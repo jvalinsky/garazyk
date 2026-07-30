@@ -45,13 +45,13 @@ Target: **−300–400s** on `AllTests`.
 
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
-| T5 | Class-scoped (or process-scoped) `PDSApplication` / account fixtures for `AdminAuthXrpcTestBase` and `RepoAuthXrpcTestBase` | open | Deferred until Phase 1 CI timing confirms remaining headroom. Higher risk of cross-test pollution. Linux XCTest shim has no `+setUp`/`+tearDown`. |
+| T5 | Class-scoped (or process-scoped) `PDSApplication` / account fixtures for `AdminAuthXrpcTestBase` and `RepoAuthXrpcTestBase` | deferred | Phase 1 already removes most of the XRPC-base cost (lexicon + PBKDF2). Class fixtures remain higher risk of cross-test pollution; Linux XCTest shim has no `+setUp`/`+tearDown`. |
 
 ## Phase 3 — Parallelism
 
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
-| T6 | `--shard=I/N` in `test_main.m`; PID-/shard-unique temp dirs; `ctest -j` entries | **partial** | PID-scoped `garazyk-test-plc-keys-*` / `garazyk-test-data-*` landed. `--shard` / `ctest -j` still open. |
+| T6 | `--shard=I/N` in `test_main.m`; PID-/shard-unique temp dirs; `ctest -j` entries | **complete** | `--shard=I/N` by class index; PID-scoped temp dirs; CMake registers `AllTestsShard{1..4}of4`; CI runs `ctest -j4 -E '^AllTests$'`. |
 | T7 | CI: decouple Linux `needs:`; remove bogus `september` target; repair or remove `plc-integration-tests` | **complete** | Linux jobs no longer `needs: macos-build-and-test`. Build target is `kaszlak`. Removed the `plc-integration-tests` job (ctest `-R` matched no registered names; PLC already covered by macOS AllTests). |
 | T8 | Real expectation fulfillment / run-loop polling in Linux XCTest shim | **complete** | Added `XCTestExpectation`, `XCTestCase` expectation APIs, and run-loop polling in `XCTWaiter` (no more full-timeout sleep). |
 
@@ -59,7 +59,7 @@ Target: **−300–400s** on `AllTests`.
 
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
-| T9 | Enable ccache in CI; slim duplicate ObjC compile/link deps for `AllTests` | open | Build minutes, not suite seconds, until sharding lands. |
+| T9 | Enable ccache in CI; slim duplicate ObjC compile/link deps for `AllTests` | **partial** | ccache launcher wired for macOS + Linux CI configure. Slimming AllTests link deps still open. |
 | T10 | Hamownia: gate/replace 5s settle sleep in `packages/hamownia/atproto_network.ts`; avoid redundant Deno typecheck on repeated `deno test` after `deno task check` | **partial** | Settle sleep is now opt-in via `HAMOWNIA_SETTLE_MS` (default 0; per-service readiness already waited). Deno `--no-check` hygiene still open. |
 
 ## Rollback
