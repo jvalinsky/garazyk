@@ -500,7 +500,21 @@
         XCTAssertNil(error);
 
         NSString *authorization = [NSString stringWithFormat:@"DPoP %@", [accessToken encodedToken]];
+        NSString *encodedAccessToken = [accessToken encodedToken];
         NSData * _Nonnull emptyBody = [@"" dataUsingEncoding:NSASCIIStringEncoding];
+
+        // Resource-server proofs carrying an access token must bind it through
+        // the RFC 9449 `ath` claim. Rebuild the initial proof now that the
+        // token is available, retaining the same key and nonce-less state.
+        error = nil;
+        initialProof = [DPoPUtil createDPoPForMethod:@"GET"
+                                                 uri:dpopURLString
+                                               nonce:nil
+                                         accessToken:encodedAccessToken
+                                                 key:privateKey
+                                               error:&error];
+        XCTAssertNotNil(initialProof);
+        XCTAssertNil(error);
 
         // (1) Nonce-less request — expect 401 + DPoP-Nonce challenge.
         HttpRequest *firstRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
@@ -535,6 +549,7 @@
         DPoPToken *retryProof = [DPoPUtil createDPoPForMethod:@"GET"
                                                          uri:dpopURLString
                                                       nonce:challengeNonce
+                                                accessToken:encodedAccessToken
                                                         key:privateKey
                                                       error:&error];
         if ([error.domain isEqualToString:NSOSStatusErrorDomain]) {

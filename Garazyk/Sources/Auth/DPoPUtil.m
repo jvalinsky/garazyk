@@ -17,6 +17,7 @@
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/Crypto/AuthCryptoECDSA.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDSReplayCache.h"
 #import "Security/PDSSecurityCompare.h"
 #import <CommonCrypto/CommonDigest.h>
@@ -96,6 +97,20 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
                                        nonce:(nullable NSString *)nonce
                                          key:(SecKeyRef)privateKey
                                        error:(NSError **)error {
+    return [self createDPoPForMethod:htm
+                                 uri:htu
+                               nonce:nonce
+                         accessToken:nil
+                                 key:privateKey
+                               error:error];
+}
+
++ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
+                                         uri:(NSString *)htu
+                                       nonce:(nullable NSString *)nonce
+                                 accessToken:(nullable NSString *)accessToken
+                                         key:(SecKeyRef)privateKey
+                                       error:(NSError **)error {
     NSURL *url = [NSURL URLWithString:htu];
     if (!url) {
         if (error) {
@@ -127,6 +142,19 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     token.jti = [[NSUUID UUID] UUIDString];
     token.nonce = nonce;
     token.exp = [NSDate dateWithTimeIntervalSinceNow:300];
+    if (accessToken.length > 0) {
+        NSData *tokenData = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
+        NSData *tokenHash = [CryptoUtils sha256:tokenData];
+        if (!tokenHash) {
+            if (error) {
+                *error = [NSError errorWithDomain:DPoPErrorDomain
+                                             code:-18
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Unable to hash access token for DPoP proof"}];
+            }
+            return nil;
+        }
+        token.ath = [AuthCryptoBase64URL encode:tokenHash];
+    }
 
     // Build JWT
     NSDictionary *header = @{
@@ -243,6 +271,15 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 @implementation DPoPUtil
 
 + (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce key:(SecKeyRef)privateKey error:(NSError **)error {
+    if (error) {
+        *error = [NSError errorWithDomain:DPoPErrorDomain
+                                     code:-99
+                                 userInfo:@{NSLocalizedDescriptionKey: @"DPoPUtil not available on this platform. Use AuthCryptoDPoP instead."}];
+    }
+    return nil;
+}
+
++ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce accessToken:(nullable NSString *)accessToken key:(SecKeyRef)privateKey error:(NSError **)error {
     if (error) {
         *error = [NSError errorWithDomain:DPoPErrorDomain
                                      code:-99
