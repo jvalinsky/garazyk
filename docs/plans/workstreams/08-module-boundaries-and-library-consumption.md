@@ -632,7 +632,7 @@ outside the build.
 
 Independent of M0; can run in parallel with anything after M1.
 
-- Replace `exit(1)` and `abort()` in library targets with error returns.
+- **[Done]** Replace `exit(1)` and `abort()` in library targets with error returns.
   Terminating the host process is not a library's decision.
 - Route the hardcoded absolute paths (`/usr/share/garazyk/lexicons`,
   `/usr/share/atprotopds/assets`, `/var/db/kaszlak/log`) through
