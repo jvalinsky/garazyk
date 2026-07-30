@@ -2720,16 +2720,16 @@ under the gate above, then re-run gate-checks 1–8 against
 
 ## S20. HTTP transport crash-safety and request-boundary hardening
 
-**Status: in progress (verified 2026-07-29).** Sub-tasks A, B, D, and E
-have landed (`77d5ad8c`, `f3aa3fb1`/`4fc2f097`, `36240eed`, `2ec37c47`
-respectively — all on `main`, confirmed present in the current source:
-`HttpRequestDispatcher.m` has `@try`/`@catch` at both
+**Status: complete (verified 2026-07-29).** All five sub-tasks (A-E)
+have landed (`77d5ad8c`, `f3aa3fb1`/`4fc2f097`, `2f9b00a0`, `36240eed`,
+`2ec37c47` respectively — all on `main`, confirmed present in the
+current source: `HttpRequestDispatcher.m` has `@try`/`@catch` at both
 previously-unguarded dispatch sites; `HttpRouter.m`'s `normalizePath:`
 resolves `..` segments per RFC 3986 §5.2.4; `HttpRequest.m` parses
 `X-Forwarded-For` right-to-left with a trusted-proxy check; every XRPC
-route pack's raw `jsonBody` reads are now either type-guarded or
-confirmed already safe). Only sub-task C remains — the verification
-suite proving B's fixes actually reject each type-confusion payload
+route pack's raw `jsonBody` reads are type-guarded or confirmed already
+safe; `XRPCAddRouteCrashSafetyTests` proves the guards actually reject
+each type-confusion payload
 with a 400 rather than crashing.
 
 Sub-task B's helper already exists and needs no new code: `AuthTypedValue`
@@ -2891,21 +2891,33 @@ multi-type-tolerant sink like SQL binding or JSON re-serialization)
 before adding a type guard — a declared Objective-C parameter type is not
 proof a runtime crash is reachable.
 
-#### Sub-task C — table-driven `(route, field)` × `{null, @1, @[], @{}, @true}` sweep
+#### Sub-task C — table-driven `(route, field)` × type-confusion sweep *(complete 2026-07-29, `2f9b00a0`)*
 
-New test class: `Garazyk/Tests/Network/XRPCAddRouteCrashSafetyTests.m`.
+`Garazyk/Tests/Network/XRPCAddRouteCrashSafetyTests.m` (registered in
+`test_main.m`'s `testClasses`, per this repo's two-step new-suite rule).
+Covers 8 `(route, field)` cases spanning 5 of the files fixed in sub-task
+B: `com.atproto.server.deactivateAccount`/`deleteAccount`/
+`createAppPassword`, `app.bsky.graph.muteActor`,
+`com.atproto.identity.updateHandle`, `com.atproto.repo.deleteBlob`.
 
-Procedure per `(route, field)` pair:
+One deviation from the original spec, found necessary while implementing
+it: the doc's literal `{null, @1, @[], @{}, @true}` set can't be applied
+uniformly to every field, because `@1`/`@true` are themselves valid
+`NSNumber` instances — asserting that a field typed to expect `NSNumber`
+must *reject* `@1` would test the wrong thing. Each case instead supplies
+the subset of `{NSNull, @1, @YES, @[], @{}, @"a string"}` that is
+genuinely the wrong type for that specific field (`NSString`-typed
+fields get numbers/arrays/dicts/booleans/null; `NSNumber`-typed fields
+get strings/arrays/dicts/null).
 
-1. POST the test fixture for each of the five type-confusion payloads.
-2. Assert HTTP 400 + JSON body `{error: "InvalidRequest", …}`.
-3. Assert process is still alive (the suite's `XCTestCase` continues to
-   the next iteration).
-4. Allow-list exemptions for handlers that genuinely accept untyped values
-   (e.g. binary blob ingestion paths).
+Verified the suite has real discriminating power rather than a vacuous
+pass: temporarily reverted the `muteActor.actor` guard back to an
+unguarded `body[@"actor"]` read, rebuilt, and confirmed the suite failed
+with 10 concrete assertion failures (200 instead of 400) — then restored
+the fix and confirmed a byte-identical diff against `HEAD` before
+committing.
 
-Lands with sub-task B in the same commit; the suite is the gate evidence
-for B's correctness.
+**This closes S20 entirely — sub-tasks A through E are all landed.**
 
 #### Sub-task D — `..`-resolution in `normalizePath:` *(§2.2, landed 2026-07-29, `36240eed`)*
 
