@@ -180,7 +180,37 @@ async function authenticatedXrpc(
   return await readJSON(response);
 }
 
-async function prepareDedicatedSpaceKey(did: string): Promise<string> {
+async function prepareDedicatedSpaceKey(
+  did: string,
+  accessJwt?: string,
+): Promise<string> {
+  const pds2 = Deno.env.get("PDS2_URL");
+  if (accessJwt && pds2) {
+    try {
+      const parsed = await authenticatedXrpc(
+        pds2,
+        "com.atproto.temp.prepareSpaceKey",
+        accessJwt,
+        {},
+      );
+      const methods = parsed?.verificationMethods as
+        | Record<string, unknown>
+        | undefined;
+      const key = methods?.atproto_space;
+      if (typeof key === "string" && key.startsWith("did:key:z")) {
+        return key;
+      }
+      throw new Error(
+        `prepareSpaceKey returned unexpected payload: ${JSON.stringify(parsed)}`,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Only fall through for missing route on garazyk-native PDS B.
+      if (!msg.includes("MethodNotFound") && !msg.includes("404")) {
+        throw new Error(`space-key preparation failed: ${msg}`);
+      }
+    }
+  }
   const runDir = Deno.env.get("ATPROTO_E2E_RUN_DIR");
   if (!runDir) throw new Error("binary run directory is unavailable");
   const binDir = Deno.env.get("BUILD_DIR") || "build/bin";
@@ -767,7 +797,7 @@ export async function run(): Promise<ScenarioResult> {
   const dedicatedSpaceKey = await timedCall(
     result,
     "Authority prepares a dedicated space signing key",
-    () => prepareDedicatedSpaceKey(owner.did),
+    () => prepareDedicatedSpaceKey(owner.did, owner.accessJwt),
     (key) => `public_key=${key.slice(0, 20)}…`,
   );
   if (!dedicatedSpaceKey || !owner.accessJwt) {
@@ -957,7 +987,10 @@ export async function run(): Promise<ScenarioResult> {
         },
       });
       const listBlobs = await readJSON(listBlobsResponse);
-      if (JSON.stringify(listBlobs.blobs).includes(privateBlobCID)) {
+      // Lexicon output is `cids` (com.atproto.sync.listBlobs); accept legacy
+      // `blobs` if a server still emits it.
+      const listed = listBlobs.cids ?? listBlobs.blobs ?? [];
+      if (JSON.stringify(listed).includes(privateBlobCID)) {
         throw new Error("public sync blob listing exposed a private blob");
       }
     },

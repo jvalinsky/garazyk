@@ -179,6 +179,12 @@ export async function startBinaryServices(
   // child services and the scenario process that drives them.
   const recoveryControlToken = crypto.randomUUID() + crypto.randomUUID();
   Deno.env.set("PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN", recoveryControlToken);
+  // Persist for --setup-only + external scenario drivers (e.g. jpl as PDS3).
+  // Mode 0600; file is under the run directory and removed with teardown.
+  const recoveryTokenPath = join(ctx.runDir, "space-recovery-control.token");
+  await Deno.writeTextFile(recoveryTokenPath, recoveryControlToken + "\n", {
+    mode: 0o600,
+  });
 
   const commonEnv: Record<string, string> = {
     PDS_RUNNING_TESTS: "true",
