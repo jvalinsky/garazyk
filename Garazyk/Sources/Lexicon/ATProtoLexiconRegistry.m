@@ -10,6 +10,11 @@
 @interface ATProtoLexiconRegistry ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoLexiconSchema *> *schemas;
+/// Absolute directory paths already loaded successfully, keyed to the
+/// directory mtime observed at load time. Cleared by -clearCache.
+/// Avoids re-walking/re-parsing the lexicon tree on every PDSApplication init
+/// (workstream 09 T1 / test-suite-speedups Finding 1).
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *loadedDirectoryFingerprints;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t registryQueue;
 
 @end
@@ -29,6 +34,7 @@
     self = [super init];
     if (self) {
         _schemas = [NSMutableDictionary dictionary];
+        _loadedDirectoryFingerprints = [NSMutableDictionary dictionary];
         _registryQueue = dispatch_queue_create("com.atproto.pds.lexicon.registry",
                                                DISPATCH_QUEUE_CONCURRENT);
     }
@@ -46,6 +52,22 @@
                                      userInfo:@{NSLocalizedDescriptionKey: @"Directory does not exist"}];
         }
         return NO;
+    }
+
+    NSDictionary *attrs = [fileManager attributesOfItemAtPath:path error:nil];
+    NSDate *modDate = attrs[NSFileModificationDate];
+    NSTimeInterval mtime = modDate ? modDate.timeIntervalSince1970 : 0.0;
+
+    __block BOOL alreadyLoaded = NO;
+    dispatch_sync(self.registryQueue, ^{
+        NSNumber *previous = self.loadedDirectoryFingerprints[path];
+        if (previous && previous.doubleValue == mtime) {
+            alreadyLoaded = YES;
+        }
+    });
+    if (alreadyLoaded) {
+        GZ_LOG_DEBUG(@"[LexiconRegistry] Skipping already-loaded directory: %@", path);
+        return YES;
     }
 
     GZ_LOG_DEBUG(@"[LexiconRegistry] Loading lexicons from: %@", path);
@@ -85,6 +107,15 @@
 
     GZ_LOG_DEBUG(@"[LexiconRegistry] Loaded %lu lexicons (%lu errors) from %@",
                 (unsigned long)loadedCount, (unsigned long)errorCount, path);
+
+    if (errorCount == 0) {
+        // barrier_sync waits for any pending registerSchema barrier_async
+        // work before publishing the fingerprint, so a later short-circuit
+        // cannot race ahead of schema registration.
+        dispatch_barrier_sync(self.registryQueue, ^{
+            self.loadedDirectoryFingerprints[path] = @(mtime);
+        });
+    }
 
     return errorCount == 0;
 }
@@ -149,8 +180,9 @@
 }
 
 - (void)clearCache {
-    dispatch_barrier_async(self.registryQueue, ^{
+    dispatch_barrier_sync(self.registryQueue, ^{
         [self.schemas removeAllObjects];
+        [self.loadedDirectoryFingerprints removeAllObjects];
     });
     GZ_LOG_DEBUG(@"[LexiconRegistry] Cache cleared");
 }

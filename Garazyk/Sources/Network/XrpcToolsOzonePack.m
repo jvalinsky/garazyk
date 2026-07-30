@@ -638,6 +638,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         if (limitParam.length > 0) {
             limit = [limitParam integerValue];
         }
+        if (limit < 1) limit = 100;
+        if (limit > 100) limit = 100;
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
         NSError *error = nil;
@@ -662,6 +664,8 @@ static NSString *ExtractAdminDid(HttpRequest *request,
         if (limitParam.length > 0) {
             limit = [limitParam integerValue];
         }
+        if (limit < 1) limit = 50;
+        if (limit > 100) limit = 100;
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSString *namePrefix = [request queryParamForKey:@"namePrefix"];
 
