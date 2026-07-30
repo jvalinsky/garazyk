@@ -19,6 +19,8 @@
         _sequencerDirectory = [baseDirectory stringByAppendingPathComponent:@"sequencer"];
         _blobsDirectory = [baseDirectory stringByAppendingPathComponent:@"blobs"];
         _lexiconsDirectory = [baseDirectory stringByAppendingPathComponent:@"lexicons"];
+        _assetsDirectory = [baseDirectory stringByAppendingPathComponent:@"assets"];
+        _logDirectory = [baseDirectory stringByAppendingPathComponent:@"log"];
         _keysDirectory = [baseDirectory stringByAppendingPathComponent:@"keys"];
         _exploreCacheDirectory = [[baseDirectory stringByAppendingPathComponent:@"cache"]
                                   stringByAppendingPathComponent:@"explore"];
@@ -36,6 +38,8 @@
         self.sequencerDirectory,
         self.blobsDirectory,
         self.lexiconsDirectory,
+        self.assetsDirectory,
+        self.logDirectory,
         self.keysDirectory,
         self.exploreCacheDirectory,
     ];

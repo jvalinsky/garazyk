@@ -20,6 +20,8 @@
    sequencer/                   # sequencer database
    blobs/                       # blob storage
    lexicons/                    # lexicon files
+   assets/                      # static web assets
+   log/                         # system logs
    keys/                        # rotation key storage
    cache/explore/               # explore cache
  @endcode
@@ -49,6 +51,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, copy, readonly) NSString *blobsDirectory;
 @property (nonatomic, copy, readonly) NSString *lexiconsDirectory;
+@property (nonatomic, copy, readonly) NSString *assetsDirectory;
+@property (nonatomic, copy, readonly) NSString *logDirectory;
 @property (nonatomic, copy, readonly) NSString *keysDirectory;
 @property (nonatomic, copy, readonly) NSString *exploreCacheDirectory;
 

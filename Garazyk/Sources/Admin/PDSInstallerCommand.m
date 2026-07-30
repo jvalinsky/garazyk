@@ -4,6 +4,7 @@
 #import "Admin/PDSInstallerCommand.h"
 #import "Debug/GZLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
+#import "Core/ATProtoDataPaths.h"
 #import <Foundation/Foundation.h>
 
 static NSString * const kDaemonPlistName = @"com.atproto.pds.plist";
@@ -448,7 +449,12 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
         logPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Logs/kaszlak/agent.log"];
         NSFileManager *fm = [NSFileManager defaultManager];
         if (![fm fileExistsAtPath:logPath]) {
-            logPath = @"/var/db/kaszlak/log/daemon.log";
+            if (context.dataDir) {
+                ATProtoDataPaths *dataPaths = [ATProtoDataPaths pathsForBaseDirectory:context.dataDir];
+                logPath = [dataPaths.logDirectory stringByAppendingPathComponent:@"daemon.log"];
+            } else {
+                logPath = @"/var/db/kaszlak/log/daemon.log";
+            }
         }
 
         if ([fm fileExistsAtPath:logPath]) {
