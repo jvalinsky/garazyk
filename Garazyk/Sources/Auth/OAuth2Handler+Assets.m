@@ -4,6 +4,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
+#import "Core/ATProtoDataPaths.h"
 
 @implementation OAuth2Handler (Assets)
 
@@ -26,19 +27,20 @@
 
 - (NSString *)assetsPath {
   if (self.dataDirectory) {
-    NSString *path =
-        [self.dataDirectory stringByAppendingPathComponent:@"Auth/Assets"];
-    GZ_LOG_AUTH_DEBUG(@"Checking for assets in dataDirectory: %@", path);
+    ATProtoDataPaths *dataPaths = [ATProtoDataPaths pathsForBaseDirectory:self.dataDirectory];
+    NSString *path = [dataPaths.assetsDirectory stringByAppendingPathComponent:@"Auth"];
+    GZ_LOG_AUTH_DEBUG(@"Checking for assets in dataPaths: %@", path);
     if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
       return path;
     }
+    // Fallback to older inline-directory structure if present
+    NSString *oldPath = [self.dataDirectory stringByAppendingPathComponent:@"Auth/Assets"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:oldPath]) {
+      return oldPath;
+    }
   }
 
-  // Check standard install path (Docker/packaged deployments)
-  NSString *installPath = @"/usr/share/atprotopds/assets/Auth";
-  if ([[NSFileManager defaultManager] fileExistsAtPath:installPath]) {
-    return installPath;
-  }
+
 
   // Fallback to project structure if running from source (handling cwd=build/)
   NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
@@ -65,19 +67,19 @@
 
 - (NSString *)sharedCSSPath {
   if (self.dataDirectory) {
-    NSString *path =
-        [self.dataDirectory stringByAppendingPathComponent:
-            @"Shared/DesignSystem/css"];
+    ATProtoDataPaths *dataPaths = [ATProtoDataPaths pathsForBaseDirectory:self.dataDirectory];
+    NSString *path = [dataPaths.assetsDirectory stringByAppendingPathComponent:@"css"];
     if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
       return path;
     }
+    // Fallback to older inline-directory structure if present
+    NSString *oldPath = [self.dataDirectory stringByAppendingPathComponent:@"Shared/DesignSystem/css"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:oldPath]) {
+      return oldPath;
+    }
   }
 
-  // Check standard install path (Docker/packaged deployments)
-  NSString *installPath = @"/usr/share/atprotopds/assets/css";
-  if ([[NSFileManager defaultManager] fileExistsAtPath:installPath]) {
-    return installPath;
-  }
+
 
   // Fallback to project structure (development from build/ or project root)
   NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
