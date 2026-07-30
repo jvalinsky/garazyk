@@ -217,45 +217,53 @@ doesn't depend on the sibling `jelcz` executable target) — confirmed via
 direct manual runs of the binary, not just the test harness, before
 concluding the actual code change was correct.
 
-**`Transport -> Storage` investigated, not fixed** — genuinely needs
-design, matching this item's own framing. The 3 files the corrected
-baseline actually names are `RateLimiter.m` and two route packs
-(`ATProtoHttpOAuthRoutePack.m`, `ATProtoHttpWellKnownRoutePack.m`), and
-they're not the same shape of problem:
-- The two route packs are not narrowly-scoped database leaks at all —
-  they already import `OAuth2Handler`, `WebAuthnRegistrationHandler`,
-  `PDSSecondFactorService`, `PDSAccountService`, and `PDSController`
-  directly (several already separately flagged in the baseline). These
-  are Services-layer route handlers that happen to live in `Network/`
-  physically; injecting a storage protocol would leave the other
-  Services imports untouched. The real fix is deciding where these
-  files belong (XRPC layer, most likely, matching `Xrpc*.m`'s existing
-  carve-out from Transport) — a relocation decision, not a protocol
-  injection, and one this pass didn't have enough certainty to make
-  unilaterally.
-- `RateLimiter` is the cleaner case (only these 2 leak classes,
-  `ATProtoConnectionManagerSerial`/`ATProtoDatabaseQueryRunner`, no
-  other Services deps) but its dependency is deep: 16 call sites across
-  a 540-line file directly issue SQL through
-  `ATProtoDatabaseQueryRunner`/`ATProtoConnectionManagerSerial`, and
-  `RateLimiter` constructs both itself, lazily, inside
-  `ensureDatabaseOpened`. Unlike the `PDSReplayCache` fix (a single
-  already-protocol-typed property that just needed its one production
-  construction site repointed), `RateLimiter` is a process-wide
-  singleton (`+sharedLimiter`) with no caller anywhere passing in a
-  storage dependency — every consumer just calls `[RateLimiter
-  sharedLimiter]`. A real fix needs a factory seam (something like
-  `RateLimiterSetStorageFactory(...)`, set once at App/Runtime startup,
-  that `RateLimiter` calls lazily instead of hardcoding the concrete
-  classes) — a legitimate design task, not a mechanical move, and
-  larger than anything else fixed in this M4 pass. Recommended next
-  step for whoever picks this up: design the factory protocol first,
-  verify it against all of `RateLimiter`'s 16 internal call sites
-  (`executeQuery:`/`executeUpdate:`/`performWriteTransaction:error:`,
-  already conveniently matching the existing `ATProtoDatabaseTransactor`
-  protocol shape almost exactly), then wire the one production call
-  site (wherever `App`/`Runtime` boots the server) before touching
-  `RateLimiter.m` itself.
+**`Transport -> Storage` / `RateLimiter` resolved** (`6788ee60`). Built
+the factory seam this section's earlier pass had scoped out but not
+implemented:
+- `ATProtoDatabaseQueryRunner.h` gained `ATProtoQueryRunning`, extracting
+  its public surface (`executeQuery:`/`executeUpdate:`/
+  `performWriteTransaction:error:`) as a protocol — the same treatment
+  `ATProtoConnectionManager` already had.
+- `RateLimiter.h` gained `RateLimiterStorageHandle` (bundling
+  `id<ATProtoConnectionManager>` + `id<ATProtoQueryRunning>`),
+  `RateLimiterStorageFactory`, and `RateLimiterSetStorageFactory` —
+  importing only the two protocol headers, never a concrete Storage
+  class.
+- `RateLimiter.m`'s `ensureDatabaseOpened`/`reconfigureDatabasePath`/
+  `dealloc` now go through the injected `storageHandle` instead of
+  instantiating `ATProtoConnectionManagerSerial`/
+  `ATProtoDatabaseQueryRunner` directly.
+- New `Network/XrpcRateLimiterStorageRegistration.m` registers the real
+  factory via `+load`, mirroring the `GZHTTPClientRegistry`/
+  `ATProtoSafeHTTPClient` self-registration pattern from M2 — so none of
+  the three binaries that construct a `RateLimiter` (`kaszlak` via
+  `PDSApplication.m`, `Mikrus`, `Beskid`) needed their bootstrap code
+  touched.
+
+**Why this file lives in XRPC, not Storage:** Storage self-registering
+into a Transport-owned registry would just invert the leak instead of
+removing it — Storage isn't allowed to depend on Transport either.
+`ATProtoXRPC` is the one module in the declared DAG that already
+legitimately depends on both Storage and Transport, and every binary
+that constructs a `RateLimiter` already links it.
+
+Resolved both leaks from `ATProtoTransport`. Baseline ratcheted 47 → 45.
+Verified: `RateLimiterTests`, `RateLimitingTests`,
+`GZXrpcRouteSupportTests`, and `PDSRateLimitAdminHandlerTests` all pass,
+plus a full `AllTests --gated=run` showing the identical (pre-existing)
+failure profile.
+
+**Still open — the two misplaced route-pack files**
+(`ATProtoHttpOAuthRoutePack.m`, `ATProtoHttpWellKnownRoutePack.m`): not
+narrowly-scoped database leaks — they already import `OAuth2Handler`,
+`WebAuthnRegistrationHandler`, `PDSSecondFactorService`,
+`PDSAccountService`, and `PDSController` directly (several already
+separately flagged in the baseline). These are Services-layer route
+handlers that happen to live in `Network/` physically; the real fix is
+deciding where they belong (XRPC layer, most likely, matching
+`Xrpc*.m`'s existing carve-out from Transport) — a relocation decision,
+not a protocol injection, and one this pass still doesn't have enough
+certainty to make unilaterally.
 
 - `Transport -> Runtime`: invert route-pack registration so `App/`
   handlers register themselves with the router instead of route packs
