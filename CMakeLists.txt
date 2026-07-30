@@ -1847,7 +1847,7 @@ if(BUILD_TESTS)
     # portability failure cannot turn this security boundary into an
     # untested code path.
     add_executable(SecItemLinuxStoreTests
-      Garazyk/Sources/Auth/CryptoUtils.m
+      Garazyk/Sources/Auth/Crypto/CryptoUtils.m
       Garazyk/Tests/Compat/SecItemLinuxStoreTestMain.m
       Garazyk/Tests/Compat/SecItemPersistenceTests.m
       Garazyk/Sources/Compat/XCTest/XCTest.m
