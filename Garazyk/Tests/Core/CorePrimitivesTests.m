@@ -1,12 +1,15 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
+#import <string.h>
 #import "Core/CID.h"
 #import "Core/TID.h"
 #import "Core/DID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"
 #import "Core/ATProtoBase32.h"
+#import "Core/CBOR.h"
+#import <Security/Security.h> // provides OSSwapBigToHostInt{32,64} on Linux via the PlatformShims CFByteOrder shim
 
 #pragma mark - CID Tests
 
@@ -481,6 +484,54 @@
     XCTAssertNil(error);
     // Both should produce identical bytes because keys are sorted
     XCTAssertEqualObjects(data1, data2);
+}
+
+@end
+
+#pragma mark - CBOR Encoder Count Width Tests
+
+/// Exposes the private length-prefix encoder so the >=2^32 boundary can be
+/// probed without allocating a multi-gigabyte buffer (security-review N1).
+@interface CBOREncoder (CountWidthTesting)
++ (void)encodeCount:(NSUInteger)count withMajorType:(uint8_t)majorType toData:(NSMutableData *)data;
+@end
+
+@interface CBOREncoderCountWidthTests : XCTestCase
+@end
+
+@implementation CBOREncoderCountWidthTests
+
+- (void)testCountAtTwoPow32EncodesAsEightByteLength {
+    // Below the fix, counts >= 2^32 were cast through (uint32_t), silently
+    // wrapping to 0 and emitting a 5-byte (additional-info 26) header whose
+    // length claims zero bytes instead of 4294967296.
+    NSMutableData *data = [NSMutableData data];
+    [CBOREncoder encodeCount:4294967296ULL withMajorType:0x40 toData:data];
+
+    XCTAssertEqual(data.length, (NSUInteger)9, @"additional-info 27 needs a 1-byte header + 8-byte length");
+    const uint8_t *bytes = data.bytes;
+    XCTAssertEqual(bytes[0], (uint8_t)(0x40 | 27), @"header must select additional-info 27 (8-byte length)");
+
+    uint64_t decodedLength = 0;
+    memcpy(&decodedLength, bytes + 1, 8);
+    decodedLength = OSSwapBigToHostInt64(decodedLength);
+    XCTAssertEqual(decodedLength, (uint64_t)4294967296ULL, @"the 8-byte length must round-trip exactly, not wrap");
+}
+
+- (void)testCountJustBelowTwoPow32StillUsesFourByteLength {
+    // Sibling control: the existing 4-byte (additional-info 26) branch must
+    // stay exactly as-is for the value directly below the new boundary.
+    NSMutableData *data = [NSMutableData data];
+    [CBOREncoder encodeCount:4294967295ULL withMajorType:0x40 toData:data];
+
+    XCTAssertEqual(data.length, (NSUInteger)5, @"additional-info 26 needs a 1-byte header + 4-byte length");
+    const uint8_t *bytes = data.bytes;
+    XCTAssertEqual(bytes[0], (uint8_t)(0x40 | 26));
+
+    uint32_t decodedLength = 0;
+    memcpy(&decodedLength, bytes + 1, 4);
+    decodedLength = OSSwapBigToHostInt32(decodedLength);
+    XCTAssertEqual(decodedLength, (uint32_t)4294967295U);
 }
 
 @end

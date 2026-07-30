@@ -96,6 +96,24 @@
     XCTAssertFalse([self.validator isSupportedMimeType:@"image/x-icon" error:nil], @"image/x-icon should not be supported");
 }
 
+- (void)testActiveContentMimeTypesRejected {
+    // §6.2: BlobStorage validateBlob uses isSupportedMimeType — active content
+    // must not be in the supported set even if a route denylist also exists.
+    NSArray<NSString *> *active = @[
+        @"image/svg+xml",
+        @"text/html",
+        @"text/css",
+        @"text/javascript",
+        @"application/javascript",
+        @"application/xml",
+        @"application/postscript",
+    ];
+    for (NSString *mime in active) {
+        XCTAssertFalse([self.validator isSupportedMimeType:mime error:nil],
+                       @"%@ must not be a supported upload MIME type", mime);
+    }
+}
+
 #pragma mark - Category Tests
 
 - (void)testCategoryImage {

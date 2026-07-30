@@ -104,12 +104,14 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
 @interface XCTestCase ()
 @property (nonatomic, readwrite) SEL selector;
 @property (nonatomic, readwrite, copy) NSString *name;
+@property (nonatomic, strong) NSMutableArray<XCTestExpectation *> *pendingExpectations;
 @end
 
 @implementation XCTestCase
 
 @synthesize selector = _selector;
 @synthesize name = _name;
+@synthesize pendingExpectations = _pendingExpectations;
 
 - (nullable instancetype)initWithSelector:(SEL)selector {
     self = [super init];
@@ -119,16 +121,40 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
         NSString *className = NSStringFromClass([self class]);
         NSString *methodName = NSStringFromSelector(selector);
         self.name = [NSString stringWithFormat:@"-[%@ %@]", className, methodName];
+        _pendingExpectations = [NSMutableArray array];
     }
     return self;
 }
 
 - (void)setUp {
     // Default no-op; subclasses override
+    [self.pendingExpectations removeAllObjects];
 }
 
 - (void)tearDown {
     // Default no-op; subclasses override
+    [self.pendingExpectations removeAllObjects];
+}
+
+- (XCTestExpectation *)expectationWithDescription:(NSString *)description {
+    XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:description ?: @""];
+    [self.pendingExpectations addObject:expectation];
+    return expectation;
+}
+
+- (void)waitForExpectationsWithTimeout:(NSTimeInterval)timeout
+                               handler:(void (^ _Nullable)(NSError * _Nullable))handler {
+    NSArray *expectations = [self.pendingExpectations copy];
+    [XCTWaiter waitForExpectations:expectations timeout:timeout];
+    if (handler) {
+        handler(nil);
+    }
+    [self.pendingExpectations removeAllObjects];
+}
+
+- (void)waitForExpectations:(NSArray<XCTestExpectation *> *)expectations
+                    timeout:(NSTimeInterval)timeout {
+    [XCTWaiter waitForExpectations:expectations timeout:timeout];
 }
 
 - (void)invokeTest {
@@ -271,19 +297,76 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
 
 @end
 
+// ── XCTestExpectation ─────────────────────────────────────────────────
+
+@interface XCTestExpectation ()
+@property (nonatomic, readwrite, copy) NSString *expectationDescription;
+@property (atomic, assign, readwrite, getter=isFulfilled) BOOL fulfilled;
+@end
+
+@implementation XCTestExpectation
+
+- (instancetype)initWithDescription:(NSString *)description {
+    self = [super init];
+    if (self) {
+        _expectationDescription = [description copy] ?: @"";
+        _fulfilled = NO;
+    }
+    return self;
+}
+
+- (void)fulfill {
+    self.fulfilled = YES;
+}
+
+@end
+
 // ── XCTWaiter ─────────────────────────────────────────────────────────
 
 @implementation XCTWaiter
 
++ (BOOL)pds_allFulfilled:(NSArray<XCTestExpectation *> *)expectations {
+    for (XCTestExpectation *expectation in expectations) {
+        if (!expectation.isFulfilled) {
+            return NO;
+        }
+    }
+    return YES;
+}
+
++ (void)waitForExpectations:(NSArray<XCTestExpectation *> *)expectations
+                    timeout:(NSTimeInterval)timeout {
+    if (expectations.count == 0) {
+        return;
+    }
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:MAX(timeout, 0)];
+    while ([XCTWaiter pds_allFulfilled:expectations] == NO) {
+        if ([[NSDate date] compare:deadline] != NSOrderedAscending) {
+            NSMutableArray *outstanding = [NSMutableArray array];
+            for (XCTestExpectation *expectation in expectations) {
+                if (!expectation.isFulfilled) {
+                    [outstanding addObject:expectation.expectationDescription ?: @"(unnamed)"];
+                }
+            }
+            _PDSXCTFail(@"Asynchronous wait failed: Exceeded timeout of %g seconds, with unmet expectations: %@",
+                        timeout, [outstanding componentsJoinedByString:@", "]);
+            return;
+        }
+        // Pump GCD / CFRunLoop sources so fulfill callbacks can land.
+        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+    }
+}
+
 + (NSTimeInterval)waitForExpectationsWithTimeout:(NSTimeInterval)timeout
                                           handler:(void (^ _Nullable)(NSError * _Nullable))handler {
-    // Minimal implementation: just sleep for the timeout.
-    // Real expectation fulfillment is not implemented.
-    [NSThread sleepForTimeInterval:timeout];
+    // Legacy entry point used by a few call sites that do not pass an
+    // expectation array. Sleeping the full timeout is wrong; with no
+    // expectations there is nothing to wait for.
+    NSDate *start = [NSDate date];
     if (handler) {
         handler(nil);
     }
-    return timeout;
+    return [[NSDate date] timeIntervalSinceDate:start];
 }
 
 @end

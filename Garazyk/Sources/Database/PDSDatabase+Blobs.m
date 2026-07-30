@@ -62,9 +62,18 @@
     return result;
 }
 
-- (BOOL)deleteBlob:(NSData *)cid error:(NSError **)error {
-    NSString *sql = @"DELETE FROM blobs WHERE cid = ?";
-    return [self executeParameterizedUpdate:sql params:@[cid] error:error];
+- (BOOL)deleteBlob:(NSData *)cid did:(NSString *)did error:(NSError **)error {
+    // §5.1: require did so a re-uploader cannot delete the original owner's row.
+    if (did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSDatabase"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"did is required to delete a blob"}];
+        }
+        return NO;
+    }
+    NSString *sql = @"DELETE FROM blobs WHERE cid = ? AND did = ?";
+    return [self executeParameterizedUpdate:sql params:@[cid ?: [NSNull null], did] error:error];
 }
 
 - (PDSDatabaseBlob *)blobFromStatement:(sqlite3_stmt *)stmt {

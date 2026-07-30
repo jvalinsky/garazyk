@@ -77,14 +77,28 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key;
 
 /*! Derives a key from a password and salt using PBKDF2-SHA256.
-    Uses 600,000 iterations and produces a 32-byte key.
-    Note: Uses 600,000 iterations for encryption key derivation to align with
-    OWASP 2023 recommendations.
+    Uses ATProtoPBKDF2IterationCount() rounds and produces a 32-byte key.
+    Note: Production uses 600,000 iterations (OWASP 2023); under
+    PDS_RUNNING_TESTS the count is reduced for suite wall-clock.
     @param password The password/secret string (nonnull).
     @param salt The salt data, typically 16+ bytes (nonnull).
     @return Derived 32-byte key, or nil on failure. */
 + (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt;
 
 @end
+
+/*! Production PBKDF2-HMAC-SHA256 iteration count (OWASP 2023). */
+FOUNDATION_EXPORT const uint32_t ATProtoPBKDF2ProductionIterations;
+
+/*! Reduced iteration count used when PDS_RUNNING_TESTS (or XCTest) is set. */
+FOUNDATION_EXPORT const uint32_t ATProtoPBKDF2TestIterations;
+
+/*!
+ @abstract Effective PBKDF2 iteration count for password / key derivation.
+ @discussion Returns ATProtoPBKDF2TestIterations when PDS_RUNNING_TESTS or
+ XCTestConfigurationFilePath is present in the environment; otherwise
+ ATProtoPBKDF2ProductionIterations. Workstream 09 T2.
+ */
+FOUNDATION_EXPORT uint32_t ATProtoPBKDF2IterationCount(void);
 
 NS_ASSUME_NONNULL_END

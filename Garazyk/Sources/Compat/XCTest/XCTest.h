@@ -157,20 +157,63 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+// ── XCTestExpectation ─────────────────────────────────────────────────
+
+/*!
+ @class XCTestExpectation
+
+ @abstract Async expectation that can be fulfilled from a callback.
+ */
+@interface XCTestExpectation : NSObject
+
+/*! Human-readable description used in timeout failure messages. */
+@property (nonatomic, readonly, copy) NSString *expectationDescription;
+
+/*! YES once -fulfill has been called. */
+@property (atomic, assign, readonly, getter=isFulfilled) BOOL fulfilled;
+
+/*! Create an expectation with a description. */
+- (instancetype)initWithDescription:(NSString *)description;
+
+/*! Mark the expectation as fulfilled (idempotent). */
+- (void)fulfill;
+
+@end
+
 // ── XCTWaiter ─────────────────────────────────────────────────────────
 
 /*!
  @class XCTWaiter
 
- @abstract Asynchronous test waiter (minimal implementation).
+ @abstract Asynchronous test waiter.
 
- @discussion Provides basic async test support for Linux.
+ @discussion Polls the current run loop until expectations are fulfilled
+ or the timeout elapses (workstream 09 T8).
  */
 @interface XCTWaiter : NSObject
 
-/*! Wait for expectations with timeout. */
+/*! Wait for expectations with timeout. Returns elapsed seconds. */
 + (NSTimeInterval)waitForExpectationsWithTimeout:(NSTimeInterval)timeout
                                           handler:(void (^ _Nullable)(NSError * _Nullable))handler;
+
+/*! Wait until every expectation in the array is fulfilled or timeout. */
++ (void)waitForExpectations:(NSArray<XCTestExpectation *> *)expectations
+                    timeout:(NSTimeInterval)timeout;
+
+@end
+
+@interface XCTestCase (Expectations)
+
+/*! Create and track an expectation owned by this test case. */
+- (XCTestExpectation *)expectationWithDescription:(NSString *)description;
+
+/*! Wait for all expectations created via -expectationWithDescription:. */
+- (void)waitForExpectationsWithTimeout:(NSTimeInterval)timeout
+                               handler:(void (^ _Nullable)(NSError * _Nullable))handler;
+
+/*! Wait for the given expectations. */
+- (void)waitForExpectations:(NSArray<XCTestExpectation *> *)expectations
+                    timeout:(NSTimeInterval)timeout;
 
 @end
 

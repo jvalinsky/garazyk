@@ -170,9 +170,19 @@ correct as written. This is a test-only change.
 | §3.3 negative integers | `CBORParserExploitTests` **6/6 green** — now includes an INT64_MIN encoder round-trip case |
 | §3.4 canonical form + §S19 routing | landed in `ATProtoDagCBOR`; `ATProtoCBORSerialization` routes via `initWithContentAddressed:` |
 | §4.1 token_use / typ | wired on the local path (`PDSAuth.m`, `AuthVerifier.m:295-296`); `verifyRefreshToken:` no longer delegates to `verifyAccessToken:`, closing the bidirectional confusion |
+| §4.2 DPoP `ath` | `AuthCryptoDPoP` requires/matches `ath` when `expectedAccessToken` is set; `AuthVerifier`, `AppViewOAuth2Middleware`, and `XrpcAuthHelper` pass the presented token |
+| §4.6 DPoP `htu` | Issuer authority preferred; Host / `X-Forwarded-Proto` only under trusted-proxy gate (`AuthVerifier`, AppView middleware aligned with Xrpc/OAuth2Handler) |
 | §4.3 refresh reuse detection | family-id + tombstone + migration |
 | §2.2 path normalization | `normalizePath:` now resolves `..` with a segment stack and drops above-root traversal |
+| §5.1 blob ownership | `PDSDatabase+Blobs` and `PDSActorStore+Blob` preserve `did` on CID conflict; deletes scoped by `(cid, did)` |
+| §5.2–§5.4 moderation SQL | ModerationService cursor/`limit`/`LIKE ESCAPE`; AppView Group/Graph/Actor/Feed siblings; Ozone route clamps |
+| §6.1 blob CDN redirect | `CID cidFromString:` before `Location`; CR/LF stripped in `HttpResponse setHeader:` |
+| §6.2 active-content headers | CSP on repo/sync downloads; MimeTypeValidator drops html/svg/js/css/xml/postscript from supported uploads |
+| §6.4 / §6.5 / §6.7 handle resolver | failure-cache key normalized; DNS TXT `did=` trimmed/bounded; ambient `XCTestCase` SSRF bypass removed (env-only) |
+| §6.6 handle backlink | `verifyHandleBacklink:did:` requires DID `alsoKnownAs` claim (non-test) |
 | §8 vacuous test | `XCTAssertTrue(YES)` replaced with real depth assertions |
+| N1 `encodeCount:` 8-byte | additional-info 27 branch for counts ≥ 2³² |
+| N3 `setUsage:` setter | deleted; usage is immutable for the instance lifetime |
 
 ### Open — revised priorities
 
@@ -206,12 +216,9 @@ than sweeping blindly.
 
 ### New findings from this pass
 
-**N1 — `encodeCount:` truncates above 2³² (low).** `CBOR.m` `encodeCount:` has
-branches for additional-info 24/25/26 but **no 27 (8-byte) branch**; the `else`
-casts an `NSUInteger` count through `(uint32_t)`. A byte string or array of
-≥ 4 GiB would encode a silently wrong length. Not remotely reachable under the
-50 MB body cap, and encoders are not attacker-driven — but it is a correctness
-landmine, and it means the encoder cannot represent what the decoder now accepts.
+**N1 — `encodeCount:` truncates above 2³² (low).** **REMEDIATED (2026-07-30)** —
+additional-info 27 (8-byte) branch landed; tests in `CBOREncoderCountWidthTests`.
+Was: branches for 24/25/26 only; `else` cast through `(uint32_t)`.
 
 **N2 — S19 is strict on decode, lenient on encode (design note).**
 `encodeDataWithJSONObject:` routes through `[CBOREncoder encode:]` *regardless*
@@ -224,18 +231,16 @@ round-trip failure rather than at the point of the mistake. Worth either routing
 encode through `ATProtoDagCBOR` too, or documenting the invariant with a
 property test.
 
-**N3 — `setUsage:` contradicts documented immutability.** The header calls the
-flag "immutable for the lifetime of the instance" but ships a public setter whose
-misuse is only a DEBUG warning. If any instance is ever shared or cached, one
-caller can flip another's decode strictness. Prefer deleting the setter now,
-while adoption is still small.
+**N3 — `setUsage:` contradicts documented immutability.** **REMEDIATED (2026-07-30)** —
+public setter deleted. Was: header claimed immutable but shipped a public setter.
 
 ### Unchanged
 
-§4.2 (DPoP `ath`), §4.6 (`htu` from Host), §5 (data layer: blob ownership,
-`stringValue` crash, unclamped limit, LIKE ESCAPE), §6 (blob CRLF, handle
-resolver), §7 (PLC, MST/commit integrity, Registration, AdminUI, Email,
-MediaCore/Video, password KDF) are all untouched since the original audit.
+§5.5 (write-path IDOR / secrets-at-rest follow-ups),
+§7 (PLC, MST/commit integrity, Registration, AdminUI, Email,
+MediaCore/Video, password KDF) remain open or partially open since the
+original audit. §4.2 / §4.6 / §5.1–§5.4 / §6.1–§6.2 / §6.4–§6.7 / N1 / N3 closed
+2026-07-30 on `cursor/execute-remaining-plan-work-96ec`.
 
 ---
 
@@ -874,15 +879,15 @@ defense in depth.
 
 ### 4.2 DPoP proof not bound to the access token
 
-**CONFIRMED, medium.** `AuthCryptoDPoP.m:190-204` reads `htm`, `htu`, `iat`,
-`jti`, `nonce` — never `ath`. RFC 9449 §4.3 requires `ath` =
-`base64url(SHA-256(token))` when a proof accompanies an access token.
-`AuthVerifier.m:394` completes binding on the key thumbprint alone, so any two
-tokens under one DPoP key are interchangeable from the proof's perspective.
+**REMEDIATED (2026-07-30).** `AuthCryptoDPoP.m` validates `ath` =
+`base64url(SHA-256(token))` when `expectedAccessToken` is non-nil. Callers that
+present an access token alongside a DPoP proof pass the token:
+`AuthVerifier.m`, `AppViewOAuth2Middleware.m`, and `XrpcAuthHelper.m`. Token-
+endpoint proofs (no access token yet) correctly pass nil.
 
-Bounded by the replay cache (one use per proof), which is correctly implemented.
-Also `iat` uses `fabs(now - iat) > 300`, accepting proofs up to 5 minutes in the
-future.
+Was: **CONFIRMED, medium.** Proof checked `htm`/`htu`/`iat`/`jti`/`nonce` only;
+thumbprint binding alone made tokens under one DPoP key interchangeable from
+the proof's perspective (bounded by replay cache).
 
 ### 4.3 Refresh-token reuse detection
 
@@ -992,12 +997,14 @@ for full gate evidence.
 
 ### 4.6 DPoP `htu` from unvalidated Host
 
-**CONFIRMED, deployment-dependent.** `AuthVerifier.m:446` builds the expected
-`htu` from the `Host` and `X-Forwarded-Proto` headers with no host allowlist and
-no trusted-proxy check, so the requester chooses the value their proof is
-compared against. Behind a proxy that overwrites both headers this is not
-reachable; combined with §2.3 it is worth fixing together. `hostHeader` is also
-used with no nil-guard (yields the literal `https://(null)/path`).
+**REMEDIATED (2026-07-30).** Resource-server DPoP URL builders prefer the
+configured issuer authority/scheme. `X-Forwarded-Proto` / Host are honored only
+when `PDS_TRUST_PROXY_HEADERS` is set and the peer is a trusted proxy address
+(same gate as §2.3): `AuthVerifier`, `XrpcAuthHelper`, `OAuth2Handler+DPoP`,
+and `AppViewOAuth2Middleware`. Missing authority returns nil (no
+`https://(null)/…`).
+
+Was: **CONFIRMED, deployment-dependent** — Host + X-Forwarded-Proto unbound.
 
 ### 4.7 JWKS advertises secp256k1 as P-256
 
@@ -1024,44 +1031,30 @@ The real issues are elsewhere:
 
 ### 5.1 Blob ownership rewrite
 
-**CONFIRMED (schema precondition verified).** Schema is `cid BLOB PRIMARY KEY`
-(`Schema.m:117`) — uniqueness on `cid` alone. `PDSDatabase+Blobs.m:21` upserts
-`ON CONFLICT(cid) DO UPDATE SET did=excluded.did`, and `:60` deletes by `cid`
-with no `AND did`. Sibling accessors scope correctly
-(`PDSActorStore+Blob.m:101`, `PDSSQLiteBlobRepository.m:114`).
+**REMEDIATED (2026-07-30).** Both upsert paths preserve the original `did` on
+`ON CONFLICT(cid)` (`PDSDatabase+Blobs.m`, `PDSActorStore+Blob.m`). Deletes are
+scoped by `(cid, did)` (`deleteBlob:did:error:`, ActorStore `deleteBlobForCID:forDid:`).
+Tests cover wrong-owner delete no-op and owner preservation on re-upload.
 
-CIDs are content hashes, so re-uploading a victim's bytes collides deliberately:
-the row's owner is rewritten to the attacker (quota accounting follows `did`),
-and a later delete removes it for the victim.
-
-**Still to verify:** which upload path actually reaches `PDSDatabase+Blobs`
-versus the scoped store. `BlobStorage.m:152` is the candidate. The missing
-predicate is a defect regardless.
+Was: schema `cid PRIMARY KEY` + `SET did=excluded.did` let a re-uploader steal
+quota ownership and delete the victim's row.
 
 ### 5.2 `stringValue` sent to `NSString`
 
-**CONFIRMED (column types verified as TEXT).** `ModerationService.m:415` and
-`:459` call `-stringValue` on a value read from a TEXT column, i.e. an
-`NSString`, which has no such method. The `?: @""` fallback never runs — the
-message raises first. Triggered by any `limit` reaching a full page (e.g.
-`limit=1` on a non-empty set).
+**REMEDIATED (2026-07-30).** `ModerationService` uses `PDSCursorString` (NSString-
+aware) for set-member and set-id cursors; no longer sends `-stringValue` to TEXT
+column values.
 
 ### 5.3 Unclamped limit
 
-`ModerationService.m:392` binds `limit` unclamped; SQLite treats a **negative**
-LIMIT as unlimited. The guard `rows.count >= (NSUInteger)limit` cannot catch it —
-casting a negative `NSInteger` yields a huge value, so it is always false.
-A shared validator exists (`GZXrpcRouteSupport.m:50`); confirm which routes skip it.
+**REMEDIATED (2026-07-30).** `PDSClampQueryLimit` in `getSetValues` / `querySets`;
+Ozone `getValues` / `querySets` routes also clamp to `[1, 100]`.
 
 ### 5.4 LIKE without ESCAPE
 
-`ModerationService.m:427` interpolates `namePrefix` raw into a `LIKE` pattern.
-`%` defeats the prefix filter (enumeration on a moderation endpoint); a
-`%a%b%c%…` pattern forces superlinear matching. The correct idiom already exists
-at `AppViewDatabase.m:956` (`LIKE ? || '%' ESCAPE '\'`).
-
-Unverified sibling sites: `GroupService.m:291,418`, `GraphService.m:771`,
-`ActorService.m:497,539`, `FeedService.m:672-694`.
+**REMEDIATED (2026-07-30).** Moderation set name-prefix uses escaped pattern +
+`ESCAPE '\\'`. Sibling AppView sites (`GroupService`, `GraphService`,
+`ActorService`, `FeedService`) escape user-controlled fragments the same way.
 
 ### 5.5 Not reached
 
@@ -1078,29 +1071,21 @@ construction at `ATProtoConnectionPool.m:19`.
 
 ### 6.1 CRLF / open redirect via unvalidated `cid`
 
-**CONFIRMED (open-redirect half); CRLF half PLAUSIBLE.** `XrpcSyncPack.m:898`
-checks `cid` only for emptiness, never parses it, then interpolates it into a
-302 `Location`. `HttpResponse.m:279` serializes headers with raw `\r\n` and no
-stripping. Same pattern at `XrpcRepoPack+Blobs.m:312`.
+**REMEDIATED (2026-07-30).** `sync.getBlob` and `repo.getBlob` parse `cid` via
+`CID cidFromString:` before CDN redirect; Location uses the re-encoded
+`stringValue`. `HttpResponse setHeader:forKey:` strips CR/LF.
 
-The open-redirect variant (`cid=@evil.example.com`) needs no decoding and is
-confirmed. The CRLF variant depends on whether `%0d%0a` survives query decoding —
-one read of `queryParamForKey:` settles it.
-
-**Fix:** parse through `CID cidFromString:` before use (the validated path
-already exists), and strip CR/LF in `setHeader:forKey:` as defense in depth.
+Was: emptiness-only check, raw query string interpolated into 302 Location.
 
 ### 6.2 Active-content MIME denylist is route-only
 
-**CONFIRMED as a latent gap.** `MimeTypeValidator` still lists `text/html` and
-`image/svg+xml` as supported (`:64`, `:124`), and `BlobStorage.uploadBlob` applies
-no active-content check — the denylist lives only at the route
-(`XrpcRepoPack+Blobs.m:164`). `nosniff` does not stop a correctly-declared
-`image/svg+xml` from executing script on top-level navigation.
-
-No network-reachable bypass was found, so this is a regression risk rather than
-an open hole. `XrpcSpacePack.m:301` does it correctly (attachment + nosniff +
-`CSP: default-src 'none'; sandbox`) — adopt that CSP on the repo/sync paths.
+**REMEDIATED (2026-07-30).** Repo/sync blob download paths set CSP
+`default-src 'none'; sandbox` (matching `XrpcSpacePack`) plus nosniff /
+selective attachment. `MimeTypeValidator` no longer lists active types
+(`text/html`, `image/svg+xml`, `text/javascript`, `application/javascript`,
+`text/css`, `application/xml`, `application/postscript`) as supported, so
+`BlobStorage validateBlob:` rejects them even if a route denylist is skipped.
+Route-level `isActiveUploadMimeType` remains as defense in depth.
 
 ### 6.3 Verified clean — blob path traversal
 
@@ -1114,50 +1099,40 @@ caps with overflow-safe quota arithmetic, and Range header parsing.
 
 ### 6.4 Handle resolver — SSRF control plane disabled by ambient state
 
-**CONFIRMED-high.** Spike 0.5 confirmed `ATProtoSafeHTTPClient.m defaultOptions`
-sets `allowHTTP=NO` and `allowPrivateHosts=NO`. The latter gates two distinct
-defenses — `validateHostResolvesToPublicIP:` (line 220) and
-`resolvePinnedAddressesForHost:` (line 261, ADR 0016 pinned-egress DNS-rebinding
-protection). Both flip off together. `HandleResolver.m:58`:
+**REMEDIATED (2026-07-30).** Running-tests detection no longer uses ambient
+`NSClassFromString(@"XCTestCase")`; only explicit env (`PDS_RUNNING_TESTS`)
+opts into relaxed SafeHTTP options. Production binaries with XCTest linked no
+longer disable private-host / pinned-egress defenses by linkage alone.
 
-```objc
-return NSClassFromString(@"XCTestCase") != Nil;
-```
-
-Both `allowHTTP` and `allowPrivateHosts` are switched off by this predicate
-(`HandleResolver.m:242`). The third clause is not an opt-in — it is a
-**linkage side effect**. Any binary shipping with XCTest linked, or any
-process inheriting `PDS_RUNNING_TESTS`, resolves handles over cleartext HTTP
-to loopback and link-local addresses — and, per spike 0.5, the same flip
-disables the public-IP allowlist *and* the ADR 0016 pinned-egress check, so
-any caller can request a private or loopback address directly (no DNS
-rebind required).
-
-**Fix:** replace the ambient check with an injected seam so the default is
-secure and tests opt in explicitly.
+Was: **CONFIRMED-high** linkage side effect flipping `allowHTTP` /
+`allowPrivateHosts` off whenever XCTest was present in the process.
 
 ### 6.5 DNS TXT path performs no validation
 
-**CONFIRMED.** `HandleResolver.m:507` returns everything after `did=` verbatim —
-no `did:` prefix check, no trim, no length bound, unlike the HTTPS path (`:310`,
-which does all three). Segments are concatenated across 255-byte chunks, so the
-value can be kilobytes. Reached by simply not serving `/.well-known/atproto-did`.
+**REMEDIATED (2026-07-30).** DNS TXT `did=` values are trimmed and length-
+bounded (≤ 256), aligning with the HTTPS well-known path checks.
+
+Was: **CONFIRMED** — verbatim return of everything after `did=` with no trim /
+prefix / length bound.
 
 ### 6.6 Resolution is one-way
 
-**CONFIRMED for the resolver; exploitability depends on callers.**
-`HandleResolver` never fetches a DID document and has no `alsoKnownAs`
-cross-check, so whoever controls a domain can assert any DID — including a
-victim's — and it is cached for 300 s. **Next step:** enumerate `resolveHandle:`
-callers and check whether any performs the reverse verification. This is the
-highest-value follow-up in the identity slice.
+**REMEDIATED (already on tree; documented 2026-07-30).** After HTTPS/DNS
+handle→DID resolution, `HandleResolver verifyHandleBacklink:did:` resolves the
+DID document and requires `alsoKnownAs` to contain `at://<handle>` (skipped only
+under explicit test-mode env). Domain control alone cannot assert a victim DID.
+
+Was: **CONFIRMED for the resolver** — no reverse check; exploitability depended
+on callers.
 
 ### 6.7 Failure-cache key mismatch
 
-**CONFIRMED, low-medium.** Failures are read pre-normalization
-(`HandleResolver.m:103`) and written post-normalization (`:172`), so backoff only
-ever fires for already-lowercase handles. `Victim.example` vs `victim.example`
-bypasses it; the success cache is correctly keyed.
+**REMEDIATED (2026-07-30).** Handle is normalized before failure-cache lookup
+(and write remains post-normalization). Test:
+`testFailureCacheKeyIsCaseNormalized`.
+
+Was: **CONFIRMED, low-medium** — failures read pre-normalization so backoff
+only applied to already-lowercase handles.
 
 ---
 

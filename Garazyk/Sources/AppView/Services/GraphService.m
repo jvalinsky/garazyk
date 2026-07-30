@@ -22,6 +22,15 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
     return [NSString stringWithFormat:@"%@|%@", did ?: @"", cid ?: @""];
 }
 
+/// Escape LIKE wildcards for contains-match with ESCAPE '\\' (§5.4).
+static NSString *GZLikeContainsPattern(NSString *term) {
+    NSMutableString *escaped = [term mutableCopy] ?: [NSMutableString string];
+    [escaped replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"%" withString:@"\\%" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"_" withString:@"\\_" options:0 range:NSMakeRange(0, escaped.length)];
+    return [NSString stringWithFormat:@"%%%@%%", escaped];
+}
+
 @interface GraphService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
 @property (nonatomic, strong) ActorService *actorService;
@@ -768,8 +777,8 @@ static NSString *GZGraphRecordBodyKey(NSString *did, NSString *cid) {
                                         error:(NSError **)error {
     limit = MIN(MAX(limit, 1), 100);
 
-    NSString *sql = @"SELECT did, rkey, cid, name, created_at FROM starter_packs WHERE name LIKE ? ORDER BY created_at DESC LIMIT ?";
-    NSString *likeQuery = [NSString stringWithFormat:@"%%%@%%", searchQuery];
+    NSString *sql = @"SELECT did, rkey, cid, name, created_at FROM starter_packs WHERE name LIKE ? ESCAPE '\\' ORDER BY created_at DESC LIMIT ?";
+    NSString *likeQuery = GZLikeContainsPattern(searchQuery);
     NSArray *rows = [self.database executeParameterizedQuery:sql params:@[likeQuery, @(limit)] error:error];
     if (!rows) return nil;
 
