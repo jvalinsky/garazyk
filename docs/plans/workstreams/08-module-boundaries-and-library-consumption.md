@@ -8,7 +8,7 @@ last_verified: 2026-07-30
 
 The earlier execution summary and the proposed Option A plan overstated the
 workstream's completion. A current run of
-`scripts/check_module_boundaries.sh build` passes only because all **28**
+`scripts/check_module_boundaries.sh build` passes only because all **27**
 remaining violations are still recorded in
 `docs/module-boundary-baseline.txt`:
 
@@ -19,10 +19,9 @@ remaining violations are still recorded in
 | `ATProtoMediaCore` | 3 |
 | `ATProtoVideoService` | 2 |
 | `ATProtoStorage` | 1 |
-| `ATProtoSync` | 1 |
 
 M1-M3 are complete. M4 has resolved the inversions originally enumerated in
-its first audit and the first residual PLC-persistence cluster, but it has
+its first audit plus the PLC-persistence and Sync-multibase residual clusters, but it has
 **not** met its own zero-baseline acceptance gate.
 M7 is partially complete: dependency injection and most data-path work landed,
 but module sources still contain host-process exits and an installer
@@ -458,6 +457,27 @@ object pointers, which Clang rejects in
 the full Linux gate as passed or push until that separate compatibility blocker
 is repaired and the full gate rerun.
 
+**M4.2 Sync multibase dependency extraction complete** (`33357d36`). The one
+remaining `ATProtoSync:XrpcIdentityHelper` reference was
+`RelayEventValidator`'s decoding of a DID document's
+`publicKeyMultibase` value. The decoder is pure data conversion and its
+`CID`, `JWT`, and DID-error dependencies already belong to `ATProtoCore`, so
+the implementation now lives in `ATProtoMultibase`; XRPC keeps its existing
+public helper as a forwarding compatibility API. This is source ownership
+correction, not a new module dependency: no `PUBLIC` CMake edge was added and
+the ten-library dependency graph remains acyclic. The baseline ratcheted
+28 -> 27. A fresh reconfigure rebuilt `AllTests`; focused
+`ATProtoMultibaseTests` (2/2), `RelayEventValidatorTests` (8/8), and
+`XrpcMethodRegistryTests` (6/6) passed, as did the checker at 27 current / 27
+baselined leaks. `deno task check` and `deno task lint` passed. The full Deno
+suite has one unrelated, order-sensitive
+`DockerApiClient: streamEvents abort exits cleanly` failure, which passes when
+rerun alone. The macOS full `AllTests --gated=run` run was interrupted after
+two order-sensitive `HandleResolverTests` failures; that class passes in
+isolation (28/28). These non-green whole-suite gates, plus the independent
+GNUstep XCTest compile blocker above, mean this change is committed but not
+pushed; M4 remains in progress.
+
 M0 (third-party consumption goal) is now answered yes under the bounded package
 contract in the verified-status section above. M5/M6 remain gated on the real
 completion of M4.
@@ -652,7 +672,7 @@ Rollback: single revert; the change is file moves plus mechanical import edits.
 
 ## M4. Resolve the remaining inversions
 
-Status: **in progress; 28 baselined violations remain.** The earlier M4 work
+Status: **in progress; 27 baselined violations remain.** The earlier M4 work
 resolved the initially enumerated clusters, but the follow-on baseline was
 incorrectly treated as out of scope. It is not: M4's purpose and acceptance
 gate are both zero undeclared dependencies.
@@ -739,9 +759,10 @@ baseline each time:
    `ActorStore -> PDSAppleActorKeyManager` by injecting a key-manager factory or
    moving Apple-specific construction above Storage. Storage must remain usable
    on GNUstep/Linux.
-5. **Sync identity helper (1).** Extract the identity operation used by
-   `RelayEventValidator` into a lower-layer protocol or service; Sync must not
-   import an XRPC helper.
+5. **Sync identity helper (1, complete in `33357d36`).** The pure
+   `publicKeyMultibase` decoder used by `RelayEventValidator` now belongs to
+   Core, with XRPC retaining a forwarding compatibility API; Sync no longer
+   imports an XRPC helper and the baseline ratcheted 28 -> 27.
 
 The object-file mapping in the verified 2026-07-30 run is the starting evidence
 for these batches. Read each implementation before choosing move versus
