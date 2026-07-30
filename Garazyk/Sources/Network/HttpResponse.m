@@ -101,7 +101,12 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)setHeader:(NSString *)value forKey:(NSString *)key {
-    [self.headers setObject:value forKey:key.lowercaseString];
+    // Strip CR/LF so untrusted values cannot smuggle headers (§6.1 defense in depth).
+    NSString *safeKey = [[key ?: @""] stringByReplacingOccurrencesOfString:@"\r" withString:@""];
+    safeKey = [safeKey stringByReplacingOccurrencesOfString:@"\n" withString:@""];
+    NSString *safeValue = [[value ?: @""] stringByReplacingOccurrencesOfString:@"\r" withString:@""];
+    safeValue = [safeValue stringByReplacingOccurrencesOfString:@"\n" withString:@""];
+    [self.headers setObject:safeValue forKey:safeKey.lowercaseString];
 }
 
 - (nullable NSString *)headerForKey:(NSString *)key {

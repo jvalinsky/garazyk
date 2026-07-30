@@ -20,6 +20,7 @@
 #import "Auth/Crypto/JWT.h"
 #import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Network/Generated/GZXrpcNSID.h"
+#import "Core/CID.h"
 
 static const NSUInteger kPDSUploadBlobDefaultMaxBytes = 1024 * 1024;
 static const NSUInteger kPDSUploadBlobVideoMaxBytes = 50 * 1024 * 1024;
@@ -47,6 +48,7 @@ static BOOL repoBlobMimeTypeShouldAttach(NSString *mimeType) {
 
 void applyRepoBlobDownloadHeaders(NSString *mimeType, HttpResponse *response) {
     [response setHeader:@"nosniff" forKey:@"X-Content-Type-Options"];
+    [response setHeader:@"default-src 'none'; sandbox" forKey:@"Content-Security-Policy"];
     if (repoBlobMimeTypeShouldAttach(mimeType)) {
         [response setHeader:@"attachment" forKey:@"Content-Disposition"];
     }
@@ -293,6 +295,15 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
             return;
         }
 
+        // §6.1: parse CID before interpolating into Location (blocks open redirect / CRLF).
+        CID *parsedCID = [CID cidFromString:cid];
+        if (!parsedCID) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Invalid cid"}];
+            return;
+        }
+        NSString *safeCid = parsedCID.stringValue;
+
         NSString *didParam = [request queryParamForKey:@"did"];
         NSString *blobDid = didParam.length > 0 ? didParam : did;
         if (![blobDid isEqualToString:did]) {
@@ -310,7 +321,7 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
         NSString *cdnURL = [configuration stringForKey:@"cdnURL"];
         if (cdnURL && cdnURL.length > 0) {
             // Return 302 Found redirect to CDN URL
-            NSString *cdnBlobURL = [NSString stringWithFormat:@"%@/%@", cdnURL, cid];
+            NSString *cdnBlobURL = [NSString stringWithFormat:@"%@/%@", cdnURL, safeCid];
             response.statusCode = 302; // Found (temporary redirect)
             [response setHeader:cdnBlobURL forKey:@"Location"];
             [response setJsonBody:@{
@@ -322,9 +333,9 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
 
         // Delegate to shared blob retrieval logic with Range support from sync.getBlob
         NSError *blobError = nil;
-        NSDictionary *result = [blobService getBlobStreamWithCID:cid did:blobDid error:&blobError];
+        NSDictionary *result = [blobService getBlobStreamWithCID:safeCid did:blobDid error:&blobError];
         if (!result && !blobError) {
-            result = [blobService getBlobWithCID:cid did:blobDid error:&blobError];
+            result = [blobService getBlobWithCID:safeCid did:blobDid error:&blobError];
         }
         if (!result) {
             response.statusCode = HttpStatusNotFound;
