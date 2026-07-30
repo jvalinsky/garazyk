@@ -647,7 +647,10 @@ endif()
 target_link_libraries(ATProtoTransport PUBLIC ATProtoCore)
 target_link_libraries(ATProtoSync PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
 target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoPLC ATProtoCore)
-target_link_libraries(ATProtoPLC PUBLIC ATProtoTransport ATProtoCore)
+# PLCPersistentStore owns the serialized SQLite connection and query-runner
+# construction used by the PLC directory.  Storage depends only on Core, so
+# this is a fundamental acyclic public edge and part of PLC's link closure.
+target_link_libraries(ATProtoPLC PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
 target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService)
 target_link_libraries(ATProtoMediaCore PUBLIC ATProtoStorage ATProtoCore ATProtoTransport)
 target_link_libraries(ATProtoVideoService PUBLIC ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport)
@@ -1476,6 +1479,33 @@ set_target_properties(record_cache_tests PROPERTIES
   LINK_FLAGS "-ObjC"
 )
 
+# Workstream 08 M4: this executable names ATProtoPLC as its only Garazyk
+# library.  Its successful link and open/close cycle prove that the declared
+# ATProtoPLC closure supplies PLCPersistentStore's Storage implementation.
+add_executable(plc_persistent_store_link_tests
+  Garazyk/Tests/PLC/PLCPersistentStoreStandaloneLinkTests.m
+)
+
+target_include_directories(plc_persistent_store_link_tests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(plc_persistent_store_link_tests PRIVATE
+  ATProtoPLC
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+)
+
+target_compile_definitions(plc_persistent_store_link_tests PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(plc_persistent_store_link_tests PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
+)
+
 #=============================
 # Fuzzer Targets
 #=============================
@@ -1691,6 +1721,7 @@ if(BUILD_TESTS)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ConnectionPoolTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/RecordCacheTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/MigrationTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/PLC/PLCPersistentStoreStandaloneLinkTests.m")
   # Network/SecurityHardeningTests.m defines NetworkSecurityHardeningTests (renamed to avoid
   # colliding with Security/SecurityHardeningTests). Both classes now coexist and compile.
 
