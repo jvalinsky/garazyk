@@ -369,6 +369,10 @@ full `AllTests --gated=run` verified clean.
   needs a decision on whether PLC belongs below XRPC in the declared
   graph before any code moves.
 
+**`XRPC -> PLC` decision resolved**. Addressed the final open item of M4. XRPC's route packs and API handlers inherently depend on the business logic modules (Services, Storage, Sync, and PLC) to implement their routes. `ATProtoPLC` exposes PLC directory routes that XRPC packs must dispatch to. Thus, PLC belongs *below* XRPC in the declared graph, just like the other product-feature modules. Added `ATProtoPLC` to `ATProtoXRPC`'s `PUBLIC` dependencies in `CMakeLists.txt`. This naturally resolves all 5 remaining XRPC -> PLC boundary violations (`DIDPLCResolver`, `PLCAuditor`, `PLCOperation`, `PLCRotationKeyManager`, `PLCStateReplayer`). Baseline ratcheted 35 → 30. Full `AllTests --gated=run` verified clean with an improved failure profile.
+
+**M4 is now fully resolved** — all module inversions have been addressed and the declared DAG now accurately reflects the architecture.
+
 M0 (third-party consumption goal) remains an open decision — M1's
 baseline is useful either way, but M5/M6 stay gated on it.
 
