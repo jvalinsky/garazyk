@@ -637,7 +637,7 @@ Independent of M0; can run in parallel with anything after M1.
 - Route the hardcoded absolute paths (`/usr/share/garazyk/lexicons`,
   `/usr/share/atprotopds/assets`, `/var/db/kaszlak/log`) through
   `ATProtoDataPaths` or configuration.
-- Delete the debug sink at
+- **[Done]** Delete the debug sink at
   `Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:289`, which
   writes to `/tmp/debug-logs/backfill.log` on every run and appears
   unintentional.
