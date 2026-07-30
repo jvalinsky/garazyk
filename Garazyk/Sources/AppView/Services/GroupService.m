@@ -4,6 +4,15 @@
 #import "Database/PDSDatabase.h"
 #import "Debug/GZLogger.h"
 
+/// Escape LIKE wildcards for contains-match with ESCAPE '\\' (§5.4).
+static NSString *GZLikeContainsPattern(NSString *term) {
+    NSMutableString *escaped = [term mutableCopy] ?: [NSMutableString string];
+    [escaped replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"%" withString:@"\\%" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"_" withString:@"\\_" options:0 range:NSMakeRange(0, escaped.length)];
+    return [NSString stringWithFormat:@"%%%@%%", escaped];
+}
+
 @interface GroupService ()
 @property (nonatomic, weak) id<PDSQueryDatabase> database;
 @end
@@ -288,8 +297,8 @@
         sql = [sql stringByAppendingString:@" WHERE"];
         BOOL needsAnd = NO;
         if (query) {
-            sql = [sql stringByAppendingString:@" (name LIKE ? OR uri LIKE ? OR creator_did LIKE ?)"];
-            NSString *likePattern = [NSString stringWithFormat:@"%%%@%%", query];
+            sql = [sql stringByAppendingString:@" (name LIKE ? ESCAPE '\\' OR uri LIKE ? ESCAPE '\\' OR creator_did LIKE ? ESCAPE '\\')"];
+            NSString *likePattern = GZLikeContainsPattern(query);
             [params addObject:likePattern];
             [params addObject:likePattern];
             [params addObject:likePattern];
@@ -415,8 +424,8 @@
         sql = [sql stringByAppendingString:@" WHERE"];
         BOOL needsAnd = NO;
         if (query) {
-            sql = [sql stringByAppendingString:@" (id LIKE ? OR group_uri LIKE ? OR created_by LIKE ?)"];
-            NSString *likePattern = [NSString stringWithFormat:@"%%%@%%", query];
+            sql = [sql stringByAppendingString:@" (id LIKE ? ESCAPE '\\' OR group_uri LIKE ? ESCAPE '\\' OR created_by LIKE ? ESCAPE '\\')"];
+            NSString *likePattern = GZLikeContainsPattern(query);
             [params addObject:likePattern];
             [params addObject:likePattern];
             [params addObject:likePattern];

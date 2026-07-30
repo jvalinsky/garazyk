@@ -736,6 +736,11 @@ int main(int argc, char *argv[]) {
   @autoreleasepool {
     // Ensure config defaults behave in non-interactive test mode.
     setenv("PDS_RUNNING_TESTS", "1", 1);
+    // Quiet default logging unless the operator overrides GZ_LOG_LEVEL
+    // (workstream 09 T3 — CI AllTests logs were ~97k leveled lines).
+    if (getenv("GZ_LOG_LEVEL") == NULL) {
+      setenv("GZ_LOG_LEVEL", "warn", 1);
+    }
     if (getenv("PDS_USE_KEYCHAIN") == NULL) {
       setenv("PDS_USE_KEYCHAIN", "0", 1);
     }
@@ -769,7 +774,8 @@ int main(int argc, char *argv[]) {
     // Without this, sharedManager reads from the machine's default path and
     // fails to decrypt an existing key encrypted with a different secret.
     if (getenv("PDS_PLC_KEYS_DIR") == NULL) {
-      NSString *tempKeysDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"garazyk-test-plc-keys"];
+      NSString *tempKeysDir = [NSTemporaryDirectory() stringByAppendingPathComponent:
+          [NSString stringWithFormat:@"garazyk-test-plc-keys-%d", getpid()]];
       [[NSFileManager defaultManager] removeItemAtPath:tempKeysDir error:NULL];
       [[NSFileManager defaultManager] createDirectoryAtPath:tempKeysDir
                                 withIntermediateDirectories:YES
@@ -778,7 +784,8 @@ int main(int argc, char *argv[]) {
       setenv("PDS_PLC_KEYS_DIR", tempKeysDir.UTF8String, 1);
     }
     if (getenv("PDS_DATA_DIR") == NULL) {
-      NSString *tempDataDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"garazyk-test-data"];
+      NSString *tempDataDir = [NSTemporaryDirectory() stringByAppendingPathComponent:
+          [NSString stringWithFormat:@"garazyk-test-data-%d", getpid()]];
       [[NSFileManager defaultManager] removeItemAtPath:tempDataDir error:NULL];
       [[NSFileManager defaultManager] createDirectoryAtPath:tempDataDir
                                 withIntermediateDirectories:YES
@@ -1132,6 +1139,7 @@ int main(int argc, char *argv[]) {
       @"CIDTests",
       @"TIDTests",
       @"CBORSerializationTests",
+      @"CBOREncoderCountWidthTests",
       @"ATProtoValidatorTests",
       @"ATProtoBase32Tests",
       @"ATProtoCoreTests",
@@ -1277,6 +1285,8 @@ int main(int argc, char *argv[]) {
     NSTimeInterval perTestTimeout = 0;
     PDSGatedMode gatedMode = PDSGatedModeSkip;
     NSString *legacyFilter = nil;
+    NSInteger shardIndex = 0; // 1-based when sharding; 0 = disabled
+    NSInteger shardCount = 0;
 
     for (int i = 1; i < argc; i++) {
       NSString *arg = [NSString stringWithUTF8String:argv[i]];
@@ -1285,6 +1295,28 @@ int main(int argc, char *argv[]) {
       if ([arg isEqualToString:@"-XCTest"] && i + 1 < argc) {
         legacyFilter = [NSString stringWithUTF8String:argv[i + 1]];
         i++;
+        continue;
+      }
+
+      // --shard=I/N or --shard I/N (workstream 09 T6)
+      NSString *shardSpec = nil;
+      if ([arg hasPrefix:@"--shard="]) {
+        shardSpec = [arg substringFromIndex:8];
+      } else if ([arg isEqualToString:@"--shard"] && i + 1 < argc) {
+        shardSpec = [NSString stringWithUTF8String:argv[i + 1]];
+        i++;
+      }
+      if (shardSpec) {
+        NSArray *parts = [shardSpec componentsSeparatedByString:@"/"];
+        if (parts.count == 2) {
+          shardIndex = [parts[0] integerValue];
+          shardCount = [parts[1] integerValue];
+        }
+        if (shardIndex < 1 || shardCount < 1 || shardIndex > shardCount) {
+          fprintf(stderr, "Invalid --shard=%s (expected I/N with 1 <= I <= N)\n",
+                  shardSpec.UTF8String);
+          return 2;
+        }
         continue;
       }
 
@@ -1400,6 +1432,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Filtering:\n");
         fprintf(stderr, "  -f, --filter PATTERN     Include tests matching glob pattern\n");
         fprintf(stderr, "  -e, --exclude PATTERN    Exclude tests matching glob pattern\n");
+        fprintf(stderr, "      --shard I/N          Run shard I of N (1-based; by class index)\n");
         fprintf(stderr, "  -c, --category CAT       Include tests in category (comma-separated)\n");
         fprintf(stderr, "      --exclude-category   Exclude tests in category\n");
         fprintf(stderr, "  -XCTest FILTER           Legacy XCTest filter (ClassName[/method])\n");
@@ -1538,6 +1571,13 @@ int main(int argc, char *argv[]) {
 
     for (NSString *className in testClasses) {
       if (!classPassesFilter(className)) continue;
+
+      if (shardCount > 0) {
+        NSUInteger classIndex = [testClasses indexOfObject:className];
+        if ((classIndex % (NSUInteger)shardCount) != (NSUInteger)(shardIndex - 1)) {
+          continue;
+        }
+      }
 
       NSString *skipReason = PDSSkipReasonForClass(className, gatedMode);
       if (skipReason) {

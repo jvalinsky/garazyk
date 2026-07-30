@@ -47,7 +47,12 @@ static NSData *PDSActorStoreBlobCursorData(NSString *cursor, NSError **error) {
     // state is intentionally omitted from the ON CONFLICT UPDATE clause: a
     // re-upload of an already-referenced blob must not reset it back to
     // temporary (spec: re-uploading an existing referenced blob is a no-op).
-    NSString *sql = @"INSERT INTO blobs (cid, did, mimeType, size, created_at, state) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(cid) DO UPDATE SET did=excluded.did, mimeType=excluded.mimeType, size=excluded.size, created_at=excluded.created_at";
+    // §5.1: do NOT overwrite did — content-addressed CIDs must keep the
+    // original owner's quota attribution when another account re-uploads
+    // the same bytes.
+    NSString *sql = @"INSERT INTO blobs (cid, did, mimeType, size, created_at, state) VALUES (?, ?, ?, ?, ?, ?) "
+                     @"ON CONFLICT(cid) DO UPDATE SET mimeType=excluded.mimeType, size=excluded.size, "
+                     @"created_at=excluded.created_at";
     NSArray *params = @[
         blob.cid ?: [NSNull null],
         blob.did ?: @"",

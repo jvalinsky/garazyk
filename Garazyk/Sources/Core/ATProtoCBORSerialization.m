@@ -37,12 +37,6 @@ static NSData *CBORBase64URLDecode(NSString *string) {
   return self;
 }
 
-- (void)setUsage:(BOOL)contentAddressed {
-  // Two-step companion setter: equivalent to passing the matching value to
-  // -initWithContentAddressed:. Use either form, but not both.
-  _isContentAddressed = contentAddressed;
-}
-
 - (NSData *)encodeDataWithJSONObject:(id)obj error:(NSError **)error {
   CBORValue *cbor = [ATProtoCBORSerialization cborValueFromObject:obj];
   if (!cbor) {

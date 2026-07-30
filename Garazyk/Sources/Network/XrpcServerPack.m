@@ -45,6 +45,7 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
 static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.createAccount";
@@ -147,7 +148,7 @@ BOOL isLikelyEmail(NSString *email) {
 }
 
 NSData *pbkdf2HashPassword(NSString *password, NSData *salt, NSError **error) {
-    const uint32_t iterations = 600000;
+    const uint32_t iterations = ATProtoPBKDF2IterationCount();
     const size_t derivedKeyLength = 32;
     unsigned char derivedKey[32];
 

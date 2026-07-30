@@ -616,6 +616,33 @@
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 
+- (void)testFailureCacheKeyIsCaseNormalized {
+    // security-review §6.7: failure cache must key on the normalized handle so
+    // Victim.example and victim.example share the same backoff entry.
+    MockURLSession *errorSession = [[MockURLSession alloc] initWithResponse:nil
+                                                                     error:[NSError errorWithDomain:NSURLErrorDomain
+                                                                                               code:NSURLErrorTimedOut
+                                                                                           userInfo:nil]
+                                                                     delay:0.0];
+    HandleResolver *resolver = [[TestHandleResolver alloc] init];
+    ((TestHandleResolver *)resolver).mockSession = errorSession;
+
+    XCTestExpectation *exp1 = [self expectationWithDescription:@"Initial mixed-case failure"];
+    [resolver resolveHandle:@"BackOff.Case.Example.COM" completion:^(NSString *did, NSError *error) {
+        XCTAssertEqual(error.code, HandleErrorNetworkError);
+        [exp1 fulfill];
+    }];
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+
+    XCTestExpectation *exp2 = [self expectationWithDescription:@"Lowercase variant hits backoff"];
+    [resolver resolveHandle:@"backoff.case.example.com" completion:^(NSString *did, NSError *error) {
+        XCTAssertEqual(error.code, HandleErrorRateLimitExceeded);
+        XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"Resolution backed off"]);
+        [exp2 fulfill];
+    }];
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+}
+
 - (NSError *)batchTestErrorWithCode:(NSInteger)code {
     return [NSError errorWithDomain:@"HandleResolverBatchTests"
                                code:code

@@ -137,16 +137,37 @@
 
 - (void)testDeleteBlob {
     NSData *cid = [@"bafyreideleteblob1" dataUsingEncoding:NSUTF8StringEncoding];
-    PDSDatabaseBlob *blob = [self testBlobWithCid:cid did:@"did:plc:blobdeleteowner"];
+    NSString *ownerDid = @"did:plc:blobdeleteowner";
+    PDSDatabaseBlob *blob = [self testBlobWithCid:cid did:ownerDid];
     [self.database saveBlob:blob error:nil];
 
     NSError *error = nil;
-    BOOL deleted = [self.database deleteBlob:cid error:&error];
+    BOOL deletedWrongOwner = [self.database deleteBlob:cid did:@"did:plc:other" error:&error];
+    XCTAssertTrue(deletedWrongOwner, @"DELETE with no matching row still succeeds");
+    XCTAssertNil(error);
+    XCTAssertNotNil([self.database getBlobWithCid:cid error:nil],
+                    @"Wrong-owner delete must not remove the row");
+
+    BOOL deleted = [self.database deleteBlob:cid did:ownerDid error:&error];
     XCTAssertTrue(deleted);
     XCTAssertNil(error);
 
     PDSDatabaseBlob *found = [self.database getBlobWithCid:cid error:nil];
     XCTAssertNil(found, @"Blob should be gone after deletion");
+}
+
+- (void)testSaveBlobPreservesOriginalOwnerOnConflict {
+    NSData *cid = [@"bafyreiblobownerpreserve" dataUsingEncoding:NSUTF8StringEncoding];
+    PDSDatabaseBlob *original = [self testBlobWithCid:cid did:@"did:plc:originalowner"];
+    XCTAssertTrue([self.database saveBlob:original error:nil]);
+
+    PDSDatabaseBlob *reupload = [self testBlobWithCid:cid did:@"did:plc:reuploader"];
+    reupload.mimeType = @"image/png";
+    XCTAssertTrue([self.database saveBlob:reupload error:nil]);
+
+    PDSDatabaseBlob *found = [self.database getBlobWithCid:cid error:nil];
+    XCTAssertEqualObjects(found.did, @"did:plc:originalowner");
+    XCTAssertEqualObjects(found.mimeType, @"image/png");
 }
 
 @end

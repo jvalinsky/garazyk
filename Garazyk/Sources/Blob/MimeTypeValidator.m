@@ -61,7 +61,7 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
         @"image/webp",
         @"image/tiff",
         @"image/bmp",
-        @"image/svg+xml",
+        // image/svg+xml denied as active content (§6.2) — reject at BlobStorage validate
         @"image/avif",
         @"image/heic",
         @"image/heif",
@@ -107,7 +107,7 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
 
     _supportedDocumentTypes = [NSSet setWithArray:@[
         @"application/pdf",
-        @"application/postscript",
+        // application/postscript denied as active content (§6.2)
         @"application/msword",
         @"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         @"application/vnd.ms-excel",
@@ -117,15 +117,12 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
         @"application/rtf",
         @"application/epub+zip",
         @"application/json",
-        @"application/xml",
+        // application/xml, text/html, text/css, text/javascript, application/javascript
+        // denied as active content (§6.2)
         @"application/ld+json",
         @"application/octet-stream",
         @"text/plain",
-        @"text/html",
-        @"text/css",
         @"text/csv",
-        @"text/javascript",
-        @"application/javascript",
         @"text/markdown",
         @"application/markdown",
     ]];

@@ -67,8 +67,8 @@
 
 - (void)tearDown {
     [self.controller stopServer];
-    // Wait for port to be released
-    [NSThread sleepForTimeInterval:3.0];
+    // Port release is handled by startServerWithRetry on the next test;
+    // a fixed 3s sleep here was pure wall-clock waste (workstream 09 T4).
     [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
     [super tearDown];
 }

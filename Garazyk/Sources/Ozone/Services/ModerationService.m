@@ -30,6 +30,30 @@ static NSSet<NSString *> *sValidEventTypes(void) {
     return types;
 }
 
+/// Clamp LIMIT so SQLite never sees a negative (unlimited) value (§5.3).
+static NSInteger PDSClampQueryLimit(NSInteger limit, NSInteger fallback, NSInteger maximum) {
+    if (limit < 1) return fallback;
+    if (limit > maximum) return maximum;
+    return limit;
+}
+
+/// Escape LIKE wildcards for prefix match with ESCAPE '\\' (§5.4).
+static NSString *PDSLikePrefixPattern(NSString *prefix) {
+    NSMutableString *escaped = [prefix mutableCopy] ?: [NSMutableString string];
+    [escaped replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"%" withString:@"\\%" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"_" withString:@"\\_" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped appendString:@"%"];
+    return [escaped copy];
+}
+
+/// TEXT columns arrive as NSString — never send -stringValue (§5.2).
+static NSString *PDSCursorString(id value) {
+    if ([value isKindOfClass:[NSString class]]) return (NSString *)value;
+    if ([value respondsToSelector:@selector(stringValue)]) return [value stringValue];
+    return value ? [value description] : @"";
+}
+
 @interface ModerationService ()
 @property (nonatomic, weak) id<PDSQueryDatabase> database;
 @end
@@ -386,6 +410,7 @@ static NSSet<NSString *> *sValidEventTypes(void) {
                                   limit:(NSInteger)limit
                                  cursor:(nullable NSString *)cursor
                                   error:(NSError **)error {
+    limit = PDSClampQueryLimit(limit, 100, 100);
     NSMutableArray *params = [NSMutableArray arrayWithObject:setId];
     NSString *sql = @"SELECT did, added_at FROM moderation_set_members WHERE set_id = ?";
     
@@ -411,7 +436,7 @@ static NSSet<NSString *> *sValidEventTypes(void) {
     
     NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:values forKey:@"values"];
     if (rows.count >= (NSUInteger)limit) {
-        result[@"cursor"] = [rows.lastObject[@"did"] stringValue] ?: @"";
+        result[@"cursor"] = PDSCursorString(rows.lastObject[@"did"]);
     }
     return [result copy];
 }
@@ -420,13 +445,14 @@ static NSSet<NSString *> *sValidEventTypes(void) {
                               cursor:(nullable NSString *)cursor
                           namePrefix:(nullable NSString *)namePrefix
                               error:(NSError **)error {
+    limit = PDSClampQueryLimit(limit, 50, 100);
     NSMutableArray *params = [NSMutableArray array];
     NSString *sql = @"SELECT id, name, created_by, created_at FROM moderation_sets";
     
     NSMutableArray *conditions = [NSMutableArray array];
     if (namePrefix && namePrefix.length > 0) {
-        [conditions addObject:@"name LIKE ?"];
-        [params addObject:[NSString stringWithFormat:@"%@%%", namePrefix]];
+        [conditions addObject:@"name LIKE ? ESCAPE '\\'"];
+        [params addObject:PDSLikePrefixPattern(namePrefix)];
     }
     if (cursor && cursor.length > 0) {
         [conditions addObject:@"id > ?"];
@@ -456,7 +482,7 @@ static NSSet<NSString *> *sValidEventTypes(void) {
     
     NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:sets forKey:@"sets"];
     if (rows.count >= (NSUInteger)limit) {
-        result[@"cursor"] = [rows.lastObject[@"id"] stringValue] ?: @"";
+        result[@"cursor"] = PDSCursorString(rows.lastObject[@"id"]);
     }
     return [result copy];
 }
