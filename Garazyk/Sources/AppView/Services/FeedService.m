@@ -21,6 +21,15 @@ static NSString *GZFeedStringValue(id value) {
     return [value isKindOfClass:[NSString class]] ? value : nil;
 }
 
+/// Escape LIKE wildcards for embedding user-controlled fragments (§5.4).
+static NSString *GZLikeEscapeFragment(NSString *fragment) {
+    NSMutableString *escaped = [fragment mutableCopy] ?: [NSMutableString string];
+    [escaped replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"%" withString:@"\\%" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"_" withString:@"\\_" options:0 range:NSMakeRange(0, escaped.length)];
+    return [escaped copy];
+}
+
 static NSDictionary *GZFeedDictionaryValue(id value) {
     return [value isKindOfClass:[NSDictionary class]] ? value : nil;
 }
@@ -669,8 +678,9 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
         return 0;
     }
     
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ? AND value LIKE ?";
-    NSString *likePattern = [NSString stringWithFormat:@"%%\"reply\"%%\"uri\"%%\"at://%@/%@\"%%", repo, rkey];
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ? AND value LIKE ? ESCAPE '\\'";
+    NSString *likePattern = [NSString stringWithFormat:@"%%\"reply\"%%\"uri\"%%\"at://%@/%@\"%%",
+                             GZLikeEscapeFragment(repo), GZLikeEscapeFragment(rkey)];
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[collection, likePattern] error:nil];
     
     if (rows && rows.count > 0) {
@@ -680,8 +690,8 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
 }
 
 - (NSInteger)getRepostCountForURI:(NSString *)uri {
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = 'app.bsky.feed.repost' AND value LIKE ?";
-    NSString *likePattern = [NSString stringWithFormat:@"%%\"subject\"%%\"uri\"%%\"%@\"%%", uri];
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = 'app.bsky.feed.repost' AND value LIKE ? ESCAPE '\\'";
+    NSString *likePattern = [NSString stringWithFormat:@"%%\"subject\"%%\"uri\"%%\"%@\"%%", GZLikeEscapeFragment(uri)];
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[likePattern] error:nil];
     
     if (rows && rows.count > 0) {
@@ -691,8 +701,8 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
 }
 
 - (NSInteger)getLikeCountForURI:(NSString *)uri {
-    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = 'app.bsky.feed.like' AND value LIKE ?";
-    NSString *likePattern = [NSString stringWithFormat:@"%%\"subject\"%%\"uri\"%%\"%@\"%%", uri];
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = 'app.bsky.feed.like' AND value LIKE ? ESCAPE '\\'";
+    NSString *likePattern = [NSString stringWithFormat:@"%%\"subject\"%%\"uri\"%%\"%@\"%%", GZLikeEscapeFragment(uri)];
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[likePattern] error:nil];
     
     if (rows && rows.count > 0) {
@@ -732,12 +742,14 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
         NSString *replyURI = parts.count >= 4
             ? [NSString stringWithFormat:@"at://%@/%@", parts[2], parts[3]]
             : @"";
-        NSString *replyPattern = [NSString stringWithFormat:@"%%\"reply\"%%\"uri\"%%\"%@\"%%", replyURI];
-        NSString *subjectPattern = [NSString stringWithFormat:@"%%\"subject\"%%\"uri\"%%\"%@\"%%", uri];
+        NSString *replyPattern = [NSString stringWithFormat:@"%%\"reply\"%%\"uri\"%%\"%@\"%%",
+                                  GZLikeEscapeFragment(replyURI)];
+        NSString *subjectPattern = [NSString stringWithFormat:@"%%\"subject\"%%\"uri\"%%\"%@\"%%",
+                                    GZLikeEscapeFragment(uri)];
         if (index > 0) [query appendString:@", "];
-        [query appendFormat:@"SUM(CASE WHEN collection = ? AND value LIKE ? THEN 1 ELSE 0 END) AS reply%lu, ", (unsigned long)index];
-        [query appendFormat:@"SUM(CASE WHEN collection = ? AND value LIKE ? THEN 1 ELSE 0 END) AS repost%lu, ", (unsigned long)index];
-        [query appendFormat:@"SUM(CASE WHEN collection = ? AND value LIKE ? THEN 1 ELSE 0 END) AS like%lu", (unsigned long)index];
+        [query appendFormat:@"SUM(CASE WHEN collection = ? AND value LIKE ? ESCAPE '\\' THEN 1 ELSE 0 END) AS reply%lu, ", (unsigned long)index];
+        [query appendFormat:@"SUM(CASE WHEN collection = ? AND value LIKE ? ESCAPE '\\' THEN 1 ELSE 0 END) AS repost%lu, ", (unsigned long)index];
+        [query appendFormat:@"SUM(CASE WHEN collection = ? AND value LIKE ? ESCAPE '\\' THEN 1 ELSE 0 END) AS like%lu", (unsigned long)index];
         [params addObjectsFromArray:@[@"app.bsky.feed.post", replyPattern,
                                       @"app.bsky.feed.repost", subjectPattern,
                                       @"app.bsky.feed.like", subjectPattern]];
