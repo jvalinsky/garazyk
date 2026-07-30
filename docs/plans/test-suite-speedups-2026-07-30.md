@@ -319,23 +319,23 @@ compose rebuilds.**
 
 ## Todos / checklist
 
-- [ ] **lexicon-memoize** — Memoize `ATProtoLexiconRegistry` directory/file
+- [x] **lexicon-memoize** — Memoize `ATProtoLexiconRegistry` directory/file
   loads by path+mtime/size; invalidate on `clearCache`
-- [ ] **pbkdf2-test-iters** — Lower PBKDF2 iterations under
+- [x] **pbkdf2-test-iters** — Lower PBKDF2 iterations under
   `PDS_RUNNING_TESTS`; assert production still uses 600000
-- [ ] **test-log-level** — Default `GZ_LOG_LEVEL=warn` (or similar) in test
+- [x] **test-log-level** — Default `GZ_LOG_LEVEL=warn` (or similar) in test
   runner / CI
-- [ ] **remove-dead-sleeps** — Remove/replace 3s sleeps in
-  `CoverageGapTests` and `XrpcProxyTests`
+- [x] **remove-dead-sleeps** — Remove tearDown sleep in `CoverageGapTests`
+  (`XrpcProxyTests` 3s is intentional timeout fixture — left alone)
 - [ ] **xrpc-class-fixtures** — Share `PDSApplication`/accounts across
   methods in AdminAuth/RepoAuth bases
-- [ ] **test-sharding** — Add `--shard=I/N`, PID-scoped temp dirs,
-  `ctest -j` entries
-- [ ] **ci-parallel-fixups** — Decouple Linux `needs:`; remove `september`;
-  fix PLC ctest `-R` job
-- [ ] **xctest-shim-waits** — Real expectation fulfillment / polling on
+- [ ] **test-sharding** — Add `--shard=I/N`, `ctest -j` entries (PID-scoped
+  temp dirs landed)
+- [x] **ci-parallel-fixups** — Decouple Linux `needs:`; remove `september`;
+  remove broken PLC ctest `-R` job
+- [x] **xctest-shim-waits** — Real expectation fulfillment / polling on
   Linux XCTest shim
 - [ ] **build-ccache-deps** — Enable ccache; slim duplicate compile/link for
   tests
-- [ ] **deno-scenario-waits** — Gate/replace 5s settle in
-  `atproto_network.ts`; avoid redundant Deno typecheck on test reruns
+- [x] **deno-scenario-waits** — Gate settle sleep behind `HAMOWNIA_SETTLE_MS`
+  (default 0); Deno `--no-check` on test reruns still open
