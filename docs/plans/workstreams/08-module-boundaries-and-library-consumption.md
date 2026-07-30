@@ -319,24 +319,51 @@ fails only under `--filter` in isolation, passes in the full suite —
 confirmed unrelated by diffing the actual changeset, which touches
 none of that test's dependencies).
 
-**`PLC -> Sync` direction investigated, not fixed.** `PLCServer.m`
-constructs Sync's `PDSWebSocketNetworkAdapter` directly, for its
-WebSocket export-stream endpoint (`handleExportStream:connection:`).
-Unlike `RateLimiter`, this has only one production construction site
-(`Garazyk/Binaries/campagnola/main.m`), and no new protocol is needed —
-`PDSWebSocketNetworkAdapter` already conforms to the existing
-`id<PDSWebSocketTransport>` protocol (`Sync/WebSocket/PDSWebSocketTransport.h`),
-which already declares exactly the methods `PLCServer.m` calls
-(`start`, `closeWithCode:reason:completion:`, `sendMessage:completion:`).
-So the mechanical shape of the fix is straightforward: add an injectable
-`id<PDSWebSocketTransport> (^)(id<ATProtoNetworkConnection>)` factory to
-`PLCServer`, wire it at the single call site in `campagnola/main.m`.
-What stopped this from landing in the same pass: `handleExportStream:`
-has **zero existing test coverage** (`grep` across `Garazyk/Tests/PLC/`
-found nothing), so a refactor here would ship unverified — a separate,
-worthwhile finding on its own (this WebSocket export-stream endpoint has
-no tests at all, module boundaries aside), and the reason this wasn't
-attempted blind.
+**`PLC -> Sync` direction resolved.** Before the fix, `PLCServer.m`
+constructed Sync's `PDSWebSocketNetworkAdapter` directly (twice, in
+`handleExportStream:connection:`), an undeclared PLC -> Sync dependency
+(`ATProtoPLC:PDSWebSocketNetworkAdapter`). First added test coverage for
+the previously-untested cursor-validation path (`grep` across
+`Garazyk/Tests/PLC/` had found zero coverage for this method):
+`PLCServerTests.m` gained a locally-declared minimal
+`ATProtoNetworkConnection` mock (matching the existing
+`PDSWebSocketNetworkAdapterTests.m` precedent — never importing the real
+`Network/ATProtoNetworkTransport.h`, so no protocol-definition collision)
+and `testHandleExportStreamRejectsInvalidCursorWithFutureCursorClose`,
+which asserts the raw WebSocket close frame bytes (parsed by hand, since
+`WebSocketCodec`'s decode side is hardwired to require masked/client
+framing and this frame is server-direction/unmasked) carry close code
+1008 and reason `"FutureCursor"`. Deliberately did **not** attempt to
+cover the snapshot/live-poll path in a unit test — it spins up a real
+`dispatch_source` timer that only stops when the connection closes, and
+a unit test can't trigger that deterministically without reaching into
+the adapter's private internals; forcing it would leak a background
+timer across the rest of the suite. That path remains a Deno-scenario
+concern, not a unit-test one.
+
+With the guardrail in place: added `PLCWebSocketTransportFactory` (a
+`id<PDSWebSocketTransport> (^)(id<ATProtoNetworkConnection>)` typedef) and
+`PLCServerSetWebSocketTransportFactory` to `PLCServer.h`, exactly mirroring
+`RateLimiterStorageFactory`. `handleExportStream:` now calls the factory
+once at the top and uses the returned `id<PDSWebSocketTransport>` for
+everything (both the early `FutureCursor` close and the main stream), no
+per-branch duplication like the original two separate `alloc]
+initWithConnection:]` call sites. The `+load` self-registration
+(`Garazyk/Sources/App/PLCWebSocketTransportRegistration.m`) lives in
+`ATProtoRuntime` — the one module in the DAG that already legitimately
+depends on both PLC and Sync (`campagnola`, the only binary that runs a
+`PLCServer`, already links Runtime) — landing it in `App/` needed no
+`CMakeLists.txt` change since Runtime's source glob already covers
+`Garazyk/Sources/App/*.m`. One wrinkle hit and fixed: the new `App/*.m`
+file didn't show up in the first rebuild (`nm` on `AllTests` showed the
+setter symbol but not the registration class at all) because
+`file(GLOB_RECURSE ...)` caches its file list — same root cause as the
+documented "new test suite" gotcha, just triggered by a non-test source
+file this time. Fixed with a full `cmake -S . -B build` reconfigure.
+Resolves `ATProtoPLC:PDSWebSocketNetworkAdapter`. Baseline ratcheted
+36 → 35 (one leak removed, `PDSWebSocketNetworkAdapterTests` and
+`PLCReplicaServerTests` and `PDSPLCIntegrationTests` all still pass);
+full `AllTests --gated=run` verified clean.
 
 - `XRPC -> PLC`: a DAG question, not necessarily a code question —
   needs a decision on whether PLC belongs below XRPC in the declared

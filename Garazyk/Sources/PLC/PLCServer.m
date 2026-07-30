@@ -10,7 +10,6 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "PLC/PLCConstants.h"
-#import "Sync/WebSocket/PDSWebSocketNetworkAdapter.h"
 
 static const NSUInteger kPLCMaxAlsoKnownAsEntries = 10;
 static const NSUInteger kPLCMaxAlsoKnownAsLength = 258;
@@ -351,6 +350,12 @@ static NSNumber *PLCParseUnsignedInteger(NSString *value) {
     if (!PLCStringIsUnsignedInteger(value)) return nil;
     unsigned long long parsed = strtoull(value.UTF8String, NULL, 10);
     return @(parsed);
+}
+
+static PLCWebSocketTransportFactory _plcWebSocketTransportFactory = nil;
+
+void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory) {
+    _plcWebSocketTransportFactory = [factory copy];
 }
 
 @interface PLCServer ()
@@ -857,18 +862,25 @@ static NSNumber *PLCParseUnsignedInteger(NSString *value) {
 }
 
 - (void)handleExportStream:(HttpRequest *)req connection:(id<ATProtoNetworkConnection>)connection {
+    id<PDSWebSocketTransport> adapter = _plcWebSocketTransportFactory ? _plcWebSocketTransportFactory(connection) : nil;
+    if (!adapter) {
+        // No factory registered (should not happen in any real binary — see
+        // PLCWebSocketTransportRegistration.m's `+load`). connection is only
+        // forward-declared here, so it can't be messaged directly; simply
+        // decline to stream and let the transport layer's own timeout close it.
+        return;
+    }
+
     NSNumber *cursor = nil;
     NSString *cursorString = req.queryParams[@"cursor"];
     if (cursorString.length > 0) {
         cursor = PLCParseUnsignedInteger(cursorString);
         if (!cursor) {
-            PDSWebSocketNetworkAdapter *adapter = [[PDSWebSocketNetworkAdapter alloc] initWithConnection:connection];
             [adapter closeWithCode:1008 reason:@"FutureCursor" completion:^(NSError * _Nullable error) {}];
             return;
         }
     }
 
-    PDSWebSocketNetworkAdapter *adapter = [[PDSWebSocketNetworkAdapter alloc] initWithConnection:connection];
     [adapter start];
 
     __block NSInteger liveCursor = cursor.integerValue;
