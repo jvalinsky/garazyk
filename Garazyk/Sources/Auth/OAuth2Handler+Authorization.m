@@ -5,6 +5,9 @@
 
 #import "Auth/OAuth2.h"
 #import "Security/PDSSecurityCompare.h"
+#import "Auth/OAuth2Handler_Internal.h"
+#import "Auth/OAuth2Handler+Assets.h"
+#import "Auth/OAuth2Handler+ClientMetadataFetch.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
