@@ -5,7 +5,7 @@
 #import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
 #import "Auth/Crypto/Secp256k1.h"
-#import "Network/XrpcIdentityHelper.h"
+#import "Core/ATProtoMultibase.h"
 #import "Core/ATProtoDIDDocumentFields.h"
 #import "Debug/GZLogger.h"
 
@@ -87,8 +87,8 @@
             NSString *signingKeyMultibase = [ATProtoDIDDocumentFields atprotoSigningKeyMultibaseFromDocument:didDoc];
             if (signingKeyMultibase) {
                 NSError *decodeError = nil;
-                NSData *publicKeyBytes = [XrpcIdentityHelper publicKeyBytesFromMultibase:signingKeyMultibase
-                                                                                  error:&decodeError];
+                NSData *publicKeyBytes = [ATProtoMultibase publicKeyBytesFromMultibase:signingKeyMultibase
+                                                                                   error:&decodeError];
                 if (publicKeyBytes) {
                     GZ_LOG_SYNC_INFO(@"Signature precheck: resolved signing key for %@ (%lu bytes)",
                                      commitEvent.repo, (unsigned long)publicKeyBytes.length);
