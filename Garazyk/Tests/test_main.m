@@ -736,6 +736,11 @@ int main(int argc, char *argv[]) {
   @autoreleasepool {
     // Ensure config defaults behave in non-interactive test mode.
     setenv("PDS_RUNNING_TESTS", "1", 1);
+    // Quiet default logging unless the operator overrides GZ_LOG_LEVEL
+    // (workstream 09 T3 — CI AllTests logs were ~97k leveled lines).
+    if (getenv("GZ_LOG_LEVEL") == NULL) {
+      setenv("GZ_LOG_LEVEL", "warn", 1);
+    }
     if (getenv("PDS_USE_KEYCHAIN") == NULL) {
       setenv("PDS_USE_KEYCHAIN", "0", 1);
     }
@@ -769,7 +774,8 @@ int main(int argc, char *argv[]) {
     // Without this, sharedManager reads from the machine's default path and
     // fails to decrypt an existing key encrypted with a different secret.
     if (getenv("PDS_PLC_KEYS_DIR") == NULL) {
-      NSString *tempKeysDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"garazyk-test-plc-keys"];
+      NSString *tempKeysDir = [NSTemporaryDirectory() stringByAppendingPathComponent:
+          [NSString stringWithFormat:@"garazyk-test-plc-keys-%d", getpid()]];
       [[NSFileManager defaultManager] removeItemAtPath:tempKeysDir error:NULL];
       [[NSFileManager defaultManager] createDirectoryAtPath:tempKeysDir
                                 withIntermediateDirectories:YES
@@ -778,7 +784,8 @@ int main(int argc, char *argv[]) {
       setenv("PDS_PLC_KEYS_DIR", tempKeysDir.UTF8String, 1);
     }
     if (getenv("PDS_DATA_DIR") == NULL) {
-      NSString *tempDataDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"garazyk-test-data"];
+      NSString *tempDataDir = [NSTemporaryDirectory() stringByAppendingPathComponent:
+          [NSString stringWithFormat:@"garazyk-test-data-%d", getpid()]];
       [[NSFileManager defaultManager] removeItemAtPath:tempDataDir error:NULL];
       [[NSFileManager defaultManager] createDirectoryAtPath:tempDataDir
                                 withIntermediateDirectories:YES

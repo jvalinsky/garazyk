@@ -944,7 +944,8 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
 
 - (NSData *)hashPassword:(NSString *)password salt:(NSData *)salt {
     // OWASP 2023 recommendation: 600,000 iterations for PBKDF2-HMAC-SHA256
-    const uint32_t iterations = 600000;
+    // (reduced under PDS_RUNNING_TESTS via ATProtoPBKDF2IterationCount).
+    const uint32_t iterations = ATProtoPBKDF2IterationCount();
     const size_t derivedKeyLength = 32; // 256 bits
     unsigned char derivedKey[32];
 
