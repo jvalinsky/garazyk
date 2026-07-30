@@ -69,15 +69,19 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSInteger)getBlobCountForDid:(NSString *)did error:(NSError **)error;
 
 /*!
- @method deleteBlob:error:
+ @method deleteBlob:did:error:
 
- @abstract Deletes a blob from the database.
+ @abstract Deletes a blob owned by the given DID.
+
+ @discussion Scoped by (cid, did) so one account cannot delete another
+ account's row for a shared content-addressed CID (§5.1).
 
  @param cid The CID of the blob to delete.
+ @param did The DID that must own the blob row.
  @param error On return, contains an error if the operation failed.
  @return YES if the blob was deleted successfully, NO otherwise.
  */
-- (BOOL)deleteBlob:(NSData *)cid error:(NSError **)error;
+- (BOOL)deleteBlob:(NSData *)cid did:(NSString *)did error:(NSError **)error;
 
 @end
 
