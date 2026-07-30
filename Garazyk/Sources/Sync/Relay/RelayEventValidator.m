@@ -7,7 +7,6 @@
 #import "Auth/Crypto/Secp256k1.h"
 #import "Network/XrpcIdentityHelper.h"
 #import "Core/ATProtoDIDDocumentFields.h"
-#import "PLC/DIDPLCResolver.h"
 #import "Debug/GZLogger.h"
 
 @implementation RelayValidationOutcome
@@ -82,10 +81,7 @@
 
     if (self.plcResolver) {
         NSError *resolveError = nil;
-        NSDictionary *didDoc = nil;
-        if ([self.plcResolver isKindOfClass:[DIDPLCResolver class]]) {
-            didDoc = [(DIDPLCResolver *)self.plcResolver resolveDID:commitEvent.repo error:&resolveError];
-        }
+        NSDictionary *didDoc = [self.plcResolver resolveDID:commitEvent.repo error:&resolveError];
 
         if (didDoc) {
             NSString *signingKeyMultibase = [ATProtoDIDDocumentFields atprotoSigningKeyMultibaseFromDocument:didDoc];
