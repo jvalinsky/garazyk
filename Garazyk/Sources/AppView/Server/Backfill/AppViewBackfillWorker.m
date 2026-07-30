@@ -285,20 +285,6 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
 - (nullable NSString *)_parseRepoArchiveAndIndex:(NSData *)archiveData
                                           forDID:(NSString *)did
                                            error:(NSError **)error {
-    // File-based debug logging
-    static NSString *debugLogPath = @"/tmp/debug-logs/backfill.log";
-    [[NSFileManager defaultManager] createDirectoryAtPath:@"/tmp/debug-logs" withIntermediateDirectories:YES attributes:nil error:nil];
-    NSString *logMsg = [NSString stringWithFormat:@"[%@] PARSE START did=%@ len=%lu\n",
-                     [NSDate date], did, (unsigned long)archiveData.length];
-    NSFileHandle *fh = [NSFileHandle fileHandleForWritingAtPath:debugLogPath];
-    if (!fh) {
-        [[NSData data] writeToFile:debugLogPath atomically:YES];
-        fh = [NSFileHandle fileHandleForWritingAtPath:debugLogPath];
-    }
-    [fh writeData:[logMsg dataUsingEncoding:NSUTF8StringEncoding]];
-    [fh synchronizeFile];
-    [fh closeFile];
-
     GZ_LOG_DEBUG(@"[AppView BackfillWorker] Parsing repo archive for %@", did);
     GZ_LOG_DEBUG(@"[AppView BackfillWorker] Data length: %lu",
                  (unsigned long)archiveData.length);
