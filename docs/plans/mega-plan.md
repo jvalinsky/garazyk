@@ -457,7 +457,7 @@ remaining program does not depend on items 1-2.
     [workstream 08](workstreams/08-module-boundaries-and-library-consumption.md).
     M1-M3 are complete. M4 was previously reported complete, but its own
     zero-baseline gate is not met: the current boundary checker still permits
-    30 baselined violations across seven modules. M7 is also partial because
+    28 baselined violations across six modules. M7 is also partial because
     package-target sources retain host-process exits and one hard-coded log
     fallback. Finish those residual items, then replace implicit module
     membership, curate and namespace the public API, and add relocatable

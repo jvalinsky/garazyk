@@ -8,7 +8,7 @@ last_verified: 2026-07-30
 
 The earlier execution summary and the proposed Option A plan overstated the
 workstream's completion. A current run of
-`scripts/check_module_boundaries.sh build` passes only because all **30**
+`scripts/check_module_boundaries.sh build` passes only because all **28**
 remaining violations are still recorded in
 `docs/module-boundary-baseline.txt`:
 
@@ -17,13 +17,13 @@ remaining violations are still recorded in
 | `ATProtoServices` | 15 |
 | `ATProtoXRPC` | 6 |
 | `ATProtoMediaCore` | 3 |
-| `ATProtoPLC` | 2 |
 | `ATProtoVideoService` | 2 |
 | `ATProtoStorage` | 1 |
 | `ATProtoSync` | 1 |
 
 M1-M3 are complete. M4 has resolved the inversions originally enumerated in
-its first audit, but it has **not** met its own zero-baseline acceptance gate.
+its first audit and the first residual PLC-persistence cluster, but it has
+**not** met its own zero-baseline acceptance gate.
 M7 is partially complete: dependency injection and most data-path work landed,
 but module sources still contain host-process exits and an installer
 `/var/db/kaszlak` fallback. M5 and M6 have not started.
@@ -419,9 +419,37 @@ full `AllTests --gated=run` verified clean.
 
 **Correction (2026-07-30): M4's originally enumerated inversion set is
 resolved, but M4 itself is not complete.** Its acceptance gate requires the
-baseline to reach zero, and 30 baselined violations remain. The revised M4
+baseline to reach zero, and 28 baselined violations remain. The revised M4
 below treats those violations as the remaining work rather than declaring
 victory after the `XRPC -> PLC` subset.
+
+**M4.2 PLC persistence complete** (`f08166df`). M4.1's fresh ten-archive
+evidence found both PLC leaks in one emitter, `PLCPersistentStore.m.o`:
+`PLCPersistentStore` directly allocates `ATProtoConnectionManagerSerial` and
+`ATProtoDatabaseQueryRunner`, retains them in its internal interface, and owns
+their connection/transaction lifecycle. The concrete Storage implementation is
+therefore a fundamental PLC requirement, not composition that can honestly be
+injected above PLC. `ATProtoStorage` has only `ATProtoCore` in its declared
+module closure, so adding `ATProtoPLC -> ATProtoStorage` is acyclic. The commit
+adds that `PUBLIC` edge and a `plc_persistent_store_link_tests` executable that
+names `ATProtoPLC` as its only Garazyk library, then opens and closes a real
+temporary SQLite store. It passes on macOS; the link-time baseline ratcheted
+30 -> 28, with no new leaks.
+
+macOS verification: fresh CMake reconfigure; all ten archive targets rebuilt;
+`scripts/check_module_boundaries.sh build` passed at 30/30 before the change
+and at 28 current/30 prior-baseline entries after it; the focused standalone
+test passed; `cmake --build build --target AllTests --parallel 4` and
+`./build/tests/AllTests --gated=run` passed. `deno task check` and
+`deno task lint` passed; the unrelated existing `deno task test` suite still
+reports live Gruszka lexicon-resolution integration failures and its checked-in
+generated-lexicon drift failure. The GNUstep Docker builder image completed,
+but the full GNUstep CMake gate is blocked before compilation by existing
+`CMakeLists.txt:1849` source ownership drift: `SecItemLinuxStoreTests` names
+the removed `Garazyk/Sources/Auth/CryptoUtils.m` rather than
+`Garazyk/Sources/Auth/Crypto/CryptoUtils.m`. Do not treat the Linux gate as
+passed or push this branch until that separate platform blocker is repaired and
+the full GNUstep gate rerun.
 
 M0 (third-party consumption goal) is now answered yes under the bounded package
 contract in the verified-status section above. M5/M6 remain gated on the real
@@ -617,7 +645,7 @@ Rollback: single revert; the change is file moves plus mechanical import edits.
 
 ## M4. Resolve the remaining inversions
 
-Status: **in progress; 30 baselined violations remain.** The earlier M4 work
+Status: **in progress; 28 baselined violations remain.** The earlier M4 work
 resolved the initially enumerated clusters, but the follow-on baseline was
 incorrectly treated as out of scope. It is not: M4's purpose and acceptance
 gate are both zero undeclared dependencies.
