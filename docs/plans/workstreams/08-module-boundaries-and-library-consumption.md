@@ -286,10 +286,20 @@ failure profile, with `ATProtoHttpServerBuilderTests`, `AdminAuthXrpcTests`,
 and `PDSApplicationTests` checked explicitly given this touches
 bootstrap for every binary.
 
-**Only `XrpcErrorHelper` remains in `ATProtoTransport`'s leak list**
-(from `GZXrpcRouteSupport.m`, consumed by Mikrus/Beskid's own
-binary-specific route packs rather than `ATProtoHttpServerBuilder.m`'s
-flow — a different shape of fix, not addressed here).
+**`ATProtoTransport` reaches zero module-boundary leaks** (`8547bcfb`).
+`GZXrpcRouteSupport.m` directly messaged `XrpcErrorHelper` (XRPC-owned)
+while compiling into Transport; its only consumers,
+`MikrusXrpcRoutePack.m` and `BeskidXrpcRoutePack.m`, already need
+`ATProtoXRPC` linked regardless (both binaries link it alongside
+Transport). Same carve-out technique as everything else in this
+section: excluded from Transport's glob, added to XRPC's explicit file
+list. Baseline ratcheted 37 (from 38). Full `AllTests --gated=run`
+verified clean; `GZXrpcRouteSupportTests` passes.
+
+This is a real milestone worth naming: **two of the ten `ATProto*`
+modules now have zero declared-boundary violations** —
+`ATProtoCore` (M2, `b19d81cb`) and `ATProtoTransport` (M4, this commit).
+Neither needed a baseline entry left over from the original M1 audit.
 
 **Remaining M4 items:**
 - `PLC <-> Sync`: a genuine cycle (`PLCServer` imports the WebSocket
