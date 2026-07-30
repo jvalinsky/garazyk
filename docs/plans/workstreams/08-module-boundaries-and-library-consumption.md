@@ -253,21 +253,45 @@ Verified: `RateLimiterTests`, `RateLimitingTests`,
 plus a full `AllTests --gated=run` showing the identical (pre-existing)
 failure profile.
 
-**Still open — the two misplaced route-pack files**
-(`ATProtoHttpOAuthRoutePack.m`, `ATProtoHttpWellKnownRoutePack.m`): not
-narrowly-scoped database leaks — they already import `OAuth2Handler`,
-`WebAuthnRegistrationHandler`, `PDSSecondFactorService`,
-`PDSAccountService`, and `PDSController` directly (several already
-separately flagged in the baseline). These are Services-layer route
-handlers that happen to live in `Network/` physically; the real fix is
-deciding where they belong (XRPC layer, most likely, matching
-`Xrpc*.m`'s existing carve-out from Transport) — a relocation decision,
-not a protocol injection, and one this pass still doesn't have enough
-certainty to make unilaterally.
+**`Transport -> Runtime` resolved, including both misplaced route packs**
+(`4dc11bb8`, `0ab4f715`). `ATProtoHttpOAuthRoutePack.m`,
+`ATProtoHttpWellKnownRoutePack.m`, `ATProtoHttpMSTViewerRoutePack.m`,
+`ATProtoHttpNodeInfoRoutePack.m`, `ATProtoHttpOAuthDemoRoutePack.m`,
+`ATProtoHttpRelayAPIRoutePack.m`, and `PDSHttpPDSAdminRoutePack.m` all
+shared the same shape: each imports and directly messages a Runtime,
+Services, or Sync handler class while compiling into `ATProtoTransport`.
+Confirmed via grep that all 7 are registered *exclusively* by
+`ATProtoHttpServerBuilder.m`, which was already `ATProtoRuntime`-owned
+(carved out during M1/M2) — so this was a `CMakeLists.txt` source-list
+change for all 7, no code changes: exclude from Transport, append to
+Runtime, matching the carve-out technique used throughout M2-M4.
 
-- `Transport -> Runtime`: invert route-pack registration so `App/`
-  handlers register themselves with the router instead of route packs
-  importing handlers.
+`ATProtoHttpWellKnownRoutePack.m` is the interesting case: it wasn't
+actually flagged by the nm-based leak detector at all (its
+`ATProtoHandleValidator`/`PDSController` references apparently don't
+produce a class-message symbol the detector catches — the same
+false-negative shape already seen with `PDSSpaceStore` in M2 and
+`HttpRequest`/`HttpResponse` in M3). It was moved anyway, for
+architectural consistency with its 6 siblings, not because the
+automated metric demanded it — the same judgment call made those
+earlier two times.
+
+Resolved 7 of the 8 remaining `ATProtoTransport` leaks in one move:
+`MSTViewerHandler`, `NodeInfoHandler`, `OAuth2Handler`, `OAuthDemoHandler`,
+`PDSAdminAuth`, `RelayAPIHandler`, `WebAuthnRegistrationHandler`.
+Baseline ratcheted 45 → 38 (`ATProtoHttpWellKnownRoutePack.m`'s move
+didn't change the count further, matching its detector-invisible status
+above). Full `AllTests --gated=run` verified: identical (pre-existing)
+failure profile, with `ATProtoHttpServerBuilderTests`, `AdminAuthXrpcTests`,
+and `PDSApplicationTests` checked explicitly given this touches
+bootstrap for every binary.
+
+**Only `XrpcErrorHelper` remains in `ATProtoTransport`'s leak list**
+(from `GZXrpcRouteSupport.m`, consumed by Mikrus/Beskid's own
+binary-specific route packs rather than `ATProtoHttpServerBuilder.m`'s
+flow — a different shape of fix, not addressed here).
+
+**Remaining M4 items:**
 - `PLC <-> Sync`: a genuine cycle (`PLCServer` imports the WebSocket
   adapter; `RelayEventValidator` imports `DIDPLCResolver`) — needs a
   resolver protocol owned by Core.
