@@ -45,16 +45,6 @@ extern dispatch_once_t sClientCacheOnceToken;
 /** @abstract Canonical externally visible server origin used in OAuth and DPoP comparisons. */
 @property (nonatomic, copy) NSString *serverOrigin;
 
-#pragma mark - Route Handlers
-/** @abstract Validates an authorization request and renders consent or redirects with an OAuth error. */
-- (void)handleAuthorizeRequest:(HttpRequest *)request
-                      response:(HttpResponse *)response;
-/** @abstract Consumes a consent submission and issues an authorization response when it is valid. */
-- (void)handleAuthorizeConfirm:(HttpRequest *)request
-                      response:(HttpResponse *)response;
-/** @abstract Processes sign-in credentials for a pending authorization flow and updates its response. */
-- (void)handleAuthorizeSignIn:(HttpRequest *)request
-                     response:(HttpResponse *)response;
 /** @abstract Validates a passkey challenge request and stores a short-lived challenge session. */
 - (void)handlePasskeyChallenge:(HttpRequest *)request
                       response:(HttpResponse *)response;
@@ -81,9 +71,6 @@ extern dispatch_once_t sClientCacheOnceToken;
 /** @abstract Authenticates an introspection request and reports token activity without exposing secrets. */
 - (void)handleIntrospectRequest:(HttpRequest *)request
                        response:(HttpResponse *)response;
-/** @abstract Serves the authorization UI stylesheet using the constrained configured asset path. */
-- (void)handleCSSRequest:(HttpRequest *)request
-                response:(HttpResponse *)response;
 /** @abstract Adds CORS headers only when the request origin matches configured allowed origins. */
 - (void)setCorsHeaders:(HttpResponse *)response
             forRequest:(HttpRequest *)request;
@@ -118,12 +105,6 @@ extern dispatch_once_t sClientCacheOnceToken;
 - (BOOL)validateRedirectURI:(NSString *)redirectURI
                   forClient:(NSDictionary *)client
                       error:(NSError **)error;
-/** @abstract Fetches dynamic client metadata from a validated client-identifier URL. */
-- (void)fetchClientMetadataFromURL:(NSString *)url
-                        completion:(void (^)(NSDictionary *_Nullable metadata,
-                                             NSError *_Nullable error))completion;
-/** @abstract Parses client metadata only when the input has the expected dictionary representation. */
-- (NSDictionary *)parseClientMetadataFromInput:(id)clientMetadataInput;
 
 #pragma mark - Consent & Passkey Session Store
 /** @abstract Creates a bounded, expiring consent session while holding the authorization-state lock. */
@@ -150,7 +131,7 @@ extern dispatch_once_t sClientCacheOnceToken;
  */
 - (BOOL)validateDPoPForRequest:(HttpRequest *)request
                       response:(HttpResponse *)response
-                 outThumbprint:(NSString **)outThumbprint;
+                 outThumbprint:(NSString * _Nullable * _Nullable)outThumbprint;
 /** @abstract Adds a fresh DPoP nonce only when the response does not already carry one. */
 - (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response;
 /** @abstract Builds the canonical URL used for DPoP htu validation. */
@@ -166,14 +147,6 @@ extern dispatch_once_t sClientCacheOnceToken;
                                  clientID:(NSString *)clientID
                                     error:(NSError **)error;
 
-#pragma mark - Assets & HTML
-/** @abstract Resolves the configured authorization UI asset directory. */
-- (NSString *)assetsPath;
-/** @abstract Resolves the shared stylesheet directory used by the authorization UI. */
-- (NSString *)sharedCSSPath;
-/** @abstract Escapes text before it is interpolated into authorization HTML. */
-- (NSString *)escapeHtml:(NSString *)input;
-
 #pragma mark - Parsing & Helpers
 /** @abstract Parses a nonempty JSON request body into a dictionary, or nil for invalid input. */
 - (NSDictionary *)parseJSONBody:(NSData *)data;
@@ -183,12 +156,6 @@ extern dispatch_once_t sClientCacheOnceToken;
 - (NSString *)iso8601StringFromDate:(NSDate *)date;
 /** @abstract Parses an AT Protocol ISO-8601 date string, or nil if it is invalid. */
 - (NSDate *)dateFromISO8601String:(NSString *)dateString;
-
-#pragma mark - Authorization Page
-/** @abstract Renders the authorization page from validated request parameters and client metadata. */
-- (void)serveAuthorizePage:(HttpResponse *)response
-                    params:(NSDictionary *)params
-                    client:(NSDictionary *)client;
 
 #pragma mark - Crypto Helpers
 /** @abstract Creates a retained P-256 public key from JWK affine coordinates, or nil if invalid. */

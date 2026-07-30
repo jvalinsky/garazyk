@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
+#import "Auth/OAuth2Handler.h"
+#import "Auth/OAuth2Handler_Internal.h"
 #import "Auth/OAuth2Handler+ClientValidation.h"
+#import "Auth/OAuth2Handler+ClientMetadataFetch.h"
 #import "Auth/OAuth2.h"
 #import "Security/PDSSecurityCompare.h"
 #import "Auth/Crypto/CryptoUtils.h"
