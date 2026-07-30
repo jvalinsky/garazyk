@@ -31,7 +31,6 @@ ATProtoServices:XrpcRoutePackServiceBag (defined in ATProtoXRPC, not a declared 
 ATProtoStorage:PDSAppleActorKeyManager (defined in ATProtoServices, not a declared PUBLIC dependency of ATProtoStorage)
 ATProtoSync:DIDPLCResolver (defined in ATProtoPLC, not a declared PUBLIC dependency of ATProtoSync)
 ATProtoSync:XrpcIdentityHelper (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoSync)
-ATProtoTransport:XrpcErrorHelper (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoTransport)
 ATProtoVideoService:XrpcAuthHelper (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoVideoService)
 ATProtoVideoService:XrpcErrorHelper (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoVideoService)
 ATProtoXRPC:ATProtoVideoWorker (defined in ATProtoVideoService, not a declared PUBLIC dependency of ATProtoXRPC)
