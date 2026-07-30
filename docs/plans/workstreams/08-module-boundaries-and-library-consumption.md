@@ -301,10 +301,43 @@ modules now have zero declared-boundary violations** —
 `ATProtoCore` (M2, `b19d81cb`) and `ATProtoTransport` (M4, this commit).
 Neither needed a baseline entry left over from the original M1 audit.
 
-**Remaining M4 items:**
-- `PLC <-> Sync`: a genuine cycle (`PLCServer` imports the WebSocket
-  adapter; `RelayEventValidator` imports `DIDPLCResolver`) — needs a
-  resolver protocol owned by Core.
+**`PLC <-> Sync`, `Sync -> PLC` direction resolved** (`ea21775f`).
+`RelayEventValidator.m` (Sync) imported `PLC/DIDPLCResolver.h` only to
+cast an already-untyped `id plcResolver` property before calling
+`resolveDID:error:` — the seam was already most of the way there, it
+just needed a real protocol instead of a runtime `isKindOfClass:` cast.
+Added `Core/DIDResolving.h` (a single-method protocol); `DIDPLCResolver`
+(PLC) now conforms to it; `RelayEventValidator.h`'s property is
+`id<DIDResolving>` instead of plain `id`. Verified via grep across the
+whole tree that `plcResolver` is never actually assigned anywhere in
+production code or tests — this fix is zero behavior change, not just
+low-risk. Resolves `ATProtoSync:DIDPLCResolver`. Baseline ratcheted
+37 → 36. `RelayEventValidatorTests` (8/8) and `DIDPLCResolverTests`
+(2/2) checked explicitly; full `AllTests --gated=run` verified clean
+(one `RelayIntegrationTests/testMetricsRecording` isolation artifact —
+fails only under `--filter` in isolation, passes in the full suite —
+confirmed unrelated by diffing the actual changeset, which touches
+none of that test's dependencies).
+
+**`PLC -> Sync` direction investigated, not fixed.** `PLCServer.m`
+constructs Sync's `PDSWebSocketNetworkAdapter` directly, for its
+WebSocket export-stream endpoint (`handleExportStream:connection:`).
+Unlike `RateLimiter`, this has only one production construction site
+(`Garazyk/Binaries/campagnola/main.m`), and no new protocol is needed —
+`PDSWebSocketNetworkAdapter` already conforms to the existing
+`id<PDSWebSocketTransport>` protocol (`Sync/WebSocket/PDSWebSocketTransport.h`),
+which already declares exactly the methods `PLCServer.m` calls
+(`start`, `closeWithCode:reason:completion:`, `sendMessage:completion:`).
+So the mechanical shape of the fix is straightforward: add an injectable
+`id<PDSWebSocketTransport> (^)(id<ATProtoNetworkConnection>)` factory to
+`PLCServer`, wire it at the single call site in `campagnola/main.m`.
+What stopped this from landing in the same pass: `handleExportStream:`
+has **zero existing test coverage** (`grep` across `Garazyk/Tests/PLC/`
+found nothing), so a refactor here would ship unverified — a separate,
+worthwhile finding on its own (this WebSocket export-stream endpoint has
+no tests at all, module boundaries aside), and the reason this wasn't
+attempted blind.
+
 - `XRPC -> PLC`: a DAG question, not necessarily a code question —
   needs a decision on whether PLC belongs below XRPC in the declared
   graph before any code moves.
