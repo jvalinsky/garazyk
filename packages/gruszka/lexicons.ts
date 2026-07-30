@@ -1306,6 +1306,596 @@ export interface LexiconDefs {
   "app.bsky.video.uploadVideo": {
     "main": never;
   };
+  "app.offprint.actor.profile": {
+    "main": {
+      "avatar"?: any /* blob */;
+      "banner"?: any /* blob */;
+      "createdAt"?: string;
+      "description"?: string;
+      "displayName"?: string;
+      "pronouns"?: string;
+      "website"?: string;
+    };
+  };
+  "app.offprint.block.blockquote": {
+    "main": {
+      "content": Array<LexiconDefs["app.offprint.block.text"]["main"] | LexiconDefs["app.offprint.block.heading"]["main"] | Record<string, any>>;
+    };
+  };
+  "app.offprint.block.blueskyPost": {
+    "main": {
+      "post": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "app.offprint.block.bulletList": {
+    "listItem": {
+      "children"?: Array<LexiconDefs["app.offprint.block.bulletList"]["listItem"]>;
+      "content": LexiconDefs["app.offprint.block.text"]["main"];
+    };
+    "main": {
+      "children": Array<LexiconDefs["app.offprint.block.bulletList"]["listItem"]>;
+    };
+  };
+  "app.offprint.block.button": {
+    "main": {
+      "alignment"?: string;
+      "caption"?: string;
+      "href": string;
+      "text": string;
+    };
+  };
+  "app.offprint.block.callout": {
+    "main": {
+      "color"?: string;
+      "emoji"?: string;
+      "facets"?: Array<LexiconDefs["app.offprint.richtext.facet"]["main"]>;
+      "plaintext": string;
+    };
+  };
+  "app.offprint.block.codeBlock": {
+    "main": {
+      "code": string;
+      "language"?: string;
+      "showLineNumbers"?: boolean;
+    };
+  };
+  "app.offprint.block.component": {
+    "main": {
+      "component": string;
+    };
+  };
+  "app.offprint.block.heading": {
+    "main": {
+      "facets"?: Array<LexiconDefs["app.offprint.richtext.facet"]["main"]>;
+      "level": number;
+      "plaintext": string;
+      "textAlign"?: string;
+    };
+  };
+  "app.offprint.block.horizontalRule": {
+    "main": {
+    };
+  };
+  "app.offprint.block.image": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+    "main": {
+      "alignment"?: string;
+      "alt"?: string;
+      "aspectRatio"?: LexiconDefs["app.offprint.block.image"]["aspectRatio"];
+      "caption"?: string;
+      "captionFacets"?: Array<LexiconDefs["app.offprint.richtext.facet"]["main"]>;
+      "image"?: any /* blob */;
+      "width"?: string;
+    };
+  };
+  "app.offprint.block.imageCarousel": {
+    "main": {
+      "caption"?: string;
+      "images": Array<LexiconDefs["app.offprint.block.imageGrid"]["gridImage"]>;
+    };
+  };
+  "app.offprint.block.imageDiff": {
+    "main": {
+      "alignment"?: string;
+      "caption"?: string;
+      "images": Array<LexiconDefs["app.offprint.block.imageGrid"]["gridImage"]>;
+      "width"?: string;
+    };
+  };
+  "app.offprint.block.imageGrid": {
+    "gridImage": {
+      "alt"?: string;
+      "aspectRatio"?: LexiconDefs["app.offprint.block.image"]["aspectRatio"];
+      "blob"?: any /* blob */;
+    };
+    "main": {
+      "aspectRatio"?: string;
+      "caption"?: string;
+      "gridRows"?: number;
+      "images": Array<LexiconDefs["app.offprint.block.imageGrid"]["gridImage"]>;
+    };
+  };
+  "app.offprint.block.mathBlock": {
+    "main": {
+      "tex": string;
+    };
+  };
+  "app.offprint.block.orderedList": {
+    "listItem": {
+      "children"?: Array<LexiconDefs["app.offprint.block.orderedList"]["listItem"]>;
+      "content": LexiconDefs["app.offprint.block.text"]["main"];
+    };
+    "main": {
+      "children": Array<LexiconDefs["app.offprint.block.orderedList"]["listItem"]>;
+      "start"?: number;
+    };
+  };
+  "app.offprint.block.taskList": {
+    "main": {
+      "children": Array<LexiconDefs["app.offprint.block.taskList"]["taskItem"]>;
+    };
+    "taskItem": {
+      "checked": boolean;
+      "children"?: Array<LexiconDefs["app.offprint.block.taskList"]["taskItem"]>;
+      "content": LexiconDefs["app.offprint.block.text"]["main"];
+    };
+  };
+  "app.offprint.block.text": {
+    "main": {
+      "facets"?: Array<LexiconDefs["app.offprint.richtext.facet"]["main"]>;
+      "plaintext": string;
+      "textAlign"?: string;
+    };
+  };
+  "app.offprint.block.webBookmark": {
+    "main": {
+      "description"?: string;
+      "href": string;
+      "preview"?: any /* blob */;
+      "siteName"?: string;
+      "title": string;
+    };
+  };
+  "app.offprint.block.webEmbed": {
+    "main": {
+      "alignment"?: string;
+      "description"?: string;
+      "embedHeight"?: number;
+      "embedUrl"?: string;
+      "embedWidth"?: number;
+      "href": string;
+      "preview"?: any /* blob */;
+      "siteName"?: string;
+      "title"?: string;
+      "width"?: string;
+    };
+  };
+  "app.offprint.component": {
+    "main": {
+      "content": LexiconDefs["app.offprint.content"]["main"];
+      "name": string;
+      "publication": string;
+      "updatedAt"?: string;
+    };
+  };
+  "app.offprint.content": {
+    "main": {
+      "items": Array<LexiconDefs["app.offprint.block.text"]["main"] | LexiconDefs["app.offprint.block.heading"]["main"] | LexiconDefs["app.offprint.block.blockquote"]["main"] | LexiconDefs["app.offprint.block.callout"]["main"] | LexiconDefs["app.offprint.block.bulletList"]["main"] | LexiconDefs["app.offprint.block.orderedList"]["main"] | LexiconDefs["app.offprint.block.taskList"]["main"] | LexiconDefs["app.offprint.block.codeBlock"]["main"] | LexiconDefs["app.offprint.block.horizontalRule"]["main"] | LexiconDefs["app.offprint.block.image"]["main"] | LexiconDefs["app.offprint.block.imageGrid"]["main"] | LexiconDefs["app.offprint.block.imageCarousel"]["main"] | LexiconDefs["app.offprint.block.imageDiff"]["main"] | LexiconDefs["app.offprint.block.webBookmark"]["main"] | LexiconDefs["app.offprint.block.webEmbed"]["main"] | LexiconDefs["app.offprint.block.button"]["main"] | LexiconDefs["app.offprint.block.mathBlock"]["main"] | LexiconDefs["app.offprint.block.blueskyPost"]["main"] | Record<string, any>>;
+    };
+  };
+  "app.offprint.document.article": {
+    "main": {
+      "document": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "app.offprint.page": {
+    "main": {
+      "content": LexiconDefs["app.offprint.content"]["main"];
+      "coverImage"?: any /* blob */;
+      "description"?: string;
+      "path": string;
+      "publication": string;
+      "publishedAt"?: string;
+      "title": string;
+      "updatedAt"?: string;
+    };
+  };
+  "app.offprint.publication": {
+    "main": {
+      "navigation"?: Array<LexiconDefs["app.offprint.publication"]["navItem"]>;
+      "publication": string;
+    };
+    "navItem": {
+      "children"?: Array<LexiconDefs["app.offprint.publication"]["navItem"]>;
+      "external"?: boolean;
+      "href"?: string;
+      "label": string;
+    };
+  };
+  "app.offprint.richtext.facet": {
+    "bold": {
+    };
+    "byteSlice": {
+      "byteEnd": number;
+      "byteStart": number;
+    };
+    "code": {
+    };
+    "highlight": {
+      "color"?: string;
+    };
+    "italic": {
+    };
+    "link": {
+      "uri": string;
+    };
+    "main": {
+      "features": Array<LexiconDefs["app.offprint.richtext.facet"]["bold"] | LexiconDefs["app.offprint.richtext.facet"]["italic"] | LexiconDefs["app.offprint.richtext.facet"]["underline"] | LexiconDefs["app.offprint.richtext.facet"]["strikethrough"] | LexiconDefs["app.offprint.richtext.facet"]["code"] | LexiconDefs["app.offprint.richtext.facet"]["highlight"] | LexiconDefs["app.offprint.richtext.facet"]["link"] | LexiconDefs["app.offprint.richtext.facet"]["mention"] | LexiconDefs["app.offprint.richtext.facet"]["webMention"] | Record<string, any>>;
+      "index": LexiconDefs["app.offprint.richtext.facet"]["byteSlice"];
+    };
+    "mention": {
+      "did": string;
+      "handle"?: string;
+    };
+    "strikethrough": {
+    };
+    "underline": {
+    };
+    "webMention": {
+      "siteName"?: string;
+      "title": string;
+      "uri": string;
+    };
+  };
+  "app.offprint.theme": {
+    "colors": {
+      "accent"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "accentContent"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "base100": LexiconDefs["site.standard.theme.color"]["rgb"];
+      "base200": LexiconDefs["site.standard.theme.color"]["rgb"];
+      "base300": LexiconDefs["site.standard.theme.color"]["rgb"];
+      "baseContent": LexiconDefs["site.standard.theme.color"]["rgb"];
+      "error"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "errorContent"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "info"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "infoContent"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "neutral"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "neutralContent"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "primary": LexiconDefs["site.standard.theme.color"]["rgb"];
+      "primaryContent": LexiconDefs["site.standard.theme.color"]["rgb"];
+      "secondary"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "secondaryContent"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "success"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "successContent"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "warning"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+      "warningContent"?: LexiconDefs["site.standard.theme.color"]["rgb"];
+    };
+    "effects": {
+      "depth"?: boolean;
+      "noise"?: boolean;
+    };
+    "main": {
+      "colorScheme": string;
+      "colors": LexiconDefs["app.offprint.theme"]["colors"];
+      "effects"?: LexiconDefs["app.offprint.theme"]["effects"];
+      "sizing"?: LexiconDefs["app.offprint.theme"]["sizing"];
+      "typography"?: LexiconDefs["app.offprint.theme"]["typography"];
+    };
+    "sizing": {
+      "border"?: string;
+      "radiusBox"?: string;
+      "radiusField"?: string;
+      "radiusSelector"?: string;
+      "sizeField"?: string;
+      "sizeSelector"?: string;
+    };
+    "typography": {
+      "bodyFont"?: string;
+      "headingFont"?: string;
+    };
+  };
+  "blog.pckt.block.blockquote": {
+    "main": {
+      "content": Array<LexiconDefs["blog.pckt.block.text"]["main"] | Record<string, any>>;
+    };
+  };
+  "blog.pckt.block.blueskyEmbed": {
+    "main": {
+      "postRef": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "blog.pckt.block.bulletList": {
+    "main": {
+      "content": Array<LexiconDefs["blog.pckt.block.listItem"]["main"]>;
+    };
+  };
+  "blog.pckt.block.codeBlock": {
+    "main": {
+      "language"?: string;
+      "plaintext": string;
+    };
+  };
+  "blog.pckt.block.gallery": {
+    "main": {
+      "ref": string;
+    };
+  };
+  "blog.pckt.block.hardBreak": {
+    "main": {
+    };
+  };
+  "blog.pckt.block.heading": {
+    "main": {
+      "facets"?: Array<LexiconDefs["blog.pckt.richtext.facet"]["main"]>;
+      "level"?: number;
+      "plaintext": string;
+    };
+  };
+  "blog.pckt.block.horizontalRule": {
+    "main": {
+    };
+  };
+  "blog.pckt.block.iframe": {
+    "main": {
+      "height"?: number;
+      "url": string;
+    };
+  };
+  "blog.pckt.block.image": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+    "imageAttrs": {
+      "align"?: string;
+      "alt"?: string;
+      "aspectRatio"?: LexiconDefs["blog.pckt.block.image"]["aspectRatio"];
+      "blob"?: any /* blob */;
+      "src": string;
+      "title"?: string;
+    };
+    "main": {
+      "attrs": LexiconDefs["blog.pckt.block.image"]["imageAttrs"];
+    };
+  };
+  "blog.pckt.block.listItem": {
+    "main": {
+      "content": Array<LexiconDefs["blog.pckt.block.text"]["main"] | LexiconDefs["blog.pckt.block.bulletList"]["main"] | LexiconDefs["blog.pckt.block.orderedList"]["main"] | Record<string, any>>;
+    };
+  };
+  "blog.pckt.block.mention": {
+    "main": {
+      "did": string;
+      "handle": string;
+    };
+  };
+  "blog.pckt.block.noteEmbed": {
+    "main": {
+      "noteRef": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "blog.pckt.block.orderedList": {
+    "main": {
+      "content": Array<LexiconDefs["blog.pckt.block.listItem"]["main"]>;
+      "start"?: number;
+    };
+  };
+  "blog.pckt.block.table": {
+    "main": {
+      "content": Array<LexiconDefs["blog.pckt.block.tableRow"]["main"]>;
+    };
+  };
+  "blog.pckt.block.tableCell": {
+    "main": {
+      "colspan"?: number;
+      "content": Array<LexiconDefs["blog.pckt.block.text"]["main"] | Record<string, any>>;
+      "rowspan"?: number;
+    };
+  };
+  "blog.pckt.block.tableHeader": {
+    "main": {
+      "colspan"?: number;
+      "content": Array<LexiconDefs["blog.pckt.block.text"]["main"] | Record<string, any>>;
+      "rowspan"?: number;
+    };
+  };
+  "blog.pckt.block.tableRow": {
+    "main": {
+      "content": Array<LexiconDefs["blog.pckt.block.tableCell"]["main"] | LexiconDefs["blog.pckt.block.tableHeader"]["main"] | Record<string, any>>;
+    };
+  };
+  "blog.pckt.block.taskItem": {
+    "main": {
+      "checked": boolean;
+      "content": Array<LexiconDefs["blog.pckt.block.text"]["main"] | Record<string, any>>;
+    };
+  };
+  "blog.pckt.block.taskList": {
+    "main": {
+      "content": Array<LexiconDefs["blog.pckt.block.taskItem"]["main"]>;
+    };
+  };
+  "blog.pckt.block.text": {
+    "main": {
+      "facets"?: Array<LexiconDefs["blog.pckt.richtext.facet"]["main"]>;
+      "plaintext": string;
+    };
+  };
+  "blog.pckt.block.website": {
+    "main": {
+      "description"?: string;
+      "previewImage"?: string;
+      "src": string;
+      "title"?: string;
+    };
+  };
+  "blog.pckt.content": {
+    "main": {
+      "blob"?: any /* blob */;
+      "items"?: Array<never | Record<string, any>>;
+      "references"?: Array<any /* blob */>;
+    };
+  };
+  "blog.pckt.document": {
+    "main": {
+      "document": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "site": string;
+    };
+  };
+  "blog.pckt.domain.getStatus": {
+    "main": never;
+  };
+  "blog.pckt.domain.remove": {
+    "main": never;
+  };
+  "blog.pckt.domain.set": {
+    "main": never;
+  };
+  "blog.pckt.domain.verify": {
+    "main": never;
+  };
+  "blog.pckt.gallery": {
+    "main": {
+      "caption"?: string;
+      "images": Array<LexiconDefs["blog.pckt.block.image"]["imageAttrs"]>;
+      "layout"?: string;
+      "title"?: string;
+    };
+  };
+  "blog.pckt.mini.follow": {
+    "main": {
+      "createdAt": string;
+      "subject": string;
+    };
+  };
+  "blog.pckt.mini.post": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+    "byteSlice": {
+      "byteEnd": number;
+      "byteStart": number;
+    };
+    "external": {
+      "description": string;
+      "thumb"?: any /* blob */;
+      "title": string;
+      "uri": string;
+    };
+    "facet": {
+      "features": Array<LexiconDefs["blog.pckt.mini.post"]["mention"] | LexiconDefs["blog.pckt.mini.post"]["link"] | LexiconDefs["blog.pckt.mini.post"]["tag"] | Record<string, any>>;
+      "index": LexiconDefs["blog.pckt.mini.post"]["byteSlice"];
+    };
+    "image": {
+      "alt": string;
+      "aspectRatio"?: LexiconDefs["blog.pckt.mini.post"]["aspectRatio"];
+      "image": any /* blob */;
+    };
+    "images": {
+      "images": Array<LexiconDefs["blog.pckt.mini.post"]["image"]>;
+    };
+    "link": {
+      "uri": string;
+    };
+    "main": {
+      "createdAt": string;
+      "embed"?: LexiconDefs["blog.pckt.mini.post"]["images"] | LexiconDefs["blog.pckt.mini.post"]["external"] | LexiconDefs["blog.pckt.mini.post"]["record"] | LexiconDefs["blog.pckt.mini.post"]["recordWithMedia"] | Record<string, any>;
+      "facets"?: Array<LexiconDefs["blog.pckt.mini.post"]["facet"]>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "langs"?: Array<string>;
+      "publication"?: string;
+      "reply"?: LexiconDefs["blog.pckt.mini.post"]["replyRef"];
+      "subject"?: string;
+      "tags"?: Array<string>;
+      "text": string;
+    };
+    "mention": {
+      "did": string;
+    };
+    "record": {
+      "record": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+    "recordWithMedia": {
+      "media": LexiconDefs["blog.pckt.mini.post"]["images"] | LexiconDefs["blog.pckt.mini.post"]["external"] | Record<string, any>;
+      "record": LexiconDefs["blog.pckt.mini.post"]["record"];
+    };
+    "replyRef": {
+      "parent": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "root": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+    "tag": {
+      "tag": string;
+    };
+  };
+  "blog.pckt.mini.repost": {
+    "main": {
+      "createdAt": string;
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "blog.pckt.publication": {
+    "main": {
+      "publication": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "blog.pckt.richtext.facet": {
+    "atMention": {
+      "atURI": string;
+    };
+    "bold": {
+    };
+    "byteSlice": {
+      "byteEnd": number;
+      "byteStart": number;
+    };
+    "code": {
+    };
+    "didMention": {
+      "did": string;
+    };
+    "highlight": {
+    };
+    "id": {
+      "id"?: string;
+    };
+    "italic": {
+    };
+    "link": {
+      "uri": string;
+    };
+    "main": {
+      "features": Array<LexiconDefs["blog.pckt.richtext.facet"]["link"] | LexiconDefs["blog.pckt.richtext.facet"]["didMention"] | LexiconDefs["blog.pckt.richtext.facet"]["atMention"] | LexiconDefs["blog.pckt.richtext.facet"]["code"] | LexiconDefs["blog.pckt.richtext.facet"]["highlight"] | LexiconDefs["blog.pckt.richtext.facet"]["underline"] | LexiconDefs["blog.pckt.richtext.facet"]["strikethrough"] | LexiconDefs["blog.pckt.richtext.facet"]["id"] | LexiconDefs["blog.pckt.richtext.facet"]["bold"] | LexiconDefs["blog.pckt.richtext.facet"]["italic"] | Record<string, any>>;
+      "index": LexiconDefs["blog.pckt.richtext.facet"]["byteSlice"];
+    };
+    "strikethrough": {
+    };
+    "underline": {
+    };
+  };
+  "blog.pckt.theme": {
+    "main": {
+      "backgroundTileSize"?: number;
+      "corners"?: string;
+      "dark": LexiconDefs["blog.pckt.theme"]["palette"];
+      "font"?: string;
+      "highlightColor"?: string;
+      "highlightShape"?: string;
+      "light": LexiconDefs["blog.pckt.theme"]["palette"];
+      "tileBackground"?: boolean;
+      "transparency"?: number;
+    };
+    "palette": {
+      "accent": string;
+      "background": string;
+      "link": string;
+      "surfaceHover": string;
+      "text": string;
+    };
+  };
   "blue.linkat.board": {
     "card": {
       "text"?: string;
@@ -2948,6 +3538,401 @@ export interface LexiconDefs {
   "place.stream.server.updateWebhook": {
     "main": never;
   };
+  "pub.leaflet.blocks.blockquote": {
+    "main": {
+      "facets"?: Array<LexiconDefs["pub.leaflet.richtext.facet"]["main"]>;
+      "plaintext": string;
+    };
+  };
+  "pub.leaflet.blocks.bskyPost": {
+    "main": {
+      "clientHost"?: string;
+      "postRef": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "pub.leaflet.blocks.button": {
+    "main": {
+      "text": string;
+      "url": string;
+    };
+  };
+  "pub.leaflet.blocks.code": {
+    "main": {
+      "language"?: string;
+      "plaintext": string;
+      "syntaxHighlightingTheme"?: string;
+    };
+  };
+  "pub.leaflet.blocks.header": {
+    "main": {
+      "facets"?: Array<LexiconDefs["pub.leaflet.richtext.facet"]["main"]>;
+      "level"?: number;
+      "plaintext": string;
+    };
+  };
+  "pub.leaflet.blocks.horizontalRule": {
+    "main": {
+    };
+  };
+  "pub.leaflet.blocks.html": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+    "main": {
+      "aspectRatio"?: LexiconDefs["pub.leaflet.blocks.html"]["aspectRatio"];
+      "height"?: number;
+      "html": string;
+    };
+  };
+  "pub.leaflet.blocks.iframe": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+    "main": {
+      "aspectRatio"?: LexiconDefs["pub.leaflet.blocks.iframe"]["aspectRatio"];
+      "height"?: number;
+      "html"?: string;
+      "url"?: string;
+    };
+  };
+  "pub.leaflet.blocks.image": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+    "main": {
+      "alt"?: string;
+      "aspectRatio": LexiconDefs["pub.leaflet.blocks.image"]["aspectRatio"];
+      "fullBleed"?: boolean;
+      "image": any /* blob */;
+      "width"?: number;
+    };
+  };
+  "pub.leaflet.blocks.imageGallery": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+    "image": {
+      "alt"?: string;
+      "aspectRatio": LexiconDefs["pub.leaflet.blocks.imageGallery"]["aspectRatio"];
+      "image": any /* blob */;
+    };
+    "main": {
+      "format"?: string;
+      "gap"?: number;
+      "images": Array<LexiconDefs["pub.leaflet.blocks.imageGallery"]["image"]>;
+      "maxWidth"?: number;
+    };
+  };
+  "pub.leaflet.blocks.math": {
+    "main": {
+      "tex": string;
+    };
+  };
+  "pub.leaflet.blocks.membersOnlyDelimiter": {
+    "main": {
+    };
+  };
+  "pub.leaflet.blocks.orderedList": {
+    "listItem": {
+      "checked"?: boolean;
+      "children"?: Array<LexiconDefs["pub.leaflet.blocks.orderedList"]["listItem"]>;
+      "content": LexiconDefs["pub.leaflet.blocks.text"]["main"] | LexiconDefs["pub.leaflet.blocks.header"]["main"] | LexiconDefs["pub.leaflet.blocks.image"]["main"] | Record<string, any>;
+      "unorderedListChildren"?: LexiconDefs["pub.leaflet.blocks.unorderedList"]["main"];
+    };
+    "main": {
+      "children": Array<LexiconDefs["pub.leaflet.blocks.orderedList"]["listItem"]>;
+      "startIndex"?: number;
+    };
+  };
+  "pub.leaflet.blocks.page": {
+    "main": {
+      "id": string;
+    };
+  };
+  "pub.leaflet.blocks.poll": {
+    "main": {
+      "pollRef": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "pub.leaflet.blocks.postsList": {
+    "main": {
+      "filterByTags"?: Array<string>;
+      "highlightFirstPost"?: boolean;
+      "limit"?: number;
+      "view"?: string;
+    };
+  };
+  "pub.leaflet.blocks.signup": {
+    "main": {
+    };
+  };
+  "pub.leaflet.blocks.standardSitePost": {
+    "main": {
+      "cid"?: string;
+      "showPublicationTheme"?: boolean;
+      "size"?: string;
+      "uri": string;
+    };
+  };
+  "pub.leaflet.blocks.standardSitePublication": {
+    "main": {
+      "cid"?: string;
+      "showPublicationTheme"?: boolean;
+      "uri": string;
+    };
+  };
+  "pub.leaflet.blocks.text": {
+    "main": {
+      "facets"?: Array<LexiconDefs["pub.leaflet.richtext.facet"]["main"]>;
+      "plaintext": string;
+      "textSize"?: string;
+    };
+  };
+  "pub.leaflet.blocks.unorderedList": {
+    "listItem": {
+      "checked"?: boolean;
+      "children"?: Array<LexiconDefs["pub.leaflet.blocks.unorderedList"]["listItem"]>;
+      "content": LexiconDefs["pub.leaflet.blocks.text"]["main"] | LexiconDefs["pub.leaflet.blocks.header"]["main"] | LexiconDefs["pub.leaflet.blocks.image"]["main"] | Record<string, any>;
+      "orderedListChildren"?: LexiconDefs["pub.leaflet.blocks.orderedList"]["main"];
+    };
+    "main": {
+      "children": Array<LexiconDefs["pub.leaflet.blocks.unorderedList"]["listItem"]>;
+    };
+  };
+  "pub.leaflet.blocks.website": {
+    "main": {
+      "description"?: string;
+      "previewImage"?: any /* blob */;
+      "src": string;
+      "title"?: string;
+    };
+  };
+  "pub.leaflet.comment": {
+    "linearDocumentQuote": {
+      "document": string;
+      "quote": LexiconDefs["pub.leaflet.pages.linearDocument"]["quote"];
+    };
+    "main": {
+      "attachment"?: LexiconDefs["pub.leaflet.comment"]["linearDocumentQuote"] | Record<string, any>;
+      "createdAt": string;
+      "facets"?: Array<LexiconDefs["pub.leaflet.richtext.facet"]["main"]>;
+      "onPage"?: string;
+      "plaintext": string;
+      "reply"?: LexiconDefs["pub.leaflet.comment"]["replyRef"];
+      "subject": string;
+    };
+    "replyRef": {
+      "parent": string;
+    };
+  };
+  "pub.leaflet.content": {
+    "main": {
+      "blobPages"?: any /* blob */;
+      "blobs"?: Array<any /* blob */>;
+      "pages": Array<LexiconDefs["pub.leaflet.pages.linearDocument"]["main"] | LexiconDefs["pub.leaflet.pages.canvas"]["main"] | Record<string, any>>;
+    };
+  };
+  "pub.leaflet.document": {
+    "main": {
+      "author": string;
+      "coverImage"?: any /* blob */;
+      "description"?: string;
+      "pages": Array<LexiconDefs["pub.leaflet.pages.linearDocument"]["main"] | LexiconDefs["pub.leaflet.pages.canvas"]["main"] | Record<string, any>>;
+      "postRef"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "preferences"?: LexiconDefs["pub.leaflet.publication"]["preferences"];
+      "publication"?: string;
+      "publishedAt"?: string;
+      "tags"?: Array<string>;
+      "theme"?: LexiconDefs["pub.leaflet.publication"]["theme"];
+      "title": string;
+    };
+  };
+  "pub.leaflet.graph.subscription": {
+    "main": {
+      "publication": string;
+    };
+  };
+  "pub.leaflet.interactions.recommend": {
+    "main": {
+      "createdAt": string;
+      "subject": string;
+    };
+  };
+  "pub.leaflet.pages.canvas": {
+    "block": {
+      "block": LexiconDefs["pub.leaflet.blocks.iframe"]["main"] | LexiconDefs["pub.leaflet.blocks.html"]["main"] | LexiconDefs["pub.leaflet.blocks.text"]["main"] | LexiconDefs["pub.leaflet.blocks.blockquote"]["main"] | LexiconDefs["pub.leaflet.blocks.header"]["main"] | LexiconDefs["pub.leaflet.blocks.image"]["main"] | LexiconDefs["pub.leaflet.blocks.imageGallery"]["main"] | LexiconDefs["pub.leaflet.blocks.unorderedList"]["main"] | LexiconDefs["pub.leaflet.blocks.orderedList"]["main"] | LexiconDefs["pub.leaflet.blocks.website"]["main"] | LexiconDefs["pub.leaflet.blocks.math"]["main"] | LexiconDefs["pub.leaflet.blocks.code"]["main"] | LexiconDefs["pub.leaflet.blocks.horizontalRule"]["main"] | LexiconDefs["pub.leaflet.blocks.bskyPost"]["main"] | LexiconDefs["pub.leaflet.blocks.standardSitePost"]["main"] | LexiconDefs["pub.leaflet.blocks.standardSitePublication"]["main"] | LexiconDefs["pub.leaflet.blocks.page"]["main"] | LexiconDefs["pub.leaflet.blocks.poll"]["main"] | LexiconDefs["pub.leaflet.blocks.button"]["main"] | LexiconDefs["pub.leaflet.blocks.postsList"]["main"] | LexiconDefs["pub.leaflet.blocks.signup"]["main"] | LexiconDefs["pub.leaflet.blocks.membersOnlyDelimiter"]["main"] | Record<string, any>;
+      "height"?: number;
+      "rotation"?: number;
+      "width": number;
+      "x": number;
+      "y": number;
+    };
+    "main": {
+      "blocks": Array<LexiconDefs["pub.leaflet.pages.canvas"]["block"]>;
+      "id"?: string;
+    };
+    "position": {
+      "block": Array<number>;
+      "offset": number;
+    };
+    "quote": {
+      "end": LexiconDefs["pub.leaflet.pages.canvas"]["position"];
+      "start": LexiconDefs["pub.leaflet.pages.canvas"]["position"];
+    };
+    "textAlignCenter": string;
+    "textAlignLeft": string;
+    "textAlignRight": string;
+  };
+  "pub.leaflet.pages.linearDocument": {
+    "block": {
+      "alignment"?: string;
+      "block": LexiconDefs["pub.leaflet.blocks.iframe"]["main"] | LexiconDefs["pub.leaflet.blocks.html"]["main"] | LexiconDefs["pub.leaflet.blocks.text"]["main"] | LexiconDefs["pub.leaflet.blocks.blockquote"]["main"] | LexiconDefs["pub.leaflet.blocks.header"]["main"] | LexiconDefs["pub.leaflet.blocks.image"]["main"] | LexiconDefs["pub.leaflet.blocks.imageGallery"]["main"] | LexiconDefs["pub.leaflet.blocks.unorderedList"]["main"] | LexiconDefs["pub.leaflet.blocks.orderedList"]["main"] | LexiconDefs["pub.leaflet.blocks.website"]["main"] | LexiconDefs["pub.leaflet.blocks.math"]["main"] | LexiconDefs["pub.leaflet.blocks.code"]["main"] | LexiconDefs["pub.leaflet.blocks.horizontalRule"]["main"] | LexiconDefs["pub.leaflet.blocks.bskyPost"]["main"] | LexiconDefs["pub.leaflet.blocks.standardSitePost"]["main"] | LexiconDefs["pub.leaflet.blocks.standardSitePublication"]["main"] | LexiconDefs["pub.leaflet.blocks.page"]["main"] | LexiconDefs["pub.leaflet.blocks.poll"]["main"] | LexiconDefs["pub.leaflet.blocks.button"]["main"] | LexiconDefs["pub.leaflet.blocks.postsList"]["main"] | LexiconDefs["pub.leaflet.blocks.signup"]["main"] | LexiconDefs["pub.leaflet.blocks.membersOnlyDelimiter"]["main"] | Record<string, any>;
+    };
+    "main": {
+      "blocks": Array<LexiconDefs["pub.leaflet.pages.linearDocument"]["block"]>;
+      "id"?: string;
+    };
+    "position": {
+      "block": Array<number>;
+      "offset": number;
+    };
+    "quote": {
+      "end": LexiconDefs["pub.leaflet.pages.linearDocument"]["position"];
+      "start": LexiconDefs["pub.leaflet.pages.linearDocument"]["position"];
+    };
+    "textAlignCenter": string;
+    "textAlignJustify": string;
+    "textAlignLeft": string;
+    "textAlignRight": string;
+  };
+  "pub.leaflet.poll.definition": {
+    "main": {
+      "endDate"?: string;
+      "name": string;
+      "options": Array<LexiconDefs["pub.leaflet.poll.definition"]["option"]>;
+    };
+    "option": {
+      "text"?: string;
+    };
+  };
+  "pub.leaflet.poll.vote": {
+    "main": {
+      "option": Array<string>;
+      "poll": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "pub.leaflet.publication": {
+    "main": {
+      "base_path"?: string;
+      "description"?: string;
+      "icon"?: any /* blob */;
+      "name": string;
+      "preferences"?: LexiconDefs["pub.leaflet.publication"]["preferences"];
+      "theme"?: LexiconDefs["pub.leaflet.publication"]["theme"];
+    };
+    "preferences": {
+      "prevNextDirection"?: string;
+      "showComments"?: boolean;
+      "showFirstLast"?: boolean;
+      "showInDiscover"?: boolean;
+      "showMentions"?: boolean;
+      "showPrevNext"?: boolean;
+      "showRecommends"?: boolean;
+    };
+    "theme": {
+      "accentBackground"?: LexiconDefs["pub.leaflet.theme.color"]["rgba"] | LexiconDefs["pub.leaflet.theme.color"]["rgb"] | Record<string, any>;
+      "accentText"?: LexiconDefs["pub.leaflet.theme.color"]["rgba"] | LexiconDefs["pub.leaflet.theme.color"]["rgb"] | Record<string, any>;
+      "backgroundColor"?: LexiconDefs["pub.leaflet.theme.color"]["rgba"] | LexiconDefs["pub.leaflet.theme.color"]["rgb"] | Record<string, any>;
+      "backgroundImage"?: LexiconDefs["pub.leaflet.theme.backgroundImage"]["main"];
+      "bodyFont"?: string;
+      "headingFont"?: string;
+      "pageBackground"?: LexiconDefs["pub.leaflet.theme.color"]["rgba"] | LexiconDefs["pub.leaflet.theme.color"]["rgb"] | Record<string, any>;
+      "pageWidth"?: number;
+      "primary"?: LexiconDefs["pub.leaflet.theme.color"]["rgba"] | LexiconDefs["pub.leaflet.theme.color"]["rgb"] | Record<string, any>;
+      "showPageBackground"?: boolean;
+      "wordmark"?: LexiconDefs["pub.leaflet.theme.wordmark"]["main"];
+    };
+  };
+  "pub.leaflet.publicationPage": {
+    "main": {
+      "content": LexiconDefs["pub.leaflet.content"]["main"];
+      "path": string;
+      "publication": string;
+      "publishedAt"?: string;
+      "title"?: string;
+    };
+  };
+  "pub.leaflet.richtext.facet": {
+    "atMention": {
+      "atURI": string;
+      "href"?: string;
+    };
+    "bold": {
+    };
+    "byteSlice": {
+      "byteEnd": number;
+      "byteStart": number;
+    };
+    "code": {
+    };
+    "didMention": {
+      "did": string;
+    };
+    "footnote": {
+      "contentFacets"?: Array<LexiconDefs["pub.leaflet.richtext.facet"]["main"]>;
+      "contentPlaintext": string;
+      "footnoteId": string;
+    };
+    "highlight": {
+      "color"?: LexiconDefs["pub.leaflet.theme.color"]["rgba"] | LexiconDefs["pub.leaflet.theme.color"]["rgb"] | Record<string, any>;
+    };
+    "id": {
+      "id"?: string;
+    };
+    "italic": {
+    };
+    "link": {
+      "uri": string;
+    };
+    "main": {
+      "features": Array<LexiconDefs["pub.leaflet.richtext.facet"]["link"] | LexiconDefs["pub.leaflet.richtext.facet"]["didMention"] | LexiconDefs["pub.leaflet.richtext.facet"]["atMention"] | LexiconDefs["pub.leaflet.richtext.facet"]["code"] | LexiconDefs["pub.leaflet.richtext.facet"]["highlight"] | LexiconDefs["pub.leaflet.richtext.facet"]["underline"] | LexiconDefs["pub.leaflet.richtext.facet"]["strikethrough"] | LexiconDefs["pub.leaflet.richtext.facet"]["id"] | LexiconDefs["pub.leaflet.richtext.facet"]["bold"] | LexiconDefs["pub.leaflet.richtext.facet"]["italic"] | LexiconDefs["pub.leaflet.richtext.facet"]["footnote"] | Record<string, any>>;
+      "index": LexiconDefs["pub.leaflet.richtext.facet"]["byteSlice"];
+    };
+    "strikethrough": {
+    };
+    "underline": {
+    };
+  };
+  "pub.leaflet.theme.backgroundImage": {
+    "main": {
+      "image": any /* blob */;
+      "repeat"?: boolean;
+      "width"?: number;
+    };
+  };
+  "pub.leaflet.theme.color": {
+    "rgb": {
+      "b": number;
+      "g": number;
+      "r": number;
+    };
+    "rgba": {
+      "a": number;
+      "b": number;
+      "g": number;
+      "r": number;
+    };
+  };
+  "pub.leaflet.theme.wordmark": {
+    "main": {
+      "image": any /* blob */;
+      "width"?: number;
+    };
+  };
   "sh.tangled.actor.profile": {
     "main": {
       "bluesky": boolean;
@@ -2962,6 +3947,76 @@ export interface LexiconDefs {
     "main": {
       "createdAt": string;
       "subject": string;
+    };
+  };
+  "site.standard.document": {
+    "contributor": {
+      "did": string;
+      "displayName"?: string;
+      "role"?: string;
+    };
+    "main": {
+      "bskyPostRef"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "content"?: never | Record<string, any>;
+      "contributors"?: Array<LexiconDefs["site.standard.document"]["contributor"]>;
+      "coverImage"?: any /* blob */;
+      "description"?: string;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "links"?: never | Record<string, any>;
+      "path"?: string;
+      "publishedAt": string;
+      "site": string;
+      "tags"?: Array<string>;
+      "textContent"?: string;
+      "title": string;
+      "updatedAt"?: string;
+    };
+  };
+  "site.standard.graph.recommend": {
+    "main": {
+      "createdAt": string;
+      "document": string;
+    };
+  };
+  "site.standard.graph.subscription": {
+    "main": {
+      "createdAt"?: string;
+      "publication": string;
+    };
+  };
+  "site.standard.publication": {
+    "main": {
+      "basicTheme"?: LexiconDefs["site.standard.theme.basic"]["main"];
+      "description"?: string;
+      "icon"?: any /* blob */;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "name": string;
+      "preferences"?: LexiconDefs["site.standard.publication"]["preferences"];
+      "url": string;
+    };
+    "preferences": {
+      "showInDiscover"?: boolean;
+    };
+  };
+  "site.standard.theme.basic": {
+    "main": {
+      "accent": LexiconDefs["site.standard.theme.color"]["rgb"] | Record<string, any>;
+      "accentForeground": LexiconDefs["site.standard.theme.color"]["rgb"] | Record<string, any>;
+      "background": LexiconDefs["site.standard.theme.color"]["rgb"] | Record<string, any>;
+      "foreground": LexiconDefs["site.standard.theme.color"]["rgb"] | Record<string, any>;
+    };
+  };
+  "site.standard.theme.color": {
+    "rgb": {
+      "b": number;
+      "g": number;
+      "r": number;
+    };
+    "rgba": {
+      "a": number;
+      "b": number;
+      "g": number;
+      "r": number;
     };
   };
   "social.grain.actor.defs": {
@@ -5543,6 +6598,95 @@ export interface Lexicons {
     output: {
       "jobStatus": LexiconDefs["app.bsky.video.defs"]["jobStatus"];
     };
+  };
+  "app.offprint.actor.profile": {
+    type: "record";
+    record: LexiconDefs["app.offprint.actor.profile"]["main"];
+  };
+  "app.offprint.component": {
+    type: "record";
+    record: LexiconDefs["app.offprint.component"]["main"];
+  };
+  "app.offprint.document.article": {
+    type: "record";
+    record: LexiconDefs["app.offprint.document.article"]["main"];
+  };
+  "app.offprint.page": {
+    type: "record";
+    record: LexiconDefs["app.offprint.page"]["main"];
+  };
+  "app.offprint.publication": {
+    type: "record";
+    record: LexiconDefs["app.offprint.publication"]["main"];
+  };
+  "blog.pckt.document": {
+    type: "record";
+    record: LexiconDefs["blog.pckt.document"]["main"];
+  };
+  "blog.pckt.domain.getStatus": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "blog": string;
+    };
+    input: never;
+    output: {
+      "sslStatus"?: string;
+      "status"?: string;
+    };
+  };
+  "blog.pckt.domain.remove": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: {
+      "message": string;
+    };
+  };
+  "blog.pckt.domain.set": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "domain": string;
+    };
+    output: {
+      "cfHostnameVerificationToken"?: string;
+      "domain": string;
+      "verificationToken"?: string;
+      "verified": boolean;
+    };
+  };
+  "blog.pckt.domain.verify": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: never;
+    output: {
+      "message": string;
+      "verified": boolean;
+    };
+  };
+  "blog.pckt.gallery": {
+    type: "record";
+    record: LexiconDefs["blog.pckt.gallery"]["main"];
+  };
+  "blog.pckt.mini.follow": {
+    type: "record";
+    record: LexiconDefs["blog.pckt.mini.follow"]["main"];
+  };
+  "blog.pckt.mini.post": {
+    type: "record";
+    record: LexiconDefs["blog.pckt.mini.post"]["main"];
+  };
+  "blog.pckt.mini.repost": {
+    type: "record";
+    record: LexiconDefs["blog.pckt.mini.repost"]["main"];
+  };
+  "blog.pckt.publication": {
+    type: "record";
+    record: LexiconDefs["blog.pckt.publication"]["main"];
   };
   "blue.linkat.board": {
     type: "record";
@@ -8331,6 +9475,38 @@ export interface Lexicons {
       "webhook": LexiconDefs["place.stream.server.defs"]["webhook"];
     };
   };
+  "pub.leaflet.comment": {
+    type: "record";
+    record: LexiconDefs["pub.leaflet.comment"]["main"];
+  };
+  "pub.leaflet.document": {
+    type: "record";
+    record: LexiconDefs["pub.leaflet.document"]["main"];
+  };
+  "pub.leaflet.graph.subscription": {
+    type: "record";
+    record: LexiconDefs["pub.leaflet.graph.subscription"]["main"];
+  };
+  "pub.leaflet.interactions.recommend": {
+    type: "record";
+    record: LexiconDefs["pub.leaflet.interactions.recommend"]["main"];
+  };
+  "pub.leaflet.poll.definition": {
+    type: "record";
+    record: LexiconDefs["pub.leaflet.poll.definition"]["main"];
+  };
+  "pub.leaflet.poll.vote": {
+    type: "record";
+    record: LexiconDefs["pub.leaflet.poll.vote"]["main"];
+  };
+  "pub.leaflet.publication": {
+    type: "record";
+    record: LexiconDefs["pub.leaflet.publication"]["main"];
+  };
+  "pub.leaflet.publicationPage": {
+    type: "record";
+    record: LexiconDefs["pub.leaflet.publicationPage"]["main"];
+  };
   "sh.tangled.actor.profile": {
     type: "record";
     record: LexiconDefs["sh.tangled.actor.profile"]["main"];
@@ -8338,6 +9514,26 @@ export interface Lexicons {
   "sh.tangled.graph.follow": {
     type: "record";
     record: LexiconDefs["sh.tangled.graph.follow"]["main"];
+  };
+  "site.standard.document": {
+    type: "record";
+    record: LexiconDefs["site.standard.document"]["main"];
+  };
+  "site.standard.graph.recommend": {
+    type: "record";
+    record: LexiconDefs["site.standard.graph.recommend"]["main"];
+  };
+  "site.standard.graph.subscription": {
+    type: "record";
+    record: LexiconDefs["site.standard.graph.subscription"]["main"];
+  };
+  "site.standard.publication": {
+    type: "record";
+    record: LexiconDefs["site.standard.publication"]["main"];
+  };
+  "site.standard.theme.basic": {
+    type: "record";
+    record: LexiconDefs["site.standard.theme.basic"]["main"];
   };
   "social.grain.actor.getActorFavs": {
     type: "query";
@@ -9606,6 +10802,68 @@ export const LEXICON_DEFINITION_KINDS = {
   "app.bsky.video.getJobStatus": "query",
   "app.bsky.video.getUploadLimits": "query",
   "app.bsky.video.uploadVideo": "procedure",
+  "app.offprint.actor.profile": "record",
+  "app.offprint.block.blockquote": "other",
+  "app.offprint.block.blueskyPost": "other",
+  "app.offprint.block.bulletList": "other",
+  "app.offprint.block.button": "other",
+  "app.offprint.block.callout": "other",
+  "app.offprint.block.codeBlock": "other",
+  "app.offprint.block.component": "other",
+  "app.offprint.block.heading": "other",
+  "app.offprint.block.horizontalRule": "other",
+  "app.offprint.block.image": "other",
+  "app.offprint.block.imageCarousel": "other",
+  "app.offprint.block.imageDiff": "other",
+  "app.offprint.block.imageGrid": "other",
+  "app.offprint.block.mathBlock": "other",
+  "app.offprint.block.orderedList": "other",
+  "app.offprint.block.taskList": "other",
+  "app.offprint.block.text": "other",
+  "app.offprint.block.webBookmark": "other",
+  "app.offprint.block.webEmbed": "other",
+  "app.offprint.component": "record",
+  "app.offprint.content": "other",
+  "app.offprint.document.article": "record",
+  "app.offprint.page": "record",
+  "app.offprint.publication": "record",
+  "app.offprint.richtext.facet": "other",
+  "app.offprint.theme": "other",
+  "blog.pckt.block.blockquote": "other",
+  "blog.pckt.block.blueskyEmbed": "other",
+  "blog.pckt.block.bulletList": "other",
+  "blog.pckt.block.codeBlock": "other",
+  "blog.pckt.block.gallery": "other",
+  "blog.pckt.block.hardBreak": "other",
+  "blog.pckt.block.heading": "other",
+  "blog.pckt.block.horizontalRule": "other",
+  "blog.pckt.block.iframe": "other",
+  "blog.pckt.block.image": "other",
+  "blog.pckt.block.listItem": "other",
+  "blog.pckt.block.mention": "other",
+  "blog.pckt.block.noteEmbed": "other",
+  "blog.pckt.block.orderedList": "other",
+  "blog.pckt.block.table": "other",
+  "blog.pckt.block.tableCell": "other",
+  "blog.pckt.block.tableHeader": "other",
+  "blog.pckt.block.tableRow": "other",
+  "blog.pckt.block.taskItem": "other",
+  "blog.pckt.block.taskList": "other",
+  "blog.pckt.block.text": "other",
+  "blog.pckt.block.website": "other",
+  "blog.pckt.content": "other",
+  "blog.pckt.document": "record",
+  "blog.pckt.domain.getStatus": "query",
+  "blog.pckt.domain.remove": "procedure",
+  "blog.pckt.domain.set": "procedure",
+  "blog.pckt.domain.verify": "procedure",
+  "blog.pckt.gallery": "record",
+  "blog.pckt.mini.follow": "record",
+  "blog.pckt.mini.post": "record",
+  "blog.pckt.mini.repost": "record",
+  "blog.pckt.publication": "record",
+  "blog.pckt.richtext.facet": "other",
+  "blog.pckt.theme": "other",
   "blue.linkat.board": "record",
   "chat.bsky.actor.declaration": "record",
   "chat.bsky.actor.defs": "other",
@@ -9888,8 +11146,51 @@ export const LEXICON_DEFINITION_KINDS = {
   "place.stream.server.listWebhooks": "query",
   "place.stream.server.settings": "record",
   "place.stream.server.updateWebhook": "procedure",
+  "pub.leaflet.blocks.blockquote": "other",
+  "pub.leaflet.blocks.bskyPost": "other",
+  "pub.leaflet.blocks.button": "other",
+  "pub.leaflet.blocks.code": "other",
+  "pub.leaflet.blocks.header": "other",
+  "pub.leaflet.blocks.horizontalRule": "other",
+  "pub.leaflet.blocks.html": "other",
+  "pub.leaflet.blocks.iframe": "other",
+  "pub.leaflet.blocks.image": "other",
+  "pub.leaflet.blocks.imageGallery": "other",
+  "pub.leaflet.blocks.math": "other",
+  "pub.leaflet.blocks.membersOnlyDelimiter": "other",
+  "pub.leaflet.blocks.orderedList": "other",
+  "pub.leaflet.blocks.page": "other",
+  "pub.leaflet.blocks.poll": "other",
+  "pub.leaflet.blocks.postsList": "other",
+  "pub.leaflet.blocks.signup": "other",
+  "pub.leaflet.blocks.standardSitePost": "other",
+  "pub.leaflet.blocks.standardSitePublication": "other",
+  "pub.leaflet.blocks.text": "other",
+  "pub.leaflet.blocks.unorderedList": "other",
+  "pub.leaflet.blocks.website": "other",
+  "pub.leaflet.comment": "record",
+  "pub.leaflet.content": "other",
+  "pub.leaflet.document": "record",
+  "pub.leaflet.graph.subscription": "record",
+  "pub.leaflet.interactions.recommend": "record",
+  "pub.leaflet.pages.canvas": "other",
+  "pub.leaflet.pages.linearDocument": "other",
+  "pub.leaflet.poll.definition": "record",
+  "pub.leaflet.poll.vote": "record",
+  "pub.leaflet.publication": "record",
+  "pub.leaflet.publicationPage": "record",
+  "pub.leaflet.richtext.facet": "other",
+  "pub.leaflet.theme.backgroundImage": "other",
+  "pub.leaflet.theme.color": "other",
+  "pub.leaflet.theme.wordmark": "other",
   "sh.tangled.actor.profile": "record",
   "sh.tangled.graph.follow": "record",
+  "site.standard.document": "record",
+  "site.standard.graph.recommend": "record",
+  "site.standard.graph.subscription": "record",
+  "site.standard.publication": "record",
+  "site.standard.theme.basic": "record",
+  "site.standard.theme.color": "other",
   "social.grain.actor.defs": "other",
   "social.grain.actor.getActorFavs": "query",
   "social.grain.actor.getProfile": "query",
@@ -10115,6 +11416,10 @@ export const LEXICON_METHOD_TYPES = {
   "app.bsky.video.getJobStatus": "query",
   "app.bsky.video.getUploadLimits": "query",
   "app.bsky.video.uploadVideo": "procedure",
+  "blog.pckt.domain.getStatus": "query",
+  "blog.pckt.domain.remove": "procedure",
+  "blog.pckt.domain.set": "procedure",
+  "blog.pckt.domain.verify": "procedure",
   "chat.bsky.actor.deleteAccount": "procedure",
   "chat.bsky.actor.exportAccountData": "query",
   "chat.bsky.convo.acceptConvo": "procedure",
@@ -10452,6 +11757,9 @@ export const LEXICON_METHOD_INPUT_ENCODINGS = {
   "app.bsky.unspecced.confirmAgeAssurance": "application/json",
   "app.bsky.unspecced.initAgeAssurance": "application/json",
   "app.bsky.video.uploadVideo": "video/mp4",
+  "blog.pckt.domain.remove": "application/json",
+  "blog.pckt.domain.set": "application/json",
+  "blog.pckt.domain.verify": "application/json",
   "chat.bsky.actor.deleteAccount": "application/json",
   "chat.bsky.convo.acceptConvo": "application/json",
   "chat.bsky.convo.addReaction": "application/json",
@@ -10733,6 +12041,10 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "app.bsky.video.getJobStatus": "application/json",
   "app.bsky.video.getUploadLimits": "application/json",
   "app.bsky.video.uploadVideo": "application/json",
+  "blog.pckt.domain.getStatus": "application/json",
+  "blog.pckt.domain.remove": "application/json",
+  "blog.pckt.domain.set": "application/json",
+  "blog.pckt.domain.verify": "application/json",
   "chat.bsky.actor.deleteAccount": "application/json",
   "chat.bsky.actor.exportAccountData": "application/jsonl",
   "chat.bsky.convo.acceptConvo": "application/json",
@@ -11220,6 +12532,16 @@ export interface GeneratedClient {
         "getJobStatus"(params?: QueryParams<"app.bsky.video.getJobStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.video.getJobStatus">>;
         "getUploadLimits"(params?: QueryParams<"app.bsky.video.getUploadLimits">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.video.getUploadLimits">>;
         "uploadVideo"(input?: ProcedureInput<"app.bsky.video.uploadVideo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.video.uploadVideo">>;
+      };
+    };
+  };
+  "blog": {
+    "pckt": {
+      "domain": {
+        "getStatus"(params?: QueryParams<"blog.pckt.domain.getStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"blog.pckt.domain.getStatus">>;
+        "remove"(input?: ProcedureInput<"blog.pckt.domain.remove">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"blog.pckt.domain.remove">>;
+        "set"(input?: ProcedureInput<"blog.pckt.domain.set">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"blog.pckt.domain.set">>;
+        "verify"(input?: ProcedureInput<"blog.pckt.domain.verify">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"blog.pckt.domain.verify">>;
       };
     };
   };
