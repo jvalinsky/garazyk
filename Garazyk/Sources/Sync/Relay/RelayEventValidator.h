@@ -20,6 +20,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Core/DIDResolving.h"
 #import "Sync/Relay/RelayConfiguration.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -97,7 +98,7 @@ typedef NS_ENUM(NSInteger, RelayValidationResult) {
 /** Current validation mode used to decide forwarding policy. */
 @property (nonatomic, assign, readonly) RelayValidationMode validationMode;
 /** Optional PLC resolver for DID-based signature verification. */
-@property (nonatomic, strong, nullable) id plcResolver;
+@property (nonatomic, strong, nullable) id<DIDResolving> plcResolver;
 
 /**
  * @abstract Creates a validator with the supplied forwarding policy.
