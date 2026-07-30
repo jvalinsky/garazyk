@@ -857,6 +857,7 @@ int main(int argc, char *argv[]) {
       @"AdminAuthModerationTests",
       @"AdminAuthXrpcTests",
       @"AccountLifecycleXrpcTests",
+      @"XRPCAddRouteCrashSafetyTests",
       @"SyncEndpointXrpcTests",
       @"ModerationIdentityXrpcTests",
       @"LexiconResolveXrpcTests",
