@@ -462,6 +462,17 @@ remaining program does not depend on items 1-2.
     link-time boundary gate (M1) before the structural items; it is what makes
     the rest measurable. Items M5 and M6 are gated on the M0 decision   about whether third-party consumption is a goal.
 
+11. **Open (added 2026-07-30):** cut `AllTests` wall clock and related CI /
+    Deno cycle waste. Complete
+    [workstream 09](workstreams/09-test-suite-speedups.md). Measured baseline
+    from CI run `30512753291`: suite **~654s**, ~61% in XRPC auth-base
+    classes, driven by uncached lexicon reloads (~200–250s) and production
+    PBKDF2 in tests (~100–150s). Full critique:
+    [`test-suite-speedups-2026-07-30.md`](test-suite-speedups-2026-07-30.md).
+    Phase 1 (lexicon memoization, test-mode PBKDF2, quieter logs, dead
+    sleeps) is the highest-impact / lowest-risk entry; fixture sharing and
+    sharding follow.
+
 Cross-link (added 2026-07-28): activate two new workstream 01 sub-items
 alongside this entry — **S18** (`OAuthProvider*` adapter-stack deletion,
 security-review §4.5) and **S19** (DAG-CBOR routing migration,
