@@ -19,8 +19,31 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Runtime/GZServiceLifecycle.h"
+#import "Sync/WebSocket/PDSWebSocketTransport.h"
 
 NS_ASSUME_NONNULL_BEGIN
+
+@protocol ATProtoNetworkConnection;
+
+/*!
+ @abstract Wraps a raw network connection as a WebSocket transport, for the
+ export-stream endpoint.
+
+ @discussion PLCServer (PLC) previously constructed PDSWebSocketNetworkAdapter
+ (Sync) directly, an undeclared PLC -> Sync dependency (workstream 08 M4).
+ The concrete construction now happens behind this factory, registered by
+ whichever module links both PLC and Sync into the running process (see
+ PLCWebSocketTransportRegistration.m's `+load`, in ATProtoRuntime) — mirrors
+ the RateLimiterStorageFactory pattern from the Transport -> Storage fix.
+ */
+typedef id<PDSWebSocketTransport> _Nullable (^PLCWebSocketTransportFactory)(id<ATProtoNetworkConnection> connection);
+
+/*!
+ @abstract Registers the factory PLCServer uses to wrap connections for its
+ export-stream endpoint. Call once at process startup. If never registered,
+ handleExportStream: declines to stream rather than crash.
+ */
+FOUNDATION_EXPORT void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory _Nullable factory);
 
 /*!
  @class PLCServer
