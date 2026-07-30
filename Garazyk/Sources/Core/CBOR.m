@@ -292,11 +292,16 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
         [data appendBytes:&major length:1];
         uint16_t be = OSSwapHostToBigInt16((uint16_t)count);
         [data appendBytes:&be length:2];
-    } else {
+    } else if (count < 4294967296ULL) {
         major |= 26;
         [data appendBytes:&major length:1];
         uint32_t be = OSSwapHostToBigInt32((uint32_t)count);
         [data appendBytes:&be length:4];
+    } else {
+        major |= 27;
+        [data appendBytes:&major length:1];
+        uint64_t be = OSSwapHostToBigInt64((uint64_t)count);
+        [data appendBytes:&be length:8];
     }
 }
 

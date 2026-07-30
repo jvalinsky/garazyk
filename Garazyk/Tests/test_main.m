@@ -1132,6 +1132,7 @@ int main(int argc, char *argv[]) {
       @"CIDTests",
       @"TIDTests",
       @"CBORSerializationTests",
+      @"CBOREncoderCountWidthTests",
       @"ATProtoValidatorTests",
       @"ATProtoBase32Tests",
       @"ATProtoCoreTests",
