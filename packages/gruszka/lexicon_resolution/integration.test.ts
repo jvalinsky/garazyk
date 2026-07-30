@@ -5,9 +5,8 @@
  * {@link HttpRecordFetcher} adapters to resolve a known-good AT Protocol
  * lexicon through the DNS → DID → record fetch pipeline.
  *
- * These tests require network access (`--allow-net`).  They are gated
- * behind `Deno.env.get("GARAZYK_INTEGRATION")` so they can be skipped in
- * CI environments without DNS/fetch access.
+ * These tests require network access (`--allow-net`). They run only when
+ * `GARAZYK_INTEGRATION=1` (or `true`) explicitly opts in.
  *
  * @module lexicon_resolution
  */
@@ -28,12 +27,8 @@ import type { DidDocument, LexiconDoc, ResolutionError } from "./types.ts";
 
 /** Check whether integration tests should run. */
 function shouldRunIntegration(): boolean {
-  // Run if GARAZYK_INTEGRATION is "1" or "true", or if not in CI.
   const env = Deno.env.get("GARAZYK_INTEGRATION");
-  if (env === "1" || env === "true") return true;
-  if (Deno.env.get("CI")) return false;
-  // Default: run locally, skip in CI.
-  return true;
+  return env === "1" || env === "true";
 }
 
 /** Shared caches so repeated integration runs reuse resolved results. */
