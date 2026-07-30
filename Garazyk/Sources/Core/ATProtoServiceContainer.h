@@ -28,6 +28,15 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Resolves an instance for a protocol. */
 - (nullable id)resolveProtocol:(Protocol *)protocol;
 
+/*! Registers a singleton instance for a class. */
+- (void)registerInstance:(id)instance forClass:(Class)cls;
+
+/*! Registers a factory block for a class. The instance is created lazily. */
+- (void)registerFactory:(id (^)(ATProtoServiceContainer *container))factory forClass:(Class)cls;
+
+/*! Resolves an instance for a class. */
+- (nullable id)resolveClass:(Class)cls;
+
 /*! Removes all registrations. Useful for testing. */
 - (void)reset;
 
