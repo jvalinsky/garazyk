@@ -443,13 +443,20 @@ test passed; `cmake --build build --target AllTests --parallel 4` and
 `./build/tests/AllTests --gated=run` passed. `deno task check` and
 `deno task lint` passed; the unrelated existing `deno task test` suite still
 reports live Gruszka lexicon-resolution integration failures and its checked-in
-generated-lexicon drift failure. The GNUstep Docker builder image completed,
-but the full GNUstep CMake gate is blocked before compilation by existing
-`CMakeLists.txt:1849` source ownership drift: `SecItemLinuxStoreTests` names
-the removed `Garazyk/Sources/Auth/CryptoUtils.m` rather than
-`Garazyk/Sources/Auth/Crypto/CryptoUtils.m`. Do not treat the Linux gate as
-passed or push this branch until that separate platform blocker is repaired and
-the full GNUstep gate rerun.
+generated-lexicon drift failure. GNUstep follow-up (`92d3820f`) corrected the
+stale `SecItemLinuxStoreTests` source membership from the removed
+`Garazyk/Sources/Auth/CryptoUtils.m` to
+`Garazyk/Sources/Auth/Crypto/CryptoUtils.m`. In the GNUstep Docker builder,
+all ten module archives build; `SecItemLinuxStoreTests` and
+`plc_persistent_store_link_tests` pass. The Linux checker completes without a
+new leak (`0 current leaks, 28 baselined`); its GNU `nm` parsing cannot emit the
+macOS archive-member mapping, so the canonical 28/28 baseline remains the
+fresh macOS result above. The full GNUstep `AllTests` build is still blocked by
+an independent XCTest compatibility issue: `XCTAssertEqual` boxes Objective-C
+object pointers, which Clang rejects in
+`PDSAdminServiceTests.m:146` and `PDSBlobAuditHandlerTests.m:21`. Do not treat
+the full Linux gate as passed or push until that separate compatibility blocker
+is repaired and the full gate rerun.
 
 M0 (third-party consumption goal) is now answered yes under the bounded package
 contract in the verified-status section above. M5/M6 remain gated on the real
