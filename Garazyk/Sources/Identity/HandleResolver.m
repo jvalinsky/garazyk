@@ -34,6 +34,7 @@
 
 NSString * const HandleErrorDomain = @"com.atproto.handle";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
+static const NSUInteger kMaximumFailureCacheEntries = 1024;
 
 @interface HandleResolutionFailure : NSObject
 @property (nonatomic, assign) NSInteger failureCount;
@@ -49,6 +50,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 }
 @property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *resolutionCacheTimestamps;
+- (void)pruneExpiredFailureCacheEntriesLockedAtDate:(NSDate *)now;
 - (void)executeSafeHTTPSRequest:(NSURLRequest *)request
                         options:(ATProtoSafeHTTPClientOptions *)options
                         attempt:(NSInteger)attempt
@@ -71,7 +73,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
     if (self) {
         BOOL isTestEnv = PDSHandleResolverRunningTests();
         _resolutionCache = [[NSCache alloc] init];
-        _failureCache = [[NSCache alloc] init];
+        _failureCache = [NSMutableDictionary dictionary];
         _resolutionCacheTimestamps = [NSMutableDictionary dictionary];
         _cacheExpirationInterval = 300.0;
         _rateLimitPerMinute = 100;
@@ -115,7 +117,16 @@ static BOOL PDSHandleResolverRunningTests(void) {
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
     /*! Check failure cache for backoff. */
-    HandleResolutionFailure *failure = [self.failureCache objectForKey:handle];
+    __block HandleResolutionFailure *failure = nil;
+    dispatch_sync(_cacheQueue, ^{
+        NSDate *now = [NSDate date];
+        [self pruneExpiredFailureCacheEntriesLockedAtDate:now];
+        failure = self.failureCache[handle];
+        if (failure && [failure.expiresAt compare:now] != NSOrderedDescending) {
+            [self.failureCache removeObjectForKey:handle];
+            failure = nil;
+        }
+    });
     if (failure && [failure.expiresAt timeIntervalSinceNow] > 0) {
         NSError *backoffError = [NSError errorWithDomain:HandleErrorDomain
                                                     code:HandleErrorRateLimitExceeded
@@ -162,7 +173,9 @@ static BOOL PDSHandleResolverRunningTests(void) {
         if (did) {
             /*! Cache successful resolution for future requests. */
             [self cacheDID:did forHandle:handle];
-            [self.failureCache removeObjectForKey:handle]; // Clear failure count on success
+            dispatch_sync(self->_cacheQueue, ^{
+                [self.failureCache removeObjectForKey:handle];
+            });
             completion(did, nil);
         } else if (error && [error.domain isEqualToString:HandleErrorDomain] &&
                    error.code == HandleErrorNotFound) {
@@ -170,7 +183,9 @@ static BOOL PDSHandleResolverRunningTests(void) {
             [self resolveHandleViaDNS:handle completion:^(NSString * _Nullable dnsDid, NSError * _Nullable dnsError) {
                 if (dnsDid) {
                     [self cacheDID:dnsDid forHandle:handle];
-                    [self.failureCache removeObjectForKey:handle];
+                    dispatch_sync(self->_cacheQueue, ^{
+                        [self.failureCache removeObjectForKey:handle];
+                    });
                     completion(dnsDid, nil);
                 } else {
                     // Record failure
@@ -203,16 +218,44 @@ static BOOL PDSHandleResolverRunningTests(void) {
 }
 
 - (void)recordFailureForHandle:(NSString *)handle {
-    HandleResolutionFailure *failure = [self.failureCache objectForKey:handle];
-    if (!failure) {
-        failure = [[HandleResolutionFailure alloc] init];
-        failure.failureCount = 0;
+    dispatch_sync(_cacheQueue, ^{
+        [self pruneExpiredFailureCacheEntriesLockedAtDate:[NSDate date]];
+        HandleResolutionFailure *failure = self.failureCache[handle];
+        if (!failure) {
+            if (self.failureCache.count >= kMaximumFailureCacheEntries) {
+                NSString *earliestExpiryKey = nil;
+                NSDate *earliestExpiry = nil;
+                for (NSString *key in self.failureCache) {
+                    HandleResolutionFailure *candidate = self.failureCache[key];
+                    if (!earliestExpiry || [candidate.expiresAt compare:earliestExpiry] == NSOrderedAscending) {
+                        earliestExpiryKey = key;
+                        earliestExpiry = candidate.expiresAt;
+                    }
+                }
+                if (earliestExpiryKey) {
+                    [self.failureCache removeObjectForKey:earliestExpiryKey];
+                }
+            }
+            failure = [[HandleResolutionFailure alloc] init];
+            failure.failureCount = 0;
+        }
+        failure.failureCount++;
+        // 2^count seconds backoff (2, 4, 8, 16...), max 1 hour
+        NSTimeInterval backoff = MIN(pow(2.0, (double)failure.failureCount), 3600.0);
+        failure.expiresAt = [NSDate dateWithTimeIntervalSinceNow:backoff];
+        self.failureCache[handle] = failure;
+    });
+}
+
+- (void)pruneExpiredFailureCacheEntriesLockedAtDate:(NSDate *)now {
+    NSMutableArray<NSString *> *expiredKeys = [NSMutableArray array];
+    for (NSString *key in self.failureCache) {
+        HandleResolutionFailure *failure = self.failureCache[key];
+        if ([failure.expiresAt compare:now] != NSOrderedDescending) {
+            [expiredKeys addObject:key];
+        }
     }
-    failure.failureCount++;
-    // 2^count seconds backoff (2, 4, 8, 16...), max 1 hour
-    NSTimeInterval backoff = MIN(pow(2.0, (double)failure.failureCount), 3600.0);
-    failure.expiresAt = [NSDate dateWithTimeIntervalSinceNow:backoff];
-    [self.failureCache setObject:failure forKey:handle];
+    [self.failureCache removeObjectsForKeys:expiredKeys];
 }
 
 - (void)resolveHandleViaHTTPS:(NSString *)handle
