@@ -170,6 +170,12 @@ export function buildHostScenarioEnv(
   if (resourceManifest) env.ATPROTO_RESOURCE_MANIFEST = resourceManifest;
   const twilioBaseUrl = Deno.env.get("TWILIO_API_BASE_URL");
   if (twilioBaseUrl) env.TWILIO_API_BASE_URL = twilioBaseUrl;
+  const recoveryControlToken = Deno.env.get(
+    "PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN",
+  );
+  if (recoveryControlToken) {
+    env.PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN = recoveryControlToken;
+  }
 
   for (const [role, url] of Object.entries(topology.serviceUrls)) {
     env[roleEnvKey(role)] = normalizeHostLoopbackUrl(String(url));

@@ -412,11 +412,24 @@ async function delegationAndCredential(
 
 type RecoverySelector = "incremental" | "lightweight" | "fullCAR";
 
+async function loadRecoveryControlToken(): Promise<string | undefined> {
+  const fromEnv = Deno.env.get("PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN");
+  if (fromEnv) return fromEnv;
+  const runDir = Deno.env.get("ATPROTO_E2E_RUN_DIR");
+  if (!runDir) return undefined;
+  try {
+    return (await Deno.readTextFile(`${runDir}/space-recovery-control.token`))
+      .trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function recoveryTestControl(
   base: string,
   input: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  const token = Deno.env.get("PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN");
+  const token = await loadRecoveryControlToken();
   if (!token) {
     throw new Error("recovery test control token is unavailable");
   }
