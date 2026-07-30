@@ -165,7 +165,11 @@ int main(int argc, const char * argv[]) {
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
     @autoreleasepool {
-        [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
+        NSError *bootstrapError = nil;
+        if (![GZServiceLifecycle bootstrapWithExecutableName:executable_name error:&bootstrapError]) {
+            fprintf(stderr, "FATAL: %s\n", bootstrapError.localizedDescription.UTF8String);
+            return 1;
+        }
         NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX
         // On Linux/GNUstep, verify critical categories are loaded

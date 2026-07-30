@@ -153,14 +153,8 @@ static NSData *PDSSecItemLinuxStoreResolveKey(void) {
                       @"PDS_LINUX_KEYCHAIN_KEY or PDS_LINUX_KEYCHAIN_KEY_FILE before "
                       @"starting. Refusing to open the Linux secret store — it will "
                       @"never fall back to writing plaintext.");
-        if (!PDSSecItemLinuxStoreRunningUnderTests()) {
-            // Fail startup loudly rather than run with an unusable (and
-            // therefore effectively unencrypted-or-unreadable) secret store.
-            exit(1);
-        }
-        // Under tests, leave gKeychainDB NULL so every operation below
-        // returns kSecItemLinuxStoreErrorMissingKey instead of crashing the
-        // test binary or silently touching plaintext.
+        // Leave gKeychainDB NULL so every operation below returns
+        // kSecItemLinuxStoreErrorMissingKey instead of crashing or silently touching plaintext.
         return;
     }
 
