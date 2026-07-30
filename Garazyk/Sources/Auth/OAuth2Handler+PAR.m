@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Auth/OAuth2Handler+PAR.h"
 #import "Auth/OAuth2.h"
+#import "Auth/OAuth2Handler+ClientMetadataFetch.h"
 #import "Auth/OAuthClientAuthPolicy.h"
 #import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDSNonceManager.h"
