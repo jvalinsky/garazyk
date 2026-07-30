@@ -69,7 +69,11 @@ static BOOL help_requested_before_parse_error(NSArray<NSString *> *args) {
 }
 
 int main(int argc, const char *argv[]) {
-    [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
+    NSError *bootstrapError = nil;
+    if (![GZServiceLifecycle bootstrapWithExecutableName:executable_name error:&bootstrapError]) {
+        fprintf(stderr, "FATAL: %s\n", bootstrapError.localizedDescription.UTF8String);
+        return 1;
+    }
     // Preserve the UI's dedicated named crash log after lifecycle bootstrap.
     [GZCrashReporter installCrashHandlersWithExecutableName:executable_name];
     @autoreleasepool {

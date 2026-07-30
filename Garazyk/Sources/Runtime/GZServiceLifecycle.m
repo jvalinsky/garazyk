@@ -42,7 +42,7 @@ static void sigabrtHandler(int sig) {
 
 @implementation GZServiceLifecycle
 
-+ (void)bootstrapWithExecutableName:(const char *)executableName {
++ (BOOL)bootstrapWithExecutableName:(const char *)executableName error:(NSError **)error {
     [[GZSignalManager sharedManager] installIgnoredSignals];
     [GZCrashReporter installCrashHandlersWithExecutableName:executableName];
     
@@ -63,10 +63,15 @@ static void sigabrtHandler(int sig) {
 #ifdef LINUX
     // On Linux/GNUstep, verify critical categories are loaded
     if (![NSDateFormatter respondsToSelector:NSSelectorFromString(@"atproto_dateFromString:")]) {
-        fprintf(stderr, "FATAL: Objective-C category NSDateFormatter(ATProto) not loaded. Check linker settings.\n");
-        exit(1);
+        if (error) {
+            *error = [NSError errorWithDomain:@"GZServiceLifecycleErrorDomain"
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Objective-C category NSDateFormatter(ATProto) not loaded. Check linker settings."}];
+        }
+        return NO;
     }
 #endif
+    return YES;
 }
 
 + (int)runServiceWithRuntime:(id<GZServiceRuntimeProtocol>)runtime
