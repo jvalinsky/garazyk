@@ -156,13 +156,22 @@ NS_ASSUME_NONNULL_BEGIN
     setenv("PDS_TRUST_PROXY_HEADERS", "1", 1);
 
     @try {
+        // §2.3 (S20 sub-task E) walks X-Forwarded-For right to left and
+        // skips entries recognized as trusted proxy addresses (loopback,
+        // RFC1918) — the same predicate used for the immediate peer. Two
+        // RFC 5737 documentation-range IPs (203.0.113.0/24, 198.51.100.0/24)
+        // are both "untrusted" under that predicate, so the rightmost one
+        // wins immediately rather than being skipped as a proxy hop; this
+        // test previously asserted the pre-S20E left-to-right value. Use a
+        // real RFC1918 address for the proxy hop so the walk actually skips
+        // it and returns the genuine client IP, matching this test's name.
         HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                        methodString:@"GET"
                                                                path:@"/xrpc/test"
                                                         queryString:@""
                                                         queryParams:@{}
                                                             version:@"1.1"
-                                                            headers:@{@"x-forwarded-for": @"203.0.113.42, 198.51.100.1"}
+                                                            headers:@{@"x-forwarded-for": @"203.0.113.42, 10.0.0.5"}
                                                                body:[NSData data]
                                                      remoteAddress:@"127.0.0.1"];
         XCTAssertEqualObjects(request.remoteAddress, @"203.0.113.42");
