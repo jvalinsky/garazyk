@@ -328,14 +328,14 @@ compose rebuilds.**
 - [x] **remove-dead-sleeps** — Remove tearDown sleep in `CoverageGapTests`
   (`XrpcProxyTests` 3s is intentional timeout fixture — left alone)
 - [ ] **xrpc-class-fixtures** — Share `PDSApplication`/accounts across
-  methods in AdminAuth/RepoAuth bases
-- [ ] **test-sharding** — Add `--shard=I/N`, `ctest -j` entries (PID-scoped
-  temp dirs landed)
+  methods in AdminAuth/RepoAuth bases (deferred; Phase 1 covers most cost)
+- [x] **test-sharding** — `--shard=I/N`, PID-scoped temp dirs, `ctest -j`
+  shard entries
 - [x] **ci-parallel-fixups** — Decouple Linux `needs:`; remove `september`;
   remove broken PLC ctest `-R` job
 - [x] **xctest-shim-waits** — Real expectation fulfillment / polling on
   Linux XCTest shim
-- [ ] **build-ccache-deps** — Enable ccache; slim duplicate compile/link for
-  tests
+- [x] **build-ccache-deps** — Enable ccache compiler launchers in CI
+  (AllTests link-dep slim still open)
 - [x] **deno-scenario-waits** — Gate settle sleep behind `HAMOWNIA_SETTLE_MS`
   (default 0); Deno `--no-check` on test reruns still open

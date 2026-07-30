@@ -1285,6 +1285,8 @@ int main(int argc, char *argv[]) {
     NSTimeInterval perTestTimeout = 0;
     PDSGatedMode gatedMode = PDSGatedModeSkip;
     NSString *legacyFilter = nil;
+    NSInteger shardIndex = 0; // 1-based when sharding; 0 = disabled
+    NSInteger shardCount = 0;
 
     for (int i = 1; i < argc; i++) {
       NSString *arg = [NSString stringWithUTF8String:argv[i]];
@@ -1293,6 +1295,28 @@ int main(int argc, char *argv[]) {
       if ([arg isEqualToString:@"-XCTest"] && i + 1 < argc) {
         legacyFilter = [NSString stringWithUTF8String:argv[i + 1]];
         i++;
+        continue;
+      }
+
+      // --shard=I/N or --shard I/N (workstream 09 T6)
+      NSString *shardSpec = nil;
+      if ([arg hasPrefix:@"--shard="]) {
+        shardSpec = [arg substringFromIndex:8];
+      } else if ([arg isEqualToString:@"--shard"] && i + 1 < argc) {
+        shardSpec = [NSString stringWithUTF8String:argv[i + 1]];
+        i++;
+      }
+      if (shardSpec) {
+        NSArray *parts = [shardSpec componentsSeparatedByString:@"/"];
+        if (parts.count == 2) {
+          shardIndex = [parts[0] integerValue];
+          shardCount = [parts[1] integerValue];
+        }
+        if (shardIndex < 1 || shardCount < 1 || shardIndex > shardCount) {
+          fprintf(stderr, "Invalid --shard=%s (expected I/N with 1 <= I <= N)\n",
+                  shardSpec.UTF8String);
+          return 2;
+        }
         continue;
       }
 
@@ -1408,6 +1432,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Filtering:\n");
         fprintf(stderr, "  -f, --filter PATTERN     Include tests matching glob pattern\n");
         fprintf(stderr, "  -e, --exclude PATTERN    Exclude tests matching glob pattern\n");
+        fprintf(stderr, "      --shard I/N          Run shard I of N (1-based; by class index)\n");
         fprintf(stderr, "  -c, --category CAT       Include tests in category (comma-separated)\n");
         fprintf(stderr, "      --exclude-category   Exclude tests in category\n");
         fprintf(stderr, "  -XCTest FILTER           Legacy XCTest filter (ClassName[/method])\n");
@@ -1546,6 +1571,13 @@ int main(int argc, char *argv[]) {
 
     for (NSString *className in testClasses) {
       if (!classPassesFilter(className)) continue;
+
+      if (shardCount > 0) {
+        NSUInteger classIndex = [testClasses indexOfObject:className];
+        if ((classIndex % (NSUInteger)shardCount) != (NSUInteger)(shardIndex - 1)) {
+          continue;
+        }
+      }
 
       NSString *skipReason = PDSSkipReasonForClass(className, gatedMode);
       if (skipReason) {
