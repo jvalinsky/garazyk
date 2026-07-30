@@ -449,6 +449,17 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoute
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\+.*\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpServerBuilder\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Generated/GZXrpcNSID\\.m$")
+# These route packs are registered only by ATProtoHttpServerBuilder.m
+# (already Runtime-owned) and each reaches directly into a Runtime,
+# Services, or Sync handler class (workstream 08 M4, Transport -> Runtime
+# inversion) — carved out alongside their only caller rather than left in
+# Transport importing upward.
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpMSTViewerRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpNodeInfoRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpOAuthDemoRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpOAuthRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpRelayAPIRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpPDSAdminRoutePack\\.m$")
 # HttpRequest/HttpResponse/HttpRoute/HttpRetryPolicy/HttpParsing are
 # Foundation-only HTTP message value types with no I/O or socket
 # dependency (workstream 08 M3) — carved out to ATProtoCore so Services
@@ -505,6 +516,12 @@ file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
   "Garazyk/Sources/Auth/PDS/*.m"
   "Garazyk/Sources/Auth/PDS/*.c"
   "Garazyk/Sources/Network/ATProtoHttpServerBuilder.m"
+  "Garazyk/Sources/Network/ATProtoHttpMSTViewerRoutePack.m"
+  "Garazyk/Sources/Network/ATProtoHttpNodeInfoRoutePack.m"
+  "Garazyk/Sources/Network/ATProtoHttpOAuthDemoRoutePack.m"
+  "Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m"
+  "Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.m"
+  "Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m"
 )
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/ATProtoServiceConfiguration\\.m$")
