@@ -12,7 +12,6 @@ ATProtoMediaCore:XrpcErrorHelper (defined in ATProtoXRPC, not a declared PUBLIC 
 ATProtoMediaCore:XrpcRoutePackServiceBag (defined in ATProtoXRPC, not a declared PUBLIC dependency of ATProtoMediaCore)
 ATProtoPLC:ATProtoConnectionManagerSerial (defined in ATProtoStorage, not a declared PUBLIC dependency of ATProtoPLC)
 ATProtoPLC:ATProtoDatabaseQueryRunner (defined in ATProtoStorage, not a declared PUBLIC dependency of ATProtoPLC)
-ATProtoPLC:PDSWebSocketNetworkAdapter (defined in ATProtoSync, not a declared PUBLIC dependency of ATProtoPLC)
 ATProtoServices:ATProtoSafeHTTPClient (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoServices)
 ATProtoServices:ATProtoSafeHTTPClientOptions (defined in ATProtoTransport, not a declared PUBLIC dependency of ATProtoServices)
 ATProtoServices:DIDPLCResolver (defined in ATProtoPLC, not a declared PUBLIC dependency of ATProtoServices)

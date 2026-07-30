@@ -14,6 +14,52 @@
 #import <sys/socket.h>
 #import <CoreFoundation/CoreFoundation.h>
 
+// Locally re-declared minimal ATProtoNetworkConnection surface, matching the
+// established pattern in PDSWebSocketNetworkAdapterTests.m: this test never
+// imports Network/ATProtoNetworkTransport.h, so this forward declaration is
+// the only definition of the protocol visible in this translation unit.
+@protocol ATProtoNetworkConnection <NSObject>
+- (void)sendData:(NSData *)data completion:(void (^)(NSError * _Nullable))completion;
+- (void)receiveWithMinimumLength:(NSUInteger)minLength
+                   maximumLength:(NSUInteger)maxLength
+                      completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion;
+@end
+
+@interface MockPLCStreamConnection : NSObject <ATProtoNetworkConnection>
+@property (nonatomic, strong) NSMutableArray<NSData *> *sentFrames;
+@property (nonatomic, copy, nullable) void (^sendHandler)(NSData *data);
+@end
+
+@implementation MockPLCStreamConnection
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _sentFrames = [NSMutableArray array];
+    }
+    return self;
+}
+
+- (void)sendData:(NSData *)data completion:(void (^)(NSError * _Nullable))completion {
+    [self.sentFrames addObject:data];
+    if (self.sendHandler) {
+        self.sendHandler(data);
+    }
+    if (completion) {
+        completion(nil);
+    }
+}
+
+- (void)receiveWithMinimumLength:(NSUInteger)minLength
+                   maximumLength:(NSUInteger)maxLength
+                      completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
+    // No-op: these tests only exercise the synchronous cursor-validation
+    // path, which closes the connection before the adapter ever starts its
+    // receive loop.
+}
+
+@end
+
 @interface PLCServerTests : XCTestCase
 @property (nonatomic, strong) PLCMockStore *store;
 @property (nonatomic, strong) PLCAuditor *auditor;
@@ -26,6 +72,7 @@
 - (void)handleGetData:(HttpRequest *)req response:(HttpResponse *)resp;
 - (void)handleGetLog:(HttpRequest *)req response:(HttpResponse *)resp includeNullified:(BOOL)includeNullified includeMetadata:(BOOL)includeMetadata;
 - (void)handleExport:(HttpRequest *)req response:(HttpResponse *)resp;
+- (void)handleExportStream:(HttpRequest *)req connection:(id<ATProtoNetworkConnection>)connection;
 @end
 
 @implementation PLCServerTests
@@ -522,6 +569,59 @@
     XCTAssertNotNil(entry[@"nullified"], @"Export entry must include nullified");
     XCTAssertNotNil(entry[@"createdAt"], @"Export entry must include createdAt");
 }
+
+#pragma mark - export stream (WebSocket) cursor validation
+
+- (void)testHandleExportStreamRejectsInvalidCursorWithFutureCursorClose {
+    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                              methodString:@"GET"
+                                                      path:@"/export"
+                                               queryString:@"cursor=notanumber"
+                                               queryParams:@{@"cursor": @"notanumber"}
+                                                   version:@"HTTP/1.1"
+                                                   headers:@{}
+                                                      body:[NSData data]
+                                             remoteAddress:@"127.0.0.1"];
+    MockPLCStreamConnection *conn = [[MockPLCStreamConnection alloc] init];
+
+    XCTestExpectation *sentExpectation = [self expectationWithDescription:@"close frame sent"];
+    conn.sendHandler = ^(NSData *data) {
+        [sentExpectation fulfill];
+    };
+
+    [self.server handleExportStream:req connection:conn];
+
+    [self waitForExpectationsWithTimeout:2.0 handler:nil];
+
+    XCTAssertEqual(conn.sentFrames.count, 1, @"Invalid cursor should send exactly one close frame and nothing else");
+
+    // WebSocketCodec's decode side (feedData:) is hardwired to the server
+    // role, which requires masked input (RFC 6455 client->server framing).
+    // The frame under test is the reverse direction (server->client, always
+    // unmasked), so it's parsed by hand rather than fed back through the
+    // codec.
+    NSData *frame = conn.sentFrames.firstObject;
+    XCTAssertGreaterThanOrEqual(frame.length, (NSUInteger)4);
+    const uint8_t *bytes = frame.bytes;
+    XCTAssertEqual(bytes[0], (uint8_t)0x88, @"expected FIN + close opcode (0x88)");
+    XCTAssertEqual(bytes[1] & 0x80, 0, @"server close frames must not be masked");
+    NSUInteger payloadLen = bytes[1] & 0x7F;
+    XCTAssertGreaterThanOrEqual(payloadLen, (NSUInteger)2);
+    uint16_t closeCode = (uint16_t)((bytes[2] << 8) | bytes[3]);
+    XCTAssertEqual(closeCode, 1008);
+    NSData *reasonData = [frame subdataWithRange:NSMakeRange(4, payloadLen - 2)];
+    NSString *reason = [[NSString alloc] initWithData:reasonData encoding:NSUTF8StringEncoding];
+    XCTAssertEqualObjects(reason, @"FutureCursor");
+}
+
+// Note: the no-cursor/valid-cursor "snapshot + live poll" path is
+// deliberately NOT covered here. It spins up a real dispatch_source timer
+// (PLCReplicaDefaultPollInterval) that only stops when the connection
+// closes; a unit test can't trigger that closure deterministically without
+// reaching into PLCServer's private adapter, and leaving the timer running
+// would leak a background poll across the rest of the test suite. That
+// streaming behavior is better exercised by the Deno scenario framework
+// against a live server (see docs/plans/workstreams/08 for the follow-up).
 
 #pragma mark - /_health endpoint
 
