@@ -113,7 +113,7 @@ allowed_links_for_module() {
     ATProtoStorage|ATProtoTransport) echo "ATProtoCore" ;;
     ATProtoServices) echo "ATProtoStorage ATProtoCore" ;;
     ATProtoSync) echo "ATProtoStorage ATProtoTransport ATProtoCore" ;;
-    ATProtoXRPC) echo "ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoCore" ;;
+    ATProtoXRPC) echo "ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoPLC ATProtoCore" ;;
     ATProtoPLC) echo "ATProtoTransport ATProtoCore" ;;
     ATProtoVideoService) echo "ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport" ;;
     ATProtoRuntime) echo "ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService" ;;
