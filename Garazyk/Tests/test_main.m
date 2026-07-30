@@ -1198,6 +1198,7 @@ int main(int argc, char *argv[]) {
       @"GermIdentityServiceTests",
       @"GermCommandTests",
       @"ATProtoCIDTests",
+      @"ATProtoMultibaseTests",
       @"ATProtoDagCBOREdgeCaseTests",
       @"ATProtoTIDTests",
       @"OAuthMetadataComplianceTests",
