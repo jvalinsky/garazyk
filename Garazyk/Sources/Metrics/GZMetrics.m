@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Metrics/GZMetrics.h"
+#import "Core/ATProtoServiceContainer.h"
 
 #ifdef __APPLE__
 #import <mach/mach.h>
@@ -41,12 +42,13 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
 @implementation GZMetrics
 
 + (instancetype)sharedMetrics {
-    static GZMetrics *shared = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        shared = [[GZMetrics alloc] init];
-    });
-    return shared;
+    ATProtoServiceContainer *container = [ATProtoServiceContainer sharedContainer];
+    GZMetrics *metrics = [container resolveClass:self];
+    if (!metrics) {
+        metrics = [[GZMetrics alloc] init];
+        [container registerInstance:metrics forClass:self];
+    }
+    return metrics;
 }
 
 - (instancetype)init {

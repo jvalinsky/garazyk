@@ -69,6 +69,42 @@
     return instance;
 }
 
+- (void)registerInstance:(id)instance forClass:(Class)cls {
+    NSString *key = NSStringFromClass(cls);
+    [_lock lock];
+    _instances[key] = instance;
+    [_lock unlock];
+}
+
+- (void)registerFactory:(id (^)(ATProtoServiceContainer *))factory forClass:(Class)cls {
+    NSString *key = NSStringFromClass(cls);
+    [_lock lock];
+    _factories[key] = [factory copy];
+    [_instances removeObjectForKey:key]; // Invalidate cache
+    [_lock unlock];
+}
+
+- (nullable id)resolveClass:(Class)cls {
+    NSString *key = NSStringFromClass(cls);
+    __block id instance = nil;
+    
+    [_lock lock];
+    instance = _instances[key];
+    
+    if (!instance) {
+        id (^factory)(ATProtoServiceContainer *) = _factories[key];
+        if (factory) {
+            instance = factory(self);
+            if (instance) {
+                _instances[key] = instance;
+            }
+        }
+    }
+    [_lock unlock];
+    
+    return instance;
+}
+
 - (void)reset {
     [_lock lock];
     [_instances removeAllObjects];

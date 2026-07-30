@@ -3,6 +3,7 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Core/GZHTTPClient.h"
+#import "Core/ATProtoServiceContainer.h"
 
 #if defined(__APPLE__) && !defined(GNUSTEP)
 #import <Network/Network.h>
@@ -147,11 +148,12 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
 @implementation ATProtoSafeHTTPClient
 
 + (instancetype)sharedClient {
-    static ATProtoSafeHTTPClient *client = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
+    ATProtoServiceContainer *container = [ATProtoServiceContainer sharedContainer];
+    ATProtoSafeHTTPClient *client = [container resolveClass:self];
+    if (!client) {
         client = [[ATProtoSafeHTTPClient alloc] init];
-    });
+        [container registerInstance:client forClass:self];
+    }
     return client;
 }
 
@@ -683,11 +685,12 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
 @implementation ATProtoSafeHTTPClient
 
 + (instancetype)sharedClient {
-    static ATProtoSafeHTTPClient *client = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
+    ATProtoServiceContainer *container = [ATProtoServiceContainer sharedContainer];
+    ATProtoSafeHTTPClient *client = [container resolveClass:self];
+    if (!client) {
         client = [[ATProtoSafeHTTPClient alloc] init];
-    });
+        [container registerInstance:client forClass:self];
+    }
     return client;
 }
 
