@@ -13,10 +13,111 @@
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/CryptoUtils.h"
 #import "Auth/PDSReplayCache.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middleware";
+
+static BOOL AppViewOAuthEnvBool(NSString *value) {
+    if (value.length == 0) return NO;
+    NSString *normalized = [[value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    return [normalized isEqualToString:@"1"] ||
+           [normalized isEqualToString:@"true"] ||
+           [normalized isEqualToString:@"yes"] ||
+           [normalized isEqualToString:@"on"];
+}
+
+static BOOL AppViewOAuthIsTrustedProxyRemoteAddress(NSString *remoteAddress) {
+    NSString *candidate = [[remoteAddress ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    if (candidate.length == 0) return NO;
+    if ([candidate hasPrefix:@"127."] || [candidate isEqualToString:@"::1"] || [candidate isEqualToString:@"localhost"]) {
+        return YES;
+    }
+    if ([candidate hasPrefix:@"10."] || [candidate hasPrefix:@"192.168."]) return YES;
+    if ([candidate hasPrefix:@"172."]) {
+        NSArray<NSString *> *parts = [candidate componentsSeparatedByString:@"."];
+        if (parts.count >= 2) {
+            NSInteger secondOctet = [parts[1] integerValue];
+            if (secondOctet >= 16 && secondOctet <= 31) return YES;
+        }
+    }
+    return NO;
+}
+
+static BOOL AppViewOAuthShouldTrustForwardedHeaders(HttpRequest *request) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    if (!AppViewOAuthEnvBool(env[@"PDS_TRUST_PROXY_HEADERS"])) return NO;
+    return AppViewOAuthIsTrustedProxyRemoteAddress(request.remoteAddress);
+}
+
+/// §4.6: build expected DPoP htu from issuer authority; Host / X-Forwarded-*
+/// only when local or trusted-proxy.
+static NSURL *AppViewOAuthExpectedDPoPURL(HttpRequest *request) {
+    NSString *path = request.path ?: @"/";
+    if (![path hasPrefix:@"/"]) {
+        path = [@"/" stringByAppendingString:path];
+    }
+
+    NSString *hostHeader = [[request headerForKey:@"Host"]
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *hostLower = [hostHeader lowercaseString];
+    BOOL localHost = [hostLower containsString:@"localhost"] ||
+                     [hostLower hasPrefix:@"127.0.0.1"] ||
+                     [hostLower hasPrefix:@"[::1]"] ||
+                     [hostLower isEqualToString:@"::1"];
+    BOOL trustForwarded = AppViewOAuthShouldTrustForwardedHeaders(request);
+
+    ATProtoServiceConfiguration *configuration = [ATProtoServiceConfiguration sharedConfiguration];
+    NSString *issuer = [configuration canonicalIssuerWithPortHint:0];
+    NSURL *issuerURL = [NSURL URLWithString:issuer ?: @""];
+
+    NSString *scheme = nil;
+    if (trustForwarded) {
+        NSString *forwardedProto = [[request headerForKey:@"X-Forwarded-Proto"] lowercaseString];
+        if (forwardedProto.length > 0) {
+            NSString *firstProto = [[forwardedProto componentsSeparatedByString:@","] firstObject];
+            firstProto = [firstProto stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if ([firstProto isEqualToString:@"http"] || [firstProto isEqualToString:@"https"]) {
+                scheme = firstProto;
+            }
+        }
+    }
+    if (scheme.length == 0) {
+        if (localHost) {
+            scheme = @"http";
+        } else if (issuerURL.scheme.length > 0) {
+            scheme = issuerURL.scheme;
+        } else {
+            scheme = @"https";
+        }
+    }
+
+    NSString *authority = nil;
+    if (issuerURL.host.length > 0 && !localHost) {
+        authority = issuerURL.host;
+        if (issuerURL.port != nil) {
+            BOOL isDefaultPort =
+                ([issuerURL.scheme.lowercaseString isEqualToString:@"https"] && issuerURL.port.integerValue == 443) ||
+                ([issuerURL.scheme.lowercaseString isEqualToString:@"http"] && issuerURL.port.integerValue == 80);
+            if (!isDefaultPort) {
+                authority = [NSString stringWithFormat:@"%@:%@", issuerURL.host, issuerURL.port];
+            }
+        }
+    } else if (hostHeader.length > 0 && (trustForwarded || localHost)) {
+        authority = hostHeader;
+    }
+
+    if (authority.length == 0) {
+        return nil;
+    }
+
+    NSString *urlString = [NSString stringWithFormat:@"%@://%@%@", scheme, authority, path];
+    if (request.queryString.length > 0) {
+        urlString = [urlString stringByAppendingFormat:@"?%@", request.queryString];
+    }
+    return [NSURL URLWithString:urlString];
+}
 
 @interface AppViewOAuth2Middleware ()
 
@@ -146,13 +247,20 @@ NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middlewa
         return YES;
     }
 
-    // Build the expected DPoP URL from the request
+    // Build the expected DPoP URL from issuer authority (§4.6)
     NSString *method = [request methodString] ?: @"GET";
-    NSString *scheme = [request headerForKey:@"X-Forwarded-Proto"] ?: @"https";
-    NSString *host = [request headerForKey:@"Host"] ?: @"localhost";
-    NSString *path = [request path] ?: @"/";
-    NSString *urlStr = [NSString stringWithFormat:@"%@://%@%@", scheme, host, path];
-    NSURL *dpopURL = [NSURL URLWithString:urlStr];
+    NSURL *dpopURL = AppViewOAuthExpectedDPoPURL(request);
+    if (!dpopURL) {
+        GZ_LOG_AUTH_DEBUG(@"[OAuth2Middleware] Unable to construct DPoP URL");
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewOAuth2MiddlewareErrorDomain
+                                         code:AppViewOAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{
+                NSLocalizedDescriptionKey: @"Unable to construct DPoP URL"
+            }];
+        }
+        return NO;
+    }
 
     // Verify the DPoP proof using the canonical verifier (RFC 9449)
     NSString *dpopThumbprint = nil;
