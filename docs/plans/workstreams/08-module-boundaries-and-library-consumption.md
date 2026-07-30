@@ -161,18 +161,26 @@ checked carefully rather than assumed safe, since this touches the live
 HTTP request path (`HttpServer` → `Http1Parser` → `HttpRouteTrie` →
 `XrpcDispatcher`).
 
-**Remaining for M3:** `HttpRouter` itself appears to be legacy/dead —
-its only non-test reference in the whole tree is `HttpRouterTests.m`;
-the live request path goes through `HttpRouteTrie` instead. Confirming
-and removing dead code is a separate, distinct decision from module
-boundaries and was left untouched here (out of scope for a boundary
-fix, and not something to do "while in the neighborhood" without
-explicit sign-off). `SSRFValidator`, `HttpBufferPool`, and the
-connection drivers were left in Transport per the original plan (they
-have genuine socket/I/O dependencies). The `Network/` import-count
-figure this milestone's verification gate names (86 → 36) was not
-re-measured directly — the module-boundary baseline is the tracked
-metric per M1's own correction, and it moved as described above.
+**`HttpRouter` dead-code question resolved** (`ee5743ff`). A follow-up
+pass re-verified the earlier finding exhaustively — every binary's
+`main.m`, `HttpServer.h/.m`'s own properties and instantiation sites,
+`CMakeLists.txt`'s source-list treatment, and dynamic dispatch via
+`NSClassFromString` — before concluding it's genuinely unreachable:
+`HttpServer.m:1082` instantiates `HttpRouteTrie`, never `HttpRouter`,
+and nothing else in the tree references the class outside its own test
+suite. Deleted `HttpRouter.h/.m` and `HttpRouterTests.m` (same standard
+as the S18 `OAuthProvider` deletion earlier this session: zero real
+consumers beyond a class's own test). `SSRFValidator`, `HttpBufferPool`,
+and the connection drivers remain in Transport per the original plan
+(genuine socket/I/O dependencies). The `Network/` import-count figure
+this milestone's verification gate names (86 → 36) was not re-measured
+directly — the module-boundary baseline is the tracked metric per M1's
+own correction, and it moved as described above (the `HttpRouter`
+deletion itself didn't change the baseline count, since dead code was
+never counted as a boundary violation in the first place).
+
+**M3 is now fully resolved** — the HTTP message-type carve-out landed,
+and the one open follow-up question (`HttpRouter`) is closed.
 
 **M4 started** (`6d5ad6bd`). First inversion resolved: `Storage -> Services`
 via `ATProtoHandleValidator` — confirmed a pure Foundation-only validator
