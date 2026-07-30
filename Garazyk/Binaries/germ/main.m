@@ -26,7 +26,11 @@ void print_usage(void) {
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
+        NSError *bootstrapError = nil;
+        if (![GZServiceLifecycle bootstrapWithExecutableName:executable_name error:&bootstrapError]) {
+            fprintf(stderr, "FATAL: %s\n", bootstrapError.localizedDescription.UTF8String);
+            return 1;
+        }
 
         if (argc < 2) {
             print_usage();

@@ -26,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Should be called immediately inside `main` but outside the autorelease pool (except where category checks require it).
  * @param executableName The name of the process (e.g. "syrena", "beskid")
  */
-+ (void)bootstrapWithExecutableName:(const char *)executableName;
++ (BOOL)bootstrapWithExecutableName:(const char *)executableName error:(NSError **)error;
 
 /**
  * @abstract Runs the service and blocks the current thread until stopped by a signal or error.

@@ -305,7 +305,11 @@ int main(int argc, const char *argv[]) {
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
-    [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
+    NSError *bootstrapError = nil;
+    if (![GZServiceLifecycle bootstrapWithExecutableName:executable_name error:&bootstrapError]) {
+        fprintf(stderr, "FATAL: %s\n", bootstrapError.localizedDescription.UTF8String);
+        return 1;
+    }
     [GZCrashReporter installCrashHandlersWithExecutableName:executable_name];
     @autoreleasepool {
         if (argc < 2) {

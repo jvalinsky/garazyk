@@ -228,7 +228,11 @@ static int fail_with_usage(NSString *errorMessage) {
  * Flags before command are rejected.
  */
 int main(int argc, const char * argv[]) {
-    [GZServiceLifecycle bootstrapWithExecutableName:executable_name];
+    NSError *bootstrapError = nil;
+    if (![GZServiceLifecycle bootstrapWithExecutableName:executable_name error:&bootstrapError]) {
+        fprintf(stderr, "FATAL: %s\n", bootstrapError.localizedDescription.UTF8String);
+        return 1;
+    }
     install_crash_handlers();
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
