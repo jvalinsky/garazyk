@@ -14,8 +14,6 @@
 #import "Core/ATProtoDataPaths.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
-#import "Database/Connection/ATProtoConnectionManagerSerial.h"
-#import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 #import "Metrics/GZMetrics.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -33,6 +31,26 @@ void RateLimiterSetDisabledGlobally(BOOL disabled) {
 BOOL RateLimiterIsDisabledGlobally(void) {
     return _rateLimiterDisabledGlobally;
 }
+
+static RateLimiterStorageFactory _rateLimiterStorageFactory = nil;
+
+void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
+    _rateLimiterStorageFactory = [factory copy];
+}
+
+@implementation RateLimiterStorageHandle
+
+- (instancetype)initWithConnectionManager:(id<ATProtoConnectionManager>)connectionManager
+                              queryRunner:(id<ATProtoQueryRunning>)queryRunner {
+    self = [super init];
+    if (self) {
+        _connectionManager = connectionManager;
+        _queryRunner = queryRunner;
+    }
+    return self;
+}
+
+@end
 
 @implementation RateLimitResult
 
@@ -55,8 +73,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 @interface RateLimiter ()
 
 @property (nonatomic, copy, nullable) NSString *databasePath;
-@property (nonatomic, strong, nullable) ATProtoConnectionManagerSerial *connectionManager;
-@property (nonatomic, strong, nullable) ATProtoDatabaseQueryRunner *queryRunner;
+@property (nonatomic, strong, nullable) RateLimiterStorageHandle *storageHandle;
 
 @end
 
@@ -110,18 +127,17 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 - (void)reconfigureDatabasePath:(nullable NSString *)path {
     NSString *normalizedPath = path.length > 0 ? [path copy] : nil;
     @synchronized(self) {
-        if (_connectionManager) {
-            [_connectionManager close];
-            _connectionManager = nil;
+        if (_storageHandle) {
+            [_storageHandle.connectionManager close];
+            _storageHandle = nil;
         }
-        _queryRunner = nil;
         _databasePath = normalizedPath;
     }
 }
 
 - (BOOL)ensureDatabaseOpened {
     @synchronized(self) {
-        if (self.connectionManager && self.connectionManager.isOpen) {
+        if (self.storageHandle && self.storageHandle.connectionManager.isOpen) {
             return YES;
         }
 
@@ -141,24 +157,22 @@ BOOL RateLimiterIsDisabledGlobally(void) {
                                                             error:nil];
         }
 
-        if (!self.connectionManager) {
-            self.connectionManager = [[ATProtoConnectionManagerSerial alloc] initWithLabel:@"com.atproto.ratelimiter.db"];
+        if (!_rateLimiterStorageFactory) {
+            GZ_LOG_DB_ERROR(@"RateLimiter: no storage factory registered — cannot open rate limit database");
+            return NO;
         }
 
         ATProtoDBConfig dbConfig = ATProtoDBConfigDefault;
         NSError *openError = nil;
-        if (![self.connectionManager openWithPath:self.databasePath config:dbConfig error:&openError]) {
+        RateLimiterStorageHandle *handle = _rateLimiterStorageFactory(self.databasePath, dbConfig, &openError);
+        if (!handle) {
             GZ_LOG_DB_ERROR(@"Failed to open rate limit database at path %@: %@", self.databasePath, openError);
             return NO;
         }
-
-        if (!self.queryRunner) {
-            self.queryRunner = [[ATProtoDatabaseQueryRunner alloc] initWithConnectionManager:self.connectionManager
-                                                                                 errorDomain:@"RateLimiterErrorDomain"];
-        }
+        self.storageHandle = handle;
 
         [self initializeDatabase];
-        return self.connectionManager.isOpen;
+        return self.storageHandle.connectionManager.isOpen;
     }
 }
 
@@ -171,10 +185,10 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         @"window_start INTEGER NOT NULL, "
         @"UNIQUE(identifier, type)"
         @")";
-    [self.queryRunner executeUpdate:createTableSQL params:nil error:nil];
+    [self.storageHandle.queryRunner executeUpdate:createTableSQL params:nil error:nil];
 
     NSString *createIndexSQL = @"CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier)";
-    [self.queryRunner executeUpdate:createIndexSQL params:nil error:nil];
+    [self.storageHandle.queryRunner executeUpdate:createIndexSQL params:nil error:nil];
 
     NSString *createBlobTableSQL = @"CREATE TABLE IF NOT EXISTS blob_rate_limits ("
         @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -183,7 +197,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         @"window_start INTEGER NOT NULL, "
         @"UNIQUE(did)"
         @")";
-    [self.queryRunner executeUpdate:createBlobTableSQL params:nil error:nil];
+    [self.storageHandle.queryRunner executeUpdate:createBlobTableSQL params:nil error:nil];
 }
 
 - (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
@@ -239,7 +253,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     __block RateLimitResult *outResult = nil;
     __block NSInteger requestCount = 0;
 
-    [self.queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **error) {
+    [self.storageHandle.queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **error) {
         NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
         NSArray *rows = [tx executeQuery:selectSQL params:@[identifier, @(type), @(windowStart)] error:error];
         NSTimeInterval existingWindowStart = 0;
@@ -301,7 +315,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     NSTimeInterval windowStart = now - windowSeconds;
     NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
 
-    NSArray *rows = [self.queryRunner executeQuery:selectSQL params:@[identifier, @(type), @(windowStart)] error:nil];
+    NSArray *rows = [self.storageHandle.queryRunner executeQuery:selectSQL params:@[identifier, @(type), @(windowStart)] error:nil];
     NSInteger requestCount = 0;
     NSTimeInterval existingWindowStart = 0;
     if (rows.count > 0) {
@@ -341,7 +355,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     __block RateLimitResult *outResult = nil;
     __block NSInteger uploadCount = 0;
 
-    [self.queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **error) {
+    [self.storageHandle.queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **error) {
         NSString *selectSQL = @"SELECT upload_count, window_start FROM blob_rate_limits WHERE did = ? AND window_start > ?";
         NSArray *rows = [tx executeQuery:selectSQL params:@[did, @(windowStart)] error:error];
         NSTimeInterval existingWindowStart = 0;
@@ -400,7 +414,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     NSTimeInterval windowStart = now - windowSeconds;
     NSString *selectSQL = @"SELECT upload_count, window_start FROM blob_rate_limits WHERE did = ? AND window_start > ?";
 
-    NSArray *rows = [self.queryRunner executeQuery:selectSQL params:@[did, @(windowStart)] error:nil];
+    NSArray *rows = [self.storageHandle.queryRunner executeQuery:selectSQL params:@[did, @(windowStart)] error:nil];
     NSInteger uploadCount = 0;
     NSTimeInterval existingWindowStart = 0;
     if (rows.count > 0) {
@@ -488,7 +502,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 }
 
 - (void)dealloc {
-    [_connectionManager close];
+    [_storageHandle.connectionManager close];
 }
 
 - (NSArray<NSDictionary *> *)getTopLimitedIdentifiers:(NSInteger)limit {
@@ -503,7 +517,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
                      @"FROM rate_limits WHERE window_start > ? "
                      @"GROUP BY identifier, type ORDER BY total_count DESC LIMIT ?";
 
-    NSArray *rows = [self.queryRunner executeQuery:sql params:@[@(windowStart), @(limit)] error:nil];
+    NSArray *rows = [self.storageHandle.queryRunner executeQuery:sql params:@[@(windowStart), @(limit)] error:nil];
     if (!rows) return @[];
 
     NSMutableArray *entries = [NSMutableArray arrayWithCapacity:rows.count];
@@ -531,7 +545,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         params = @[identifier, type];
     }
 
-    NSInteger changes = [self.queryRunner executeUpdate:sql params:params error:nil];
+    NSInteger changes = [self.storageHandle.queryRunner executeUpdate:sql params:params error:nil];
     return changes < 0 ? 0 : changes;
 }
 

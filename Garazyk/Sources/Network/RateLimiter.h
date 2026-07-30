@@ -25,11 +25,56 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Database/Connection/ATProtoConnectionManager.h"
+#import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class HttpRequest;
 @class HttpResponse;
+
+/*!
+ @class RateLimiterStorageHandle
+
+ @abstract Bundles the connection manager and query runner a @c RateLimiter
+ needs, without naming any concrete Storage class.
+
+ @discussion RateLimiter (Transport) previously constructed
+ @c ATProtoConnectionManagerSerial and @c ATProtoDatabaseQueryRunner
+ (both Storage) directly, an undeclared Transport -> Storage dependency.
+ The concrete construction now happens behind @c RateLimiterStorageFactory,
+ registered by whichever Storage/Services code links into the running
+ process (see @c ATProtoDatabaseQueryRunner.m's own `+load` registration).
+ */
+@interface RateLimiterStorageHandle : NSObject
+
+@property (nonatomic, strong, readonly) id<ATProtoConnectionManager> connectionManager;
+@property (nonatomic, strong, readonly) id<ATProtoQueryRunning> queryRunner;
+
+- (instancetype)init NS_UNAVAILABLE;
+- (instancetype)initWithConnectionManager:(id<ATProtoConnectionManager>)connectionManager
+                              queryRunner:(id<ATProtoQueryRunning>)queryRunner NS_DESIGNATED_INITIALIZER;
+
+@end
+
+/*!
+ @abstract Opens (or reopens) the SQLite-backed storage a @c RateLimiter uses.
+ @discussion Returns nil and sets @c error on failure to open. Called at most
+ once per distinct database path — @c RateLimiter caches the result.
+ */
+typedef RateLimiterStorageHandle * _Nullable (^RateLimiterStorageFactory)(NSString *path,
+                                                                          ATProtoDBConfig config,
+                                                                          NSError **error);
+
+/*!
+ @abstract Registers the factory @c RateLimiter uses to open its storage.
+ @discussion Call once at process startup, before any @c RateLimiter method
+ that touches the database runs. Whichever binary links Storage does this
+ via a `+load` self-registration (see @c ATProtoDatabaseQueryRunner.m),
+ mirroring the existing @c GZHTTPClientRegistry pattern — no call site in
+ App/Runtime startup code needs to change.
+ */
+FOUNDATION_EXPORT void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory);
 
 /**
  * @abstract Rate limit buckets tracked by request identity and resource type.
