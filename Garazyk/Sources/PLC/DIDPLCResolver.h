@@ -12,6 +12,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Core/DIDResolving.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -45,7 +46,7 @@ typedef NS_ENUM(NSInteger, DIDPLCResolverErrorCode) {
 
     Thread Safety: All methods are thread-safe and can be called from any queue.
  */
-@interface DIDPLCResolver : NSObject
+@interface DIDPLCResolver : NSObject <DIDResolving>
 
 /*! The base URL of the PLC server (e.g., https://plc.directory). */
 @property (nonatomic, copy, readonly) NSString *plcUrl;
