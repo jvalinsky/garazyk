@@ -451,16 +451,19 @@ remaining program does not depend on items 1-2.
    Round-trip, empty-tree, malformed-input, and STAR→CAR conversion tests
    added (6 new test methods). All 20 STARPreorderTests pass.
 
-10. **Open (added 2026-07-28):** make the ten `ATProto*` static-library
-    boundaries real. Complete
+10. **Open (re-verified 2026-07-30):** make the ten `ATProto*` static-library
+    boundaries real and publish them as a bounded, experimental CMake config
+    package. Complete
     [workstream 08](workstreams/08-module-boundaries-and-library-consumption.md).
-    The declared dependency graph in `CMakeLists.txt` is not enforced:
-    `libATProtoCore.a` is declared dependency-free but carries six undefined
-    class references to Storage and Transport, and roughly 140 import edges
-    violate the declared layering. Static archives defer symbol resolution to
-    the final executable link, so this has never failed a build. Land the
-    link-time boundary gate (M1) before the structural items; it is what makes
-    the rest measurable. Items M5 and M6 are gated on the M0 decision   about whether third-party consumption is a goal.
+    M1-M3 are complete. M4 was previously reported complete, but its own
+    zero-baseline gate is not met: the current boundary checker still permits
+    30 baselined violations across seven modules. M7 is also partial because
+    package-target sources retain host-process exits and one hard-coded log
+    fallback. Finish those residual items, then replace implicit module
+    membership, curate and namespace the public API, and add relocatable
+    install/export rules. M0 is answered yes for source-built static libraries
+    on macOS and GNUstep/Linux; prebuilt binaries, Apple
+    frameworks/XCFrameworks, iOS, and package registries remain out of scope.
 
 11. **Open (added 2026-07-30):** cut `AllTests` wall clock and related CI /
     Deno cycle waste. Complete

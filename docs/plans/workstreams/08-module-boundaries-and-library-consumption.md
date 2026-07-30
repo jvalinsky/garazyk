@@ -1,8 +1,54 @@
 ---
 title: Module Boundaries and Library Consumption
 status: active
-last_verified: 2026-07-29
+last_verified: 2026-07-30
 ---
+
+## Verified status (2026-07-30)
+
+The earlier execution summary and the proposed Option A plan overstated the
+workstream's completion. A current run of
+`scripts/check_module_boundaries.sh build` passes only because all **30**
+remaining violations are still recorded in
+`docs/module-boundary-baseline.txt`:
+
+| Referencing module | Remaining violations |
+| --- | ---: |
+| `ATProtoServices` | 15 |
+| `ATProtoXRPC` | 6 |
+| `ATProtoMediaCore` | 3 |
+| `ATProtoPLC` | 2 |
+| `ATProtoVideoService` | 2 |
+| `ATProtoStorage` | 1 |
+| `ATProtoSync` | 1 |
+
+M1-M3 are complete. M4 has resolved the inversions originally enumerated in
+its first audit, but it has **not** met its own zero-baseline acceptance gate.
+M7 is partially complete: dependency injection and most data-path work landed,
+but module sources still contain host-process exits and an installer
+`/var/db/kaszlak` fallback. M5 and M6 have not started.
+
+M0 is now answered **yes**, with a deliberately bounded first release:
+
+- provide a relocatable, source-built CMake config package for the ten
+  `ATProto*` static-library targets;
+- support macOS and GNUstep/Linux, which are the two platforms already in the
+  repository's build contract;
+- export imported targets as `Garazyk::ATProtoCore`,
+  `Garazyk::ATProtoStorage`, and so on;
+- mark the 0.x API experimental and make no ABI-stability promise;
+- exclude prebuilt binary archives, Apple frameworks/XCFrameworks, CocoaPods,
+  SwiftPM, iOS, and package-registry publication from this workstream.
+
+This scope is enough for a third party to build, install, relocate, discover,
+and link the libraries without vendoring Garazyk into its own source tree. It
+does not commit the project to maintaining every distribution channel at once.
+
+The current archives also make the naming cost measurable. Across the ten
+package targets, the existing build contains 500 Objective-C classes, of which
+283 do not begin with the project's reserved `GZ`, `ATProto`, or `PDS`
+prefixes. That is the starting baseline for M5, not the short illustrative list
+in the original plan.
 
 ## Progress (2026-07-29)
 
@@ -371,10 +417,15 @@ full `AllTests --gated=run` verified clean.
 
 **`XRPC -> PLC` decision resolved**. Addressed the final open item of M4. XRPC's route packs and API handlers inherently depend on the business logic modules (Services, Storage, Sync, and PLC) to implement their routes. `ATProtoPLC` exposes PLC directory routes that XRPC packs must dispatch to. Thus, PLC belongs *below* XRPC in the declared graph, just like the other product-feature modules. Added `ATProtoPLC` to `ATProtoXRPC`'s `PUBLIC` dependencies in `CMakeLists.txt`. This naturally resolves all 5 remaining XRPC -> PLC boundary violations (`DIDPLCResolver`, `PLCAuditor`, `PLCOperation`, `PLCRotationKeyManager`, `PLCStateReplayer`). Baseline ratcheted 35 → 30. Full `AllTests --gated=run` verified clean with an improved failure profile.
 
-**M4 is now fully resolved** — all module inversions have been addressed and the declared DAG now accurately reflects the architecture.
+**Correction (2026-07-30): M4's originally enumerated inversion set is
+resolved, but M4 itself is not complete.** Its acceptance gate requires the
+baseline to reach zero, and 30 baselined violations remain. The revised M4
+below treats those violations as the remaining work rather than declaring
+victory after the `XRPC -> PLC` subset.
 
-M0 (third-party consumption goal) remains an open decision — M1's
-baseline is useful either way, but M5/M6 stay gated on it.
+M0 (third-party consumption goal) is now answered yes under the bounded package
+contract in the verified-status section above. M5/M6 remain gated on the real
+completion of M4.
 
 # Module Boundaries and Library Consumption
 
@@ -384,26 +435,34 @@ The ten `ATProto*` static libraries become real boundaries: each links against
 only its declared dependencies, the build enforces that property, and the
 declared dependency graph in `CMakeLists.txt` stops being documentation.
 
-Whether those libraries are also *published* for third-party consumption is a
-separate decision. Items M1-M4 are worth doing either way — they are internal
-architecture health and they are what make the graph true. Items M5-M6 only pay
-off if external consumption is a goal, and they are the expensive half. Decide
-M0 before starting M5.
+The libraries will also be installable for third-party consumption through the
+bounded CMake package contract recorded above. Items M1-M4 remain internal
+architecture prerequisites: an installed package cannot compensate for false
+dependency declarations. M5 defines a collision-safe public surface, and M6
+makes that surface relocatable and consumable.
 
 ## M0. Decide the consumption target
 
-Answer one question and record it: is a third-party project expected to link
-`libATProtoCore.a` (or a framework built from it) without vendoring this
-repository?
+**Decision: yes.** A third-party project is expected to build and install
+Garazyk, then consume one or more static-library targets through
+`find_package(Garazyk CONFIG REQUIRED)` without adding the Garazyk source tree
+to its own build.
 
-- **No** — stop after M4 and M7. The dependency graph becomes true and
-  enforceable, which is worth it on its own. Skip symbol renaming and install
-  rules.
-- **Yes** — M5 and M6 become required, and the symbol renaming in M5 is a
-  one-way door that should happen before any external consumer exists.
+The acceptance contract is intentionally precise:
 
-This gates roughly two-thirds of the total effort. Nothing below M4 depends on
-the answer, so M1-M4 can start immediately.
+1. All ten module targets are exported under the `Garazyk::` namespace with
+   their transitive dependencies represented accurately.
+2. `Garazyk::ATProtoCore` can be linked alone by a minimal consumer.
+3. A second consumer can link the top-level runtime/module set and exercise the
+   full exported dependency closure.
+4. The installed prefix can be moved before either consumer is configured; no
+   build-tree path may appear in installed headers or CMake metadata.
+5. macOS and GNUstep/Linux both pass the package-consumer gates.
+
+Version 0.x is an experimental source API. The first release does not promise
+ABI compatibility or ship prebuilt binaries. Expanding to frameworks,
+XCFrameworks, iOS, SwiftPM, CocoaPods, or a public registry requires a separate
+decision after this workstream.
 
 ## Current evidence
 
@@ -558,85 +617,344 @@ Rollback: single revert; the change is file moves plus mechanical import edits.
 
 ## M4. Resolve the remaining inversions
 
-What is left after M3 needs design, not moves — but most of it is the same bug:
-a protocol declared in the wrong layer.
+Status: **in progress; 30 baselined violations remain.** The earlier M4 work
+resolved the initially enumerated clusters, but the follow-on baseline was
+incorrectly treated as out of scope. It is not: M4's purpose and acceptance
+gate are both zero undeclared dependencies.
 
-- `Storage -> Services` (5): `ATProtoHandleValidator` is a pure validator with
-  no service dependencies. Move it to Core.
-- `Video -> Services` (7), `MediaCore -> Services` (4), `XRPC -> Video` (5):
-  `PDSBlobProvider` is already a protocol. Move the protocol to Core and leave
-  the implementations in Services.
-- `Transport -> Storage` (7): `RateLimiter` and two route packs reach into the
-  database. Inject a storage protocol rather than importing `PDSDatabase.h`.
-- `Transport -> Runtime` (3): route packs import `App/` handlers. Invert the
-  registration so handlers register themselves with the router.
-- `PLC <-> Sync` (2): a genuine cycle. `PLCServer` imports the WebSocket
-  adapter and `RelayEventValidator` imports `DIDPLCResolver`. Break it with a
-  resolver protocol owned by Core.
-- `XRPC -> PLC` (7): decide whether PLC belongs below XRPC in the declared
-  graph. This one may be a wrong edge in the DAG rather than wrong code.
+### M4.1. Freeze and explain the residual baseline
 
-Owner boundary: one module pair per commit, each landing a baseline reduction.
+Generate a report mapping every baseline entry to the object file that emits
+the undefined reference. Check that report into the work log, not as a second
+permanent baseline. For each cluster, record whether the fix is:
 
-Verification gate: baseline reaches zero; the gate script then runs without a
-baseline file at all.
+- source ownership (the object file is compiled into the wrong module);
+- dependency declaration (the dependency is fundamental and acyclic);
+- dependency inversion (a protocol/factory belongs below both sides); or
+- composition extraction (an adapter imports two siblings and belongs in
+  Runtime or a dedicated integration target).
 
-Rollback: per-pair commits revert independently.
+Do not silence a violation by adding a `PUBLIC` edge until the resulting graph
+has been checked for cycles and the referenced API is intentionally part of the
+lower module's public contract.
+
+#### Evidence map (2026-07-30)
+
+After a fresh `cmake -S . -B build` and rebuild of all ten package archives,
+the link-time checker reports the expected 30 leaks in seven modules. `nm -u -A`
+identified the emitting members below; the source path is relative to
+`Garazyk/Sources`. The classifications are proposed next steps, not baseline
+exceptions.
+
+| Referencing archive | Undefined class | Emitting object / source | Owning archive | Proposed classification |
+| --- | --- | --- | --- | --- |
+| ATProtoMediaCore | XrpcDispatcher | `ATProtoMediaServiceRuntime.m.o` / `MediaCore/ATProtoMediaServiceRuntime.m` | ATProtoXRPC | composition extraction |
+| ATProtoMediaCore | XrpcErrorHelper | `ATProtoMediaXrpcPack.m.o` / `MediaCore/ATProtoMediaXrpcPack.m` | ATProtoXRPC | composition extraction |
+| ATProtoMediaCore | XrpcRoutePackServiceBag | `ATProtoMediaServiceRuntime.m.o` / `MediaCore/ATProtoMediaServiceRuntime.m` | ATProtoXRPC | composition extraction |
+| ATProtoPLC | ATProtoConnectionManagerSerial | `PLCPersistentStore.m.o` / `PLC/PLCPersistentStore.m` | ATProtoStorage | legitimate dependency edge |
+| ATProtoPLC | ATProtoDatabaseQueryRunner | `PLCPersistentStore.m.o` / `PLC/PLCPersistentStore.m` | ATProtoStorage | legitimate dependency edge |
+| ATProtoServices | ATProtoSafeHTTPClient | `ChatAuthManager.m.o`, `FederationClient.m.o`, `HandleResolver.m.o`, `OAuth2Handler+ClientMetadataFetch.m.o`, `PDSAccountService.m.o`, `PDSCaptchaRegistrationGate.m.o`, `PDSEmailHTTPClient.m.o`, `PDSRelayService.m.o`, `PDSSpaceAppAttestationVerifier.m.o`, `PDSSpaceReconciler.m.o` / matching `Chat`, `Federation`, `Identity`, `Auth`, `Services`, `Registration`, `Email`, and `Security` sources | ATProtoTransport | dependency inversion |
+| ATProtoServices | ATProtoSafeHTTPClientOptions | `ChatAuthManager.m.o`, `FederationClient.m.o`, `HandleResolver.m.o`, `OAuth2Handler+ClientMetadataFetch.m.o`, `PDSAccountService.m.o`, `PDSCaptchaRegistrationGate.m.o`, `PDSEmailHTTPClient.m.o`, `PDSSpaceAppAttestationVerifier.m.o` / matching sources above | ATProtoTransport | dependency inversion |
+| ATProtoServices | DIDPLCResolver | `AppViewIdentityHelper.m.o` / `AppView/AppViewIdentityHelper.m` | ATProtoPLC | composition extraction |
+| ATProtoServices | HttpServer | `ChatRuntime.m.o`, `GermRuntime.m.o` / `Chat/Server/ChatRuntime.m`, `Germ/Server/Runtime/GermRuntime.m` | ATProtoTransport | composition extraction |
+| ATProtoServices | PDSBaseCommand | `PDSInstallerCommand.m.o` / `Admin/PDSInstallerCommand.m` | ATProtoRuntime | wrong source ownership |
+| ATProtoServices | PDSCLIDispatcher | `PDSInstallerCommand.m.o` / `Admin/PDSInstallerCommand.m` | ATProtoRuntime | wrong source ownership |
+| ATProtoServices | PDSController | `PDSAdminAuth.m.o` / `Admin/PDSAdminAuth.m` | ATProtoRuntime | composition extraction |
+| ATProtoServices | PLCOperation | `PDSAccountService.m.o` / `Services/PDS/PDSAccountService.m` | ATProtoPLC | dependency inversion |
+| ATProtoServices | PLCRotationKeyManager | `PDSAccountService.m.o` / `Services/PDS/PDSAccountService.m` | ATProtoPLC | dependency inversion |
+| ATProtoServices | RateLimiter | `PDSRateLimitAdminHandler.m.o` / `Admin/Diagnostics/PDSRateLimitAdminHandler.m` | ATProtoTransport | dependency inversion |
+| ATProtoServices | XrpcChatBskyActorPack | `ChatRuntime.m.o` / `Chat/Server/ChatRuntime.m` | ATProtoXRPC | composition extraction |
+| ATProtoServices | XrpcChatBskyConvoPack | `ChatRuntime.m.o` / `Chat/Server/ChatRuntime.m` | ATProtoXRPC | composition extraction |
+| ATProtoServices | XrpcChatBskyGroupPack | `ChatRuntime.m.o` / `Chat/Server/ChatRuntime.m` | ATProtoXRPC | composition extraction |
+| ATProtoServices | XrpcDispatcher | `ChatRuntime.m.o`, `GermRuntime.m.o` / `Chat/Server/ChatRuntime.m`, `Germ/Server/Runtime/GermRuntime.m` | ATProtoXRPC | composition extraction |
+| ATProtoServices | XrpcRoutePackServiceBag | `ChatRuntime.m.o` / `Chat/Server/ChatRuntime.m` | ATProtoXRPC | composition extraction |
+| ATProtoStorage | PDSAppleActorKeyManager | `ActorStore.m.o` / `Database/ActorStore/ActorStore.m` | ATProtoServices | dependency inversion |
+| ATProtoSync | XrpcIdentityHelper | `RelayEventValidator.m.o` / `Sync/Relay/RelayEventValidator.m` | ATProtoXRPC | dependency inversion |
+| ATProtoVideoService | XrpcAuthHelper | `VideoPDSAuthProvider.m.o` / `Video/VideoPDSAuthProvider.m` | ATProtoXRPC | composition extraction |
+| ATProtoVideoService | XrpcErrorHelper | `VideoXrpcPack.m.o` / `Video/VideoXrpcPack.m` | ATProtoXRPC | composition extraction |
+| ATProtoXRPC | ATProtoVideoWorker | `XrpcAppBskyPack.m.o` / `Network/XrpcAppBskyPack.m` | ATProtoVideoService | composition extraction |
+| ATProtoXRPC | ATProtoVideoXrpcPack | `XrpcAppBskyPack.m.o` / `Network/XrpcAppBskyPack.m` | ATProtoVideoService | composition extraction |
+| ATProtoXRPC | PDSAccountPolicy | `XrpcAuthHelper.m.o` / `Network/XrpcAuthHelper.m` | ATProtoRuntime | dependency inversion |
+| ATProtoXRPC | PDSController | `XrpcAuthHelper.m.o`, `XrpcRepoPack.m.o` / `Network/XrpcAuthHelper.m`, `Network/XrpcRepoPack.m` | ATProtoRuntime | dependency inversion |
+| ATProtoXRPC | PDSLocalVideoJobStore | `XrpcAppBskyPack.m.o` / `Network/XrpcAppBskyPack.m` | ATProtoVideoService | composition extraction |
+| ATProtoXRPC | VideoPDSAuthProvider | `XrpcAppBskyPack.m.o` / `Network/XrpcAppBskyPack.m` | ATProtoVideoService | composition extraction |
+
+### M4.2. Resolve the remaining clusters
+
+Land one independently reviewable cluster per commit, shrinking the existing
+baseline each time:
+
+1. **Services composition leaks (15).** Separate runtime/composition objects
+   (`ChatRuntime`, `GermRuntime`, `PDSInstallerCommand`, and admin/runtime
+   adapters) from service implementations. Replace direct
+   `ATProtoSafeHTTPClient`, PLC, Transport, Runtime, and XRPC construction with
+   lower-layer protocols or move the composition object to the module that
+   already owns both sides.
+2. **Video/XRPC integration cycle (8 total across XRPC, VideoService, and
+   MediaCore).** Keep media abstractions independent of XRPC. Move route-pack
+   registration and concrete video-worker/auth-provider composition to Runtime,
+   or introduce one narrowly scoped integration target if Runtime ownership
+   would be false. `ATProtoMediaCore` must not depend on XRPC.
+3. **PLC persistence (2).** Decide explicitly whether
+   `PLCPersistentStore` makes Storage a fundamental PLC dependency. If yes, add
+   the acyclic `ATProtoPLC -> ATProtoStorage` edge and test standalone PLC
+   linking. If no, inject a persistence protocol and keep the concrete adapter
+   in Runtime.
+4. **Storage key-manager construction (1).** Remove
+   `ActorStore -> PDSAppleActorKeyManager` by injecting a key-manager factory or
+   moving Apple-specific construction above Storage. Storage must remain usable
+   on GNUstep/Linux.
+5. **Sync identity helper (1).** Extract the identity operation used by
+   `RelayEventValidator` into a lower-layer protocol or service; Sync must not
+   import an XRPC helper.
+
+The object-file mapping in the verified 2026-07-30 run is the starting evidence
+for these batches. Read each implementation before choosing move versus
+inversion; the earlier workstream already showed that directory names and the
+link-time detector both miss real ownership constraints.
+
+### M4.3. Close the gate
+
+The acceptance gate is all of the following:
+
+- `docs/module-boundary-baseline.txt` has no violation entries;
+- `scripts/check_module_boundaries.sh build` reports zero current leaks;
+- the source-import boundary gate also passes, catching type-only references
+  that do not emit `_OBJC_CLASS_$_` symbols;
+- every one of the ten archives can participate in a minimal link using only
+  its declared transitive dependency closure;
+- the full macOS suite and GNUstep/Linux gate pass.
+
+Keep the baseline file with only its explanatory header, or teach the script to
+treat an absent baseline as empty. Do not let the script recreate an allegedly
+deleted baseline with `touch`.
+
+Rollback: per-cluster commits revert independently. A dependency-declaration
+commit must include its graph rationale and standalone-link test so it cannot
+be mistaken for a convenient suppression.
+
+## M4.5. Make module membership deterministic
+
+Do this after the residual objects are assigned correctly and before public API
+curation begins.
+
+1. Add `CONFIGURE_DEPENDS` immediately to every remaining
+   `file(GLOB_RECURSE)` so new and renamed files cannot be omitted until a
+   reconfigure.
+2. Replace directory globs plus exclusion regexes with reviewed, per-target
+   source manifests under `cmake/modules/`. Preserve generated lists only if CI
+   compares the generated result with a checked-in ownership manifest.
+3. Add a configure-time assertion that no source belongs to two package
+   targets and every package-target implementation belongs to exactly one.
+4. Keep platform-specific implementations explicit and conditional; do not
+   export build-host absolute paths in those manifests.
+
+Verification gate: adding an unassigned implementation, assigning one file to
+two targets, or renaming a source without updating its manifest fails
+configuration.
 
 ## M5. Namespace the exported symbols
 
-Only if M0 answered yes. This is a one-way door and should precede any external
-consumer.
+M0 is yes, but renaming begins only after M4 and M4.5. Namespace policy and the
+public API must be defined before touching hundreds of call sites.
 
-Order by collision risk, highest first:
+### M5.1. Define the public API and namespace policy
 
-1. Migration classes (`V1InitialSchema` through `V17...`, `AppViewV1...`).
-   These are internal with no external contract — rename outright.
-2. Transport types: `HttpRequest`, `HttpResponse`, `HttpServer`, `HttpRouter`,
-   `RateLimiter`, `HttpParsing`.
-3. Core and Storage types: `CID`, `TID`, `ATURI`, `Base58`, `DIDResolver`,
-   `MST*`, `CBOR*`, `CAR*`.
+Create an explicit public-header manifest for each module. A header is not
+public merely because it lives below `Garazyk/Sources`; installed consumers get
+only the manifest. Compile each manifest as an umbrella before renaming.
 
-Use `@compatibility_alias` for a deprecation window so in-tree call sites
-migrate incrementally instead of in one 500-file commit.
+Use the existing semantic prefixes consistently:
 
-Verification gate: every exported `_OBJC_CLASS_$_` in every `ATProto*` archive
-matches `^(GZ|ATProto|PDS)`, checked by the same CI script as M1.
+- `ATProto` for protocol/domain primitives;
+- `PDS` for PDS-specific types;
+- `GZ` for Garazyk infrastructure that is not an AT Protocol domain type.
 
-Rollback: the aliases keep old names resolving for the whole window; revert is
-per-module.
+The policy covers Objective-C classes, protocols, categories, exported
+functions, global variables, notification names, and error domains. Category
+names and any selectors added to types Garazyk does not own need a reserved
+prefix too.
+
+Generate two inventories from a fresh build:
+
+1. all project-defined global/runtime symbols in the ten archives, grouped by
+   owning target and object file; and
+2. all declarations reachable from the curated public headers.
+
+Check in a shrink-only namespace baseline. The 2026-07-30 build starts at 283
+unprefixed Objective-C classes; the broader inventory will also expose C
+symbols, protocols, and categories that the original class-only proposal
+missed.
+
+### M5.2. Add the namespace gate before renaming
+
+Extend the existing boundary tooling or add a focused script that fails on any
+new unprefixed project symbol. Exclude system and vendored symbols by provenance
+(owning archive/object), not by an ever-growing name allowlist.
+
+The gate must inspect at least:
+
+- `_OBJC_CLASS_$_*` and `_OBJC_METACLASS_$_*`;
+- Objective-C protocol and category metadata where the toolchain exposes it;
+- externally visible C/Objective-C functions and data symbols; and
+- installed public declarations.
+
+Run the gate on both Apple and GNUstep/Linux archives because the selected
+sources differ by platform.
+
+### M5.3. Rename in dependency order
+
+Use small, buildable commits with generated inventory deltas:
+
+1. internal migration classes as a low-risk pilot;
+2. Core primitives and Core-owned crypto/security helpers;
+3. Storage and Transport;
+4. PLC, Sync, Services, and MediaCore;
+5. XRPC and VideoService;
+6. Runtime and any remaining composition types.
+
+Within a batch, rename the declaration, implementation, file, imports, string
+lookups such as `NSClassFromString`, tests, fixtures, and documentation
+together. Search for serialized class names and selector strings before
+declaring the batch complete.
+
+`@compatibility_alias` is source compatibility only; it does **not** preserve
+the old runtime class symbol or provide binary compatibility. If aliases are
+needed to keep intermediate in-tree commits buildable, put them behind an
+opt-in migration header that is never installed, never included by an umbrella,
+and is removed before M6. Do not publish generic aliases such as `CID` or
+`HttpRequest`, because their declarations recreate the source-namespace
+collision the rename is meant to solve.
+
+### M5.4. Close the namespace gate
+
+Acceptance requires:
+
+- zero project-owned namespace-baseline entries on macOS and GNUstep/Linux;
+- no legacy compatibility aliases in package targets or installed headers;
+- every curated umbrella compiles in isolation;
+- runtime lookup/archiving tests pass for renamed types that use string-based
+  discovery; and
+- the full repository gates pass after each module batch.
+
+Rollback: before the first external package release, each module batch can be
+reverted. After release, a public rename is a source-breaking API change and
+must follow the package's versioning policy; temporary aliases are not an ABI
+rollback mechanism.
 
 ## M6. Make the libraries installable
 
-Only if M0 answered yes.
+M6 turns the curated, namespaced targets into the bounded CMake package chosen
+in M0. It is not complete until a relocated install works on both supported
+platforms.
 
-1. `install(TARGETS ... EXPORT GarazykTargets)` for the ten module targets,
-   plus `GarazykConfig.cmake` and `write_basic_package_version_file`.
-2. Replace the blanket source-tree include directory with per-module
-   `BUILD_INTERFACE`/`INSTALL_INTERFACE` paths and a curated public header set,
-   so private headers stop being public.
-3. Repair the umbrella headers and add a compile-only target that imports each
-   one. The absence of such a target is why `ATProtoServices.h` could reference
-   six nonexistent files indefinitely.
-4. Replace `GLOB_RECURSE` plus regex filters with explicit source lists, or at
-   minimum add `CONFIGURE_DEPENDS`, so module membership stops being implicit
-   in a file's path.
+### M6.1. Make target usage requirements relocatable
 
-Verification gate: an out-of-tree sample consumer runs `find_package(Garazyk)`,
-links `ATProtoCore` alone, and builds — which is only possible once M2 is done.
+1. Replace blanket source-tree include paths with target-specific
+   `$<BUILD_INTERFACE:...>` and `$<INSTALL_INTERFACE:...>` paths.
+2. Audit every `PUBLIC` compile definition, option, include path, and link
+   library. Keep only requirements that an installed consumer genuinely needs.
+3. Replace global `include_directories()`/`link_directories()` platform setup
+   with target-scoped imported or interface targets.
+4. Resolve the `secp256k1` export problem explicitly. `ATProtoCore` currently
+   exposes a `PUBLIC` dependency on a vendored target whose installation is
+   disabled. Either install/export that target as part of Garazyk or hide it
+   behind a packaged implementation target while preserving static-link
+   closure; never emit a dangling target reference.
+5. Represent Apple frameworks, GNUstep Foundation/runtime, SQLite, OpenSSL, and
+   other transitive dependencies through relocatable targets and
+   `find_dependency()` calls rather than build-host absolute library paths.
 
-Rollback: install and export rules are additive; the sample consumer lives
-outside the build.
+Add build-tree aliases named `Garazyk::ATProtoCore` and so on, matching the
+installed target names.
+
+### M6.2. Install the curated headers
+
+Use the M5 public-header manifests to preserve the import directory structure
+under one stable include root. Do not flatten path-based imports into a single
+directory.
+
+Repair the existing eight umbrella headers, create missing umbrellas for
+`ATProtoMediaCore` and `ATProtoVideoService`, and define or remove the currently
+declaration-only `*VersionNumber`/`*VersionString` symbols. Add one compile-only
+target per umbrella so a missing or private transitive header fails in the
+normal build.
+
+Choose one of these mechanisms and use it consistently:
+
+- raise the CMake minimum after verifying CI, then use `FILE_SET HEADERS` with
+  explicit base directories; or
+- keep CMake 3.21 and install the explicit manifest with a helper that preserves
+  each relative directory.
+
+### M6.3. Export the CMake package
+
+Install the ten targets into one export set with
+`NAMESPACE Garazyk::`. Generate:
+
+- `GarazykTargets.cmake`;
+- `GarazykConfig.cmake`;
+- `GarazykConfigVersion.cmake` using the project version;
+- optional component checks for the ten modules; and
+- license/notice files and a concise installed-package README.
+
+The config file must discover external dependencies before loading the target
+export and must contain no source- or build-tree absolute paths.
+
+### M6.4. Add consumer and relocation tests
+
+Check in minimal consumers under `tests/package-consumers/`:
+
+1. **Core-only:** imports the Core umbrella, constructs/parses representative
+   CID/TID/ATURI values, and links only `Garazyk::ATProtoCore`.
+2. **Full graph:** imports every umbrella and links the highest-level exported
+   targets, exercising transitive closure without manually naming their
+   dependencies.
+3. **Negative/private-header:** proves a non-public implementation header is
+   unavailable from the install tree.
+
+CI must:
+
+1. configure and build Garazyk in a fresh out-of-source directory;
+2. install to a temporary prefix;
+3. move or copy that prefix to a different absolute path;
+4. configure, build, and run the positive consumers using only
+   `CMAKE_PREFIX_PATH` to the moved prefix; and
+5. verify the negative consumer fails for the intended missing-header reason.
+
+Run the sequence on macOS and GNUstep/Linux. Also scan installed `.cmake`,
+`.pc`, and header files for the original source/build directory.
+
+### M6.5. Document and release the experimental contract
+
+Document supported platforms, compiler/CMake minimums, components, dependency
+requirements, example `find_package` usage, static-library/category linker
+requirements such as `-ObjC` where applicable, and the 0.x compatibility
+policy. Record a release checklist, but leave registry publication and prebuilt
+artifacts to a later decision.
+
+Verification gate: both relocated consumers pass on both platforms; the
+private-header test fails as designed; namespace and module-boundary baselines
+remain empty; and the mega plan's global gates pass.
+
+Rollback: target cleanup and public-header curation are retained because they
+improve the internal build. Package install/export files and consumer fixtures
+can be reverted as one additive change before the first release.
 
 ## M7. Embedding hygiene
 
 Independent of M0; can run in parallel with anything after M1.
 
-- **[Done]** Replace `exit(1)` and `abort()` in library targets with error returns.
-  Terminating the host process is not a library's decision.
-- Route the hardcoded absolute paths (`/usr/share/garazyk/lexicons`,
-  `/usr/share/atprotopds/assets`, `/var/db/kaszlak/log`) through
-  `ATProtoDataPaths` or configuration.
+- **[Partial]** Replace `exit()` and `abort()` in package-target sources with
+  error returns or caller-owned lifecycle callbacks. Terminating the host
+  process is not a library's decision. The original `GZServiceLifecycle` and
+  compatibility-shim sites were fixed, but `PDSApplication` and CLI command
+  implementations compiled into package targets still call `exit()`.
+- **[Partial]** Route hardcoded absolute paths
+  (`/usr/share/garazyk/lexicons`, `/usr/share/atprotopds/assets`,
+  `/var/db/kaszlak/log`) through `ATProtoDataPaths` or configuration. Lexicon
+  and installer path work landed, but the installer's log fallback still uses
+  `/var/db/kaszlak/log/daemon.log`.
 - **[Done]** Delete the debug sink at
   `Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m:289`, which
   writes to `/tmp/debug-logs/backfill.log` on every run and appears
@@ -653,25 +971,53 @@ Rollback: per-item commits revert independently.
 ## Sequencing
 
 ```
-M0 ─────────────────────────────► (gates M5, M6 only)
-M1 ──► M2 ──► M3 ──► M4 ──► M5 ──► M6
-                       └──► M7 (parallel)
+M0 (yes, bounded package contract) ─────────────────────────────────────┐
+                                                                       ▼
+M1 ✓ ──► M2 ✓ ──► M3 ✓ ──► M4 residual cleanup ──► M4.5 ──► M5 ──┬──► M6
+                              │                                  │
+                              └──► M7 residual cleanup ──────────┘
 ```
 
-M1 gates everything because it is what makes the rest measurable. M2 proves the
-approach on the smallest real module. M3 removes the largest cluster. M4 drives
-the baseline to zero. M5 and M6 deliver external consumption. M7 is independent
-polish.
+M1-M3 are complete. The critical path is now:
+
+1. drive the real M4 baseline from 30 to zero;
+2. finish M7's host-control and absolute-path cleanup;
+3. make module source ownership deterministic;
+4. curate the public API and eliminate project-owned namespace collisions; and
+5. export and validate a relocatable package.
+
+M5 must not begin while M4 is still baselining undeclared dependencies: a
+namespace migration would obscure the same symbols used to measure those
+violations. M6 can be prototyped on a throwaway branch, but package changes must
+not land before the M5 public surface and namespace gates and M7 embedding
+gates are complete.
 
 ## Rollback
 
-Every item is independently revertible and none changes on-disk formats, wire
-formats, or the XRPC surface. M1 touches no product source. M2 and M3 are file
-moves plus additive protocols. M5 carries `@compatibility_alias` for its
-deprecation window. If the workstream is abandoned mid-flight, the baseline file
-records exactly how far it got.
+M1-M4 changes remain independently revertible by module pair and do not change
+on-disk or wire formats. M5 source renames are revertible only before a package
+release; `@compatibility_alias` is an optional in-tree migration aid, not binary
+compatibility and not part of the installed surface. M6 package metadata is
+additive, while its target-scoping and public-header cleanup should be retained
+even if distribution is deferred.
+
+The module and namespace baselines record remaining debt while work is in
+flight. Both must be empty before the first external release.
 
 ## Global gates
 
-Every lane runs the mega plan's global gates. M3 and anything touching
-`Network/` or `Compat/` additionally requires the Linux Docker gate.
+Every lane runs the mega plan's global gates:
+
+```bash
+deno task check
+deno task lint
+deno task test
+cmake --build build --target AllTests --parallel 4
+./build/tests/AllTests --gated=run
+```
+
+Run `xcodegen generate` before macOS Xcode builds. M4-M6 additionally require
+the GNUstep/Linux gate because the package contract supports that platform.
+M5 runs the namespace gate on both platform archive sets. M6 runs the relocated
+install-tree consumer suite and rejects source/build absolute paths in installed
+metadata.
