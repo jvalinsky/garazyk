@@ -2536,6 +2536,26 @@ content-addressed callers go through `Garazyk/Sources/Core/ATProtoDagCBOR.m`;
 the generic `CBORDecoder` (in `Garazyk/Sources/Repository/CBOR.m`) keeps its
 CTAP2 / WebAuthn / generic-CBOR footprint and is not used for signed AT data.
 
+**Follow-up test fix (2026-07-30):** `ATProtoDagCBOR decodeData:error:`'s
+trailing-byte rejection (this section's own strict-decode hardening) broke
+two integration tests that predate it: `CommitChainTests.m`'s
+`decodeEventPayload:` helper and `FirehoseIntegrationTests.m`'s
+`testBroadcastCommitCARContainsRecordBlocks` both manually split a firehose
+frame (two concatenated dag-cbor objects, header then payload, no length
+prefix) by decoding the whole buffer and trusting `decodeData:` to return
+just the header while ignoring the payload's trailing bytes — exactly the
+pattern this section's hardening now correctly rejects. Confirmed via a
+disposable `git worktree` at clean `origin/main` that both failures
+predate and are unrelated to any other uncommitted work. Fixed by routing
+both through `EventFormatter`'s own `decodeEventFromData:op:msgType:error:`
+incremental decoder — the same one the real firehose consumer
+(`Firehose.m`'s `handleMessage:`) already uses — instead of reimplementing
+the split against the public all-or-nothing decode API. Both suites now
+pass in isolation and in the full suite; full `AllTests --gated=run` drops
+from 28 to 15 failures (the remaining 15 are the pre-existing, unrelated
+DPoP-nonce-challenge and X-Forwarded-For-parsing failures tracked
+elsewhere in this workstream).
+
 ### Design (option c, per §3.4 ADR)
 
 The boundary matches the profile boundary. ATProto DAG-CBOR (RFC 8949 §CBOR

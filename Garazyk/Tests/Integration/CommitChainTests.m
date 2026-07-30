@@ -13,6 +13,7 @@
 #import "Services/PDS/PDSRecordService.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
+#import "Sync/Relay/EventFormatter.h"
 
 // Expose private property for testing
 @interface SubscribeReposHandler (CommitChainTesting)
@@ -153,17 +154,17 @@
 }
 
 - (NSDictionary *)decodeEventPayload:(NSData *)msg {
+    // A firehose frame is two concatenated dag-cbor objects (header, then
+    // payload) with no length prefix; ATProtoDagCBOR decodeData: rejects
+    // trailing bytes after a complete item, so it can't be used to split
+    // this buffer manually. Use EventFormatter's own incremental decoder
+    // instead — the same one the real firehose consumer (Firehose.m's
+    // handleMessage:) uses.
     NSError *error = nil;
-    id header = [ATProtoDagCBOR decodeData:msg error:&error];
-    if (!header || ![header isKindOfClass:[NSDictionary class]]) return nil;
-
-    NSData *headerData = [ATProtoDagCBOR encodeObject:header error:nil];
-    if (!headerData || headerData.length >= msg.length) return nil;
-
-    NSData *payloadData = [msg subdataWithRange:NSMakeRange(headerData.length, msg.length - headerData.length)];
-    id payload = [ATProtoDagCBOR decodeData:payloadData error:&error];
-    if ([payload isKindOfClass:[NSDictionary class]]) return payload;
-    return nil;
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    return [formatter decodeEventFromData:msg op:&op msgType:&msgType error:&error];
 }
 
 #ifndef GNUSTEP
