@@ -58,11 +58,12 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 @implementation HandleResolver
 
 static BOOL PDSHandleResolverRunningTests(void) {
+    // Only trust explicit env markers — never ambient XCTestCase class
+    // linkage (security-review §6.4). Linking XCTest into a production
+    // binary must not flip SSRF / backlink behavior.
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
-    if ([env[@"PDS_RUNNING_TESTS"] length] > 0 || [env[@"XCTestConfigurationFilePath"] length] > 0) {
-        return YES;
-    }
-    return NSClassFromString(@"XCTestCase") != Nil;
+    return [env[@"PDS_RUNNING_TESTS"] length] > 0 ||
+           [env[@"XCTestConfigurationFilePath"] length] > 0;
 }
 
 - (instancetype)init {
@@ -100,7 +101,19 @@ static BOOL PDSHandleResolverRunningTests(void) {
         completion(nil, rateLimitError);
         return;
     }
-    
+
+    /*! Validate handle format before resolution. */
+    NSError *validationError = nil;
+    if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
+        completion(nil, validationError);
+        return;
+    }
+
+    /*! Normalize before failure-cache / success-cache keys (security-review
+        §6.7). Reads previously used the raw handle while writes used the
+        normalized form, so case variants bypassed backoff. */
+    handle = [ATProtoHandleValidator normalizeHandle:handle];
+
     /*! Check failure cache for backoff. */
     HandleResolutionFailure *failure = [self.failureCache objectForKey:handle];
     if (failure && [failure.expiresAt timeIntervalSinceNow] > 0) {
@@ -110,16 +123,6 @@ static BOOL PDSHandleResolverRunningTests(void) {
         completion(nil, backoffError);
         return;
     }
-
-    /*! Validate handle format before resolution. */
-    NSError *validationError = nil;
-    if (![ATProtoHandleValidator validateHandle:handle error:&validationError]) {
-        completion(nil, validationError);
-        return;
-    }
-
-    /*! Normalize handle to standard format. */
-    handle = [ATProtoHandleValidator normalizeHandle:handle];
 
     /*! Prevent SSRF attacks — validation is handled by ATProtoSafeHTTPClient
         during the actual HTTPS request, eliminating the validate-before-fetch
@@ -519,7 +522,8 @@ static BOOL PDSHandleResolverRunningTests(void) {
             }
             
             if ([fullTxt hasPrefix:@"did="]) {
-                NSString *did = [fullTxt substringFromIndex:4];
+                NSString *did = [[fullTxt substringFromIndex:4]
+                    stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
                 // Validate DID format — must be a supported ATProto DID method.
                 if (![self isValidATProtoDID:did]) {
                     continue;
@@ -581,6 +585,10 @@ static BOOL PDSHandleResolverRunningTests(void) {
  */
 - (BOOL)isValidATProtoDID:(NSString *)did {
     if (!did || did.length == 0) return NO;
+    // Bound length: DID responses and DNS TXT concatenations must not be
+    // unbounded (security-review §6.5). ATProto DIDs are short in practice;
+    // 256 matches CID.stringValue's length cap used elsewhere.
+    if (did.length > 256) return NO;
     if (![did hasPrefix:@"did:"]) return NO;
     if ([did hasPrefix:@"did:plc:"]) return YES;
     if ([did hasPrefix:@"did:web:"]) return YES;
