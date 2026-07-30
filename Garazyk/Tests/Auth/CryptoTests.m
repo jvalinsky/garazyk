@@ -243,4 +243,36 @@
     XCTAssertNotEqualObjects(key1, key2, @"Different salts should produce different keys");
 }
 
+- (void)testPBKDF2ProductionIterationsRemain600000 {
+    // Workstream 09 T2: production constant must stay at the OWASP count
+    // even though tests use a reduced value via ATProtoPBKDF2IterationCount().
+    XCTAssertEqual(ATProtoPBKDF2ProductionIterations, (uint32_t)600000);
+}
+
+- (void)testPBKDF2IterationCountUsesTestValueUnderPDSRunningTests {
+    XCTAssertEqual(ATProtoPBKDF2IterationCount(), ATProtoPBKDF2TestIterations,
+                   @"AllTests sets PDS_RUNNING_TESTS; iteration count must be reduced");
+}
+
+- (void)testPBKDF2IterationCountUsesProductionOutsideTests {
+    const char *prevRunning = getenv("PDS_RUNNING_TESTS");
+    const char *prevXCT = getenv("XCTestConfigurationFilePath");
+    unsetenv("PDS_RUNNING_TESTS");
+    unsetenv("XCTestConfigurationFilePath");
+
+    uint32_t count = ATProtoPBKDF2IterationCount();
+
+    if (prevRunning) {
+        setenv("PDS_RUNNING_TESTS", prevRunning, 1);
+    } else {
+        setenv("PDS_RUNNING_TESTS", "1", 1);
+    }
+    if (prevXCT) {
+        setenv("XCTestConfigurationFilePath", prevXCT, 1);
+    }
+
+    XCTAssertEqual(count, ATProtoPBKDF2ProductionIterations,
+                   @"Without test env markers, iteration count must be production");
+}
+
 @end

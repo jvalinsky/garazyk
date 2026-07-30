@@ -23,6 +23,18 @@
 #import <Security/Security.h>
 #endif
 
+const uint32_t ATProtoPBKDF2ProductionIterations = 600000;
+const uint32_t ATProtoPBKDF2TestIterations = 1000;
+
+uint32_t ATProtoPBKDF2IterationCount(void) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    if ([env[@"PDS_RUNNING_TESTS"] length] > 0 ||
+        [env[@"XCTestConfigurationFilePath"] length] > 0) {
+        return ATProtoPBKDF2TestIterations;
+    }
+    return ATProtoPBKDF2ProductionIterations;
+}
+
 @implementation CryptoUtils
 
 /*!
@@ -192,7 +204,7 @@
                                       passwordData.bytes, passwordData.length,
                                       salt.bytes, salt.length,
                                       kCCPRFHmacAlgSHA256,
-                                      600000,
+                                      ATProtoPBKDF2IterationCount(),
                                       derivedKey.mutableBytes, 32);
     
     if (result != kCCSuccess) {

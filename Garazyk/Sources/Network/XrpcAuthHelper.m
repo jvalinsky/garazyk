@@ -299,7 +299,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
             return nil;
         }
 
-        // Verify DPoP proof
+        // Verify DPoP proof (bind to access token via ath per RFC 9449 §4.3 / §4.2)
         NSError *dpopError = nil;
         if (![OAuth2DPoPProof verifyProof:dpopProof
                                    method:request.methodString
@@ -307,6 +307,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                                     nonce:nil
                              requireNonce:[ATProtoServiceConfiguration sharedConfiguration].requireDPoPNonce
                             outThumbprint:&dpopThumbprint
+                      expectedAccessToken:token
                                     error:&dpopError]) {
             if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
                 if (response) {

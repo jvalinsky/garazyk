@@ -27,6 +27,15 @@ static NSString *GZActorPlaceholders(NSUInteger count) {
     return [placeholders componentsJoinedByString:@","];
 }
 
+/// Escape LIKE wildcards for contains-match with ESCAPE '\\' (§5.4).
+static NSString *GZLikeContainsPattern(NSString *term) {
+    NSMutableString *escaped = [term mutableCopy] ?: [NSMutableString string];
+    [escaped replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"%" withString:@"\\%" options:0 range:NSMakeRange(0, escaped.length)];
+    [escaped replaceOccurrencesOfString:@"_" withString:@"\\_" options:0 range:NSMakeRange(0, escaped.length)];
+    return [NSString stringWithFormat:@"%%%@%%", escaped];
+}
+
 @implementation ActorService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
@@ -490,11 +499,11 @@ static NSString *GZActorPlaceholders(NSUInteger count) {
 
     limit = MIN(MAX(limit, 1), 100);
 
-    NSString *searchPattern = [NSString stringWithFormat:@"%%%@%%", term.lowercaseString];
+    NSString *searchPattern = GZLikeContainsPattern(term.lowercaseString);
 
     NSString *query = @"SELECT DISTINCT did FROM records "
                       @"WHERE collection = 'app.bsky.actor.profile' "
-                      @"AND (value LIKE ? OR value LIKE ?) ";
+                      @"AND (value LIKE ? ESCAPE '\\' OR value LIKE ? ESCAPE '\\') ";
     NSMutableArray *params = [NSMutableArray arrayWithObjects:searchPattern, searchPattern, nil];
 
     if (cursor) {
@@ -532,11 +541,11 @@ static NSString *GZActorPlaceholders(NSUInteger count) {
     }
 
     limit = MIN(MAX(limit, 1), 10);
-    NSString *searchPattern = [NSString stringWithFormat:@"%%%@%%", term.lowercaseString];
+    NSString *searchPattern = GZLikeContainsPattern(term.lowercaseString);
 
     NSString *query = @"SELECT DISTINCT did FROM records "
                       @"WHERE collection = 'app.bsky.actor.profile' "
-                      @"AND (value LIKE ? OR value LIKE ?) "
+                      @"AND (value LIKE ? ESCAPE '\\' OR value LIKE ? ESCAPE '\\') "
                       @"ORDER BY did DESC LIMIT ?";
     NSArray *params = @[searchPattern, searchPattern, @(limit)];
 

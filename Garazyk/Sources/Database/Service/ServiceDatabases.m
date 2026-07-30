@@ -13,6 +13,7 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/ATProtoDataPaths.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -29,7 +30,7 @@ static NSData *appPasswordGenerateSalt(void) {
 }
 
 static NSData *appPasswordHash(NSString *password, NSData *salt) {
-    const uint32_t iterations = 600000;
+    const uint32_t iterations = ATProtoPBKDF2IterationCount();
     const size_t derivedKeyLength = 32;
     unsigned char derivedKey[32];
 

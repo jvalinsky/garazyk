@@ -1840,7 +1840,17 @@ if(BUILD_TESTS)
   # 2026-07-16 76-failure baseline across 11 of the 29 gated classes
   # (workstream 01 S5) is repaired; a full --gated=run pass is green
   # (3454 tests, 0 failures).
+  #
+  # Sharded entries (workstream 09 T6) let `ctest -j` overlap independent
+  # AllTests processes. The unsharded AllTests target remains for local
+  # one-shot runs and for jobs that do not pass -j.
   add_test(NAME AllTests COMMAND AllTests --gated=run)
+  add_test(NAME AllTestsShard1of4 COMMAND AllTests --gated=run --shard=1/4)
+  add_test(NAME AllTestsShard2of4 COMMAND AllTests --gated=run --shard=2/4)
+  add_test(NAME AllTestsShard3of4 COMMAND AllTests --gated=run --shard=3/4)
+  add_test(NAME AllTestsShard4of4 COMMAND AllTests --gated=run --shard=4/4)
+  set_tests_properties(AllTestsShard1of4 AllTestsShard2of4 AllTestsShard3of4 AllTestsShard4of4
+    PROPERTIES LABELS "shard")
   add_test(
     NAME AdminUIAssetsSync
     COMMAND ${CMAKE_COMMAND}

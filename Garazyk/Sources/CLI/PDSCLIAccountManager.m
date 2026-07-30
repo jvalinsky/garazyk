@@ -322,7 +322,7 @@
 }
 
 + (NSData *)hashPassword:(NSString *)password salt:(NSData *)salt {
-    const uint32_t iterations = 600000;
+    const uint32_t iterations = ATProtoPBKDF2IterationCount();
     const size_t derivedKeyLength = 32;
 
     NSMutableData *derivedKey = [NSMutableData dataWithLength:derivedKeyLength];

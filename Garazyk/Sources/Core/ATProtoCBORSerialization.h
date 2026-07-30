@@ -17,9 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
  similar non-CID'd payloads) keep the plain `[CBORDecoder decode:]` /
  `[CBOREncoder encode:]` path.
 
- The flag is part of the immutable state set at construction. Callers that
- prefer two-step setup can configure via `setUsage:`; both end-states are
- equivalent.
+ The flag is part of the immutable state set at construction and has no
+ setter: a shared or cached instance must not have its decode strictness
+ flipped by one caller out from under another.
 
  Identity for the strict path: `[ATProtoDagCBOR decodeDataAsJSON:error:]`
  (see `AppViewBackfillWorker.m:422`). The wrapped `[CBORDecoder decode:]`
@@ -41,14 +41,6 @@ NS_ASSUME_NONNULL_BEGIN
  don't participate in content addressing.
  */
 - (nullable instancetype)initWithContentAddressed:(BOOL)contentAddressed;
-
-/*!
- @brief Companion setter for two-step configuration. Equivalent to passing
- the matching value to `initWithContentAddressed:`. Re-setting after first
- use is a programming error (the implementation warns in DEBUG); treat the
- flag as immutable for the lifetime of the instance.
- */
-- (void)setUsage:(BOOL)contentAddressed;
 
 /*!
  @brief Encodes a JSON-compatible object to DAG-CBOR or generic CBOR.
