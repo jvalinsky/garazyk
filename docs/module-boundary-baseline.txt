@@ -1,4 +1,4 @@
-# Workstream 08 M1: known module-boundary leaks as of 2026-07-29.
+# Workstream 08 M1: known module-boundary leaks as of 2026-07-30.
 #
 # Format: one leak per line, exactly as printed by
 # scripts/check_module_boundaries.sh: "<module>:<Class> (defined in <owner>, ...)".
