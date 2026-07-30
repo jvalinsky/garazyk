@@ -100,9 +100,11 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method clearCache
 
- @abstract Clears all loaded schemas.
+ @abstract Clears all loaded schemas and directory-load memoization.
 
  @discussion Primarily for testing. Not recommended for production use.
+ Also invalidates the loaded-directory fingerprints used to skip
+ re-parsing unchanged lexicon trees (workstream 09 T1).
  */
 - (void)clearCache;
 

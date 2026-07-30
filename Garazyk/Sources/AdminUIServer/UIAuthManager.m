@@ -40,7 +40,7 @@ static NSData *pbkdf2DeriveKey(NSString *password, NSData *salt) {
                                        passwordData.bytes, passwordData.length,
                                        salt.bytes, salt.length,
                                        kCCPRFHmacAlgSHA256,
-                                       600000, // 600k iterations
+                                       ATProtoPBKDF2IterationCount(),
                                        derivedKey, 32);
     if (result != kCCSuccess) return nil;
     return [NSData dataWithBytes:derivedKey length:32];
