@@ -221,6 +221,7 @@ static BOOL blobMimeTypeShouldAttach(NSString *mimeType) {
 
 static void applyBlobDownloadHeaders(NSString *mimeType, HttpResponse *response) {
   [response setHeader:@"nosniff" forKey:@"X-Content-Type-Options"];
+  [response setHeader:@"default-src 'none'; sandbox" forKey:@"Content-Security-Policy"];
   if (blobMimeTypeShouldAttach(mimeType)) {
     [response setHeader:@"attachment" forKey:@"Content-Disposition"];
   }
@@ -904,11 +905,23 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
+    // §6.1: parse CID before interpolating into Location (blocks open redirect / CRLF).
+    CID *parsedCID = [CID cidFromString:cid];
+    if (!parsedCID) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Invalid cid"
+      }];
+      return;
+    }
+    NSString *safeCid = parsedCID.stringValue;
+
     // Check if CDN redirect is enabled (Phase 5)
     NSString *cdnURL = config.cdnURL;
     if (cdnURL && cdnURL.length > 0) {
       // Return 302 Found redirect to CDN URL
-      NSString *cdnBlobURL = [NSString stringWithFormat:@"%@/%@", cdnURL, cid];
+      NSString *cdnBlobURL = [NSString stringWithFormat:@"%@/%@", cdnURL, safeCid];
       response.statusCode = 302; // Found (temporary redirect)
       [response setHeader:cdnBlobURL forKey:@"Location"];
       [response setJsonBody:@{
@@ -920,9 +933,9 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
     NSError *blobError = nil;
     NSDictionary *result =
-        [blobService getBlobStreamWithCID:cid did:did error:&blobError];
+        [blobService getBlobStreamWithCID:safeCid did:did error:&blobError];
     if (!result && !blobError) {
-      result = [blobService getBlobWithCID:cid did:did error:&blobError];
+      result = [blobService getBlobWithCID:safeCid did:did error:&blobError];
     }
     if (!result) {
       response.statusCode = HttpStatusNotFound;
