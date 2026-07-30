@@ -208,4 +208,58 @@
     [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
 }
 
+- (void)testLoadLexiconsFromDirectory_SecondLoadSkipsReparse {
+    NSString *tempDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"test_memo_lexicon_dir"];
+    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    [[NSFileManager defaultManager] createDirectoryAtPath:tempDir withIntermediateDirectories:YES attributes:nil error:nil];
+
+    NSDictionary *json = @{
+        @"lexicon": @1,
+        @"id": @"app.bsky.feed.memo",
+        @"defs": @{@"main": @{@"type": @"record"}}
+    };
+    NSData *data = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];
+    NSString *filePath = [tempDir stringByAppendingPathComponent:@"memo.json"];
+    [data writeToFile:filePath atomically:YES];
+
+    NSError *error = nil;
+    XCTAssertTrue([self.registry loadLexiconsFromDirectory:tempDir error:&error]);
+    XCTAssertTrue([self.registry hasSchemaForNSID:@"app.bsky.feed.memo"]);
+
+    // Corrupt the on-disk file. A memoized second load must not re-read it.
+    [@"not-json" writeToFile:filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    error = nil;
+    XCTAssertTrue([self.registry loadLexiconsFromDirectory:tempDir error:&error],
+                  @"Second load of an unchanged directory mtime should short-circuit");
+    XCTAssertTrue([self.registry hasSchemaForNSID:@"app.bsky.feed.memo"],
+                  @"Memoized load must keep the previously registered schema");
+
+    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+}
+
+- (void)testLoadLexiconsFromDirectory_ClearCacheForcesReload {
+    NSString *tempDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"test_memo_reload_lexicon_dir"];
+    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    [[NSFileManager defaultManager] createDirectoryAtPath:tempDir withIntermediateDirectories:YES attributes:nil error:nil];
+
+    NSDictionary *json = @{
+        @"lexicon": @1,
+        @"id": @"app.bsky.feed.reload",
+        @"defs": @{@"main": @{@"type": @"record"}}
+    };
+    NSData *data = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];
+    NSString *filePath = [tempDir stringByAppendingPathComponent:@"reload.json"];
+    [data writeToFile:filePath atomically:YES];
+
+    XCTAssertTrue([self.registry loadLexiconsFromDirectory:tempDir error:nil]);
+    [self.registry clearCache];
+    XCTAssertFalse([self.registry hasSchemaForNSID:@"app.bsky.feed.reload"]);
+
+    XCTAssertTrue([self.registry loadLexiconsFromDirectory:tempDir error:nil]);
+    XCTAssertTrue([self.registry hasSchemaForNSID:@"app.bsky.feed.reload"],
+                  @"After clearCache, directory memoization must be invalidated");
+
+    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+}
+
 @end

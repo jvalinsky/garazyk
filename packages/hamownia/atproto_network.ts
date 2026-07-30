@@ -343,8 +343,13 @@ export async function startLocalNetwork(
       }
     }
 
-    console.log("[INFO]  Waiting for services to settle...");
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    // Per-service readiness already waited above. Optional extra settle for
+    // flaky compose topologies (workstream 09 T10); default is no sleep.
+    const settleMs = Number(Deno.env.get("HAMOWNIA_SETTLE_MS") ?? "0");
+    if (Number.isFinite(settleMs) && settleMs > 0) {
+      console.log(`[INFO]  Waiting ${settleMs}ms for services to settle...`);
+      await new Promise((resolve) => setTimeout(resolve, settleMs));
+    }
 
     if (isOtelEnabled() && !options.useBinary) {
       // In standalone mode, we do not start the background stats sampler

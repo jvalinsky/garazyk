@@ -127,7 +127,6 @@ jobs:
     name: Linux GNUstep Build & Test
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    needs: macos-build-and-test
 
     steps:
       - name: Checkout
@@ -189,7 +188,7 @@ jobs:
 
       - name: Build (GNUstep)
         run: |
-          cmake --build build-linux --parallel 4 --target september AllTests
+          cmake --build build-linux --parallel 4 --target kaszlak AllTests
 
       - name: Check Module Boundaries (Link-Time, GNUstep)
         run: |
@@ -207,7 +206,6 @@ jobs:
     name: Linux Docker Build
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    needs: macos-build-and-test
 
     steps:
       - name: Checkout
@@ -229,58 +227,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  plc-integration-tests:
-    name: PLC Integration Tests
-    runs-on: macos-14
-    timeout-minutes: 15
-    needs: macos-build-and-test
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: recursive
-
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
-
-      - name: Install Build Dependencies
-        run: |
-          brew update
-          brew install ninja cmake || true
-
-      - name: Check Module Boundaries
-        run: |
-          ./scripts/dev/check_module_boundaries.sh .
-
-      - name: Configure (CMake)
-        run: |
-          cmake -S . -B build \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
-            -DBUILD_SECP256K1=ON \
-            -DBUILD_TESTS=ON \
-            -DBUILD_FUZZERS=OFF
-
-      - name: Build
-        run: |
-          cmake --build build --parallel 4 --target kaszlak AllTests
-
-      - name: Check Module Boundaries (Link-Time)
-        run: |
-          ./scripts/check_module_boundaries.sh build
-
-      - name: Run PLC-specific tests
-        run: |
-          ctest --test-dir build --output-on-failure -R "PLC|DID|Identity"
-
-      - name: Verify PLC binary
-        run: |
-          ./build/bin/kaszlak --help
+  # plc-integration-tests removed (workstream 09 T7): it rebuilt the full
+  # macOS tree then ran `ctest -R "PLC|DID|Identity"`, which matches no
+  # registered ctest name (only `AllTests` is registered). PLC coverage
+  # already runs inside macos-build-and-test's AllTests --gated=run.
 
   pty-sidecar-tests:
     name: PTY Sidecar Tests
