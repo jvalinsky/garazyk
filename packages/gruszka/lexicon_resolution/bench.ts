@@ -30,9 +30,7 @@ import type { DidDocument, LexiconDoc } from "./types.ts";
 
 function shouldRun(): boolean {
   const env = Deno.env.get("GARAZYK_INTEGRATION");
-  if (env === "1" || env === "true") return true;
-  if (Deno.env.get("CI")) return false;
-  return true;
+  return env === "1" || env === "true";
 }
 
 function makeUncachedPorts() {
