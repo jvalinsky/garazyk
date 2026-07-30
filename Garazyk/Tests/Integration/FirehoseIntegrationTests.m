@@ -138,23 +138,18 @@
     NSData *msg = mockConn.lastMessage;
     XCTAssertNotNil(msg);
     
-    // Decode Message (CBOR)
-    id decodedMsg = [ATProtoDagCBOR decodeData:msg error:&error];
-    XCTAssertNotNil(decodedMsg);
-    XCTAssertTrue([decodedMsg isKindOfClass:[NSDictionary class]]);
-    NSDictionary *header = decodedMsg;
-    XCTAssertEqualObjects(header[@"t"], @"#commit");
-    
-    // Extract Payload (after header)
-    NSData *headerData = [ATProtoDagCBOR encodeObject:header error:nil];
-    NSUInteger headerLen = headerData.length;
-    XCTAssertLessThan(headerLen, msg.length);
-    
-    NSData *payloadData = [msg subdataWithRange:NSMakeRange(headerLen, msg.length - headerLen)];
-    id payload = [ATProtoDagCBOR decodeData:payloadData error:&error];
-    XCTAssertNotNil(payload);
-    XCTAssertTrue([payload isKindOfClass:[NSDictionary class]]);
-    NSDictionary *payloadMap = (NSDictionary *)payload;
+    // A firehose frame is two concatenated dag-cbor objects (header, then
+    // payload) with no length prefix; ATProtoDagCBOR decodeData: rejects
+    // trailing bytes after a complete item, so it can't be used to split
+    // this buffer manually. Use EventFormatter's own incremental decoder
+    // instead — the same one the real firehose consumer (Firehose.m's
+    // handleMessage:) uses.
+    EventFormatter *eventFormatter = [[EventFormatter alloc] init];
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *payloadMap = [eventFormatter decodeEventFromData:msg op:&op msgType:&msgType error:&error];
+    XCTAssertNotNil(payloadMap, @"Failed to decode firehose event: %@", error);
+    XCTAssertEqualObjects(msgType, @"#commit");
     
     // "blocks" key contains CAR bytes
     NSData *carData = payloadMap[@"blocks"];
