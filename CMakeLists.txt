@@ -461,6 +461,11 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpOAuth
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpRelayAPIRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpPDSAdminRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpWellKnownRoutePack\\.m$")
+# GZXrpcRouteSupport's only consumers (Mikrus/Beskid's own XRPC route
+# packs) already need it linked alongside ATProtoXRPC; it also directly
+# messages XrpcErrorHelper (XRPC-owned) — carved out here rather than
+# left in Transport importing upward (workstream 08 M4).
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/GZXrpcRouteSupport\\.m$")
 # HttpRequest/HttpResponse/HttpRoute/HttpRetryPolicy/HttpParsing are
 # Foundation-only HTTP message value types with no I/O or socket
 # dependency (workstream 08 M3) — carved out to ATProtoCore so Services
@@ -491,6 +496,7 @@ file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/PDSRepoImportValidationResult.m"
   "Garazyk/Sources/Network/PDSRepoImportValidator.m"
   "Garazyk/Sources/Network/Generated/GZXrpcNSID.m"
+  "Garazyk/Sources/Network/GZXrpcRouteSupport.m"
 )
 # XRPCError.m is included in ATPROTO_TRANSPORT_SOURCES, exclude from here to avoid duplicate
 list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Network/XRPCError\\.m$")
