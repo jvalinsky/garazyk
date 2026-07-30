@@ -17,14 +17,14 @@
 #define HAS_GETRANDOM 0
 #endif
 
-static void _arc4random_abort(const char *msg) {
+static int _arc4random_log_error(const char *msg) {
     write(STDERR_FILENO, msg, strlen(msg));
-    abort();
+    return -1;
 }
 
 // Internal random byte function using getrandom(2) or /dev/urandom
-static void _arc4random_buf_impl(void *buf, size_t nbytes) {
-    if (nbytes == 0) return;
+static int _arc4random_buf_impl(void *buf, size_t nbytes) {
+    if (nbytes == 0) return 0;
 
 #if HAS_GETRANDOM
     // Try getrandom(2) first (available on Linux 3.17+)
@@ -41,13 +41,13 @@ static void _arc4random_buf_impl(void *buf, size_t nbytes) {
             break;
         }
     }
-    if (nbytes == 0) return;
+    if (nbytes == 0) return 0;
 #endif
 
     // Fallback to /dev/urandom
     int fd = open("/dev/urandom", O_RDONLY);
     if (fd < 0) {
-        _arc4random_abort("arc4random: entropy source failure\n");
+        return _arc4random_log_error("arc4random: entropy source failure\n");
     }
 
     while (nbytes > 0) {
@@ -59,12 +59,14 @@ static void _arc4random_buf_impl(void *buf, size_t nbytes) {
             // Retry on interrupt
             continue;
         } else {
-            // Read failed, abort
-            _arc4random_abort("arc4random: entropy source read failure\n");
+            // Read failed, return error
+            close(fd);
+            return _arc4random_log_error("arc4random: entropy source read failure\n");
         }
     }
 
     close(fd);
+    return 0;
 }
 
 uint32_t arc4random(void) {
@@ -97,7 +99,9 @@ void arc4random_buf(void *buf, size_t nbytes) {
 
 int SecRandomCopyBytes(int *drbg, size_t count, void *bytes) {
     (void)drbg;
-    arc4random_buf(bytes, count);
+    if (_arc4random_buf_impl(bytes, count) != 0) {
+        return -1; // errSecAllocate or generic failure
+    }
     return 0; // errSecSuccess
 }
 
