@@ -8,6 +8,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "Auth/Crypto/JWT.h"
+#import "Core/CID.h"
 
 @interface BlobXrpcTests : XCTestCase
 @property (nonatomic, strong) PDSController *controller;
@@ -331,7 +332,10 @@
 }
 
 - (void)testGetBlobNotFound {
-    NSDictionary *queryParams = @{@"did": self.did, @"cid": @"bafkreixxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}; // Fake CID
+    CID *missingCID = [CID cidWithDigest:[CID sha256Digest:[@"missing blob" dataUsingEncoding:NSUTF8StringEncoding]]
+                                   codec:0x55];
+    XCTAssertNotNil(missingCID);
+    NSDictionary *queryParams = @{@"did": self.did, @"cid": missingCID.stringValue};
     
     HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"

@@ -226,8 +226,14 @@
     XCTAssertTrue([self.registry loadLexiconsFromDirectory:tempDir error:&error]);
     XCTAssertTrue([self.registry hasSchemaForNSID:@"app.bsky.feed.memo"]);
 
-    // Corrupt the on-disk file. A memoized second load must not re-read it.
-    [@"not-json" writeToFile:filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    // Corrupt the on-disk file in place. Atomic replacement updates the
+    // containing directory's mtime, which correctly invalidates the registry
+    // cache and would test a different behavior.
+    NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:filePath];
+    XCTAssertNotNil(fileHandle);
+    [fileHandle truncateFileAtOffset:0];
+    [fileHandle writeData:[@"not-json" dataUsingEncoding:NSUTF8StringEncoding]];
+    [fileHandle closeFile];
     error = nil;
     XCTAssertTrue([self.registry loadLexiconsFromDirectory:tempDir error:&error],
                   @"Second load of an unchanged directory mtime should short-circuit");
