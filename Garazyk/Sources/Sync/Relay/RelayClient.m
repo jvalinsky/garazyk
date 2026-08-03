@@ -287,6 +287,24 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     });
 }
 
+- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveRawEvent:(FirehoseRawEvent *)event {
+    if (event.payload[@"seq"] != nil) {
+        int64_t sequence = [event.payload[@"seq"] longLongValue];
+        if (sequence > 0 && self.currentSeq > 0 && sequence <= self.currentSeq) {
+            GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic raw sequence %lld (current=%lld)",
+                             (long long)sequence, (long long)self.currentSeq);
+            return;
+        }
+        if (sequence > 0) self.currentSeq = sequence;
+    }
+    id<RelayClientDelegate> delegate = self.delegate;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (delegate && [delegate respondsToSelector:@selector(relayClient:didReceiveRawEvent:)]) {
+            [delegate relayClient:self didReceiveRawEvent:event];
+        }
+    });
+}
+
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {
     GZ_LOG_SYNC_WARN(@"RelayClient: Received error from relay: error=%@ message=%@", event.error, event.message);
 

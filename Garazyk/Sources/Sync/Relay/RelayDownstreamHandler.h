@@ -18,6 +18,7 @@
 #import <Foundation/Foundation.h>
 #import "Sync/Relay/RelayUpstreamManager.h"
 #import "Sync/Relay/RelayConfiguration.h"
+#import "Sync/Firehose/Firehose.h"
 
 @class RelayEventBuffer;
 @class SubscribeReposHandler;
@@ -25,6 +26,7 @@
 @class RelayRepoStateManager;
 @class RelayEventValidator;
 @class FirehoseCommitEvent;
+@class FirehoseRawEvent;
 
 NS_ASSUME_NONNULL_BEGIN
 

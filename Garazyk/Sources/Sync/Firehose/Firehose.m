@@ -28,6 +28,9 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 @property (nonatomic, strong, readwrite) EventFormatter *eventFormatter;
 @end
 
+@implementation FirehoseRawEvent
+@end
+
 @implementation Firehose
 
 - (instancetype)initWithServerURL:(NSURL *)serverURL {
@@ -231,10 +234,24 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 
     } else if ([msgType isEqualToString:@"#info"]) {
         FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
-        event.kind = payload[@"kind"];
+        event.kind = payload[@"kind"] ?: payload[@"name"];
         event.message = payload[@"message"];
 
         [self sendEventToSubscriptions:event kind:FirehoseEventKindInfo];
+    } else {
+        FirehoseRawEvent *event = [[FirehoseRawEvent alloc] init];
+        event.messageType = msgType ?: @"";
+        event.frameData = [data copy];
+        event.payload = payload;
+        for (FirehoseSubscription *subscription in self.subscriptions) {
+            if (!subscription.isActive) continue;
+            id<FirehoseSubscriptionDelegate> delegate = subscription.delegate;
+            if ([delegate respondsToSelector:@selector(firehoseSubscription:didReceiveRawEvent:)]) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [delegate firehoseSubscription:subscription didReceiveRawEvent:event];
+                });
+            }
+        }
     }
 }
 

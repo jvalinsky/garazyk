@@ -6,13 +6,18 @@
  @abstract Canonical DAG-CBOR encoder/decoder for ATProto compliance.
 
  @discussion This is the authoritative CBOR encoder for ATProto repositories.
- It implements the DRISL-CBOR subset used by ATProto:
+ It implements DRISL (https://dasl.ing/drisl.html), the deterministic CBOR
+ profile ATProto calls DAG-CBOR:
  - Canonical map key ordering (by encoded key bytes, length-first)
- - CID-link encoding (CBOR tag 42 with 0x00 marker byte)
+ - String-only map keys, no duplicates
+ - CID-link encoding (CBOR tag 42 with 0x00 marker byte); all other tags rejected
  - JSON $link/$bytes wrapper conversion
- - Float rejection (DRISL-CBOR forbids IEEE 754 floats)
- 
+ - Minimal-length integer/length encodings only; no indefinite lengths
+ - `true`, `false` and `null` are the only simple values; `undefined` is rejected
+
  This replaces the use of ATProtoCBORSerialization for repo/commit encoding.
+
+ Floats are governed by the profile — see ATProtoDRISLProfile.
  */
 
 #import <Foundation/Foundation.h>
@@ -20,6 +25,32 @@
 @class CID;
 
 NS_ASSUME_NONNULL_BEGIN
+
+/**
+ Which DRISL dialect to encode or decode.
+
+ DRISL permits 64-bit floats; ATProto records do not permit floats at all. Both
+ statements are true at once, so the float rule is a profile rather than a
+ single global policy. Everything else about the two dialects is identical.
+ */
+typedef NS_ENUM(NSInteger, ATProtoDRISLProfile) {
+    /**
+     ATProto records, commits, MST nodes and firehose frames. Floats are
+     rejected on both encode and decode. This is the default for every
+     profile-less API and is what all repository code uses.
+     */
+    ATProtoDRISLProfileATProto = 0,
+
+    /**
+     DRISL as specified. Adds 64-bit floats (major type 7, additional info 27),
+     represented by ATProtoDRISLFloat. Half- and single-precision floats stay
+     rejected, as do NaN, Infinity and -Infinity; negative zero is permitted.
+
+     Used by the DASL conformance suite and by non-record DASL documents such
+     as MASL. Do not use it for anything that gets signed into a repository.
+     */
+    ATProtoDRISLProfileDRISL = 1
+};
 
 /**
  Error domain for DAG-CBOR operations.
@@ -34,8 +65,39 @@ typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
     ATProtoDagCBORErrorCodeDecodingFailed = 2,
     ATProtoDagCBORErrorCodeInvalidType = 3,
     ATProtoDagCBORErrorCodeFloatsNotAllowed = 4,
-    ATProtoDagCBORErrorCodeInvalidCIDLink = 5
+    ATProtoDagCBORErrorCodeInvalidCIDLink = 5,
+    /** A CBOR tag other than 42 was encountered. DRISL permits only tag 42. */
+    ATProtoDagCBORErrorCodeDisallowedTag = 6,
+    /** A map key was not a text string. DRISL permits only string keys. */
+    ATProtoDagCBORErrorCodeNonStringMapKey = 7
 };
+
+/**
+ A 64-bit IEEE 754 value, for use with ATProtoDRISLProfileDRISL.
+
+ Floats need their own box rather than riding on NSNumber. NSNumber cannot tell
+ `0.0` apart from `0`, so a decoded float would re-encode as an integer and
+ break content addressing; and GNUstep reports some boxed integers as floating
+ types, so inspecting -objCType would misclassify ordinary integers. An
+ explicit type makes the distinction unambiguous on both platforms.
+
+ NaN, Infinity and -Infinity are rejected at encode time. Negative zero is
+ permitted and round-trips exactly.
+ */
+@interface ATProtoDRISLFloat : NSObject <NSCopying>
+
+/** The underlying double. */
+@property (readonly, nonatomic) double value;
+
+/** Creates a float box. */
++ (instancetype)floatWithValue:(double)value;
+
+/** Initializes a float box. */
+- (instancetype)initWithValue:(double)value NS_DESIGNATED_INITIALIZER;
+
+- (instancetype)init NS_UNAVAILABLE;
+
+@end
 
 /**
  ATProto-compliant DAG-CBOR encoder/decoder.
@@ -112,6 +174,55 @@ typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
  Byte strings are decoded as `{"$bytes": "base64..."}` dictionaries where needed.
  */
 + (nullable id)decodeDataAsJSON:(NSData *)data error:(NSError **)error;
+
+/**
+ Encode a Foundation object under an explicit DRISL profile.
+
+ @param object The object to encode. Add ATProtoDRISLFloat to the supported
+ types under ATProtoDRISLProfileDRISL.
+ @param profile Which DRISL dialect to encode.
+ @param error Error pointer (optional)
+ @return DRISL-encoded bytes, or nil on error
+
+ @discussion `encodeObject:error:` is this method with
+ ATProtoDRISLProfileATProto.
+ */
++ (nullable NSData *)encodeObject:(id)object
+                          profile:(ATProtoDRISLProfile)profile
+                            error:(NSError **)error;
+
+/**
+ Decode DRISL bytes under an explicit DRISL profile.
+
+ @param data DRISL-encoded bytes
+ @param profile Which DRISL dialect to accept.
+ @param error Error pointer (optional)
+ @return Decoded Foundation object, or nil on error
+
+ @discussion `decodeData:error:` is this method with
+ ATProtoDRISLProfileATProto.
+ */
++ (nullable id)decodeData:(NSData *)data
+                  profile:(ATProtoDRISLProfile)profile
+                    error:(NSError **)error;
+
+/**
+ Decode one DRISL item from the beginning of a byte sequence.
+
+ @param data Bytes containing one item, optionally followed by another item.
+ @param profile Which DRISL profile to apply.
+ @param consumedLength Receives the number of bytes consumed by the first item.
+ @param error Error pointer (optional).
+ @return The decoded first item, or nil on error.
+
+ @discussion Unlike `decodeData:profile:error:`, this method intentionally
+ permits trailing bytes. It is used for the two concatenated CBOR items in an
+ AT Protocol XRPC stream frame; callers must validate the remainder separately.
+ */
++ (nullable id)decodeOneFromData:(NSData *)data
+                         profile:(ATProtoDRISLProfile)profile
+                 consumedLength:(NSUInteger *)consumedLength
+                           error:(NSError **)error;
 
 @end
 

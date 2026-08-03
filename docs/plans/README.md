@@ -23,6 +23,7 @@ competing roadmaps.
 | [Storage and MST optimization](workstreams/07-storage-and-mst-optimization.md)                     | `INSERT OR IGNORE`, `WITHOUT ROWID`, lazy MST hydration, covering indexes, DID caching, ingest decoupling |
 | [Module boundaries and library consumption](workstreams/08-module-boundaries-and-library-consumption.md) | Static-library dependency enforcement, Transport split, symbol namespacing, install/export rules |
 | [Test suite speedups](workstreams/09-test-suite-speedups.md)                                       | `AllTests` wall-clock cuts (lexicon memoization, test PBKDF2, XRPC fixtures, sharding); measured critique in [test-suite-speedups-2026-07-30.md](test-suite-speedups-2026-07-30.md) |
+| [DASL conformance](workstreams/10-dasl-conformance.md)                                             | DRISL/CID/CAR conformance against upstream dasl-testing vectors (ADR 0032); RASL/BDASL/MASL/PFP/MUXL/S2PA/Tiles as additive follow-on phases |
 | [Phase execution prompts](prompts/README.md)                                                       | Derived agent prompts that execute the remaining phases; not a roadmap      |
 | [Retired plans](retired-plans.md)                                                                  | Disposition and recovery references for removed plans                       |
 
