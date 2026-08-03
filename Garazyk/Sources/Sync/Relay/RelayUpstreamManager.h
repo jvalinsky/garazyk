@@ -20,10 +20,12 @@
 
 #import <Foundation/Foundation.h>
 #import "Sync/Relay/RelayClient.h"
+#import "Sync/Firehose/Firehose.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class RelayUpstreamManager;
+@class FirehoseRawEvent;
 
 /**
  * @abstract Host connectivity status reported by the relay host status endpoint.

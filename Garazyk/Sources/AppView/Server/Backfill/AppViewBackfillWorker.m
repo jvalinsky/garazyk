@@ -296,10 +296,12 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
         NSData *carBytes =
             [STARConverter carDataFromSTARData:archiveData error:error];
         if (carBytes) {
-            reader = [CARReader readFromData:carBytes error:error];
+            reader = [CARReader readFromData:carBytes strict:YES error:error];
         }
     } else {
-        reader = [CARReader readFromData:archiveData error:error];
+        // Archive fetched from a remote PDS: verify block CIDs against their
+        // payloads rather than trusting what the peer labelled them.
+        reader = [CARReader readFromData:archiveData strict:YES error:error];
     }
     if (!reader) {
         GZ_LOG_ERROR(@"[AppView BackfillWorker] Failed to read repo data: %@",

@@ -457,7 +457,7 @@ remaining program does not depend on items 1-2.
     [workstream 08](workstreams/08-module-boundaries-and-library-consumption.md).
     M1-M3 are complete. M4 was previously reported complete, but its own
     zero-baseline gate is not met: the current boundary checker still permits
-    27 baselined violations across six modules. M7 is also partial because
+    26 baselined violations across four modules. M7 is also partial because
     package-target sources retain host-process exits and one hard-coded log
     fallback. Finish those residual items, then replace implicit module
     membership, curate and namespace the public API, and add relocatable
@@ -483,6 +483,23 @@ security-review §3.4). See
 [`docs/plans/security-review-2026-07-28.md`](security-review-2026-07-28.md)
 for full traceability; mirrored in the
 [`workstreams` table](./README.md#active-structure).
+
+12. **Open (added 2026-08-03):** make Garazyk's DASL (dasl.ing) implementation
+    conformant and prove it against the upstream dasl-testing corpus. Complete
+    [workstream 10](workstreams/10-dasl-conformance.md). Phases 1–4 (DRISL
+    profile fixes, strict DASL CID profile, DASL CAR with block-CID/payload
+    verification, 104-vector conformance harness) are implemented and
+    passing (`DASLConformanceTests`, 16 tests, 0 failures); rationale and the
+    five DRISL defects found are recorded in
+    [ADR 0032](../adr/0032-dasl-conformance-profiles.md). Also supersedes
+    workstream 01 §S19 row 10 (`Repository/CAR.m` was recorded importer-only;
+    its header decoder has now actually migrated to `ATProtoDagCBOR`,
+    closing that row for real). Full regression run and GNUstep/Linux
+    UTF-8 verification still open before this slice is finishable; Phases
+    5–11 (RASL, BDASL, MASL, PFP, MUXL, S2PA, Web Tiles) are each additive,
+    multi-week, and require their own evidence/gate/rollback slice in the
+    workstream doc before implementation starts — MUXL (a deterministic MP4
+    muxer) is the largest single item in the whole workstream.
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.

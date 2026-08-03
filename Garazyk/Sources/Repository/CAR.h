@@ -122,6 +122,45 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable instancetype)readFromPath:(NSString *)path error:(NSError **)error;
 
 /*!
+ @method readFromData:strict:error:
+
+ @abstract Creates a reader from CAR data, optionally enforcing the DASL CAR
+ spec.
+
+ @param data The CAR-encoded data.
+ @param strict When YES, apply the rules from https://dasl.ing/car.html: the
+ header must be canonical DRISL; every block CID must be a conformant DASL CID
+ whose digest matches SHA-256 of the block payload; every declared root must
+ be present in the body; and the non-standard legacy fallback layout is not
+ attempted.
+ @param error On return, contains an error if parsing or verification failed.
+ @return A new CARReader instance, or nil on failure.
+
+ @discussion Non-strict reading, which is what @c readFromData:error: does,
+ trusts the CID stated for each block. That is fine for archives this process
+ produced, and wrong for archives that arrived over the network: nothing
+ otherwise stops a peer claiming any CID for any bytes.
+ */
++ (nullable instancetype)readFromData:(NSData *)data
+                               strict:(BOOL)strict
+                                error:(NSError **)error;
+
+/*!
+ @method readFromPath:strict:error:
+
+ @abstract Creates a reader from a CAR file, optionally enforcing the DASL CAR
+ spec.
+
+ @param path The file path to the CAR archive.
+ @param strict See @c readFromData:strict:error:.
+ @param error On return, contains an error if reading or verification failed.
+ @return A new CARReader instance, or nil on failure.
+ */
++ (nullable instancetype)readFromPath:(NSString *)path
+                               strict:(BOOL)strict
+                                error:(NSError **)error;
+
+/*!
  @method blockWithCID:
  
  @abstract Retrieves a block by its CID.

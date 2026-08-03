@@ -8,7 +8,7 @@ last_verified: 2026-07-30
 
 The earlier execution summary and the proposed Option A plan overstated the
 workstream's completion. A current run of
-`scripts/check_module_boundaries.sh build` passes only because all **27**
+`scripts/check_module_boundaries.sh build` passes only because all **26**
 remaining violations are still recorded in
 `docs/module-boundary-baseline.txt`:
 
@@ -18,10 +18,10 @@ remaining violations are still recorded in
 | `ATProtoXRPC` | 6 |
 | `ATProtoMediaCore` | 3 |
 | `ATProtoVideoService` | 2 |
-| `ATProtoStorage` | 1 |
 
 M1-M3 are complete. M4 has resolved the inversions originally enumerated in
-its first audit plus the PLC-persistence and Sync-multibase residual clusters, but it has
+its first audit plus the PLC-persistence, Sync-multibase, and Storage key-manager
+residual clusters, but it has
 **not** met its own zero-baseline acceptance gate.
 M7 is partially complete: dependency injection and most data-path work landed,
 but module sources still contain host-process exits and an installer
@@ -478,6 +478,31 @@ isolation (28/28). These non-green whole-suite gates, plus the independent
 GNUstep XCTest compile blocker above, mean this change is committed but not
 pushed; M4 remains in progress.
 
+**M4.2 Storage key-manager ownership extraction complete (commit pending).**
+`ActorStore` constructs the Apple and GNUstep actor key managers directly, but
+`PDSAppleActorKeyManager` and `PDSOpenSSLKeyManager` use only Core-owned
+crypto, configuration, and platform facilities. Their CMake ownership now
+belongs to `ATProtoCore`, which is already `ATProtoStorage`'s declared
+acyclic dependency. A new `storage_actor_store_link_tests` executable names
+only `ATProtoStorage` as its Garazyk library and opens/closes an actor store.
+That test initially exposed two untracked C-function references from Storage
+migrations to `PDSBlobAuditUtils`; the pure CID/blob-reference parser also
+moved to Core ownership. No `PUBLIC` edge was added. The baseline ratcheted
+27 -> 26. On macOS, a fresh reconfigure and `AllTests` build succeeded;
+`ActorStoreTests` (19/19), `PDSOpenSSLKeyManagerTests` (2/2), the standalone
+Storage test, and the checker (26 current / 26 baselined) passed. In GNUstep
+Docker, all ten archives and the standalone test pass; the Linux checker
+reports no new leak (`0 current leaks, 26 baselined`) but cannot provide the
+macOS archive-member mapping. The full GNUstep build remains blocked by the
+same XCTest object-pointer boxing errors above. The current macOS full suite
+was stopped after the unrelated
+`AppViewIngestEngineTests/testConcurrencySafety` timeout and incomplete-event
+assertions; do not treat it as green. `deno task check` and `deno task lint`
+passed; `deno task test` could not be launched because the execution approval
+quota was exhausted. Git staging/commit is pending the same external approval
+limit; do not push before both it and the non-green full-suite gates are
+resolved.
+
 M0 (third-party consumption goal) is now answered yes under the bounded package
 contract in the verified-status section above. M5/M6 remain gated on the real
 completion of M4.
@@ -672,7 +697,7 @@ Rollback: single revert; the change is file moves plus mechanical import edits.
 
 ## M4. Resolve the remaining inversions
 
-Status: **in progress; 27 baselined violations remain.** The earlier M4 work
+Status: **in progress; 26 baselined violations remain.** The earlier M4 work
 resolved the initially enumerated clusters, but the follow-on baseline was
 incorrectly treated as out of scope. It is not: M4's purpose and acceptance
 gate are both zero undeclared dependencies.
@@ -755,10 +780,12 @@ baseline each time:
    the acyclic `ATProtoPLC -> ATProtoStorage` edge and test standalone PLC
    linking. If no, inject a persistence protocol and keep the concrete adapter
    in Runtime.
-4. **Storage key-manager construction (1).** Remove
-   `ActorStore -> PDSAppleActorKeyManager` by injecting a key-manager factory or
-   moving Apple-specific construction above Storage. Storage must remain usable
-   on GNUstep/Linux.
+4. **Storage key-manager construction (1, complete; commit pending).**
+   `PDSAppleActorKeyManager`, `PDSOpenSSLKeyManager`, and the shared
+   blob-reference parser are Core primitives used by Storage; their CMake
+   ownership moved to `ATProtoCore`, preserving Storage's declared acyclic
+   closure and passing the macOS/GNUstep standalone Storage link test. The
+   baseline ratcheted 27 -> 26.
 5. **Sync identity helper (1, complete in `33357d36`).** The pure
    `publicKeyMultibase` decoder used by `RelayEventValidator` now belongs to
    Core, with XRPC retaining a forwarding compatibility API; Sync no longer

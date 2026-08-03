@@ -385,6 +385,14 @@ list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Ne
 # Workstream 08 M4: ATProtoHandleValidator is a pure validator with no
 # Services/Storage/Transport dependency (see Identity/ note above).
 list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Identity/ATProtoHandleValidator.m")
+# ActorStore constructs the platform-specific actor key managers directly.
+# Both implementations use only Core-owned crypto, configuration, and compat
+# facilities, so Core owns them to keep Storage's declared closure complete.
+list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Auth/PDSAppleActorKeyManager.m")
+list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Auth/PDSOpenSSLKeyManager.m")
+# Blob-reference parsing and CID formatting are shared data primitives used by
+# Storage migrations as well as admin diagnostics. They depend only on Core.
+list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.m")
 
 file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES
   "Garazyk/Sources/Database/*.m"
@@ -427,6 +435,9 @@ list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/PDSAuth/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Crypto/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Verifier/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDS/.*")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleActorKeyManager\\.m$")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLKeyManager\\.m$")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils\\.m$")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/AppView/Server/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Services/PDS(AdminService|PhoneVerificationProvider)\\.m$")
 list(APPEND ATPROTO_SERVICES_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Security/Space/PDSSpaceAppAttestationVerifier.m")
@@ -1506,6 +1517,34 @@ set_target_properties(plc_persistent_store_link_tests PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
 )
 
+# Workstream 08 M4: this executable names ATProtoStorage as its only Garazyk
+# library. Its successful link and open/close cycle prove that ActorStore's
+# platform key-manager construction is satisfied by Storage's Core closure.
+add_executable(storage_actor_store_link_tests
+  Garazyk/Tests/Database/ActorStore/StorageActorStoreStandaloneLinkTests.m
+)
+
+target_include_directories(storage_actor_store_link_tests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(storage_actor_store_link_tests PRIVATE
+  ATProtoStorage
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+)
+
+target_compile_definitions(storage_actor_store_link_tests PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(storage_actor_store_link_tests PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
+  LINK_FLAGS "-ObjC"
+)
+
 #=============================
 # Fuzzer Targets
 #=============================
@@ -1722,6 +1761,7 @@ if(BUILD_TESTS)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/RecordCacheTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/MigrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/PLC/PLCPersistentStoreStandaloneLinkTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ActorStore/StorageActorStoreStandaloneLinkTests.m")
   # Network/SecurityHardeningTests.m defines NetworkSecurityHardeningTests (renamed to avoid
   # colliding with Security/SecurityHardeningTests). Both classes now coexist and compile.
 

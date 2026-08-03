@@ -2556,6 +2556,19 @@ from 28 to 15 failures (the remaining 15 are the pre-existing, unrelated
 DPoP-nonce-challenge and X-Forwarded-For-parsing failures tracked
 elsewhere in this workstream).
 
+**Row 10 correction (2026-08-03, workstream 10):** this section's own
+consumer table below recorded `Repository/CAR.m` (row 10) as importer-only —
+confirmed empty for `CBORDecoder|CBORValue` at the time, which was accurate
+for the decoder-macro grep used but missed that the CAR header was still
+decoded through the generic `[CBORValue decode:]` path directly, not via
+`CBORDecoder`, so the audit's grep didn't catch it.
+[Workstream 10](10-dasl-conformance.md) Phase 3 migrated `CAR.m`'s header
+decode to `[ATProtoDagCBOR decodeData:error:]`, closing this row for real —
+see [ADR 0032](../../adr/0032-dasl-conformance-profiles.md). That migration
+also added CAR strict mode, which verifies block CIDs against a SHA-256 of
+their payload; no such check existed anywhere in `CAR.m` before, since §3.4's
+original audit was scoped to decoder routing, not CID/payload integrity.
+
 ### Design (option c, per §3.4 ADR)
 
 The boundary matches the profile boundary. ATProto DAG-CBOR (RFC 8949 §CBOR
@@ -2589,7 +2602,7 @@ Entries marked "Stays" are intentional uses of the generic decoder.
 | 7 | `Garazyk/Sources/Sync/Firehose/Firehose.m` | imports `Core/ATProtoDagCBOR.h:5` | Route |
 | 8 | `Garazyk/Sources/Sync/Relay/EventFormatter.m` | imports `Core/ATProtoDagCBOR.h:5` | Route |
 | 9 | `Garazyk/Sources/Repository/STAR.m` | imports both headers `:5, :8`; content-addressed paths use `ATProtoDagCBOR` per call site | Mixed | 
-| 10 | `Garazyk/Sources/Repository/CAR.m` | imports `Repository/CBOR.h:17` only | **Migration candidate** (see below) |
+| 10 | `Garazyk/Sources/Repository/CAR.m` | header now `[ATProtoDagCBOR decodeData:error:]` (workstream 10 Phase 3) | **Migrated** (2026-08-03; was misrecorded importer-only, see row-10 correction above) |
 | 11 | `Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m` | imports both `:5, :18`; uses `[ATProtoDagCBOR decodeData:…]` for content-addressed commit/MST blocks | Mixed |
 | 12 | `Garazyk/Sources/Services/PDS/PDSRecordService+BatchWrites.m` | imports `Core/ATProtoDagCBOR.h:8` only | Route |
 | 13 | `Garazyk/Sources/Services/PDS/PDSRecordService+RecordCRUD.m` | imports `Core/ATProtoDagCBOR.h:8` only | Route |
@@ -2656,10 +2669,10 @@ are listed here so future audits don't re-litigate them:
   import-only; commit plumbing routes DAG-CBOR content via
   `PDSRecordService+BatchWrites.m` and `+RecordCRUD.m` (which already
   import `Core/ATProtoDagCBOR.h`).
-- `Garazyk/Sources/Repository/CAR.m:17` — import for CAR header / varint
-  parsing only; DAG-CBOR block verification goes through
-  `RepoCommit.m` and `STAR.m`'s `ATProtoDagCBOR` encode/decode pair, not
-  `CAR.m:17`.
+- ~~`Garazyk/Sources/Repository/CAR.m:17`~~ — **stale, see row-10 correction
+  above.** `CAR.m` now imports `Core/ATProtoDagCBOR.h` and decodes its header
+  through `[ATProtoDagCBOR decodeData:error:]` (workstream 10 Phase 3); it is
+  no longer importer-only.
 - `Garazyk/Sources/Network/PDSRepoImportValidator.m:7` — import-only.
   Repo import reads raw CAR bytes; the per-record DAG verification
   is delegated to `Repository/RepoCommit.m` and downstream services,
