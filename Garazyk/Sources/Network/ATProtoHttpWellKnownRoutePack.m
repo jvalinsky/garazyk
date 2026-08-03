@@ -197,8 +197,11 @@
   void (^handleWellKnownRasl)(HttpRequest *request, HttpResponse *response, BOOL includeBody) =
       ^(HttpRequest *request, HttpResponse *response, BOOL includeBody) {
         NSString *cidParam = [request.pathParameters[@"cid"] stringByRemovingPercentEncoding];
+        // Phase 5 only verifies SHA-256 CIDs. Big DASL/BLAKE3 retrieval is
+        // deliberately rejected until Phase 6 supplies the streaming verifier;
+        // accepting it here would serve bytes without checking their CID.
         CID *cid = cidParam.length > 0
-            ? [CID daslCIDFromString:cidParam profile:ATProtoDASLCIDProfileBig]
+            ? [CID daslCIDFromString:cidParam profile:ATProtoDASLCIDProfileBase]
             : nil;
         if (!cid) {
           response.statusCode = HttpStatusBadRequest;
@@ -227,25 +230,20 @@
 
         // Defense in depth: re-verify against the CID's own digest before
         // serving, rather than trusting that whatever the resolver found was
-        // stored correctly. Only SHA-256 (base DASL) is checked here; BLAKE3
-        // (Big DASL) verification lands with the Phase 6 streaming verifier —
-        // nothing writes a BLAKE3-addressed block or blob today, so this scan
-        // should never actually surface one, but if it somehow did, this
-        // route serves it unverified rather than failing closed. Tightening
-        // that (reject non-SHA-256 CIDs outright here) is a one-line follow-up
-        // once Phase 6 lands and can be exercised by a real test fixture.
+        // stored correctly. Non-SHA-256 CIDs cannot reach this point because
+        // the base DASL parser above rejects them.
         NSData *multihash = cid.multihash;
-        if (multihash.length >= 2) {
-          const uint8_t *multihashBytes = multihash.bytes;
-          if (multihashBytes[0] == ATProtoDASLMultihashSHA256) {
-            NSData *expectedDigest = [multihash subdataWithRange:NSMakeRange(2, multihash.length - 2)];
-            NSData *actualDigest = [CID sha256Digest:data];
-            if (![actualDigest isEqualToData:expectedDigest]) {
-              response.statusCode = HttpStatusInternalServerError;
-              response.contentType = @"application/octet-stream";
-              return;
-            }
-          }
+        if (multihash.length < 2 || ((const uint8_t *)multihash.bytes)[0] != ATProtoDASLMultihashSHA256) {
+          response.statusCode = HttpStatusBadRequest;
+          response.contentType = @"application/octet-stream";
+          return;
+        }
+        NSData *expectedDigest = [multihash subdataWithRange:NSMakeRange(2, multihash.length - 2)];
+        NSData *actualDigest = [CID sha256Digest:data];
+        if (![actualDigest isEqualToData:expectedDigest]) {
+          response.statusCode = HttpStatusInternalServerError;
+          response.contentType = @"application/octet-stream";
+          return;
         }
 
         response.statusCode = HttpStatusOK;
