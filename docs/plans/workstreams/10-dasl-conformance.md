@@ -109,25 +109,37 @@ and client verification boundary and remains Phase 6 work, rather than being ser
 - Owner boundary: `Garazyk/Sources/Core` (URL parser), `Garazyk/Sources/Network` (route/client),
   and `Garazyk/Sources/Services/PDS` (bounded resolver). Does not touch Storage or repository
   record contracts.
-- Evidence: `ATProtoRASLURLTests`, `ATProtoRASLClientTests`, and `PDSRASLResolverTests` are
-  registered. The URL/client/resolver suites cover strict parsing, no-hint and unsupported-hash
-  failures, block/blob lookup, scan bounds, and fail-closed BLAKE3 behavior. A live route-level
-  socket fixture and GNUstep SSRF/HTTPS integration remain follow-up evidence because the current
-  test harness has no local TLS fixture.
+- Evidence: `ATProtoRASLURLTests`, `ATProtoRASLClientTests`, `PDSRASLResolverTests`, and
+  `ATProtoHttpWellKnownRoutePackTests` are registered. The URL/client/resolver suites cover strict
+  parsing, no-hint and unsupported-hash failures, block/blob lookup, scan bounds, and fail-closed
+  BLAKE3 behavior. The live route fixture starts an ephemeral loopback server and exercises exact
+  CID-verified GET and bodyless HEAD responses, then corrupts a repository block while retaining
+  its original CID key and confirms both methods fail closed. GNUstep SSRF/HTTPS integration remains follow-up evidence
+  because the current test harness has no local TLS fixture.
 - Rollback: route and client are additive; delete the route registration and the client class.
 
-**Phase 6 — BDASL.** The CID half is already done (Phase 2, `ATProtoDASLCIDProfileBig`).
-Remaining: the 1 KiB-chunk streaming verifier and HTTP-range→chunk mapping for blob/video
-downloads. BLAKE3 is already vendored (`Garazyk/Sources/Security/Space/Vendor/BLAKE3`) and already
-linked into `ATProtoCore` (used by `PDSSpaceLtHash`), so the hash primitive is free. Gate behind
-config; never emit BDASL CIDs into records — only `ATProtoDASLCIDProfileBig` accepts them, and
-nothing routes ordinary repository writes through that profile.
+**Phase 6 — BDASL — PARTIAL (bounded verifier primitive).** The CID half was already done
+(Phase 2, `ATProtoDASLCIDProfileBig`). `Core/ATProtoBDASLVerifier` now verifies an explicit sidecar
+of one BLAKE3 digest per 1 KiB payload chunk while data arrives in arbitrary-sized pieces, then
+verifies the complete payload root against the BLAKE3 CID. It also maps inclusive HTTP byte ranges
+to the containing chunk indices, including open-ended and clamped ranges. This is an interim,
+repository-owned sidecar shape, not the full BDASL hash-tree wire format: the sidecar remains an
+explicit caller-supplied array because BDASL requires hash-tree metadata, and this slice does not
+invent a network sidecar format or silently trust an HTTP server.
 
-- Owner boundary: blob/video download path only (`Garazyk/Sources/Video`, blob serving in
-  `Services/PDS`). Does not change blob upload or CID assignment.
-- Gate: streaming verifier test with a truncated/corrupted chunk mid-stream; range-request test
-  confirming byte ranges map to the correct chunk boundaries.
-- Rollback: config flag off restores current (unverified streaming) behavior.
+BLAKE3 is vendored (`Security/Space/Vendor/BLAKE3`) and already linked into `ATProtoCore` (used by
+`PDSSpaceLtHash`). This phase does not emit BDASL CIDs into records, alter blob upload/CID
+assignment, or wire unverified existing HTTP blob responses to the new verifier. The production
+HTTP-range integration remains the next BDASL slice after a sidecar transport contract is chosen.
+
+- Owner boundary: `Garazyk/Sources/Core` for the reusable verifier; future integration belongs to
+  blob/video download paths only (`Blob`, `Services/PDS`, `Video`).
+- Evidence: `ATProtoBDASLVerifierTests` covers split-input verification, sidecar and payload
+  corruption (including the final short chunk), truncated streams, root mismatch, exact chunk
+  boundaries, open-ended/clamped ranges, and reversed-range rejection. Registered in
+  `Tests/test_main.m`.
+- Rollback: remove the additive verifier and test registration; existing blob upload and download
+  behavior is unchanged.
 
 **Phase 7 — MASL.** DRISL metadata documents: single mode (`src`), bundle mode (`resources` path
 map with a required `/` entry), `prev` history chain, curated HTTP-header allow-list, web-app-
