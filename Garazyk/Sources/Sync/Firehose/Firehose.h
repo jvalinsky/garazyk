@@ -221,6 +221,18 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 
 @end
 
+/**
+ A well-formed firehose frame whose event type is not understood locally.
+
+ The raw frame is retained so relays can forward new event types without
+ decoding and re-encoding them through a lossy model.
+ */
+@interface FirehoseRawEvent : NSObject
+@property (nonatomic, copy) NSString *messageType;
+@property (nonatomic, copy) NSData *frameData;
+@property (nonatomic, strong) NSDictionary *payload;
+@end
+
 /*!
  @protocol FirehoseSubscriptionDelegate
 
@@ -234,6 +246,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveSyncEvent:(FirehoseSyncEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveInfoEvent:(FirehoseInfoEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event;
+- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveRawEvent:(FirehoseRawEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(nullable NSError *)error;
 - (void)firehoseSubscriptionDidConnect:(FirehoseSubscription *)subscription;
 @end

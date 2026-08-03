@@ -192,6 +192,17 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
             FirehoseErrorEvent *errorEvent = (FirehoseErrorEvent *)event;
             GZ_LOG_WARN(@"Relay: Received error from upstream %@: %@", url, errorEvent.message ?: @"unknown");
         }
+        else if ([event isKindOfClass:[FirehoseRawEvent class]]) {
+            FirehoseRawEvent *rawEvent = (FirehoseRawEvent *)event;
+            int64_t rawSequence = [rawEvent.payload[@"seq"] longLongValue];
+            if (self.eventBuffer && rawSequence > 0) {
+                [self.eventBuffer appendEvent:rawEvent.frameData seq:rawSequence];
+            }
+            if (self.subscribeReposHandler) {
+                [self.subscribeReposHandler broadcastEventData:rawEvent.frameData];
+            }
+            GZ_LOG_SYNC_INFO(@"Relay: Forwarded unknown firehose event type %@ byte-for-byte", rawEvent.messageType);
+        }
         else if ([event isKindOfClass:[NSDictionary class]]) {
             // Raw dictionary event (legacy/fallback)
             NSDictionary *eventDict = (NSDictionary *)event;

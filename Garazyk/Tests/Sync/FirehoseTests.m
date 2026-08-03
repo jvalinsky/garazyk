@@ -18,6 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) XCTestExpectation *commitExpectation;
 @property (nonatomic, strong) XCTestExpectation *identityExpectation;
 @property (nonatomic, strong) XCTestExpectation *errorExpectation;
+@property (nonatomic, strong) XCTestExpectation *rawExpectation;
+@property (nonatomic, strong, nullable) FirehoseRawEvent *rawEvent;
 @property (nonatomic, strong, nullable) FirehoseCommitEvent *commitEvent;
 @property (nonatomic, strong, nullable) FirehoseIdentityEvent *identityEvent;
 @property (nonatomic, strong, nullable) FirehoseErrorEvent *errorEvent;
@@ -38,6 +40,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {
     self.errorEvent = event;
     [self.errorExpectation fulfill];
+}
+
+- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveRawEvent:(FirehoseRawEvent *)event {
+    self.rawEvent = event;
+    [self.rawExpectation fulfill];
 }
 
 @end
@@ -134,6 +141,29 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects(delegate.errorEvent.message, @"oops");
 }
 #endif
+
+- (void)testUnknownWellFormedEventIsDeliveredByteForByte {
+    Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
+    FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
+    delegate.rawExpectation = [self expectationWithDescription:@"raw event"];
+    [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
+
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    NSError *error = nil;
+    NSData *frame = [formatter encodeStreamEventWithType:@"#futureEvent"
+                                                  payload:@{@"x": @1}
+                                                    error:&error];
+    XCTAssertNotNil(frame);
+    XCTAssertNil(error);
+
+    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
+    [firehose webSocketConnection:connection didReceiveMessage:frame];
+    [self waitForExpectations:@[delegate.rawExpectation] timeout:1.0];
+
+    XCTAssertEqualObjects(delegate.rawEvent.messageType, @"#futureEvent");
+    XCTAssertEqualObjects(delegate.rawEvent.payload[@"x"], @1);
+    XCTAssertEqualObjects(delegate.rawEvent.frameData, frame);
+}
 
 @end
 

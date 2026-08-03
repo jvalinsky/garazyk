@@ -14,7 +14,8 @@
 
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
-#import "Core/CBOR.h"
+#import "Core/ATProtoDagCBOR.h"
+#import "Core/CID+DASL.h"
 #import <Security/Security.h>
 
 #pragma mark - CARBlock Implementation
@@ -44,7 +45,7 @@
 @property (nonatomic, strong, readwrite) NSArray<CARBlock *> *blocks;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, CARBlock *> *blockIndex;
 
-- (BOOL)parseCarV1Data:(NSData *)data error:(NSError **)error;
+- (BOOL)parseCarV1Data:(NSData *)data strict:(BOOL)strict error:(NSError **)error;
 - (BOOL)parseLegacyData:(NSData *)data error:(NSError **)error;
 
 @end
@@ -78,43 +79,6 @@ static NSUInteger ReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_
     return 0;
 }
 
-static CID *CIDFromTaggedCBOR(CBORValue *value, NSError **error) {
-    if (!value || value.type != CBORTypeTag || !value.tagValue || value.tagValue.type != CBORTypeByteString) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.car"
-                                         code:-10
-                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR header roots entry is not a CID tag"}];
-        }
-        return nil;
-    }
-
-    NSData *taggedCIDBytes = value.tagValue.byteString;
-    if (!taggedCIDBytes || taggedCIDBytes.length == 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.car"
-                                         code:-11
-                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR header CID bytes are empty"}];
-        }
-        return nil;
-    }
-
-    // Dag-CBOR CID tag (42) is encoded as a byte string with a leading 0x00 marker,
-    // followed by the raw CID bytes.
-    NSData *cidBytes = taggedCIDBytes;
-    const uint8_t *bytes = cidBytes.bytes;
-    if (cidBytes.length > 0 && bytes[0] == 0x00) {
-        cidBytes = [cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)];
-    }
-
-    CID *cid = [CID cidFromBytes:cidBytes];
-    if (!cid && error) {
-        *error = [NSError errorWithDomain:@"com.atproto.car"
-                                     code:-12
-                                 userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse root CID"}];
-    }
-    return cid;
-}
-
 static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **cidOut, NSUInteger *cidLengthOut) {
     NSUInteger consumed = 0;
     CID *cid = [CID cidFromBuffer:bytes length:length consumed:&consumed];
@@ -131,14 +95,22 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
 }
 
 + (instancetype)readFromData:(NSData *)data error:(NSError **)error {
+    return [self readFromData:data strict:NO error:error];
+}
+
++ (instancetype)readFromData:(NSData *)data strict:(BOOL)strict error:(NSError **)error {
     CARReader *reader = [[CARReader alloc] init];
-    if (![reader parseData:data error:error]) {
+    if (![reader parseData:data strict:strict error:error]) {
         return nil;
     }
     return reader;
 }
 
 + (instancetype)readFromPath:(NSString *)path error:(NSError **)error {
+    return [self readFromPath:path strict:NO error:error];
+}
+
++ (instancetype)readFromPath:(NSString *)path strict:(BOOL)strict error:(NSError **)error {
 #if defined(__APPLE__)
     NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
 #else
@@ -150,16 +122,24 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     if (!data) {
         return nil;
     }
-    return [self readFromData:data error:error];
+    return [self readFromData:data strict:strict error:error];
 }
 
 - (BOOL)parseData:(NSData *)data error:(NSError **)error {
+    return [self parseData:data strict:NO error:error];
+}
+
+- (BOOL)parseData:(NSData *)data strict:(BOOL)strict error:(NSError **)error {
     NSError *v1Error = nil;
-    if ([self parseCarV1Data:data error:&v1Error]) {
+    if ([self parseCarV1Data:data strict:strict error:&v1Error]) {
         return YES;
     }
 
-    if ([self parseLegacyData:data error:error]) {
+    // The legacy layout is a fixed-width header this project once wrote; it is
+    // not a CAR variant, and it recomputes block CIDs from the payload instead
+    // of reading them, which would paper over a malformed v1 archive. Strict
+    // callers get the v1 error instead.
+    if (!strict && [self parseLegacyData:data error:error]) {
         return YES;
     }
 
@@ -169,7 +149,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     return NO;
 }
 
-- (BOOL)parseCarV1Data:(NSData *)data error:(NSError **)error {
+- (BOOL)parseCarV1Data:(NSData *)data strict:(BOOL)strict error:(NSError **)error {
     if (data.length < 2) {
         return NO;
     }
@@ -195,13 +175,24 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     NSData *headerData = [data subdataWithRange:NSMakeRange(offset, headerLength)];
     offset += headerLength;
 
-    CBORValue *header = [CBORValue decode:headerData];
-    if (!header || header.type != CBORTypeMap) {
+    // The CAR header is a DRISL object. Decoding it with the DAG-CBOR decoder
+    // rather than the generic one gets canonical-form enforcement (minimal
+    // lengths, sorted string keys, no trailing bytes, tag 42 only) and hands
+    // back CID objects directly.
+    NSError *headerError = nil;
+    id header = [ATProtoDagCBOR decodeData:headerData error:&headerError];
+    if (![header isKindOfClass:[NSDictionary class]]) {
+        if (error) {
+            *error = headerError ?: [NSError errorWithDomain:@"com.atproto.car"
+                                                        code:-10
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"CAR header is not a DRISL map"}];
+        }
         return NO;
     }
+    NSDictionary *headerMap = (NSDictionary *)header;
 
-    CBORValue *rootsValue = header.map[[CBORValue textString:@"roots"]];
-    if (!rootsValue || rootsValue.type != CBORTypeArray || rootsValue.array.count == 0) {
+    id rootsValue = headerMap[@"roots"];
+    if (![rootsValue isKindOfClass:[NSArray class]] || ((NSArray *)rootsValue).count == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
                                          code:-2
@@ -210,27 +201,32 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         return NO;
     }
 
-    NSMutableArray<CID *> *parsedRoots = [NSMutableArray arrayWithCapacity:rootsValue.array.count];
-    for (CBORValue *rootEntry in rootsValue.array) {
-      NSError *rootError = nil;
-      CID *rootCID = CIDFromTaggedCBOR(rootEntry, &rootError);
-      if (!rootCID) {
-        if (error) *error = rootError;
-        return NO;
-      }
-      [parsedRoots addObject:rootCID];
-    }
-    if (parsedRoots.count == 0) {
-      if (error) {
-        *error = [NSError errorWithDomain:@"com.atproto.car"
-                                     code:-2
-                                 userInfo:@{NSLocalizedDescriptionKey: @"CAR header missing roots"}];
-      }
-      return NO;
+    NSArray *rootEntries = (NSArray *)rootsValue;
+    NSMutableArray<CID *> *parsedRoots = [NSMutableArray arrayWithCapacity:rootEntries.count];
+    for (id rootEntry in rootEntries) {
+        if (![rootEntry isKindOfClass:[CID class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-10
+                                         userInfo:@{NSLocalizedDescriptionKey: @"CAR header roots entry is not a CID tag"}];
+            }
+            return NO;
+        }
+        CID *rootCID = (CID *)rootEntry;
+        if (strict && !rootCID.isDASLConformant) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-12
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"CAR root %@ is not a DASL CID", rootCID.stringValue]}];
+            }
+            return NO;
+        }
+        [parsedRoots addObject:rootCID];
     }
 
-    CBORValue *versionValue = header.map[[CBORValue textString:@"version"]];
-    if (!versionValue || versionValue.type != CBORTypeUnsignedInteger || versionValue.unsignedInteger.unsignedIntegerValue != 1) {
+    id versionValue = headerMap[@"version"];
+    if (![versionValue isKindOfClass:[NSNumber class]] ||
+        ((NSNumber *)versionValue).unsignedIntegerValue != 1) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
                                          code:-3
@@ -279,9 +275,49 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         }
 
         NSData *blockData = [blockBytes subdataWithRange:NSMakeRange(cidLength, blockBytes.length - cidLength)];
+
+        if (strict) {
+            if (!blockCID.isDASLConformant) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"com.atproto.car"
+                                                 code:-7
+                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"CAR block CID %@ is not a DASL CID", blockCID.stringValue]}];
+                }
+                return NO;
+            }
+            // Without this the CID is just a label: a peer can ship any bytes
+            // under any CID and every downstream lookup silently trusts it.
+            NSData *actualDigest = [CID sha256Digest:blockData];
+            NSData *statedDigest = [blockCID.multihash subdataWithRange:NSMakeRange(2, blockCID.multihash.length - 2)];
+            if (![actualDigest isEqualToData:statedDigest]) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"com.atproto.car"
+                                                 code:-8
+                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"CAR block %@ does not hash to its stated CID", blockCID.stringValue]}];
+                }
+                return NO;
+            }
+        }
+
         CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
         [blocks addObject:block];
         index[blockCID.stringValue] = block;
+    }
+
+    if (strict) {
+        // The spec allows verifying roots after the body has been read, which
+        // is what this does — the body has to be indexed before the check can
+        // be made at all.
+        for (CID *rootCID in parsedRoots) {
+            if (!index[rootCID.stringValue]) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"com.atproto.car"
+                                                 code:-9
+                                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"CAR root %@ is not present in the body", rootCID.stringValue]}];
+                }
+                return NO;
+            }
+        }
     }
 
     _roots = [parsedRoots copy];

@@ -95,8 +95,10 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
             }
         }
 
+        // Caller-supplied archive: verify every block hashes to its stated CID
+        // before any of it reaches the repository.
         NSError *carError = nil;
-        CARReader *reader = [CARReader readFromData:carData error:&carError];
+        CARReader *reader = [CARReader readFromData:carData strict:YES error:&carError];
         if (!reader || !reader.rootCID) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
