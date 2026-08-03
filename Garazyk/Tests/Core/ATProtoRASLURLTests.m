@@ -162,24 +162,23 @@
     XCTAssertNil(url);
 }
 
-- (void)testBigDASLBlake3CIDAccepted {
-    // The URL parser accepts Big DASL (BLAKE3) CIDs even though today's
-    // client (ATProtoRASLClient) refuses to verify them — parsing and
-    // verification are separate concerns; see ADR 0032.
+- (void)testBigDASLBlake3CIDParsesForClientSideRejection {
+    // The URL model preserves a syntactically valid Big DASL CID so the
+    // transport client can report its unsupported hash algorithm explicitly.
+    // The server route uses the base profile separately and rejects it before
+    // resolution; neither path serves BLAKE3 bytes before Phase 6.
     NSData *digest = [CID sha256Digest:[@"blake3-placeholder" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *blake3CID = [CID daslCIDFromBytes:[self bytesForDigest:digest codec:ATProtoDASLCodecRaw]
-                                     profile:ATProtoDASLCIDProfileBig];
-    // The helper above always emits SHA-256 multihash bytes; build a genuine
-    // BLAKE3-tagged CID by swapping the hash-function byte directly instead.
     NSMutableData *blake3Bytes = [[self bytesForDigest:digest codec:ATProtoDASLCodecRaw] mutableCopy];
     uint8_t blake3Code = ATProtoDASLMultihashBLAKE3;
     [blake3Bytes replaceBytesInRange:NSMakeRange(2, 1) withBytes:&blake3Code];
-    blake3CID = [CID daslCIDFromBytes:blake3Bytes profile:ATProtoDASLCIDProfileBig];
+    CID *blake3CID = [CID daslCIDFromBytes:blake3Bytes profile:ATProtoDASLCIDProfileBig];
     XCTAssertNotNil(blake3CID, @"test fixture setup must produce a conformant Big DASL CID");
 
     NSString *urlString = [NSString stringWithFormat:@"rasl://%@/", blake3CID.stringValue];
-    ATProtoRASLURL *url = [ATProtoRASLURL raslURLFromString:urlString error:nil];
+    NSError *error = nil;
+    ATProtoRASLURL *url = [ATProtoRASLURL raslURLFromString:urlString error:&error];
     XCTAssertNotNil(url);
+    XCTAssertNil(error);
     XCTAssertTrue([url.cid isEqualToCID:blake3CID]);
 }
 
