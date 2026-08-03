@@ -87,20 +87,43 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
 }
 
 - (void)testMapKeyLengthFirstBoundary {
-    // Cross-major-type length-first boundary. Single-byte unsigned integer 0
-    // (0x00) is 1 byte; text string "a" is 3 bytes (61 61). By DAG-CBOR
-    // canonical sort, the 1-byte key sorts first regardless of major type.
-    const uint8_t canonical[] = {0xA2, 0x00, 0x01, 0x61, 0x61, 0x02};  // {0: 1, "a": 2}
+    // Cross-length length-first boundary using two text-string keys (DAG-CBOR
+    // requires string-only map keys — see testNonStringMapKeyIsRejected below
+    // for that rule; this test is purely about sort order once both keys are
+    // legal). Empty string "" encodes as a single byte (0x60); "a" encodes as
+    // two bytes (0x61 0x61). By DAG-CBOR canonical sort, the shorter encoded
+    // key sorts first regardless of content.
+    //
+    // Originally used an integer key (0) in place of "" to exercise the same
+    // boundary across major types; Phase 1 (docs/adr/0032) made integer keys
+    // unconditionally invalid, which made that variant untestable as a
+    // positive control. This still checks the same length-first comparison.
+    const uint8_t canonical[] = {0xA2, 0x60, 0x01, 0x61, 0x61, 0x02};  // {"": 1, "a": 2}
     NSError *error = nil;
     id decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(canonical, sizeof(canonical))
                                       error:&error];
     XCTAssertNotNil(decoded);
     XCTAssertNil(error);
 
-    // Same keys in byte-wise (wrong) order — "a" first, then 0 — must reject
-    // because the 3-byte key sorts after the 1-byte key by length-first rule.
-    const uint8_t outOfOrder[] = {0xA2, 0x61, 0x61, 0x01, 0x00, 0x02};  // {"a": 1, 0: 2}
+    // Same keys in byte-wise (wrong) order — "a" first, then "" — must reject
+    // because the 2-byte key sorts after the 1-byte key by length-first rule.
+    const uint8_t outOfOrder[] = {0xA2, 0x61, 0x61, 0x01, 0x60, 0x02};  // {"a": 1, "": 2}
     [self assertDecodeFailsForBytes:outOfOrder length:sizeof(outOfOrder)];
+}
+
+- (void)testIntegerMapKeyIsRejected {
+    // {0: 1} — DAG-CBOR requires text-string map keys; Phase 1 (docs/adr/0032)
+    // closed this as a content-addressing bug: it used to decode successfully
+    // and re-encode without the ability to round-trip a non-string key at all,
+    // which is exactly the kind of asymmetry that breaks CID stability.
+    const uint8_t integerKey[] = {0xA1, 0x00, 0x01};  // {0: 1}
+    NSError *error = nil;
+    id decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(integerKey, sizeof(integerKey))
+                                      error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, ATProtoDagCBORErrorDomain);
+    XCTAssertEqual(error.code, ATProtoDagCBORErrorCodeNonStringMapKey);
 }
 
 - (void)testThreeEntryCanonicalMapAccepted {
@@ -142,27 +165,46 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
 }
 
 - (void)testCBORMajorType7Rejection {
+    // Unassigned/reserved simple values (major type 7, additional info 0-19
+    // inline or 24 in the following byte) have no DRISL meaning at all and
+    // fail as a generic decode error.
     const uint8_t simpleValue0[] = {0xE0};
     const uint8_t simpleValue24[] = {0xF8, 0x18};
-    const uint8_t halfFloat[] = {0xF9, 0x00, 0x00};
-    const uint8_t float32[] = {0xFA, 0x3F, 0x80, 0x00, 0x00};
-    const uint8_t float64[] = {0xFB, 0x3F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-    NSArray *cases = @[
+    NSArray *genericCases = @[
         ATProtoDataWithBytes(simpleValue0, sizeof(simpleValue0)),
         ATProtoDataWithBytes(simpleValue24, sizeof(simpleValue24)),
-        ATProtoDataWithBytes(halfFloat, sizeof(halfFloat)),
-        ATProtoDataWithBytes(float32, sizeof(float32)),
-        ATProtoDataWithBytes(float64, sizeof(float64))
     ];
-
-    for (NSData *data in cases) {
+    for (NSData *data in genericCases) {
         NSError *error = nil;
         id decoded = [ATProtoDagCBOR decodeData:data error:&error];
         XCTAssertNil(decoded);
         XCTAssertNotNil(error);
         XCTAssertEqualObjects(error.domain, ATProtoDagCBORErrorDomain);
         XCTAssertEqual(error.code, ATProtoDagCBORErrorCodeDecodingFailed);
+    }
+
+    // Floats (additional info 25/26/27) are a distinct, more specific
+    // rejection since Phase 1 (docs/adr/0032) introduced
+    // ATProtoDRISLProfile: the default ATProto profile still rejects every
+    // float width, but now with ATProtoDagCBORErrorCodeFloatsNotAllowed
+    // rather than the generic decoding-failed code, since "this is a float
+    // and the ATProto profile forbids floats" is a more specific and more
+    // useful diagnosis than "malformed input."
+    const uint8_t halfFloat[] = {0xF9, 0x00, 0x00};
+    const uint8_t float32[] = {0xFA, 0x3F, 0x80, 0x00, 0x00};
+    const uint8_t float64[] = {0xFB, 0x3F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    NSArray *floatCases = @[
+        ATProtoDataWithBytes(halfFloat, sizeof(halfFloat)),
+        ATProtoDataWithBytes(float32, sizeof(float32)),
+        ATProtoDataWithBytes(float64, sizeof(float64))
+    ];
+    for (NSData *data in floatCases) {
+        NSError *error = nil;
+        id decoded = [ATProtoDagCBOR decodeData:data error:&error];
+        XCTAssertNil(decoded);
+        XCTAssertNotNil(error);
+        XCTAssertEqualObjects(error.domain, ATProtoDagCBORErrorDomain);
+        XCTAssertEqual(error.code, ATProtoDagCBORErrorCodeFloatsNotAllowed);
     }
 }
 

@@ -2,12 +2,57 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
+#import "Core/CID+DASL.h"
 #import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonDigest.h>
+#import <math.h>
+#import <string.h>
 
 NSString * const ATProtoDagCBORErrorDomain = @"com.atproto.dagcbor";
 
 static const NSUInteger kMaxDecodeDepth = 64;
+
+@implementation ATProtoDRISLFloat
+
++ (instancetype)floatWithValue:(double)value {
+    return [[self alloc] initWithValue:value];
+}
+
+- (instancetype)initWithValue:(double)value {
+    self = [super init];
+    if (self) {
+        _value = value;
+    }
+    return self;
+}
+
+- (id)copyWithZone:(nullable NSZone *)zone {
+    return self;
+}
+
+- (BOOL)isEqual:(id)object {
+    if (self == object) return YES;
+    if (![object isKindOfClass:[ATProtoDRISLFloat class]]) return NO;
+    // Bit-comparison, not ==, so that -0.0 and 0.0 stay distinguishable: they
+    // encode to different bytes and therefore to different CIDs.
+    double other = ((ATProtoDRISLFloat *)object).value;
+    uint64_t a = 0, b = 0;
+    memcpy(&a, &_value, sizeof(a));
+    memcpy(&b, &other, sizeof(b));
+    return a == b;
+}
+
+- (NSUInteger)hash {
+    uint64_t bits = 0;
+    memcpy(&bits, &_value, sizeof(bits));
+    return (NSUInteger)(bits ^ (bits >> 32));
+}
+
+- (NSString *)description {
+    return [NSString stringWithFormat:@"%g", _value];
+}
+
+@end
 
 // Compare two CBOR-encoded map keys per DAG-CBOR canonical sort order:
 // shorter encoded length sorts first; for equal lengths, byte-wise memcmp.
@@ -28,14 +73,30 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
 #pragma mark - Public API
 
 + (nullable NSData *)encodeObject:(id)object error:(NSError **)error {
+    return [self encodeObject:object profile:ATProtoDRISLProfileATProto error:error];
+}
+
++ (nullable NSData *)encodeObject:(id)object
+                          profile:(ATProtoDRISLProfile)profile
+                            error:(NSError **)error {
     NSMutableData *result = [NSMutableData data];
-    if (![self _encodeValue:object toData:result error:error]) {
+    if (![self _encodeValue:object profile:profile toData:result error:error]) {
         return nil;
     }
     return result;
 }
 
 + (nullable id)decodeData:(NSData *)data error:(NSError **)error {
+    return [self decodeData:data profile:ATProtoDRISLProfileATProto error:error];
+}
+
++ (nullable id)decodeOneFromData:(NSData *)data
+                         profile:(ATProtoDRISLProfile)profile
+                 consumedLength:(NSUInteger *)consumedLength
+                           error:(NSError **)error {
+    if (consumedLength) {
+        *consumedLength = 0;
+    }
     if (data.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -46,7 +107,37 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     }
 
     NSUInteger index = 0;
-    id result = [self _decodeFromBytes:data.bytes length:data.length index:&index depth:0 error:error];
+    id result = [self _decodeFromBytes:data.bytes
+                                length:data.length
+                                 index:&index
+                                 depth:0
+                               profile:profile
+                                 error:error];
+    if (result && consumedLength) {
+        *consumedLength = index;
+    }
+    return result;
+}
+
++ (nullable id)decodeData:(NSData *)data
+                  profile:(ATProtoDRISLProfile)profile
+                    error:(NSError **)error {
+    if (data.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                         code:ATProtoDagCBORErrorCodeDecodingFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Empty CBOR data"}];
+        }
+        return nil;
+    }
+
+    NSUInteger index = 0;
+    id result = [self _decodeFromBytes:data.bytes
+                                length:data.length
+                                 index:&index
+                                 depth:0
+                               profile:profile
+                                 error:error];
     if (result && index != data.length) {
         if (error) {
             *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -158,6 +249,11 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     if ([cbor isKindOfClass:[CID class]]) {
         CID *cid = (CID *)cbor;
         return @{@"$link": cid.stringValue};
+    } else if ([cbor isKindOfClass:[ATProtoDRISLFloat class]]) {
+        // JSON has no way to preserve the float/integer distinction, so this
+        // is lossy in one direction: re-encoding the result needs the caller
+        // to re-wrap. Only reachable under ATProtoDRISLProfileDRISL.
+        return @(((ATProtoDRISLFloat *)cbor).value);
     } else if ([cbor isKindOfClass:[NSData class]]) {
         NSData *data = (NSData *)cbor;
         return @{@"$bytes": [data base64EncodedStringWithOptions:0]};
@@ -182,30 +278,36 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
 
 #pragma mark - Encoding
 
-+ (BOOL)_encodeValue:(id)value toData:(NSMutableData *)data error:(NSError **)error {
++ (BOOL)_encodeValue:(id)value
+             profile:(ATProtoDRISLProfile)profile
+              toData:(NSMutableData *)data
+               error:(NSError **)error {
     if ([value isKindOfClass:[NSNull class]]) {
         uint8_t byte = 0xF6;
         [data appendBytes:&byte length:1];
         return YES;
-        
+
     } else if ([value isKindOfClass:[NSNumber class]]) {
-        return [self _encodeNumber:(NSNumber *)value toData:data error:error];
-        
+        return [self _encodeNumber:(NSNumber *)value profile:profile toData:data error:error];
+
     } else if ([value isKindOfClass:[NSString class]]) {
         return [self _encodeString:(NSString *)value toData:data error:error];
-        
+
     } else if ([value isKindOfClass:[NSData class]]) {
         return [self _encodeByteString:(NSData *)value toData:data error:error];
-        
+
     } else if ([value isKindOfClass:[NSArray class]]) {
-        return [self _encodeArray:(NSArray *)value toData:data error:error];
-        
+        return [self _encodeArray:(NSArray *)value profile:profile toData:data error:error];
+
     } else if ([value isKindOfClass:[NSDictionary class]]) {
-        return [self _encodeMap:(NSDictionary *)value toData:data error:error];
-        
+        return [self _encodeMap:(NSDictionary *)value profile:profile toData:data error:error];
+
     } else if ([value isKindOfClass:[CID class]]) {
         return [self _encodeCIDLink:(CID *)value toData:data error:error];
-        
+
+    } else if ([value isKindOfClass:[ATProtoDRISLFloat class]]) {
+        return [self _encodeDRISLFloat:(ATProtoDRISLFloat *)value profile:profile toData:data error:error];
+
     } else {
         GZ_LOG_ERROR(@"ATProtoDagCBOR: Unsupported type: %@", NSStringFromClass([value class]));
         if (error) {
@@ -217,7 +319,46 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     }
 }
 
-+ (BOOL)_encodeNumber:(NSNumber *)number toData:(NSMutableData *)data error:(NSError **)error {
++ (BOOL)_encodeDRISLFloat:(ATProtoDRISLFloat *)number
+                  profile:(ATProtoDRISLProfile)profile
+                   toData:(NSMutableData *)data
+                    error:(NSError **)error {
+    if (profile != ATProtoDRISLProfileDRISL) {
+        if (error) {
+            *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                         code:ATProtoDagCBORErrorCodeFloatsNotAllowed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"ATProto records forbid floats; encode under ATProtoDRISLProfileDRISL to emit one"}];
+        }
+        return NO;
+    }
+
+    double value = number.value;
+    if (isnan(value) || isinf(value)) {
+        if (error) {
+            *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                         code:ATProtoDagCBORErrorCodeFloatsNotAllowed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DRISL forbids NaN, Infinity and -Infinity"}];
+        }
+        return NO;
+    }
+
+    // Major type 7, additional info 27: always the 64-bit form. DRISL forbids
+    // the shorter float widths, so there is no minimal-encoding reduction to
+    // apply here the way there is for integers.
+    uint64_t bits = 0;
+    memcpy(&bits, &value, sizeof(bits));
+    uint8_t bytes[9] = { 0xFB };
+    for (int i = 0; i < 8; i++) {
+        bytes[1 + i] = (uint8_t)((bits >> ((7 - i) * 8)) & 0xFF);
+    }
+    [data appendBytes:bytes length:9];
+    return YES;
+}
+
++ (BOOL)_encodeNumber:(NSNumber *)number
+              profile:(ATProtoDRISLProfile)profile
+               toData:(NSMutableData *)data
+                error:(NSError **)error {
     // Check for boolean
     if (CFGetTypeID((__bridge CFTypeRef)number) == CFBooleanGetTypeID()) {
         uint8_t byte = number.boolValue ? 0xF5 : 0xF4;
@@ -245,11 +386,18 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
         }
     }
     
-    // Reject non-integer floats per DRISL-CBOR spec
+    // A non-integral NSNumber. Even under ATProtoDRISLProfileDRISL this is an
+    // error rather than an implicit float: NSNumber cannot distinguish 0.0 from
+    // 0, and GNUstep reports some boxed integers as floating types, so treating
+    // NSNumber as a float source would silently change how integers encode.
+    // Callers that mean a float say so with ATProtoDRISLFloat.
     if (error) {
+        NSString *message = (profile == ATProtoDRISLProfileDRISL)
+            ? @"Non-integral NSNumber; wrap the value in ATProtoDRISLFloat to encode it as a DRISL float"
+            : @"ATProto records forbid IEEE 754 floats";
         *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
                                      code:ATProtoDagCBORErrorCodeFloatsNotAllowed
-                                 userInfo:@{NSLocalizedDescriptionKey: @"DRISL-CBOR forbids IEEE 754 floats"}];
+                                 userInfo:@{NSLocalizedDescriptionKey: message}];
     }
     return NO;
 }
@@ -347,7 +495,10 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     return YES;
 }
 
-+ (BOOL)_encodeArray:(NSArray *)array toData:(NSMutableData *)data error:(NSError **)error {
++ (BOOL)_encodeArray:(NSArray *)array
+             profile:(ATProtoDRISLProfile)profile
+              toData:(NSMutableData *)data
+               error:(NSError **)error {
     NSUInteger count = array.count;
     uint8_t initialByte = 0x80; // Major type 4
     
@@ -370,15 +521,18 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     }
     
     for (id item in array) {
-        if (![self _encodeValue:item toData:data error:error]) {
+        if (![self _encodeValue:item profile:profile toData:data error:error]) {
             return NO;
         }
     }
-    
+
     return YES;
 }
 
-+ (BOOL)_encodeMap:(NSDictionary *)dict toData:(NSMutableData *)data error:(NSError **)error {
++ (BOOL)_encodeMap:(NSDictionary *)dict
+           profile:(ATProtoDRISLProfile)profile
+            toData:(NSMutableData *)data
+             error:(NSError **)error {
     NSUInteger count = dict.count;
     uint8_t initialByte = 0xA0; // Major type 5
     
@@ -407,21 +561,32 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     }
     
     for (id key in sortedKeys) {
-        if (![self _encodeValue:key toData:data error:error]) {
+        if (![self _encodeValue:key profile:profile toData:data error:error]) {
             return NO;
         }
-        if (![self _encodeValue:dict[key] toData:data error:error]) {
+        if (![self _encodeValue:dict[key] profile:profile toData:data error:error]) {
             return NO;
         }
     }
-    
+
     return YES;
 }
 
 + (nullable NSArray *)_canonicallySortedKeys:(NSArray *)keys error:(NSError **)error {
-    // Encode each key and pair it with the original key
+    // Encode each key and pair it with the original key. DRISL permits only
+    // text-string keys, so anything else is rejected before it can be encoded
+    // — an integer key would otherwise sort and serialize happily and produce
+    // a document no conforming decoder will read back.
     NSMutableArray *encodedPairs = [NSMutableArray arrayWithCapacity:keys.count];
     for (id key in keys) {
+        if (![key isKindOfClass:[NSString class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                             code:ATProtoDagCBORErrorCodeNonStringMapKey
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"DRISL map keys must be strings, got %@", NSStringFromClass([key class])]}];
+            }
+            return nil;
+        }
         NSData *encoded = [self encodeObject:key error:error];
         if (!encoded) {
             return nil;
@@ -473,7 +638,12 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
 
 #pragma mark - Decoding
 
-+ (nullable id)_decodeFromBytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
++ (nullable id)_decodeFromBytes:(const uint8_t *)bytes
+                         length:(NSUInteger)length
+                          index:(NSUInteger *)index
+                          depth:(NSUInteger)depth
+                        profile:(ATProtoDRISLProfile)profile
+                          error:(NSError **)error {
     if (depth > kMaxDecodeDepth) {
         if (error) {
             *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -512,17 +682,17 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
             return [self _decodeTextString:additionalInfo bytes:bytes length:length index:index error:error];
             
         case 4: // Array
-            return [self _decodeArray:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
-            
+            return [self _decodeArray:additionalInfo bytes:bytes length:length index:index depth:depth profile:profile error:error];
+
         case 5: // Map
-            return [self _decodeMap:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
-            
+            return [self _decodeMap:additionalInfo bytes:bytes length:length index:index depth:depth profile:profile error:error];
+
         case 6: // Tag
-            return [self _decodeTag:additionalInfo bytes:bytes length:length index:index depth:depth error:error];
-            
+            return [self _decodeTag:additionalInfo bytes:bytes length:length index:index depth:depth profile:profile error:error];
+
         case 7: // Special/float
-            return [self _decodeSpecial:additionalInfo bytes:bytes length:length index:index error:error];
-            
+            return [self _decodeSpecial:additionalInfo bytes:bytes length:length index:index profile:profile error:error];
+
         default:
             if (error) {
                 *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -669,7 +839,7 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     return string;
 }
 
-+ (nullable NSArray *)_decodeArray:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
++ (nullable NSArray *)_decodeArray:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth profile:(ATProtoDRISLProfile)profile error:(NSError **)error {
     NSNumber *arrayLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
     if (!arrayLength) return nil;
     
@@ -685,7 +855,7 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:count];
 
     for (uint64_t i = 0; i < count; i++) {
-        id item = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+        id item = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 profile:profile error:error];
         if (!item) {
             if (error && !*error) {
                 *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -700,7 +870,7 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     return array;
 }
 
-+ (nullable NSDictionary *)_decodeMap:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
++ (nullable NSDictionary *)_decodeMap:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth profile:(ATProtoDRISLProfile)profile error:(NSError **)error {
     NSNumber *mapLength = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
     if (!mapLength) return nil;
     
@@ -722,12 +892,25 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
 
     for (uint64_t i = 0; i < count; i++) {
         NSUInteger keyStart = *index;
-        id key = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+        id key = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 profile:profile error:error];
         if (!key) {
             if (error && !*error) {
                 *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
                                              code:ATProtoDagCBORErrorCodeDecodingFailed
                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to decode map key"}];
+            }
+            return nil;
+        }
+
+        // DRISL permits text-string keys only. Without this, an integer key
+        // decodes into a perfectly usable NSNumber dictionary key and the
+        // document silently round-trips as something no conforming decoder
+        // accepts.
+        if (![key isKindOfClass:[NSString class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                             code:ATProtoDagCBORErrorCodeNonStringMapKey
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"DRISL map keys must be strings, got %@", NSStringFromClass([key class])]}];
             }
             return nil;
         }
@@ -753,7 +936,7 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
         prevKeyBytes = bytes + keyStart;
         prevKeyLen = keyLen;
 
-        id value = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+        id value = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 profile:profile error:error];
         if (!value) {
             if (error && !*error) {
                 *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -769,18 +952,32 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     return dict;
 }
 
-+ (nullable id)_decodeTag:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth error:(NSError **)error {
++ (nullable id)_decodeTag:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index depth:(NSUInteger)depth profile:(ATProtoDRISLProfile)profile error:(NSError **)error {
     NSNumber *tagNumber = [self _decodeLength:additionalInfo bytes:bytes length:length index:index error:error];
     if (!tagNumber) return nil;
-    
+
     uint64_t tag = tagNumber.unsignedLongLongValue;
-    
+
+    // DRISL permits tag 42 and nothing else. Reject before decoding the
+    // content: an unknown tag used to be unwrapped and its payload returned,
+    // which meant a tagged document decoded and re-encoded to *different*
+    // bytes — a different CID for the same input. Bignums (tags 2 and 3),
+    // datetimes (tag 0) and self-describing CBOR (tag 55799) all land here.
+    if (tag != 42) {
+        if (error) {
+            *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                         code:ATProtoDagCBORErrorCodeDisallowedTag
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"DRISL permits only CBOR tag 42, got tag %llu", (unsigned long long)tag]}];
+        }
+        return nil;
+    }
+
     // Decode the tagged value
-    id taggedValue = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 error:error];
+    id taggedValue = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 profile:profile error:error];
     if (!taggedValue) return nil;
-    
+
     // Handle CID-link (tag 42)
-    if (tag == 42) {
+    {
         if (![taggedValue isKindOfClass:[NSData class]]) {
             if (error) {
                 *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -811,7 +1008,16 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
         }
         
         NSData *pureCIDBytes = [cidData subdataWithRange:NSMakeRange(1, cidData.length - 1)];
-        CID *cid = [CID cidFromBytes:pureCIDBytes];
+
+        // The ATProto profile keeps the permissive parser on purpose. Links
+        // inside records include blob references, and blobs uploaded before
+        // the CID rules settled carry dag-pb and other non-DASL CIDs; those
+        // records are already signed and must stay readable. The DRISL
+        // profile, which no repository data goes through, holds links to the
+        // strict spec.
+        CID *cid = (profile == ATProtoDRISLProfileDRISL)
+            ? [CID daslCIDFromBytes:pureCIDBytes profile:ATProtoDASLCIDProfileBig]
+            : [CID cidFromBytes:pureCIDBytes];
         if (!cid && error) {
             *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
                                          code:ATProtoDagCBORErrorCodeInvalidCIDLink
@@ -819,13 +1025,9 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
         }
         return cid;
     }
-    
-    // Unknown tags: return the tagged value as-is
-    // (In a full implementation, you might want to preserve the tag somehow)
-    return taggedValue;
 }
 
-+ (nullable id)_decodeSpecial:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
++ (nullable id)_decodeSpecial:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index profile:(ATProtoDRISLProfile)profile error:(NSError **)error {
     switch (additionalInfo) {
         case 20: // false
             return @NO;
@@ -833,9 +1035,31 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
             return @YES;
         case 22: // null
             return [NSNull null];
-        case 23: // undefined (treat as null)
-            return [NSNull null];
+
+        case 23:
+            // `undefined`. DRISL allows true, false and null only. Decoding it
+            // to NSNull used to make 0xF7 re-encode as 0xF6 — a silent change
+            // of bytes, and so of CID, for any document containing it.
+            [self _setDecodingError:error message:@"DRISL forbids the `undefined` simple value"];
+            return nil;
+
+        case 27:
+            return [self _decodeFloat64:bytes length:length index:index profile:profile error:error];
+
+        case 25: // half-precision float
+        case 26: // single-precision float
+            if (error) {
+                *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                             code:ATProtoDagCBORErrorCodeFloatsNotAllowed
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DRISL permits only 64-bit floats"}];
+            }
+            return nil;
+
         default:
+            // additionalInfo 24 is a simple value in the following byte, and
+            // 0-19 are the inline unassigned simple values. DRISL allows
+            // neither. 28-30 are reserved and 31 is the indefinite-length
+            // break code.
             if (error) {
                 *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
                                              code:ATProtoDagCBORErrorCodeDecodingFailed
@@ -843,6 +1067,47 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
             }
             return nil;
     }
+}
+
++ (nullable ATProtoDRISLFloat *)_decodeFloat64:(const uint8_t *)bytes
+                                        length:(NSUInteger)length
+                                         index:(NSUInteger *)index
+                                       profile:(ATProtoDRISLProfile)profile
+                                         error:(NSError **)error {
+    if (profile != ATProtoDRISLProfileDRISL) {
+        if (error) {
+            *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                         code:ATProtoDagCBORErrorCodeFloatsNotAllowed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"ATProto records forbid floats; decode under ATProtoDRISLProfileDRISL to accept one"}];
+        }
+        return nil;
+    }
+
+    // Compare against remaining bytes rather than summing, which can wrap.
+    if (*index > length || length - *index < 8) {
+        [self _setDecodingError:error message:@"Truncated 64-bit float"];
+        return nil;
+    }
+
+    uint64_t bits = 0;
+    for (int i = 0; i < 8; i++) {
+        bits = (bits << 8) | bytes[*index + i];
+    }
+    *index += 8;
+
+    double value = 0;
+    memcpy(&value, &bits, sizeof(value));
+
+    if (isnan(value) || isinf(value)) {
+        if (error) {
+            *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                         code:ATProtoDagCBORErrorCodeFloatsNotAllowed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DRISL forbids NaN, Infinity and -Infinity"}];
+        }
+        return nil;
+    }
+
+    return [ATProtoDRISLFloat floatWithValue:value];
 }
 
 @end

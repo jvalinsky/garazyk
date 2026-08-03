@@ -28,3 +28,9 @@ License: MIT OR Apache-2.0
 Files: vendor/reference/Allegedly/**
 Copyright: 2022-2025 Bluesky Social PBC
 License: Apache-2.0
+
+# Vendored DASL conformance vectors (MIT)
+Files: Garazyk/Tests/fixtures/dasl-testing/**
+Copyright: 2025 Hypha Worker Co-operative
+License: MIT
+Comment: Test vectors from https://github.com/hyphacoop/dasl-testing, the conformance suite for the DASL specs at https://dasl.ing/. Data only, no code.

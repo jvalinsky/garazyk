@@ -304,6 +304,67 @@
     XCTAssertNotNil(error);
 }
 
+- (void)testDecodeRejectsNonCanonicalHeaderLength {
+    const uint8_t frameBytes[] = {
+        0xA2, 0x62, 0x6F, 0x70, 0x01, 0x61, 0x74, 0x68,
+        0x18, 0x01, 0xA0
+    };
+    NSData *frame = [NSData dataWithBytes:frameBytes length:sizeof(frameBytes)];
+    NSError *error = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:frame op:nil msgType:nil error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.domain, ATProtoDagCBORErrorDomain);
+}
+
+- (void)testDecodeRejectsUnknownCBORTagInBody {
+    NSError *error = nil;
+    NSData *header = [ATProtoDagCBOR encodeObject:@{
+        @"op": @1,
+        @"t": @"#future",
+    } error:&error];
+    XCTAssertNotNil(header);
+    // Tag 1 uses the compact single-byte tag encoding (0xC1). Using D8 01
+    // would itself be a non-minimal tag encoding and should fail earlier with
+    // the canonical-encoding error rather than the disallowed-tag error.
+    const uint8_t bodyBytes[] = {0xA1, 0x61, 0x78, 0xC1, 0x01};
+    NSMutableData *frame = [header mutableCopy];
+    [frame appendBytes:bodyBytes length:sizeof(bodyBytes)];
+
+    NSDictionary *decoded = [self.formatter decodeEventFromData:frame
+                                                             op:nil
+                                                        msgType:nil
+                                                           error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.domain, ATProtoDagCBORErrorDomain);
+    XCTAssertEqual(error.code, ATProtoDagCBORErrorCodeDisallowedTag);
+}
+
+- (void)testDecodeRejectsFloatInBody {
+    NSError *error = nil;
+    NSData *header = [ATProtoDagCBOR encodeObject:@{
+        @"op": @1,
+        @"t": @"#future",
+    } error:&error];
+    XCTAssertNotNil(header);
+    const uint8_t bodyBytes[] = {
+        0xA1, 0x61, 0x78, 0xFB,
+        0x3F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    NSMutableData *frame = [header mutableCopy];
+    [frame appendBytes:bodyBytes length:sizeof(bodyBytes)];
+
+    NSDictionary *decoded = [self.formatter decodeEventFromData:frame
+                                                             op:nil
+                                                        msgType:nil
+                                                           error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.domain, ATProtoDagCBORErrorDomain);
+    XCTAssertEqual(error.code, ATProtoDagCBORErrorCodeFloatsNotAllowed);
+}
+
 - (void)testDecodeRejectsNonMapPayload {
     NSError *error = nil;
     NSData *header = [ATProtoDagCBOR encodeObject:@{

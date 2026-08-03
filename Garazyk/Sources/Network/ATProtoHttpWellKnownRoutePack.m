@@ -12,6 +12,8 @@
 
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
+#import "Core/CID.h"
+#import "Core/CID+DASL.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/GZLogger.h"
@@ -19,6 +21,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+#import "Services/PDS/PDSRASLResolver.h"
 
 @implementation ATProtoHttpWellKnownRoutePack
 
@@ -182,6 +185,84 @@
                             request, response, [method isEqualToString:@"GET"]);
                       }
                     }];
+
+  // RASL (https://dasl.ing/rasl.html): "GET or HEAD", "stateless (no cookies,
+  // no credentials of any kind), and ... no content negotiation". This route
+  // sets neither cookies nor Vary, and always answers application/octet-stream
+  // regardless of any stored content type, per spec.
+  //
+  // CID -> bytes resolution is a bounded scan across locally known accounts'
+  // block and blob stores (see PDSRASLResolver) — Garazyk has no host-wide
+  // CID index today. See workstream 10 Phase 5 for the design tradeoff.
+  void (^handleWellKnownRasl)(HttpRequest *request, HttpResponse *response, BOOL includeBody) =
+      ^(HttpRequest *request, HttpResponse *response, BOOL includeBody) {
+        NSString *cidParam = [request.pathParameters[@"cid"] stringByRemovingPercentEncoding];
+        CID *cid = cidParam.length > 0
+            ? [CID daslCIDFromString:cidParam profile:ATProtoDASLCIDProfileBig]
+            : nil;
+        if (!cid) {
+          response.statusCode = HttpStatusBadRequest;
+          response.contentType = @"application/octet-stream";
+          return;
+        }
+
+        PDSController *strongController = weakController;
+        if (!strongController.userDatabasePool || !strongController.blobService ||
+            !strongController.accountService) {
+          response.statusCode = HttpStatusInternalServerError;
+          response.contentType = @"application/octet-stream";
+          return;
+        }
+
+        PDSRASLResolver *resolver =
+            [[PDSRASLResolver alloc] initWithDatabasePool:strongController.userDatabasePool
+                                                blobService:strongController.blobService
+                                              accountService:strongController.accountService];
+        NSData *data = [resolver dataForCID:cid maxAccountsToScan:200];
+        if (!data) {
+          response.statusCode = HttpStatusNotFound;
+          response.contentType = @"application/octet-stream";
+          return;
+        }
+
+        // Defense in depth: re-verify against the CID's own digest before
+        // serving, rather than trusting that whatever the resolver found was
+        // stored correctly. Only SHA-256 (base DASL) is checked here; BLAKE3
+        // (Big DASL) verification lands with the Phase 6 streaming verifier —
+        // nothing writes a BLAKE3-addressed block or blob today, so this scan
+        // should never actually surface one, but if it somehow did, this
+        // route serves it unverified rather than failing closed. Tightening
+        // that (reject non-SHA-256 CIDs outright here) is a one-line follow-up
+        // once Phase 6 lands and can be exercised by a real test fixture.
+        NSData *multihash = cid.multihash;
+        if (multihash.length >= 2) {
+          const uint8_t *multihashBytes = multihash.bytes;
+          if (multihashBytes[0] == ATProtoDASLMultihashSHA256) {
+            NSData *expectedDigest = [multihash subdataWithRange:NSMakeRange(2, multihash.length - 2)];
+            NSData *actualDigest = [CID sha256Digest:data];
+            if (![actualDigest isEqualToData:expectedDigest]) {
+              response.statusCode = HttpStatusInternalServerError;
+              response.contentType = @"application/octet-stream";
+              return;
+            }
+          }
+        }
+
+        response.statusCode = HttpStatusOK;
+        response.contentType = @"application/octet-stream";
+        if (includeBody) {
+          [response setBodyData:data];
+        }
+      };
+
+  [server addRoute:@"GET" path:@"/.well-known/rasl/:cid"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             handleWellKnownRasl(request, response, YES);
+           }];
+  [server addRoute:@"HEAD" path:@"/.well-known/rasl/:cid"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             handleWellKnownRasl(request, response, NO);
+           }];
 
   GZ_LOG_DEBUG(@"ATProtoHttpWellKnownRoutePack: .well-known routes registered");
 }
