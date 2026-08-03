@@ -35,10 +35,13 @@ list, and consequences: [ADR 0032](../../adr/0032-dasl-conformance-profiles.md).
 
 ## Status (2026-08-03)
 
-Phases 1–4 implemented and passing. Phase 0 (this doc + ADR 0032) landed alongside them,
-deliberately after implementation so it records what was built rather than what was predicted.
-Regression suite and cross-platform (GNUstep/Linux) UTF-8 verification pending. Phases 5–11 not
-started.
+Phases 1–5 are implemented as a bounded base-DASL slice. Phase 0 (this doc + ADR 0032) landed
+alongside the initial implementation, deliberately after implementation so it records what was
+built rather than what was predicted. Phase 5 now has strict URL parsing, a registered GET/HEAD
+well-known route, bounded local block/blob resolution, mandatory SHA-256 CID verification, and an
+SSRF-safe parallel client. BLAKE3/Big DASL is rejected at the RASL boundary until Phase 6 supplies
+its streaming verifier. Full regression and cross-platform (GNUstep/Linux) UTF-8 verification
+remain pending.
 
 ## DONE — Phase 1: DRISL conformance
 
@@ -94,21 +97,23 @@ drops files fails loudly). Registered in `Garazyk/Tests/test_main.m`.
 ## Phases 5–11 — the remaining specs
 
 Each phase below needs its own evidence/gate/rollback slice added here before implementation
-starts; the summaries are the plan, not a completed record.
+starts; the summaries are the plan, not a completed record.**Phase 5 — RASL — IMPLEMENTED (base profile).** (`rasl://<cid>/?hint=<host>`).
+`ATProtoRASLURL` parses strict base/Big-DASL authorities and bounded HTTPS hints. The registered
+`GET|HEAD /.well-known/rasl/{cid}` route selects the base profile, serves locally resolved
+blocks/blobs as `application/octet-stream`, and re-hashes every response against the requested
+SHA-256 CID before serving. `ATProtoRASLClient` performs parallel hint fetches through the existing
+SSRF validator and pinned-egress client, returning only a CID-verified response; it rejects a
+parsed BLAKE3 CID before network access. BLAKE3/Big DASL is therefore rejected at the server route
+and client verification boundary and remains Phase 6 work, rather than being served unverified.
 
-**Phase 5 — RASL** (`rasl://<cid>/?hint=<host>`). `ATProtoRASLURL` parser in Core; a
-`GET|HEAD /.well-known/rasl/{cid}` route serving blocks and blobs as `application/octet-stream`
-(alongside `App/NodeInfo/NodeInfoHandler.m`'s existing well-known routes); `ATProtoRASLClient` in
-Transport doing parallel hint fetch, abort-on-first-success, non-307-redirects-treated-as-307, and
-mandatory CID verification before returning bytes. The client fetches caller-supplied hosts, so it
-must route through the existing SSRF validator and pinned-egress resolution (ADR 0016).
-
-- Owner boundary: `Garazyk/Sources/Core` (URL parser), `Garazyk/Sources/App/NodeInfo` or a new
-  well-known route pack (server side), `Garazyk/Sources/Transport` (client). Does not touch
-  Storage or repository record contracts.
-- Gate: new `ATProtoRASLURLTests` (parse/reject table), route-level test hitting the well-known
-  endpoint with a known CID, SSRF-validator test proving hint hosts can't reach internal
-  addresses.
+- Owner boundary: `Garazyk/Sources/Core` (URL parser), `Garazyk/Sources/Network` (route/client),
+  and `Garazyk/Sources/Services/PDS` (bounded resolver). Does not touch Storage or repository
+  record contracts.
+- Evidence: `ATProtoRASLURLTests`, `ATProtoRASLClientTests`, and `PDSRASLResolverTests` are
+  registered. The URL/client/resolver suites cover strict parsing, no-hint and unsupported-hash
+  failures, block/blob lookup, scan bounds, and fail-closed BLAKE3 behavior. A live route-level
+  socket fixture and GNUstep SSRF/HTTPS integration remain follow-up evidence because the current
+  test harness has no local TLS fixture.
 - Rollback: route and client are additive; delete the route registration and the client class.
 
 **Phase 6 — BDASL.** The CID half is already done (Phase 2, `ATProtoDASLCIDProfileBig`).
