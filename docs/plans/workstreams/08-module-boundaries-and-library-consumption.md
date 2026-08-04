@@ -32,10 +32,11 @@ complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
 a configure-time disjoint-source assertion); item 2 (glob-to-manifest
 conversion) remains open. M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
-and **batch 2 is partially done** (15 of ~25 classes, the smaller/mid-sized
-ones by consumer count) — namespace baseline ratcheted 283 → 253 → 249 → 238.
+and **batch 2 is partially done** (19 of ~25 classes, everything up to 34
+consumers) — namespace baseline ratcheted 283 → 253 → 249 → 238 → 234.
 The remaining, much larger batch-2 classes (`CID` at 265 consumers, `JWT` at
-136, `JWTMinter`, `Secp256k1`, `CryptoUtils`, `TID`, etc.) and batches 3-6
+136, `JWTMinter` at 80, `Secp256k1` at 53, `CryptoUtils` at 45, `TID` at 41)
+and batches 3-6
 remain open. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
@@ -1514,10 +1515,32 @@ covering every renamed class and every file with 2+ replacements (`Base58Tests`,
 boundary checks clean; `deno task check`/`lint` clean; full
 `AllTests --gated=run`: 4,966 tests, 0 failures, 509s.
 
+**Batch 2c (2026-08-04): the 26-34 consumer tier.** Renamed `DIDDocument` →
+`ATProtoDIDDocument`, `DIDResolver` → `ATProtoDIDResolver`, `CBORValue` →
+`ATProtoCBORValue`, `Secp256k1KeyPair` → `ATProtoSecp256k1KeyPair`.
+`DIDDocument` declares `NSSecureCoding` conformance
+(`encodeWithCoder:`/`initWithCoder:`/`supportsSecureCoding`) — checked
+specifically, since a keyed-archive's default class-name encoding can break
+cross-version compatibility on a rename if old archived data exists on
+disk. Confirmed `NSKeyedArchiver`/`NSKeyedUnarchiver` is not used anywhere
+in `Garazyk/Sources/`, so this is dead code from a persistence standpoint
+today and the rename carries no on-disk compatibility risk. Same method as
+batch 2b (`#import` path strings excluded, file names unchanged); verified
+zero stray references to any of the four old names remain anywhere in
+`Garazyk/Sources`/`Garazyk/Tests` after the rename (95 files, 928
+replacements).
+
+Namespace baseline ratchets 238 → 234. Verified: 23 targeted test suites
+covering every renamed class and every file with a meaningful replacement
+count, all 0 failures; source and link-time module boundary checks clean;
+`deno task check`/`lint` clean; full `AllTests --gated=run`: 4,966 tests,
+0 failures, 506s.
+
 The remaining, much larger batch-2 classes (`CID` at 265 consumers, `JWT`
 at 136, `JWTMinter` at 80, `Secp256k1` at 53, `CryptoUtils` at 45, `TID` at
-41, `DIDResolver`/`CBORValue`/`Secp256k1KeyPair` at 30-34) are deliberately
-left open for a dedicated, carefully reviewed session.
+41) are deliberately left open for a dedicated, carefully reviewed session
+— each is large enough that an in-band rename risks missing something a
+focused review pass would catch.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
