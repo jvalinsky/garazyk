@@ -39,8 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (NSData *)attestationObjectWithAuthData:(NSData *)authData {
-    CBORValue *map = [CBORValue map:@{
-        [CBORValue textString:@"authData"]: [CBORValue byteString:authData]
+    ATProtoCBORValue *map = [ATProtoCBORValue map:@{
+        [ATProtoCBORValue textString:@"authData"]: [ATProtoCBORValue byteString:authData]
     }];
     return [map encode];
 }
@@ -83,7 +83,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSData *expectedChallenge = [@"expected" dataUsingEncoding:NSUTF8StringEncoding];
     NSString *expectedOrigin = @"https://example.com";
 
-    CBORValue *map = [CBORValue map:@{}];
+    ATProtoCBORValue *map = [ATProtoCBORValue map:@{}];
     NSData *attestation = [map encode];
     NSDictionary *response = [self registrationResponseWithChallenge:expectedChallenge
                                                               origin:expectedOrigin

@@ -23,10 +23,10 @@ NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/json";
 
-@interface DIDResolver () <NSURLSessionTaskDelegate>
+@interface ATProtoDIDResolver () <NSURLSessionTaskDelegate>
 @end
 
-@implementation DIDDocument
+@implementation ATProtoDIDDocument
 
 + (nullable instancetype)documentWithJSON:(NSDictionary *)json error:(NSError **)error {
     if (!json || ![json isKindOfClass:[NSDictionary class]]) {
@@ -62,7 +62,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         service = @[serviceValue];
     }
 
-    DIDDocument *document = [[DIDDocument alloc] init];
+    ATProtoDIDDocument *document = [[ATProtoDIDDocument alloc] init];
     if (document) {
         document->_jsonDictionary = [json copy];
         document->_id = [documentId copy];
@@ -89,12 +89,12 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     }
     
     NSError *error;
-    return [DIDDocument documentWithJSON:json error:&error];
+    return [ATProtoDIDDocument documentWithJSON:json error:&error];
 }
 
 @end
 
-@implementation DIDResolver {
+@implementation ATProtoDIDResolver {
     NSURLSession *_session;
     dispatch_queue_t _cacheQueue;
     // _staleTTL and _maxTTL are synthesized properties
@@ -102,10 +102,10 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 }
 
 + (instancetype)sharedResolver {
-    static DIDResolver *shared;
+    static ATProtoDIDResolver *shared;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[DIDResolver alloc] init];
+        shared = [[ATProtoDIDResolver alloc] init];
         shared.plcURL = [ATProtoServiceConfiguration sharedConfiguration].plcURL;
     });
     return shared;
@@ -145,7 +145,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 - (void)seedCacheWithDID:(NSString *)did documentJSON:(NSDictionary *)json {
     if (!did || !json) return;
     NSError *error = nil;
-    DIDDocument *doc = [DIDDocument documentWithJSON:json error:&error];
+    ATProtoDIDDocument *doc = [ATProtoDIDDocument documentWithJSON:json error:&error];
     if (doc) {
         [self cacheDocument:doc forDID:did];
     }
@@ -165,20 +165,20 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     NSDictionary *entry = [self cachedEntryForDID:did status:&status];
     if (entry && status == DIDCacheStatusFresh) {
         GZ_LOG_CORE_DEBUG(@"Returning fresh cached DID document");
-        DIDDocument *doc = entry[@"document"];
+        ATProtoDIDDocument *doc = entry[@"document"];
         completion(doc.jsonDictionary, nil);
         return;
     }
     if (entry && status == DIDCacheStatusStale) {
         GZ_LOG_CORE_DEBUG(@"Returning stale cached DID document and refreshing");
-        DIDDocument *doc = entry[@"document"];
+        ATProtoDIDDocument *doc = entry[@"document"];
         completion(doc.jsonDictionary, nil);
         [self refreshCacheForDID:did];
         return;
     }
 
     // Perform resolution
-    [self resolveDID:did forceRefresh:NO completion:^(DIDDocument *document, NSError *error) {
+    [self resolveDID:did forceRefresh:NO completion:^(ATProtoDIDDocument *document, NSError *error) {
         if (document && !error) {
             completion(document.jsonDictionary, nil);
         } else {
@@ -217,7 +217,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 
 - (void)resolveDID:(NSString *)did
      forceRefresh:(BOOL)forceRefresh
-       completion:(void (^)(DIDDocument * _Nullable document, NSError * _Nullable error))completion {
+       completion:(void (^)(ATProtoDIDDocument * _Nullable document, NSError * _Nullable error))completion {
 
     if (!completion) return;
 
@@ -268,16 +268,16 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     }
 }
 
-- (nullable DIDDocument *)resolveDIDSync:(NSString *)did error:(NSError **)error {
+- (nullable ATProtoDIDDocument *)resolveDIDSync:(NSString *)did error:(NSError **)error {
     return [self resolveDIDSync:did forceRefresh:NO error:error];
 }
 
-- (nullable DIDDocument *)resolveDIDSync:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error {
+- (nullable ATProtoDIDDocument *)resolveDIDSync:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error {
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    __block DIDDocument *result = nil;
+    __block ATProtoDIDDocument *result = nil;
     __block NSError *resultError = nil;
     
-    [self resolveDID:did forceRefresh:forceRefresh completion:^(DIDDocument * _Nullable document, NSError * _Nullable resolveError) {
+    [self resolveDID:did forceRefresh:forceRefresh completion:^(ATProtoDIDDocument * _Nullable document, NSError * _Nullable resolveError) {
         result = document;
         resultError = resolveError;
         dispatch_semaphore_signal(semaphore);
@@ -325,7 +325,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     return result;
 }
 
-- (void)cacheDocument:(DIDDocument *)document forDID:(NSString *)did {
+- (void)cacheDocument:(ATProtoDIDDocument *)document forDID:(NSString *)did {
     dispatch_sync(_cacheQueue, ^{
         [self.cache setObject:document forKey:did];
         _cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
@@ -337,7 +337,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 }
 
 - (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error {
-    DIDDocument *doc = [self resolveDIDSync:did forceRefresh:forceRefresh error:error];
+    ATProtoDIDDocument *doc = [self resolveDIDSync:did forceRefresh:forceRefresh error:error];
     if (!doc) return nil;
 
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
@@ -437,7 +437,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 }
 
 - (void)refreshCacheForDID:(NSString *)did {
-    [self resolveDID:did forceRefresh:YES completion:^(DIDDocument *document, NSError *error) {
+    [self resolveDID:did forceRefresh:YES completion:^(ATProtoDIDDocument *document, NSError *error) {
         if (document) {
             dispatch_sync(self->_cacheQueue, ^{
                 [self.cache setObject:document forKey:did];
@@ -463,7 +463,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     return nil;
 }
 
-- (void)resolveDIDWeb:(NSString *)did completion:(void (^)(DIDDocument * _Nullable, NSError * _Nullable))completion {
+- (void)resolveDIDWeb:(NSString *)did completion:(void (^)(ATProtoDIDDocument * _Nullable, NSError * _Nullable))completion {
     // did:web:example.com -> https://example.com/.well-known/did.json
     // did:web:example.com:user -> https://example.com/user/did.json
     
@@ -544,7 +544,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
             return;
         }
         
-        DIDDocument *document = [DIDDocument documentWithJSON:json error:&jsonError];
+        ATProtoDIDDocument *document = [ATProtoDIDDocument documentWithJSON:json error:&jsonError];
         if (!document) {
             NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
                                                       code:DIDErrorInvalidDocument
@@ -559,7 +559,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     }];
 }
 
-- (void)processPLCResponseData:(NSData *)data did:(NSString *)did completion:(void (^)(DIDDocument *_Nullable, NSError *_Nullable))completion {
+- (void)processPLCResponseData:(NSData *)data did:(NSString *)did completion:(void (^)(ATProtoDIDDocument *_Nullable, NSError *_Nullable))completion {
     if (!data || data.length == 0) {
         completion(nil, [NSError errorWithDomain:DIDErrorDomain
                                            code:DIDErrorResolutionFailed
@@ -577,7 +577,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         return;
     }
 
-    DIDDocument *document = [DIDDocument documentWithJSON:json error:&jsonError];
+    ATProtoDIDDocument *document = [ATProtoDIDDocument documentWithJSON:json error:&jsonError];
     if (!document) {
         completion(nil, [NSError errorWithDomain:DIDErrorDomain
                                            code:DIDErrorInvalidDocument
@@ -590,7 +590,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     completion(document, nil);
 }
 
-- (void)resolveDIDPLC:(NSString *)did completion:(void (^)(DIDDocument * _Nullable, NSError * _Nullable))completion {
+- (void)resolveDIDPLC:(NSString *)did completion:(void (^)(ATProtoDIDDocument * _Nullable, NSError * _Nullable))completion {
     NSString *urlString = [NSString stringWithFormat:@"%@/%@", self.plcURL, did];
     NSURL *url = [NSURL URLWithString:urlString];
 

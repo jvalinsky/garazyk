@@ -7,26 +7,26 @@
 
 @implementation MSTDecoderTests
 
-- (CBORValue *)validCIDTag {
+- (ATProtoCBORValue *)validCIDTag {
     CID *cid = [CID sha256:[@"mst-decoder-test" dataUsingEncoding:NSUTF8StringEncoding]];
     NSMutableData *bytes = [NSMutableData dataWithBytes:"\x00" length:1];
     [bytes appendData:cid.bytes];
-    return [CBORValue tag:42 value:[CBORValue byteString:bytes]];
+    return [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:bytes]];
 }
 
-- (CBORValue *)entryWithPrefix:(NSUInteger)prefix value:(CBORValue *)value {
-    return [CBORValue map:@{
-        [CBORValue textString:@"k"]: [CBORValue byteString:[@"app.bsky.feed.post/test" dataUsingEncoding:NSUTF8StringEncoding]],
-        [CBORValue textString:@"p"]: [CBORValue unsignedInteger:prefix],
-        [CBORValue textString:@"t"]: [CBORValue nilValue],
-        [CBORValue textString:@"v"]: value,
+- (ATProtoCBORValue *)entryWithPrefix:(NSUInteger)prefix value:(ATProtoCBORValue *)value {
+    return [ATProtoCBORValue map:@{
+        [ATProtoCBORValue textString:@"k"]: [ATProtoCBORValue byteString:[@"app.bsky.feed.post/test" dataUsingEncoding:NSUTF8StringEncoding]],
+        [ATProtoCBORValue textString:@"p"]: [ATProtoCBORValue unsignedInteger:prefix],
+        [ATProtoCBORValue textString:@"t"]: [ATProtoCBORValue nilValue],
+        [ATProtoCBORValue textString:@"v"]: value,
     }];
 }
 
-- (NSData *)nodeDataWithEntries:(NSArray<CBORValue *> *)entries {
-    return [[CBORValue map:@{
-        [CBORValue textString:@"e"]: [CBORValue array:entries],
-        [CBORValue textString:@"l"]: [CBORValue nilValue],
+- (NSData *)nodeDataWithEntries:(NSArray<ATProtoCBORValue *> *)entries {
+    return [[ATProtoCBORValue map:@{
+        [ATProtoCBORValue textString:@"e"]: [ATProtoCBORValue array:entries],
+        [ATProtoCBORValue textString:@"l"]: [ATProtoCBORValue nilValue],
     }] encode];
 }
 
@@ -36,7 +36,7 @@
 }
 
 - (void)testDecoderRejectsMalformedEntry {
-    NSData *data = [self nodeDataWithEntries:@[[CBORValue textString:@"not-a-map"]]];
+    NSData *data = [self nodeDataWithEntries:@[[ATProtoCBORValue textString:@"not-a-map"]]];
     XCTAssertNil([MST deserializeFromCBOR:data]);
 }
 
@@ -46,7 +46,7 @@
 }
 
 - (void)testDecoderRejectsNonTagValue {
-    NSData *data = [self nodeDataWithEntries:@[[self entryWithPrefix:0 value:[CBORValue byteString:[NSData data]]]]];
+    NSData *data = [self nodeDataWithEntries:@[[self entryWithPrefix:0 value:[ATProtoCBORValue byteString:[NSData data]]]]];
     XCTAssertNil([MST deserializeFromCBOR:data]);
 }
 

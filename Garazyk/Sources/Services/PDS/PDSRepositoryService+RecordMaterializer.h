@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param cid The CID to encode.
  * @return A CBOR tag 42 value containing the CID link representation.
  */
-- (CBORValue *)cidLinkValueForCID:(CID *)cid;
+- (ATProtoCBORValue *)cidLinkValueForCID:(CID *)cid;
 
 @end
 

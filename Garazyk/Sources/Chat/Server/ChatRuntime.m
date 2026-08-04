@@ -107,7 +107,7 @@
     
     // Propagate PLC URL to the shared DID resolver
     if (self.configuration.plcUrl.length > 0) {
-        [DIDResolver sharedResolver].plcURL = self.configuration.plcUrl;
+        [ATProtoDIDResolver sharedResolver].plcURL = self.configuration.plcUrl;
     }
     
     // Set the service DID for audience validation in service auth JWTs.

@@ -703,7 +703,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         CC_SHA256(dataBytes.bytes, (CC_LONG)dataBytes.length, hash);
         NSData *hashData = [NSData dataWithBytes:hash length:32];
         
-        Secp256k1KeyPair *keyPair = [Secp256k1KeyPair keyPairWithPrivateKey:self.privateKey error:error];
+        ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:self.privateKey error:error];
         if (!keyPair) return nil;
         
         return [keyPair signHash:hashData error:error];

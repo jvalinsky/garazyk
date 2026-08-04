@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XrpcLexiconResolver (Testing)
 
 + (nullable NSString *)authorityDomainForNSID:(NSString *)nsid error:(NSError **)error;
-+ (nullable NSString *)pdsEndpointFromDidDocument:(DIDDocument *)document error:(NSError **)error;
++ (nullable NSString *)pdsEndpointFromDidDocument:(ATProtoDIDDocument *)document error:(NSError **)error;
 + (nullable NSDictionary *)buildResolveResponseWithSchema:(NSDictionary *)schema nsid:(NSString *)nsid configuration:(ATProtoServiceConfiguration *)configuration error:(NSError **)error;
 + (nullable NSDictionary *)loadLexiconJSONForNSID:(NSString *)nsid dataDirectory:(NSString *)dataDirectory error:(NSError **)error;
 + (nullable NSURL *)lexiconRecordURLForEndpoint:(NSString *)endpoint did:(NSString *)did nsid:(NSString *)nsid error:(NSError **)error;

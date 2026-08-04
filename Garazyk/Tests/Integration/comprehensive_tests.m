@@ -13,7 +13,7 @@
 
 @property (nonatomic, strong) PDSController *pdsController;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) DIDResolver *didResolver;
+@property (nonatomic, strong) ATProtoDIDResolver *didResolver;
 @property (nonatomic, strong) HandleResolver *handleResolver;
 @property (nonatomic, strong) OAuth2Server *oauthServer;
 
@@ -31,7 +31,7 @@
     XCTAssertNotNil(self.database, @"Database should initialize");
 
     // Initialize resolvers
-    self.didResolver = [[DIDResolver alloc] init];
+    self.didResolver = [[ATProtoDIDResolver alloc] init];
     self.handleResolver = [[HandleResolver alloc] init];
 
     // Initialize OAuth server

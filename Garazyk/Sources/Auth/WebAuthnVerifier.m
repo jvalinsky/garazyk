@@ -62,7 +62,7 @@
     // 2. Parse attestationObject (CBOR)
     NSString *attestationObjectB64 = response[@"response"][@"attestationObject"];
     NSData *attestationObject = [[NSData alloc] initWithBase64EncodedString:attestationObjectB64 options:0];
-    CBORValue *attestationParams = [CBORValue decode:attestationObject];
+    ATProtoCBORValue *attestationParams = [ATProtoCBORValue decode:attestationObject];
     
     if (attestationParams.type != CBORTypeMap) {
         if (error) *error = [self errorWithCode:1005 message:@"Invalid attestation object"];
@@ -72,9 +72,9 @@
     NSDictionary *map = attestationParams.map;
     // Find "authData" key
     NSData *authData = nil;
-    for (CBORValue *key in map) {
+    for (ATProtoCBORValue *key in map) {
          if (key.type == CBORTypeTextString && [key.textString isEqualToString:@"authData"]) {
-             CBORValue *val = map[key];
+             ATProtoCBORValue *val = map[key];
              if (val.type == CBORTypeByteString) {
                  authData = val.byteString;
              }

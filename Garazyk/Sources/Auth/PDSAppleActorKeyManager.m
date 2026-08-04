@@ -52,7 +52,7 @@ static NSString * const kSpaceSigningKeyAccountPrefix = @"space-signing-key-";
 
 - (BOOL)generateSigningKeyWithError:(NSError **)error {
     NSError *genError = nil;
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&genError];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&genError];
     if (!keyPair) {
         if (error) {
             *error = genError;
@@ -75,7 +75,7 @@ static NSString * const kSpaceSigningKeyAccountPrefix = @"space-signing-key-";
     if (!self.useKeychain) {
         self.memoryKeyData = [privateKey copy];
         if ([self.delegate respondsToSelector:@selector(appleActorKeyManager:storeSigningKey:publicKey:error:)]) {
-            Secp256k1KeyPair *kp = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:nil];
+            ATProtoSecp256k1KeyPair *kp = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:nil];
             [self.delegate appleActorKeyManager:self storeSigningKey:privateKey publicKey:kp.compressedPublicKey error:nil];
         }
         return YES;
@@ -145,7 +145,7 @@ static NSString * const kSpaceSigningKeyAccountPrefix = @"space-signing-key-";
         return nil;
     }
 
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
     if (!keyPair) {
         return nil;
     }
@@ -158,7 +158,7 @@ static NSString * const kSpaceSigningKeyAccountPrefix = @"space-signing-key-";
         return nil;
     }
 
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
     if (!keyPair) {
         return nil;
     }

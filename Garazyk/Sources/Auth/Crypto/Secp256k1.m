@@ -6,7 +6,7 @@
 
 NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
 
-@implementation Secp256k1KeyPair
+@implementation ATProtoSecp256k1KeyPair
 
 + (nullable instancetype)generateKeyPair:(NSError **)error {
     Secp256k1PrivateKey privKey;
@@ -22,7 +22,7 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
         return nil;
     }
 
-    Secp256k1KeyPair *keyPair = [[Secp256k1KeyPair alloc] init];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1KeyPair alloc] init];
     keyPair->_privateKey = [NSData dataWithBytes:privKey.data length:32];
     keyPair->_publicKey = [NSData dataWithBytes:pubKey.data length:65];
 
@@ -65,7 +65,7 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
         return nil;
     }
 
-    Secp256k1KeyPair *keyPair = [[Secp256k1KeyPair alloc] init];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1KeyPair alloc] init];
     keyPair->_privateKey = privateKey;
     keyPair->_publicKey = [NSData dataWithBytes:pubKey.data length:65];
 
@@ -165,12 +165,12 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
     return sharedInstance;
 }
 
-- (nullable Secp256k1KeyPair *)generateKeyPairWithError:(NSError **)error {
-    return [Secp256k1KeyPair generateKeyPair:error];
+- (nullable ATProtoSecp256k1KeyPair *)generateKeyPairWithError:(NSError **)error {
+    return [ATProtoSecp256k1KeyPair generateKeyPair:error];
 }
 
-- (nullable Secp256k1KeyPair *)keyPairFromPrivateKey:(NSData *)privateKey error:(NSError **)error {
-    return [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
+- (nullable ATProtoSecp256k1KeyPair *)keyPairFromPrivateKey:(NSData *)privateKey error:(NSError **)error {
+    return [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
 }
 
 - (nullable NSData *)signHash:(NSData *)hash withPrivateKey:(NSData *)privateKey error:(NSError **)error {

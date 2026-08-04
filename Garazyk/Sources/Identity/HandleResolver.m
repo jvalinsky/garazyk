@@ -654,7 +654,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
     }
 
     NSError *resolveError = nil;
-    DIDDocument *document = [[DIDResolver sharedResolver] resolveDIDSync:did error:&resolveError];
+    ATProtoDIDDocument *document = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:&resolveError];
     if (!document) {
         GZ_LOG_CORE_WARN(@"Bidirectional handle check: failed to resolve DID document for %@: %@",
                           did, resolveError.localizedDescription ?: @"unknown error");

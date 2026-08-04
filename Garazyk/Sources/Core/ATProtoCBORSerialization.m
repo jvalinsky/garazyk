@@ -38,7 +38,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
 }
 
 - (NSData *)encodeDataWithJSONObject:(id)obj error:(NSError **)error {
-  CBORValue *cbor = [ATProtoCBORSerialization cborValueFromObject:obj];
+  ATProtoCBORValue *cbor = [ATProtoCBORSerialization cborValueFromObject:obj];
   if (!cbor) {
     if (error)
       *error = [NSError errorWithDomain:@"ATProtoCBORSerialization"
@@ -65,7 +65,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
     return [ATProtoDagCBOR decodeDataAsJSON:data error:error];
   }
   // Fallthrough: generic / CTAP2 callers stay on the legacy decoder.
-  CBORValue *cbor = [ATProtoCBORDecoder decode:data];
+  ATProtoCBORValue *cbor = [ATProtoCBORDecoder decode:data];
   if (!cbor) {
     if (error)
       *error = [NSError
@@ -81,7 +81,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
 
 #pragma mark - Private Helpers
 
-+ (CBORValue *)cborValueFromObject:(id)obj {
++ (ATProtoCBORValue *)cborValueFromObject:(id)obj {
   if ([obj isKindOfClass:[NSDictionary class]]) {
     NSDictionary *json = (NSDictionary *)obj;
 
@@ -98,7 +98,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
         uint8_t identityPrefix = 0x00;
         [tagPayload appendBytes:&identityPrefix length:1];
         [tagPayload appendData:cidBytes];
-        return [CBORValue tag:42 value:[CBORValue byteString:tagPayload]];
+        return [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:tagPayload]];
       }
     }
 
@@ -106,7 +106,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
     if (json.count == 1 && [json[@"$bytes"] isKindOfClass:[NSString class]]) {
       NSString *b64 = json[@"$bytes"];
       NSData *bytes = CBORBase64URLDecode(b64);
-      return [CBORValue byteString:bytes ?: [NSData data]];
+      return [ATProtoCBORValue byteString:bytes ?: [NSData data]];
     }
 
     NSArray *sortedKeys = [[json allKeys]
@@ -119,29 +119,29 @@ static NSData *CBORBase64URLDecode(NSString *string) {
 
     NSMutableDictionary *map = [NSMutableDictionary dictionary];
     for (id key in sortedKeys) {
-      CBORValue *keyVal = [self cborValueFromObject:key];
-      CBORValue *valVal = [ATProtoCBORSerialization cborValueFromObject:[obj objectForKey:key]];
+      ATProtoCBORValue *keyVal = [self cborValueFromObject:key];
+      ATProtoCBORValue *valVal = [ATProtoCBORSerialization cborValueFromObject:[obj objectForKey:key]];
       if (keyVal && valVal) {
         map[keyVal] = valVal;
       }
     }
-    return [CBORValue map:map];
+    return [ATProtoCBORValue map:map];
   } else if ([obj isKindOfClass:[NSArray class]]) {
     NSMutableArray *arr = [NSMutableArray array];
     for (id item in obj) {
-      CBORValue *val = [ATProtoCBORSerialization cborValueFromObject:item];
+      ATProtoCBORValue *val = [ATProtoCBORSerialization cborValueFromObject:item];
       if (val)
         [arr addObject:val];
     }
-    return [CBORValue array:arr];
+    return [ATProtoCBORValue array:arr];
   } else if ([obj isKindOfClass:[NSString class]]) {
-    return [CBORValue textString:obj];
+    return [ATProtoCBORValue textString:obj];
   } else if ([obj isKindOfClass:[NSNumber class]]) {
     // Handle boolean using CFTypeID check
     // This avoids issues with @encode(BOOL) varying across platforms (signed
     // char vs bool)
     if (CFGetTypeID((__bridge CFTypeRef)obj) == CFBooleanGetTypeID()) {
-      return [obj boolValue] ? [CBORValue simple:21] : [CBORValue simple:20];
+      return [obj boolValue] ? [ATProtoCBORValue simple:21] : [ATProtoCBORValue simple:20];
     }
 
     // Handle integer vs float
@@ -149,12 +149,12 @@ static NSData *CBORBase64URLDecode(NSString *string) {
     if (strcmp(objCType, @encode(float)) == 0 ||
         strcmp(objCType, @encode(double)) == 0) {
       // It's float
-      // But CBORValue only has simple/float?
-      // Actually CBORValue.m has decodeSimpleOrFloat but init methods are
-      // limited. Wait, CBORValue has +tag:value: but simplistic support. Let's
-      // check CBORValue class capabilities. It has initWithType... and
+      // But ATProtoCBORValue only has simple/float?
+      // Actually ATProtoCBORValue.m has decodeSimpleOrFloat but init methods are
+      // limited. Wait, ATProtoCBORValue has +tag:value: but simplistic support. Let's
+      // check ATProtoCBORValue class capabilities. It has initWithType... and
       // properties like unsignedInteger, negativeInteger. But does it support
-      // float? encodeFloatValue implementation exists. But CBORValue
+      // float? encodeFloatValue implementation exists. But ATProtoCBORValue
       // structure... Let's assume NSNumber is integer for simplicity unless it
       // forces float. DAG-CBOR prefers integers. But if it has decimal... For
       // now, treat as integer if possible.
@@ -162,29 +162,29 @@ static NSData *CBORBase64URLDecode(NSString *string) {
       long long l = [obj longLongValue];
       if (d == (double)l) {
         if (l >= 0)
-          return [CBORValue unsignedInteger:(NSUInteger)l];
+          return [ATProtoCBORValue unsignedInteger:(NSUInteger)l];
         else
-          return [CBORValue negativeInteger:(NSInteger)l];
+          return [ATProtoCBORValue negativeInteger:(NSInteger)l];
       }
-      // Float support missing in CBORValue object wrapper?
-      // Let's check CBORValue interface.
+      // Float support missing in ATProtoCBORValue object wrapper?
+      // Let's check ATProtoCBORValue interface.
       return nil; // Not fully supported yet
     } else {
       long long l = [obj longLongValue];
       if (l >= 0)
-        return [CBORValue unsignedInteger:(NSUInteger)l];
+        return [ATProtoCBORValue unsignedInteger:(NSUInteger)l];
       else
-        return [CBORValue negativeInteger:(NSInteger)l];
+        return [ATProtoCBORValue negativeInteger:(NSInteger)l];
     }
   } else if ([obj isKindOfClass:[NSNull class]]) {
-    return [CBORValue simple:22];
+    return [ATProtoCBORValue simple:22];
   } else if ([obj isKindOfClass:[NSData class]]) {
-    return [CBORValue byteString:obj];
+    return [ATProtoCBORValue byteString:obj];
   }
   return nil;
 }
 
-+ (id)objectFromCBORValue:(CBORValue *)cbor {
++ (id)objectFromCBORValue:(ATProtoCBORValue *)cbor {
   switch (cbor.type) {
   case CBORTypeUnsignedInteger:
     return @(cbor.unsignedInteger.unsignedIntegerValue);
@@ -199,7 +199,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
     return cbor.textString;
   case CBORTypeArray: {
     NSMutableArray *arr = [NSMutableArray array];
-    for (CBORValue *val in cbor.array) {
+    for (ATProtoCBORValue *val in cbor.array) {
       id obj = [ATProtoCBORSerialization objectFromCBORValue:val];
       if (obj)
         [arr addObject:val];
@@ -208,7 +208,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
   }
   case CBORTypeMap: {
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-    for (CBORValue *key in cbor.map) {
+    for (ATProtoCBORValue *key in cbor.map) {
       id keyObj = [ATProtoCBORSerialization objectFromCBORValue:key];
       id valObj = [ATProtoCBORSerialization objectFromCBORValue:cbor.map[key]];
       if (keyObj && valObj) {

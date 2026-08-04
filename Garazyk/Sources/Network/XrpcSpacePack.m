@@ -213,9 +213,9 @@ static NSData *SpacePublicKeyFromDIDKey(NSString *value) {
   return [decoded subdataWithRange:NSMakeRange(2, 33)];
 }
 
-static DIDDocument *SpaceResolveDID(NSString *did, BOOL refresh, HttpResponse *response) {
+static ATProtoDIDDocument *SpaceResolveDID(NSString *did, BOOL refresh, HttpResponse *response) {
   NSError *error = nil;
-  DIDDocument *document = [[DIDResolver sharedResolver] resolveDIDSync:did forceRefresh:refresh error:&error];
+  ATProtoDIDDocument *document = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did forceRefresh:refresh error:&error];
   if (!document) SpaceError(response, HttpStatusUnauthorized, @"InvalidToken", @"Unable to resolve signing DID");
   return document;
 }
@@ -224,7 +224,7 @@ static DIDDocument *SpaceResolveDID(NSString *did, BOOL refresh, HttpResponse *r
  * public key.  A #atproto_space kid must never be attached to an account-key
  * signature merely because a DID document happens to contain that fragment. */
 static id<PDSActorKeyManager> SpaceCredentialSignerForAuthorityDocument(PDSActorStore *authority,
-                                                                          DIDDocument *document,
+                                                                          ATProtoDIDDocument *document,
                                                                           NSString **keyID) {
   NSString *spaceKey = [ATProtoDIDDocumentFields dedicatedSpaceSigningKeyMultibaseFromDocument:document];
   NSString *localSpaceKey = [authority spaceSigningDIDKeyStringWithError:nil];
@@ -248,7 +248,7 @@ static NSDictionary *SpaceCredentialAuthentication(HttpRequest *request, HttpRes
   if (!([keyID isEqualToString:@"#atproto_space"] || [keyID isEqualToString:@"#atproto"])) {
     SpaceError(response, HttpStatusUnauthorized, @"InvalidCredential", @"Credential key ID is invalid"); return @{};
   }
-  DIDDocument *doc = SpaceResolveDID(space.authorityDID, NO, response); if (!doc) return @{};
+  ATProtoDIDDocument *doc = SpaceResolveDID(space.authorityDID, NO, response); if (!doc) return @{};
   NSString *key = [keyID isEqualToString:@"#atproto_space"]
       ? [ATProtoDIDDocumentFields dedicatedSpaceSigningKeyMultibaseFromDocument:doc]
       : [ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:doc];
@@ -365,7 +365,7 @@ static NSString *SpaceServiceAuthentication(HttpRequest *request, HttpResponse *
       ![jwt.payload.lxm isEqualToString:expectedMethod]) {
     SpaceError(response, HttpStatusUnauthorized, @"InvalidToken", @"Invalid service authentication claims"); return nil;
   }
-  DIDDocument *doc = SpaceResolveDID(issuer, NO, response); if (!doc) return nil;
+  ATProtoDIDDocument *doc = SpaceResolveDID(issuer, NO, response); if (!doc) return nil;
   NSData *key = SpacePublicKeyFromDIDKey([ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:doc]);
   ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init]; verifier.publicKey = key; verifier.expectedIssuer = issuer;
   verifier.expectedAudience = expectedAudience; verifier.allowedAlgorithms = @[ @"ES256K" ];
@@ -393,7 +393,7 @@ static BOOL SpaceCheckManagingAppAccess(id<XrpcRoutePackServices> services,
                                         NSString *managingAppDID,
                                         NSString *userDID,
                                         NSString *clientID) {
-  DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:managingAppDID error:nil];
+  ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:managingAppDID error:nil];
   NSURL *endpoint = [NSURL URLWithString:[ATProtoDIDDocumentFields pdsEndpointFromDocument:doc] ?: @""];
   if (!endpoint || endpoint.host.length == 0) return NO;
   PDSActorStore *actor = [services.userDatabasePool storeForDid:space.authorityDID error:nil];
@@ -434,7 +434,7 @@ static void SpaceNotifyAuthority(id<XrpcRoutePackServices> services, PDSSpaceURI
     [services.spaceStore recordWriter:writer forSpace:space.spaceURI rev:writeState[@"rev"] hash:writeState[@"hash"] error:nil];
     return;
   }
-  DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:space.authorityDID error:nil];
+  ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:space.authorityDID error:nil];
   NSURL *endpoint = [NSURL URLWithString:[ATProtoDIDDocumentFields spaceHostEndpointFromDocument:doc] ?: @""];
   PDSActorStore *actor = [services.userDatabasePool storeForDid:writer error:nil];
   NSString *token = [services.jwtMinter mintServiceAuthJWTForDID:writer aud:space.authorityDID
@@ -607,7 +607,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     }
     NSString *token = SpaceAuthorizationToken(request); JWT *unverified = [JWT jwtWithToken:token error:nil];
     NSString *issuer = unverified.payload.iss; if (![ATProtoValidator validateDID:issuer error:nil]) { SpaceError(response, HttpStatusUnauthorized, @"InvalidDelegationToken", @"Delegation issuer is invalid"); return; }
-    DIDDocument *userDocument = SpaceResolveDID(issuer, NO, response); if (!userDocument) return;
+    ATProtoDIDDocument *userDocument = SpaceResolveDID(issuer, NO, response); if (!userDocument) return;
     NSData *key = SpacePublicKeyFromDIDKey([ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:userDocument]);
     NSDictionary *claims = key ? [PDSSpaceJWT verifyDelegation:token publicKey:key expectedIssuer:issuer expectedAudience:[space.authorityDID stringByAppendingString:@"#atproto_space_host"] expectedSubject:space.spaceURI now:nil error:nil] : nil;
     if (!claims) { userDocument = SpaceResolveDID(issuer, YES, response); key = SpacePublicKeyFromDIDKey([ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:userDocument]); claims = key ? [PDSSpaceJWT verifyDelegation:token publicKey:key expectedIssuer:issuer expectedAudience:[space.authorityDID stringByAppendingString:@"#atproto_space_host"] expectedSubject:space.spaceURI now:nil error:nil] : nil; }
@@ -632,7 +632,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     if (![store consumeDelegationID:claims[@"jti"] expiresAt:expires now:[NSDate date] error:nil]) { SpaceError(response, HttpStatusUnauthorized, @"InvalidDelegationToken", @"Delegation token has already been used"); return; }
     PDSActorStore *authority = [resolvedServices.userDatabasePool storeForDid:space.authorityDID error:nil];
     if (!authority) { SpaceError(response, HttpStatusInternalServerError, @"InternalError", @"Authority signing store is unavailable"); return; }
-    DIDDocument *authorityDocument = SpaceResolveDID(space.authorityDID, NO, response); if (!authorityDocument) return;
+    ATProtoDIDDocument *authorityDocument = SpaceResolveDID(space.authorityDID, NO, response); if (!authorityDocument) return;
     NSString *credentialKeyID = nil;
     id<PDSActorKeyManager> credentialSigner = SpaceCredentialSignerForAuthorityDocument(authority, authorityDocument, &credentialKeyID);
     NSString *credential = [PDSSpaceJWT mintCredentialWithAuthority:space.authorityDID space:space.spaceURI keyID:credentialKeyID actorKeyManager:credentialSigner now:nil expiration:nil error:nil];

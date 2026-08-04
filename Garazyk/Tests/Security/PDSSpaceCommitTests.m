@@ -11,12 +11,12 @@
 #import "Security/Space/PDSSpaceLtHash.h"
 
 @interface PDSSpaceCommitTestKeyManager : NSObject <PDSActorKeyManager>
-@property(nonatomic, strong) Secp256k1KeyPair *keyPair;
+@property(nonatomic, strong) ATProtoSecp256k1KeyPair *keyPair;
 @end
 
 @implementation PDSSpaceCommitTestKeyManager
-- (BOOL)generateSigningKeyWithError:(NSError **)error { self.keyPair = [Secp256k1KeyPair generateKeyPair:error]; return self.keyPair != nil; }
-- (BOOL)importSigningKey:(NSData *)privateKey error:(NSError **)error { self.keyPair = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:error]; return self.keyPair != nil; }
+- (BOOL)generateSigningKeyWithError:(NSError **)error { self.keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:error]; return self.keyPair != nil; }
+- (BOOL)importSigningKey:(NSData *)privateKey error:(NSError **)error { self.keyPair = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:error]; return self.keyPair != nil; }
 - (NSData *)signData:(NSData *)data error:(NSError **)error { unsigned char hash[CC_SHA256_DIGEST_LENGTH]; CC_SHA256(data.bytes, (CC_LONG)data.length, hash); return [self.keyPair signHash:[NSData dataWithBytes:hash length:sizeof(hash)] error:error]; }
 - (NSData *)publicSigningKeyWithError:(NSError **)error { return self.keyPair.compressedPublicKey; }
 - (NSString *)didKeyStringWithError:(NSError **)error { return self.keyPair.didKeyString; }

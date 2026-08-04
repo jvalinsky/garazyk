@@ -1012,7 +1012,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         [_database saveHandle:event.handle did:event.did error:nil];
         GZ_LOG_INFO(@"[AppView Ingest] Updated handle mapping: %@ -> %@", event.handle, event.did);
     }
-    [[DIDResolver sharedResolver] invalidateDID:event.did];
+    [[ATProtoDIDResolver sharedResolver] invalidateDID:event.did];
 
     AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
     ingestEvent.seq        = event.seq;

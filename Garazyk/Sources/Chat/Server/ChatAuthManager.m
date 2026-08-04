@@ -12,7 +12,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 @interface ChatAuthManager ()
-@property (nonatomic, strong) DIDResolver *didResolver;
+@property (nonatomic, strong) ATProtoDIDResolver *didResolver;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t verificationQueue;
 @end
 
@@ -23,7 +23,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         shared = [[ChatAuthManager alloc] init];
-        shared->_didResolver = [DIDResolver sharedResolver];
+        shared->_didResolver = [ATProtoDIDResolver sharedResolver];
         shared->_verificationQueue = dispatch_queue_create("com.atproto.chat.auth.verification", DISPATCH_QUEUE_SERIAL);
     });
     return shared;
@@ -32,7 +32,7 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _didResolver = [DIDResolver sharedResolver];
+        _didResolver = [ATProtoDIDResolver sharedResolver];
         _verificationQueue = dispatch_queue_create("com.atproto.chat.auth.verification", DISPATCH_QUEUE_SERIAL);
     }
     return self;

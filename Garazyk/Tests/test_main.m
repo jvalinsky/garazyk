@@ -381,7 +381,7 @@ static NSDictionary<NSString *, NSString *> *PDSBuildCategoryMap(void) {
                            @"PDSHealthCheck", @"ServiceDatabases",
                            @"RecordCache", @"PDSNewArchitecture",
                            @"PDSVideoJobs", @"ConnectionPool"],
-      @"Identity":       @[@"DIDResolver", @"HandleResolver", @"ATProtoHandle",
+      @"Identity":       @[@"ATProtoDIDResolver", @"HandleResolver", @"ATProtoHandle",
                            @"XrpcIdentityResolution"],
       @"Network":        @[@"Http", @"RateLimiter", @"RateLimiting",
                            @"ATProtoNetwork", @"PDSHttp", @"WebSocketUpgrade",

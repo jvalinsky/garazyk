@@ -29,25 +29,25 @@ static void S2PASetError(NSError **error, ATProtoS2PAErrorCode code, NSString *m
     if (error) *error = S2PAError(code, message);
 }
 
-static CBORValue *S2PAUnsigned(uint64_t value) {
-    return [CBORValue unsignedInteger:(NSUInteger)value];
+static ATProtoCBORValue *S2PAUnsigned(uint64_t value) {
+    return [ATProtoCBORValue unsignedInteger:(NSUInteger)value];
 }
 
-static CBORValue *S2PANegative(NSInteger value) {
-    return [CBORValue negativeInteger:value];
+static ATProtoCBORValue *S2PANegative(NSInteger value) {
+    return [ATProtoCBORValue negativeInteger:value];
 }
 
-static NSData *S2PAEncodeValue(CBORValue *value) {
+static NSData *S2PAEncodeValue(ATProtoCBORValue *value) {
     return [value encode];
 }
 
-static CBORValue *S2PAProtectedHeaderValue(void) {
+static ATProtoCBORValue *S2PAProtectedHeaderValue(void) {
     // COSE protected headers are a CBOR map with integer key 1 (alg) and
-    // negative integer value -47 (ES256K). CBORValue is used instead of
+    // negative integer value -47 (ES256K). ATProtoCBORValue is used instead of
     // ATProtoDagCBOR because COSE maps intentionally permit integer keys.
-    CBORValue *key = S2PAUnsigned(1);
-    CBORValue *algorithm = S2PANegative(kS2PAAlgorithmES256K);
-    return [CBORValue map:@{key: algorithm}];
+    ATProtoCBORValue *key = S2PAUnsigned(1);
+    ATProtoCBORValue *algorithm = S2PANegative(kS2PAAlgorithmES256K);
+    return [ATProtoCBORValue map:@{key: algorithm}];
 }
 
 static BOOL S2PAIsCanonicalProtectedHeaders(NSData *data) {
@@ -66,7 +66,7 @@ static BOOL S2PAExtractEnvelope(NSData *envelope,
     }
 
     NSUInteger offset = 0;
-    CBORValue *root = [ATProtoCBORDecoder decode:envelope offset:&offset];
+    ATProtoCBORValue *root = [ATProtoCBORDecoder decode:envelope offset:&offset];
     if (!root || offset != envelope.length || root.type != CBORTypeArray || root.array.count != 4) {
         S2PASetError(error, ATProtoS2PAErrorInvalidEnvelope,
                      @"COSE_Sign1 must be exactly one four-element CBOR array");
@@ -81,10 +81,10 @@ static BOOL S2PAExtractEnvelope(NSData *envelope,
         return NO;
     }
 
-    CBORValue *protectedValue = root.array[0];
-    CBORValue *unprotectedValue = root.array[1];
-    CBORValue *payloadValue = root.array[2];
-    CBORValue *signatureValue = root.array[3];
+    ATProtoCBORValue *protectedValue = root.array[0];
+    ATProtoCBORValue *unprotectedValue = root.array[1];
+    ATProtoCBORValue *payloadValue = root.array[2];
+    ATProtoCBORValue *signatureValue = root.array[3];
     if (protectedValue.type != CBORTypeByteString ||
         unprotectedValue.type != CBORTypeMap || unprotectedValue.map.count != 0 ||
         payloadValue.type != CBORTypeByteString ||
@@ -120,19 +120,19 @@ static BOOL S2PAExtractEnvelope(NSData *envelope,
         return nil;
     }
 
-    CBORValue *structure = [CBORValue array:@[
-        [CBORValue textString:@"Signature1"],
-        [CBORValue byteString:[self canonicalProtectedHeaders]],
-        [CBORValue byteString:[NSData data]],
-        [CBORValue byteString:payload]
+    ATProtoCBORValue *structure = [ATProtoCBORValue array:@[
+        [ATProtoCBORValue textString:@"Signature1"],
+        [ATProtoCBORValue byteString:[self canonicalProtectedHeaders]],
+        [ATProtoCBORValue byteString:[NSData data]],
+        [ATProtoCBORValue byteString:payload]
     ]];
     return S2PAEncodeValue(structure);
 }
 
 + (nullable NSData *)signPayload:(NSData *)payload
-                    withKeyPair:(Secp256k1KeyPair *)keyPair
+                    withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
                            error:(NSError **)error {
-    if (![keyPair isKindOfClass:[Secp256k1KeyPair class]]) {
+    if (![keyPair isKindOfClass:[ATProtoSecp256k1KeyPair class]]) {
         S2PASetError(error, ATProtoS2PAErrorInvalidInput, @"S2PA signing requires a secp256k1 key pair");
         return nil;
     }
@@ -157,11 +157,11 @@ static BOOL S2PAExtractEnvelope(NSData *envelope,
         return nil;
     }
 
-    CBORValue *envelope = [CBORValue array:@[
-        [CBORValue byteString:[self canonicalProtectedHeaders]],
-        [CBORValue map:@{}],
-        [CBORValue byteString:payload],
-        [CBORValue byteString:signature]
+    ATProtoCBORValue *envelope = [ATProtoCBORValue array:@[
+        [ATProtoCBORValue byteString:[self canonicalProtectedHeaders]],
+        [ATProtoCBORValue map:@{}],
+        [ATProtoCBORValue byteString:payload],
+        [ATProtoCBORValue byteString:signature]
     ]];
     return S2PAEncodeValue(envelope);
 }

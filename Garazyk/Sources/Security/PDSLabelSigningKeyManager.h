@@ -3,7 +3,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class Secp256k1KeyPair;
+@class ATProtoSecp256k1KeyPair;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -29,7 +29,7 @@ typedef NS_ENUM(NSInteger, PDSLabelSigningKeyManagerError) {
 /** @abstract Directory containing the persisted key, or nil when persistence is disabled. */
 @property (nonatomic, copy, readonly, nullable) NSString *keyStoragePath;
 /** @abstract Loaded or generated key pair, or nil until key initialization succeeds. */
-@property (nonatomic, strong, readonly, nullable) Secp256k1KeyPair *signingKeyPair;
+@property (nonatomic, strong, readonly, nullable) ATProtoSecp256k1KeyPair *signingKeyPair;
 /** @abstract did:key representation of the current public key, or nil when unloaded. */
 @property (nonatomic, copy, readonly, nullable) NSString *signingKeyDidKey;
 

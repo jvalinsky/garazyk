@@ -335,14 +335,14 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     
     [[PDSHealthCheck sharedInstance] configureWithServiceDatabases:_serviceDatabases];
 
-    // Pre-populate DIDResolver in-memory cache from persistent did_cache pool
+    // Pre-populate ATProtoDIDResolver in-memory cache from persistent did_cache pool
     {
-        DIDResolver *resolver = [DIDResolver sharedResolver];
+        ATProtoDIDResolver *resolver = [ATProtoDIDResolver sharedResolver];
         NSArray *cachedDIDs = [_serviceDatabases enumerateValidCachedDIDsWithError:nil];
         for (NSDictionary *entry in cachedDIDs) {
             [resolver seedCacheWithDID:entry[@"did"] documentJSON:entry[@"document"]];
         }
-        GZ_LOG_INFO_C(GZLogComponentCore, @"Pre-populated DIDResolver cache with %lu entries from persistent store", (unsigned long)cachedDIDs.count);
+        GZ_LOG_INFO_C(GZLogComponentCore, @"Pre-populated ATProtoDIDResolver cache with %lu entries from persistent store", (unsigned long)cachedDIDs.count);
     }
 
     _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
@@ -390,7 +390,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     BOOL hasProvisionedSigningKey = NO;
     if (PDSApplicationShouldUseEphemeralJWTKeyForTests()) {
         NSError *fallbackError = nil;
-        Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+        ATProtoSecp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
         if (fallbackKeyPair) {
             _jwtMinter.keyManager = nil;
             _jwtMinter.signingAlgorithm = @"ES256K";
@@ -416,7 +416,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
             _jwtMinter.keyManager = keyManager;
         } else if (!isProduction) {
             NSError *fallbackError = nil;
-            Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+            ATProtoSecp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
             if (fallbackKeyPair) {
                 _jwtMinter.keyManager = nil;
                 _jwtMinter.signingAlgorithm = @"ES256K";

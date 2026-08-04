@@ -5,7 +5,7 @@
 
 @interface DIDResolverTests : XCTestCase
 
-@property (nonatomic, strong) DIDResolver *resolver;
+@property (nonatomic, strong) ATProtoDIDResolver *resolver;
 
 @end
 
@@ -13,7 +13,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.resolver = [[DIDResolver alloc] init];
+    self.resolver = [[ATProtoDIDResolver alloc] init];
 }
 
 - (void)tearDown {
@@ -21,11 +21,11 @@
 }
 
 - (void)testResolveAtprotoDataDecodesSigningKey {
-    DIDResolver *resolver = [[DIDResolver alloc] init];
+    ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] init];
     NSDictionary *service = @{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"};
     NSDictionary *verification = @{@"id": @"did:plc:test#atproto", @"type": @"Multikey", @"controller": @"did:plc:test", @"publicKeyMultibase": @"zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N"};
     NSDictionary *documentJSON = @{@"id": @"did:plc:test", @"alsoKnownAs": @[@"at://test/user"], @"verificationMethod": @[verification], @"service": @[service]};
-    DIDDocument *document = [DIDDocument documentWithJSON:documentJSON error:nil];
+    ATProtoDIDDocument *document = [ATProtoDIDDocument documentWithJSON:documentJSON error:nil];
     [resolver.cache setObject:document forKey:@"did:plc:test"];
     resolver.cacheTimestamps[@"did:plc:test"] = @([[NSDate date] timeIntervalSince1970]);
 
@@ -44,9 +44,9 @@
 }
 
 - (void)testInvalidateDIDRemovesCachedDocument {
-    DIDResolver *resolver = [[DIDResolver alloc] init];
+    ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] init];
     NSString *did = @"did:plc:invalidate";
-    DIDDocument *document = [DIDDocument documentWithJSON:@{ @"id": did }
+    ATProtoDIDDocument *document = [ATProtoDIDDocument documentWithJSON:@{ @"id": did }
                                                    error:nil];
     [resolver.cache setObject:document forKey:did];
     resolver.cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
@@ -59,11 +59,11 @@
 
 #ifndef GNUSTEP
 - (void)testDIDResolutionCachingReturnsCachedDocument {
-    DIDResolver *resolver = [[DIDResolver alloc] init];
+    ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] init];
 
     // Mock a document in cache to avoid network calls
     NSDictionary *mockDocJSON = @{@"id": @"did:plc:test", @"verificationMethod": @[]};
-    DIDDocument *mockDoc = [DIDDocument documentWithJSON:mockDocJSON error:nil];
+    ATProtoDIDDocument *mockDoc = [ATProtoDIDDocument documentWithJSON:mockDocJSON error:nil];
     [resolver.cache setObject:mockDoc forKey:@"did:plc:test"];
     resolver.cacheTimestamps[@"did:plc:test"] = @([[NSDate date] timeIntervalSince1970]);
 
@@ -84,7 +84,7 @@
 
 #ifndef GNUSTEP
 - (void)testBatchResolution {
-    DIDResolver *resolver = [[DIDResolver alloc] init];
+    ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] init];
     NSArray *dids = @[@"did:plc:test1", @"did:plc:test2"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Batch resolution"];
@@ -109,11 +109,11 @@
 
 #ifndef GNUSTEP
 - (void)testTTLCachingReturnsCachedDocumentWithSameDid {
-    DIDResolver *resolver = [[DIDResolver alloc] init];
+    ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] init];
 
     // Mock a cached document
     NSDictionary *mockDocJSON = @{@"id": @"did:test:123", @"test": @"data"};
-    DIDDocument *mockDocument = [DIDDocument documentWithJSON:mockDocJSON error:nil];
+    ATProtoDIDDocument *mockDocument = [ATProtoDIDDocument documentWithJSON:mockDocJSON error:nil];
     [resolver.cache setObject:mockDocument forKey:@"did:test:123"];
 
     // Set a timestamp that's within stale TTL but beyond fresh TTL
@@ -134,11 +134,11 @@
 
 #ifndef GNUSTEP
 - (void)testExpiredCacheEvictionReturnsNilDocument {
-    DIDResolver *resolver = [[DIDResolver alloc] init];
+    ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] init];
 
     // Mock a cached document
     NSDictionary *mockDocJSON = @{@"id": @"did:test:expired", @"test": @"data"};
-    DIDDocument *mockDocument = [DIDDocument documentWithJSON:mockDocJSON error:nil];
+    ATProtoDIDDocument *mockDocument = [ATProtoDIDDocument documentWithJSON:mockDocJSON error:nil];
     [resolver.cache setObject:mockDocument forKey:@"did:test:expired"];
 
     // Set a timestamp that's beyond max TTL

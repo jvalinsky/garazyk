@@ -46,7 +46,7 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray *alsoKnownAs) {
 }
 
 // Helper function to check if DID document contains a handle
-static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
+static BOOL didDocumentContainsHandle(ATProtoDIDDocument *doc, NSString *handle) {
     NSString *normalizedHandle = [handle lowercaseString];
     NSString *docHandle = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs);
     return docHandle.length > 0 && [docHandle isEqualToString:normalizedHandle];
@@ -246,11 +246,11 @@ static NSArray<NSDictionary *> *servicesForConfiguration(ATProtoServiceConfigura
             }
         }
 
-        // For did:web, try external resolution via DIDResolver
+        // For did:web, try external resolution via ATProtoDIDResolver
         if ([method isEqualToString:@"web"]) {
-            DIDResolver *didResolver = [DIDResolver sharedResolver];
+            ATProtoDIDResolver *didResolver = [ATProtoDIDResolver sharedResolver];
             NSError *resolveError = nil;
-            DIDDocument *doc = [didResolver resolveDIDSync:did error:&resolveError];
+            ATProtoDIDDocument *doc = [didResolver resolveDIDSync:did error:&resolveError];
             if (doc) {
                 return doc.jsonDictionary;
             }
@@ -260,11 +260,11 @@ static NSArray<NSDictionary *> *servicesForConfiguration(ATProtoServiceConfigura
         return localDoc;
     }
 
-    // No local account - use DIDResolver for external resolution
-    // DIDResolver supports both did:plc and did:web
-    DIDResolver *didResolver = [DIDResolver sharedResolver];
+    // No local account - use ATProtoDIDResolver for external resolution
+    // ATProtoDIDResolver supports both did:plc and did:web
+    ATProtoDIDResolver *didResolver = [ATProtoDIDResolver sharedResolver];
     NSError *resolveError = nil;
-    DIDDocument *doc = [didResolver resolveDIDSync:did error:&resolveError];
+    ATProtoDIDDocument *doc = [didResolver resolveDIDSync:did error:&resolveError];
 
     if (doc) {
         return doc.jsonDictionary;
@@ -327,10 +327,10 @@ static NSArray<NSDictionary *> *servicesForConfiguration(ATProtoServiceConfigura
         }
     }
 
-    DIDResolver *didResolver = [DIDResolver sharedResolver];
+    ATProtoDIDResolver *didResolver = [ATProtoDIDResolver sharedResolver];
 
     if ([identifier hasPrefix:@"did:"]) {
-        DIDDocument *doc = [didResolver resolveDIDSync:identifier error:error];
+        ATProtoDIDDocument *doc = [didResolver resolveDIDSync:identifier error:error];
         if (!doc) {
             if (errorName) *errorName = @"DidNotFound";
             return nil;
@@ -364,7 +364,7 @@ static NSArray<NSDictionary *> *servicesForConfiguration(ATProtoServiceConfigura
         return nil;
     }
 
-    DIDDocument *doc = [didResolver resolveDIDSync:did error:error];
+    ATProtoDIDDocument *doc = [didResolver resolveDIDSync:did error:error];
     if (!doc) {
         if (errorName) *errorName = @"DidNotFound";
         return nil;

@@ -53,25 +53,25 @@
     XCTAssertNotNil(serialized, @"Serialized commit should not be nil");
     XCTAssertGreaterThan(serialized.length, 0, @"Serialized commit should have data");
     
-    CBORValue *decoded = [ATProtoCBORDecoder decode:serialized];
+    ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:serialized];
     XCTAssertNotNil(decoded, @"Decoded CBOR should not be nil");
     XCTAssertEqual(decoded.type, CBORTypeMap, @"Decoded CBOR should be a map");
     
-    NSDictionary<CBORValue *, CBORValue *> *map = decoded.map;
+    NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *map = decoded.map;
     XCTAssertNotNil(map, @"Map should not be nil");
     
-    CBORValue *didKey = [CBORValue textString:@"did"];
-    CBORValue *versionKey = [CBORValue textString:@"version"];
-    CBORValue *dataKey = [CBORValue textString:@"data"];
-    CBORValue *revKey = [CBORValue textString:@"rev"];
+    ATProtoCBORValue *didKey = [ATProtoCBORValue textString:@"did"];
+    ATProtoCBORValue *versionKey = [ATProtoCBORValue textString:@"version"];
+    ATProtoCBORValue *dataKey = [ATProtoCBORValue textString:@"data"];
+    ATProtoCBORValue *revKey = [ATProtoCBORValue textString:@"rev"];
     
     XCTAssertNotNil(map[didKey], @"Should have 'did' field");
     XCTAssertNotNil(map[versionKey], @"Should have 'version' field");
     XCTAssertNotNil(map[dataKey], @"Should have 'data' field");
     XCTAssertNotNil(map[revKey], @"Should have 'rev' field");
     
-    CBORValue *sigKey = [CBORValue textString:@"sig"];
-    CBORValue *prevKey = [CBORValue textString:@"prev"];
+    ATProtoCBORValue *sigKey = [ATProtoCBORValue textString:@"sig"];
+    ATProtoCBORValue *prevKey = [ATProtoCBORValue textString:@"prev"];
     XCTAssertNil(map[sigKey], @"Should not have 'sig' field in unsigned commit");
     XCTAssertNil(map[prevKey], @"Should not have 'prev' field when nil");
 }
@@ -85,10 +85,10 @@
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     NSData *serialized = [commit serialize];
     
-    CBORValue *decoded = [ATProtoCBORDecoder decode:serialized];
-    NSDictionary<CBORValue *, CBORValue *> *map = decoded.map;
+    ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:serialized];
+    NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *map = decoded.map;
     
-    CBORValue *prevKey = [CBORValue textString:@"prev"];
+    ATProtoCBORValue *prevKey = [ATProtoCBORValue textString:@"prev"];
     XCTAssertNotNil(map[prevKey], @"Should have 'prev' field when set");
     XCTAssertEqual(map[prevKey].type, CBORTypeTag, @"Prev should be a CID tag");
 }
@@ -102,7 +102,7 @@
     
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     
     XCTAssertNotNil(keyPair, @"Key pair should be generated");
     XCTAssertNil(error, @"There should be no error generating key pair");
@@ -124,8 +124,8 @@
     
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair1 = [secp generateKeyPairWithError:&error];
-    Secp256k1KeyPair *keyPair2 = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair1 = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair2 = [secp generateKeyPairWithError:&error];
     
     BOOL signedSuccessfully = [commit signWithPrivateKey:keyPair1.privateKey error:&error];
     XCTAssertTrue(signedSuccessfully, @"Commit should be signed");
@@ -144,8 +144,8 @@
     
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair1 = [secp generateKeyPairWithError:&error];
-    Secp256k1KeyPair *keyPair2 = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair1 = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair2 = [secp generateKeyPairWithError:&error];
     
     [commit signWithPrivateKey:keyPair1.privateKey error:&error];
     
@@ -162,7 +162,7 @@
     
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     
     [commit signWithPrivateKey:keyPair.privateKey error:&error];
     
@@ -181,7 +181,7 @@
     
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     
     BOOL verified = [commit verifySignatureWithPublicKey:keyPair.publicKey error:&error];
     
@@ -198,7 +198,7 @@
     
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     
     [commit signWithPrivateKey:keyPair.privateKey error:&error];
     
@@ -248,7 +248,7 @@
     // Sign the commit
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     [originalCommit signWithPrivateKey:keyPair.privateKey error:&error];
     
     // Serialize to CAR
@@ -284,7 +284,7 @@
                                                      prev:prevCID];
 
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:&error];
     XCTAssertNotNil(keyPair);
     XCTAssertTrue([original signWithPrivateKey:keyPair.privateKey error:&error]);
 

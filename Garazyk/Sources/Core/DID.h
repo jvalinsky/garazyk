@@ -50,14 +50,14 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 };
 
 /*!
- @class DIDDocument
+ @class ATProtoDIDDocument
 
  @abstract Parsed DID document with service endpoints.
 
  @discussion Represents a resolved DID document containing identity
  information, service endpoints, and verification methods.
  */
-@interface DIDDocument : NSObject <NSSecureCoding>
+@interface ATProtoDIDDocument : NSObject <NSSecureCoding>
 
 /*! The full JSON dictionary from resolution. */
 @property (readonly, nonatomic, strong) NSDictionary *jsonDictionary;
@@ -76,14 +76,14 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 @end
 
 /*!
- @class DIDResolver
+ @class ATProtoDIDResolver
 
  @abstract Resolves DIDs to their documents via network requests.
 
  @discussion Supports did:plc and did:web methods with configurable
  caching. Provides both async and sync resolution APIs.
  */
-@interface DIDResolver : NSObject
+@interface ATProtoDIDResolver : NSObject
 
 /*!
  @method initWithRequestTimeout:
@@ -129,7 +129,7 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
  @param error On return, contains an error if resolution failed.
  @return The resolved DID document.
  */
-- (nullable DIDDocument *)resolveDIDSync:(NSString *)did error:(NSError **)error;
+- (nullable ATProtoDIDDocument *)resolveDIDSync:(NSString *)did error:(NSError **)error;
 
 /*!
  @method resolveDIDSync:forceRefresh:error:
@@ -139,11 +139,11 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
  @param error On return, contains an error if resolution failed.
  @return The resolved DID document.
  */
-- (nullable DIDDocument *)resolveDIDSync:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error;
+- (nullable ATProtoDIDDocument *)resolveDIDSync:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error;
 
 - (void)resolveDID:(NSString *)did
       forceRefresh:(BOOL)forceRefresh
-        completion:(void (^)(DIDDocument * _Nullable document, NSError * _Nullable error))completion;
+        completion:(void (^)(ATProtoDIDDocument * _Nullable document, NSError * _Nullable error))completion;
 
 /**
  * @abstract Performs the resolveAtprotoDataForDID operation.

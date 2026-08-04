@@ -561,14 +561,14 @@ static XrpcDispatcher *_sharedInstance = nil;
         return NO;
     }
 
-    // Use DIDResolver to get document
-    DIDResolver *resolver = [[DIDResolver alloc] init];
+    // Use ATProtoDIDResolver to get document
+    ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] init];
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     if (config.plcURL.length > 0) {
         resolver.plcURL = config.plcURL;
     }
 
-    DIDDocument *document = [resolver resolveDIDSync:did error:error];
+    ATProtoDIDDocument *document = [resolver resolveDIDSync:did error:error];
     if (!document) return NO;
 
     // Find service entry

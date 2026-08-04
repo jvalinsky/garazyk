@@ -20,11 +20,11 @@ extern id objc_retain(id);
 extern void objc_release(id);
 extern id objc_autorelease(id);
 
-static BOOL MSTCBORValueIsNull(CBORValue *value) {
+static BOOL MSTCBORValueIsNull(ATProtoCBORValue *value) {
     return value.type == CBORTypeSimpleOrFloat && value.simpleValue.unsignedIntegerValue == 22;
 }
 
-static CID * _Nullable MSTCIDFromCBORTag(CBORValue *value) {
+static CID * _Nullable MSTCIDFromCBORTag(ATProtoCBORValue *value) {
     if (value.type != CBORTypeTag || value.tag.unsignedIntegerValue != 42 ||
         value.tagValue.type != CBORTypeByteString) {
         return nil;
@@ -280,7 +280,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     // Preserve original CBOR if the node hasn't been modified
     if (self.originalCBOR) return self.originalCBOR;
 
-    NSMutableArray<CBORValue *> *entriesCBOR = [NSMutableArray array];
+    NSMutableArray<ATProtoCBORValue *> *entriesCBOR = [NSMutableArray array];
     NSData *prevKeyData = [NSData data];
     
     for (MSTNodeEntry *entry in self.internalEntries) {
@@ -302,48 +302,48 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
         NSData *kSuffix = [fullKeyData subdataWithRange:NSMakeRange(p, fullKeyData.length - p)];
         
         // TreeEntry spec order: k, p, t, v
-        NSMutableDictionary<CBORValue *, CBORValue *> *dict = [NSMutableDictionary dictionary];
-        dict[[CBORValue textString:@"k"]] = [CBORValue byteString:kSuffix];
-        dict[[CBORValue textString:@"p"]] = [CBORValue unsignedInteger:p];
+        NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *dict = [NSMutableDictionary dictionary];
+        dict[[ATProtoCBORValue textString:@"k"]] = [ATProtoCBORValue byteString:kSuffix];
+        dict[[ATProtoCBORValue textString:@"p"]] = [ATProtoCBORValue unsignedInteger:p];
         
         if (entry.internalTree) {
             CID *tCID = [entry.internalTree getCID:cache];
             NSMutableData *tData = [NSMutableData dataWithBytes:"\x00" length:1];
             [tData appendData:tCID.bytes];
-            dict[[CBORValue textString:@"t"]] = [CBORValue tag:42 value:[CBORValue byteString:tData]];
+            dict[[ATProtoCBORValue textString:@"t"]] = [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:tData]];
         } else if (entry.treeCID) {
             NSMutableData *tData = [NSMutableData dataWithBytes:"\x00" length:1];
             [tData appendData:entry.treeCID.bytes];
-            dict[[CBORValue textString:@"t"]] = [CBORValue tag:42 value:[CBORValue byteString:tData]];
+            dict[[ATProtoCBORValue textString:@"t"]] = [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:tData]];
         } else {
-            dict[[CBORValue textString:@"t"]] = [CBORValue nilValue];
+            dict[[ATProtoCBORValue textString:@"t"]] = [ATProtoCBORValue nilValue];
         }
         
         NSMutableData *vData = [NSMutableData dataWithBytes:"\x00" length:1];
         [vData appendData:entry.value.bytes];
-        dict[[CBORValue textString:@"v"]] = [CBORValue tag:42 value:[CBORValue byteString:vData]];
+        dict[[ATProtoCBORValue textString:@"v"]] = [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:vData]];
         
-        [entriesCBOR addObject:[CBORValue map:dict]];
+        [entriesCBOR addObject:[ATProtoCBORValue map:dict]];
         prevKeyData = fullKeyData;
     }
     
     // NodeData spec order: e, l
-    NSMutableDictionary<CBORValue *, CBORValue *> *nodeDict = [NSMutableDictionary dictionary];
-    nodeDict[[CBORValue textString:@"e"]] = [CBORValue array:entriesCBOR];
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *nodeDict = [NSMutableDictionary dictionary];
+    nodeDict[[ATProtoCBORValue textString:@"e"]] = [ATProtoCBORValue array:entriesCBOR];
     if (self.internalLeft) {
         CID *lCID = [self.internalLeft getCID:cache];
         NSMutableData *lData = [NSMutableData dataWithBytes:"\x00" length:1];
         [lData appendData:lCID.bytes];
-        nodeDict[[CBORValue textString:@"l"]] = [CBORValue tag:42 value:[CBORValue byteString:lData]];
+        nodeDict[[ATProtoCBORValue textString:@"l"]] = [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:lData]];
     } else if (self.leftCID) {
         NSMutableData *lData = [NSMutableData dataWithBytes:"\x00" length:1];
         [lData appendData:self.leftCID.bytes];
-        nodeDict[[CBORValue textString:@"l"]] = [CBORValue tag:42 value:[CBORValue byteString:lData]];
+        nodeDict[[ATProtoCBORValue textString:@"l"]] = [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:lData]];
     } else {
-        nodeDict[[CBORValue textString:@"l"]] = [CBORValue nilValue];
+        nodeDict[[ATProtoCBORValue textString:@"l"]] = [ATProtoCBORValue nilValue];
     }
     
-    return [[CBORValue map:nodeDict] encode];
+    return [[ATProtoCBORValue map:nodeDict] encode];
 }
 
 - (void)split:(NSString *)key left:(MSTNode **)leftOut right:(MSTNode **)rightOut {
@@ -593,10 +593,10 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 
 - (NSData *)computeEmptyTreeHash {
     NSDictionary *dict = @{
-        [CBORValue textString:@"e"]: [CBORValue array:@[]],
-        [CBORValue textString:@"l"]: [CBORValue nilValue]
+        [ATProtoCBORValue textString:@"e"]: [ATProtoCBORValue array:@[]],
+        [ATProtoCBORValue textString:@"l"]: [ATProtoCBORValue nilValue]
     };
-    NSData *cbor = [[CBORValue map:dict] encode];
+    NSData *cbor = [[ATProtoCBORValue map:dict] encode];
     return [CID sha256Digest:cbor];
 }
 
@@ -1035,28 +1035,28 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 }
 
 + (nullable MSTNode *)deserializeNodeFromCBOR:(NSData *)data {
-    CBORValue *rootValue = [CBORValue decode:data];
+    ATProtoCBORValue *rootValue = [ATProtoCBORValue decode:data];
     if (!rootValue || rootValue.type != CBORTypeMap) {
         return nil;
     }
 
-    CBORValue *entriesValue = rootValue.map[[CBORValue textString:@"e"]];
+    ATProtoCBORValue *entriesValue = rootValue.map[[ATProtoCBORValue textString:@"e"]];
     if (entriesValue.type != CBORTypeArray) return nil;
 
-    CBORValue *leftValue = rootValue.map[[CBORValue textString:@"l"]];
+    ATProtoCBORValue *leftValue = rootValue.map[[ATProtoCBORValue textString:@"l"]];
     if (!leftValue) return nil;
 
     NSMutableArray<MSTNodeEntry *> *entries = [NSMutableArray array];
     NSData *prevKeyData = [NSData data];
 
-    for (CBORValue *entryMap in entriesValue.array) {
+    for (ATProtoCBORValue *entryMap in entriesValue.array) {
         if (entryMap.type != CBORTypeMap) return nil;
 
-        CBORValue *keyValue = entryMap.map[[CBORValue textString:@"k"]];
+        ATProtoCBORValue *keyValue = entryMap.map[[ATProtoCBORValue textString:@"k"]];
         if (keyValue.type != CBORTypeByteString) return nil;
         NSData *suffixData = keyValue.byteString;
 
-        CBORValue *prefixValue = entryMap.map[[CBORValue textString:@"p"]];
+        ATProtoCBORValue *prefixValue = entryMap.map[[ATProtoCBORValue textString:@"p"]];
         if (prefixValue.type != CBORTypeUnsignedInteger) return nil;
         NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
         if (prefixLen > prevKeyData.length) return nil;
@@ -1070,12 +1070,12 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         }
         prevKeyData = [fullKeyData copy];
 
-        CBORValue *valueTag = entryMap.map[[CBORValue textString:@"v"]];
+        ATProtoCBORValue *valueTag = entryMap.map[[ATProtoCBORValue textString:@"v"]];
         CID *valueCID = MSTCIDFromCBORTag(valueTag);
         if (!valueCID) return nil;
 
         CID *treeCID = nil;
-        CBORValue *treeValue = entryMap.map[[CBORValue textString:@"t"]];
+        ATProtoCBORValue *treeValue = entryMap.map[[ATProtoCBORValue textString:@"t"]];
         if (!treeValue) return nil;
         if (!MSTCBORValueIsNull(treeValue)) {
             treeCID = MSTCIDFromCBORTag(treeValue);
