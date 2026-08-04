@@ -1,7 +1,7 @@
 ---
 title: Module Boundaries and Library Consumption
 status: active
-last_verified: 2026-08-03
+last_verified: 2026-08-04
 ---
 
 ## Verified status (2026-07-30)
@@ -15,14 +15,16 @@ violations are recorded in `docs/module-boundary-baseline.txt`:
 | --- | ---: |
 | `ATProtoServices` | 0 |
 | `ATProtoXRPC` | 0 |
-| `ATProtoMediaCore` | 3 |
+| `ATProtoMediaCore` | 0 |
 | `ATProtoVideoService` | 0 |
 
 M1-M3 are complete. M4 has resolved the inversions originally enumerated in
 its first audit plus the PLC-persistence, Sync-multibase, Storage key-manager,
-AppView identity-resolver, PLC account-operation, HTTP-client, and
-RateLimiter residual clusters, but it has **not** met its own zero-baseline
-acceptance gate; **3** baselined violations remain (all in `ATProtoMediaCore`).
+AppView identity-resolver, PLC account-operation, HTTP-client, RateLimiter,
+and MediaCore/XRPC residual clusters. **M4's zero-baseline acceptance gate is
+now met**: `docs/module-boundary-baseline.txt` is empty and
+`scripts/check_module_boundaries.sh build` reports **0 current leaks** across
+all ten modules.
 M7 is partially complete: dependency injection and most data-path work landed,
 but module sources still contain host-process exits and an installer
 `/var/db/kaszlak` fallback. M5 and M6 have not started.
@@ -49,18 +51,20 @@ package targets, the existing build contains 500 Objective-C classes, of which
 prefixes. That is the starting baseline for M5, not the short illustrative list
 in the original plan.
 
-The live boundary baseline is now **3** entries, all `ATProtoMediaCore`
-composition leaks. The PLC account-operation pair was removed after the
-account service was changed to consume the Core `PDSPLCAccountOperationProvider`
-protocol and Runtime composition injected the PLC-owned implementation. The
-HTTP-client pair was removed after Services callers switched to the Core-owned
-`GZHTTPClient` protocol and transport-independent `GZHTTPClientOptions`; the
-Transport implementation remains responsible for SSRF validation, DNS pinning,
-redirect validation, and response limits. The Core registry now returns a
-fail-closed unavailable client when no transport has registered, rather than
-returning nil. The last Services entry, `RateLimiter`, was removed when the
-diagnostics composition sources that constructed it were moved into Runtime
-(see below).
+The live boundary baseline is now **empty**: all ten `ATProto*` modules
+report zero declared-boundary violations. The PLC account-operation pair was
+removed after the account service was changed to consume the Core
+`PDSPLCAccountOperationProvider` protocol and Runtime composition injected the
+PLC-owned implementation. The HTTP-client pair was removed after Services
+callers switched to the Core-owned `GZHTTPClient` protocol and
+transport-independent `GZHTTPClientOptions`; the Transport implementation
+remains responsible for SSRF validation, DNS pinning, redirect validation, and
+response limits. The Core registry now returns a fail-closed unavailable
+client when no transport has registered, rather than returning nil. The last
+Services entry, `RateLimiter`, was removed when the diagnostics composition
+sources that constructed it were moved into Runtime (see below). The final
+three `ATProtoMediaCore` entries were removed when the media service runtime
+and its XRPC route pack moved to Runtime (see below).
 
 ## Progress (2026-07-29)
 
@@ -655,6 +659,28 @@ baselined violations. Fresh macOS validation rebuilt `ATProtoServices`,
 baselined** leaks, the source-import checker passed, and `git diff --check`
 passed.
 
+**`ATProtoMediaCore` / XRPC composition extraction — baseline reaches zero:**
+The last three baselined violations (`XrpcDispatcher`, `XrpcErrorHelper`,
+`XrpcRoutePackServiceBag`) all traced to two files in the MediaCore glob:
+`ATProtoMediaServiceRuntime.m` (constructs a private `XrpcDispatcher` and
+`XrpcRoutePackServiceBag`, wires them into its own `HttpServer`, and
+instantiates the media route pack) and `ATProtoMediaXrpcPack.m` (an XRPC
+route pack registering methods on a dispatcher). Both are Runtime composition
+— they route across MediaCore, Transport, and XRPC — not MediaCore
+implementations, matching the `ChatRuntime`/`GermRuntime`/`PDSInstallerCommand`
+precedent. CMake now excludes both from the MediaCore glob and appends them
+explicitly to `ATProtoRuntime` (which already links `ATProtoVideoService` →
+`ATProtoMediaCore` PUBLIC, so the composition path is legal and acyclic);
+their headers, route APIs, and the `jelcz` construction site are unchanged.
+`ATProtoMediaCore`'s declared closure (`ATProtoStorage`, `ATProtoCore`,
+`ATProtoTransport`) is now honest. The boundary baseline ratcheted **3 -> 0**
+and **`docs/module-boundary-baseline.txt` is empty**, meeting M4's
+zero-baseline acceptance gate. Fresh macOS validation rebuilt
+`ATProtoMediaCore`, `ATProtoRuntime`, `ATProtoXRPC`, and `AllTests`; the link
+checker reported **0 current / 0 baselined** leaks, the source-import checker
+passed, `ATProtoMediaServiceRuntimeTests` passed **8/8**,
+`ATProtoMediaXrpcPackTests` passed **16/16**, and `git diff --check` passed.
+
 **`PDSAdminAuth` controller protocol extraction:**
 `PDSAdminAuth.m` previously imported and messaged the Runtime-owned
 `PDSController`, creating a Services -> Runtime leak. The authentication
@@ -863,10 +889,10 @@ Rollback: single revert; the change is file moves plus mechanical import edits.
 
 ## M4. Resolve the remaining inversions
 
-Status: **in progress; 3 baselined violations remain.** The earlier M4 work
+Status: **complete — zero baselined violations remain.** The earlier M4 work
 resolved the initially enumerated clusters, but the follow-on baseline was
 incorrectly treated as out of scope. It is not: M4's purpose and acceptance
-gate are both zero undeclared dependencies.
+gate are both zero undeclared dependencies, and that gate is now met.
 
 ### M4.1. Freeze and explain the residual baseline
 
@@ -902,6 +928,10 @@ exceptions.
 | ATProtoMediaCore | XrpcDispatcher | `ATProtoMediaServiceRuntime.m.o` / `MediaCore/ATProtoMediaServiceRuntime.m` | ATProtoXRPC | composition extraction |
 | ATProtoMediaCore | XrpcErrorHelper | `ATProtoMediaXrpcPack.m.o` / `MediaCore/ATProtoMediaXrpcPack.m` | ATProtoXRPC | composition extraction |
 | ATProtoMediaCore | XrpcRoutePackServiceBag | `ATProtoMediaServiceRuntime.m.o` / `MediaCore/ATProtoMediaServiceRuntime.m` | ATProtoXRPC | composition extraction |
+
+> Resolved: both emitting files moved to Runtime (see the "ATProtoMediaCore /
+> XRPC composition extraction — baseline reaches zero" entry below), closing
+> all three rows and emptying the live baseline.
 | ATProtoPLC | ATProtoConnectionManagerSerial | `PLCPersistentStore.m.o` / `PLC/PLCPersistentStore.m` | ATProtoStorage | legitimate dependency edge |
 | ATProtoPLC | ATProtoDatabaseQueryRunner | `PLCPersistentStore.m.o` / `PLC/PLCPersistentStore.m` | ATProtoStorage | legitimate dependency edge |
 | ATProtoServices | ATProtoSafeHTTPClient | `ChatAuthManager.m.o`, `FederationClient.m.o`, `HandleResolver.m.o`, `OAuth2Handler+ClientMetadataFetch.m.o`, `PDSAccountService.m.o`, `PDSCaptchaRegistrationGate.m.o`, `PDSEmailHTTPClient.m.o`, `PDSRelayService.m.o`, `PDSSpaceAppAttestationVerifier.m.o`, `PDSSpaceReconciler.m.o` / matching `Chat`, `Federation`, `Identity`, `Auth`, `Services`, `Registration`, `Email`, and `Security` sources | ATProtoTransport | dependency inversion |
