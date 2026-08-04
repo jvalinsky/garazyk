@@ -1,7 +1,7 @@
 ---
 title: DASL Conformance
 status: active
-last_verified: 2026-08-03
+last_verified: 2026-08-04
 ---
 
 # DASL Conformance
@@ -48,9 +48,12 @@ Phase 0 evidence: `build/tests/AllTests --gated=run` passes 4,955 tests with 0 f
 `scripts/check_module_boundaries.sh build` reports no new violations with 26 baseline
 violations remaining; `scripts/dev/check_module_boundaries.sh .` and
 `scripts/check-recursive-setters.sh` pass. The source-boundary checker now permits the
-intentional acyclic PLC→Storage edge documented in workstream 08 M4.2 (`06c0c8f5`). GNUstep
-full-suite verification and the previously documented cross-platform UTF-8 follow-up remain
-separate evidence gaps.
+intentional acyclic PLC→Storage edge documented in workstream 08 M4.2 (`06c0c8f5`). The
+cross-platform UTF-8 follow-up and a full GNUstep `AllTests` run are now both closed (2026-08-04,
+see "Outstanding — cross-platform DASL evidence" below and workstream 08's verified-status
+section) — the GNUstep suite runs to completion (4,726 tests, 562 failures, 933s wall clock;
+reproduced twice), a new backlog recorded but not yet triaged — 86.7% of it traces to one
+shared-fixture root cause, see workstream 08.
 
 ## DONE — Phase 1: DRISL conformance
 
@@ -98,21 +101,37 @@ drops files fails loudly). Registered in `Garazyk/Tests/test_main.m`.
 
 ## Outstanding — cross-platform DASL evidence
 
-1. **Partially closed.** UTF-8 rejection (`_decodeTextString:` on `62c328` / bytes `0xC3 0x28`) was
-   verified directly against GNUstep's `-[NSString initWithData:encoding:NSUTF8StringEncoding]` in
-   the `garazyk-gnustep` toolchain image (a standalone probe linked only against
-   `gnustep-base`, not the full decoder) — it returns `nil`, matching macOS. That case is now also
-   pinned as a permanent regression, `testInvalidUTF8TextStringIsRejected` in
-   `ATProtoDagCBOREdgeCaseTests.m`, **currently uncommitted in the working tree** alongside an
-   `XCTAssertEqual`→`XCTAssertEqualObjects` fix in `PDSAdminServiceTests.m` and
-   `PDSBlobAuditHandlerTests.m` — object-pointer comparisons GNUstep's XCTest shim boxes
-   differently than Apple's, which is the blocker item 2 below refers to. Land these three files
-   before closing this item for real: the standalone Foundation probe proves the underlying
-   platform behavior, not that `ATProtoDagCBOREdgeCaseTests` itself compiles and passes as part of
-   a full GNUstep `AllTests` binary.
-2. **Still open.** A full GNUstep/Linux `AllTests --gated=run` has not completed in this workstream.
-   The fix in item 1 removes the known compile blocker; a GNUstep build/run pass after it lands is
-   the remaining gate.
+1. **Closed (2026-08-04).** The `1c8c2dd8` fix (`testInvalidUTF8TextStringIsRejected` in
+   `ATProtoDagCBOREdgeCaseTests.m`, plus the `XCTAssertEqual`→`XCTAssertEqualObjects` boxing fixes
+   in `PDSAdminServiceTests.m`/`PDSBlobAuditHandlerTests.m`) is committed and confirmed against a
+   real GNUstep `AllTests` binary, not just the earlier standalone Foundation probe:
+   `ATProtoDagCBOREdgeCaseTests` (26/26), `DASLConformanceTests` (16/16), `PDSAdminServiceTests`
+   (47/47), and `PDSBlobAuditHandlerTests` (5/5) all pass 0 failures under
+   `./tests/AllTests --filter '<class>' --gated=run` on GNUstep. See workstream 08's verified-status
+   section for the toolchain and full-suite evidence.
+2. **Closed for real (2026-08-04), new baseline recorded, reproduced twice.** A full GNUstep
+   `AllTests --gated=run` now completes for the first time in this workstream's history:
+   **4,726 tests run, 562 failures, 933s (~15.5 min) wall clock**, using the known-good
+   from-source toolchain in `docker/Dockerfile.gnustep` (a first attempt, lost to an unrelated
+   environment reset mid-capture, gave 4,723/560 with a misleading ~101-minute duration figure
+   that turned out to be a clock-jump measurement artifact, not real elapsed time — see workstream
+   08's verified-status section for the full reproduction and correction). This closes the "has
+   not completed" gap, but 562 failures is a new, real backlog, not a clean pass — do not treat
+   GNUstep as green. **The complete (untruncated) failure log shows 488 of 562 failures (86.7%)
+   are one root cause**: `AdminAuthXrpcTestBase`/`RepoAuthTempTests`'s shared `-setUp` fails its
+   own `XCTAssertTrue(adminAuthSuccess, ...)` assertion (`PDSAdminAuth
+   authenticateWithPassword:error:` — password verification or JWT signing diverging from macOS
+   on GNUstep, not yet root-caused), cascading into every inherited test method across 51 test
+   classes regardless of what each one exercises. Remaining clusters: ~57 HTML-template-loading
+   failures likely specific to this reproduction's container missing the built `Assets` directory
+   (not necessarily a real GNUstep bug — `UITemplateEngine.m:31` logs "Failed to load template
+   ...: (null)" alongside every one), ~9 environment-variable config-parsing failures in
+   `ATProtoMediaServiceConfiguration`/`JelczCLITests` (genuinely distinct, worth its own
+   investigation), 3 failures from a missing `ffprobe` binary (environment gap, not a code bug),
+   and a handful of unclassified one-offs. Triaging and fixing this backlog is its own bounded
+   follow-up workstream item, not attempted here — this entry proves the suite now runs to
+   completion and records a precise, complete accounting of what it found, including the
+   high-leverage root-cause finding above.
 
 ## Phases 5–11 — the remaining specs
 
