@@ -32,10 +32,10 @@ complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
 a configure-time disjoint-source assertion); item 2 (glob-to-manifest
 conversion) remains open. M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
-and **batch 2 is done except for the three largest classes** (22 of ~25
-classes renamed) — namespace baseline ratcheted
-283 → 253 → 249 → 238 → 234 → 232 → 231. The remaining batch-2 classes
-(`CID` at 265 consumers, `JWT` at 136, `JWTMinter` at 80)
+and **batch 2 is done except `CID` and `JWT`** (23 of ~25 classes
+renamed) — namespace baseline ratcheted
+283 → 253 → 249 → 238 → 234 → 232 → 231 → 230. The remaining batch-2
+classes (`CID` at 265 consumers, `JWT` at 136)
 and batches 3-6
 remain open. M6 has not started.
 
@@ -1578,12 +1578,20 @@ Verified: `Secp256k1Tests` (21/21) plus 9 other targeted suites, all
 `deno task check`/`lint` clean; full `AllTests --gated=run`: 4,966 tests,
 0 failures, 592s.
 
-This closes out M5.3 batch 2 to the point where only the three largest,
-riskiest classes remain: `CID` (265 consumers), `JWT` (136), and
-`JWTMinter` (80) — each deliberately deferred to its own dedicated,
-carefully reviewed session, and each large enough that an in-band rename
-risks missing something a focused review pass would catch. **Before
-attempting any of them, apply the `Tests/fixtures/` exclusion lesson above.**
+**Batch 2f (2026-08-04): JWTMinter, the second-largest remaining class.**
+`JWTMinter` → `ATProtoJWTMinter` (80 consumers). Same verification method
+as prior batches. Namespace baseline ratchets 231 → 230. Verified:
+`JWTTests` (34/34) plus 10 other targeted suites, all 0 failures; source
+and link-time module boundary checks clean; `deno task check`/`lint`
+clean; full `AllTests --gated=run`: 4,966 tests, 0 failures, 686s.
+
+This closes out M5.3 batch 2 to the point where only the two largest,
+riskiest classes remain: `CID` (265 consumers) and `JWT` (136) — each
+deliberately deferred to its own dedicated, carefully reviewed session.
+`CID` in particular touches roughly half the file discovery surface of the
+whole batch-2 group and warrants fresh, focused review rather than being
+folded into this session's pattern. **Before attempting either, apply the
+`Tests/fixtures/` exclusion lesson above.**
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
