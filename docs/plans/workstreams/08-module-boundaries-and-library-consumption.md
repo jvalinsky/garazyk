@@ -32,7 +32,10 @@ complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
 a configure-time disjoint-source assertion); item 2 (glob-to-manifest
 conversion) remains open. M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
-— namespace baseline ratcheted 283 → 253. M6 has not started.
+and **batch 2 is partially done** (the four smallest, most confined
+classes) — namespace baseline ratcheted 283 → 253 → 249. The remaining,
+much larger batch-2 classes (`CID`, `JWT`, `TID`, `Secp256k1`, etc.) and
+batches 3-6 remain open. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -1451,6 +1454,30 @@ and `check_no_host_process_exit.sh` all pass unaffected.
 
 Remaining M5.3 batches (2-6 above) are each their own slice — not attempted
 in this pass.
+
+**Batch 2, partial (2026-08-04): four smallest Core/Auth value types.**
+Batch 2 ("Core primitives and Core-owned crypto/security helpers") groups
+classes with wildly different blast radii — a consumer-count survey found
+`CID` alone has **265** referencing files, `JWT` **136**, `JWTMinter` **80**,
+`Secp256k1` **53**, `CryptoUtils` **45**, `TID` **41**, `DIDResolver` **30**,
+`CBORValue` **30**, `Secp256k1KeyPair` **34** — each too large and
+consequential for an unattended pass; they need their own carefully reviewed
+session(s), not a mechanical sweep. This slice took only the four smallest,
+most confined entries from the same baseline group (2-4 consuming files
+each, confirmed via grep before renaming that none is referenced via
+`NSClassFromString`/`NSStringFromClass`/a string literal anywhere in the
+tree): `ATDID` → `ATProtoATDID`, `AuthCryptoDPoPResult` →
+`ATProtoAuthCryptoDPoPResult`, `AuthVerifierPrincipal` →
+`ATProtoAuthVerifierPrincipal`, `JWTHeader` → `ATProtoJWTHeader`. `ATProto`
+matches the existing convention for Core-owned protocol/domain primitives
+(`ATProtoDagCBOR`, `ATProtoMultibase`, `ATProtoValidator`, etc.).
+
+Namespace baseline ratchets 253 → 249. Verified: `AuthVerifierParityTests`
+(9/9), `JWTTests` (34/34), `OAuth2HandlerTests` (31/31),
+`RelayXrpcRoutePackTests` (15/15), `AuthCryptoDPoPTests` (29/29), source and
+link-time module boundary checks clean, full `AllTests --gated=run`:
+4,966 tests, 0 failures, 588s. The remaining, much larger batch-2 classes
+are deliberately left open.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are

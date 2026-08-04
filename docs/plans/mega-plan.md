@@ -461,9 +461,13 @@ remaining program does not depend on items 1-2.
     acceptance gate. M5 (namespace the exported symbols) is the active
     milestone — first step is the shrink-only namespace gate over the ~283
     unprefixed classes; M5.3's first rename batch (internal migration
-    classes, the low-risk pilot) is complete, ratcheting the namespace
-    baseline 283 → 253 — batches 2-6 (Core, Storage/Transport, PLC/Sync/
-    Services/MediaCore, XRPC/VideoService, Runtime) remain open. **M7 is now
+    classes, the low-risk pilot) is complete and batch 2 (Core primitives)
+    is partially done (its four smallest, most-confined classes), ratcheting
+    the namespace baseline 283 → 253 → 249 — the remaining batch-2 classes
+    (`CID` with 265 consumers, `JWT` with 136, `TID`, `Secp256k1`, etc., each
+    needing its own reviewed session) and batches 3-6 (Storage/Transport,
+    PLC/Sync/Services/MediaCore, XRPC/VideoService, Runtime) remain open.
+    **M7 is now
     complete (2026-08-04):** the remaining host-process `exit()`/`abort()`
     calls in `PDSApplication.m`/`PDSCLIServeCommand.m`/
     `PDSCLIDaemonCommand.m` and the installer's hard-coded
