@@ -28,8 +28,11 @@ now met**: `docs/module-boundary-baseline.txt` is empty and
 all ten modules.
 **M7 is now complete (2026-08-04).** The residual host-process exits and the
 installer's `/var/db/kaszlak` fallback are fixed; see "M7 residual cleanup
-complete" below. M5 has started (namespace gate landed, see below); M6 has
-not started.
+complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
+a configure-time disjoint-source assertion); item 2 (glob-to-manifest
+conversion) remains open. M5 has started: the namespace gate landed, and
+**M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
+— namespace baseline ratcheted 283 → 253. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -1423,6 +1426,31 @@ Within a batch, rename the declaration, implementation, file, imports, string
 lookups such as `NSClassFromString`, tests, fixtures, and documentation
 together. Search for serialized class names and selector strings before
 declaring the batch complete.
+
+**Batch 1 complete (2026-08-04): internal migration classes, the low-risk
+pilot.** All 30 baseline entries matching `V<N>*`/`AppViewV<N>*` — every
+`PDSMigration`-conforming schema-version class — are private implementations
+confined entirely to `Database/Migrations/PDSMigrationManager.m`, referenced
+only by that file's own registration array. Confirmed via grep before
+renaming that none of them appear via `NSClassFromString`,
+`NSStringFromClass`, or as a string literal anywhere in `Garazyk/`, `docs/`,
+`scripts/`, or `packages/`. Renamed to their `PDS`-prefixed form (e.g.
+`V1InitialSchema` → `PDSV1InitialSchema`, `AppViewV5ActorCounts` →
+`PDSAppViewV5ActorCounts`), matching the surrounding
+`PDSMigrationManager`/`PDSMigration` naming; `PDSMigration.h`'s doc-comment
+example updated to match. No file move, no import changes elsewhere — zero
+external consumers.
+
+Verified: `scripts/check_namespace.sh build` passes at **253 unprefixed
+classes of 515 total, 253 baselined** (ratcheted from 283, a set-diff
+confirmed the removal is exactly these 30 entries and nothing else changed);
+`PDSMigrationManagerTests` (16/16) and `DatabaseMigrationTests` (3/3) pass;
+full `AllTests --gated=run` on macOS: 4,966 tests, 0 failures, 563s.
+`scripts/dev/check_module_boundaries.sh .`, `check-recursive-setters.sh`,
+and `check_no_host_process_exit.sh` all pass unaffected.
+
+Remaining M5.3 batches (2-6 above) are each their own slice — not attempted
+in this pass.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
