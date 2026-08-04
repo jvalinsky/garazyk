@@ -1013,7 +1013,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
     NSError *error = nil;
     ATProtoJWTHeader *jwtHeader = [ATProtoJWTHeader headerFromDictionary:header error:&error];
-    JWTPayload *jwtPayload = [JWTPayload payloadFromDictionary:payload error:&error];
+    ATProtoJWTPayload *jwtPayload = [ATProtoJWTPayload payloadFromDictionary:payload error:&error];
 
     JWT *jwt = [JWT jwtWithHeader:jwtHeader payload:jwtPayload signature:@"" error:&error];
     NSString *signingInput = jwt.signingInput;

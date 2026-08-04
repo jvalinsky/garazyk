@@ -217,15 +217,15 @@
 // Builds an unsigned compact DPoP-shaped JWT from raw header/payload
 // dictionaries so tests can inject claim values of the wrong JSON type.
 // The signature segment is a fixed placeholder; these tests only need to
-// reach AuthCryptoDPoP's type-checking of the header/payload claims, which
+// reach ATProtoAuthCryptoDPoP's type-checking of the header/payload claims, which
 // runs before signature verification.
 - (NSString *)dpopProofWithHeaderDict:(NSDictionary *)headerDict payloadDict:(NSDictionary *)payloadDict {
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:headerDict options:0 error:nil];
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payloadDict options:0 error:nil];
-    NSString *headerEncoded = [AuthCryptoBase64URL encode:headerData];
-    NSString *payloadEncoded = [AuthCryptoBase64URL encode:payloadData];
+    NSString *headerEncoded = [ATProtoAuthCryptoBase64URL encode:headerData];
+    NSString *payloadEncoded = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSData *sigData = [@"0123456789012345678901234567890123456789012345678901234567890a" dataUsingEncoding:NSUTF8StringEncoding];
-    NSString *sigEncoded = [AuthCryptoBase64URL encode:sigData];
+    NSString *sigEncoded = [ATProtoAuthCryptoBase64URL encode:sigData];
     return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, payloadEncoded, sigEncoded];
 }
 
@@ -242,7 +242,7 @@
             header[claim] = malformedShapes[shape];
             NSString *proof = [self dpopProofWithHeaderDict:header payloadDict:validPayload];
             NSError *error = nil;
-            BOOL valid = [AuthCryptoDPoP verifyProof:proof method:@"GET" url:[NSURL URLWithString:@"https://example.com"]
+            BOOL valid = [ATProtoAuthCryptoDPoP verifyProof:proof method:@"GET" url:[NSURL URLWithString:@"https://example.com"]
                                                 nonce:nil requireNonce:NO nonceValidator:nil replayChecker:[PDSReplayCache sharedCache]
                                         outThumbprint:nil expectedAccessToken:nil error:&error];
             XCTAssertFalse(valid, @"DPoP header claim '%@' (%@) with wrong type must be rejected, not crash", claim, shape);
@@ -257,7 +257,7 @@
     NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com", @"iat": @([[NSDate date] timeIntervalSince1970]), @"jti": @"jti-1"};
     NSString *proof = [self dpopProofWithHeaderDict:header payloadDict:payload];
     NSError *error = nil;
-    BOOL valid = [AuthCryptoDPoP verifyProof:proof method:@"GET" url:[NSURL URLWithString:@"https://example.com"]
+    BOOL valid = [ATProtoAuthCryptoDPoP verifyProof:proof method:@"GET" url:[NSURL URLWithString:@"https://example.com"]
                                         nonce:nil requireNonce:NO nonceValidator:nil replayChecker:[PDSReplayCache sharedCache]
                                 outThumbprint:nil expectedAccessToken:nil error:&error];
     XCTAssertFalse(valid, @"String-valued jwk must be rejected, not crash on jwk[@\"d\"] subscript");
@@ -278,7 +278,7 @@
             payload[claim] = malformedShapes[shape];
             NSString *proof = [self dpopProofWithHeaderDict:header payloadDict:payload];
             NSError *error = nil;
-            BOOL valid = [AuthCryptoDPoP verifyProof:proof method:@"GET" url:[NSURL URLWithString:@"https://example.com"]
+            BOOL valid = [ATProtoAuthCryptoDPoP verifyProof:proof method:@"GET" url:[NSURL URLWithString:@"https://example.com"]
                                                 nonce:nil requireNonce:NO nonceValidator:nil replayChecker:[PDSReplayCache sharedCache]
                                         outThumbprint:nil expectedAccessToken:nil error:&error];
             XCTAssertFalse(valid, @"DPoP payload claim '%@' (%@) with wrong type must be rejected, not crash", claim, shape);

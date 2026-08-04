@@ -397,7 +397,7 @@
     NSData *publicKey = nil;
     JWTMinter *minter = [self testMinterWithPublicKey:&publicKey];
 
-    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     verifier.expectedIssuer = @"test-issuer";
     verifier.allowedAlgorithms = @[@"ES256K"];
     verifier.publicKey = publicKey;
@@ -421,7 +421,7 @@
     NSData *publicKey = nil;
     JWTMinter *minter = [self testMinterWithPublicKey:&publicKey];
 
-    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     verifier.expectedIssuer = @"test-issuer";
     verifier.allowedAlgorithms = @[@"ES256K"];
     verifier.publicKey = publicKey;

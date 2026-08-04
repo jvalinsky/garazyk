@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthCryptoDPoP.m
+ @file ATProtoAuthCryptoDPoP.m
 
  @abstract Canonical DPoP proof verification and creation implementation.
 
@@ -22,7 +22,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
 @implementation ATProtoAuthCryptoDPoPResult
 @end
 
-@implementation AuthCryptoDPoP
+@implementation ATProtoAuthCryptoDPoP
 
 + (NSString *)canonicalHTUFromURL:(NSURL *)url {
     if (!url) return @"";
@@ -89,7 +89,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     }
 
     // Decode header
-    NSData *headerData = [AuthCryptoBase64URL decode:parts[0]];
+    NSData *headerData = [ATProtoAuthCryptoBase64URL decode:parts[0]];
     if (!headerData) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
@@ -167,7 +167,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     }
 
     // Decode payload
-    NSData *payloadData = [AuthCryptoBase64URL decode:parts[1]];
+    NSData *payloadData = [ATProtoAuthCryptoBase64URL decode:parts[1]];
     if (!payloadData) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
@@ -319,7 +319,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
             }
             return NO;
         }
-        NSString *expectedAth = [AuthCryptoBase64URL encode:tokenHash];
+        NSString *expectedAth = [ATProtoAuthCryptoBase64URL encode:tokenHash];
         if (![PDSSecurityCompare constantTimeEqualString:proofAth string:expectedAth]) {
             if (error) {
                 *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
@@ -334,7 +334,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
 
     // Create public key from JWK using protocol-based API
     NSError *keyError = nil;
-    id<PDSPublicKeyProtocol> publicKey = [AuthCryptoJWK publicKeyFromJWK:jwk error:&keyError];
+    id<PDSPublicKeyProtocol> publicKey = [ATProtoAuthCryptoJWK publicKeyFromJWK:jwk error:&keyError];
     if (!publicKey) {
         if (error) {
             *error = keyError ?: [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
@@ -345,7 +345,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     }
 
     // Decode signature (raw r||s format, 64 bytes)
-    NSData *signatureData = [AuthCryptoBase64URL decode:parts[2]];
+    NSData *signatureData = [ATProtoAuthCryptoBase64URL decode:parts[2]];
     if (!signatureData || signatureData.length != 64) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
@@ -384,7 +384,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     }
 
     if (thumbprint) {
-        *thumbprint = [AuthCryptoJWK thumbprint:jwk error:error];
+        *thumbprint = [ATProtoAuthCryptoJWK thumbprint:jwk error:error];
         if (!*thumbprint) return NO;
     }
 
@@ -416,7 +416,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     }
 
     // Get public JWK (without private key material) for header
-    NSDictionary *publicJWK = [AuthCryptoJWK publicJWKFromJWK:jwk];
+    NSDictionary *publicJWK = [ATProtoAuthCryptoJWK publicJWKFromJWK:jwk];
 
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:@{
         @"typ": @"dpop+jwt",
@@ -425,7 +425,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     } options:0 error:error];
     if (!headerData) return nil;
 
-    NSString *headerEncoded = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEncoded = [ATProtoAuthCryptoBase64URL encode:headerData];
     if (!headerEncoded) return nil;
 
     NSDictionary *claims = @{
@@ -437,13 +437,13 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
 
     NSData *claimsData = [NSJSONSerialization dataWithJSONObject:claims options:0 error:error];
     if (!claimsData) return nil;
-    NSString *claimsEncoded = [AuthCryptoBase64URL encode:claimsData];
+    NSString *claimsEncoded = [ATProtoAuthCryptoBase64URL encode:claimsData];
 
     NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEncoded, claimsEncoded];
 
     // Create private key using protocol-based API
     NSError *keyError = nil;
-    id<PDSPrivateKeyProtocol> privateKey = [AuthCryptoJWK privateKeyFromJWK:jwk error:&keyError];
+    id<PDSPrivateKeyProtocol> privateKey = [ATProtoAuthCryptoJWK privateKeyFromJWK:jwk error:&keyError];
     if (!privateKey) {
         if (error) {
             *error = keyError ?: [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
@@ -464,7 +464,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         return nil;
     }
 
-    NSString *signatureEncoded = [AuthCryptoBase64URL encode:signatureData];
+    NSString *signatureEncoded = [ATProtoAuthCryptoBase64URL encode:signatureData];
     return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, claimsEncoded, signatureEncoded];
 }
 

@@ -237,7 +237,7 @@
     NSString *cid = [request queryParamForKey:@"cid"];
 
     NSError *parseError = nil;
-    ATURI *uri = [ATURI uriWithString:atURI error:&parseError];
+    ATProtoATURI *uri = [ATProtoATURI uriWithString:atURI error:&parseError];
     if (!uri || uri.collection.length == 0 || uri.rkey.length == 0) {
         [self writeInvalidRequest:parseError.localizedDescription ?: @"Invalid at_uri" response:response];
         return;

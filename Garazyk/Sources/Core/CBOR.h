@@ -149,11 +149,11 @@ typedef NS_ENUM(NSInteger, CBORType) {
 @end
 
 /*!
- @class CBOREncoder
+ @class ATProtoCBOREncoder
 
  @abstract Encodes CBORValue objects to bytes.
  */
-@interface CBOREncoder : NSObject
+@interface ATProtoCBOREncoder : NSObject
 
 /*! Encodes a CBOR value to byte data. */
 + (NSData *)encode:(CBORValue *)value;
@@ -161,11 +161,11 @@ typedef NS_ENUM(NSInteger, CBORType) {
 @end
 
 /*!
- @class CBORDecoder
+ @class ATProtoCBORDecoder
 
  @abstract Decodes CBOR bytes to CBORValue objects.
  */
-@interface CBORDecoder : NSObject
+@interface ATProtoCBORDecoder : NSObject
 
 /*! Decodes CBOR data to a value. */
 + (nullable CBORValue *)decode:(NSData *)data;

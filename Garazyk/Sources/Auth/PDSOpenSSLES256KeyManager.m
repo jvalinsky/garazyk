@@ -28,8 +28,8 @@
 
 NSString * const PDSOpenSSLES256KeyErrorDomain = @"com.atproto.pds.openssl.es256";
 
-// Note: PDSKeyAlgorithmES256 and PDSKeyAlgorithmRS256 are defined in AuthCryptoJWK.m
-// PDSKeyErrorDomain is also defined in AuthCryptoJWK.m
+// Note: PDSKeyAlgorithmES256 and PDSKeyAlgorithmRS256 are defined in ATProtoAuthCryptoJWK.m
+// PDSKeyErrorDomain is also defined in ATProtoAuthCryptoJWK.m
 
 #pragma mark - Helper Functions
 

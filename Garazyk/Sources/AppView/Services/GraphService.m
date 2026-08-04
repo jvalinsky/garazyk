@@ -683,7 +683,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
 #pragma mark - Starter Packs
 
 - (nullable NSDictionary *)getStarterPack:(NSString *)starterPackURI error:(NSError **)error {
-    ATURI *parsedURI = [ATURI uriWithString:starterPackURI error:nil];
+    ATProtoATURI *parsedURI = [ATProtoATURI uriWithString:starterPackURI error:nil];
     if (!parsedURI) return nil;
     NSString *did = parsedURI.did;
     NSString *rkey = parsedURI.rkey;

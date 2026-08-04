@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthCryptoECDSA.m
+ @file ATProtoAuthCryptoECDSA.m
 
  @abstract ECDSA signature format conversion implementation.
 
@@ -11,7 +11,7 @@
 #import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 
-@implementation AuthCryptoECDSA
+@implementation ATProtoAuthCryptoECDSA
 
 + (BOOL)readASN1Length:(const uint8_t *)bytes
                 length:(size_t)length

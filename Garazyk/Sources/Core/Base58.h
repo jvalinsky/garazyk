@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file Base58.h
+ @file ATProtoBase58.h
 
  @abstract Base58BTC encode/decode helpers.
  */
@@ -11,11 +11,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class Base58
+ @class ATProtoBase58
 
  @abstract Provides Base58BTC conversions used by DID/CID parsing code.
  */
-@interface Base58 : NSObject
+@interface ATProtoBase58 : NSObject
 
 /*!
  @method encode:

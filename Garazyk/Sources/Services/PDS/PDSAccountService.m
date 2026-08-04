@@ -743,7 +743,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         return nil;
     }
     if (self.minter) {
-        JWTVerifier *verifier = [[JWTVerifier alloc] init];
+        ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
         verifier.keyManager = self.minter.keyManager;
         verifier.publicKey = self.minter.publicKey;
         verifier.expectedIssuer = self.minter.issuer;

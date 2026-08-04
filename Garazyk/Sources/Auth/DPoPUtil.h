@@ -9,7 +9,7 @@
  Prevents token theft by requiring proof of private key possession on each request.
 
  NOTE: This class uses SecKeyRef which is only available on macOS.
- For cross-platform DPoP support, use AuthCryptoDPoP directly with
+ For cross-platform DPoP support, use ATProtoAuthCryptoDPoP directly with
  the protocol-based key interfaces (PDSPrivateKeyProtocol/PDSPublicKeyProtocol).
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
@@ -80,7 +80,7 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Utility class for DPoP proof creation and verification.
 
  @discussion NOTE: This class is only available on macOS. On GNUstep,
- use AuthCryptoDPoP directly with protocol-based key interfaces.
+ use ATProtoAuthCryptoDPoP directly with protocol-based key interfaces.
  */
 @interface DPoPUtil : NSObject
 
@@ -94,7 +94,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error Error output
  @return DPoPToken or nil on error
 
- @discussion On GNUstep, this always returns nil. Use AuthCryptoDPoP instead.
+ @discussion On GNUstep, this always returns nil. Use ATProtoAuthCryptoDPoP instead.
  */
 /**
  * @abstract Performs the createDPoPForMethod operation.
@@ -131,7 +131,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error Error output
  @return YES if valid
 
- @discussion On GNUstep, this always returns NO. Use AuthCryptoDPoP instead.
+ @discussion On GNUstep, this always returns NO. Use ATProtoAuthCryptoDPoP instead.
  */
 /**
  * @abstract Performs the verifyDPoP operation.

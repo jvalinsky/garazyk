@@ -31,7 +31,7 @@
     XCTAssertNotNil(structure);
 
     NSUInteger offset = 0;
-    CBORValue *decoded = [CBORDecoder decode:structure offset:&offset];
+    CBORValue *decoded = [ATProtoCBORDecoder decode:structure offset:&offset];
     XCTAssertEqual(offset, structure.length);
     XCTAssertEqual(decoded.type, CBORTypeArray);
     XCTAssertEqual(decoded.array.count, 4U);
@@ -72,7 +72,7 @@
     // payload. This deliberately preserves a valid envelope so the assertion
     // exercises cryptographic failure rather than parser rejection.
     NSUInteger offset = 0;
-    CBORValue *decoded = [CBORDecoder decode:signedEnvelope offset:&offset];
+    CBORValue *decoded = [ATProtoCBORDecoder decode:signedEnvelope offset:&offset];
     XCTAssertEqual(offset, signedEnvelope.length);
     NSMutableData *tamperedPayload = [originalPayload mutableCopy];
     ((uint8_t *)tamperedPayload.mutableBytes)[0] ^= 0x01;

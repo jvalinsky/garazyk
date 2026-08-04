@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthCryptoDPoP.h
+ @file ATProtoAuthCryptoDPoP.h
 
  @abstract Canonical DPoP proof verification and creation (RFC 9449).
 
@@ -71,11 +71,11 @@ extern NSString * const AuthCryptoDPoPErrorDomain;
 @end
 
 /*!
- @class AuthCryptoDPoP
+ @class ATProtoAuthCryptoDPoP
 
  @abstract DPoP proof verification and creation.
  */
-@interface AuthCryptoDPoP : NSObject
+@interface ATProtoAuthCryptoDPoP : NSObject
 
 /*! Returns the canonical HTTP target URI (scheme + authority + path, no query/fragment). */
 + (NSString *)canonicalHTUFromURL:(NSURL *)url;

@@ -423,18 +423,18 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 }
 
 + (NSDictionary *)publicJWKFromJWK:(NSDictionary *)jwk {
-    return [AuthCryptoJWK publicJWKFromJWK:jwk];
+    return [ATProtoAuthCryptoJWK publicJWKFromJWK:jwk];
 }
 
 + (nullable NSString *)jwkThumbprint:(NSDictionary *)jwk error:(NSError **)error {
-    return [AuthCryptoJWK thumbprint:jwk error:error];
+    return [ATProtoAuthCryptoJWK thumbprint:jwk error:error];
 }
 
 + (nullable NSString *)createProofForURL:(NSURL *)url
                                  method:(NSString *)method
                                    key:(NSDictionary *)jwk
                                   error:(NSError **)error {
-    return [AuthCryptoDPoP createProofForURL:url method:method key:jwk error:error];
+    return [ATProtoAuthCryptoDPoP createProofForURL:url method:method key:jwk error:error];
 }
 
 + (BOOL)verifyProof:(NSString *)dpopJwt
@@ -477,7 +477,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
       outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
  expectedAccessToken:(nullable NSString *)expectedAccessToken
                 error:(NSError **)error {
-    return [AuthCryptoDPoP verifyProof:dpopJwt
+    return [ATProtoAuthCryptoDPoP verifyProof:dpopJwt
                                 method:method
                                    url:url
                                  nonce:nonce

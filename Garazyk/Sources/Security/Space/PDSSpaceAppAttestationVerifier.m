@@ -222,7 +222,7 @@ static const NSUInteger PDSSpaceAppAttestationMaxMetadataBytes = 64 * 1024;
     return NO;
   }
   NSError *keyError = nil;
-  id<PDSPublicKeyProtocol> publicKey = [AuthCryptoJWK publicKeyFromJWK:matchingJWK error:&keyError];
+  id<PDSPublicKeyProtocol> publicKey = [ATProtoAuthCryptoJWK publicKeyFromJWK:matchingJWK error:&keyError];
   if (!publicKey) {
     if (error) *error = [self errorWithCode:PDSSpaceAppAttestationErrorKeyNotFound
                                      message:[NSString stringWithFormat:@"Matched JWK could not be parsed: %@", keyError.localizedDescription]];

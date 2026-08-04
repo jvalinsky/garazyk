@@ -14,16 +14,16 @@ NS_ASSUME_NONNULL_BEGIN
  (repository records, MST/CAR blocks, profile records, sync ops, anything
  with a CID) through `[ATProtoDagCBOR decodeData:]` / `[ATProtoDagCBOR
  decodeDataAsJSON:]`, while CTAP2/generic-CBOR callers (lexicon schemas and
- similar non-CID'd payloads) keep the plain `[CBORDecoder decode:]` /
- `[CBOREncoder encode:]` path.
+ similar non-CID'd payloads) keep the plain `[ATProtoCBORDecoder decode:]` /
+ `[ATProtoCBOREncoder encode:]` path.
 
  The flag is part of the immutable state set at construction and has no
  setter: a shared or cached instance must not have its decode strictness
  flipped by one caller out from under another.
 
  Identity for the strict path: `[ATProtoDagCBOR decodeDataAsJSON:error:]`
- (see `AppViewBackfillWorker.m:422`). The wrapped `[CBORDecoder decode:]`
- at `ATProtoCBORSerialization.m:39` is the only `[CBORDecoder decode:]`
+ (see `AppViewBackfillWorker.m:422`). The wrapped `[ATProtoCBORDecoder decode:]`
+ at `ATProtoCBORSerialization.m:39` is the only `[ATProtoCBORDecoder decode:]`
  call that survives this refactor; every other production caller routes
  through `[ATProtoDagCBOR decodeData:...]` (gate check 1 of §S19).
  */
@@ -44,7 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @brief Encodes a JSON-compatible object to DAG-CBOR or generic CBOR.
- @discussion Routes through `[CBOREncoder encode:]` regardless of the flag;
+ @discussion Routes through `[ATProtoCBOREncoder encode:]` regardless of the flag;
  canonical-form alignment for content-addressed outputs is the responsibility
  of the encoder, not the wrapper.
  */
@@ -54,7 +54,7 @@ NS_ASSUME_NONNULL_BEGIN
  @brief Decodes CBOR data into a JSON-compatible object.
  @discussion When `isContentAddressed` is YES, delegates to
  `[ATProtoDagCBOR decodeDataAsJSON:error:]` -- the strict DAG-CBOR path.
- Otherwise uses `[CBORDecoder decode:]` -- the legacy / CTAP2 path.
+ Otherwise uses `[ATProtoCBORDecoder decode:]` -- the legacy / CTAP2 path.
  */
 - (id)JSONObjectWithData:(NSData *)data error:(NSError **)error;
 

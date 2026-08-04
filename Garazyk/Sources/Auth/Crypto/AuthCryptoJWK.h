@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthCryptoJWK.h
+ @file ATProtoAuthCryptoJWK.h
 
  @abstract JWK (JSON Web Key) utilities for key operations and thumbprints.
 
@@ -18,11 +18,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class AuthCryptoJWK
+ @class ATProtoAuthCryptoJWK
 
  @abstract JWK key operations and RFC 7638 thumbprint calculation.
  */
-@interface AuthCryptoJWK : NSObject
+@interface ATProtoAuthCryptoJWK : NSObject
 
 #pragma mark - JWK Thumbprint Operations
 
@@ -66,9 +66,9 @@ NS_ASSUME_NONNULL_END
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Extends AuthCryptoJWK with deprecated behavior.
+ * @abstract Extends ATProtoAuthCryptoJWK with deprecated behavior.
  */
-@interface AuthCryptoJWK (Deprecated)
+@interface ATProtoAuthCryptoJWK (Deprecated)
 
 /*! Creates a SecKeyRef public key from an EC P-256 JWK. Caller must CFRelease. */
 + (nullable SecKeyRef)createPublicKeyFromJWK:(NSDictionary *)jwk error:(NSError **)error

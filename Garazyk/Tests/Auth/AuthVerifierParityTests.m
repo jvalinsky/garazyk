@@ -19,7 +19,7 @@
 
 static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) {
 #if defined(__APPLE__) && !defined(GNUSTEP)
-    return [AuthCryptoJWK publicJWKFromSecKey:key error:error];
+    return [ATProtoAuthCryptoJWK publicJWKFromSecKey:key error:error];
 #else
     (void)key;
     if (error) {
@@ -99,7 +99,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
 
 @interface AuthVerifierParityTests : XCTestCase
 @property (nonatomic, strong) JWTMinter *minter;
-@property (nonatomic, strong) AuthVerifier *verifier;
+@property (nonatomic, strong) ATProtoAuthVerifier *verifier;
 @property (nonatomic, strong) AuthParityAdminController *adminController;
 @property (nonatomic, strong) AuthParityAccountPolicy *accountPolicy;
 @property (nonatomic, strong) AuthParitySessionRepository *sessionRepository;
@@ -124,7 +124,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     self.sessionRepository = [[AuthParitySessionRepository alloc] init];
     self.sessionRepository.active = YES;
 
-    self.verifier = [[AuthVerifier alloc] initWithKeyResolver:nil
+    self.verifier = [[ATProtoAuthVerifier alloc] initWithKeyResolver:nil
                                                 accountPolicy:self.accountPolicy
                                                    nonceStore:nil];
     [self.verifier setLocalPublicKey:keyPair.publicKey];
@@ -205,8 +205,8 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payloadDict options:0 error:error];
     if (!headerData || !payloadData) return nil;
 
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEnc, payloadEnc];
     NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
 
@@ -219,11 +219,11 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
         if (error && signError) *error = CFBridgingRelease(signError);
         return nil;
     }
-    NSData *rawSignature = [AuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:error];
-    rawSignature = [AuthCryptoECDSA normalizeLowS:rawSignature error:error];
+    NSData *rawSignature = [ATProtoAuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:error];
+    rawSignature = [ATProtoAuthCryptoECDSA normalizeLowS:rawSignature error:error];
     if (!rawSignature) return nil;
 
-    NSString *sigEnc = [AuthCryptoBase64URL encode:rawSignature];
+    NSString *sigEnc = [ATProtoAuthCryptoBase64URL encode:rawSignature];
     return [NSString stringWithFormat:@"%@.%@.%@", headerEnc, payloadEnc, sigEnc];
 }
 
@@ -232,9 +232,9 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     if (parts.count != 3) {
         return nil;
     }
-    NSData *headerData = [AuthCryptoBase64URL decode:parts[0]];
+    NSData *headerData = [ATProtoAuthCryptoBase64URL decode:parts[0]];
     NSDictionary *header = [NSJSONSerialization JSONObjectWithData:headerData options:0 error:error];
-    return header ? [AuthCryptoJWK thumbprint:header[@"jwk"] error:error] : nil;
+    return header ? [ATProtoAuthCryptoJWK thumbprint:header[@"jwk"] error:error] : nil;
 }
 
 - (void)testParityValidSessionToken {
@@ -327,7 +327,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     // Keep the same token/key binding with a new JTI to avoid replay rejection.
     NSData *tokenData = [token.encodedToken dataUsingEncoding:NSUTF8StringEncoding];
     NSData *tokenHash = [CryptoUtils sha256:tokenData];
-    NSString *athValue = [AuthCryptoBase64URL encode:tokenHash];
+    NSString *athValue = [ATProtoAuthCryptoBase64URL encode:tokenHash];
 
     // Build the DPoP proof manually with ath in the payload
     NSDictionary *jwk = PDSTestPublicJWKFromSecKey(key, &error);
@@ -337,7 +337,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
         return;
     }
     NSDictionary *headerDict = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
-    NSString *canonicalHTU = [AuthCryptoDPoP canonicalHTUFromURL:[NSURL URLWithString:url]];
+    NSString *canonicalHTU = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:[NSURL URLWithString:url]];
     NSDictionary *payloadDict = @{
         @"htm": @"GET",
         @"htu": canonicalHTU,
@@ -349,8 +349,8 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payloadDict options:0 error:&error];
     XCTAssertNotNil(headerData);
     XCTAssertNotNil(payloadData);
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerEnc, payloadEnc];
     NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
 
@@ -362,11 +362,11 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     XCTAssertNotNil(derSignature, @"Signature failed");
     if (signError) CFRelease(signError);
 
-    NSData *rawSignature = [AuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:&error];
-    rawSignature = [AuthCryptoECDSA normalizeLowS:rawSignature error:&error];
+    NSData *rawSignature = [ATProtoAuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:&error];
+    rawSignature = [ATProtoAuthCryptoECDSA normalizeLowS:rawSignature error:&error];
     XCTAssertNotNil(rawSignature);
     NSString *proofWithAth = [NSString stringWithFormat:@"%@.%@.%@", headerEnc, payloadEnc,
-                                                          [AuthCryptoBase64URL encode:rawSignature]];
+                                                          [ATProtoAuthCryptoBase64URL encode:rawSignature]];
 
     HttpRequest *newRequest = [self requestWithAuthorization:authorization dpop:proofWithAth];
     XCTAssertEqualObjects([self newPrincipalForAuthorization:authorization request:newRequest].did, @"did:plc:alice");
@@ -430,7 +430,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     resolver.allowedIssuer = remoteIssuer;
     resolver.jwks = @{@"keys": @[jwk]};
 
-    AuthVerifier *remoteVerifier = [[AuthVerifier alloc] initWithKeyResolver:resolver
+    ATProtoAuthVerifier *remoteVerifier = [[ATProtoAuthVerifier alloc] initWithKeyResolver:resolver
                                                                 accountPolicy:self.accountPolicy
                                                                    nonceStore:nil];
     [remoteVerifier setLocalIssuer:self.minter.issuer];
@@ -474,7 +474,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     resolver.allowedIssuer = remoteIssuer;
     resolver.jwks = @{@"keys": @[jwk]};
 
-    AuthVerifier *remoteVerifier = [[AuthVerifier alloc] initWithKeyResolver:resolver
+    ATProtoAuthVerifier *remoteVerifier = [[ATProtoAuthVerifier alloc] initWithKeyResolver:resolver
                                                                 accountPolicy:self.accountPolicy
                                                                    nonceStore:nil];
     [remoteVerifier setLocalIssuer:self.minter.issuer];

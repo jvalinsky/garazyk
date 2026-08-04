@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthCryptoBase64URL.m
+ @file ATProtoAuthCryptoBase64URL.m
 
  @abstract Base64URL encoding and decoding implementation.
 
@@ -10,7 +10,7 @@
 
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 
-@implementation AuthCryptoBase64URL
+@implementation ATProtoAuthCryptoBase64URL
 
 + (NSString *)encode:(NSData *)data {
     NSString *base64 = [data base64EncodedStringWithOptions:0];

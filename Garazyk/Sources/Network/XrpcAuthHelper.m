@@ -29,9 +29,9 @@
 #import "Debug/GZLogger.h"
 
 /*!
- @abstract Whether the new AuthVerifier cluster should be used instead of the
+ @abstract Whether the new ATProtoAuthVerifier cluster should be used instead of the
     legacy XrpcAuthHelper path. Controlled by the PDS_USE_AUTH_VERIFIER env var.
-    When enabled, authentication routes through AuthVerifier/PDSAccountPolicy.
+    When enabled, authentication routes through ATProtoAuthVerifier/PDSAccountPolicy.
     When disabled (default), the legacy XrpcAuthHelper path is used.
     This switch allows safe cutover with zero-rebuild rollback.
  */
@@ -42,7 +42,7 @@ static BOOL XrpcAuthUseAuthVerifier(void) {
         NSString *value = [[[NSProcessInfo processInfo] environment][@"PDS_USE_AUTH_VERIFIER"] lowercaseString];
         useVerifier = [value isEqualToString:@"1"] || [value isEqualToString:@"true"] || [value isEqualToString:@"yes"];
         if (useVerifier) {
-            GZ_LOG_AUTH_INFO(@"AuthVerifier cluster enabled via PDS_USE_AUTH_VERIFIER");
+            GZ_LOG_AUTH_INFO(@"ATProtoAuthVerifier cluster enabled via PDS_USE_AUTH_VERIFIER");
         }
         checked = YES;
     }
@@ -306,7 +306,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     }
 
     // Create verifier and set expected issuer
-    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     if (jwtMinter) {
         verifier.keyManager = jwtMinter.keyManager;
         verifier.publicKey = jwtMinter.publicKey;
@@ -415,11 +415,11 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                             controller:(PDSController *)controller
                                request:(HttpRequest *)request
                               response:(HttpResponse *)response {
-    // When the AuthVerifier switch is on, delegate to the application-owned verifier.
+    // When the ATProtoAuthVerifier switch is on, delegate to the application-owned verifier.
     if (XrpcAuthUseAuthVerifier()) {
-        AuthVerifier *verifier = controller.application.authVerifier;
+        ATProtoAuthVerifier *verifier = controller.application.authVerifier;
         if (!verifier) {
-            GZ_LOG_CORE_ERROR(@"AuthVerifier requested but not available — rejecting request");
+            GZ_LOG_CORE_ERROR(@"ATProtoAuthVerifier requested but not available — rejecting request");
             [self setAuthRequiredResponse:response];
             return nil;
         } else {
@@ -428,12 +428,12 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                                                               response:response
                                                                  error:&verifierError];
             if (principal) {
-                GZ_LOG_AUTH_DEBUG(@"AuthVerifier: authenticated %@ (admin=%d, dpop=%d)",
+                GZ_LOG_AUTH_DEBUG(@"ATProtoAuthVerifier: authenticated %@ (admin=%d, dpop=%d)",
                                    principal.did, principal.isAdmin, principal.usedDPoP);
                 return principal.did;
             }
-            // AuthVerifier rejected — fall through to legacy path for parity comparison
-            GZ_LOG_AUTH_WARN(@"AuthVerifier rejected (%@) — checking legacy path",
+            // ATProtoAuthVerifier rejected — fall through to legacy path for parity comparison
+            GZ_LOG_AUTH_WARN(@"ATProtoAuthVerifier rejected (%@) — checking legacy path",
                               XrpcAuthSanitizedErrorSummary(verifierError));
         }
     }
@@ -456,11 +456,11 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                               services:(id<XrpcRoutePackServices>)services
                                request:(HttpRequest *)request
                               response:(nullable HttpResponse *)response {
-    // When the AuthVerifier switch is on, delegate to the registry-injected verifier.
+    // When the ATProtoAuthVerifier switch is on, delegate to the registry-injected verifier.
     if (XrpcAuthUseAuthVerifier()) {
-        AuthVerifier *verifier = services.authVerifier;
+        ATProtoAuthVerifier *verifier = services.authVerifier;
         if (!verifier) {
-            GZ_LOG_CORE_ERROR(@"AuthVerifier requested but route services did not provide one — rejecting request");
+            GZ_LOG_CORE_ERROR(@"ATProtoAuthVerifier requested but route services did not provide one — rejecting request");
             [self setAuthRequiredResponse:response];
             return nil;
         }
@@ -470,11 +470,11 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                                                               response:response
                                                                  error:&verifierError];
             if (principal) {
-                GZ_LOG_AUTH_DEBUG(@"AuthVerifier (services): authenticated %@ (admin=%d, dpop=%d)",
+                GZ_LOG_AUTH_DEBUG(@"ATProtoAuthVerifier (services): authenticated %@ (admin=%d, dpop=%d)",
                                    principal.did, principal.isAdmin, principal.usedDPoP);
                 return principal.did;
             }
-            GZ_LOG_AUTH_WARN(@"AuthVerifier (services) rejected (%@) — checking legacy path",
+            GZ_LOG_AUTH_WARN(@"ATProtoAuthVerifier (services) rejected (%@) — checking legacy path",
                               XrpcAuthSanitizedErrorSummary(verifierError));
         }
     }

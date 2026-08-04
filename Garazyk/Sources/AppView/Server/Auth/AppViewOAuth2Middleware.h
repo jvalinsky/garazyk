@@ -86,7 +86,7 @@ typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
 
  @abstract Validate the DPoP proof and enforce cnf.jkt binding.
 
- @discussion Uses the canonical AuthCryptoDPoP verifier (RFC 9449) to
+ @discussion Uses the canonical ATProtoAuthCryptoDPoP verifier (RFC 9449) to
  verify the proof, then checks that the proof key thumbprint matches
  the access token's cnf.jkt claim. Rejects DPoP-bound tokens sent
  without a proof, and proofs that don't match the token binding.
