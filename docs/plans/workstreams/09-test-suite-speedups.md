@@ -1,7 +1,7 @@
 ---
 title: Test Suite Speedups
 status: active
-last_verified: 2026-07-30
+last_verified: 2026-08-03
 ---
 
 # Test Suite Speedups
@@ -60,7 +60,7 @@ Target: **−300–400s** on `AllTests`.
 | ID | Item | Status | Notes |
 | --- | --- | --- | --- |
 | T9 | Enable ccache in CI; slim duplicate ObjC compile/link deps for `AllTests` | **partial** | ccache launcher wired for macOS + Linux CI configure. Slimming AllTests link deps still open. |
-| T10 | Hamownia: gate/replace 5s settle sleep in `packages/hamownia/atproto_network.ts`; avoid redundant Deno typecheck on repeated `deno test` after `deno task check` | **partial** | Settle sleep is now opt-in via `HAMOWNIA_SETTLE_MS` (default 0; per-service readiness already waited). Deno `--no-check` hygiene still open. |
+| T10 | Hamownia: gate/replace 5s settle sleep in `packages/hamownia/atproto_network.ts`; avoid redundant Deno typecheck on repeated `deno test` after `deno task check` | **complete** | Settle sleep is opt-in via `HAMOWNIA_SETTLE_MS` (default 0). Deno `--no-check` landed (2026-08-03): `deno.json`'s `check` task now also covers `packages/**/*_test.ts` / `*.test.ts` (previously only `packages/*/mod.ts` entry graphs — test files were never actually reachable from those and so were unchecked by `check` at all, only by `test`'s own implicit check). `packages/hamownia/cli/test_command.ts` now passes `--no-check` to both `deno test` invocations (`runUnitTests` and the `--filter` path), safe because `check` now covers the same files. Verified: `deno task check` (1320 files, ~1.5s warm), `deno task test` (1264 passed, 0 failed, ~32s vs ~37s before), `deno task test --filter` path, and `deno task lint` all pass clean. |
 
 ## Rollback
 
