@@ -141,16 +141,23 @@ HTTP-range integration remains the next BDASL slice after a sidecar transport co
 - Rollback: remove the additive verifier and test registration; existing blob upload and download
   behavior is unchanged.
 
-**Phase 7 — MASL.** DRISL metadata documents: single mode (`src`), bundle mode (`resources` path
-map with a required `/` entry), `prev` history chain, curated HTTP-header allow-list, web-app-
-manifest fields. Sits in Core; integrates with Phase 3 as CAR header metadata. First real consumer
-of `ATProtoDRISLProfileDRISL` (Phase 1). Prerequisite for Phase 11.
+**Phase 7 — MASL — PARTIAL (validated Core document model).** `Core/ATProtoMASLDocument` now
+validates DRISL metadata documents in single mode (`src`) and bundle mode (`resources` with an
+exact `/` entry), preserves arbitrary namespaced metadata, validates `$type`, `prev`, and bundle
+resource CIDs, and exposes the lower-case HTTP-header allow-list without reflecting unknown or
+incorrectly-cased fields. `sourcemap`, `speculation-rules`, and Web App Manifest icon/screenshot
+references must name exact bundle paths. CAR compatibility is an explicit validation gate for
+integer `version: 1` and CID-only `roots`; the existing CAR reader is not changed until a header
+metadata integration contract is selected.
 
-- Owner boundary: `Garazyk/Sources/Core` only for the document model; CAR integration touches
+- Owner boundary: `Garazyk/Sources/Core` only for the document model; future CAR integration touches
   `Repository/CAR.m` read path.
-- Gate: MASL document round-trip tests (single + bundle mode), `prev` chain validation test,
-  header allow-list rejection test.
-- Rollback: additive document type; no existing CAR consumer depends on MASL fields being present.
+- Evidence: `ATProtoMASLDocumentTests` covers single/bundle DRISL round-trip, required root and
+  resource `src` fields, `prev`/`$type`, allow-listed header projection, manifest path references,
+  and CAR compatibility validation. The model is registered in `Tests/test_main.m`.
+- Explicit remainder: CAR header read/write integration and bundle resource lookup are not wired;
+  this bounded slice does not invent a new CAR metadata transport or web runtime.
+- Rollback: additive document type and test registration; no existing CAR consumer depends on MASL fields being present.
 
 **Phase 8 — PFP.** Identifier type (`p` prefix, algo byte, length, inline hash or CID) plus the
 `{"__pfp": "p…"}` JSON pseudo-type. ADR 0013 (claim-type rejection at JSON boundaries) governs
