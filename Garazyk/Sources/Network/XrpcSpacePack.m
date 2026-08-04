@@ -367,7 +367,7 @@ static NSString *SpaceServiceAuthentication(HttpRequest *request, HttpResponse *
   }
   DIDDocument *doc = SpaceResolveDID(issuer, NO, response); if (!doc) return nil;
   NSData *key = SpacePublicKeyFromDIDKey([ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:doc]);
-  JWTVerifier *verifier = [[JWTVerifier alloc] init]; verifier.publicKey = key; verifier.expectedIssuer = issuer;
+  ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init]; verifier.publicKey = key; verifier.expectedIssuer = issuer;
   verifier.expectedAudience = expectedAudience; verifier.allowedAlgorithms = @[ @"ES256K" ];
   // Inter-service auth tokens (iss/aud/lxm) carry no subject claim — matching
   // the service-auth verification in XrpcServerPack.

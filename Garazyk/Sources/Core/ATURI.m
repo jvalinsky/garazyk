@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  ATURI.m
+//  ATProtoATURI.m
 //  ATProtoPDS
 //
 
@@ -9,7 +9,7 @@
 
 NSString *const ATURIErrorDomain = @"com.atproto.uri";
 
-@implementation ATURI
+@implementation ATProtoATURI
 
 - (instancetype)init {
     [self doesNotRecognizeSelector:_cmd];
@@ -75,7 +75,7 @@ NSString *const ATURIErrorDomain = @"com.atproto.uri";
         return nil;
     }
     
-    ATURI *uri = [[ATURI alloc] initPrivate];
+    ATProtoATURI *uri = [[ATProtoATURI alloc] initPrivate];
     uri->_uriString = [string copy];
     uri->_did = [authority copy];
     uri->_collection = [collection copy] ?: @"";

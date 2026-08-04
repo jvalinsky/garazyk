@@ -12,7 +12,7 @@
 @class PDSController;
 @class RateLimiter;
 @class JWTMinter;
-@class AuthVerifier;
+@class ATProtoAuthVerifier;
 @class SubscribeReposHandler;
 @class PDSRecordService;
 @class PDSBlobAuditManager;
@@ -141,7 +141,7 @@ extern NSString * const PDSApplicationErrorDomain;
 @property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
 
 /*! Protocol-backed request verifier shared with XRPC route registration. */
-@property (nonatomic, strong, readonly, nullable) AuthVerifier *authVerifier;
+@property (nonatomic, strong, readonly, nullable) ATProtoAuthVerifier *authVerifier;
 
 /*! Handler for the subscribeRepos firehose. */
 @property (nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;

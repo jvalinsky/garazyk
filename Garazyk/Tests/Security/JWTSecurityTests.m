@@ -4,14 +4,14 @@
 #import "Auth/Crypto/JWT.h"
 
 @interface JWTSecurityTests : XCTestCase
-@property (nonatomic, strong) JWTVerifier *verifier;
+@property (nonatomic, strong) ATProtoJWTVerifier *verifier;
 @end
 
 @implementation JWTSecurityTests
 
 - (void)setUp {
     [super setUp];
-    self.verifier = [[JWTVerifier alloc] init];
+    self.verifier = [[ATProtoJWTVerifier alloc] init];
     self.verifier.allowedAlgorithms = @[@"ES256K", @"ES256"];
 }
 
@@ -36,7 +36,7 @@
 }
 
 - (void)testSignatureStrippingFailsVerification {
-    JWTVerifier *verifierWithKey = [[JWTVerifier alloc] init];
+    ATProtoJWTVerifier *verifierWithKey = [[ATProtoJWTVerifier alloc] init];
     verifierWithKey.allowedAlgorithms = @[@"ES256"];
     NSData *dummyKey = [NSMutableData dataWithLength:65];
     verifierWithKey.publicKey = dummyKey;
@@ -51,7 +51,7 @@
 }
 
 - (void)testFailClosedWhenNoKeyConfigured {
-    JWTVerifier *verifierWithoutKey = [[JWTVerifier alloc] init];
+    ATProtoJWTVerifier *verifierWithoutKey = [[ATProtoJWTVerifier alloc] init];
     verifierWithoutKey.allowedAlgorithms = @[@"ES256"];
 
     NSString *header = @"{\"alg\":\"ES256\",\"typ\":\"JWT\"}";

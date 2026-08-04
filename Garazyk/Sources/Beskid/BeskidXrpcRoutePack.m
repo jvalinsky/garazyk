@@ -120,7 +120,7 @@
     NSString *cid = [request queryParamForKey:@"cid"];
 
     NSError *parseError = nil;
-    ATURI *uri = [ATURI uriWithString:atURI error:&parseError];
+    ATProtoATURI *uri = [ATProtoATURI uriWithString:atURI error:&parseError];
     if (!uri || uri.collection.length == 0 || uri.rkey.length == 0) {
         [self writeInvalidRequest:parseError.localizedDescription ?: @"Invalid at_uri" response:response];
         return;
@@ -380,7 +380,7 @@
     NSMutableDictionary *hydratedRecords = [NSMutableDictionary dictionary];
     for (NSString *uriStr in extractedUris) {
         NSError *parseError = nil;
-        ATURI *uri = [ATURI uriWithString:uriStr error:&parseError];
+        ATProtoATURI *uri = [ATProtoATURI uriWithString:uriStr error:&parseError];
         if (!uri || uri.collection.length == 0 || uri.rkey.length == 0) continue;
 
         NSString *did = uri.did;

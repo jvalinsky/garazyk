@@ -397,11 +397,11 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (nullable NSData *)base58btcDecode:(NSString *)string {
-    return [Base58 decode:string];
+    return [ATProtoBase58 decode:string];
 }
 
 + (NSString *)base58btcEncode:(NSData *)data {
-    return [Base58 encode:data];
+    return [ATProtoBase58 encode:data];
 }
 
 + (nullable NSData *)base8Decode:(NSString *)string {

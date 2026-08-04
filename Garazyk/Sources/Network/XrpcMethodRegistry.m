@@ -55,7 +55,7 @@ static void registerMethodsWithDispatcherUsingServices(
     Class registryClass, XrpcDispatcher *dispatcher,
     id<PDSAccountService> accountService, PDSRecordService *recordService,
     PDSBlobService *blobService, id<VideoJobStore> videoJobStore,
-    AuthVerifier *authVerifier,
+    ATProtoAuthVerifier *authVerifier,
     PDSRepositoryService *repositoryService,
     PDSRelayService *relayService, id<PDSAdminController> adminController,
     PDSBlobAuditManager *blobAuditManager,

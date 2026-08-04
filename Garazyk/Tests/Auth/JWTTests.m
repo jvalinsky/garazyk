@@ -7,7 +7,7 @@
 
 @interface JWTTests : XCTestCase
 @property (nonatomic, strong) JWTMinter *minter;
-@property (nonatomic, strong) JWTVerifier *verifier;
+@property (nonatomic, strong) ATProtoJWTVerifier *verifier;
 @end
 
 @implementation JWTTests
@@ -26,7 +26,7 @@
     self.minter.privateKey = keyPair.privateKey;
 
     // Create verifier
-    self.verifier = [[JWTVerifier alloc] init];
+    self.verifier = [[ATProtoJWTVerifier alloc] init];
     self.verifier.expectedIssuer = @"test.issuer";
     self.verifier.expectedAudience = @"test.audience";
     self.verifier.allowedAlgorithms = @[@"ES256K"];
@@ -113,7 +113,7 @@
     header.typ = @"JWT";
 
     // Create payload
-    JWTPayload *payload = [[JWTPayload alloc] init];
+    ATProtoJWTPayload *payload = [[ATProtoJWTPayload alloc] init];
     payload.sub = @"test-subject";
     payload.iss = @"test-issuer";
     payload.aud = @"test-audience";
@@ -218,7 +218,7 @@
     header.alg = @"none";
     header.typ = @"JWT";
 
-    JWTPayload *payload = [[JWTPayload alloc] init];
+    ATProtoJWTPayload *payload = [[ATProtoJWTPayload alloc] init];
     payload.sub = @"test-user";
     payload.iss = @"test.issuer";
     payload.aud = @"test.audience";
@@ -449,7 +449,7 @@
 
 - (void)testExpStringShapeIsRejectedRatherThanSilentlyIgnored {
     // Before this fix, a string 'exp' silently left payload.exp nil, which
-    // JWTVerifier's absent-claim skip then treated as "never expires."
+    // ATProtoJWTVerifier's absent-claim skip then treated as "never expires."
     [self assertTokenRejectedWithPayload:@{@"sub": @"test-user", @"exp": @"1700000000"} claim:@"exp (string)"];
 }
 
@@ -543,7 +543,7 @@
     NSString *token = [self.minter signPayload:payload error:&error];
     JWT *jwt = [JWT jwtWithToken:token error:&error];
 
-    JWTVerifier *unrestrictedVerifier = [[JWTVerifier alloc] init];
+    ATProtoJWTVerifier *unrestrictedVerifier = [[ATProtoJWTVerifier alloc] init];
     unrestrictedVerifier.expectedIssuer = @"test.issuer";
     unrestrictedVerifier.expectedAudience = @"test.audience";
     unrestrictedVerifier.publicKey = self.verifier.publicKey;

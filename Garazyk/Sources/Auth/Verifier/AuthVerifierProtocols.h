@@ -3,10 +3,10 @@
 /*!
  @file AuthVerifierProtocols.h
 
- @abstract Protocols defining the interface between AuthVerifier and its host application.
+ @abstract Protocols defining the interface between ATProtoAuthVerifier and its host application.
 
- @discussion These protocols define the seams between the reusable AuthVerifier
- token-verification engine and PDS-specific implementations. AuthVerifier itself
+ @discussion These protocols define the seams between the reusable ATProtoAuthVerifier
+ token-verification engine and PDS-specific implementations. ATProtoAuthVerifier itself
  has no dependencies on PDS database types, allowing it to be reused by both PDS
  and eventually AppView servers.
 
@@ -56,7 +56,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Policy interface for resource server access control.
 
- @discussion Used by AuthVerifier to check account status.
+ @discussion Used by ATProtoAuthVerifier to check account status.
  */
 @protocol AccountPolicy <NSObject>
 
@@ -88,7 +88,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Interface for remote JWKS resolution.
 
- @discussion Used by AuthVerifier to fetch JWKS from other servers.
+ @discussion Used by ATProtoAuthVerifier to fetch JWKS from other servers.
  */
 @protocol TokenKeyResolver <NSObject>
 

@@ -265,7 +265,7 @@ static NSURL *AppViewOAuthExpectedDPoPURL(HttpRequest *request) {
     // Verify the DPoP proof using the canonical verifier (RFC 9449)
     NSString *dpopThumbprint = nil;
     NSError *dpopError = nil;
-    BOOL validProof = [AuthCryptoDPoP verifyProof:dpopHeader
+    BOOL validProof = [ATProtoAuthCryptoDPoP verifyProof:dpopHeader
                                            method:method
                                               url:dpopURL
                                             nonce:nil

@@ -1090,14 +1090,14 @@ static BOOL PLCP256UncompressPublicKey(const uint8_t compressed[33], uint8_t out
     // Hash must be 32 bytes (SHA-256)
     if (!hash || hash.length != 32) return NO;
 
-    // did:plc requires low-S canonical signatures (see AuthCryptoECDSA.h's
+    // did:plc requires low-S canonical signatures (see ATProtoAuthCryptoECDSA.h's
     // normalizeLowS discussion / https://web.plc.directory/spec/v0.1/did-plc);
     // libsecp256k1 enforces this for free on the ES256K path, but the shared
-    // P-256 JOSE verifier (AuthCryptoJWK) deliberately accepts both S forms
+    // P-256 JOSE verifier (ATProtoAuthCryptoJWK) deliberately accepts both S forms
     // per ADR 0007 (DPoP/JWT/WebAuthn callers must not reject high-S). PLC
     // operation verification is not one of those callers, so it must reject
     // non-canonical signatures explicitly here.
-    if (![AuthCryptoECDSA isLowS:rawSig error:nil]) {
+    if (![ATProtoAuthCryptoECDSA isLowS:rawSig error:nil]) {
         return NO;
     }
     
@@ -1132,13 +1132,13 @@ static BOOL PLCP256UncompressPublicKey(const uint8_t compressed[33], uint8_t out
     NSDictionary *jwk = @{
         @"kty": @"EC",
         @"crv": @"P-256",
-        @"x": [AuthCryptoBase64URL encode:xData],
-        @"y": [AuthCryptoBase64URL encode:yData]
+        @"x": [ATProtoAuthCryptoBase64URL encode:xData],
+        @"y": [ATProtoAuthCryptoBase64URL encode:yData]
     };
     
     // Create public key from JWK
     NSError *keyError = nil;
-    id<PDSPublicKeyProtocol> publicKey = [AuthCryptoJWK publicKeyFromJWK:jwk error:&keyError];
+    id<PDSPublicKeyProtocol> publicKey = [ATProtoAuthCryptoJWK publicKeyFromJWK:jwk error:&keyError];
     if (!publicKey) {
         return NO;
     }

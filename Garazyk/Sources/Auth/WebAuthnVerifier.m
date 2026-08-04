@@ -238,12 +238,12 @@
         NSDictionary *jwk = @{
             @"kty": @"EC",
             @"crv": @"P-256",
-            @"x": [AuthCryptoBase64URL encode:xData],
-            @"y": [AuthCryptoBase64URL encode:yData]
+            @"x": [ATProtoAuthCryptoBase64URL encode:xData],
+            @"y": [ATProtoAuthCryptoBase64URL encode:yData]
         };
         
         NSError *keyError = nil;
-        id<PDSPublicKeyProtocol> pubKey = [AuthCryptoJWK publicKeyFromJWK:jwk error:&keyError];
+        id<PDSPublicKeyProtocol> pubKey = [ATProtoAuthCryptoJWK publicKeyFromJWK:jwk error:&keyError];
         if (!pubKey) {
             if (error) *error = [self errorWithCode:2007 message:@"Invalid public key format"];
             return NO;

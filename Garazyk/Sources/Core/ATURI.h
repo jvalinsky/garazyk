@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  ATURI.h
+//  ATProtoATURI.h
 //  ATProtoPDS
 //
 
@@ -12,9 +12,9 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const ATURIErrorDomain;
 
 /**
- * @abstract Declares the ATURI public API.
+ * @abstract Declares the ATProtoATURI public API.
  */
-@interface ATURI : NSObject
+@interface ATProtoATURI : NSObject
 
 /**
  * @abstract Exposes the uri string value.

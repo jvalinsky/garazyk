@@ -225,7 +225,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
         return nil;
     }
 
-    ATURI *parsedURI = [ATURI uriWithString:uri error:nil];
+    ATProtoATURI *parsedURI = [ATProtoATURI uriWithString:uri error:nil];
     NSString *repo = parsedURI.did;
     NSString *rkey = parsedURI.rkey;
 
@@ -595,7 +595,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
         return nil;
     }
 
-    ATURI *parsedURI = [ATURI uriWithString:uriString error:nil];
+    ATProtoATURI *parsedURI = [ATProtoATURI uriWithString:uriString error:nil];
     if (!parsedURI) {
         return nil;
     }

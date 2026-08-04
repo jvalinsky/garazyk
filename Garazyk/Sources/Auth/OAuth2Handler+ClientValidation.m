@@ -904,7 +904,7 @@
   }
 
   NSString *clientID = client[@"client_id"];
-  JWTPayload *jwtPayload = jwt.payload;
+  ATProtoJWTPayload *jwtPayload = jwt.payload;
   NSDictionary *payload = [jwtPayload toDictionary];
 
   if (![payload isKindOfClass:[NSDictionary class]]) {

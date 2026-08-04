@@ -29,7 +29,7 @@
 }
 
 - (nullable PDSDatabaseRecord *)recordForUri:(NSString *)uri error:(NSError **)error {
-    ATURI *parsed = [ATURI uriWithString:uri error:error];
+    ATProtoATURI *parsed = [ATProtoATURI uriWithString:uri error:error];
     if (!parsed) return nil;
     NSString *did = parsed.did;
     __block PDSDatabaseRecord *record = nil;
@@ -57,7 +57,7 @@
 }
 
 - (BOOL)deleteRecord:(NSString *)uri error:(NSError **)error {
-    ATURI *parsed = [ATURI uriWithString:uri error:error];
+    ATProtoATURI *parsed = [ATProtoATURI uriWithString:uri error:error];
     if (!parsed) return NO;
     NSString *did = parsed.did;
     __block BOOL success = NO;

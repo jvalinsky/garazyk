@@ -10,8 +10,8 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract JWT (JSON Web Token) handling for ATProto authentication.
  
  @discussion This header defines classes for creating, parsing, signing,
- and verifying JWT tokens. It includes ATProtoJWTHeader, JWTPayload, JWT,
- JWTVerifier, and JWTMinter classes.
+ and verifying JWT tokens. It includes ATProtoJWTHeader, ATProtoJWTPayload, JWT,
+ ATProtoJWTVerifier, and JWTMinter classes.
  
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -129,7 +129,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @end
 
 /*!
- @class JWTPayload
+ @class ATProtoJWTPayload
  
  @abstract Represents the claims portion of a JWT.
  
@@ -137,7 +137,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
  including standard claims (iss, sub, aud, exp, iat, nbf) and ATProto-specific
  claims (did, handle, scope).
  */
-@interface JWTPayload : NSObject
+@interface ATProtoJWTPayload : NSObject
 
 /*! The issuer (who created the token). */
 @property (nonatomic, copy, nullable) NSString *iss;
@@ -198,7 +198,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
  
  @param dictionary The claims dictionary.
  @param error On return, contains an error if parsing failed.
- @return A new JWTPayload instance.
+ @return A new ATProtoJWTPayload instance.
  */
 + (nullable instancetype)payloadFromDictionary:(NSDictionary *)dictionary error:(NSError **)error;
 
@@ -242,7 +242,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @property (nonatomic, strong, readonly) ATProtoJWTHeader *header;
 
 /*! The decoded payload. */
-@property (nonatomic, strong, readonly) JWTPayload *payload;
+@property (nonatomic, strong, readonly) ATProtoJWTPayload *payload;
 
 /*! The base64URL-encoded header string. */
 @property (nonatomic, copy, readonly) NSString *rawHeader;
@@ -282,7 +282,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
  * @abstract Performs the jwtWithHeader operation.
  */
 + (nullable instancetype)jwtWithHeader:(ATProtoJWTHeader *)header
-                               payload:(JWTPayload *)payload
+                               payload:(ATProtoJWTPayload *)payload
                              signature:(NSString *)signature
                                   error:(NSError **)error;
 
@@ -329,14 +329,14 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @end
 
 /*!
- @class JWTVerifier
+ @class ATProtoJWTVerifier
  
  @abstract Verifies JWT tokens.
  
- @discussion JWTVerifier validates JWT signatures and claims including
+ @discussion ATProtoJWTVerifier validates JWT signatures and claims including
  issuer, audience, and expiration.
  */
-@interface JWTVerifier : NSObject
+@interface ATProtoJWTVerifier : NSObject
 
 /*! The expected issuer claim value. */
 @property (nonatomic, copy) NSString *expectedIssuer;
@@ -391,7 +391,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param error On return, contains an error if validation failed.
  @return YES if claims are valid, NO otherwise.
  */
-- (BOOL)validateClaims:(JWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error;
+- (BOOL)validateClaims:(ATProtoJWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error;
 
 @end
 

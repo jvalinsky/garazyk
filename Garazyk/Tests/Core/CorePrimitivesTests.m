@@ -170,7 +170,7 @@
     XCTAssertNotNil(encoded);
 }
 
-#pragma mark - CID Base58
+#pragma mark - CID ATProtoBase58
 
 - (void)testBase58EncodeDecode {
     NSData *data = [@"hello world" dataUsingEncoding:NSUTF8StringEncoding];
@@ -186,7 +186,7 @@
 - (void)testBase58DecodeInvalid {
     NSData *decoded = [CID base58btcDecode:@"0OIl"]; // Invalid base58 chars
     // Should return nil or empty — implementation-dependent
-    // Base58 alphabet excludes 0, O, I, l
+    // ATProtoBase58 alphabet excludes 0, O, I, l
 }
 
 #pragma mark - CID cidFromBuffer
@@ -492,7 +492,7 @@
 
 /// Exposes the private length-prefix encoder so the >=2^32 boundary can be
 /// probed without allocating a multi-gigabyte buffer (security-review N1).
-@interface CBOREncoder (CountWidthTesting)
+@interface ATProtoCBOREncoder (CountWidthTesting)
 + (void)encodeCount:(NSUInteger)count withMajorType:(uint8_t)majorType toData:(NSMutableData *)data;
 @end
 
@@ -506,7 +506,7 @@
     // wrapping to 0 and emitting a 5-byte (additional-info 26) header whose
     // length claims zero bytes instead of 4294967296.
     NSMutableData *data = [NSMutableData data];
-    [CBOREncoder encodeCount:4294967296ULL withMajorType:0x40 toData:data];
+    [ATProtoCBOREncoder encodeCount:4294967296ULL withMajorType:0x40 toData:data];
 
     XCTAssertEqual(data.length, (NSUInteger)9, @"additional-info 27 needs a 1-byte header + 8-byte length");
     const uint8_t *bytes = data.bytes;
@@ -522,7 +522,7 @@
     // Sibling control: the existing 4-byte (additional-info 26) branch must
     // stay exactly as-is for the value directly below the new boundary.
     NSMutableData *data = [NSMutableData data];
-    [CBOREncoder encodeCount:4294967295ULL withMajorType:0x40 toData:data];
+    [ATProtoCBOREncoder encodeCount:4294967295ULL withMajorType:0x40 toData:data];
 
     XCTAssertEqual(data.length, (NSUInteger)5, @"additional-info 26 needs a 1-byte header + 4-byte length");
     const uint8_t *bytes = data.bytes;

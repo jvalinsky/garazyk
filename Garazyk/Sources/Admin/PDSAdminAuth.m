@@ -369,7 +369,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
         return NO;
     }
 
-    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     verifier.keyManager = controller.jwtMinter.keyManager;
     verifier.publicKey = controller.jwtMinter.publicKey;
 
