@@ -11,15 +11,15 @@ static NSString * const kBase64URLAlphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefg
 @implementation PKCEUtil
 
 + (NSString *)generateCodeVerifier {
-    NSData *randomData = [CryptoUtils randomBytes:32];
-    return [CryptoUtils base64URLEncode:randomData];
+    NSData *randomData = [ATProtoCryptoUtils randomBytes:32];
+    return [ATProtoCryptoUtils base64URLEncode:randomData];
 }
 
 + (NSString *)generateCodeChallengeWithVerifier:(NSString *)verifier {
     NSData *verifierData = [verifier dataUsingEncoding:NSUTF8StringEncoding];
     if (!verifierData) return nil;
-    NSData *hashData = [CryptoUtils sha256:verifierData];
-    return [CryptoUtils base64URLEncode:hashData];
+    NSData *hashData = [ATProtoCryptoUtils sha256:verifierData];
+    return [ATProtoCryptoUtils base64URLEncode:hashData];
 }
 
 + (BOOL)verifyCodeChallenge:(NSString *)challenge withVerifier:(NSString *)verifier {

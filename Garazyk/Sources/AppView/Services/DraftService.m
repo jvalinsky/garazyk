@@ -36,7 +36,7 @@
         return nil;
     }
 
-    NSString *draftID = [TID tid].stringValue;
+    NSString *draftID = [ATProtoTID tid].stringValue;
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
 
     NSString *sql = @"INSERT INTO drafts (id, did, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)";

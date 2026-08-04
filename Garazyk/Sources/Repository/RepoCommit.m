@@ -22,7 +22,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     commit.did = did;
     commit.version = 3;
     commit.dataCID = dataCID;
-    commit.rev = rev ?: [[TID tid] stringValue];
+    commit.rev = rev ?: [[ATProtoTID tid] stringValue];
     commit.prevCID = prevCID;
     return commit;
 }

@@ -681,9 +681,9 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 #pragma mark - Encryption Helpers
 
-- (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt { return [CryptoUtils deriveKeyFromPassword:password salt:salt]; }
-- (nullable NSData *)encryptData:(NSData *)data withKey:(NSData *)key { return [CryptoUtils encryptData:data withKey:key]; }
-- (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key { return [CryptoUtils decryptData:data withKey:key]; }
+- (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt { return [ATProtoCryptoUtils deriveKeyFromPassword:password salt:salt]; }
+- (nullable NSData *)encryptData:(NSData *)data withKey:(NSData *)key { return [ATProtoCryptoUtils encryptData:data withKey:key]; }
+- (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key { return [ATProtoCryptoUtils decryptData:data withKey:key]; }
 
 static BOOL isValidTableName(NSString *n) { return [@[@"actor_status", @"records", @"blocks", @"blobs", @"migrations", @"account", @"repo", @"cid_index", @"collection_index"] containsObject:n]; }
 static BOOL isValidColumnName(NSString *n) { return [@[@"did", @"collection", @"rkey", @"cid", @"value", @"created_at", @"indexed_at", @"takedown_ref", @"blob_data", @"mimeType", @"size", @"height", @"rev", @"handle"] containsObject:n]; }

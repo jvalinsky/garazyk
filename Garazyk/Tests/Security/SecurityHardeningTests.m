@@ -64,7 +64,7 @@
     NSData *key = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *data = [@"message" dataUsingEncoding:NSUTF8StringEncoding];
 
-    NSData *hmac = [CryptoUtils hmacSHA1WithKey:key data:data];
+    NSData *hmac = [ATProtoCryptoUtils hmacSHA1WithKey:key data:data];
     XCTAssertNotNil(hmac, @"Should generate HMAC-SHA1");
     XCTAssertEqual(hmac.length, 20, @"HMAC-SHA1 should be 20 bytes");
 }
@@ -73,7 +73,7 @@
     // Verify that TOTP supports SHA1 for RFC 6238 compatibility
     // (Default should be SHA256, but SHA1 should be supported)
 
-    NSData *secret = [CryptoUtils randomBytes:20];
+    NSData *secret = [ATProtoCryptoUtils randomBytes:20];
     XCTAssertNotNil(secret, @"Should generate random secret");
 
     // Create TOTP with SHA256 (default)
@@ -93,7 +93,7 @@
     NSData *key = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *data = [@"message" dataUsingEncoding:NSUTF8StringEncoding];
 
-    NSData *hmac = [CryptoUtils hmacSHA256WithKey:key data:data];
+    NSData *hmac = [ATProtoCryptoUtils hmacSHA256WithKey:key data:data];
     XCTAssertNotNil(hmac, @"Should generate HMAC-SHA256");
     XCTAssertEqual(hmac.length, 32, @"HMAC-SHA256 should be 32 bytes");
 }
@@ -105,9 +105,9 @@
     // Note: We can't directly verify iterations, but we can verify it works
 
     NSString *password = @"test password";
-    NSData *salt = [CryptoUtils randomBytes:16];
+    NSData *salt = [ATProtoCryptoUtils randomBytes:16];
 
-    NSData *derivedKey = [CryptoUtils deriveKeyFromPassword:password salt:salt];
+    NSData *derivedKey = [ATProtoCryptoUtils deriveKeyFromPassword:password salt:salt];
     XCTAssertNotNil(derivedKey, @"Should derive key");
     XCTAssertEqual(derivedKey.length, 32, @"Derived key should be 32 bytes");
 }
@@ -116,10 +116,10 @@
     // Verify same password and salt produce same key
 
     NSString *password = @"test password";
-    NSData *salt = [CryptoUtils randomBytes:16];
+    NSData *salt = [ATProtoCryptoUtils randomBytes:16];
 
-    NSData *key1 = [CryptoUtils deriveKeyFromPassword:password salt:salt];
-    NSData *key2 = [CryptoUtils deriveKeyFromPassword:password salt:salt];
+    NSData *key1 = [ATProtoCryptoUtils deriveKeyFromPassword:password salt:salt];
+    NSData *key2 = [ATProtoCryptoUtils deriveKeyFromPassword:password salt:salt];
 
     XCTAssertEqualObjects(key1, key2, @"Same password and salt should produce same key");
 }

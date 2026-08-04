@@ -360,7 +360,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
             [self setAuthRequiredResponse:response];
             return nil;
         }
-        if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
+        if (![ATProtoCryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
             GZ_LOG_AUTH_WARN(@"DPoP thumbprint mismatch");
             [self setAuthRequiredResponse:response];
             return nil;

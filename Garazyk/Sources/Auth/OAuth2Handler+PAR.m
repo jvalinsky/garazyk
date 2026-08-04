@@ -348,7 +348,7 @@
   NSDictionary *row = rows.firstObject;
   NSString *storedClientID = row[@"client_id"];
   if (clientID.length > 0 && storedClientID.length > 0 &&
-      ![CryptoUtils constantTimeCompare:clientID to:storedClientID]) {
+      ![ATProtoCryptoUtils constantTimeCompare:clientID to:storedClientID]) {
     if (error) {
       *error = [NSError errorWithDomain:@"OAuth2"
                                    code:400

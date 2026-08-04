@@ -221,7 +221,7 @@
         rev = preferredRev;
     }
     if (rev.length == 0) {
-        rev = [TID tid].stringValue;
+        rev = [ATProtoTID tid].stringValue;
     }
 
     NSData *prevCommitBytes = [store getRepoRootForDid:did error:nil];

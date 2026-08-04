@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file TID.h
+ @file ATProtoTID.h
 
- @abstract Timestamp Identifier (TID) for ATProto record keys.
+ @abstract Timestamp Identifier (ATProtoTID) for ATProto record keys.
 
  @discussion Implements TIDs as 13-character base32-sortable identifiers
  encoding microsecond timestamps. TIDs provide chronological ordering
@@ -17,16 +17,16 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class TID
+ @class ATProtoTID
 
  @abstract Time-ordered identifier for ATProto records.
 
  @discussion Encodes microsecond timestamps in a sortable base32 format.
  Used as record keys (rkeys) in repository collections.
  */
-@interface TID : NSObject <NSCopying, NSSecureCoding>
+@interface ATProtoTID : NSObject <NSCopying, NSSecureCoding>
 
-/*! The raw TID string (13-character base32). */
+/*! The raw ATProtoTID string (13-character base32). */
 @property (readonly, nonatomic, copy) NSString *stringValue;
 
 /*! The timestamp component (microseconds since Unix epoch). */
@@ -34,58 +34,58 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @method tid
- @abstract Create a new TID with current timestamp.
- @return A new TID instance.
+ @abstract Create a new ATProtoTID with current timestamp.
+ @return A new ATProtoTID instance.
  */
 + (instancetype)tid;
 
 /*!
  @method tidFromString:
- @abstract Create TID from string.
- @param string The TID string.
- @return A new TID instance.
+ @abstract Create ATProtoTID from string.
+ @param string The ATProtoTID string.
+ @return A new ATProtoTID instance.
  */
 + (nullable instancetype)tidFromString:(NSString *)string;
 
 /*!
  @method tidWithTimestamp:
- @abstract Create TID from timestamp.
+ @abstract Create ATProtoTID from timestamp.
  @param timestamp Microseconds since Unix epoch.
- @return A new TID instance.
+ @return A new ATProtoTID instance.
  */
 + (instancetype)tidWithTimestamp:(uint64_t)timestamp;
 
 /*!
  @method tidWithDate:
- @abstract Create TID from date.
+ @abstract Create ATProtoTID from date.
  @param date The date.
- @return A new TID instance.
+ @return A new ATProtoTID instance.
  */
 + (instancetype)tidWithDate:(NSDate *)date;
 
 /*!
  @method compare:
  @abstract Compare two TIDs chronologically.
- @param other The other TID to compare.
+ @param other The other ATProtoTID to compare.
  @return Comparison result.
  */
-- (NSComparisonResult)compare:(TID *)other;
+- (NSComparisonResult)compare:(ATProtoTID *)other;
 
 /*!
  @method isBefore:
- @abstract Check if this TID is before another.
- @param other The other TID.
- @return YES if this TID is before the other, NO otherwise.
+ @abstract Check if this ATProtoTID is before another.
+ @param other The other ATProtoTID.
+ @return YES if this ATProtoTID is before the other, NO otherwise.
  */
-- (BOOL)isBefore:(TID *)other;
+- (BOOL)isBefore:(ATProtoTID *)other;
 
 /*!
  @method isAfter:
- @abstract Check if this TID is after another.
- @param other The other TID.
- @return YES if this TID is after the other, NO otherwise.
+ @abstract Check if this ATProtoTID is after another.
+ @param other The other ATProtoTID.
+ @return YES if this ATProtoTID is after the other, NO otherwise.
  */
-- (BOOL)isAfter:(TID *)other;
+- (BOOL)isAfter:(ATProtoTID *)other;
 
 @end
 

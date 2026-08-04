@@ -122,7 +122,7 @@
 }
 
 - (void)testLoadMSTForDidReconstructsFromCAR {
-    // Use deterministic keys with proper TID-format rkeys
+    // Use deterministic keys with proper ATProtoTID-format rkeys
     // TIDs are base32-sortable timestamp identifiers (13 chars, lowercase alphanumeric)
     MST *seedTree = [[MST alloc] init];
     NSArray *tidRkeys = @[

@@ -362,7 +362,7 @@ static NSDictionary<NSString *, NSString *> *PDSBuildCategoryMap(void) {
       @"CLI":            @[@"CLI"],
       @"Chat":           @[@"SyrenaChat", @"Chat"],
       @"Germ":           @[@"Germ"],
-      @"Core":           @[@"CID", @"TID", @"ATProtoBase58", @"ATProtoCore",
+      @"Core":           @[@"CID", @"ATProtoTID", @"ATProtoBase58", @"ATProtoCore",
                            @"ATProtoDagCBOR", @"CBORSerialization",
                            @"ATProtoValidator", @"ATProtoBase32",
                            @"CorePrimitives", @"ProtocolCompile",

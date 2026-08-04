@@ -409,7 +409,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                                        record:(NSDictionary *)record
                                validationMode:(PDSValidationMode)mode
                                         error:(NSError **)error {
-  NSString *rkey = [TID tid].stringValue;
+  NSString *rkey = [ATProtoTID tid].stringValue;
   BOOL success = [self putRecord:collection
                             rkey:rkey
                            value:record

@@ -50,9 +50,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method validateTID:error:
  
- @abstract Validates a TID string.
+ @abstract Validates a ATProtoTID string.
  
- @param tid The TID string to validate.
+ @param tid The ATProtoTID string to validate.
  @param error On return, contains an error if validation failed.
  @return YES if valid, NO otherwise.
  */

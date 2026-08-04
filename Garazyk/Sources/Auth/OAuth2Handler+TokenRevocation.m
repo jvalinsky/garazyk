@@ -59,8 +59,8 @@
   NSString *sessionIdToRemove = nil;
   for (NSString *sessionId in self.oauthServer.activeSessions) {
     Session *session = self.oauthServer.activeSessions[sessionId];
-    if ([CryptoUtils constantTimeCompare:session.accessToken to:token] ||
-        [CryptoUtils constantTimeCompare:session.refreshToken to:token]) {
+    if ([ATProtoCryptoUtils constantTimeCompare:session.accessToken to:token] ||
+        [ATProtoCryptoUtils constantTimeCompare:session.refreshToken to:token]) {
       sessionIdToRemove = sessionId;
       break;
     }
@@ -170,7 +170,7 @@
   // Not a valid JWT - check if it's a refresh token in active sessions
   for (NSString *sessionId in self.oauthServer.activeSessions) {
     Session *session = self.oauthServer.activeSessions[sessionId];
-    if ([CryptoUtils constantTimeCompare:session.refreshToken to:token]) {
+    if ([ATProtoCryptoUtils constantTimeCompare:session.refreshToken to:token]) {
       // Found refresh token in active sessions
       NSMutableDictionary *introspection = [NSMutableDictionary dictionary];
       introspection[@"active"] = @YES;
@@ -193,7 +193,7 @@
   // Also check for access token match in sessions (non-JWT tokens)
   for (NSString *sessionId in self.oauthServer.activeSessions) {
     Session *session = self.oauthServer.activeSessions[sessionId];
-    if ([CryptoUtils constantTimeCompare:session.accessToken to:token]) {
+    if ([ATProtoCryptoUtils constantTimeCompare:session.accessToken to:token]) {
       NSMutableDictionary *introspection = [NSMutableDictionary dictionary];
       introspection[@"active"] = @YES;
       introspection[@"token_type"] = @"bearer";

@@ -75,7 +75,7 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
         return;
     }
 
-    NSData *challenge = [CryptoUtils randomBytes:32];
+    NSData *challenge = [ATProtoCryptoUtils randomBytes:32];
     if (!challenge) {
         [self respondWithError:response code:500 message:@"Failed to generate challenge"];
         return;

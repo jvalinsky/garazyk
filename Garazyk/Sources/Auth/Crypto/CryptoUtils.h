@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file CryptoUtils.h
+ @file ATProtoCryptoUtils.h
 
  @abstract Cryptographic utility functions for ATProto operations.
 
@@ -17,11 +17,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class CryptoUtils
+ @class ATProtoCryptoUtils
 
  @abstract Collection of cryptographic utility methods.
  */
-@interface CryptoUtils : NSObject
+@interface ATProtoCryptoUtils : NSObject
 
 /*! Computes HMAC-SHA1 of data with key.
     Retained for TOTP (RFC 6238) compatibility. SHA1 is specified by RFC 6238

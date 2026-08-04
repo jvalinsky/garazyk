@@ -125,7 +125,7 @@
     XCTAssertEqualObjects(record[@"collection"], @"app.bsky.feed.post");
     NSString *rkey = record[@"rkey"];
     XCTAssertTrue([rkey isKindOfClass:[NSString class]]);
-    XCTAssertTrue([ATProtoValidator validateTID:rkey error:nil], @"Expected post rkey to be a valid TID, got: %@", rkey);
+    XCTAssertTrue([ATProtoValidator validateTID:rkey error:nil], @"Expected post rkey to be a valid ATProtoTID, got: %@", rkey);
 }
 
 - (void)testCreateRecordWithoutRkeyFailsForNonPostCollection {
