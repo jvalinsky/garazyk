@@ -32,10 +32,10 @@ complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
 a configure-time disjoint-source assertion); item 2 (glob-to-manifest
 conversion) remains open. M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
-and **batch 2 is partially done** (19 of ~25 classes, everything up to 34
-consumers) — namespace baseline ratcheted 283 → 253 → 249 → 238 → 234.
-The remaining, much larger batch-2 classes (`CID` at 265 consumers, `JWT` at
-136, `JWTMinter` at 80, `Secp256k1` at 53, `CryptoUtils` at 45, `TID` at 41)
+and **batch 2 is done except for the four largest classes** (21 of ~25
+classes renamed) — namespace baseline ratcheted
+283 → 253 → 249 → 238 → 234 → 232. The remaining batch-2 classes (`CID` at
+265 consumers, `JWT` at 136, `JWTMinter` at 80, `Secp256k1` at 53)
 and batches 3-6
 remain open. M6 has not started.
 
@@ -1536,11 +1536,44 @@ count, all 0 failures; source and link-time module boundary checks clean;
 `deno task check`/`lint` clean; full `AllTests --gated=run`: 4,966 tests,
 0 failures, 506s.
 
-The remaining, much larger batch-2 classes (`CID` at 265 consumers, `JWT`
-at 136, `JWTMinter` at 80, `Secp256k1` at 53, `CryptoUtils` at 45, `TID` at
-41) are deliberately left open for a dedicated, carefully reviewed session
-— each is large enough that an in-band rename risks missing something a
-focused review pass would catch.
+**Batch 2d (2026-08-04): TID and CryptoUtils, closing out the small/medium
+tier.** `TID` → `ATProtoTID` (41 consumers), `CryptoUtils` →
+`ATProtoCryptoUtils` (45 consumers). `TID.h` declares `NSSecureCoding`
+conformance like `DIDDocument` in batch 2c — same finding applies
+(`NSKeyedArchiver`/`Unarchiver` unused anywhere, no on-disk compatibility
+risk).
+
+**Caught and fixed a real mistake before committing this batch**: the first
+mechanical pass over this batch's file list also rewrote a vendored JSON
+test fixture (`Garazyk/Tests/fixtures/atproto-interop-tests/lexicon/catalog/record.json`),
+changing a lexicon schema's `"a generic TID field"` description string —
+unrelated protocol test data, not a namespace symbol, corrupted because the
+rename script's file discovery targeted all of `Garazyk/Tests/`, which
+includes vendored external corpora under `Tests/fixtures/` that happen to
+mention the same short token. Reverted that one file before rebuilding.
+**Future M5.3 batches must exclude `Garazyk/Tests/fixtures/` explicitly**
+from file discovery, not rely on the class name simply not colliding with
+fixture content — this is now a standing checklist item for every remaining
+batch, not just short/common names like `TID`.
+
+Also confirmed a `PDSCLIRepoCommandTests` failure seen when running that
+class in isolation via `--filter` is a pre-existing test-isolation artifact
+(0 failures as part of the full suite; same documented pattern as the
+`RelayIntegrationTests` isolation artifact noted in this workstream's M4.2
+section) — not a regression from this rename.
+
+Namespace baseline ratchets 234 → 232. Verified: zero stray references to
+either old name remain in `Garazyk/Sources`/`Garazyk/Tests` outside
+`#import` path strings; source and link-time module boundary checks clean;
+`deno task check`/`lint` clean; full `AllTests --gated=run`: 4,966 tests,
+0 failures, 538s.
+
+This closes out M5.3 batch 2 to the point where only the largest, riskiest
+classes remain: `CID` (265 consumers), `JWT` (136), `JWTMinter` (80), and
+`Secp256k1` (53) — each deliberately deferred to its own dedicated,
+carefully reviewed session, and each large enough that an in-band rename
+risks missing something a focused review pass would catch. **Before
+attempting any of them, apply the `Tests/fixtures/` exclusion lesson above.**
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
