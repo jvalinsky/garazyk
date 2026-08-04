@@ -182,12 +182,17 @@ jobs:
 
       - name: Configure (GNUstep CMake)
         run: |
+          # Do not pass -DCMAKE_{C,CXX,OBJC}_COMPILER here: CMakeLists.txt's
+          # pre-project() block already resolves and sets them on Linux via
+          # find_program(), to an absolute path (e.g. /bin/clang). Passing
+          # the unqualified names here too creates a cache entry that never
+          # textually matches what the pre-project block sets, which CMake
+          # treats as "compiler changed" on every internal reconfigure --
+          # deleting the cache and restarting configure from scratch,
+          # forever, within a single `cmake` invocation.
           cmake -S . -B build-linux \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_C_COMPILER=clang \
-            -DCMAKE_CXX_COMPILER=clang++ \
-            -DCMAKE_OBJC_COMPILER=clang \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_OBJC_COMPILER_LAUNCHER=ccache \

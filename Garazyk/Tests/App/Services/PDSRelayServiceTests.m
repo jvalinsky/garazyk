@@ -3,6 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Services/PDS/PDSRelayService.h"
 #import "Core/PDSRecordEvents.h"
+#import "Compat/PDSTypes.h"
 
 #pragma mark - Mock Transport
 
@@ -43,8 +44,7 @@
 #pragma mark - Test Expose Internals
 
 @interface PDSRelayService (TestAccess)
-@property (nonatomic, strong, readonly) NSMutableSet<NSString *> *pendingDids;
-@property (nonatomic, strong, readonly) dispatch_queue_t queue;
+@property (nonatomic, strong, readonly) NSMutableSet<NSString *> *pendingDids;    @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t queue;
 @end
 
 #pragma mark - Tests

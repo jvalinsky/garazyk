@@ -13,7 +13,7 @@
     PDSNonceManager *mgr2 = [PDSNonceManager sharedManager];
     
     XCTAssertNotNil(mgr1);
-    XCTAssertEqual(mgr1, mgr2, @"Shared manager should return singleton");
+    XCTAssertTrue(mgr1 == mgr2, @"Shared manager should return singleton");
 }
 
 - (void)testGenerateNonceReturnsValidNonce {

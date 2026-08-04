@@ -126,7 +126,7 @@
 
 - (void)testServiceInitializationConfiguresDatabasePool {
     XCTAssertNotNil(self.service);
-    XCTAssertEqual(self.service.databasePool, self.pool);
+    XCTAssertTrue(self.service.databasePool == self.pool);
 }
 
 - (void)testRemoveBlobReferencesReturnsNOWhenTransactionSetupFails {

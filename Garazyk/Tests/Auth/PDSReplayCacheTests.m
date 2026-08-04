@@ -179,7 +179,7 @@
 - (void)testSharedCacheReturnsSingleton {
     // Process-wide singleton; deliberately not mutated or invalidated here.
     XCTAssertNotNil([PDSReplayCache sharedCache]);
-    XCTAssertEqual([PDSReplayCache sharedCache], [PDSReplayCache sharedCache], @"sharedCache is a singleton");
+    XCTAssertTrue([PDSReplayCache sharedCache] == [PDSReplayCache sharedCache], @"sharedCache is a singleton");
 }
 
 - (void)testCheckAndAddAfterInvalidateReturnsNO {

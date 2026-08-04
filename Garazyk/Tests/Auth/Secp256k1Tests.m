@@ -221,7 +221,7 @@
     Secp256k1 *instance2 = [Secp256k1 shared];
     
     XCTAssertNotNil(instance1);
-    XCTAssertEqual(instance1, instance2, @"Shared should return singleton");
+    XCTAssertTrue(instance1 == instance2, @"Shared should return singleton");
 }
 
 - (void)testSharedGenerateKeyPair {
