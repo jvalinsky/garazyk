@@ -203,7 +203,7 @@ static BOOL S2PAExtractEnvelope(NSData *envelope,
     CC_SHA256(structure.bytes, (CC_LONG)structure.length, digest);
     NSData *hash = [NSData dataWithBytes:digest length:sizeof(digest)];
     NSError *verifyError = nil;
-    BOOL valid = [[Secp256k1 shared] verifySignature:signature
+    BOOL valid = [[ATProtoSecp256k1 shared] verifySignature:signature
                                              forHash:hash
                                        withPublicKey:publicKey
                                                error:&verifyError];

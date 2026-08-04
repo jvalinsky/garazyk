@@ -507,7 +507,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
         
         if (perDidRotationKey) {
             GZ_LOG_INFO(@"Signing PLC operation with per-DID rotation key for %@", did);
-            sig = [[Secp256k1 shared] signHash:hash withPrivateKey:perDidRotationKey error:&signError];
+            sig = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:perDidRotationKey error:&signError];
         } else {
             GZ_LOG_INFO(@"Signing PLC operation with server rotation key for %@", did);
             [keyManager signHash:hash result:&sig error:&signError];
@@ -977,7 +977,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
                     
                     if (perDidRotationKey) {
                         GZ_LOG_INFO(@"Signing handle update with per-DID rotation key for %@", did);
-                        sigData = [[Secp256k1 shared] signHash:hash withPrivateKey:perDidRotationKey error:&signError];
+                        sigData = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:perDidRotationKey error:&signError];
                     } else {
                         GZ_LOG_INFO(@"Signing handle update with server rotation key for %@", did);
                         [keyManager signHash:hash result:&sigData error:&signError];

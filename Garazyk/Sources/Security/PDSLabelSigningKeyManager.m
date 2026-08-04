@@ -117,7 +117,7 @@ static NSString *PDSLabelSigningStorageDirectory(void) {
 
         if (privateKeyData && privateKeyData.length == 32) {
             NSError *keyError = nil;
-            self.signingKeyPair = [[Secp256k1 shared] keyPairFromPrivateKey:privateKeyData error:&keyError];
+            self.signingKeyPair = [[ATProtoSecp256k1 shared] keyPairFromPrivateKey:privateKeyData error:&keyError];
             if (self.signingKeyPair) {
                 self.signingKeyDidKey = self.signingKeyPair.didKeyString;
                 GZ_LOG_INFO(@"Loaded label signing key: %@", self.signingKeyDidKey);
@@ -128,7 +128,7 @@ static NSString *PDSLabelSigningStorageDirectory(void) {
     }
 
     NSError *genError = nil;
-    self.signingKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&genError];
+    self.signingKeyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:&genError];
     if (!self.signingKeyPair) {
         if (error) {
             *error = [NSError errorWithDomain:PDSLabelSigningKeyManagerErrorDomain
@@ -185,7 +185,7 @@ static NSString *PDSLabelSigningStorageDirectory(void) {
     }
     NSData *hash = [ATProtoCryptoUtils sha256:data];
     NSError *signError = nil;
-    NSData *signature = [[Secp256k1 shared] signHash:hash withPrivateKey:self.signingKeyPair.privateKey error:&signError];
+    NSData *signature = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:self.signingKeyPair.privateKey error:&signError];
     if (!signature) {
         if (error) {
             *error = [NSError errorWithDomain:PDSLabelSigningKeyManagerErrorDomain
@@ -202,7 +202,7 @@ static NSString *PDSLabelSigningStorageDirectory(void) {
         if (![self loadOrGenerateKeyWithError:error]) return NO;
     }
     NSData *hash = [ATProtoCryptoUtils sha256:data];
-    return [[Secp256k1 shared] verifySignature:signature forHash:hash withPublicKey:self.signingKeyPair.publicKey error:error];
+    return [[ATProtoSecp256k1 shared] verifySignature:signature forHash:hash withPublicKey:self.signingKeyPair.publicKey error:error];
 }
 
 - (void)clearKey {
