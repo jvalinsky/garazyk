@@ -1204,6 +1204,7 @@ int main(int argc, char *argv[]) {
       @"ATProtoBDASLVerifierTests",
       @"ATProtoMASLDocumentTests",
       @"ATProtoPFPTests",
+      @"ATProtoMUXLBoxTests",
       @"ATProtoRASLURLTests",
       @"ATProtoRASLClientTests",
       @"PDSRASLResolverTests",
