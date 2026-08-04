@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "ChatAuthManager.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -348,13 +348,13 @@
     [request setHTTPMethod:@"GET"];
     [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
 
-    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    GZHTTPClientOptions *options = [GZHTTPClientOptions defaultOptions];
     options.allowHTTP = YES;
     options.allowPrivateHosts = YES;
 
     NSHTTPURLResponse *urlResponse = nil;
     NSError *error = nil;
-    NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
+    NSData *data = [[GZHTTPClientRegistry sharedClient] sendSynchronousRequest:request
                                                                         options:options
                                                                        response:&urlResponse
                                                                           error:&error];

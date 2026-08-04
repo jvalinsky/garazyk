@@ -28,6 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol AccountPolicy;
 @protocol DPoPNonceStore;
 @protocol AuthCryptoDPoPReplayChecker;
+@protocol PDSKeyManager;
 
 @class HttpRequest;
 @class HttpResponse;
@@ -139,6 +140,14 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  requests fail closed until this is wired.
  */
 @property (nonatomic, strong, nullable) id<AuthCryptoDPoPReplayChecker> replayChecker;
+
+/*!
+ @brief Key manager for local JWT signature verification.
+ @discussion Used when the host stores signing keys behind a key manager rather
+ than exposing raw public-key bytes. If set, it is preferred by the local
+ issuer path when `localPublicKey` is nil.
+ */
+@property (nonatomic, strong, nullable) id<PDSKeyManager> localKeyManager;
 
 /*!
  @brief Initialize with protocols.

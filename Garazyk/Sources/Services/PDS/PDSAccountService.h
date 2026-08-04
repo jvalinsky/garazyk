@@ -13,6 +13,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Core/PDSPLCAccountOperationProvider.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -162,6 +163,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Pluggable email provider for sending verification codes and alerts.
  */
 @property (nonatomic, strong, nullable) id<PDSEmailProvider> emailProvider;
+
+/** PLC account-operation signer supplied by Runtime composition. */
+@property (nonatomic, strong, nullable) id<PDSPLCAccountOperationProvider> plcOperationProvider;
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 

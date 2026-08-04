@@ -94,6 +94,23 @@
     return [controller.jwtMinter signPayload:claims error:error];
 }
 
+- (void)testAuthenticateWithPasswordFailsClosedWithoutInjectedController {
+    [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
+
+    id<PDSAdminAuthController> injectedController = [PDSAdminAuth sharedAuth].controller;
+    [PDSAdminAuth sharedAuth].controller = nil;
+
+    NSError *error = nil;
+    BOOL success = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"secret-password" error:&error];
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 500);
+    XCTAssertTrue([error.localizedDescription containsString:@"Server not initialized"]);
+
+    [PDSAdminAuth sharedAuth].controller = injectedController;
+}
+
 - (void)testAuthenticateWithPasswordSucceedsWithFallbackIssuer {
     [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
     [self setEnv:@"PDS_ISSUER" value:nil];

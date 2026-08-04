@@ -8,21 +8,21 @@ last_verified: 2026-08-03
 
 The earlier execution summary and the proposed Option A plan overstated the
 workstream's completion. A current run of
-`scripts/check_module_boundaries.sh build` passes only because all **26**
-remaining violations are still recorded in
-`docs/module-boundary-baseline.txt`:
+`scripts/check_module_boundaries.sh build` passes because the four remaining
+violations are recorded in `docs/module-boundary-baseline.txt`:
 
 | Referencing module | Remaining violations |
 | --- | ---: |
-| `ATProtoServices` | 15 |
-| `ATProtoXRPC` | 6 |
+| `ATProtoServices` | 0 |
+| `ATProtoXRPC` | 0 |
 | `ATProtoMediaCore` | 3 |
-| `ATProtoVideoService` | 2 |
+| `ATProtoVideoService` | 0 |
 
 M1-M3 are complete. M4 has resolved the inversions originally enumerated in
-its first audit plus the PLC-persistence, Sync-multibase, and Storage key-manager
-residual clusters, but it has
-**not** met its own zero-baseline acceptance gate.
+its first audit plus the PLC-persistence, Sync-multibase, Storage key-manager,
+AppView identity-resolver, PLC account-operation, HTTP-client, and
+RateLimiter residual clusters, but it has **not** met its own zero-baseline
+acceptance gate; **3** baselined violations remain (all in `ATProtoMediaCore`).
 M7 is partially complete: dependency injection and most data-path work landed,
 but module sources still contain host-process exits and an installer
 `/var/db/kaszlak` fallback. M5 and M6 have not started.
@@ -48,6 +48,19 @@ package targets, the existing build contains 500 Objective-C classes, of which
 283 do not begin with the project's reserved `GZ`, `ATProto`, or `PDS`
 prefixes. That is the starting baseline for M5, not the short illustrative list
 in the original plan.
+
+The live boundary baseline is now **3** entries, all `ATProtoMediaCore`
+composition leaks. The PLC account-operation pair was removed after the
+account service was changed to consume the Core `PDSPLCAccountOperationProvider`
+protocol and Runtime composition injected the PLC-owned implementation. The
+HTTP-client pair was removed after Services callers switched to the Core-owned
+`GZHTTPClient` protocol and transport-independent `GZHTTPClientOptions`; the
+Transport implementation remains responsible for SSRF validation, DNS pinning,
+redirect validation, and response limits. The Core registry now returns a
+fail-closed unavailable client when no transport has registered, rather than
+returning nil. The last Services entry, `RateLimiter`, was removed when the
+diagnostics composition sources that constructed it were moved into Runtime
+(see below).
 
 ## Progress (2026-07-29)
 
@@ -416,11 +429,10 @@ full `AllTests --gated=run` verified clean.
 
 **`XRPC -> PLC` decision resolved**. Addressed the final open item of M4. XRPC's route packs and API handlers inherently depend on the business logic modules (Services, Storage, Sync, and PLC) to implement their routes. `ATProtoPLC` exposes PLC directory routes that XRPC packs must dispatch to. Thus, PLC belongs *below* XRPC in the declared graph, just like the other product-feature modules. Added `ATProtoPLC` to `ATProtoXRPC`'s `PUBLIC` dependencies in `CMakeLists.txt`. This naturally resolves all 5 remaining XRPC -> PLC boundary violations (`DIDPLCResolver`, `PLCAuditor`, `PLCOperation`, `PLCRotationKeyManager`, `PLCStateReplayer`). Baseline ratcheted 35 → 30. Full `AllTests --gated=run` verified clean with an improved failure profile.
 
-**Correction (2026-07-30): M4's originally enumerated inversion set is
-resolved, but M4 itself is not complete.** Its acceptance gate requires the
-baseline to reach zero, and 28 baselined violations remain. The revised M4
-below treats those violations as the remaining work rather than declaring
-victory after the `XRPC -> PLC` subset.
+**Historical correction (2026-07-30): M4's originally enumerated inversion
+set was resolved, but the then-current follow-on baseline was not complete.**
+Its acceptance gate requires the baseline to reach zero. The later M4.2 slices
+below continue that work; the live status is recorded at the top of this file.
 
 **M4.2 PLC persistence complete** (`f08166df`). M4.1's fresh ten-archive
 evidence found both PLC leaks in one emitter, `PLCPersistentStore.m.o`:
@@ -494,7 +506,85 @@ Storage test, and the checker (26 current / 26 baselined) passed. In GNUstep
 Docker, all ten archives and the standalone test pass; the Linux checker
 reports no new leak (`0 current leaks, 26 baselined`) but cannot provide the
 macOS archive-member mapping. The full GNUstep build remains blocked by the
-same XCTest object-pointer boxing errors above. The current macOS full suite
+same XCTest object-pointer boxing errors above. **Follow-up:** `AppViewIdentityHelper.m`
+now uses Core-owned `DIDResolver` plus Core `ATProtoValidator` rather than PLC-owned
+`DIDPLCResolver`; the fresh macOS checker reports **25 current / 25 baselined**
+entries, and the focused AppView/DID/DASL/email gate passes (70/70).
+
+**M4.2 Chat/Germ runtime ownership extraction:** `ChatRuntime.m` and
+`GermRuntime.m` were process-orchestration implementations compiled into
+`ATProtoServices` despite constructing Transport/XRPC objects. CMake now excludes
+both from Services and explicitly assigns them to Runtime; their headers and
+binary imports remain unchanged. The baseline shrank **25 -> 19**. Fresh
+macOS validation rebuilt `ATProtoServices`, `ATProtoRuntime`, and `AllTests`,
+then passed the link checker at **19 current / 19 baselined**, the source-import
+checker, and the `SyrenaChatCommandTests` (5/5) and `GermCommandTests` (4/4)
+suites. No dedicated runtime test classes exist in the current test registry.
+
+**`ATProtoVideoService` / `ATProtoXRPC` composition extraction:**
+`VideoPDSAuthProvider.m` and `VideoXrpcPack.m` are XRPC composition adapters:
+they call XRPC helpers and are constructed or registered by XRPC, while the
+underlying worker/storage implementations remain VideoService-owned. CMake
+now excludes both implementations from `ATProtoVideoService` and assigns them
+to `ATProtoXRPC`;their public headers and route APIs remain unchanged. This removed the two
+VideoService auth/error boundary entries and the two stale XRPC route-pack
+entries. The baseline ratcheted **19 -> 15**. Fresh macOS
+validation reconfigured and rebuilt `ATProtoXRPC`, `ATProtoVideoService`, and
+`AllTests`; `VideoPDSAuthProviderTests`, `ATProtoVideoXrpcPackTests`,
+`ATProtoVideoXrpcPackValidationTests`, and `ATProtoMediaXrpcPackTests` passed
+**39/39**. The link checker reported **15 current / 15 baselined** leaks,
+the source-import checker passed, and `git diff --check` passed.
+
+**`ATProtoXRPC -> ATProtoVideoWorker` composition seam:**
+`XrpcAppBskyPack.m` previously reached into the VideoService singleton only to
+copy its configured blob provider into the route service bag. The provider is
+already owned by the PDS application through
+`PDSBlobService -> BlobStorage -> id<PDSBlobProvider>`. XRPC now receives that
+protocol-backed provider from `XrpcMethodRegistry`, with an explicit
+nil-safe extraction helper that logs and leaves video uploads fail-closed when
+the service graph is incomplete. The XRPC layer no longer imports or messages
+`ATProtoVideoWorker`;route registration behavior is unchanged. The baseline ratcheted **15 -> 14**.
+Fresh macOS validation rebuilt `ATProtoXRPC`,
+`ATProtoVideoService`, and `AllTests`; the video/XRPC and registry focus passed
+**45/45**, the link checker reported **14 current / 14 baselined** leaks, the
+
+source-import checker passed, and `git diff --check` passed.
+
+**`ATProtoXRPC -> PDSLocalVideoJobStore` composition seam:**
+`XrpcAppBskyPack.m` previously constructed `PDSLocalVideoJobStore` directly
+from the AppView database. `PDSApplication` now owns one protocol-typed
+`VideoJobStore`, shared by the video worker and exposed to XRPC through
+`XrpcMethodRegistry` and `XrpcRoutePackServiceBag`. The route pack no longer
+imports or constructs the VideoService concrete store. A registry/application
+characterization test verifies the shared protocol-backed store contract. The
+baseline ratcheted **14 -> 13**. Fresh macOS validation rebuilt
+`ATProtoXRPC`, `ATProtoVideoService`, and `AllTests`; the video/XRPC and
+registry focus passed **46/46**, the link checker reported **13 current / 13
+baselined** leaks, the source-import checker passed, and `git diff --check`
+passed.
+
+**`ATProtoXRPC` registration-path Runtime seam:**
+The shared route-registration path no longer constructs Runtime-owned policy
+objects or falls back to the legacy controller for repository availability.
+`PDSApplication` owns one `AuthVerifier`, built with the existing
+protocol-backed `PDSAccountPolicy`, nonce store, replay checker, and either the
+configured public key or the existing `PDSKeyManager`. `XrpcMethodRegistry`
+passes that verifier through `XrpcRoutePackServiceBag`; `XrpcAuthHelper` uses
+that injected instance when the verifier switch is enabled. Repository
+availability/takedown helpers now consume the route-service bag rather than
+calling `PDSController sharedController`; the import route also dropped its
+stale controller import. The legacy controller overload remains as a
+compatibility API, but its dependencies are sourced from its backing
+application. The boundary baseline ratcheted **13 -> 11**.
+
+Fresh macOS validation rebuilt `ATProtoCore`, `ATProtoXRPC`, and `AllTests`;
+the focused registration/auth suites passed **29/29**, the link checker
+reported **11 current / 11 baselined** leaks, the source-import checker passed,
+and `git diff --check` passed. AuthVerifier's local verification path now also
+accepts the existing key-manager-backed JWT configuration without exposing
+Runtime concrete types in XRPC.
+
+The current macOS full suite
 was stopped after the unrelated
 `AppViewIngestEngineTests/testConcurrencySafety` timeout and incomplete-event
 assertions; do not treat it as green. `deno task check` and `deno task lint`
@@ -502,6 +592,82 @@ passed; `deno task test` could not be launched because the execution approval
 quota was exhausted. Git staging/commit is pending the same external approval
 limit; do not push before both it and the non-green full-suite gates are
 resolved.
+
+**`PDSInstallerCommand` Runtime ownership extraction:**
+`Admin/PDSInstallerCommand.m` is CLI composition rather than a Services
+implementation: it subclasses the Runtime-owned `PDSBaseCommand` and registers
+through the Runtime-owned `PDSCLIDispatcher`, while its filesystem and launchctl
+work is process orchestration. CMake now excludes it from `ATProtoServices` and
+adds it explicitly to `ATProtoRuntime`; the public header and dispatcher
+registration API are unchanged. The boundary baseline ratcheted **11 -> 9**.
+Fresh macOS validation rebuilt `ATProtoServices`, `ATProtoRuntime`, and
+`AllTests`; the link checker reported **9 current / 9 baselined** leaks, the
+source-import checker passed, and the CLI registration focus passed **38/38**
+with zero failures or skips. `git diff --check` passed.
+
+**`PDSAccountService` PLC operation-provider extraction:**
+`PDSAccountService.m` previously sent messages to PLC-owned
+`PLCOperation` and `PLCRotationKeyManager` classes while compiling into
+`ATProtoServices`. The account service now consumes the Core
+`PDSPLCAccountOperationProvider` protocol. The PLC module owns
+`PDSPLCAccountOperationProvider.m`, including rotation-key loading, operation
+signing, and signed-operation DID derivation; `PDSApplication` injects that
+implementation at Runtime composition. Registration signs one operation and
+derives the DID from that exact signed dictionary, avoiding a second signature
+that could produce a different content-addressed DID. Missing provider or
+rotation key fails closed with a 503 error. Focused account-service tests cover
+injection, call counts, and missing-provider behavior. The baseline ratcheted
+**8 -> 6**.
+
+Fresh validation should rebuild `ATProtoPLC`, `ATProtoServices`,
+`ATProtoRuntime`, and `AllTests`; the boundary checker must report **6 current /
+6 baselined** leaks for this historical PLC slice, and the account-service focus
+must include the injected provider tests.
+
+**`GZHTTPClient` Services dependency-inversion extraction:**
+Services callers previously imported the Transport-owned `ATProtoSafeHTTPClient`
+and `ATProtoSafeHTTPClientOptions` classes directly. They now consume the
+Core-owned `GZHTTPClient` protocol and `GZHTTPClientOptions` value type through
+`GZHTTPClientRegistry`. `ATProtoSafeHTTPClient` conforms to that protocol, so
+SSRF validation, DNS pinning, redirect validation, and response-size limits
+remain in the Transport implementation. The registry also returns a
+fail-closed unavailable client when no implementation is registered, avoiding
+nil messaging in binaries that omit Transport. The private-IP regression test
+now asserts the SSRF error path, and focused Core-seam tests cover options
+copy/defaults and the unavailable registry behavior. The HTTP pair was removed
+from the live boundary baseline; the checker reports **4 current / 4 baselined**
+violations at that point, with the remaining single Services entry being
+`RateLimiter` (closed by the subsequent diagnostics composition extraction).
+
+**`RateLimiter` Services leak closed via diagnostics composition extraction:**
+The last remaining `ATProtoServices` boundary violation traced to
+`PDSRateLimitAdminHandler.m` and `PDSSystemDiagnosticsHandler.m`, two
+admin/diagnostics handlers that route across Services and Transport and
+construct Transport's `RateLimiter`. Both compile into `ATProtoServices`'s
+glob only because of their directory location, not because they are service
+implementations. CMake now excludes both from `ATProtoServices` and assigns
+them explicitly to `ATProtoRuntime` (the module that composes the service
+graph at boot), matching the `ChatRuntime`/`GermRuntime`/`PDSInstallerCommand`
+precedent; their headers and route-registration APIs are unchanged. The
+boundary baseline ratcheted **4 -> 3**, and `ATProtoServices` now has **zero**
+baselined violations. Fresh macOS validation rebuilt `ATProtoServices`,
+`ATProtoRuntime`, and `AllTests`; the link checker reported **3 current / 3
+baselined** leaks, the source-import checker passed, and `git diff --check`
+passed.
+
+**`PDSAdminAuth` controller protocol extraction:**
+`PDSAdminAuth.m` previously imported and messaged the Runtime-owned
+`PDSController`, creating a Services -> Runtime leak. The authentication
+implementation now depends on the minimal `PDSAdminAuthController` protocol
+(JWT minter plus service-database access), while `PDSController` conforms to
+that protocol at the application boundary. The existing application and CLI
+composition paths continue to inject the legacy controller; an absent
+injection now fails closed rather than silently consulting the singleton.
+The baseline ratcheted **9 -> 8**. Fresh macOS validation rebuilt
+`ATProtoCore`, `ATProtoServices`, `ATProtoRuntime`, and `AllTests`; the link
+checker reported **8 current / 8 baselined** leaks, the source-import checker
+passed, and the admin-auth/CLI focus passed **70/70** with zero failures or
+skips. `git diff --check` passed.
 
 M0 (third-party consumption goal) is now answered yes under the bounded package
 contract in the verified-status section above. M5/M6 remain gated on the real
@@ -697,7 +863,7 @@ Rollback: single revert; the change is file moves plus mechanical import edits.
 
 ## M4. Resolve the remaining inversions
 
-Status: **in progress; 26 baselined violations remain.** The earlier M4 work
+Status: **in progress; 3 baselined violations remain.** The earlier M4 work
 resolved the initially enumerated clusters, but the follow-on baseline was
 incorrectly treated as out of scope. It is not: M4's purpose and acceptance
 gate are both zero undeclared dependencies.
@@ -718,10 +884,15 @@ Do not silence a violation by adding a `PUBLIC` edge until the resulting graph
 has been checked for cycles and the referenced API is intentionally part of the
 lower module's public contract.
 
-#### Evidence map (2026-07-30)
+#### Evidence map (2026-07-30, historical)
 
-After a fresh `cmake -S . -B build` and rebuild of all ten package archives,
-the link-time checker reports the expected 30 leaks in seven modules. `nm -u -A`
+The following table records the original residual emitters before the
+subsequent M4.2 slices. Resolved entries are retained as historical evidence;
+the live baseline is `docs/module-boundary-baseline.txt`.
+
+The historical evidence below predates the later M4.2 slices. At that point,
+a fresh `cmake -S . -B build` and rebuild of all ten package archives reported
+30 leaks in seven modules. `nm -u -A`
 identified the emitting members below; the source path is relative to
 `Garazyk/Sources`. The classifications are proposed next steps, not baseline
 exceptions.
@@ -764,26 +935,37 @@ exceptions.
 Land one independently reviewable cluster per commit, shrinking the existing
 baseline each time:
 
-1. **Services composition leaks (15).** Separate runtime/composition objects
+1. **Services composition leaks (13).** Separate runtime/composition objects
    (`ChatRuntime`, `GermRuntime`, `PDSInstallerCommand`, and admin/runtime
    adapters) from service implementations. Replace direct
-   `ATProtoSafeHTTPClient`, PLC, Transport, Runtime, and XRPC construction with
-   lower-layer protocols or move the composition object to the module that
+   `ATProtoSafeHTTPClient`, PLC, Transport, Runtime, and XRPC construction with   lower-layer protocols or move the composition object to the module that
    already owns both sides.
-2. **Video/XRPC integration cycle (9 in the current baseline: 3 in
-   ATProtoMediaCore, 2 in ATProtoVideoService, 4 in ATProtoXRPC referencing
-   ATProtoVideoService).** Keep media abstractions independent of XRPC. Move
-   route-pack registration and concrete video-worker/auth-provider composition
+
+2. **Video/XRPC integration cycle (3 in the current baseline: 3 in
+   ATProtoMediaCore, 0 in ATProtoVideoService, and no remaining
+   ATProtoXRPC references to ATProtoVideoService).** The route-pack implementations
+   `VideoPDSAuthProvider.m` and `VideoXrpcPack.m` are XRPC composition
+   adapters and now compile into `ATProtoXRPC`. The worker singleton seam is
+   also closed: the registry receives the blob provider through
+   `PDSBlobService` rather than `ATProtoVideoWorker`. The job-store seam is
+   likewise closed: the registry receives the protocol-backed store from
+   `PDSApplication` rather than constructing `PDSLocalVideoJobStore`. The
+   shared registration path remains for later focused slices. Keep media
+   abstractions independent of XRPC. Move
+
+   route-pack registration and any remaining concrete video composition
    to Runtime, or introduce one narrowly scoped integration target if Runtime
    ownership would be false. `ATProtoMediaCore` must not depend on XRPC.
 
    **Scoping investigation (2026-08-03, no code changed):** this is deeper
    than a single composition-object move. The video construction lives in
    `[XrpcAppBskyPack registerWithDispatcher:services:]`
-   (`Network/XrpcAppBskyPack.m`, compiled into ATProtoXRPC), which directly
-   constructs `PDSLocalVideoJobStore`/`VideoPDSAuthProvider` and calls
-   `[ATProtoVideoXrpcPack registerWithDispatcher:services:]` (all three types
-   owned by ATProtoVideoService). That method is reached from
+   (`Network/XrpcAppBskyPack.m`, compiled into ATProtoXRPC), which consumes
+   the protocol-backed job store and constructs `VideoPDSAuthProvider`, then
+   calls
+   `[ATProtoVideoXrpcPack registerWithDispatcher:services:]` (the route-pack
+   implementation is XRPC-owned; the remaining concrete worker/job-store
+   implementations are VideoService-owned). That method is reached from
    `XrpcMethodRegistry` (also ATProtoXRPC), which in turn is called from two
    places: `App/server_main.m` (ATProtoRuntime, the expected caller) **and**
    `Network/ATProtoHttpXrpcRoutePack.m` — which, despite living under

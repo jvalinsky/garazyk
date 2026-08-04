@@ -15,7 +15,7 @@
 
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/HttpRetryPolicy.h"
 #import "Core/DID.h"
@@ -52,7 +52,7 @@ static const NSUInteger kMaximumFailureCacheEntries = 1024;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *resolutionCacheTimestamps;
 - (void)pruneExpiredFailureCacheEntriesLockedAtDate:(NSDate *)now;
 - (void)executeSafeHTTPSRequest:(NSURLRequest *)request
-                        options:(ATProtoSafeHTTPClientOptions *)options
+                        options:(GZHTTPClientOptions *)options
                         attempt:(NSInteger)attempt
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion;
 @end
@@ -289,7 +289,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
 
     BOOL envAllowPrivate = [[[[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_HOSTS"] lowercaseString] isEqualToString:@"true"] ||
                             [[[[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_HOSTS"] lowercaseString] isEqualToString:@"1"];
-    ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
+    GZHTTPClientOptions *safeOptions = [[GZHTTPClientOptions alloc] init];
     safeOptions.timeout = 10.0;
     safeOptions.maxResponseBytes = 1024; // DID responses are tiny
     safeOptions.allowHTTP = envAllowPrivate;
@@ -301,9 +301,9 @@ static BOOL PDSHandleResolverRunningTests(void) {
                            attempt:0
                         completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
         // Map ATProtoSafeHTTPClient SSRF errors to HandleErrorDomain
-        if (error && [error.domain isEqualToString:ATProtoSafeHTTPClientErrorDomain]) {
-            if (error.code == ATProtoSafeHTTPClientErrorSSRFBlocked ||
-                error.code == ATProtoSafeHTTPClientErrorRedirectBlocked) {
+        if (error && [error.domain isEqualToString:GZHTTPClientErrorDomain]) {
+            if (error.code == GZHTTPClientErrorSSRFBlocked ||
+                error.code == GZHTTPClientErrorRedirectBlocked) {
                 NSError *ssrfError = [NSError errorWithDomain:HandleErrorDomain
                                                         code:HandleErrorSSRFAttempt
                                                     userInfo:@{
@@ -313,7 +313,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
                 completion(nil, ssrfError);
                 return;
             }
-            if (error.code == ATProtoSafeHTTPClientErrorUnsupportedScheme) {
+            if (error.code == GZHTTPClientErrorUnsupportedScheme) {
                 NSError *schemeError = [NSError errorWithDomain:HandleErrorDomain
                                                            code:HandleErrorInvalidFormat
                                                        userInfo:@{
@@ -391,10 +391,10 @@ static BOOL PDSHandleResolverRunningTests(void) {
 }
 
 - (void)executeSafeHTTPSRequest:(NSURLRequest *)request
-                        options:(ATProtoSafeHTTPClientOptions *)options
+                        options:(GZHTTPClientOptions *)options
                         attempt:(NSInteger)attempt
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
-    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+    [[GZHTTPClientRegistry sharedClient] performDataTaskWithRequest:request
                                                    options:options
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         NSInteger statusCode = response ? response.statusCode : 0;

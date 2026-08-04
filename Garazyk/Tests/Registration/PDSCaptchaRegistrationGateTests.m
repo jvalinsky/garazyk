@@ -92,7 +92,7 @@
         // The gate's semaphore wait will time out.
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
                                       (int64_t)(mock.artificialDelay * NSEC_PER_SEC)),
-                        dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+                        dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             if (mock.error) {
                 completion(nil, nil, mock.error);
             } else {

@@ -16,9 +16,9 @@
 #import "Auth/PDSNonceManager.h"
 #import "Auth/PDSReplayCache.h"
 #import "Auth/Crypto/CryptoUtils.h"
-#import "Auth/PDS/PDSAuth.h"
 #import "Auth/Verifier/AuthVerifier.h"
 #import "App/ATProtoServiceConfiguration.h"
+#import "App/PDSApplication.h"
 #import "App/PDSController.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Admin/PDSAdminController.h"
@@ -47,44 +47,6 @@ static BOOL XrpcAuthUseAuthVerifier(void) {
         checked = YES;
     }
     return useVerifier;
-}
-
-/*!
- @abstract Constructs and returns the shared AuthVerifier instance.
- @discussion The verifier is lazily initialized on first use. It creates
-    a PDSAccountPolicy with the admin controller from the shared PDSController.
-    This is thread-safe via dispatch_once.
- */
-static AuthVerifier *XrpcAuthSharedVerifier(void) {
-    static AuthVerifier *verifier = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        PDSController *controller = [PDSController sharedController];
-        if (!controller || !controller.jwtMinter || !controller.adminController) {
-            GZ_LOG_CORE_ERROR(@"AuthVerifier: PDSController not fully initialized — cannot construct verifier");
-            return;
-        }
-
-        PDSDatabase *db = [controller serviceDatabaseWithError:nil];
-        if (!db) {
-            GZ_LOG_CORE_ERROR(@"AuthVerifier: cannot obtain service database — cannot construct verifier");
-            return;
-        }
-        PDSAccountPolicy *policy = [[PDSAccountPolicy alloc] initWithDatabase:db
-                                                              adminController:controller.adminController];
-
-        verifier = [[AuthVerifier alloc] initWithKeyResolver:nil
-                                               accountPolicy:(id<AccountPolicy>)policy
-                                                  nonceStore:[PDSNonceManager sharedManager]];
-        [verifier setLocalPublicKey:controller.jwtMinter.publicKey];
-        [verifier setLocalIssuer:controller.jwtMinter.issuer ?: @""];
-        verifier.expectedAudience = controller.jwtMinter.issuer ?: @"";
-        verifier.requireDPoP = [ATProtoServiceConfiguration sharedConfiguration].requireDPoPNonce;
-        verifier.replayChecker = [PDSReplayCache sharedCache];
-        GZ_LOG_AUTH_INFO(@"AuthVerifier cluster constructed (issuer=%@)",
-                          controller.jwtMinter.issuer ?: @"");
-    });
-    return verifier;
 }
 
 static BOOL XrpcAuthEnvBool(NSString *value) {
@@ -453,11 +415,13 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                             controller:(PDSController *)controller
                                request:(HttpRequest *)request
                               response:(HttpResponse *)response {
-    // When the AuthVerifier switch is on, delegate to the new cluster.
+    // When the AuthVerifier switch is on, delegate to the application-owned verifier.
     if (XrpcAuthUseAuthVerifier()) {
-        AuthVerifier *verifier = XrpcAuthSharedVerifier();
+        AuthVerifier *verifier = controller.application.authVerifier;
         if (!verifier) {
-            GZ_LOG_CORE_ERROR(@"AuthVerifier requested but not available — falling back to legacy path");
+            GZ_LOG_CORE_ERROR(@"AuthVerifier requested but not available — rejecting request");
+            [self setAuthRequiredResponse:response];
+            return nil;
         } else {
             NSError *verifierError = nil;
             AuthVerifierPrincipal *principal = [verifier verifyRequest:request
@@ -492,9 +456,14 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                               services:(id<XrpcRoutePackServices>)services
                                request:(HttpRequest *)request
                               response:(nullable HttpResponse *)response {
-    // When the AuthVerifier switch is on, delegate to the new cluster.
+    // When the AuthVerifier switch is on, delegate to the registry-injected verifier.
     if (XrpcAuthUseAuthVerifier()) {
-        AuthVerifier *verifier = XrpcAuthSharedVerifier();
+        AuthVerifier *verifier = services.authVerifier;
+        if (!verifier) {
+            GZ_LOG_CORE_ERROR(@"AuthVerifier requested but route services did not provide one — rejecting request");
+            [self setAuthRequiredResponse:response];
+            return nil;
+        }
         if (verifier) {
             NSError *verifierError = nil;
             AuthVerifierPrincipal *principal = [verifier verifyRequest:request

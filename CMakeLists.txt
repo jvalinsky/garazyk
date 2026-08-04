@@ -440,6 +440,21 @@ list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLKeyManager
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils\\.m$")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/AppView/Server/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Services/PDS(AdminService|PhoneVerificationProvider)\\.m$")
+# PDSInstallerCommand is CLI composition and uses Runtime-owned
+# PDSBaseCommand/PDSCLIDispatcher. Keep the implementation with the CLI
+# runtime rather than making Services depend upward on Runtime.
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Admin/PDSInstallerCommand\\.m$")
+# ChatRuntime and GermRuntime are process orchestration, not service
+# implementations. They construct HttpServer and XRPC route packs, so compile
+# them into Runtime where those dependencies are already part of the closure.
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Chat/Server/ChatRuntime\\.m$")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Germ/Server/Runtime/GermRuntime\\.m$")
+# The diagnostics dispatcher and its rate-limit admin adapter are Runtime
+# composition: they route across Services and Transport, while Runtime already
+# declares both dependencies. Keeping them in Services makes the admin adapter
+# a Services -> Transport leak through RateLimiter.
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Admin/Diagnostics/PDSSystemDiagnosticsHandler\\.m$")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Admin/Diagnostics/PDSRateLimitAdminHandler\\.m$")
 list(APPEND ATPROTO_SERVICES_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Security/Space/PDSSpaceAppAttestationVerifier.m")
 # ATProtoHandleValidator is a pure Foundation-only validator (no network,
 # storage, or keychain dependency) despite living in Identity/ alongside
@@ -492,6 +507,8 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpParsing\\.m$
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/Xrpc*.m"
   "Garazyk/Sources/Network/Xrpc*.c"
+  "Garazyk/Sources/Video/VideoPDSAuthProvider.m"
+  "Garazyk/Sources/Video/VideoXrpcPack.m"
   "Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m"
   "Garazyk/Sources/Network/RelayXrpcRoutePack.m"
   "Garazyk/Sources/Network/AppViewXRpcRoutePack.m"
@@ -541,6 +558,11 @@ file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
   "Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.m"
   "Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m"
   "Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.m"
+  "Garazyk/Sources/Chat/Server/ChatRuntime.m"
+  "Garazyk/Sources/Germ/Server/Runtime/GermRuntime.m"
+  "Garazyk/Sources/Admin/PDSInstallerCommand.m"
+  "Garazyk/Sources/Admin/Diagnostics/PDSSystemDiagnosticsHandler.m"
+  "Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m"
 )
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/ATProtoServiceConfiguration\\.m$")
@@ -593,6 +615,12 @@ file(GLOB_RECURSE ATPROTO_VIDEO_SOURCES
   "Garazyk/Sources/Video/*.m"
   "Garazyk/Sources/Video/*.c"
 )
+# These are XRPC composition adapters: they register HTTP routes, consume
+# XRPC error helpers, and are constructed by XrpcAppBskyPack. Keep the
+# underlying video worker/storage implementations independent of XRPC while
+# retaining the public headers in the Video namespace.
+list(FILTER ATPROTO_VIDEO_SOURCES EXCLUDE REGEX ".*/Video/VideoPDSAuthProvider\\.m$")
+list(FILTER ATPROTO_VIDEO_SOURCES EXCLUDE REGEX ".*/Video/VideoXrpcPack\\.m$")
 pds_filter_common_sources(ATPROTO_VIDEO_SOURCES)
 
 # MediaCore framework — reusable AT Protocol media CDN abstractions
@@ -1798,7 +1826,27 @@ if(BUILD_TESTS)
     # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/XrpcIntegrationTests.m")
     
     # Exclude WebSocket/Sync tests (WebSocketServer not implemented)
+    # These suites exercise Apple AVFoundation/CoreGraphics APIs that have no
+    # GNUstep implementation. Keep the native media suites in macOS builds;
+    # Linux retains the cross-platform video worker coverage.
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Media/PDSVideoThumbnailGeneratorTests\\.m$")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Media/PDSVideoTranscoderIntegrationTests\\.m$")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Media/PDSVideoThumbnailGeneratorIntegrationTests\\.m$")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Media/PDSVideoWorkerIntegrationTests\\.m$")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Media/PDSVideoTranscoderTests\\.m$")
     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/SubscribeReposHandlerTests.m")
+    # These suites use Apple CoreFoundation sockets and sockaddr_in.sin_len.
+    # GNUstep keeps the portable HTTP protocol/server suites; retain native
+    # raw-socket integration coverage in macOS builds.
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpServerBuilderTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/PLC/PLCReplicaServerTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/PLC/PLCServerTests.m")
+    # SSLPinningManager and its SecTrust test hooks are Apple Security-only.
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningTests.m")
+    # Security.framework-backed key-manager suites are Apple-only.
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleKeyManagerTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/KeyManagerSecurityTests.m")
+    list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/CharacterizationTests/KeyManagerCharacterizationTests.m")
     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketConnectionTests.m")
 
     # Exclude KeyManager tests that might rely on specific Keychain behaviors not yet mocked
@@ -1828,23 +1876,25 @@ if(BUILD_TESTS)
   )
   
   target_link_libraries(AllTests PRIVATE
-    ATProtoRuntime
-    ATProtoServices
-    ATProtoTransport
-    ATProtoXRPC
-    ATProtoSync
-    ATProtoStorage
-    ATProtoCore
-    ATProtoPLC
-    ATProtoMikrus
-    ATProtoBeskid
-    ATProtoAppViewServer
-    ATProtoMediaCore
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
   )
   
   if(APPLE)
+    target_link_libraries(AllTests PRIVATE
+      ATProtoRuntime
+      ATProtoServices
+      ATProtoTransport
+      ATProtoXRPC
+      ATProtoSync
+      ATProtoStorage
+      ATProtoCore
+      ATProtoPLC
+      ATProtoMikrus
+      ATProtoBeskid
+      ATProtoAppViewServer
+      ATProtoMediaCore
+    )
     target_link_libraries(AllTests PRIVATE "-framework XCTest")
     target_compile_options(AllTests PRIVATE "-F${XCTEST_SEARCH_PATHS}")
     target_link_options(AllTests PRIVATE 

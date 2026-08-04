@@ -378,7 +378,7 @@
                                                                    ffprobePath:nil];
     NSURL *fakeURL = [NSURL fileURLWithPath:@"/tmp/nonexistent_video_test.mp4"];
     CGSize dims = [transcoder probeDimensionsForVideoAtURL:fakeURL];
-    XCTAssertTrue(CGSizeEqualToSize(dims, CGSizeZero) || (dims.width == 0 && dims.height == 0));
+    XCTAssertTrue(dims.width == 0 && dims.height == 0);
 }
 
 - (void)testProbeFramerateReturnsZeroForMissingFile {

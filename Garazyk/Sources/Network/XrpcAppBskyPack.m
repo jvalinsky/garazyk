@@ -32,8 +32,6 @@
 #import "Network/XrpcAppBskyProxyMethodPack.h"
 #import "Network/XrpcAppBskyUnspeccedPack.h"
 #import "Video/VideoXrpcPack.h"
-#import "Video/VideoWorker.h"
-#import "Video/PDSLocalVideoJobStore.h"
 #import "Video/VideoLocalBlobUploader.h"
 #import "Video/VideoPDSAuthProvider.h"
 #import "Blob/PDSBlobProvider.h"
@@ -218,16 +216,19 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
   NSString *videoMode = [[[NSProcessInfo processInfo] environment] objectForKey:@"PDS_VIDEO_MODE"];
   BOOL videoInternal = (videoMode == nil || [videoMode isEqualToString:@"internal"]);
   if (videoInternal) {
-      id<VideoJobStore> jobStore = [[PDSLocalVideoJobStore alloc] initWithDatabase:appViewDatabase];
-      id<VideoAuthProvider> authProvider = [[VideoPDSAuthProvider alloc] initWithJwtMinter:services.jwtMinter
-                                                                               adminController:services.adminController];
-      if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
-        XrpcRoutePackServiceBag *bag = (XrpcRoutePackServiceBag *)services;
-        bag.videoJobStore = jobStore;
-        bag.videoAuthProvider = authProvider;
-        bag.blobProvider = [ATProtoVideoWorker sharedWorker].blobProvider;
+      id<VideoJobStore> jobStore = services.videoJobStore;
+      if (!jobStore) {
+        GZ_LOG_WARN(@"Video XRPC routes not registered: no video job store is configured");
+      } else {
+        id<VideoAuthProvider> authProvider = [[VideoPDSAuthProvider alloc] initWithJwtMinter:services.jwtMinter
+                                                                                 adminController:services.adminController];
+        if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
+          XrpcRoutePackServiceBag *bag = (XrpcRoutePackServiceBag *)services;
+          bag.videoJobStore = jobStore;
+          bag.videoAuthProvider = authProvider;
+        }
+        [ATProtoVideoXrpcPack registerWithDispatcher:dispatcher services:services];
       }
-      [ATProtoVideoXrpcPack registerWithDispatcher:dispatcher services:services];
   }
   
   // Create and populate search index service

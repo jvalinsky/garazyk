@@ -338,6 +338,47 @@
     XCTAssertTrue([cookie containsString:@"Secure"], @"Should have Secure flag when secure:YES");
 }
 
+#pragma mark - GZHTTPClient Core seam
+
+- (void)testGZHTTPClientOptionsDefaultsAndCopy {
+    GZHTTPClientOptions *options = [GZHTTPClientOptions defaultOptions];
+    XCTAssertEqualWithAccuracy(options.timeout, 10.0, 0.001);
+    XCTAssertEqual(options.maxResponseBytes, (NSUInteger)(1024 * 1024));
+    XCTAssertFalse(options.allowHTTP);
+    XCTAssertFalse(options.allowPrivateHosts);
+    XCTAssertTrue(options.followRedirects);
+
+    options.timeout = 3.5;
+    options.maxResponseBytes = 4096;
+    options.allowHTTP = YES;
+    options.allowPrivateHosts = YES;
+    options.followRedirects = NO;
+    GZHTTPClientOptions *copy = [options copy];
+    XCTAssertNotEqual(copy, options);
+    XCTAssertEqualWithAccuracy(copy.timeout, 3.5, 0.001);
+    XCTAssertEqual(copy.maxResponseBytes, (NSUInteger)4096);
+    XCTAssertTrue(copy.allowHTTP);
+    XCTAssertTrue(copy.allowPrivateHosts);
+    XCTAssertFalse(copy.followRedirects);
+}
+
+- (void)testGZHTTPClientRegistryFailsClosedWithoutTransport {
+    id<GZHTTPClient> savedClient = [GZHTTPClientRegistry sharedClient];
+    [GZHTTPClientRegistry setSharedClient:nil];
+
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://example.com"]];
+    NSError *error = nil;
+    NSData *data = [[GZHTTPClientRegistry sharedClient] sendSynchronousRequest:request
+                                                                        options:nil
+                                                                       response:nil
+                                                                          error:&error];
+    XCTAssertNil(data);
+    XCTAssertEqualObjects(error.domain, GZHTTPClientErrorDomain);
+    XCTAssertEqual(error.code, (NSInteger)GZHTTPClientErrorUnavailable);
+
+    [GZHTTPClientRegistry setSharedClient:savedClient];
+}
+
 #pragma mark - ATProtoSafeHTTPClient Integration
 
 - (void)testSafeHTTPClientRejectsPrivateIPs {
@@ -346,7 +387,7 @@
     options.allowPrivateHosts = NO;
     options.timeout = 2.0;
 
-    NSURL *privateURL = [NSURL URLWithString:@"http://127.0.0.1:9999/test"];
+    NSURL *privateURL = [NSURL URLWithString:@"https://127.0.0.1:9999/test"];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:privateURL];
 
     NSHTTPURLResponse *response = nil;
@@ -356,6 +397,8 @@
                                                                     response:&response
                                                                        error:&error];
     XCTAssertNotNil(error, @"Should error for private IP");
+    XCTAssertEqualObjects(error.domain, ATProtoSafeHTTPClientErrorDomain);
+    XCTAssertEqual(error.code, (NSInteger)ATProtoSafeHTTPClientErrorSSRFBlocked);
     XCTAssertNil(data, @"Should not return data for private IP");
 }
 

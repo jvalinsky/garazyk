@@ -1,31 +1,26 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
+#import "Core/GZHTTPClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-extern NSErrorDomain const ATProtoSafeHTTPClientErrorDomain;
+#define ATProtoSafeHTTPClientErrorDomain GZHTTPClientErrorDomain
 
 /**
  * @abstract Error codes produced by SSRF-safe HTTP validation and fetching.
  */
-typedef NS_ENUM(NSInteger, ATProtoSafeHTTPClientErrorCode) {
-    /** The request URL is missing or malformed. */
-    ATProtoSafeHTTPClientErrorInvalidURL = 1,
-    /** The URL scheme is not permitted by the options. */
-    ATProtoSafeHTTPClientErrorUnsupportedScheme = 2,
-    /** The URL resolved to a blocked host or address range. */
-    ATProtoSafeHTTPClientErrorSSRFBlocked = 3,
-    /** The response body exceeded the configured size limit. */
-    ATProtoSafeHTTPClientErrorResponseTooLarge = 4,
-    /** A redirect target was blocked by policy. */
-    ATProtoSafeHTTPClientErrorRedirectBlocked = 5,
-};
+typedef GZHTTPClientErrorCode ATProtoSafeHTTPClientErrorCode;
+#define ATProtoSafeHTTPClientErrorInvalidURL GZHTTPClientErrorInvalidURL
+#define ATProtoSafeHTTPClientErrorUnsupportedScheme GZHTTPClientErrorUnsupportedScheme
+#define ATProtoSafeHTTPClientErrorSSRFBlocked GZHTTPClientErrorSSRFBlocked
+#define ATProtoSafeHTTPClientErrorResponseTooLarge GZHTTPClientErrorResponseTooLarge
+#define ATProtoSafeHTTPClientErrorRedirectBlocked GZHTTPClientErrorRedirectBlocked
 
 /**
  * @abstract Policy options for outbound HTTP requests that may target user-supplied URLs.
  */
-@interface ATProtoSafeHTTPClientOptions : NSObject <NSCopying>
+@interface ATProtoSafeHTTPClientOptions : GZHTTPClientOptions
 
 /** Request timeout in seconds. */
 @property (nonatomic, assign) NSTimeInterval timeout;

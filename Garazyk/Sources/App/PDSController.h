@@ -17,6 +17,7 @@
  */
 
 #import "Compat/PDSTypes.h"
+#import "Admin/PDSAdminAuthController.h"
 #import "Core/ATProtoError.h"
 #import "Services/PDS/PDSRecordService.h"
 #import <Foundation/Foundation.h>
@@ -40,6 +41,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Defines the PDSAccountService protocol contract.
  */
 @protocol PDSAccountService;
+@protocol VideoJobStore;
 @class PDSBlobService;
 @class PDSRepositoryService;
 @class PDSRelayService;
@@ -66,7 +68,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Declares the PDSController public API.
  */
-@interface PDSController : NSObject
+@interface PDSController : NSObject <PDSAdminAuthController>
 
 #pragma mark - Properties
 
@@ -96,6 +98,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Blob management service. */
 @property(nonatomic, strong, readonly) PDSBlobService *blobService;
+
+/*! Protocol-backed video job store shared with XRPC and the worker. */
+@property(nonatomic, strong, readonly, nullable) id<VideoJobStore> videoJobStore;
 
 /*! Repository management service. */
 @property(nonatomic, strong, readonly) PDSRepositoryService *repositoryService;

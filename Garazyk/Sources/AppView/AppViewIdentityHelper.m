@@ -7,7 +7,8 @@
  */
 
 #import "AppView/AppViewIdentityHelper.h"
-#import "PLC/DIDPLCResolver.h"
+#import "Core/DID.h"
+#import "Core/ATProtoValidator.h"
 
 static NSCache<NSString *, NSString *> *s_handleCache = nil;
 static NSString *s_plcURL = @"https://plc.directory";
@@ -42,14 +43,22 @@ static NSTimeInterval s_cacheTTL = 300; // 5 minutes
         // Returns nil (handle not found) without error.
         return nil;
     }
+    NSError *validationError = nil;
+    if (![ATProtoValidator validateDID:did error:&validationError]) {
+        if (error) *error = validationError;
+        return nil;
+    }
 
     NSString *cached = [s_handleCache objectForKey:did];
     if (cached) {
         return cached;
     }
 
-    DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:s_plcURL];
-    resolver.timeout = 3.0; // Short timeout for admin UI responsiveness
+    // Use Core's DID resolver capability rather than constructing the PLC
+    // transport client here. AppView only needs the resolved document; keeping
+    // the concrete network client in PLC avoids an AppView -> PLC module edge.
+    DIDResolver *resolver = [[DIDResolver alloc] initWithRequestTimeout:3.0];
+    resolver.plcURL = s_plcURL;
     
     // Create a semaphore for sync resolution
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);

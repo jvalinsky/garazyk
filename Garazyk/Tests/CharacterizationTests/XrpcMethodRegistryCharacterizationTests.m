@@ -190,6 +190,24 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
     }
 }
 
+- (void)testCharacterization_MissingVideoStoreSkipsOnlyVideoRoutes {
+    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    XrpcRoutePackServiceBag *services =
+        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                  jwtMinter:nil
+                                            adminController:nil
+                                               configuration:nil
+                                                 adminSecret:nil
+                                           serviceDatabases:nil
+                                           userDatabasePool:nil
+                                                 rateLimiter:nil];
+
+    [XrpcAppBskyPack registerAppViewMethodsWithDispatcher:dispatcher services:services];
+
+    XCTAssertFalse([dispatcher hasRegisteredMethod:@"app.bsky.video.getJobStatus"]);
+    XCTAssertTrue([dispatcher hasRegisteredMethod:@"app.bsky.unspecced.getConfig"]);
+}
+
 - (void)testCharacterization_RetainedLabelerRouteIsOwnedByAppBskyPack {
     XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
     XrpcRoutePackServiceBag *services =

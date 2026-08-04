@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
+#import "Admin/PDSAdminAuthController.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -96,9 +97,12 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @brief The controller used for JWT signing and verification.
  *
- * If nil, falls back to [PDSController sharedController].
+ * The application must inject this protocol-backed controller before
+ * authentication or audit logging. Authentication fails closed when it is nil.
+ * The concrete controller conforms to this protocol without making the admin
+ * authentication implementation depend on the Runtime facade.
  */
-@property (nonatomic, strong, nullable) id controller;
+@property (nonatomic, strong, nullable) id<PDSAdminAuthController> controller;
 
 /**
  * @brief Checks if a DID has administrator privileges.

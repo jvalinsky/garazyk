@@ -16,7 +16,6 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
-#import "App/PDSController.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Repository/CAR.h"
 #import "Repository/STAR.h"

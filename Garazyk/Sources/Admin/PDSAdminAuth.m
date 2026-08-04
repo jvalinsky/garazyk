@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Admin/PDSAdminAuth.h"
+#import "Compat/PDSTypes.h"
 #import "Auth/Crypto/JWT.h"
-#import "App/PDSController.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 #import "Database/PDSDatabase.h"
@@ -361,8 +361,8 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
         return NO;
     }
 
-    PDSController *controller = self.controller ?: [PDSController sharedController];
-    if (![controller isKindOfClass:[PDSController class]] || !controller.jwtMinter) {
+    id<PDSAdminAuthController> controller = self.controller;
+    if (!controller || !controller.jwtMinter) {
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:500 userInfo:@{NSLocalizedDescriptionKey: @"Server controller not initialized"}];
         }
@@ -511,8 +511,8 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
         }
     }
 
-    PDSController *controller = self.controller ?: [PDSController sharedController];
-    if (![controller isKindOfClass:[PDSController class]] || !controller.jwtMinter) {
+    id<PDSAdminAuthController> controller = self.controller;
+    if (!controller || !controller.jwtMinter) {
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain
                                          code:500
@@ -661,8 +661,8 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
             subjectType:(NSString *)subjectType
               subjectId:(nullable NSString *)subjectId
                 details:(nullable NSString *)details {
-    PDSController *controller = self.controller ?: [PDSController sharedController];
-    if (![controller isKindOfClass:[PDSController class]]) return;
+    id<PDSAdminAuthController> controller = self.controller;
+    if (!controller) return;
 
     NSError *dbError = nil;
     PDSDatabase *db = [controller serviceDatabaseWithError:&dbError];
