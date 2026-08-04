@@ -495,11 +495,19 @@ for full traceability; mirrored in the
     workstream 01 §S19 row 10 (`Repository/CAR.m` was recorded importer-only;
     its header decoder has now actually migrated to `ATProtoDagCBOR`,
     closing that row for real). A macOS full regression run passes 4,955 tests;
-    GNUstep/Linux UTF-8 and full-suite evidence remain open. Bounded slices for
+    module boundary and recursive-setter gates are clean. Bounded slices for
     Phases 5–11 (RASL, BDASL, MASL, PFP, MUXL, S2PA, Web Tiles) are now recorded
     with their own evidence/gate/rollback notes; their explicit production
     integration remainders remain open. MUXL's complete deterministic MP4
-    muxer remains the largest single item in the workstream.
+    muxer remains the largest single item in the workstream. GNUstep/Linux
+    full-suite evidence remains open; the compile blocker (an XCTest
+    object-pointer-boxing difference in `PDSAdminServiceTests.m` /
+    `PDSBlobAuditHandlerTests.m`) has a fix plus a new permanent UTF-8
+    regression test (`testInvalidUTF8TextStringIsRejected`) sitting
+    **uncommitted** in the working tree as of 2026-08-03 — land those three
+    files before re-attempting the GNUstep build. The GNUstep-side UTF-8
+    behavior itself (`0xC3 0x28` rejection) was independently confirmed
+    against a standalone GNUstep Foundation probe outside the full suite.
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.

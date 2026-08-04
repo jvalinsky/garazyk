@@ -133,7 +133,7 @@ ATProtoCore  ←  ATProtoStorage, ATProtoTransport
              ←  ATProtoServices (→ Storage)
              ←  ATProtoSync (→ Storage, Transport)
              ←  ATProtoXRPC (→ Services, Storage, Transport, Sync)
-             ←  ATProtoPLC (→ Transport)
+             ←  ATProtoPLC (→ Storage, Transport)
              ←  ATProtoRuntime (→ PLC, Services, Transport, XRPC, Sync, VideoService)
              ←  ATProtoMediaCore → ATProtoVideoService
 ```
