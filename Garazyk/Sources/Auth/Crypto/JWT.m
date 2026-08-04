@@ -6,7 +6,7 @@
  @abstract JWT (JSON Web Token) implementation for ATProto authentication.
 
  @discussion This file provides concrete implementations for JWT token parsing,
- encoding, verification, and minting. It includes JWTHeader, JWTPayload, JWT,
+ encoding, verification, and minting. It includes ATProtoJWTHeader, JWTPayload, JWT,
  JWTVerifier, and JWTMinter classes.
 
  @copyright Copyright (c) 2024-2026 Jack Valinsky
@@ -34,10 +34,10 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     return set;
 }
 
-@implementation JWTHeader
+@implementation ATProtoJWTHeader
 
 + (nullable instancetype)headerFromDictionary:(NSDictionary *)dictionary error:(NSError **)error {
-    JWTHeader *header = [[JWTHeader alloc] init];
+    ATProtoJWTHeader *header = [[ATProtoJWTHeader alloc] init];
     BOOL typeMismatch = NO;
     header.alg = AuthTypedValue(dictionary, @"alg", [NSString class], &typeMismatch);
     header.typ = AuthTypedValue(dictionary, @"typ", [NSString class], &typeMismatch);
@@ -182,7 +182,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 @end
 
 @interface JWT ()
-@property (nonatomic, strong) JWTHeader *header;
+@property (nonatomic, strong) ATProtoJWTHeader *header;
 @property (nonatomic, strong) JWTPayload *payload;
 @property (nonatomic, copy) NSString *rawHeader;
 @property (nonatomic, copy) NSString *rawPayload;
@@ -233,7 +233,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         return nil;
     }
 
-    JWTHeader *header = [JWTHeader headerFromDictionary:headerDict error:error];
+    ATProtoJWTHeader *header = [ATProtoJWTHeader headerFromDictionary:headerDict error:error];
     if (!header) return nil;
 
     JWTPayload *payload = [JWTPayload payloadFromDictionary:payloadDict error:error];
@@ -250,7 +250,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     return jwt;
 }
 
-+ (nullable instancetype)jwtWithHeader:(JWTHeader *)header
++ (nullable instancetype)jwtWithHeader:(ATProtoJWTHeader *)header
                                payload:(JWTPayload *)payload
                              signature:(NSString *)signature
                                   error:(NSError **)error {
@@ -741,7 +741,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         payload.cnf = @{@"jkt": jkt};
     }
 
-    JWTHeader *header = [[JWTHeader alloc] init];
+    ATProtoJWTHeader *header = [[ATProtoJWTHeader alloc] init];
     header.alg = self.signingAlgorithm;
     header.typ = @"at+jwt";
 
@@ -797,7 +797,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     payload.exp = [NSDate dateWithTimeIntervalSinceNow:86400 * 30];
     payload.jti = [[NSUUID UUID] UUIDString];
 
-    JWTHeader *header = [[JWTHeader alloc] init];
+    ATProtoJWTHeader *header = [[ATProtoJWTHeader alloc] init];
     header.alg = self.signingAlgorithm;
     header.typ = @"refresh+jwt";
 

@@ -47,11 +47,11 @@ extern NSString * const AuthCryptoDPoPErrorDomain;
 @end
 
 /*!
- @class AuthCryptoDPoPResult
+ @class ATProtoAuthCryptoDPoPResult
 
  @abstract Parsed DPoP proof contents after successful verification.
  */
-@interface AuthCryptoDPoPResult : NSObject
+@interface ATProtoAuthCryptoDPoPResult : NSObject
 
 /*! JWK thumbprint of the proof key. */
 @property (nonatomic, copy) NSString *jkt;

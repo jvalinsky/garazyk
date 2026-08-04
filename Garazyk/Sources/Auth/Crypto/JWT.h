@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract JWT (JSON Web Token) handling for ATProto authentication.
  
  @discussion This header defines classes for creating, parsing, signing,
- and verifying JWT tokens. It includes JWTHeader, JWTPayload, JWT,
+ and verifying JWT tokens. It includes ATProtoJWTHeader, JWTPayload, JWT,
  JWTVerifier, and JWTMinter classes.
  
  @copyright Copyright (c) 2025-2026 Jack Valinsky
@@ -85,14 +85,14 @@ typedef NS_ENUM(NSInteger, JWTError) {
 };
 
 /*!
- @class JWTHeader
+ @class ATProtoJWTHeader
  
  @abstract Represents the header portion of a JWT.
  
  @discussion The JWT header contains metadata about the token including
  the algorithm used for signing and the key identifier.
  */
-@interface JWTHeader : NSObject
+@interface ATProtoJWTHeader : NSObject
 
 /*! The signing algorithm (e.g., "RS256", "ES256"). */
 @property (nonatomic, copy, nullable) NSString *alg;
@@ -113,7 +113,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
  
  @param dictionary The header dictionary.
  @param error On return, contains an error if parsing failed.
- @return A new JWTHeader instance.
+ @return A new ATProtoJWTHeader instance.
  */
 + (nullable instancetype)headerFromDictionary:(NSDictionary *)dictionary error:(NSError **)error;
 
@@ -239,7 +239,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @interface JWT : NSObject
 
 /*! The decoded header. */
-@property (nonatomic, strong, readonly) JWTHeader *header;
+@property (nonatomic, strong, readonly) ATProtoJWTHeader *header;
 
 /*! The decoded payload. */
 @property (nonatomic, strong, readonly) JWTPayload *payload;
@@ -281,7 +281,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /**
  * @abstract Performs the jwtWithHeader operation.
  */
-+ (nullable instancetype)jwtWithHeader:(JWTHeader *)header
++ (nullable instancetype)jwtWithHeader:(ATProtoJWTHeader *)header
                                payload:(JWTPayload *)payload
                              signature:(NSString *)signature
                                   error:(NSError **)error;
