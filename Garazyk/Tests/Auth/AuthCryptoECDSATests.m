@@ -38,7 +38,7 @@
     [der appendBytes:s length:32];
 
     NSError *error = nil;
-    NSData *raw = [AuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
+    NSData *raw = [ATProtoAuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
     XCTAssertNotNil(raw, @"Should parse valid DER");
     XCTAssertNil(error);
     XCTAssertEqual(raw.length, (NSUInteger)64);
@@ -78,7 +78,7 @@
     [der appendBytes:s length:32];
 
     NSError *error = nil;
-    NSData *raw = [AuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
+    NSData *raw = [ATProtoAuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
     XCTAssertNotNil(raw);
     XCTAssertNil(error);
     XCTAssertEqual(raw.length, (NSUInteger)64);
@@ -93,7 +93,7 @@
     uint8_t invalid[] = {0x31, 0x02, 0x02, 0x01, 0x00};
     NSData *der = [NSData dataWithBytes:invalid length:5];
     NSError *error = nil;
-    NSData *result = [AuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
+    NSData *result = [ATProtoAuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
     XCTAssertNil(result);
     XCTAssertNotNil(error);
 }
@@ -101,7 +101,7 @@
 - (void)testRawFromDER_EmptyData_ReturnsNil {
     NSData *empty = [NSData data];
     NSError *error = nil;
-    NSData *result = [AuthCryptoECDSA rawSignatureFromDER:empty expectedSize:32 error:&error];
+    NSData *result = [ATProtoAuthCryptoECDSA rawSignatureFromDER:empty expectedSize:32 error:&error];
     XCTAssertNil(result);
     XCTAssertNotNil(error);
 }
@@ -110,7 +110,7 @@
     uint8_t partial[] = {0x30, 0x04, 0x02};
     NSData *der = [NSData dataWithBytes:partial length:3];
     NSError *error = nil;
-    NSData *result = [AuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
+    NSData *result = [ATProtoAuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
     XCTAssertNil(result);
     XCTAssertNotNil(error);
 }
@@ -124,12 +124,12 @@
     rawBytes[63] = 0x02; // s = 2, zero-padded to 32
 
     NSError *error = nil;
-    NSData *der = [AuthCryptoECDSA derSignatureFromRaw:raw error:&error];
+    NSData *der = [ATProtoAuthCryptoECDSA derSignatureFromRaw:raw error:&error];
     XCTAssertNotNil(der);
     XCTAssertNil(error);
 
     // Round-trip back
-    NSData *roundTrip = [AuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
+    NSData *roundTrip = [ATProtoAuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
     XCTAssertNotNil(roundTrip);
     XCTAssertEqualObjects(roundTrip, raw);
 }
@@ -137,7 +137,7 @@
 - (void)testDERFromRaw_OddLength_ReturnsNil {
     NSData *odd = [NSMutableData dataWithLength:33];
     NSError *error = nil;
-    NSData *result = [AuthCryptoECDSA derSignatureFromRaw:odd error:&error];
+    NSData *result = [ATProtoAuthCryptoECDSA derSignatureFromRaw:odd error:&error];
     XCTAssertNil(result);
     XCTAssertNotNil(error);
 }
@@ -152,7 +152,7 @@
     [raw appendBytes:sVal length:32];
 
     NSError *error = nil;
-    NSData *der = [AuthCryptoECDSA derSignatureFromRaw:raw error:&error];
+    NSData *der = [ATProtoAuthCryptoECDSA derSignatureFromRaw:raw error:&error];
     XCTAssertNotNil(der);
     XCTAssertNil(error);
 
@@ -166,7 +166,7 @@
     // So r[0]=0x80 → no leading zeros to strip → result starts with 0x80 (high bit) → prepend 0x00 → rLen=33
     // That means at offset 4 = rLen...
     // Let me just verify round-trip works
-    NSData *roundTrip = [AuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
+    NSData *roundTrip = [ATProtoAuthCryptoECDSA rawSignatureFromDER:der expectedSize:32 error:&error];
     XCTAssertNotNil(roundTrip);
     XCTAssertEqualObjects(roundTrip, raw);
 }
@@ -176,7 +176,7 @@
 - (void)testIsLowS_ZeroS_IsLowS {
     NSMutableData *sig = [NSMutableData dataWithLength:64];
     // s = 0 which is < N/2
-    BOOL result = [AuthCryptoECDSA isLowS:sig error:nil];
+    BOOL result = [ATProtoAuthCryptoECDSA isLowS:sig error:nil];
     XCTAssertTrue(result);
 }
 
@@ -185,7 +185,7 @@
     uint8_t *bytes = sig.mutableBytes;
     // Set s (last 32 bytes) to all 0xFF, which is > N/2
     memset(bytes + 32, 0xFF, 32);
-    BOOL result = [AuthCryptoECDSA isLowS:sig error:nil];
+    BOOL result = [ATProtoAuthCryptoECDSA isLowS:sig error:nil];
     XCTAssertFalse(result);
 }
 
@@ -199,13 +199,13 @@
     };
     NSMutableData *sig = [NSMutableData dataWithLength:64];
     memcpy(((uint8_t *)sig.mutableBytes) + 32, halfN, 32);
-    BOOL result = [AuthCryptoECDSA isLowS:sig error:nil];
+    BOOL result = [ATProtoAuthCryptoECDSA isLowS:sig error:nil];
     XCTAssertTrue(result, @"s = N/2 should be considered low-S");
 }
 
 - (void)testIsLowS_WrongLength_ReturnsNO {
     NSData *shortSig = [NSMutableData dataWithLength:32];
-    BOOL result = [AuthCryptoECDSA isLowS:shortSig error:nil];
+    BOOL result = [ATProtoAuthCryptoECDSA isLowS:shortSig error:nil];
     XCTAssertFalse(result);
 }
 
@@ -219,7 +219,7 @@
     bytes[63] = 0x01;
 
     NSError *error = nil;
-    NSData *result = [AuthCryptoECDSA normalizeLowS:sig error:&error];
+    NSData *result = [ATProtoAuthCryptoECDSA normalizeLowS:sig error:&error];
     XCTAssertNotNil(result);
     XCTAssertTrue(result == sig, @"Should return same object for already low-S");
 }
@@ -239,15 +239,15 @@
     memcpy(s, n, 32);
     s[31]--; // n - 1
 
-    BOOL isLow = [AuthCryptoECDSA isLowS:sig error:nil];
+    BOOL isLow = [ATProtoAuthCryptoECDSA isLowS:sig error:nil];
     XCTAssertFalse(isLow, @"s = n-1 should be high-S");
 
     NSError *error = nil;
-    NSData *normalized = [AuthCryptoECDSA normalizeLowS:sig error:&error];
+    NSData *normalized = [ATProtoAuthCryptoECDSA normalizeLowS:sig error:&error];
     XCTAssertNotNil(normalized);
     XCTAssertNil(error);
 
-    BOOL isNowLow = [AuthCryptoECDSA isLowS:normalized error:nil];
+    BOOL isNowLow = [ATProtoAuthCryptoECDSA isLowS:normalized error:nil];
     XCTAssertTrue(isNowLow, @"Normalized signature should be low-S");
 
     // Normalized s should be 1 (since n - (n-1) = 1)
@@ -267,7 +267,7 @@
     memset(bytes + 32, 0xFF, 32);
 
     NSError *error = nil;
-    NSData *result = [AuthCryptoECDSA denormalizeLowS:sig error:&error];
+    NSData *result = [ATProtoAuthCryptoECDSA denormalizeLowS:sig error:&error];
     XCTAssertNotNil(result);
     XCTAssertTrue(result == sig, @"Should return same object for already high-S");
 }
@@ -278,11 +278,11 @@
     bytes[63] = 0x01; // s = 1 (low-S)
 
     NSError *error = nil;
-    NSData *denormalized = [AuthCryptoECDSA denormalizeLowS:sig error:&error];
+    NSData *denormalized = [ATProtoAuthCryptoECDSA denormalizeLowS:sig error:&error];
     XCTAssertNotNil(denormalized);
     XCTAssertNil(error);
 
-    BOOL isNowLow = [AuthCryptoECDSA isLowS:denormalized error:nil];
+    BOOL isNowLow = [ATProtoAuthCryptoECDSA isLowS:denormalized error:nil];
     XCTAssertFalse(isNowLow, @"Denormalized signature should be high-S");
 }
 
@@ -295,18 +295,18 @@
     bytes[31] = 0xAA; // r = 0xAA
     bytes[32] = 0x80; // s first byte > N/2 first byte (0x7F) → high-S
 
-    BOOL isLow = [AuthCryptoECDSA isLowS:highS error:nil];
+    BOOL isLow = [ATProtoAuthCryptoECDSA isLowS:highS error:nil];
     XCTAssertFalse(isLow, @"s with first byte 0x80 should be high-S");
 
     NSError *error = nil;
-    NSData *normalized = [AuthCryptoECDSA normalizeLowS:highS error:&error];
+    NSData *normalized = [ATProtoAuthCryptoECDSA normalizeLowS:highS error:&error];
     XCTAssertNotNil(normalized);
 
-    BOOL isNowLow = [AuthCryptoECDSA isLowS:normalized error:nil];
+    BOOL isNowLow = [ATProtoAuthCryptoECDSA isLowS:normalized error:nil];
     XCTAssertTrue(isNowLow, @"Normalized should be low-S");
 
     // Now denormalize back
-    NSData *denormalized = [AuthCryptoECDSA denormalizeLowS:normalized error:nil];
+    NSData *denormalized = [ATProtoAuthCryptoECDSA denormalizeLowS:normalized error:nil];
     XCTAssertNotNil(denormalized);
 
     // Should match original (same r, same resulting s)

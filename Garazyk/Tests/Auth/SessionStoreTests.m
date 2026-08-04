@@ -8,7 +8,7 @@
 @interface SessionStoreTests : XCTestCase
 @property (nonatomic, strong) SessionStore *store;
 @property (nonatomic, strong) JWTMinter *minter;
-@property (nonatomic, strong) JWTVerifier *verifier;
+@property (nonatomic, strong) ATProtoJWTVerifier *verifier;
 @end
 
 @implementation SessionStoreTests
@@ -40,7 +40,7 @@
     XCTAssertNotNil(keyPair, @"Failed to generate key pair: %@", error);
     self.minter.privateKey = keyPair.privateKey;
 
-    self.verifier = [[JWTVerifier alloc] init];
+    self.verifier = [[ATProtoJWTVerifier alloc] init];
     self.verifier.expectedIssuer = @"test.issuer";
     self.verifier.allowedAlgorithms = @[@"ES256K"];
     self.verifier.publicKey = keyPair.publicKey;

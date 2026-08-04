@@ -6,7 +6,7 @@
 #import "Auth/PDSReplayCache.h"
 #import "Auth/Base32Utils.h"
 
-#pragma mark - AuthCryptoDPoP Tests
+#pragma mark - ATProtoAuthCryptoDPoP Tests
 
 @interface AuthCryptoDPoPReplaySpy : NSObject <AuthCryptoDPoPReplayChecker>
 @property (nonatomic, assign) NSUInteger callCount;
@@ -30,76 +30,76 @@
 
 - (void)testCanonicalHTUFromURLBasic {
     NSURL *url = [NSURL URLWithString:@"https://example.com/path"];
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
     XCTAssertEqualObjects(htu, @"https://example.com/path");
 }
 
 - (void)testCanonicalHTUFromStringBasic {
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromString:@"https://example.com/path"];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromString:@"https://example.com/path"];
     XCTAssertEqualObjects(htu, @"https://example.com/path");
 }
 
 - (void)testCanonicalHTUStripsQuery {
     NSURL *url = [NSURL URLWithString:@"https://example.com/path?query=1"];
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
     XCTAssertEqualObjects(htu, @"https://example.com/path");
 }
 
 - (void)testCanonicalHTUStripsFragment {
     NSURL *url = [NSURL URLWithString:@"https://example.com/path#fragment"];
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
     XCTAssertEqualObjects(htu, @"https://example.com/path");
 }
 
 - (void)testCanonicalHTUDefaultPortHTTPS {
     NSURL *url = [NSURL URLWithString:@"https://example.com:443/path"];
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
     XCTAssertEqualObjects(htu, @"https://example.com/path");
 }
 
 - (void)testCanonicalHTUDefaultPortHTTP {
     NSURL *url = [NSURL URLWithString:@"http://example.com:80/path"];
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
     XCTAssertEqualObjects(htu, @"http://example.com/path");
 }
 
 - (void)testCanonicalHTUNonDefaultPort {
     NSURL *url = [NSURL URLWithString:@"https://example.com:8443/path"];
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
     XCTAssertEqualObjects(htu, @"https://example.com:8443/path");
 }
 
 - (void)testCanonicalHTULowercasesSchemeAndHost {
     NSURL *url = [NSURL URLWithString:@"HTTPS://EXAMPLE.COM/path"];
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
     XCTAssertEqualObjects(htu, @"https://example.com/path");
 }
 
 - (void)testCanonicalHTUDefaultPath {
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
     XCTAssertEqualObjects(htu, @"https://example.com");
 }
 
 - (void)testCanonicalHTUNilURL {
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromURL:nil];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:nil];
     XCTAssertEqualObjects(htu, @"");
 }
 
 - (void)testCanonicalHTUFromStringNil {
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromString:nil];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromString:nil];
     XCTAssertNil(htu);
 }
 
 - (void)testCanonicalHTUFromStringInvalid {
-    NSString *htu = [AuthCryptoDPoP canonicalHTUFromString:@"not a url"];
+    NSString *htu = [ATProtoAuthCryptoDPoP canonicalHTUFromString:@"not a url"];
     XCTAssertNotNil(htu);
 }
 
 - (void)testVerifyProofNilJWT {
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:nil
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:nil
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -116,7 +116,7 @@
 - (void)testVerifyProofInvalidFormat {
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:@"not-a-jwt"
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:@"not-a-jwt"
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -134,7 +134,7 @@
     NSString *badJwt = @"!!!invalid!!!.eyJodG0iOiJHRVQifQ.signature";
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -151,15 +151,15 @@
 - (void)testVerifyProofWrongTyp {
     NSDictionary *header = @{@"typ": @"JWT", @"alg": @"ES256", @"jwk": @{@"kty": @"EC"}};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com", @"iat": @([[NSDate date] timeIntervalSince1970]), @"jti": [[NSUUID UUID] UUIDString]};
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *badJwt = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -176,15 +176,15 @@
 - (void)testVerifyProofWrongAlg {
     NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"RS256", @"jwk": @{@"kty": @"EC"}};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com", @"iat": @([[NSDate date] timeIntervalSince1970]), @"jti": [[NSUUID UUID] UUIDString]};
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *badJwt = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -201,15 +201,15 @@
 - (void)testVerifyProofMissingJWK {
     NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256"};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com", @"iat": @([[NSDate date] timeIntervalSince1970]), @"jti": [[NSUUID UUID] UUIDString]};
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *badJwt = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -226,15 +226,15 @@
 - (void)testVerifyProofJWKWithPrivateKeyMaterial {
     NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": @{@"kty": @"EC", @"d": @"private-key"}};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com", @"iat": @([[NSDate date] timeIntervalSince1970]), @"jti": [[NSUUID UUID] UUIDString]};
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *badJwt = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -252,15 +252,15 @@
     NSDictionary *jwk = @{@"kty": @"EC", @"crv": @"P-256", @"x": @"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4", @"y": @"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"};
     NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSDictionary *payload = @{@"htm": @"POST", @"htu": @"https://example.com", @"iat": @([[NSDate date] timeIntervalSince1970]), @"jti": [[NSUUID UUID] UUIDString]};
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *badJwt = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -278,15 +278,15 @@
     NSDictionary *jwk = @{@"kty": @"EC", @"crv": @"P-256", @"x": @"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4", @"y": @"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"};
     NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com", @"jti": [[NSUUID UUID] UUIDString]};
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *badJwt = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -304,16 +304,16 @@
     NSDictionary *jwk = @{@"kty": @"EC", @"crv": @"P-256", @"x": @"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4", @"y": @"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"};
     NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSTimeInterval oldIat = [[NSDate date] timeIntervalSince1970] - 600;
     NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com", @"iat": @(oldIat), @"jti": [[NSUUID UUID] UUIDString]};
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *badJwt = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -331,15 +331,15 @@
     NSDictionary *jwk = @{@"kty": @"EC", @"crv": @"P-256", @"x": @"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4", @"y": @"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"};
     NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com", @"iat": @([[NSDate date] timeIntervalSince1970]), @"jti": [[NSUUID UUID] UUIDString]};
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *badJwt = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:@"expected-nonce"
@@ -357,15 +357,15 @@
     NSDictionary *jwk = @{@"kty": @"EC", @"crv": @"P-256", @"x": @"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4", @"y": @"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"};
     NSDictionary *header = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSDictionary *payload = @{@"htm": @"GET", @"htu": @"https://example.com", @"iat": @([[NSDate date] timeIntervalSince1970]), @"jti": [[NSUUID UUID] UUIDString], @"nonce": @"wrong-nonce"};
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *badJwt = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:badJwt
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:badJwt
                                         method:@"GET"
                                            url:url
                                          nonce:@"expected-nonce"
@@ -393,16 +393,16 @@
         @"iat": @([[NSDate date] timeIntervalSince1970]),
         @"jti": @"untrusted-jti"
     };
-    NSString *headerEnc = [AuthCryptoBase64URL
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL
         encode:[NSJSONSerialization dataWithJSONObject:header options:0 error:nil]];
-    NSString *payloadEnc = [AuthCryptoBase64URL
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL
         encode:[NSJSONSerialization dataWithJSONObject:payload options:0 error:nil]];
     NSString *proof = [NSString stringWithFormat:@"%@.%@.invalid-signature",
                                                   headerEnc, payloadEnc];
     AuthCryptoDPoPReplaySpy *replaySpy = [[AuthCryptoDPoPReplaySpy alloc] init];
     NSError *error = nil;
 
-    BOOL valid = [AuthCryptoDPoP verifyProof:proof
+    BOOL valid = [ATProtoAuthCryptoDPoP verifyProof:proof
                                       method:@"GET"
                                          url:[NSURL URLWithString:@"https://example.com"]
                                        nonce:nil
@@ -421,7 +421,7 @@
 
 - (void)testCreateProofMissingParameters {
     NSError *error = nil;
-    NSString *result = [AuthCryptoDPoP createProofForURL:nil method:@"GET" key:@{} error:&error];
+    NSString *result = [ATProtoAuthCryptoDPoP createProofForURL:nil method:@"GET" key:@{} error:&error];
     XCTAssertNil(result);
     XCTAssertNotNil(error);
 }
@@ -438,14 +438,14 @@
                               @"iat": @([[NSDate date] timeIntervalSince1970]),
                               @"jti": [[NSUUID UUID] UUIDString]};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *proof = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:proof
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:proof
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -473,14 +473,14 @@
                               @"jti": [[NSUUID UUID] UUIDString],
                               @"ath": @12345};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *proof = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:proof
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:proof
                                         method:@"GET"
                                            url:url
                                          nonce:nil
@@ -506,14 +506,14 @@
                               @"iat": @([[NSDate date] timeIntervalSince1970]),
                               @"jti": [[NSUUID UUID] UUIDString]};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
-    NSString *headerEnc = [AuthCryptoBase64URL encode:headerData];
+    NSString *headerEnc = [ATProtoAuthCryptoBase64URL encode:headerData];
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    NSString *payloadEnc = [AuthCryptoBase64URL encode:payloadData];
+    NSString *payloadEnc = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *proof = [NSString stringWithFormat:@"%@.%@.fakesignature", headerEnc, payloadEnc];
 
     NSURL *url = [NSURL URLWithString:@"https://example.com"];
     NSError *error = nil;
-    BOOL result = [AuthCryptoDPoP verifyProof:proof
+    BOOL result = [ATProtoAuthCryptoDPoP verifyProof:proof
                                         method:@"GET"
                                            url:url
                                          nonce:nil

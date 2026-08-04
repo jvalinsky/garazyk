@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthVerifier.h
+ @file ATProtoAuthVerifier.h
 
  @abstract Reusable token verification for ATProto resource servers.
 
- @discussion AuthVerifier provides token verification logic that can be used by
+ @discussion ATProtoAuthVerifier provides token verification logic that can be used by
  PDS, AppView, Relay, or any ATProto resource server. It verifies:
  - JWT access tokens (signature, expiration, issuer, audience)
  - DPoP proofs (binding to access token)
@@ -92,7 +92,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
 
 
 /*!
- @class AuthVerifier
+ @class ATProtoAuthVerifier
  
  @abstract Reusable token verifier for ATProto resource servers.
  
@@ -107,9 +107,9 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  For PDS, use PDSAccountPolicy which connects to PDSDatabase.
  */
 /**
- * @abstract Declares the AuthVerifier public API.
+ * @abstract Declares the ATProtoAuthVerifier public API.
  */
-@interface AuthVerifier : NSObject
+@interface ATProtoAuthVerifier : NSObject
 
 /*!
  @brief The expected audience for access tokens.
@@ -135,7 +135,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  storage, which this Core-layer class must not depend on, so the caller
  injects it (e.g. `verifier.replayChecker = [PDSReplayCache sharedCache];`
  right after construction, matching `setLocalPublicKey:`/`setLocalIssuer:`).
- A nil replayChecker is NOT a silent skip: `AuthCryptoDPoP` treats every DPoP
+ A nil replayChecker is NOT a silent skip: `ATProtoAuthCryptoDPoP` treats every DPoP
  proof as a replay when it has nothing to check against, so DPoP-bound
  requests fail closed until this is wired.
  */

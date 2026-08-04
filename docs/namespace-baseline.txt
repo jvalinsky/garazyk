@@ -6,8 +6,7 @@
 # the class is prefixed or this file is edited in the same commit that
 # introduces it, so review sees the regression.
 #
-# Starting inventory: 249 unprefixed classes out of 515 total.
-ATURI
+# Starting inventory: 238 unprefixed classes out of 515 total.
 AVFoundationTranscoder
 ActorService
 AdminMiddleware
@@ -16,14 +15,8 @@ AppDelegate
 AppViewIdentityHelper
 AppViewVideoUriBuilder
 AppViewXRpcRoutePack
-AuthCryptoBase64URL
-AuthCryptoDPoP
-AuthCryptoECDSA
-AuthCryptoJWK
 AuthMiddleware
-AuthVerifier
 Base32Utils
-Base58
 BlobStorage
 BlobsMimeTypeRename
 BookmarkService
@@ -31,8 +24,6 @@ BufferedEvent
 CARBlock
 CARReader
 CARWriter
-CBORDecoder
-CBOREncoder
 CBORValue
 CID
 ChatAuthManager
@@ -97,8 +88,6 @@ HttpServer
 HttpStreamingBody
 JWT
 JWTMinter
-JWTPayload
-JWTVerifier
 JelczConfiguration
 JelczDatabase
 MST

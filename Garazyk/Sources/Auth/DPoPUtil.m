@@ -5,7 +5,7 @@
 //  ATProtoPDS
 //
 //  DPoP utility wrapper. This file uses SecKeyRef which is only available on macOS.
-//  For cross-platform DPoP support, use AuthCryptoDPoP directly with protocol-based keys.
+//  For cross-platform DPoP support, use ATProtoAuthCryptoDPoP directly with protocol-based keys.
 //
 //  Copyright (c) 2025-2026 Jack Valinsky. All rights reserved.
 //
@@ -32,7 +32,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
                                       uri:(NSString *)htu
                                     nonce:(nullable NSString *)nonce
                                     error:(NSError **)error {
-    NSString *canonicalHTU = [AuthCryptoDPoP canonicalHTUFromString:htu];
+    NSString *canonicalHTU = [ATProtoAuthCryptoDPoP canonicalHTUFromString:htu];
     if (canonicalHTU.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.pds.dpop"
@@ -121,20 +121,20 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         return nil;
     }
 
-    // Use AuthCryptoJWK to get the JWK representation from SecKeyRef
-    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:privateKey error:error];
+    // Use ATProtoAuthCryptoJWK to get the JWK representation from SecKeyRef
+    NSDictionary *jwk = [ATProtoAuthCryptoJWK publicJWKFromSecKey:privateKey error:error];
     if (!jwk) return nil;
 
-    // AuthCryptoDPoP expects the full JWK including private material if it's going to sign
+    // ATProtoAuthCryptoDPoP expects the full JWK including private material if it's going to sign
     // but it can also take a jwk dictionary and we can inject the private key if needed.
-    // However, AuthCryptoDPoP's createProofForURL currently expects a jwk dictionary
+    // However, ATProtoAuthCryptoDPoP's createProofForURL currently expects a jwk dictionary
     // and handles SecKey creation internally from it.
 
     // To maintain DPoPUtil's API (which takes SecKeyRef), we'll do a slightly different path
-    // or update AuthCryptoDPoP to be more flexible.
+    // or update ATProtoAuthCryptoDPoP to be more flexible.
     // For now, let's use the underlying components.
 
-    NSString *canonicalHTU = [AuthCryptoDPoP canonicalHTUFromURL:url];
+    NSString *canonicalHTU = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
     DPoPToken *token = [[DPoPToken alloc] init];
     token.htm = htm;
     token.htu = canonicalHTU;
@@ -153,7 +153,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
             }
             return nil;
         }
-        token.ath = [AuthCryptoBase64URL encode:tokenHash];
+        token.ath = [ATProtoAuthCryptoBase64URL encode:tokenHash];
     }
 
     // Build JWT
@@ -167,8 +167,8 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:[token payload] options:0 error:error];
     if (!headerData || !payloadData) return nil;
 
-    NSString *headerB64 = [AuthCryptoBase64URL encode:headerData];
-    NSString *payloadB64 = [AuthCryptoBase64URL encode:payloadData];
+    NSString *headerB64 = [ATProtoAuthCryptoBase64URL encode:headerData];
+    NSString *payloadB64 = [ATProtoAuthCryptoBase64URL encode:payloadData];
     NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerB64, payloadB64];
     NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
 
@@ -182,14 +182,14 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         return nil;
     }
 
-    NSData *rawSignature = [AuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:error];
+    NSData *rawSignature = [ATProtoAuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:error];
     if (!rawSignature) return nil;
 
     // Normalize to low-S form per PLC spec (AT Protocol requires low-S canonicalization)
-    rawSignature = [AuthCryptoECDSA normalizeLowS:rawSignature error:error];
+    rawSignature = [ATProtoAuthCryptoECDSA normalizeLowS:rawSignature error:error];
     if (!rawSignature) return nil;
 
-    token.jwt = [NSString stringWithFormat:@"%@.%@.%@", headerB64, payloadB64, [AuthCryptoBase64URL encode:rawSignature]];
+    token.jwt = [NSString stringWithFormat:@"%@.%@.%@", headerB64, payloadB64, [ATProtoAuthCryptoBase64URL encode:rawSignature]];
     return token;
 }
 
@@ -209,14 +209,14 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         return NO;
     }
 
-    // AuthCryptoDPoP handles verification. If publicKey is nil, it can still verify structure
-    // if we pass a dummy/extracted key, but AuthCryptoDPoP's verifyProof currently extracts
+    // ATProtoAuthCryptoDPoP handles verification. If publicKey is nil, it can still verify structure
+    // if we pass a dummy/extracted key, but ATProtoAuthCryptoDPoP's verifyProof currently extracts
     // the key from the JWK in the header.
 
     // If a publicKey is PROVIDED to verifyDPoP, we should ensure it MATCHES the one in the proof.
 
     NSString *thumbprint = nil;
-    BOOL valid = [AuthCryptoDPoP verifyProof:dpopJwt
+    BOOL valid = [ATProtoAuthCryptoDPoP verifyProof:dpopJwt
                                       method:htm
                                          url:url
                                        nonce:nonce
@@ -230,7 +230,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
     if (publicKey) {
         // Extra check: ensure provided publicKey matches the one in the DPoP header
-        NSString *expectedThumbprint = [AuthCryptoJWK thumbprintForSecKey:publicKey error:error];
+        NSString *expectedThumbprint = [ATProtoAuthCryptoJWK thumbprintForSecKey:publicKey error:error];
         if (!expectedThumbprint || ![PDSSecurityCompare constantTimeEqualString:thumbprint string:expectedThumbprint]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.pds.dpop"
@@ -250,7 +250,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
 // Stub implementations for GNUstep
 // DPoPUtil uses SecKeyRef from compat headers on GNUstep.
-// Use AuthCryptoDPoP directly with the protocol-based key interfaces.
+// Use ATProtoAuthCryptoDPoP directly with the protocol-based key interfaces.
 
 #import "Auth/DPoPUtil.h"
 #import "Security/SecKey.h"  // Compat SecKeyRef definition
@@ -274,7 +274,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     if (error) {
         *error = [NSError errorWithDomain:DPoPErrorDomain
                                      code:-99
-                                 userInfo:@{NSLocalizedDescriptionKey: @"DPoPUtil not available on this platform. Use AuthCryptoDPoP instead."}];
+                                 userInfo:@{NSLocalizedDescriptionKey: @"DPoPUtil not available on this platform. Use ATProtoAuthCryptoDPoP instead."}];
     }
     return nil;
 }
@@ -283,7 +283,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     if (error) {
         *error = [NSError errorWithDomain:DPoPErrorDomain
                                      code:-99
-                                 userInfo:@{NSLocalizedDescriptionKey: @"DPoPUtil not available on this platform. Use AuthCryptoDPoP instead."}];
+                                 userInfo:@{NSLocalizedDescriptionKey: @"DPoPUtil not available on this platform. Use ATProtoAuthCryptoDPoP instead."}];
     }
     return nil;
 }
@@ -292,7 +292,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     if (error) {
         *error = [NSError errorWithDomain:DPoPErrorDomain
                                      code:-99
-                                 userInfo:@{NSLocalizedDescriptionKey: @"DPoPUtil not available on this platform. Use AuthCryptoDPoP instead."}];
+                                 userInfo:@{NSLocalizedDescriptionKey: @"DPoPUtil not available on this platform. Use ATProtoAuthCryptoDPoP instead."}];
     }
     return NO;
 }

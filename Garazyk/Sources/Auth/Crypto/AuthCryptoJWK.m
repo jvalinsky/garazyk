@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthCryptoJWK.m
+ @file ATProtoAuthCryptoJWK.m
 
  @abstract JWK key operations implementation.
 
@@ -38,7 +38,7 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
 
 /**
  * Adapter class wrapping SecKeyRef to conform to PDSKeyProtocol.
- * Must be defined OUTSIDE AuthCryptoJWK implementation.
+ * Must be defined OUTSIDE ATProtoAuthCryptoJWK implementation.
  */
 @interface PDSSecKeyAdapter : NSObject <PDSPrivateKeyProtocol, PDSPublicKeyProtocol>
 @property (nonatomic, assign) SecKeyRef secKey;
@@ -102,8 +102,8 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
     return @{
         @"kty": @"EC",
         @"crv": @"P-256",
-        @"x": [AuthCryptoBase64URL encode:xData],
-        @"y": [AuthCryptoBase64URL encode:yData],
+        @"x": [ATProtoAuthCryptoBase64URL encode:xData],
+        @"y": [ATProtoAuthCryptoBase64URL encode:yData],
         @"kid": kid
     };
 }
@@ -125,7 +125,7 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
     unsigned char hash[32];
     CC_SHA256(jsonData.bytes, (CC_LONG)jsonData.length, hash);
     NSData *hashData = [NSData dataWithBytes:hash length:32];
-    return [AuthCryptoBase64URL encode:hashData];
+    return [ATProtoAuthCryptoBase64URL encode:hashData];
 }
 
 - (NSData *)signData:(NSData *)data error:(NSError **)error {
@@ -229,7 +229,7 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
     // signatures, which the ATProto data spec requires to be low-S, are
     // verified through the secp256k1 key path, not this adapter.
     NSError *derError = nil;
-    NSData *derSig = [AuthCryptoECDSA derSignatureFromRaw:signature error:&derError];
+    NSData *derSig = [ATProtoAuthCryptoECDSA derSignatureFromRaw:signature error:&derError];
     if (!derSig) {
         if (error) {
             *error = derError ?: [NSError errorWithDomain:AuthCryptoErrorDomain
@@ -303,10 +303,10 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
     // Canonicalize to low-S before verifying. Apple's SecKeyVerifySignature
     // accepts only the low-S form; normalizing prevents false rejections of
     // valid high-S signatures from WebCrypto/WebAuthn.
-    NSData *canonicalSig = [AuthCryptoECDSA normalizeLowS:signature error:nil] ?: signature;
+    NSData *canonicalSig = [ATProtoAuthCryptoECDSA normalizeLowS:signature error:nil] ?: signature;
 
     NSError *derError = nil;
-    NSData *derSig = [AuthCryptoECDSA derSignatureFromRaw:canonicalSig error:&derError];
+    NSData *derSig = [ATProtoAuthCryptoECDSA derSignatureFromRaw:canonicalSig error:&derError];
     if (!derSig) {
         if (error) {
             *error = derError ?: [NSError errorWithDomain:AuthCryptoErrorDomain
@@ -373,9 +373,9 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
 
     if (keyData.length == 97) {
         NSData *d = [keyData subdataWithRange:NSMakeRange(65, 32)];
-        jwk[@"d"] = [AuthCryptoBase64URL encode:d];
+        jwk[@"d"] = [ATProtoAuthCryptoBase64URL encode:d];
     } else if (keyData.length == 32) {
-        jwk[@"d"] = [AuthCryptoBase64URL encode:keyData];
+        jwk[@"d"] = [ATProtoAuthCryptoBase64URL encode:keyData];
     }
 
     return jwk;
@@ -385,9 +385,9 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
 
 #endif // __APPLE__ && !GNUSTEP
 
-#pragma mark - AuthCryptoJWK Implementation
+#pragma mark - ATProtoAuthCryptoJWK Implementation
 
-@implementation AuthCryptoJWK
+@implementation ATProtoAuthCryptoJWK
 
 #pragma mark - JWK Thumbprint Operations
 
@@ -450,7 +450,7 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
 #endif
 
     NSData *hashData = [NSData dataWithBytes:hash length:32];
-    return [AuthCryptoBase64URL encode:hashData];
+    return [ATProtoAuthCryptoBase64URL encode:hashData];
 }
 
 + (NSDictionary *)publicJWKFromJWK:(NSDictionary *)jwk {
@@ -596,8 +596,8 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return nil;
     }
 
-    NSData *xData = [AuthCryptoBase64URL decode:xValue];
-    NSData *yData = [AuthCryptoBase64URL decode:yValue];
+    NSData *xData = [ATProtoAuthCryptoBase64URL decode:xValue];
+    NSData *yData = [ATProtoAuthCryptoBase64URL decode:yValue];
     if (!xData || xData.length != 32 || !yData || yData.length != 32) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoErrorDomain
@@ -679,9 +679,9 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return nil;
     }
 
-    NSData *xData = [AuthCryptoBase64URL decode:xValue];
-    NSData *yData = [AuthCryptoBase64URL decode:yValue];
-    NSData *dData = [AuthCryptoBase64URL decode:dValue];
+    NSData *xData = [ATProtoAuthCryptoBase64URL decode:xValue];
+    NSData *yData = [ATProtoAuthCryptoBase64URL decode:yValue];
+    NSData *dData = [ATProtoAuthCryptoBase64URL decode:dValue];
     if (!xData || xData.length != 32 || !yData || yData.length != 32 || !dData || dData.length != 32) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoErrorDomain
@@ -779,17 +779,17 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         }
         NSData *x = [keyData subdataWithRange:NSMakeRange(1, 32)];
         NSData *y = [keyData subdataWithRange:NSMakeRange(33, 32)];
-        jwk[@"x"] = [AuthCryptoBase64URL encode:x];
-        jwk[@"y"] = [AuthCryptoBase64URL encode:y];
+        jwk[@"x"] = [ATProtoAuthCryptoBase64URL encode:x];
+        jwk[@"y"] = [ATProtoAuthCryptoBase64URL encode:y];
     } else {
         // Private key
         if (keyData.length == 97) {
             NSData *x = [keyData subdataWithRange:NSMakeRange(1, 32)];
             NSData *y = [keyData subdataWithRange:NSMakeRange(33, 32)];
             NSData *d = [keyData subdataWithRange:NSMakeRange(65, 32)];
-            jwk[@"x"] = [AuthCryptoBase64URL encode:x];
-            jwk[@"y"] = [AuthCryptoBase64URL encode:y];
-            jwk[@"d"] = [AuthCryptoBase64URL encode:d];
+            jwk[@"x"] = [ATProtoAuthCryptoBase64URL encode:x];
+            jwk[@"y"] = [ATProtoAuthCryptoBase64URL encode:y];
+            jwk[@"d"] = [ATProtoAuthCryptoBase64URL encode:d];
         } else if (keyData.length == 32) {
             // Raw d value - derive public key components
             SecKeyRef publicKey = SecKeyCopyPublicKey(key);
@@ -798,7 +798,7 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
                 CFRelease(publicKey);
                 if (publicJWK) {
                     [jwk addEntriesFromDictionary:publicJWK];
-                    jwk[@"d"] = [AuthCryptoBase64URL encode:keyData];
+                    jwk[@"d"] = [ATProtoAuthCryptoBase64URL encode:keyData];
                 }
             }
         }

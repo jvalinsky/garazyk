@@ -49,12 +49,12 @@ static void MikrusAppendInClause(NSMutableString *sql,
 
 static NSString *MikrusCursorFromDictionary(NSDictionary *dictionary) {
     NSData *data = [NSJSONSerialization dataWithJSONObject:dictionary options:0 error:nil];
-    return data ? [AuthCryptoBase64URL encode:data] : nil;
+    return data ? [ATProtoAuthCryptoBase64URL encode:data] : nil;
 }
 
 static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **error) {
     if (cursor.length == 0) return nil;
-    NSData *data = [AuthCryptoBase64URL decode:cursor];
+    NSData *data = [ATProtoAuthCryptoBase64URL decode:cursor];
     if (!data) {
         if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:400

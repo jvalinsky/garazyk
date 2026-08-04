@@ -81,7 +81,7 @@ static NSString * const kTestJWKD = @"GE8ea5wxqv-uyg35MjN4QwaINAa6wl4uSXJtZbDzNg
   NSString *signingInput = [NSString stringWithFormat:@"%@.%@", encodedHeader, encodedPayload];
 
   NSDictionary *privateJWK = @{ @"kty" : @"EC", @"crv" : @"P-256", @"x" : kTestJWKX, @"y" : kTestJWKY, @"d" : kTestJWKD };
-  id<PDSPrivateKeyProtocol> privateKey = [AuthCryptoJWK privateKeyFromJWK:privateJWK error:nil];
+  id<PDSPrivateKeyProtocol> privateKey = [ATProtoAuthCryptoJWK privateKeyFromJWK:privateJWK error:nil];
   XCTAssertNotNil(privateKey);
   NSData *signature = [privateKey signData:[signingInput dataUsingEncoding:NSUTF8StringEncoding] error:nil];
   XCTAssertEqual(signature.length, (NSUInteger)64);

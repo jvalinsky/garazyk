@@ -123,7 +123,7 @@
         }
 
         NSError *uriError = nil;
-        ATURI *parsedUri = [ATURI uriWithString:uriString error:&uriError];
+        ATProtoATURI *parsedUri = [ATProtoATURI uriWithString:uriString error:&uriError];
         if (!parsedUri) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Invalid AT-URI format"}];
