@@ -35,7 +35,7 @@
 - (void)testSharedManager {
     SSLPinningManager *manager1 = [SSLPinningManager sharedManager];
     SSLPinningManager *manager2 = [SSLPinningManager sharedManager];
-    XCTAssertEqual(manager1, manager2, @"Shared manager should return the same instance");
+    XCTAssertTrue(manager1 == manager2, @"Shared manager should return the same instance");
 }
 
 - (void)testPinningEnabled {
