@@ -44,8 +44,10 @@ async function runUnitTests(root: string): Promise<boolean> {
     return false;
   }
   logInfo(`Discovered ${testFiles.length} package test file(s).`);
+  // --no-check: `deno task check` already type-checks every test file
+  // (deno.json's check task covers packages/**/*_test.ts and *.test.ts).
   const proc = new Deno.Command("deno", {
-    args: ["test", "-A", ...testFiles],
+    args: ["test", "-A", "--no-check", ...testFiles],
     stdout: "inherit",
     stderr: "inherit",
   });
@@ -70,7 +72,7 @@ export const testCommand = new Command()
 
       if (filter) {
         const proc = new Deno.Command("deno", {
-          args: ["test", "-A", "packages/", "--filter", filter],
+          args: ["test", "-A", "--no-check", "packages/", "--filter", filter],
           stdout: "inherit",
           stderr: "inherit",
         });
