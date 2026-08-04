@@ -20,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSController;
 @class PDSApplication;
 @class ATProtoServiceConfiguration;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class PDSServiceDatabases;
 @class XrpcDispatcher;
 @class SubscribeReposHandler;
@@ -68,7 +68,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, weak, nullable) PDSApplication *application;
 
 /*! JWT minter for OAuth handlers. */
-@property (nonatomic, strong, nullable) JWTMinter *jwtMinter;
+@property (nonatomic, strong, nullable) ATProtoJWTMinter *jwtMinter;
 
 /*! Service databases for OAuth and other handlers. */
 @property (nonatomic, strong, nullable) PDSServiceDatabases *serviceDatabases;

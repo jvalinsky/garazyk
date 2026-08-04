@@ -98,7 +98,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
 @end
 
 @interface AuthVerifierParityTests : XCTestCase
-@property (nonatomic, strong) JWTMinter *minter;
+@property (nonatomic, strong) ATProtoJWTMinter *minter;
 @property (nonatomic, strong) ATProtoAuthVerifier *verifier;
 @property (nonatomic, strong) AuthParityAdminController *adminController;
 @property (nonatomic, strong) AuthParityAccountPolicy *accountPolicy;
@@ -110,7 +110,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
 - (void)setUp {
     [super setUp];
     ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
-    self.minter = [[JWTMinter alloc] init];
+    self.minter = [[ATProtoJWTMinter alloc] init];
     self.minter.issuer = @"https://pds.example.com";
     self.minter.audience = self.minter.issuer;
     self.minter.signingAlgorithm = @"ES256K";

@@ -33,7 +33,7 @@
 + (void)registerLifecycleEndpoints:(XrpcDispatcher *)dispatcher
                 services:(id<XrpcRoutePackServices>)services {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
-    JWTMinter *jwtMinter = services.jwtMinter;
+    ATProtoJWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
     PDSRecordService *recordService = services.recordService;
 

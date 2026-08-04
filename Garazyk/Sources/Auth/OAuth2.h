@@ -21,7 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const OAuth2ErrorDomain;
 
 // Forward declarations
-@class JWTMinter;
+@class ATProtoJWTMinter;
 /**
  * @abstract Defines the PDSKeyManager protocol contract.
  */
@@ -513,7 +513,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t sessionQueue;
 
 /*! JWT minting service. */
-@property (nonatomic, strong, nullable) JWTMinter *jwtMinter;
+@property (nonatomic, strong, nullable) ATProtoJWTMinter *jwtMinter;
 
 /*! Key management service. */
 @property (nonatomic, strong) id<PDSKeyManager> keyManager;

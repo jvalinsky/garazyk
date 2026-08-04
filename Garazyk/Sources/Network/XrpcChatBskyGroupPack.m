@@ -37,7 +37,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                    jwtMinter:(JWTMinter *)jwtMinter
+                    jwtMinter:(ATProtoJWTMinter *)jwtMinter
               adminController:(id<PDSAdminController>)adminController {
   XrpcRoutePackServiceBag *services =
       [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher

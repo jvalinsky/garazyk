@@ -18,7 +18,7 @@
 @class AppViewWriteProxy;
 /** @abstract Query interface used by AppView routes that need PDS-backed reads. */
 @protocol PDSQueryDatabase;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 
 /**
  * @abstract Internal dependencies and authentication helpers for AppView XRPC handlers.
@@ -52,7 +52,7 @@
 /** @abstract Optional PDS query database used by selected routes. */
 @property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;
 /** @abstract Optional JWT issuer used by authenticated AppView extensions. */
-@property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
+@property (nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 
 /** @abstract Authenticates the request and returns its actor DID, or writes an auth error and returns nil. */
 - (NSString *)requireAuth:(HttpRequest *)request response:(HttpResponse *)response;

@@ -67,7 +67,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   PDSRelayService *_relayService;
   PDSAdminController *_adminController;
   RateLimiter *_rateLimiter;
-  JWTMinter *_jwtMinter;
+  ATProtoJWTMinter *_jwtMinter;
   NSMutableDictionary<NSString *, MST *> *_repos;
   NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
   dispatch_queue_t _repoQueue;

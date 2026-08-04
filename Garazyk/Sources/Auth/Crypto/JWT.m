@@ -7,7 +7,7 @@
 
  @discussion This file provides concrete implementations for JWT token parsing,
  encoding, verification, and minting. It includes ATProtoJWTHeader, ATProtoJWTPayload, JWT,
- ATProtoJWTVerifier, and JWTMinter classes.
+ ATProtoJWTVerifier, and ATProtoJWTMinter classes.
 
  @copyright Copyright (c) 2024-2026 Jack Valinsky
  */
@@ -546,7 +546,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 @end
 
-@implementation JWTMinter
+@implementation ATProtoJWTMinter
 
 - (instancetype)init {
     self = [super init];

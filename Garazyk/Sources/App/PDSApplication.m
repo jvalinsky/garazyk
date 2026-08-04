@@ -76,7 +76,7 @@ NSString * const PDSApplicationErrorDomain = @"PDSApplicationErrorDomain";
 @property (nonatomic, strong, readwrite, nullable) PDSSpaceOplogPruner *spaceOplogPruner;
 @property (nonatomic, strong, readwrite, nullable) PDSCollectionMembershipPruner *collectionMembershipPruner;
 @property (nonatomic, strong, readwrite, nullable) PDSPasswordResetTokenPruner *passwordResetTokenPruner;
-@property (nonatomic, strong, readwrite) JWTMinter *jwtMinter;
+@property (nonatomic, strong, readwrite) ATProtoJWTMinter *jwtMinter;
 @property (nonatomic, strong, readwrite, nullable) ATProtoAuthVerifier *authVerifier;
 @property (nonatomic, strong, readwrite) HttpServer *httpServer;
 @property (nonatomic, strong, readwrite) PDSRelayService *relayService;
@@ -362,7 +362,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         }
     }
      
-    _jwtMinter = [[JWTMinter alloc] init];
+    _jwtMinter = [[ATProtoJWTMinter alloc] init];
     NSDictionary *pdsEnv = [[NSProcessInfo processInfo] environment];
     NSString *configuredIssuer = _configuration.issuer;
     BOOL isProduction = [[pdsEnv[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||

@@ -21,7 +21,7 @@
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                bookmarkService:(BookmarkService *)bookmarkService
-                     jwtMinter:(JWTMinter *)jwtMinter
+                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController {
   XrpcRoutePackServiceBag *services =
       [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher

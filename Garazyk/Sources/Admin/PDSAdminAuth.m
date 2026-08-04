@@ -171,7 +171,7 @@ static NSString *PDSAdminAuthSanitizedErrorSummary(NSError *error) {
                                       (long)error.code];
 }
 
-static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *minter) {
+static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(ATProtoJWTMinter *minter) {
     if (!minter) {
         return nil;
     }

@@ -22,7 +22,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
 @interface PDSSpaceReconciler ()
 @property(nonatomic, strong) PDSSpaceStore *spaceStore;
 @property(nonatomic, strong) PDSDatabasePool *userDatabasePool;
-@property(nonatomic, strong) JWTMinter *jwtMinter;
+@property(nonatomic, strong) ATProtoJWTMinter *jwtMinter;
 @property(nonatomic, assign) NSTimeInterval interval;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG, nullable) dispatch_source_t timer;
@@ -33,7 +33,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
 
 - (instancetype)initWithSpaceStore:(PDSSpaceStore *)spaceStore
                    userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                         jwtMinter:(JWTMinter *)jwtMinter
+                         jwtMinter:(ATProtoJWTMinter *)jwtMinter
                 intervalInSeconds:(NSTimeInterval)interval {
   self = [super init];
   if (!self) return nil;

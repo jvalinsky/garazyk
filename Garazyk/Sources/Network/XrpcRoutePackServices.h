@@ -26,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class FeedService;
 @class PDSSpaceStore;
 @class PDSSpaceReconciler;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class ATProtoAuthVerifier;
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
@@ -51,7 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol XrpcRoutePackServices <NSObject>
 
 @property (nonatomic, readonly, nullable) XrpcDispatcher *dispatcher;
-@property (nonatomic, readonly, nullable) JWTMinter *jwtMinter;
+@property (nonatomic, readonly, nullable) ATProtoJWTMinter *jwtMinter;
 @property (nonatomic, readonly, nullable) ATProtoAuthVerifier *authVerifier;
 @property (nonatomic, readonly, nullable) id<PDSAdminController> adminController;
 @property (nonatomic, readonly, nullable) ATProtoServiceConfiguration *configuration;
@@ -94,7 +94,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XrpcRoutePackServiceBag : NSObject <XrpcRoutePackServices>
 
 @property (nonatomic, readonly, nullable) XrpcDispatcher *dispatcher;
-@property (nonatomic, readonly, nullable) JWTMinter *jwtMinter;
+@property (nonatomic, readonly, nullable) ATProtoJWTMinter *jwtMinter;
 @property (nonatomic, strong, nullable) ATProtoAuthVerifier *authVerifier;
 @property (nonatomic, readonly, nullable) id<PDSAdminController> adminController;
 @property (nonatomic, readonly, nullable) ATProtoServiceConfiguration *configuration;
@@ -129,7 +129,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Performs the initWithDispatcher operation.
  */
 - (instancetype)initWithDispatcher:(nullable XrpcDispatcher *)dispatcher
-                         jwtMinter:(nullable JWTMinter *)jwtMinter
+                         jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
                    adminController:(nullable id<PDSAdminController>)adminController
                       configuration:(nullable ATProtoServiceConfiguration *)configuration
                         adminSecret:(nullable NSString *)adminSecret

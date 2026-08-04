@@ -12,7 +12,7 @@
 @interface OAuthPublicClientTests : XCTestCase
 @property(nonatomic, strong) OAuth2Handler *handler;
 @property(nonatomic, strong) PDSDatabase *database;
-@property(nonatomic, strong) JWTMinter *minter;
+@property(nonatomic, strong) ATProtoJWTMinter *minter;
 @end
 
 @implementation OAuthPublicClientTests
@@ -50,7 +50,7 @@
   XCTAssertTrue(success, @"Failed to create part requests table: %@", error);
 
   self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
-  self.minter = [[JWTMinter alloc] init];
+  self.minter = [[ATProtoJWTMinter alloc] init];
 
   // Seed a public client (no secret)
   NSDictionary *client = @{

@@ -21,7 +21,7 @@
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     
-    JWTMinter *jwtMinter = services.jwtMinter;
+    ATProtoJWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_moderation_createReport handler:^(HttpRequest *request, HttpResponse *response) {

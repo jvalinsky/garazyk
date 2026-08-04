@@ -135,7 +135,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
 
 - (instancetype)initWithAccountRepository:(id<PDSAccountRepository>)accountRepository
                         sessionRepository:(id<PDSSessionRepository>)sessionRepository
-                                   minter:(nullable JWTMinter *)minter
+                                   minter:(nullable ATProtoJWTMinter *)minter
                             emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
     if (self = [super init]) {
         _accountRepository = accountRepository;
@@ -148,7 +148,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
 
 - (instancetype)initWithAccountRepository:(id<PDSAccountRepository>)accountRepository
                         sessionRepository:(id<PDSSessionRepository>)sessionRepository
-                                   minter:(nullable JWTMinter *)minter {
+                                   minter:(nullable ATProtoJWTMinter *)minter {
     return [self initWithAccountRepository:accountRepository
                            sessionRepository:sessionRepository
                                       minter:minter
@@ -206,7 +206,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         return nil;
     }
 
-    JWTMinter *fallbackMinter = [[JWTMinter alloc] init];
+    ATProtoJWTMinter *fallbackMinter = [[ATProtoJWTMinter alloc] init];
     NSString *issuer = self.minter.issuer.length > 0 ? self.minter.issuer : @"http://localhost";
     fallbackMinter.issuer = issuer;
     fallbackMinter.audience = self.minter.audience.length > 0 ? self.minter.audience : issuer;
@@ -290,7 +290,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         return nil;
     }
 
-    JWTMinter *fallbackMinter = [[JWTMinter alloc] init];
+    ATProtoJWTMinter *fallbackMinter = [[ATProtoJWTMinter alloc] init];
     NSString *issuer = self.minter.issuer.length > 0 ? self.minter.issuer : @"http://localhost";
     fallbackMinter.issuer = issuer;
     fallbackMinter.audience = self.minter.audience.length > 0 ? self.minter.audience : issuer;

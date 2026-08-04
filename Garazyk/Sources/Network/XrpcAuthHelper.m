@@ -114,7 +114,7 @@ static void XrpcAuthAttachDPoPNonceToResponseIfMissing(HttpResponse *response) {
     }
 }
 
-static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter) {
+static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jwtMinter) {
     NSString *hostHeader = [[request headerForKey:@"Host"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSString *hostLower = [hostHeader lowercaseString];
     BOOL localHostHeader = [hostLower containsString:@"localhost"] ||
@@ -193,7 +193,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
 #pragma mark - Public Methods
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
-                             jwtMinter:(JWTMinter *)jwtMinter
+                             jwtMinter:(ATProtoJWTMinter *)jwtMinter
                        adminController:(id<PDSAdminController>)adminController
                                request:(HttpRequest *)request {
     return [self extractDIDFromAuthHeader:authHeader
@@ -204,7 +204,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
 }
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
-                             jwtMinter:(JWTMinter *)jwtMinter
+                             jwtMinter:(ATProtoJWTMinter *)jwtMinter
                        adminController:(nullable id<PDSAdminController>)adminController
                                request:(HttpRequest *)request
                               response:(nullable HttpResponse *)response {
@@ -217,7 +217,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
 }
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
-                             jwtMinter:(JWTMinter *)jwtMinter
+                             jwtMinter:(ATProtoJWTMinter *)jwtMinter
                        adminController:(nullable id<PDSAdminController>)adminController
                      sessionRepository:(nullable id<PDSSessionRepository>)sessionRepository
                                request:(HttpRequest *)request
@@ -495,7 +495,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
 + (BOOL)authorizeAdminRequest:(HttpRequest *)request
                       response:(HttpResponse *)response
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                     jwtMinter:(JWTMinter *)jwtMinter
+                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     NSString *did = [self extractDIDFromAuthHeader:authHeader
@@ -534,7 +534,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
 
 #pragma mark - Private Helpers
 
-+ (NSArray<NSString *> *)allowedAlgorithmsForMinter:(JWTMinter *)minter {
++ (NSArray<NSString *> *)allowedAlgorithmsForMinter:(ATProtoJWTMinter *)minter {
     if (!minter) {
         return nil;
     }

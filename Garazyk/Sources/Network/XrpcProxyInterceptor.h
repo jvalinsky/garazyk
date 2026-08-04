@@ -4,7 +4,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class ATProtoServiceConfiguration;
 @class PDSDatabasePool;
 @class PDSServiceDatabases;
@@ -21,7 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)installOnDispatcher:(XrpcDispatcher *)dispatcher
               configuration:(ATProtoServiceConfiguration *)configuration
-                  jwtMinter:(JWTMinter *)jwtMinter
+                  jwtMinter:(ATProtoJWTMinter *)jwtMinter
             adminController:(id<PDSAdminController>)adminController
            serviceDatabases:(PDSServiceDatabases *)serviceDatabases
            userDatabasePool:(PDSDatabasePool *)userDatabasePool;

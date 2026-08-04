@@ -30,7 +30,7 @@
 
 + (void)registerRoutesWithServer:(HttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
-                       jwtMinter:(nullable JWTMinter *)jwtMinter
+                       jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
                    dataDirectory:(nullable NSString *)dataDirectory
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller {
