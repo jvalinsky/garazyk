@@ -86,7 +86,7 @@ static NSString *GZUIStringFromFileDescriptor(int descriptor) {
     }
 
     char **childArguments = calloc(arguments.count + 2, sizeof(char *));
-    XCTAssertNotEqual(childArguments, NULL);
+    XCTAssertTrue(childArguments != NULL);
     if (!childArguments) {
         close(stdoutPipe[0]);
         close(stdoutPipe[1]);
@@ -336,7 +336,11 @@ static NSString *GZUIStringFromFileDescriptor(int descriptor) {
     close(reservation);
 
     NSTask *task = [[NSTask alloc] init];
+#if defined(__APPLE__)
     task.executableURL = [NSURL fileURLWithPath:[self garazykUIExecutablePath]];
+#else
+    task.launchPath = [self garazykUIExecutablePath];
+#endif
     task.arguments = @[@"serve", @"--host", @"127.0.0.1", @"--port", port];
     NSPipe *standardOutput = [NSPipe pipe];
     NSPipe *standardError = [NSPipe pipe];

@@ -18,7 +18,7 @@
     PDSBlobAuditHandler *first = [PDSBlobAuditHandler sharedHandler];
     PDSBlobAuditHandler *second = [PDSBlobAuditHandler sharedHandler];
     XCTAssertNotNil(first);
-    XCTAssertEqual(first, second);
+    XCTAssertEqualObjects(first, second);
 }
 
 - (void)testAuditEndpointReturnsUnavailableWithoutManager {

@@ -143,7 +143,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testServiceInitializationSetsDatabase {
     XCTAssertNotNil(self.service);
-    XCTAssertEqual(self.service.database, self.database);
+    XCTAssertEqualObjects(self.service.database, self.database);
 }
 
 - (void)testUpdateAccountHandleAndEmail {
