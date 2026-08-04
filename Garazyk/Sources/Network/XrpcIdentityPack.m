@@ -720,7 +720,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
         GZ_LOG_INFO(@"Submitted PLC operation for DID %@", did);
 
         NSError *refreshError = nil;
-        DIDDocument *refreshedDocument = [[DIDResolver sharedResolver] resolveDIDSync:did forceRefresh:YES error:&refreshError];
+        ATProtoDIDDocument *refreshedDocument = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did forceRefresh:YES error:&refreshError];
         if (!refreshedDocument) {
             // Submission has already succeeded.  Do not return a retryable status here:
             // repeating the operation would use a stale `prev` CID.  A later resolver

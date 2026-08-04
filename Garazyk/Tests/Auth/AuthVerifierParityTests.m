@@ -109,7 +109,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
 
 - (void)setUp {
     [super setUp];
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     self.minter = [[JWTMinter alloc] init];
     self.minter.issuer = @"https://pds.example.com";
     self.minter.audience = self.minter.issuer;

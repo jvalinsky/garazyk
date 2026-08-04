@@ -111,7 +111,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
     */
     
     NSError *keyError = nil;
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&keyError];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&keyError];
     XCTAssertNotNil(keyPair, @"Failed to generate key pair: %@", keyError);
 
     uint8_t prefixBytes[] = {0xE7, 0x01};

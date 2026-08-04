@@ -109,13 +109,13 @@
     }
 
     // 3. Parse the commit to extract the data CID
-    CBORValue *commitValue = [CBORValue decode:commitBlockData];
+    ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlockData];
     if (!commitValue || commitValue.type != CBORTypeMap) {
         GZ_LOG_ERROR(@"MSTCacheManager: commit block is not a CBOR map for %@", did);
         return nil;
     }
 
-    CBORValue *dataTag = commitValue.map[[CBORValue textString:@"data"]];
+    ATProtoCBORValue *dataTag = commitValue.map[[ATProtoCBORValue textString:@"data"]];
     if (!dataTag || dataTag.type != CBORTypeTag) {
         GZ_LOG_ERROR(@"MSTCacheManager: commit block missing 'data' tag for %@", did);
         return nil;

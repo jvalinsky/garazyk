@@ -516,7 +516,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         _jwtMinter.signingAlgorithm = @"ES256K";
         _jwtMinter.issuer = self.issuer;
         _jwtMinter.audience = self.issuer;
-        _didResolver = [[DIDResolver alloc] init];
+        _didResolver = [[ATProtoDIDResolver alloc] init];
         _didResolver.plcURL = [ATProtoServiceConfiguration sharedConfiguration].plcURL;
         _handleResolver = [[HandleResolver alloc] init];
         _database = database;
@@ -524,7 +524,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         BOOL hasProvisionedSigningKey = NO;
         if (OAuth2ShouldUseEphemeralJWTKeyForTests()) {
             NSError *fallbackError = nil;
-            Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+            ATProtoSecp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
             if (fallbackKeyPair) {
                 _keyManager = nil;
                 _jwtMinter.keyManager = nil;
@@ -549,7 +549,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                                     [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
                 if (!isProduction) {
                     NSError *fallbackError = nil;
-                    Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+                    ATProtoSecp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
                     if (fallbackKeyPair) {
                         _keyManager = nil;
                         _jwtMinter.keyManager = nil;
@@ -1250,7 +1250,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     // Check if it's already a DID
     if ([identity hasPrefix:@"did:"]) {
         // Validate DID format and resolve to ensure it exists
-        DIDDocument *doc = [self.didResolver resolveDIDSync:identity error:error];
+        ATProtoDIDDocument *doc = [self.didResolver resolveDIDSync:identity error:error];
         return doc ? identity : nil;
     } else {
         // It's a handle - resolve to DID

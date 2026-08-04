@@ -21,17 +21,17 @@
 /// @see ParserRecursionExploitTests.testNestingDepthIsBounded
 static const NSUInteger kCBORMaxDecodeDepth = 64;
 
-#pragma mark - CBORValue Implementation
+#pragma mark - ATProtoCBORValue Implementation
 
-@implementation CBORValue
+@implementation ATProtoCBORValue
 
 + (instancetype)unsignedInteger:(NSUInteger)value {
-    CBORValue *result = [[CBORValue alloc] initWithUnsignedInteger:@(value)];
+    ATProtoCBORValue *result = [[ATProtoCBORValue alloc] initWithUnsignedInteger:@(value)];
     return result;
 }
 
 + (instancetype)negativeInteger:(NSInteger)value {
-    CBORValue *result = [[CBORValue alloc] initWithNegativeInteger:@(value)];
+    ATProtoCBORValue *result = [[ATProtoCBORValue alloc] initWithNegativeInteger:@(value)];
     return result;
 }
 
@@ -43,15 +43,15 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     return [[self alloc] initWithTextString:string];
 }
 
-+ (instancetype)array:(NSArray<CBORValue *> *)array {
++ (instancetype)array:(NSArray<ATProtoCBORValue *> *)array {
     return [[self alloc] initWithArray:array];
 }
 
-+ (instancetype)map:(NSDictionary<CBORValue *, CBORValue *> *)map {
++ (instancetype)map:(NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *)map {
     return [[self alloc] initWithMap:map];
 }
 
-+ (instancetype)tag:(NSUInteger)tag value:(CBORValue *)value {
++ (instancetype)tag:(NSUInteger)tag value:(ATProtoCBORValue *)value {
     return [[self alloc] initWithTag:@(tag) value:value];
 }
 
@@ -107,7 +107,7 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     return self;
 }
 
-- (instancetype)initWithArray:(NSArray<CBORValue *> *)array {
+- (instancetype)initWithArray:(NSArray<ATProtoCBORValue *> *)array {
     self = [self initWithType:CBORTypeArray];
     if (self) {
         _array = array;
@@ -115,7 +115,7 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     return self;
 }
 
-- (instancetype)initWithMap:(NSDictionary<CBORValue *, CBORValue *> *)map {
+- (instancetype)initWithMap:(NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *)map {
     self = [self initWithType:CBORTypeMap];
     if (self) {
         _map = map;
@@ -123,7 +123,7 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     return self;
 }
 
-- (instancetype)initWithTag:(NSNumber *)tag value:(CBORValue *)value {
+- (instancetype)initWithTag:(NSNumber *)tag value:(ATProtoCBORValue *)value {
     self = [self initWithType:CBORTypeTag];
     if (self) {
         _tag = tag;
@@ -149,10 +149,10 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
 }
 
 - (BOOL)isEqual:(id)object {
-    if (![object isKindOfClass:[CBORValue class]]) {
+    if (![object isKindOfClass:[ATProtoCBORValue class]]) {
         return NO;
     }
-    CBORValue *other = (CBORValue *)object;
+    ATProtoCBORValue *other = (ATProtoCBORValue *)object;
     if (self.type != other.type) {
         return NO;
     }
@@ -218,7 +218,7 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
 }
 
 - (id)copyWithZone:(NSZone *)zone {
-    CBORValue *copy = [[CBORValue allocWithZone:zone] initWithType:self.type];
+    ATProtoCBORValue *copy = [[ATProtoCBORValue allocWithZone:zone] initWithType:self.type];
     copy->_unsignedInteger = self.unsignedInteger;
     copy->_negativeInteger = self.negativeInteger;
     copy->_byteString = self.byteString;
@@ -238,13 +238,13 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
 
 @implementation ATProtoCBOREncoder
 
-+ (NSData *)encode:(CBORValue *)value {
++ (NSData *)encode:(ATProtoCBORValue *)value {
     NSMutableData *data = [NSMutableData data];
     [self encodeValue:value toData:data];
     return [data copy];
 }
 
-+ (void)encodeValue:(CBORValue *)value toData:(NSMutableData *)data {
++ (void)encodeValue:(ATProtoCBORValue *)value toData:(NSMutableData *)data {
     switch (value.type) {
         case CBORTypeUnsignedInteger:
             [self encodeUnsignedInteger:value.unsignedInteger.unsignedIntegerValue toData:data];
@@ -376,21 +376,21 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     [data appendData:utf8];
 }
 
-+ (void)encodeArray:(NSArray<CBORValue *> *)array toData:(NSMutableData *)output {
++ (void)encodeArray:(NSArray<ATProtoCBORValue *> *)array toData:(NSMutableData *)output {
     NSUInteger count = array.count;
     [self encodeCount:count withMajorType:0x80 toData:output];
-    for (CBORValue *value in array) {
+    for (ATProtoCBORValue *value in array) {
         [self encodeValue:value toData:output];
     }
 }
 
-+ (void)encodeMap:(NSDictionary<CBORValue *, CBORValue *> *)map toData:(NSMutableData *)output {
++ (void)encodeMap:(NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *)map toData:(NSMutableData *)output {
     NSUInteger count = map.count;
     [self encodeCount:count withMajorType:0xA0 toData:output];
     if (count == 0) return;
     
     NSArray *keys = [map allKeys];
-    NSArray *sortedKeys = [keys sortedArrayUsingComparator:^NSComparisonResult(CBORValue *key1, CBORValue *key2) {
+    NSArray *sortedKeys = [keys sortedArrayUsingComparator:^NSComparisonResult(ATProtoCBORValue *key1, ATProtoCBORValue *key2) {
         NSData *d1 = [key1 encode];
         NSData *d2 = [key2 encode];
         if (d1.length < d2.length) return NSOrderedAscending;
@@ -401,13 +401,13 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
         return NSOrderedSame;
     }];
     
-    for (CBORValue *key in sortedKeys) {
+    for (ATProtoCBORValue *key in sortedKeys) {
         [self encodeValue:key toData:output];
         [self encodeValue:map[key] toData:output];
     }
 }
 
-+ (void)encodeTag:(NSUInteger)tag value:(CBORValue *)value toData:(NSMutableData *)data {
++ (void)encodeTag:(NSUInteger)tag value:(ATProtoCBORValue *)value toData:(NSMutableData *)data {
     [self encodeCount:tag withMajorType:0xC0 toData:data];
     [self encodeValue:value toData:data];
 }
@@ -432,7 +432,7 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
 
 @implementation ATProtoCBORDecoder
 
-+ (CBORValue *)decode:(NSData *)data {
++ (ATProtoCBORValue *)decode:(NSData *)data {
     // §3.4 option (c): the generic CBOR decoder is lenient; strict canonical-form
     // enforcement (trailing-data rejection, duplicate-key rejection, non-minimal
     // length rejection) belongs in ATProtoDagCBOR for content-addressed callers.
@@ -440,12 +440,12 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     // nesting beyond kCBORMaxDecodeDepth.
     // Match test: ParserRecursionExploitTests/testNestingDepthIsBounded.
     NSUInteger offset = 0;
-    CBORValue *result = [self decodeInternal:data offset:&offset depth:0];
+    ATProtoCBORValue *result = [self decodeInternal:data offset:&offset depth:0];
     if (result == nil) return nil;
     return result;
 }
 
-+ (CBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset {
++ (ATProtoCBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset {
     return [self decodeInternal:data offset:offset depth:0];
 }
 
@@ -456,7 +456,7 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
 /// @param depth Current nesting depth. Must be <= kCBORMaxDecodeDepth.
 /// @return The decoded CBOR value, or nil on failure (including exceeding
 ///   the depth cap).
-+ (CBORValue *)decodeInternal:(NSData *)data offset:(NSUInteger *)offset depth:(NSUInteger)depth {
++ (ATProtoCBORValue *)decodeInternal:(NSData *)data offset:(NSUInteger *)offset depth:(NSUInteger)depth {
     if (depth > kCBORMaxDecodeDepth) return nil;
     if (*offset >= data.length) {
         return nil;
@@ -467,7 +467,7 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     uint8_t majorType = (initial & 0xE0) >> 5;
     uint8_t additional = initial & 0x1F;
 
-    CBORValue *result = nil;
+    ATProtoCBORValue *result = nil;
     switch (majorType) {
         case 0: result = [self decodeUnsignedInteger:additional data:data offset:offset]; break;
         case 1: result = [self decodeNegativeInteger:additional data:data offset:offset]; break;
@@ -482,7 +482,7 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     return result;
 }
 
-+ (CBORValue *)decodeUnsignedInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
++ (ATProtoCBORValue *)decodeUnsignedInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     NSUInteger value = 0;
     if (additional < 24) {
         value = additional;
@@ -492,21 +492,21 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
         value = [self readIntegerFromData:data offset:offset bytesToRead:bytesToRead];
         *offset += bytesToRead;
     }
-    return [CBORValue unsignedInteger:value];
+    return [ATProtoCBORValue unsignedInteger:value];
 }
 
-+ (CBORValue *)decodeNegativeInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
-    CBORValue *unsignedValue = [self decodeUnsignedInteger:additional data:data offset:offset];
++ (ATProtoCBORValue *)decodeNegativeInteger:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
+    ATProtoCBORValue *unsignedValue = [self decodeUnsignedInteger:additional data:data offset:offset];
     if (!unsignedValue) return nil;
     // §3.3: the old expression -(NSInteger)(u + 1) has signed-overflow UB
     // when u == INT64_MAX (payload 0x7FFFF...). Fix shape matches §1.5 item 4.
     NSUInteger u = unsignedValue.unsignedInteger.unsignedIntegerValue;
     if (u > (NSUInteger)INT64_MAX) return nil;  // Payload exceeds representable range.
     NSInteger value = -1 - (NSInteger)u;
-    return [CBORValue negativeInteger:value];
+    return [ATProtoCBORValue negativeInteger:value];
 }
 
-+ (CBORValue *)decodeByteString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
++ (ATProtoCBORValue *)decodeByteString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     NSUInteger length = 0;
     if (additional < 24) {
         length = additional;
@@ -519,10 +519,10 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     if (length > data.length - *offset) return nil;
     NSData *value = [data subdataWithRange:NSMakeRange(*offset, length)];
     *offset += length;
-    return [CBORValue byteString:value];
+    return [ATProtoCBORValue byteString:value];
 }
 
-+ (CBORValue *)decodeTextString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
++ (ATProtoCBORValue *)decodeTextString:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     NSUInteger length = 0;
     if (additional < 24) {
         length = additional;
@@ -536,10 +536,10 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
     NSData *valueData = [data subdataWithRange:NSMakeRange(*offset, length)];
     *offset += length;
     NSString *value = [[NSString alloc] initWithData:valueData encoding:NSUTF8StringEncoding];
-    return [CBORValue textString:value ?: @""];
+    return [ATProtoCBORValue textString:value ?: @""];
 }
 
-+ (CBORValue *)decodeArray:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset depth:(NSUInteger)depth {
++ (ATProtoCBORValue *)decodeArray:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset depth:(NSUInteger)depth {
     NSUInteger count = 0;
     if (additional < 24) {
         count = additional;
@@ -556,16 +556,16 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
         return nil;
     }
     
-    NSMutableArray<CBORValue *> *array = [NSMutableArray arrayWithCapacity:count];
+    NSMutableArray<ATProtoCBORValue *> *array = [NSMutableArray arrayWithCapacity:count];
     for (NSUInteger i = 0; i < count; i++) {
-        CBORValue *value = [self decodeInternal:data offset:offset depth:depth + 1];
+        ATProtoCBORValue *value = [self decodeInternal:data offset:offset depth:depth + 1];
         if (!value) return nil;
         [array addObject:value];
     }
-    return [CBORValue array:array];
+    return [ATProtoCBORValue array:array];
 }
 
-+ (CBORValue *)decodeMap:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset depth:(NSUInteger)depth {
++ (ATProtoCBORValue *)decodeMap:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset depth:(NSUInteger)depth {
     NSUInteger count = 0;
     if (additional < 24) {
         count = additional;
@@ -582,34 +582,34 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
         return nil;
     }
     
-    NSMutableDictionary<CBORValue *, CBORValue *> *map = [NSMutableDictionary dictionary];
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *map = [NSMutableDictionary dictionary];
     for (NSUInteger i = 0; i < count; i++) {
-        CBORValue *key = [self decodeInternal:data offset:offset depth:depth + 1];
-        CBORValue *value = [self decodeInternal:data offset:offset depth:depth + 1];
+        ATProtoCBORValue *key = [self decodeInternal:data offset:offset depth:depth + 1];
+        ATProtoCBORValue *value = [self decodeInternal:data offset:offset depth:depth + 1];
         if (!key || !value) return nil;
         map[key] = value;
     }
-    return [CBORValue map:map];
+    return [ATProtoCBORValue map:map];
 }
 
-+ (CBORValue *)decodeTag:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset depth:(NSUInteger)depth {
-    CBORValue *tagValue = [self decodeUnsignedInteger:additional data:data offset:offset];
++ (ATProtoCBORValue *)decodeTag:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset depth:(NSUInteger)depth {
+    ATProtoCBORValue *tagValue = [self decodeUnsignedInteger:additional data:data offset:offset];
     if (!tagValue) return nil;
-    CBORValue *value = [self decodeInternal:data offset:offset depth:depth + 1];
+    ATProtoCBORValue *value = [self decodeInternal:data offset:offset depth:depth + 1];
     if (!value) return nil;
-    return [CBORValue tag:tagValue.unsignedInteger.unsignedIntegerValue value:value];
+    return [ATProtoCBORValue tag:tagValue.unsignedInteger.unsignedIntegerValue value:value];
 }
 
-+ (CBORValue *)decodeSimpleOrFloat:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
++ (ATProtoCBORValue *)decodeSimpleOrFloat:(uint8_t)additional data:(NSData *)data offset:(NSUInteger *)offset {
     // §3.4 (and §1.5 item 4): for simple-value additional-info values 24, 25,
     // 26, and 27, the simple value itself is encoded as the big-endian
     // unsigned integer (1/2/4/8 bytes respectively) immediately following the
-    // additional-info byte. The previous code returned [CBORValue simple:additional]
+    // additional-info byte. The previous code returned [ATProtoCBORValue simple:additional]
     // without advancing the offset, so the 1-byte payload was re-read as the head
     // of the next CBOR item -- a structural desync that produces two records
     // from identical logical bytes.
     // Match test: CBORParserExploitTests/testSimpleValuePayloadAdvancesOffset.
-    if (additional == 22) return [CBORValue nilValue];
+    if (additional == 22) return [ATProtoCBORValue nilValue];
     NSUInteger bytesToConsume;
     switch (additional) {
         case 24: bytesToConsume = 1; break;
@@ -620,13 +620,13 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
             // additional < 24: simple value, no payload.
             // additional >= 28: reserved/unassigned (28-30) or BREAK (31);
             // preserved as a no-payload simple value for backward compat.
-            return [CBORValue simple:additional];
+            return [ATProtoCBORValue simple:additional];
     }
     if (*offset + bytesToConsume > data.length) return nil;
     NSUInteger simpleValue = [self readIntegerFromData:data offset:offset
                                             bytesToRead:bytesToConsume];
     *offset += bytesToConsume;
-    return [CBORValue simple:simpleValue];
+    return [ATProtoCBORValue simple:simpleValue];
 }
 
 + (NSUInteger)bytesToReadForAdditional:(uint8_t)additional {

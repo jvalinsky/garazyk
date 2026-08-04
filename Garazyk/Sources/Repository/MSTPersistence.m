@@ -31,7 +31,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
                            levelCache:(NSMutableDictionary<NSString *, NSNumber *> *)levelCache
                        computedLevel:(uint32_t *)computedLevel
                                  error:(NSError **)error;
-- (nullable CID *)cidFromTaggedValue:(CBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error;
+- (nullable CID *)cidFromTaggedValue:(ATProtoCBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error;
 @end
 
 @implementation MSTPersistence
@@ -194,7 +194,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
 
 #pragma mark - Helpers
 
-- (nullable CID *)cidFromTaggedValue:(CBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error {
+- (nullable CID *)cidFromTaggedValue:(ATProtoCBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error {
     if (!value) {
         if (allowNil) return nil;
         if (error) {
@@ -267,7 +267,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         return nil;
     }
 
-    CBORValue *nodeValue = [CBORValue decode:block.blockData];
+    ATProtoCBORValue *nodeValue = [ATProtoCBORValue decode:block.blockData];
     if (!nodeValue || nodeValue.type != CBORTypeMap) {
         if (error && !*error) {
             *error = [NSError errorWithDomain:MSTPersistenceErrorDomain
@@ -277,8 +277,8 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         return nil;
     }
 
-    CBORValue *entriesValue = nodeValue.map[[CBORValue textString:@"e"]];
-    NSArray<CBORValue *> *entriesArray = (entriesValue && entriesValue.type == CBORTypeArray)
+    ATProtoCBORValue *entriesValue = nodeValue.map[[ATProtoCBORValue textString:@"e"]];
+    NSArray<ATProtoCBORValue *> *entriesArray = (entriesValue && entriesValue.type == CBORTypeArray)
         ? entriesValue.array
         : @[];
 
@@ -286,11 +286,11 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     NSString *prevKey = @"";
     uint32_t nodeLevel = 0;
 
-    for (CBORValue *entryMap in entriesArray) {
+    for (ATProtoCBORValue *entryMap in entriesArray) {
         if (entryMap.type != CBORTypeMap) continue;
 
-        NSData *suffixData = entryMap.map[[CBORValue textString:@"k"]].byteString ?: [NSData data];
-        CBORValue *prefixValue = entryMap.map[[CBORValue textString:@"p"]];
+        NSData *suffixData = entryMap.map[[ATProtoCBORValue textString:@"k"]].byteString ?: [NSData data];
+        ATProtoCBORValue *prefixValue = entryMap.map[[ATProtoCBORValue textString:@"p"]];
         NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
         NSUInteger safeLen = MIN(prefixLen, prevKey.length);
         NSString *prefix = [prevKey substringToIndex:safeLen];
@@ -298,11 +298,11 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         NSString *fullKey = [prefix stringByAppendingString:suffix];
         prevKey = fullKey;
 
-        CBORValue *valueTag = entryMap.map[[CBORValue textString:@"v"]];
+        ATProtoCBORValue *valueTag = entryMap.map[[ATProtoCBORValue textString:@"v"]];
         CID *valueCID = [self cidFromTaggedValue:valueTag allowNil:NO error:error];
         if (!valueCID) return nil;
 
-        CBORValue *treeTag = entryMap.map[[CBORValue textString:@"t"]];
+        ATProtoCBORValue *treeTag = entryMap.map[[ATProtoCBORValue textString:@"t"]];
         CID *treeCID = [self cidFromTaggedValue:treeTag allowNil:YES error:error];
         MSTNode *treeNode = nil;
         uint32_t treeLevel = 0;
@@ -322,7 +322,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         [entries addObject:entry];
     }
 
-    CBORValue *leftTag = nodeValue.map[[CBORValue textString:@"l"]];
+    ATProtoCBORValue *leftTag = nodeValue.map[[ATProtoCBORValue textString:@"l"]];
     CID *leftCID = [self cidFromTaggedValue:leftTag allowNil:YES error:error];
     MSTNode *leftNode = nil;
     uint32_t leftLevel = 0;

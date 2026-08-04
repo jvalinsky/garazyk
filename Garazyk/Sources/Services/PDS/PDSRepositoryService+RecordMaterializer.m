@@ -113,12 +113,12 @@
 
 #pragma mark - CID Link Value
 
-- (CBORValue *)cidLinkValueForCID:(CID *)cid {
+- (ATProtoCBORValue *)cidLinkValueForCID:(CID *)cid {
     NSMutableData *cidBytes = [NSMutableData dataWithCapacity:1 + cid.bytes.length];
     uint8_t marker = 0x00;
     [cidBytes appendBytes:&marker length:1];
     [cidBytes appendData:cid.bytes];
-    return [CBORValue tag:42 value:[CBORValue byteString:cidBytes]];
+    return [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:cidBytes]];
 }
 
 @end

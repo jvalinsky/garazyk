@@ -996,8 +996,8 @@ static NSURL *didWebDocumentURL(NSString *did) {
         return;
     }
 
-    // Wrap as DIDDocument for endpoint extraction
-    DIDDocument *didDocument = [DIDDocument documentWithJSON:didDoc error:&resolveError];
+    // Wrap as ATProtoDIDDocument for endpoint extraction
+    ATProtoDIDDocument *didDocument = [ATProtoDIDDocument documentWithJSON:didDoc error:&resolveError];
     if (!didDocument || ![didDocument.id isEqualToString:didParam])
     {
         GZ_LOG_WARN(@"Relay getRepo: Invalid DID document for %@: %@", didParam,

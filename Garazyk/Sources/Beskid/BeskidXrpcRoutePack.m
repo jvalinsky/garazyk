@@ -199,7 +199,7 @@
     }
 
     // Cache miss: resolve fresh DID document
-    DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:&error];
+    ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:&error];
     if (!doc) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"DidNotFound", @"message": error.localizedDescription ?: @"DID not found"}];
@@ -232,7 +232,7 @@
 
     // Resolve DID Document
     NSError *error = nil;
-    DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:&error];
+    ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:&error];
     if (!doc) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"NotFound", @"message": error.localizedDescription ?: @"DID not found"}];
@@ -291,7 +291,7 @@
         NSString *fragment = parts.count > 1 ? [@"#" stringByAppendingString:parts[1]] : @"";
 
         NSError *error = nil;
-        DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:baseDid error:&error];
+        ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:baseDid error:&error];
         if (doc) {
             for (NSDictionary *service in doc.service ?: @[]) {
                 if (fragment.length > 0) {
@@ -467,7 +467,7 @@
     dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 
     if (resolved.length == 0) {
-        NSString *plcUrl = NSProcessInfo.processInfo.environment[@"PDS_PLC_URL"] ?: NSProcessInfo.processInfo.environment[@"PLC_URL"] ?: [DIDResolver sharedResolver].plcURL;
+        NSString *plcUrl = NSProcessInfo.processInfo.environment[@"PDS_PLC_URL"] ?: NSProcessInfo.processInfo.environment[@"PLC_URL"] ?: [ATProtoDIDResolver sharedResolver].plcURL;
         if (plcUrl.length > 0 && ![plcUrl isEqualToString:@"mock"] && ![plcUrl isEqualToString:@"skip"]) {
             DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
             plcResolver.timeout = 2.0;
@@ -523,7 +523,7 @@
 
     if (biDirectional) {
         NSError *docError = nil;
-        DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:resolved error:&docError];
+        ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:resolved error:&docError];
         if (!doc) {
             if (error) *error = docError ?: [NSError errorWithDomain:@"blue.microcosm.beskid" code:404 userInfo:@{NSLocalizedDescriptionKey: @"DID Document resolution failed"}];
             return nil;
@@ -541,11 +541,11 @@
     return resolved;
 }
 
-- (nullable NSString *)handleFromDocument:(DIDDocument *)doc {
+- (nullable NSString *)handleFromDocument:(ATProtoDIDDocument *)doc {
     return [ATProtoDIDDocumentFields normalizedHandleFromDocument:doc];
 }
 
-- (nullable NSString *)pdsEndpointFromDocument:(DIDDocument *)doc {
+- (nullable NSString *)pdsEndpointFromDocument:(ATProtoDIDDocument *)doc {
     return [ATProtoDIDDocumentFields pdsEndpointFromDocument:doc];
 }
 
@@ -575,7 +575,7 @@
     return endpoint;
 }
 
-- (nullable NSString *)signingKeyFromDocument:(DIDDocument *)doc {
+- (nullable NSString *)signingKeyFromDocument:(ATProtoDIDDocument *)doc {
     return [ATProtoDIDDocumentFields atprotoSigningKeyMultibaseFromDocument:doc];
 }
 
@@ -584,7 +584,7 @@
                                                      rkey:(NSString *)rkey
                                                       cid:(nullable NSString *)cid {
     NSError *error = nil;
-    DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:&error];
+    ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:&error];
     NSString *endpoint = [self effectivePDSEndpointForEndpoint:(doc ? [self pdsEndpointFromDocument:doc] : nil)];
     if (endpoint.length == 0) return nil;
 

@@ -27,7 +27,7 @@
     [data appendBytes:&value length:1];
     
     @try {
-        CBORValue *decoded = [ATProtoCBORDecoder decode:data];
+        ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:data];
         XCTAssertNil(decoded,
                      @"Deeply nested CBOR input (depth=%d) must be rejected by "
                      @"the depth cap (kCBORMaxDecodeDepth=64).", depth);
@@ -57,7 +57,7 @@
     [data appendBytes:&value length:1];
     
     @try {
-        CBORValue *decoded = [ATProtoCBORDecoder decode:data];
+        ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:data];
         XCTAssertNil(decoded,
                      @"Deeply nested CBOR map (depth=%d) must be rejected by "
                      @"the depth cap.", depth);
@@ -80,7 +80,7 @@
     // BUT if it tries to allocate memory for UINT32_MAX * pointer_size initially, it will crash/OOM.
     
     NSDate *start = [NSDate date];
-    CBORValue *decoded = [ATProtoCBORDecoder decode:data];
+    ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:data];
     NSTimeInterval duration = [[NSDate date] timeIntervalSinceDate:start];
     
     XCTAssertNil(decoded, @"Should fail to decode incomplete data");
@@ -96,7 +96,7 @@
     [data appendBytes:&count length:8];
     
     NSDate *start = [NSDate date];
-    CBORValue *decoded = [ATProtoCBORDecoder decode:data];
+    ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:data];
     NSTimeInterval duration = [[NSDate date] timeIntervalSinceDate:start];
     
     XCTAssertNil(decoded, @"Should fail to decode incomplete data");
@@ -114,7 +114,7 @@
     uint8_t junk = 0x41;
     [data appendBytes:&junk length:1]; // Only 1 byte provided
     
-    CBORValue *decoded = [ATProtoCBORDecoder decode:data];
+    ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:data];
     XCTAssertNil(decoded, @"Should return nil when data is truncated");
 }
 

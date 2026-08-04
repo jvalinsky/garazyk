@@ -29,7 +29,7 @@
 
 NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfill";
 
-static CID *AppViewBackfillCIDFromCBORValue(CBORValue *value) {
+static CID *AppViewBackfillCIDFromCBORValue(ATProtoCBORValue *value) {
     if (!value) return nil;
 
     if (value.type == CBORTypeTextString) {
@@ -48,24 +48,24 @@ static CID *AppViewBackfillCIDFromCBORValue(CBORValue *value) {
 }
 
 static BOOL AppViewBackfillBlockLooksLikeMSTNode(NSData *data) {
-    CBORValue *decoded = [CBORValue decode:data];
+    ATProtoCBORValue *decoded = [ATProtoCBORValue decode:data];
     if (!decoded || decoded.type != CBORTypeMap) return NO;
 
-    CBORValue *entries = decoded.map[[CBORValue textString:@"e"]];
-    CBORValue *left = decoded.map[[CBORValue textString:@"l"]];
+    ATProtoCBORValue *entries = decoded.map[[ATProtoCBORValue textString:@"e"]];
+    ATProtoCBORValue *left = decoded.map[[ATProtoCBORValue textString:@"l"]];
     return (entries && entries.type == CBORTypeArray) || left != nil;
 }
 
 static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastRev) {
-    CBORValue *decoded = [CBORValue decode:data];
+    ATProtoCBORValue *decoded = [ATProtoCBORValue decode:data];
     if (!decoded || decoded.type != CBORTypeMap) return nil;
 
-    CBORValue *revValue = decoded.map[[CBORValue textString:@"rev"]];
+    ATProtoCBORValue *revValue = decoded.map[[ATProtoCBORValue textString:@"rev"]];
     if (lastRev && revValue.type == CBORTypeTextString) {
         *lastRev = revValue.textString;
     }
 
-    return AppViewBackfillCIDFromCBORValue(decoded.map[[CBORValue textString:@"data"]]);
+    return AppViewBackfillCIDFromCBORValue(decoded.map[[ATProtoCBORValue textString:@"data"]]);
 }
 
 - (instancetype)initWithDID:(NSString *)did

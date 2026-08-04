@@ -207,7 +207,7 @@
 }
 
 - (void)testGetDID {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[[keyPair didKeyString]],
@@ -247,7 +247,7 @@
 }
 
 - (void)testPostDID {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[[keyPair didKeyString]],
@@ -309,7 +309,7 @@
 
 - (void)testPostInvalidDID {
     NSString *wrongDid = @"did:plc:wrong";
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[[keyPair didKeyString]],
@@ -392,7 +392,7 @@
 #pragma mark - /:did/data endpoint
 
 - (PLCOperation *)insertTestOperationForDID:(NSString *)did {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[keyPair.didKeyString, @"did:key:zQ3shP5TBe1sQfSttXty15FAEHV1DZgcxRZNxvEWnPfLFwLxJ"],

@@ -16,7 +16,7 @@
 @class STARCommit;
 @class STARL0Writer;
 @class STARLiteWriter;
-@class CBORValue;
+@class ATProtoCBORValue;
 @class PDSBlockRepository;
 @class PDSRepoRepository;
 
@@ -42,7 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Returns serialized record block data when the record can be encoded for CAR export. */
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record;
 /** @abstract Wraps a CID as the DAG-CBOR link value used by repository commits. */
-- (CBORValue *)cidLinkValueForCID:(CID *)cid;
+- (ATProtoCBORValue *)cidLinkValueForCID:(CID *)cid;
 /** @abstract Loads the persisted head commit and its decoded metadata for the actor store. */
 - (BOOL)loadStoredHeadCommitForDid:(NSString *)did
                               store:(PDSActorStore *)store

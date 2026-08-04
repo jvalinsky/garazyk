@@ -67,13 +67,13 @@ static NSData *STARVarintData(uint64_t value) {
 // CID helper: encode a CID as a DAG-CBOR tag-42 byte string (with 0x00 prefix)
 // ---------------------------------------------------------------------------
 
-static CBORValue *CIDToTaggedCBOR(CID *cid) {
-    if (!cid) return [CBORValue nilValue];
+static ATProtoCBORValue *CIDToTaggedCBOR(CID *cid) {
+    if (!cid) return [ATProtoCBORValue nilValue];
     NSMutableData *tagged = [NSMutableData dataWithCapacity:1 + cid.bytes.length];
     uint8_t zero = 0x00;
     [tagged appendBytes:&zero length:1];
     [tagged appendData:cid.bytes];
-    return [CBORValue tag:42 value:[CBORValue byteString:tagged]];
+    return [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:tagged]];
 }
 
 // ---------------------------------------------------------------------------
@@ -116,27 +116,27 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 }
 
 - (nullable NSData *)serializeToDagCBOR:(NSError **)error {
-    NSMutableDictionary<CBORValue *, CBORValue *> *dict = [NSMutableDictionary dictionary];
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *dict = [NSMutableDictionary dictionary];
 
     // Spec order: did, version, data, rev, prev, sig
-    dict[[CBORValue textString:@"did"]] = [CBORValue textString:self.did];
-    dict[[CBORValue textString:@"version"]] = [CBORValue unsignedInteger:self.version];
+    dict[[ATProtoCBORValue textString:@"did"]] = [ATProtoCBORValue textString:self.did];
+    dict[[ATProtoCBORValue textString:@"version"]] = [ATProtoCBORValue unsignedInteger:self.version];
 
     if (self.data) {
-        dict[[CBORValue textString:@"data"]] = CIDToTaggedCBOR(self.data);
+        dict[[ATProtoCBORValue textString:@"data"]] = CIDToTaggedCBOR(self.data);
     }
 
-    dict[[CBORValue textString:@"rev"]] = [CBORValue textString:self.rev];
+    dict[[ATProtoCBORValue textString:@"rev"]] = [ATProtoCBORValue textString:self.rev];
 
     if (self.prev) {
-        dict[[CBORValue textString:@"prev"]] = CIDToTaggedCBOR(self.prev);
+        dict[[ATProtoCBORValue textString:@"prev"]] = CIDToTaggedCBOR(self.prev);
     }
 
     if (self.sig) {
-        dict[[CBORValue textString:@"sig"]] = [CBORValue byteString:self.sig];
+        dict[[ATProtoCBORValue textString:@"sig"]] = [ATProtoCBORValue byteString:self.sig];
     }
 
-    return [[CBORValue map:dict] encode];
+    return [[ATProtoCBORValue map:dict] encode];
 }
 
 @end
@@ -182,50 +182,50 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 }
 
 - (nullable NSData *)serializeToDagCBOR:(NSError **)error {
-    NSMutableArray<CBORValue *> *entriesCBOR = [NSMutableArray array];
+    NSMutableArray<ATProtoCBORValue *> *entriesCBOR = [NSMutableArray array];
 
     for (STARMstEntry *entry in self.entries) {
-        NSMutableDictionary<CBORValue *, CBORValue *> *entryDict = [NSMutableDictionary dictionary];
+        NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *entryDict = [NSMutableDictionary dictionary];
 
         // Spec order: k, p, v, V, t, T
-        entryDict[[CBORValue textString:@"k"]] = [CBORValue byteString:entry.keySuffix];
-        entryDict[[CBORValue textString:@"p"]] = [CBORValue unsignedInteger:entry.prefixLen];
+        entryDict[[ATProtoCBORValue textString:@"k"]] = [ATProtoCBORValue byteString:entry.keySuffix];
+        entryDict[[ATProtoCBORValue textString:@"p"]] = [ATProtoCBORValue unsignedInteger:entry.prefixLen];
 
         if (entry.value) {
-            entryDict[[CBORValue textString:@"v"]] = CIDToTaggedCBOR(entry.value);
+            entryDict[[ATProtoCBORValue textString:@"v"]] = CIDToTaggedCBOR(entry.value);
             if (entry.valueArchived) {
-                entryDict[[CBORValue textString:@"V"]] = [CBORValue simple:21]; // true
+                entryDict[[ATProtoCBORValue textString:@"V"]] = [ATProtoCBORValue simple:21]; // true
             }
         }
 
         if (entry.tree) {
-            entryDict[[CBORValue textString:@"t"]] = CIDToTaggedCBOR(entry.tree);
+            entryDict[[ATProtoCBORValue textString:@"t"]] = CIDToTaggedCBOR(entry.tree);
         } else if (entry.treeArchived) {
             // t must be present when T is true
             // This shouldn't happen for archived subtrees, but handle gracefully
         }
 
         if (entry.treeArchived) {
-            entryDict[[CBORValue textString:@"T"]] = [CBORValue simple:21]; // true
+            entryDict[[ATProtoCBORValue textString:@"T"]] = [ATProtoCBORValue simple:21]; // true
         }
 
-        [entriesCBOR addObject:[CBORValue map:entryDict]];
+        [entriesCBOR addObject:[ATProtoCBORValue map:entryDict]];
     }
 
     // Node spec order: l, L, e
-    NSMutableDictionary<CBORValue *, CBORValue *> *nodeDict = [NSMutableDictionary dictionary];
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *nodeDict = [NSMutableDictionary dictionary];
 
     if (self.left) {
-        nodeDict[[CBORValue textString:@"l"]] = CIDToTaggedCBOR(self.left);
+        nodeDict[[ATProtoCBORValue textString:@"l"]] = CIDToTaggedCBOR(self.left);
     }
 
     if (self.leftArchived) {
-        nodeDict[[CBORValue textString:@"L"]] = [CBORValue simple:21]; // true
+        nodeDict[[ATProtoCBORValue textString:@"L"]] = [ATProtoCBORValue simple:21]; // true
     }
 
-    nodeDict[[CBORValue textString:@"e"]] = [CBORValue array:entriesCBOR];
+    nodeDict[[ATProtoCBORValue textString:@"e"]] = [ATProtoCBORValue array:entriesCBOR];
 
-    return [[CBORValue map:nodeDict] encode];
+    return [[ATProtoCBORValue map:nodeDict] encode];
 }
 
 @end
@@ -702,7 +702,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 }
 
 - (nullable STARCommit *)parseCommit:(NSData *)data error:(NSError **)error {
-    CBORValue *root = [CBORValue decode:data];
+    ATProtoCBORValue *root = [ATProtoCBORValue decode:data];
     if (!root || root.type != CBORTypeMap) {
         if (error) *error = STARError(7, @"Commit is not a CBOR map");
         return nil;
@@ -711,19 +711,19 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     STARCommit *commit = [[STARCommit alloc] init];
 
     // did
-    CBORValue *did = root.map[[CBORValue textString:@"did"]];
+    ATProtoCBORValue *did = root.map[[ATProtoCBORValue textString:@"did"]];
     if (did && did.type == CBORTypeTextString) {
         commit.did = did.textString;
     }
 
     // version
-    CBORValue *ver = root.map[[CBORValue textString:@"version"]];
+    ATProtoCBORValue *ver = root.map[[ATProtoCBORValue textString:@"version"]];
     if (ver && ver.type == CBORTypeUnsignedInteger) {
         commit.version = ver.unsignedInteger.integerValue;
     }
 
     // data (CID)
-    CBORValue *dataVal = root.map[[CBORValue textString:@"data"]];
+    ATProtoCBORValue *dataVal = root.map[[ATProtoCBORValue textString:@"data"]];
     if (dataVal && dataVal.type == CBORTypeTag) {
         NSData *cidBytes = dataVal.tagValue.byteString;
         if (cidBytes.length > 1) {
@@ -732,13 +732,13 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     }
 
     // rev
-    CBORValue *rev = root.map[[CBORValue textString:@"rev"]];
+    ATProtoCBORValue *rev = root.map[[ATProtoCBORValue textString:@"rev"]];
     if (rev && rev.type == CBORTypeTextString) {
         commit.rev = rev.textString;
     }
 
     // prev (CID)
-    CBORValue *prev = root.map[[CBORValue textString:@"prev"]];
+    ATProtoCBORValue *prev = root.map[[ATProtoCBORValue textString:@"prev"]];
     if (prev && prev.type == CBORTypeTag) {
         NSData *cidBytes = prev.tagValue.byteString;
         if (cidBytes.length > 1) {
@@ -747,7 +747,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     }
 
     // sig
-    CBORValue *sig = root.map[[CBORValue textString:@"sig"]];
+    ATProtoCBORValue *sig = root.map[[ATProtoCBORValue textString:@"sig"]];
     if (sig && sig.type == CBORTypeByteString) {
         commit.sig = sig.byteString;
     }
@@ -756,7 +756,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 }
 
 /// Extract a CID from a CBOR tag-42 value (0x00-prefixed byte string).
-static CID * _Nullable CIDFromCBORTag(CBORValue *tagVal) {
+static CID * _Nullable CIDFromCBORTag(ATProtoCBORValue *tagVal) {
     if (!tagVal || tagVal.type != CBORTypeTag) return nil;
     NSData *cidBytes = tagVal.tagValue.byteString;
     if (cidBytes.length <= 1) return nil;
@@ -764,8 +764,8 @@ static CID * _Nullable CIDFromCBORTag(CBORValue *tagVal) {
 }
 
 /// Reinsert a CID as a tagged CBOR v-link in a mutable entry map.
-static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryDict,
-                            CBORValue *key, CID *cid) {
+static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *entryDict,
+                            ATProtoCBORValue *key, CID *cid) {
     if (!cid) return;
     entryDict[key] = CIDToTaggedCBOR(cid);
 }
@@ -835,29 +835,29 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
     offset += (NSUInteger)blockLen;
 
     // Parse wire-format node CBOR
-    CBORValue *wireNode = [CBORValue decode:wireData];
+    ATProtoCBORValue *wireNode = [ATProtoCBORValue decode:wireData];
     if (!wireNode || wireNode.type != CBORTypeMap) {
         if (error) *error = STARError(34, @"Expected MST node CBOR map at offset %lu", (unsigned long)(offset - blockLen));
         return NO;
     }
 
-    NSMutableDictionary<CBORValue *, CBORValue *> *nodeDict = [wireNode.map mutableCopy];
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *nodeDict = [wireNode.map mutableCopy];
 
     // Validate L/l consistency
-    BOOL hasL = nodeDict[[CBORValue textString:@"l"]] != nil;
-    BOOL hasLFlag = nodeDict[[CBORValue textString:@"L"]] != nil;
+    BOOL hasL = nodeDict[[ATProtoCBORValue textString:@"l"]] != nil;
+    BOOL hasLFlag = nodeDict[[ATProtoCBORValue textString:@"L"]] != nil;
     if (hasLFlag && !hasL) {
         if (error) *error = STARError(35, @"'L' flag present without 'l' CID at offset %lu", (unsigned long)(offset - blockLen));
         return NO;
     }
 
-    CBORValue *entriesVal = nodeDict[[CBORValue textString:@"e"]];
+    ATProtoCBORValue *entriesVal = nodeDict[[ATProtoCBORValue textString:@"e"]];
     if (!entriesVal || entriesVal.type != CBORTypeArray) {
         if (error) *error = STARError(36, @"MST node has no 'e' array at offset %lu", (unsigned long)(offset - blockLen));
         return NO;
     }
 
-    NSMutableArray<CBORValue *> *entries = [entriesVal.array mutableCopy];
+    NSMutableArray<ATProtoCBORValue *> *entries = [entriesVal.array mutableCopy];
     NSMutableArray<CID *> *entryRecordCIDs = [NSMutableArray arrayWithCapacity:entries.count];
     for (NSUInteger i = 0; i < entries.count; i++) {
         [entryRecordCIDs addObject:(id)[NSNull null]];
@@ -870,7 +870,7 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
     *offsetInOut = offset;
 
     // 1. Walk left child
-    CID *leftCID = CIDFromCBORTag(nodeDict[[CBORValue textString:@"l"]]);
+    CID *leftCID = CIDFromCBORTag(nodeDict[[ATProtoCBORValue textString:@"l"]]);
     if (leftCID && hasLFlag) {
         if (![self parseL0Node:leftCID bytes:bytes length:length offset:offsetInOut blocks:blocks error:error]) {
             return NO;
@@ -879,13 +879,13 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
 
     // 2. Walk entries
     for (NSUInteger i = 0; i < entries.count; i++) {
-        CBORValue *entry = entries[i];
+        ATProtoCBORValue *entry = entries[i];
         if (entry.type != CBORTypeMap) continue;
 
-        BOOL entryHasV = entry.map[[CBORValue textString:@"v"]] != nil;
-        BOOL entryHasVFlag = entry.map[[CBORValue textString:@"V"]] != nil;
-        BOOL entryHasT = entry.map[[CBORValue textString:@"t"]] != nil;
-        BOOL entryHasTFlag = entry.map[[CBORValue textString:@"T"]] != nil;
+        BOOL entryHasV = entry.map[[ATProtoCBORValue textString:@"v"]] != nil;
+        BOOL entryHasVFlag = entry.map[[ATProtoCBORValue textString:@"V"]] != nil;
+        BOOL entryHasT = entry.map[[ATProtoCBORValue textString:@"t"]] != nil;
+        BOOL entryHasTFlag = entry.map[[ATProtoCBORValue textString:@"T"]] != nil;
 
         if (entryHasVFlag && !entryHasV) {
             if (error) *error = STARError(37, @"'V' flag without 'v' CID in entry %lu", (unsigned long)i);
@@ -930,7 +930,7 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
         }
 
         // Emit tree child if inline
-        CID *treeCID = CIDFromCBORTag(entry.map[[CBORValue textString:@"t"]]);
+        CID *treeCID = CIDFromCBORTag(entry.map[[ATProtoCBORValue textString:@"t"]]);
         if (treeCID && entryHasTFlag) {
             if (![self parseL0Node:treeCID bytes:bytes length:length offset:offsetInOut blocks:blocks error:error]) {
                 return NO;
@@ -939,38 +939,38 @@ static void EntryMapSetCID(NSMutableDictionary<CBORValue *, CBORValue *> *entryD
     }
 
     // 3. Patch node and verify CID
-    NSMutableArray<CBORValue *> *patchedEntries = [NSMutableArray array];
+    NSMutableArray<ATProtoCBORValue *> *patchedEntries = [NSMutableArray array];
     for (NSUInteger i = 0; i < entries.count; i++) {
-        CBORValue *entry = entries[i];
+        ATProtoCBORValue *entry = entries[i];
         if (entry.type != CBORTypeMap) {
             [patchedEntries addObject:entry];
             continue;
         }
 
-        NSMutableDictionary<CBORValue *, CBORValue *> *repoEntry = [NSMutableDictionary dictionary];
-        repoEntry[[CBORValue textString:@"k"]] = entry.map[[CBORValue textString:@"k"]];
-        repoEntry[[CBORValue textString:@"p"]] = entry.map[[CBORValue textString:@"p"]];
+        NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *repoEntry = [NSMutableDictionary dictionary];
+        repoEntry[[ATProtoCBORValue textString:@"k"]] = entry.map[[ATProtoCBORValue textString:@"k"]];
+        repoEntry[[ATProtoCBORValue textString:@"p"]] = entry.map[[ATProtoCBORValue textString:@"p"]];
 
         id recCidObj = entryRecordCIDs[i];
         if (recCidObj != [NSNull null]) {
-            EntryMapSetCID(repoEntry, [CBORValue textString:@"v"], (CID *)recCidObj);
+            EntryMapSetCID(repoEntry, [ATProtoCBORValue textString:@"v"], (CID *)recCidObj);
         } else {
-            repoEntry[[CBORValue textString:@"v"]] = entry.map[[CBORValue textString:@"v"]];
+            repoEntry[[ATProtoCBORValue textString:@"v"]] = entry.map[[ATProtoCBORValue textString:@"v"]];
         }
 
-        CBORValue *wireT = entry.map[[CBORValue textString:@"t"]];
-        repoEntry[[CBORValue textString:@"t"]] = wireT ? wireT : [CBORValue nilValue];
+        ATProtoCBORValue *wireT = entry.map[[ATProtoCBORValue textString:@"t"]];
+        repoEntry[[ATProtoCBORValue textString:@"t"]] = wireT ? wireT : [ATProtoCBORValue nilValue];
 
-        [patchedEntries addObject:[CBORValue map:repoEntry]];
+        [patchedEntries addObject:[ATProtoCBORValue map:repoEntry]];
     }
 
-    nodeDict[[CBORValue textString:@"e"]] = [CBORValue array:patchedEntries];
-    [nodeDict removeObjectForKey:[CBORValue textString:@"L"]];
-    if (!nodeDict[[CBORValue textString:@"l"]]) {
-        nodeDict[[CBORValue textString:@"l"]] = [CBORValue nilValue];
+    nodeDict[[ATProtoCBORValue textString:@"e"]] = [ATProtoCBORValue array:patchedEntries];
+    [nodeDict removeObjectForKey:[ATProtoCBORValue textString:@"L"]];
+    if (!nodeDict[[ATProtoCBORValue textString:@"l"]]) {
+        nodeDict[[ATProtoCBORValue textString:@"l"]] = [ATProtoCBORValue nilValue];
     }
 
-    CBORValue *repoNode = [CBORValue map:nodeDict];
+    ATProtoCBORValue *repoNode = [ATProtoCBORValue map:nodeDict];
     NSData *repoData = [repoNode encode];
     CID *computedCID = [CID cidWithDigest:[CID sha256Digest:repoData] codec:0x71];
     

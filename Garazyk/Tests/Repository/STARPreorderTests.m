@@ -145,15 +145,15 @@
     if (chunk.length == 0) {
         return @"empty";
     }
-    CBORValue *v = [CBORValue decode:chunk];
+    ATProtoCBORValue *v = [ATProtoCBORValue decode:chunk];
     if (!v || v.type != CBORTypeMap) {
         return @"other";
     }
-    NSDictionary<CBORValue *, CBORValue *> *dict = v.map;
-    if (dict[[CBORValue textString:@"did"]]) {
+    NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *dict = v.map;
+    if (dict[[ATProtoCBORValue textString:@"did"]]) {
         return @"commit";
     }
-    if (dict[[CBORValue textString:@"e"]]) {
+    if (dict[[ATProtoCBORValue textString:@"e"]]) {
         return @"node";
     }
     return @"record";
@@ -416,19 +416,19 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
         NSData *blockData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)blockLen];
         offset += (NSUInteger)blockLen;
 
-        CBORValue *v = [CBORValue decode:blockData];
+        ATProtoCBORValue *v = [ATProtoCBORValue decode:blockData];
         if (!v || v.type != CBORTypeMap) continue;
 
         // Is this an MST node? (has 'e' key)
-        CBORValue *entriesVal = v.map[[CBORValue textString:@"e"]];
+        ATProtoCBORValue *entriesVal = v.map[[ATProtoCBORValue textString:@"e"]];
         if (!entriesVal || entriesVal.type != CBORTypeArray) continue;
 
         nodesInspected++;
-        for (CBORValue *entryCBOR in entriesVal.array) {
+        for (ATProtoCBORValue *entryCBOR in entriesVal.array) {
             if (entryCBOR.type != CBORTypeMap) continue;
-            NSDictionary<CBORValue *, CBORValue *> *entryMap = entryCBOR.map;
-            BOOL hasV = entryMap[[CBORValue textString:@"v"]] != nil;
-            BOOL hasVFlag = entryMap[[CBORValue textString:@"V"]] != nil;
+            NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *entryMap = entryCBOR.map;
+            BOOL hasV = entryMap[[ATProtoCBORValue textString:@"v"]] != nil;
+            BOOL hasVFlag = entryMap[[ATProtoCBORValue textString:@"V"]] != nil;
 
             if (!hasV) {
                 XCTAssertFalse(hasVFlag,
@@ -598,9 +598,9 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     // Must contain a commit block (with did key)
     CARBlock *commitBlock = [carReader blockWithCID:carReader.rootCID];
     XCTAssertNotNil(commitBlock, @"CAR must contain commit block");
-    CBORValue *commitVal = [CBORValue decode:commitBlock.data];
+    ATProtoCBORValue *commitVal = [ATProtoCBORValue decode:commitBlock.data];
     XCTAssertNotNil(commitVal);
-    XCTAssertNotNil(commitVal.map[[CBORValue textString:@"did"]]);
+    XCTAssertNotNil(commitVal.map[[ATProtoCBORValue textString:@"did"]]);
 
     // Must contain at least the same number of blocks as the STAR reader produced
     STARReader *starReader = [STARReader readFromData:starData error:&err];

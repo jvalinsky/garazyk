@@ -228,7 +228,7 @@
     // Generate Identity Keys
     Secp256k1 *signer = [Secp256k1 shared];
     NSError *keyError = nil;
-    Secp256k1KeyPair *keyPair = [signer generateKeyPairWithError:&keyError];
+    ATProtoSecp256k1KeyPair *keyPair = [signer generateKeyPairWithError:&keyError];
 
     if (!keyPair) {
         if (context.verbose) {
@@ -238,7 +238,7 @@
         return NO;
     }
 
-    Secp256k1KeyPair *rotationKeyPair = [signer generateKeyPairWithError:&keyError];
+    ATProtoSecp256k1KeyPair *rotationKeyPair = [signer generateKeyPairWithError:&keyError];
     if (!rotationKeyPair) {
         if (context.verbose) {
             GZ_LOG_ERROR(@"Failed to generate rotation keypair: %@", keyError.localizedDescription);
@@ -350,8 +350,8 @@
                              email:(NSString *)email 
                            pdsHost:(NSString *)pdsHost 
                        pdsEndpoint:(NSString *)pdsEndpoint
-                           keyPair:(Secp256k1KeyPair *)keyPair
-                   rotationKeyPair:(Secp256k1KeyPair *)rotationKeyPair
+                           keyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                   rotationKeyPair:(ATProtoSecp256k1KeyPair *)rotationKeyPair
                              error:(NSError **)error {
     NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:keyPair.compressedPublicKey]]];
     NSString *rotationKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:rotationKeyPair.compressedPublicKey]]];

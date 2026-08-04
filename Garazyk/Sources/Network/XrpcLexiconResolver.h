@@ -26,7 +26,7 @@ extern NSErrorDomain const XrpcLexiconResolverErrorDomain;
                                    configuration:(ATProtoServiceConfiguration *)configuration;
 
 /*! Extracts the PDS service endpoint from a DID document. */
-+ (nullable NSString *)pdsEndpointFromDidDocument:(DIDDocument *)document
++ (nullable NSString *)pdsEndpointFromDidDocument:(ATProtoDIDDocument *)document
                                             error:(NSError **)error;
 
 @end
