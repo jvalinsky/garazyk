@@ -4,12 +4,13 @@ status: active
 last_verified: 2026-08-04
 ---
 
-## Verified status (2026-07-30)
+## Verified status (2026-08-04)
 
 The earlier execution summary and the proposed Option A plan overstated the
-workstream's completion. A current run of
-`scripts/check_module_boundaries.sh build` passes because the four remaining
-violations are recorded in `docs/module-boundary-baseline.txt`:
+workstream's completion, and M4 subsequently closed for real: a current run
+of `scripts/check_module_boundaries.sh build` passes because
+`docs/module-boundary-baseline.txt` is empty — zero violations, not just
+zero baselined ones:
 
 | Referencing module | Remaining violations |
 | --- | ---: |
