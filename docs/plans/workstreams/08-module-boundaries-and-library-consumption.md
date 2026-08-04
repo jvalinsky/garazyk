@@ -32,10 +32,11 @@ complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
 a configure-time disjoint-source assertion); item 2 (glob-to-manifest
 conversion) remains open. M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
-and **batch 2 is partially done** (the four smallest, most confined
-classes) — namespace baseline ratcheted 283 → 253 → 249. The remaining,
-much larger batch-2 classes (`CID`, `JWT`, `TID`, `Secp256k1`, etc.) and
-batches 3-6 remain open. M6 has not started.
+and **batch 2 is partially done** (15 of ~25 classes, the smaller/mid-sized
+ones by consumer count) — namespace baseline ratcheted 283 → 253 → 249 → 238.
+The remaining, much larger batch-2 classes (`CID` at 265 consumers, `JWT` at
+136, `JWTMinter`, `Secp256k1`, `CryptoUtils`, `TID`, etc.) and batches 3-6
+remain open. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -1476,8 +1477,47 @@ Namespace baseline ratchets 253 → 249. Verified: `AuthVerifierParityTests`
 (9/9), `JWTTests` (34/34), `OAuth2HandlerTests` (31/31),
 `RelayXrpcRoutePackTests` (15/15), `AuthCryptoDPoPTests` (29/29), source and
 link-time module boundary checks clean, full `AllTests --gated=run`:
-4,966 tests, 0 failures, 588s. The remaining, much larger batch-2 classes
-are deliberately left open.
+4,966 tests, 0 failures, 588s.
+
+**Batch 2b (2026-08-04): the next tier by consumer count.** Renamed eleven
+more batch-2 classes, each with 6-18 referencing files (confirmed via grep
+before renaming that none is referenced via
+`NSClassFromString`/`NSStringFromClass`/a string literal): `Base58` →
+`ATProtoBase58`, `CBOREncoder` → `ATProtoCBOREncoder`, `CBORDecoder` →
+`ATProtoCBORDecoder`, `JWTPayload` → `ATProtoJWTPayload`, `JWTVerifier` →
+`ATProtoJWTVerifier`, `AuthCryptoECDSA` → `ATProtoAuthCryptoECDSA`,
+`AuthCryptoJWK` → `ATProtoAuthCryptoJWK`, `AuthCryptoDPoP` →
+`ATProtoAuthCryptoDPoP`, `AuthCryptoBase64URL` → `ATProtoAuthCryptoBase64URL`,
+`AuthVerifier` → `ATProtoAuthVerifier`, `ATURI` → `ATProtoATURI`.
+
+A first mechanical pass incorrectly rewrote `#import "Auth/Crypto/
+AuthCryptoDPoP.h"`-style path strings too, since the class names are literal
+substrings of their own header paths — reverted and redone excluding
+`#import` lines from the substitution. **File names and import paths are
+deliberately left unchanged in this and future M5.3 slices**: the namespace
+gate (`check_namespace.sh`) measures exported symbols via `nm`, not file
+names, so renaming only the symbol satisfies the actual collision-avoidance
+goal without the added risk of a repo-wide file-rename-plus-import-rewrite
+in the same pass. `AuthCryptoDPoP.h` now declares `ATProtoAuthCryptoDPoP`.
+
+Namespace baseline ratchets 249 → 238. Verified: 25 targeted test suites
+covering every renamed class and every file with 2+ replacements (`Base58Tests`,
+`AuthCryptoECDSATests`, `AuthCryptoJWKTests`, `AuthCryptoBase64URLTests`,
+`AuthCryptoDPoPTests`, `AuthVerifierParityTests`, `JWTTests`,
+`JWTSecurityTests`, `CBOREncoderCountWidthTests`, `CBORSerializationTests`,
+`CBORParserExploitTests`, `CARParserExploitTests`, `PLCAuditorTests`,
+`SecurityHardeningTests`, `ATProtoS2PACOSETests`, `CBORSecurityTests`,
+`SyntaxInteropTests`, `ATProtoCoreTests`, `SessionStoreTests`,
+`RepoCommitTests`, `ParserRecursionExploitTests`, `VideoJWTAuthProviderTests`,
+`PDSSpaceAppAttestationVerifierTests`, `OAuthDPoPTests`,
+`AuthCryptoDPoPTests`), all 0 failures; source and link-time module
+boundary checks clean; `deno task check`/`lint` clean; full
+`AllTests --gated=run`: 4,966 tests, 0 failures, 509s.
+
+The remaining, much larger batch-2 classes (`CID` at 265 consumers, `JWT`
+at 136, `JWTMinter` at 80, `Secp256k1` at 53, `CryptoUtils` at 45, `TID` at
+41, `DIDResolver`/`CBORValue`/`Secp256k1KeyPair` at 30-34) are deliberately
+left open for a dedicated, carefully reviewed session.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
