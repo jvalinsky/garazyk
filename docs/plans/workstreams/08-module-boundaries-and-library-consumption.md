@@ -26,10 +26,10 @@ and MediaCore/XRPC residual clusters. **M4's zero-baseline acceptance gate is
 now met**: `docs/module-boundary-baseline.txt` is empty and
 `scripts/check_module_boundaries.sh build` reports **0 current leaks** across
 all ten modules.
-M7 is partially complete: dependency injection and most data-path work landed,
-but module sources still contain host-process exits and an installer
-`/var/db/kaszlak` fallback. M5 has started (namespace gate landed, see
-below); M6 has not started.
+**M7 is now complete (2026-08-04).** The residual host-process exits and the
+installer's `/var/db/kaszlak` fallback are fixed; see "M7 residual cleanup
+complete" below. M5 has started (namespace gate landed, see below); M6 has
+not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -726,6 +726,232 @@ Next M5 step: extend the gate to protocols, categories, and externally visible
 C symbols (the broader inventory M5.2 names), then begin M5.3 rename batches
 in dependency order.
 
+**M7 residual cleanup complete (2026-08-04).** All four remaining items:
+
+- `PDSApplication.m`'s two `exit(1)` calls (production-issuer refusal) now set
+  a `startupConfigurationError` ivar instead, checked and returned as a normal
+  `NSError` at the top of `-startWithError:` (new `PDSApplicationErrorDomain`,
+  declared in `PDSApplication.h`). Its `NSSetUncaughtExceptionHandler` callback
+  no longer calls `exit(1)` either — it now just logs, matching
+  `GZServiceLifecycle`'s own `uncaughtExceptionHandler`, which already relies
+  on the runtime's implicit `abort()` once the handler returns. Three new
+  regression tests in `PDSApplicationTests.m` exercise the two refusal paths
+  and the success path via `-startWithError:` (impossible to test before,
+  since the old code path called real `exit(1)` inside the test process).
+- `PDSCLIServeCommand.m`'s two `exit(0)` calls (SIGINT/SIGTERM
+  forced-shutdown-after-2s-timeout watchdogs) now reset the signal to
+  `SIG_DFL` and `raise()` it instead, letting the OS decide termination —
+  same pattern as `GZServiceLifecycle`'s `sigabrtHandler`. The normal graceful
+  path (run-loop notices `shouldExit`, stops cleanly, returns 0) is unchanged;
+  only the rarely-hit watchdog fallback changed.
+- `PDSCLIDaemonCommand.m`'s post-`execv`-failure `exit(1)` (inside a forked
+  child) is now `_exit(1)` — the correct primitive for that context (skips
+  atexit handlers and flushes of stdio buffers inherited from the parent),
+  and exempt from the new CI gate below by design.
+- The installer's `/var/db/kaszlak/log/daemon.log` fallback now builds its
+  path through `ATProtoDataPaths pathsForBaseDirectory:` using this same
+  command's own existing default data directory (`~/.config/kaszlak`, already
+  used by its `purge`/`status` actions), instead of an unrelated hardcoded
+  system path.
+- `ATProtoSafeHTTPClient.sharedClient` and `GZMetrics.sharedMetrics` were
+  found to already resolve/register through `ATProtoServiceContainer` (no
+  code change needed) — both classes were already injectable while keeping
+  `+shared*` as the default, satisfying that part of M7's acceptance gate.
+- New CI gate: `scripts/check_no_host_process_exit.sh` rejects `exit(`/
+  `abort(` (word-boundary matched; `_exit(` is intentionally exempt) anywhere
+  under `Garazyk/Sources/**/*.m`, comment-aware (strips `//` and `/* */`
+  before matching). Wired into `.github/workflows/ci.yml`'s macOS job,
+  source-only so it doesn't need duplicating per platform. Verified it both
+  passes clean on the current tree and catches an injected violation.
+- M7's absolute-path-literal half of its acceptance gate ("a CI grep rejects
+  ... absolute path literals") is deliberately **not** implemented as a
+  blanket check: a survey of `@"..."` literals matching `/usr/`, `/var/`, or
+  `/etc/` in `Garazyk/Sources/` found only 5 remaining hits, none matching the
+  three specific paths this milestone named (`/usr/share/garazyk/lexicons`,
+  `/usr/share/atprotopds/assets`, `/var/db/kaszlak/log` — all three now fixed,
+  the last one today). The 5 remaining are legitimate: `/usr/bin/curl`
+  subprocess-invocation paths (3, one already tracked as a separate M2
+  follow-up), a real system install-target path in a launchctl plist
+  (`/usr/local/bin/kaszlak`), and a HeaderDoc `@code` example
+  (`/var/lib/pds`, not real code at all). A blanket literal ban would false-
+  positive on the doc-comment case and mischaracterize subprocess paths as
+  the same class of bug as a hardcoded data/log default. Left unimplemented
+  rather than guessed at.
+
+Verified: `cmake --build build --target AllTests --parallel 4` and
+`./build/tests/AllTests --gated=run` both green on macOS (see the GNUstep
+section below for the same source tree's GNUstep build/test result).
+
+## GNUstep/Linux CI investigation (2026-08-04)
+
+Top item from the mega-plan's 2026-08-04 work queue: verify the `1c8c2dd8`
+compiler-conflict fix holds, and determine whether `ci.yml`'s
+`linux-gnustep-build-and-test` job can actually compile Objective-C at all.
+
+**The compiler fix holds.** Reproduced `ci.yml`'s exact `cmake -S . -B
+build-linux -G Ninja ...` configure step (no `-DCMAKE_{C,CXX,OBJC}_COMPILER`
+override) in a fresh `ubuntu:24.04` container with the job's exact apt
+package list — configure completes cleanly, no infinite reconfigure loop.
+
+**P0 CI-truthfulness finding, confirmed: `linux-gnustep-build-and-test` has
+never been able to compile this project, and cannot, as configured.** Root
+cause: the job's apt package set (`gnustep-make`, `libgnustep-base-dev`,
+`libblocksruntime-dev`) never provides `objc/blocks_runtime.h`.
+`libblocksruntime-dev` ships Mark Heily's unrelated `libBlocksRuntime`
+project (`Block.h`/`Block_private.h`) — not libobjc2's
+`objc/blocks_runtime.h`, which GNUstep-base's `GSVersionMacros.h` requires
+once `-fobjc-runtime=gnustep-2.2` is set (`CMakeLists.txt:134`). Reproduced
+the exact, deterministic failure on the very first `.m` file compiled
+(`AuthCryptoDPoP.m`): `fatal error: 'objc/blocks_runtime.h' file not found`.
+This is architecture-independent (confirmed the wrong package's contents
+directly, not just a symptom) so it fails identically on the real x86_64
+GitHub runner, not just this arm64 reproduction. Ubuntu's apt `gnustep-base`
+family links against the legacy GCC Objective-C runtime
+(`libobjc4`/`libobjc-*-dev`), not libobjc2 — the two runtime families are
+fundamentally incompatible with this project's `-fobjc-runtime=gnustep-2.2`
+requirement, and apt does not package libobjc2 on Ubuntu at all. There is no
+apt-package fix; only a from-source libobjc2/gnustep-make/gnustep-base
+toolchain (exactly what `docker/Dockerfile.gnustep`'s first stage already
+builds) satisfies this requirement.
+
+**The from-source toolchain (`docker/Dockerfile.gnustep`) works, and was used
+to get first-ever full GNUstep build/test evidence.** Built
+`docker/Dockerfile.gnustep --target builder` fresh (`docker build`, not just
+`docker exec` reproduction) against current `main` — all binaries
+(`kaszlak`, `garazyk-ui`, `jelcz`, `syrena-chat`, `germ`, etc.) link cleanly.
+Reconfiguring the same built image with `-DBUILD_TESTS=ON` and building
+`AllTests` also links cleanly (997/997 targets, only pre-existing
+`-Wincomplete-implementation` warnings, no errors) — this is the first time
+the full `AllTests` binary has ever been built on GNUstep in this
+workstream's history. One environment-specific link wrinkle was hit and
+resolved along the way, worth recording: a fresh `garazyk-gnustep-base`-based
+container built by hand (not `docker build` end-to-end) can end up with
+`clang`'s own apt dependency chain (`clang` → `libobjc-11-dev` →
+`libobjc4`, the legacy GCC runtime) *coexisting* with the from-source
+libobjc2 in `/usr/GNUstep`; CMake's `link_directories(BEFORE ...)` calls for
+the GNUstep lib paths (`CMakeLists.txt:150-154`) then silently produce no
+`-L` flags in the Ninja-generated link line (`LINK_PATH = -L/usr/local/lib`
+only) for reasons not fully root-caused (not a Ninja-vs-Make generator
+difference — reproduced identically with the default Unix-Makefiles
+generator), causing `-lobjc` to resolve against the wrong runtime at link
+time (`objc_setProperty_nonatomic_copy` undefined). This did **not** occur
+in the real, unmodified `docker build -f docker/Dockerfile.gnustep` run
+(confirmed by inspecting its generated `link.txt`, which correctly has
+`-L/usr/GNUstep/Local/lib -L/usr/GNUstep/Local/Library/Libraries
+-L/usr/local/lib` in that order) — it is an artifact of manually
+reassembling the toolchain outside the Dockerfile's exact build sequence,
+not a defect in `docker/Dockerfile.gnustep` itself. Recorded here so a future
+GNUstep CI change knows to build/configure through the Dockerfile's own
+sequence (or replicate it exactly) rather than composing the toolchain by
+hand.
+
+**Full GNUstep `AllTests --gated=run` evidence (2026-08-04, two runs).**
+First run: 4,723 tests, 560 failures. An unrelated environment reset (host
+clock jumped ~5,200s mid-run; `docker images`/`docker ps -a` came back empty
+afterward, destroying every image/container built during this investigation)
+hit right after that run printed its summary line, so only a `tail -150`
+slice of its per-test output survived. A full from-source rebuild (`docker
+build -f docker/Dockerfile.gnustep --target builder`, then reconfigure with
+`-DBUILD_TESTS=ON`, then `AllTests --gated=run`) was relaunched
+detached/`nohup` with untruncated logging to confirm reproducibility and get
+the complete failure list. Second run: **4,726 tests, 562 failures, 933s
+(~15.5 min) wall clock** — closely reproduces the first run's counts. The
+first run's "~101 minutes" figure was **wrong**: it included the ~5,200s
+clock-jump artifact in the process's own elapsed-time report
+(6,053.879s − 5,202s ≈ 852s, consistent with the second run's clean 933s).
+The real GNUstep `AllTests` wall clock is in the same ballpark as macOS's
+511s (below), not 6x longer.
+
+**Root cause found for the large majority of failures, from the complete
+(untruncated) second-run log:**
+
+- **488 of 562 failures (86.7%) are one root cause: `AdminAuthXrpcTestBase`
+  / `RepoAuthTempTests`'s shared `-setUp` fails its own
+  `XCTAssertTrue(adminAuthSuccess, ...)` assertion** (`AdminAuthXrpcTestBase.m:56`,
+  calling `[PDSAdminAuth authenticateWithPassword:error:]`) — every test
+  method in every subclass then fails identically regardless of what the
+  test itself exercises, because the fixture itself never got past `setUp`.
+  51 distinct test classes show at least one failure; the great majority of
+  them are pure `-setUp` cascade, not independent bugs — confirmed directly
+  by grepping every `FAIL:` line for the literal `adminAuthSuccess` assertion
+  text (488 hits) and separately by inspecting representative subclasses
+  (`AdminAuthXrpcTests`, `RepoAuthTempTests`) where *every* failing method's
+  reason is exactly `XCTAssertTrue failed: adminAuthSuccess`, including tests
+  that assert `Unauthorized`/`Forbidden` responses (i.e., tests that don't
+  even need a *successful* admin auth to run, but the shared fixture still
+  blocks them). **This is the single highest-leverage GNUstep lead**: fixing
+  why `PDSAdminAuth authenticateWithPassword:error:` (password verification
+  or JWT signing) fails on GNUstep would likely resolve the large majority of
+  the current backlog in one fix. Not root-caused further in this slice —
+  needs its own investigation (compare `PDSAdminAuth`'s password-hash/JWT
+  path step by step on GNUstep vs. macOS).
+- **57 failures: HTML template loading in this reproduction's container
+  specifically, likely not a real GNUstep bug.** Every `UIServerRuntimeTests`/
+  `UIBackendClientTests`/`UILabIntegrationTests`/`PDSHttpPDSAdminRoutePackTests`
+  failure is paired with `[ERROR] [UITemplateEngine.m:31] Failed to load
+  template <name>: (null)` in the same log window — the admin-UI HTML
+  partials were not resolvable from wherever `UITemplateEngine` looked in
+  this ad-hoc container (built by `docker cp`-ing `Garazyk/Sources` alone,
+  not the full asset layout `docker/Dockerfile.gnustep`'s runtime stage
+  copies via `COPY --from=builder /src/build/bin/Assets ...`). Re-run with
+  the assets present at the expected path before treating this cluster as a
+  real product bug.
+- **~9 failures: environment-variable config parsing returns defaults
+  instead of configured values on GNUstep** — `ATProtoMediaServiceConfigurationTests`
+  (6), `JelczCLITests` (4, overlaps the "distinct classes" list above),
+  `ATProtoMediaCoreTests`, `ATProtoMediaServiceRuntimeTests`. E.g.
+  `config.port != 9999`, `config.maxOutputBytes != 1048576`, S3/DID/directory
+  settings read back as defaults/nil. Genuinely distinct from the admin-auth
+  cascade and worth its own investigation (`NSProcessInfo.environment`
+  reading, or test `setenv()` ordering, differing on GNUstep).
+- **3 failures: missing `ffprobe` binary** (`FFmpegTranscoderTests`) — an
+  environment gap in this toolchain image, not a code bug.
+- **~5 failures: assorted, one-off** (`VideoRemoteBlobUploaderTests`,
+  `OAuth2HandlerTests`, `GermIdentityServiceTests`, a couple of interop/CBOR
+  fixture tests) — not yet individually triaged.
+
+Full per-class failure counts (`grep -oE 'FAIL: -\[[A-Za-z0-9_]+ test[A-Za-z0-9_]+\]'`
+grouped by class) are in this session's scratch log; the largest are
+`XrpcToolsOzoneTests` (66), `XrpcChatBskyGroupTests` (42),
+`XrpcAppBskyGraphTests` (42), `XrpcAppBskyUnspeccedTests` (40),
+`XrpcChatBskyConvoTests` (38), `AdminAuthXrpcTests` (37) — all
+`AdminAuthXrpcTestBase` subclasses, all part of the 488-failure cascade
+above.
+
+**Decision needed before `ci.yml` itself changes.** Fixing
+`linux-gnustep-build-and-test` "for real" means either (a) adding a
+from-source libobjc2/gnustep-make/gnustep-base build step to that job
+(significant CI time, mirroring Dockerfile stage 1), or (b) restructuring it
+to build/test inside a container derived from `docker/Dockerfile.gnustep`
+(architecturally different from today's native-runner job). Wiring
+`AllTests` execution into the already-working `linux-docker-build` job would
+immediately surface the failures above and turn that job red for every
+future PR — not something to do unilaterally without confirming that's the
+intended trade-off. Per this repo's stop conditions (a slice needing a new
+architectural decision), this is recorded here rather than guessed at:
+`ci.yml` is **not** changed further in this slice beyond what M7 needed. The
+options, for a maintainer to pick from:
+
+1. Replace the apt-based job with a Docker-based one, keep tests out of the
+   gate for now (binary build only, matching today's confidence level minus
+   the false sense that Objective-C ever compiled there).
+2. Replace it and gate on `AllTests`, accepting CI goes red until the
+   admin-auth cascade (the 86.7% root cause above) and the rest of the
+   backlog are triaged — likely a single fix plus a smaller mop-up given the
+   root-cause finding above.
+3. Remove `linux-gnustep-build-and-test` entirely and rely solely on
+   `linux-docker-build`'s existing binary-only build for Linux signal.
+
+Cleanup: the stale `gnustep-ci-repro2` Docker container mentioned in the work
+queue was removed (no logs, empty `sleep infinity` shell). Exploratory
+containers created during this investigation were removed after use; all
+Docker images/containers from both runs were subsequently lost to the
+environment reset described above — a future session re-deriving this
+evidence should rebuild from `docker/Dockerfile.gnustep` again (buildkit
+layer caching made the second full rebuild fast in this session, likely
+because the daemon's build cache, unlike its image/container list, survived
+the reset).
+
 # Module Boundaries and Library Consumption
 
 ## Target
@@ -1093,16 +1319,41 @@ be mistaken for a convenient suppression.
 Do this after the residual objects are assigned correctly and before public API
 curation begins.
 
-1. Add `CONFIGURE_DEPENDS` immediately to every remaining
-   `file(GLOB_RECURSE)` so new and renamed files cannot be omitted until a
-   reconfigure.
-2. Replace directory globs plus exclusion regexes with reviewed, per-target
-   source manifests under `cmake/modules/`. Preserve generated lists only if CI
-   compares the generated result with a checked-in ownership manifest.
-3. Add a configure-time assertion that no source belongs to two package
-   targets and every package-target implementation belongs to exactly one.
-4. Keep platform-specific implementations explicit and conditional; do not
-   export build-host absolute paths in those manifests.
+1. **Done (2026-08-04).** Added `CONFIGURE_DEPENDS` to all thirteen
+   `file(GLOB_RECURSE)` module-source calls in `CMakeLists.txt` (the ten
+   `ATProto*` package targets plus `ATProtoAppViewServer`/`ATProtoMikrus`/
+   `ATProtoBeskid`, which glob from `Garazyk/Sources/` the same way but sit
+   outside the ten-module boundary/namespace contract). New or renamed
+   source files now trigger an automatic reconfigure instead of silently
+   waiting for the next manual `cmake -S . -B build`. Verified: a fresh
+   configure and an incremental `kaszlak`/`AllTests` build both succeed with
+   no unexpected rebuilds (only the `CMakeLists.txt` directive itself
+   changed, not source content).
+2. **Not started.** Replacing the globs with hand-maintained per-target
+   manifests under `cmake/modules/` is a separate, much larger change
+   (~491 files across 13 lists) deliberately left for its own slice rather
+   than folded into this one.
+3. **Done (2026-08-04).** Added a configure-time assertion (`CMakeLists.txt`,
+   right after `ATProtoBeskid`'s target definition, once all thirteen
+   `ATPROTO_*_SOURCES` lists are finalized) that walks all thirteen lists and
+   fails configure with `FATAL_ERROR` naming both owning targets if any
+   source file appears in more than one. Verified it passes cleanly today
+   (`-- M4.5: 491 package-target sources each claimed by exactly one
+   module`) and verified it actually catches a violation: temporarily
+   appending an `ATProtoCore`-owned file to `ATPROTO_STORAGE_SOURCES` made
+   configure fail with the expected message, then reverted.
+4. **N/A until item 2 lands.** "Do not export build-host absolute paths in
+   those manifests" only applies once per-target manifest files exist; there
+   are none yet.
+
+Owner boundary: `CMakeLists.txt` only; no `Garazyk/Sources/` file moved,
+renamed, or reassigned by this slice.
+
+Verification gate: `cmake -S . -B build` reconfigures cleanly and reports the
+per-target file count; `cmake --build build --target kaszlak AllTests
+--parallel 4` succeeds; `./scripts/check_module_boundaries.sh build` still
+reports 0 current / 0 baselined leaks (unaffected — this slice is CMake
+bookkeeping, not a source move).
 
 Verification gate: adding an unassigned implementation, assigning one file to
 two targets, or renaming a source without updating its manifest fails

@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-08-03
+last_verified: 2026-08-04
 ---
 
 # Garazyk Mega Plan
@@ -460,11 +460,44 @@ remaining program does not depend on items 1-2.
     `docs/module-boundary-baseline.txt` is empty, meeting M4's zero-baseline
     acceptance gate. M5 (namespace the exported symbols) is the active
     milestone — first step is the shrink-only namespace gate over the ~283
-    unprefixed classes. M7 is partial because package-target sources retain
-    host-process exits and one hard-coded log fallback. Then add relocatable
-    install/export rules. M0 is answered yes for source-built static libraries
-    on macOS and GNUstep/Linux; prebuilt binaries, Apple
-    frameworks/XCFrameworks, iOS, and package registries remain out of scope.
+    unprefixed classes; M5.3's rename batches have not started. **M7 is now
+    complete (2026-08-04):** the remaining host-process `exit()`/`abort()`
+    calls in `PDSApplication.m`/`PDSCLIServeCommand.m`/
+    `PDSCLIDaemonCommand.m` and the installer's hard-coded
+    `/var/db/kaszlak/log/daemon.log` fallback are fixed, `ATProtoSafeHTTPClient`/
+    `GZMetrics` were found already injectable via `ATProtoServiceContainer`,
+    and a new CI gate (`scripts/check_no_host_process_exit.sh`) rejects new
+    `exit()`/`abort()` calls in package-target sources; see workstream 08's
+    "M7 residual cleanup complete" section. M4.5 (deterministic module
+    membership) and M6 (relocatable install/export) remain open. M0 is
+    answered yes for source-built static libraries on macOS and GNUstep/Linux;
+    prebuilt binaries, Apple frameworks/XCFrameworks, iOS, and package
+    registries remain out of scope.
+
+    **GNUstep/Linux CI truthfulness (2026-08-04, P0 finding):** `ci.yml`'s
+    `linux-gnustep-build-and-test` job has never been able to compile this
+    project and cannot as configured — its apt package set never provides
+    libobjc2's `objc/blocks_runtime.h` (`libblocksruntime-dev` ships an
+    unrelated library), an architecture-independent, deterministic failure on
+    the very first `.m` file. The from-source toolchain
+    (`docker/Dockerfile.gnustep`) does work: a fresh `docker build --target
+    builder` links all binaries cleanly, and reconfiguring with
+    `-DBUILD_TESTS=ON` produced the first-ever full `AllTests` build and run
+    on GNUstep in this workstream's history — reproduced twice: 4,723/560
+    then 4,726/562 failures, **933s (~15.5 min) wall clock** (the first run's
+    "~101 minutes" was a clock-jump measurement artifact, corrected in
+    workstream 08). **86.7% of failures (488/562) trace to one root cause**:
+    `AdminAuthXrpcTestBase`/`RepoAuthTempTests`'s shared `-setUp` fails its
+    own admin-authentication assertion (`PDSAdminAuth
+    authenticateWithPassword:error:`), cascading into every inherited test
+    method across 51 test classes regardless of what each test exercises —
+    not root-caused further, but a single high-leverage next GNUstep lead.
+    Fixing `ci.yml` for real needs a maintainer decision among three options
+    recorded in workstream 08 (replace the job with a Docker-based one
+    binary-build-only, replace it and accept CI going red until the backlog
+    is triaged, or drop the job and rely on `linux-docker-build` alone) — not
+    changed unilaterally. Full detail, evidence, and per-class failure
+    breakdown: workstream 08's "GNUstep/Linux CI investigation" section.
 
 11. **Open (added 2026-07-30):** cut `AllTests` wall clock and related CI /
     Deno cycle waste. Complete
