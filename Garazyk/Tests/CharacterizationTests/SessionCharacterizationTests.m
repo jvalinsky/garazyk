@@ -55,14 +55,14 @@
      + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
-                                 minter:(nullable JWTMinter *)minter;
+                                 minter:(nullable ATProtoJWTMinter *)minter;
     */
     
     NSError *keyError = nil;
     ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&keyError];
     XCTAssertNotNil(keyPair, @"Failed to generate key pair: %@", keyError);
 
-    JWTMinter *minter = [[JWTMinter alloc] init];
+    ATProtoJWTMinter *minter = [[ATProtoJWTMinter alloc] init];
     minter.issuer = @"test.issuer";
     minter.signingAlgorithm = @"ES256K";
     minter.privateKey = keyPair.privateKey;
@@ -110,14 +110,14 @@
      - (instancetype)initWithDID:(NSString *)did
                     handle:(NSString *)handle
                      scope:(NSString *)scope
-                    minter:(nullable JWTMinter *)minter;
+                    minter:(nullable ATProtoJWTMinter *)minter;
     */
     
     NSError *keyError = nil;
     ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&keyError];
     XCTAssertNotNil(keyPair, @"Failed to generate key pair: %@", keyError);
 
-    JWTMinter *minter = [[JWTMinter alloc] init];
+    ATProtoJWTMinter *minter = [[ATProtoJWTMinter alloc] init];
     minter.issuer = @"test.issuer";
     minter.signingAlgorithm = @"ES256K";
     minter.privateKey = keyPair.privateKey;

@@ -11,7 +11,7 @@
 #import "Network/XrpcRoutePack.h"
 
 @class BookmarkService;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class XrpcDispatcher;
 /**
  * @abstract Defines the PDSAdminController protocol contract.
@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                bookmarkService:(BookmarkService *)bookmarkService
-                     jwtMinter:(JWTMinter *)jwtMinter
+                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController;
 
 @end

@@ -702,7 +702,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
                                                                             serviceMaxSize:10
                                                                           didCacheMaxSize:10
                                                                         sequencerMaxSize:10];
-    JWTMinter *jwtMinter = [[JWTMinter alloc] init];
+    ATProtoJWTMinter *jwtMinter = [[ATProtoJWTMinter alloc] init];
     jwtMinter.issuer = @"http://localhost";
     
     ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];

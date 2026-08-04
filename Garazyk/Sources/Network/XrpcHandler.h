@@ -6,7 +6,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class HttpRequest;
 @class HttpResponse;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class PDSDatabasePool;
 /**
  * @abstract Defines the XrpcMiddleware protocol contract.
@@ -81,7 +81,7 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 @property (nonatomic, copy, nullable) NSString *upstreamDID;
 
 /*! Minter for service-to-service auth tokens. */
-@property (nonatomic, strong, nullable) JWTMinter *jwtMinter;
+@property (nonatomic, strong, nullable) ATProtoJWTMinter *jwtMinter;
 
 /*! Upstream Ozone moderation service URL for proxying unregistered tools.ozone.* methods. */
 @property (nonatomic, copy, nullable) NSURL *ozoneURL;

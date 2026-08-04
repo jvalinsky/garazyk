@@ -14,7 +14,7 @@
 @class HttpRequest;
 @class HttpResponse;
 @class PDSController;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 /**
  * @abstract Defines the PDSAdminController protocol contract.
  */
@@ -107,7 +107,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * Uses jwtMinter and adminController directly (for use before full controller is available).
  */
-+ (instancetype)userAuthWithJwtMinter:(JWTMinter *)jwtMinter
++ (instancetype)userAuthWithJwtMinter:(ATProtoJWTMinter *)jwtMinter
                      adminController:(id<PDSAdminController>)adminController;
 
 @end

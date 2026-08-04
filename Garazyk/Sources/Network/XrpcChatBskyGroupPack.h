@@ -15,7 +15,7 @@
  * @abstract Defines the PDSQueryDatabase protocol contract.
  */
 @protocol PDSQueryDatabase;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                    jwtMinter:(nullable JWTMinter *)jwtMinter
+                    jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
               adminController:(nullable id<PDSAdminController>)adminController;
 
 @end

@@ -95,7 +95,7 @@
     self.pool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:5];
     self.service = [[PDSAccountService alloc] initWithDatabasePool:self.pool];
 
-    JWTMinter *minter = [[JWTMinter alloc] init];
+    ATProtoJWTMinter *minter = [[ATProtoJWTMinter alloc] init];
     minter.issuer = @"http://localhost:8080";
     minter.signingAlgorithm = @"RS256";
     

@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 /**
  * @abstract Defines the PDSAccountRepository protocol contract.
  */
@@ -157,7 +157,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract JWT minter for token generation.
  */
-@property (nonatomic, strong, nullable) JWTMinter *minter;
+@property (nonatomic, strong, nullable) ATProtoJWTMinter *minter;
 
 /**
  * @abstract Pluggable email provider for sending verification codes and alerts.
@@ -179,7 +179,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)initWithAccountRepository:(nullable id<PDSAccountRepository>)accountRepository
                         sessionRepository:(nullable id<PDSSessionRepository>)sessionRepository
-                                   minter:(nullable JWTMinter *)minter
+                                   minter:(nullable ATProtoJWTMinter *)minter
                             emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
 
 #pragma mark - Account Operations

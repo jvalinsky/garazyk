@@ -293,10 +293,10 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     _writeProxy = [[AppViewWriteProxy alloc] initWithDatabase:_database plcUrl:config.plcURL];
 
-    // Initialize JWTMinter for token verification (using shared master secret)
-    JWTMinter *jwtMinter = nil;
+    // Initialize ATProtoJWTMinter for token verification (using shared master secret)
+    ATProtoJWTMinter *jwtMinter = nil;
     if (config.masterSecret.length > 0) {
-        jwtMinter = [[JWTMinter alloc] init];
+        jwtMinter = [[ATProtoJWTMinter alloc] init];
         jwtMinter.issuer = @"http://localhost:2583"; // The PDS issuer we expect tokens from
     }
 

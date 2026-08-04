@@ -15,13 +15,13 @@
 
 @implementation ATProtoCoreTests
 
-- (JWTMinter *)testMinterWithPublicKey:(NSData **)publicKeyOut {
+- (ATProtoJWTMinter *)testMinterWithPublicKey:(NSData **)publicKeyOut {
     NSError *keyError = nil;
     ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&keyError];
     XCTAssertNotNil(keyPair, @"Failed to generate test key pair: %@", keyError);
     if (!keyPair) return nil;
 
-    JWTMinter *minter = [[JWTMinter alloc] init];
+    ATProtoJWTMinter *minter = [[ATProtoJWTMinter alloc] init];
     minter.issuer = @"test-issuer";
     minter.signingAlgorithm = @"ES256K";
     minter.privateKey = keyPair.privateKey;
@@ -364,7 +364,7 @@
 #pragma mark - JWT Tests
 
 - (void)testJWTMintingProducesThreeParts {
-    JWTMinter *minter = [self testMinterWithPublicKey:nil];
+    ATProtoJWTMinter *minter = [self testMinterWithPublicKey:nil];
 
     NSString *token = [minter signPayload:@{
         @"sub": @"did:web:test.com",
@@ -378,7 +378,7 @@
 }
 
 - (void)testJWTParsing {
-    JWTMinter *minter = [self testMinterWithPublicKey:nil];
+    ATProtoJWTMinter *minter = [self testMinterWithPublicKey:nil];
 
     NSString *token = [minter signPayload:@{
         @"sub": @"did:web:test.com",
@@ -395,7 +395,7 @@
 
 - (void)testJWTVerificationSucceeds {
     NSData *publicKey = nil;
-    JWTMinter *minter = [self testMinterWithPublicKey:&publicKey];
+    ATProtoJWTMinter *minter = [self testMinterWithPublicKey:&publicKey];
 
     ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     verifier.expectedIssuer = @"test-issuer";
@@ -419,7 +419,7 @@
 
 - (void)testJWTExpiredToken {
     NSData *publicKey = nil;
-    JWTMinter *minter = [self testMinterWithPublicKey:&publicKey];
+    ATProtoJWTMinter *minter = [self testMinterWithPublicKey:&publicKey];
 
     ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     verifier.expectedIssuer = @"test-issuer";
@@ -444,7 +444,7 @@
 }
 
 - (void)testAccessTokenMinting {
-    JWTMinter *minter = [self testMinterWithPublicKey:nil];
+    ATProtoJWTMinter *minter = [self testMinterWithPublicKey:nil];
 
     JWT *token = [minter mintAccessTokenForDID:@"did:web:test.com"
                                         handle:@"test.bsky.social"

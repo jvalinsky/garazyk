@@ -47,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSRelayService;
 @class PDSAdminController;
 @class RateLimiter;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 
 /*!
  @class PDSController
@@ -115,7 +115,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong, readonly) RateLimiter *rateLimiter;
 
 /*! JWT minting for access tokens. */
-@property(nonatomic, strong, readonly) JWTMinter *jwtMinter;
+@property(nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 
 /*! Handler for the subscribeRepos firehose. */
 @property(nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;

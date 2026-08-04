@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @discussion This header defines classes for creating, parsing, signing,
  and verifying JWT tokens. It includes ATProtoJWTHeader, ATProtoJWTPayload, JWT,
- ATProtoJWTVerifier, and JWTMinter classes.
+ ATProtoJWTVerifier, and ATProtoJWTMinter classes.
  
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -396,16 +396,16 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @end
 
 /*!
- @class JWTMinter
+ @class ATProtoJWTMinter
  
  @abstract Creates and signs JWT tokens.
  
- @discussion JWTMinter handles minting access tokens and refresh tokens
+ @discussion ATProtoJWTMinter handles minting access tokens and refresh tokens
  with proper claims and signatures.
  */
 @protocol PDSKeyManager;
 
-@interface JWTMinter : NSObject
+@interface ATProtoJWTMinter : NSObject
 
 /*! The issuer claim for minted tokens. */
 @property (nonatomic, copy) NSString *issuer;

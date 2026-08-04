@@ -88,7 +88,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
-                                 minter:(nullable JWTMinter *)minter
+                                 minter:(nullable ATProtoJWTMinter *)minter
                       dpopKeyThumbprint:(nullable NSString *)jkt {
     return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:jkt];
 }
@@ -96,7 +96,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
-                                 minter:(nullable JWTMinter *)minter {
+                                 minter:(nullable ATProtoJWTMinter *)minter {
     return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:nil];
 }
 
@@ -116,7 +116,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 - (instancetype)initWithDID:(NSString *)did
                      handle:(NSString *)handle
                       scope:(NSString *)scope
-                     minter:(nullable JWTMinter *)minter
+                     minter:(nullable ATProtoJWTMinter *)minter
           dpopKeyThumbprint:(nullable NSString *)jkt {
     self = [super init];
     if (self) {
@@ -137,7 +137,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 - (instancetype)initWithDID:(NSString *)did
                      handle:(NSString *)handle
                       scope:(NSString *)scope
-                     minter:(nullable JWTMinter *)minter {
+                     minter:(nullable ATProtoJWTMinter *)minter {
     return [self initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:nil];
 }
 

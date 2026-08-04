@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class PDSDatabase;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol PDSAdminAuthController <NSObject>
 
 /** JWT signer and verifier used for admin tokens. */
-@property (nonatomic, strong, readonly, nullable) JWTMinter *jwtMinter;
+@property (nonatomic, strong, readonly, nullable) ATProtoJWTMinter *jwtMinter;
 
 /** Opens the service database used for admin audit entries. */
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error;

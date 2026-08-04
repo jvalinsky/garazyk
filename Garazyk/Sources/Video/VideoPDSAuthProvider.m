@@ -7,7 +7,7 @@
 
 @implementation VideoPDSAuthProvider
 
-- (instancetype)initWithJwtMinter:(JWTMinter *)jwtMinter
+- (instancetype)initWithJwtMinter:(ATProtoJWTMinter *)jwtMinter
                    adminController:(nullable id<PDSAdminController>)adminController {
     self = [super init];
     if (self) {

@@ -47,7 +47,7 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
 }
 
 @implementation OAuth2Handler {
-  JWTMinter *_minter;
+  ATProtoJWTMinter *_minter;
 }
 
 #pragma mark - Init / Lifecycle
@@ -56,12 +56,12 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
   return nil;
 }
 
-- (void)setMinter:(JWTMinter *)minter {
+- (void)setMinter:(ATProtoJWTMinter *)minter {
   _minter = minter;
   self.oauthServer.jwtMinter = minter;
 }
 
-- (JWTMinter *)minter {
+- (ATProtoJWTMinter *)minter {
   return _minter;
 }
 

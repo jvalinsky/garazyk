@@ -13,7 +13,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class HttpServer;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class PDSApplication;
 @class PDSController;
 @class PDSServiceDatabases;
@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)registerRoutesWithServer:(HttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
-                       jwtMinter:(nullable JWTMinter *)jwtMinter
+                       jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
                    dataDirectory:(nullable NSString *)dataDirectory
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller;

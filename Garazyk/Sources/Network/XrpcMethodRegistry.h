@@ -9,7 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSApplication;
 @class PDSController;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 /**
  * @abstract Defines the PDSAdminController protocol contract.
  */

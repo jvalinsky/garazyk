@@ -7,7 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class SessionToken;
 @class Session;
 @class SessionStore;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 
 /*!
  @header Session.h
@@ -179,7 +179,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
 @property (nonatomic, copy, readwrite, nullable) NSString *dpopKeyThumbprint;
 
 /*! Minter used for creating access tokens. */
-@property (nonatomic, strong, nullable) JWTMinter *minter;
+@property (nonatomic, strong, nullable) ATProtoJWTMinter *minter;
 
 /*!
  @method sessionWithDID:handle:scope:
@@ -222,7 +222,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
-                                 minter:(nullable JWTMinter *)minter
+                                 minter:(nullable ATProtoJWTMinter *)minter
                       dpopKeyThumbprint:(nullable NSString *)jkt;
 
 /*!
@@ -233,7 +233,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
-                                 minter:(nullable JWTMinter *)minter;
+                                 minter:(nullable ATProtoJWTMinter *)minter;
 
 /*!
  @method initWithDID:handle:scope:
@@ -281,7 +281,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
 - (instancetype)initWithDID:(NSString *)did
                     handle:(NSString *)handle
                      scope:(NSString *)scope
-                    minter:(nullable JWTMinter *)minter
+                    minter:(nullable ATProtoJWTMinter *)minter
          dpopKeyThumbprint:(nullable NSString *)jkt;
 
 /*!
@@ -292,7 +292,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
 - (instancetype)initWithDID:(NSString *)did
                      handle:(NSString *)handle
                       scope:(NSString *)scope
-                     minter:(nullable JWTMinter *)minter;
+                     minter:(nullable ATProtoJWTMinter *)minter;
 
 /*!
  @method toTokenResponse
@@ -485,7 +485,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
 @property (nonatomic, assign, readonly) NSTimeInterval clockSkew;
 
 /*! Minter used for creating access tokens. */
-@property (nonatomic, strong, nullable) JWTMinter *minter;
+@property (nonatomic, strong, nullable) ATProtoJWTMinter *minter;
 
 /*!
  @method sharedStore

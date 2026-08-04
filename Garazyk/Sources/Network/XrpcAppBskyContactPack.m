@@ -26,7 +26,7 @@
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                  contactService:(ContactService *)contactService
-                      jwtMinter:(JWTMinter *)jwtMinter
+                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController {
   XrpcRoutePackServiceBag *services =
       [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
