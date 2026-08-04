@@ -50,9 +50,9 @@
     return task;
 }
 
-- (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
-                               options:(id)options
-                            completion:(void (^)(NSData * _Nullable, NSHTTPURLResponse * _Nullable, NSError * _Nullable))completion {
+- (void)performDataTaskWithRequest:(NSURLRequest *)request
+                            options:(id)options
+                         completion:(void (^)(NSData * _Nullable, NSHTTPURLResponse * _Nullable, NSError * _Nullable))completion {
     NSURLSessionDataTask *task = [self dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         completion(data, (NSHTTPURLResponse *)response, error);
     }];
