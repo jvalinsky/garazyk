@@ -14,7 +14,7 @@
 
 @interface OAuthConformanceTests : XCTestCase
 @property (nonatomic, strong) OAuth2Handler *handler;
-@property (nonatomic, strong) JWTMinter *minter;
+@property (nonatomic, strong) ATProtoJWTMinter *minter;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, assign) SecKeyRef privateKey;
 @property (nonatomic, assign) SecKeyRef publicKey;
@@ -32,7 +32,7 @@
     [self.database openWithError:nil];
     
     // Setup Minter with static key for testing
-    self.minter = [[JWTMinter alloc] init];
+    self.minter = [[ATProtoJWTMinter alloc] init];
     
     self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
     self.handler.minter = self.minter;

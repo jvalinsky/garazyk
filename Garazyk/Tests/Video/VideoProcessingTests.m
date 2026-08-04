@@ -736,7 +736,7 @@
 }
 
 - (void)testInstantiationRequiresJWTMinter {
-    // We can't create a JWTMinter without dependencies, but we can verify the
+    // We can't create a ATProtoJWTMinter without dependencies, but we can verify the
     // class compiles and the protocol is adopted.
     XCTAssertNotNil([VideoPDSAuthProvider class]);
 }

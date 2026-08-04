@@ -30,7 +30,7 @@
 
 + (void)registerInviteCodeEndpoints:(XrpcDispatcher *)dispatcher
                            services:(id<XrpcRoutePackServices>)services {
-    JWTMinter *jwtMinter = services.jwtMinter;
+    ATProtoJWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 #pragma mark - com.atproto.server.inviteCodes.*

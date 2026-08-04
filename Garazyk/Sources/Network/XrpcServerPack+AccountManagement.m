@@ -45,7 +45,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
 
 + (void)registerEmailAndAccountEndpoints:(XrpcDispatcher *)dispatcher
                                  services:(id<XrpcRoutePackServices>)services {
-    JWTMinter *jwtMinter = services.jwtMinter;
+    ATProtoJWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
     id<PDSAccountService> accountService = services.accountService;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
@@ -775,7 +775,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
             payload[@"lxm"] = lxm;
         }
 
-        JWTMinter *minter = [[JWTMinter alloc] init];
+        ATProtoJWTMinter *minter = [[ATProtoJWTMinter alloc] init];
         minter.issuer = did;
         minter.signingAlgorithm = @"ES256K";
 

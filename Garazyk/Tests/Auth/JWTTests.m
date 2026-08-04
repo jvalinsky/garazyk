@@ -6,7 +6,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 @interface JWTTests : XCTestCase
-@property (nonatomic, strong) JWTMinter *minter;
+@property (nonatomic, strong) ATProtoJWTMinter *minter;
 @property (nonatomic, strong) ATProtoJWTVerifier *verifier;
 @end
 
@@ -16,7 +16,7 @@
     [super setUp];
 
     // Create a test minter with a known private key
-    self.minter = [[JWTMinter alloc] init];
+    self.minter = [[ATProtoJWTMinter alloc] init];
     self.minter.issuer = @"test.issuer";
     self.minter.signingAlgorithm = @"ES256K";
     self.minter.defaultExpiration = 3600;
@@ -286,7 +286,7 @@
     XCTAssertEqual(error.code, JWTErrorTokenNotYetValid, @"Error should indicate token not yet valid");
 }
 
-#pragma mark - JWTMinter Tests
+#pragma mark - ATProtoJWTMinter Tests
 
 - (void)testAccessTokenMinting {
     // Test minting an access token

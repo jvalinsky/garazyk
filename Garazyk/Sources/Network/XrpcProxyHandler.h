@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class HttpRequest;
 @class HttpResponse;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 
 /*!
  
@@ -42,7 +42,7 @@ typedef _Nullable id<PDSActorKeyManager> (^ServiceAuthSigningKeyResolver)(NSStri
 @property (nonatomic, readonly, copy) NSString *upstreamDID;
 
 /*! Minter for creating service-to-service tokens. */
-@property (nonatomic, readonly, strong) JWTMinter *minter;
+@property (nonatomic, readonly, strong) ATProtoJWTMinter *minter;
 
 /*! Resolver that provides the user's actor key manager for signing service auth JWTs. */
 @property (nonatomic, copy, nullable) ServiceAuthSigningKeyResolver signingKeyResolver;
@@ -52,7 +52,7 @@ typedef _Nullable id<PDSActorKeyManager> (^ServiceAuthSigningKeyResolver)(NSStri
  
  @abstract Initializes a new proxy handler with just a minter.
  */
-- (instancetype)initWithMinter:(JWTMinter *)minter;
+- (instancetype)initWithMinter:(ATProtoJWTMinter *)minter;
 
 /*!
  @method initWithProxyURL:upstreamDID:minter:
@@ -61,7 +61,7 @@ typedef _Nullable id<PDSActorKeyManager> (^ServiceAuthSigningKeyResolver)(NSStri
  */
 - (instancetype)initWithProxyURL:(NSURL *)proxyURL
                      upstreamDID:(NSString *)upstreamDID
-                          minter:(JWTMinter *)minter;
+                          minter:(ATProtoJWTMinter *)minter;
 
 /*!
  @method handleRequest:response:

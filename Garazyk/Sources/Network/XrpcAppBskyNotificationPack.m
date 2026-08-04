@@ -79,7 +79,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                                     jwtMinter:(JWTMinter *)jwtMinter
+                                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
                                adminController:(id<PDSAdminController>)adminController {
   XrpcRoutePackServiceBag *services =
       [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
@@ -96,7 +96,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
 + (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                                    jwtMinter:(JWTMinter *)jwtMinter
+                                    jwtMinter:(ATProtoJWTMinter *)jwtMinter
                               adminController:(id<PDSAdminController>)adminController {
   XrpcRoutePackServiceBag *services =
       [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
@@ -113,7 +113,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                     jwtMinter:(JWTMinter *)jwtMinter
+                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController {
   XrpcRoutePackServiceBag *services =
       [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher

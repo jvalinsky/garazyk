@@ -11,7 +11,7 @@
 
 @class XrpcDispatcher;
 @class ContactService;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                  contactService:(ContactService *)contactService
-                      jwtMinter:(JWTMinter *)jwtMinter
+                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController;
 
 @end

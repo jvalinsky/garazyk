@@ -60,7 +60,7 @@ static void registerMethodsWithDispatcherUsingServices(
     PDSRelayService *relayService, id<PDSAdminController> adminController,
     PDSBlobAuditManager *blobAuditManager,
     PDSServiceDatabases *serviceDatabases, PDSDatabasePool *userDatabasePool,
-    JWTMinter *jwtMinter, RateLimiter *rateLimiter, ATProtoServiceConfiguration *config,
+    ATProtoJWTMinter *jwtMinter, RateLimiter *rateLimiter, ATProtoServiceConfiguration *config,
     id<PDSEmailProvider> emailProvider,
     SubscribeReposHandler *subscribeReposHandler, PDSSpaceStore *spaceStore,
     PDSSpaceReconciler *spaceReconciler) {

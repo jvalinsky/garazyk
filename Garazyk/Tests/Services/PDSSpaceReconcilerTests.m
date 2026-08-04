@@ -9,7 +9,7 @@
 @interface PDSSpaceReconcilerTests : XCTestCase
 @property (nonatomic, strong) PDSSpaceStore *spaceStore;
 @property (nonatomic, strong) PDSDatabasePool *dbPool;
-@property (nonatomic, strong) JWTMinter *jwtMinter;
+@property (nonatomic, strong) ATProtoJWTMinter *jwtMinter;
 @end
 
 @implementation PDSSpaceReconcilerTests
@@ -20,7 +20,7 @@
   // Note: PDSDatabasePool requires a data directory path; use temp for test
   NSString *tempDir = NSTemporaryDirectory();
   self.dbPool = [[PDSDatabasePool alloc] initWithDbDirectory:tempDir maxSize:10];
-  self.jwtMinter = [[JWTMinter alloc] init];
+  self.jwtMinter = [[ATProtoJWTMinter alloc] init];
 }
 
 - (void)tearDown {

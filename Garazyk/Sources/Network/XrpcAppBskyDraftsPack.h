@@ -12,7 +12,7 @@
 
 @class XrpcDispatcher;
 @class DraftService;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 /**
  * @abstract Defines the PDSAdminController protocol contract.
  */
@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                   draftService:(DraftService *)draftService
-                     jwtMinter:(JWTMinter *)jwtMinter
+                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController;
 
 @end

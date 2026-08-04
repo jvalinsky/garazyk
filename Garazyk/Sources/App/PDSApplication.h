@@ -11,7 +11,7 @@
 @class PDSRelayService;
 @class PDSController;
 @class RateLimiter;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class ATProtoAuthVerifier;
 @class SubscribeReposHandler;
 @class PDSRecordService;
@@ -138,7 +138,7 @@ extern NSString * const PDSApplicationErrorDomain;
 @property (nonatomic, strong, readonly) RateLimiter *rateLimiter;
 
 /*! JWT minting for access tokens. */
-@property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
+@property (nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 
 /*! Protocol-backed request verifier shared with XRPC route registration. */
 @property (nonatomic, strong, readonly, nullable) ATProtoAuthVerifier *authVerifier;
