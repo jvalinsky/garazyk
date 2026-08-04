@@ -272,7 +272,7 @@
     // the verifier's failure error carries `use_dpop_nonce = YES`.
     //
     // That flag is set in exactly three branches of
-    // AuthCryptoDPoP.verifyProof:method:url:nonce:requireNonce:...:
+    // ATProtoAuthCryptoDPoP.verifyProof:method:url:nonce:requireNonce:...:
     //   1. `requireNonce=YES` and the proof's `nonce` claim is absent
     //   2. `nonce` was supplied by the caller and the proof's `nonce`
     //      claim differs from it
@@ -752,7 +752,7 @@
 // a thumbprint mismatch.
 - (NSString *)thumbprintFromDPoPProofJWT:(NSString *)proofJWT error:(NSError **)error {
     NSArray<NSString *> *proofParts = [proofJWT componentsSeparatedByString:@"."];
-    NSData *proofHeaderData = [AuthCryptoBase64URL decode:proofParts[0]];
+    NSData *proofHeaderData = [ATProtoAuthCryptoBase64URL decode:proofParts[0]];
     if (!proofHeaderData) {
         return nil;
     }
@@ -762,7 +762,7 @@
     if (!proofHeaderJSON) {
         return nil;
     }
-    return [AuthCryptoJWK thumbprint:proofHeaderJSON[@"jwk"] error:error];
+    return [ATProtoAuthCryptoJWK thumbprint:proofHeaderJSON[@"jwk"] error:error];
 }
 
 @end

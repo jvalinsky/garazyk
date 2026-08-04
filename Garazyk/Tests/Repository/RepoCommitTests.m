@@ -53,7 +53,7 @@
     XCTAssertNotNil(serialized, @"Serialized commit should not be nil");
     XCTAssertGreaterThan(serialized.length, 0, @"Serialized commit should have data");
     
-    CBORValue *decoded = [CBORDecoder decode:serialized];
+    CBORValue *decoded = [ATProtoCBORDecoder decode:serialized];
     XCTAssertNotNil(decoded, @"Decoded CBOR should not be nil");
     XCTAssertEqual(decoded.type, CBORTypeMap, @"Decoded CBOR should be a map");
     
@@ -85,7 +85,7 @@
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     NSData *serialized = [commit serialize];
     
-    CBORValue *decoded = [CBORDecoder decode:serialized];
+    CBORValue *decoded = [ATProtoCBORDecoder decode:serialized];
     NSDictionary<CBORValue *, CBORValue *> *map = decoded.map;
     
     CBORValue *prevKey = [CBORValue textString:@"prev"];

@@ -210,11 +210,11 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
 }
 
 - (NSData *)encode {
-    return [CBOREncoder encode:self];
+    return [ATProtoCBOREncoder encode:self];
 }
 
 + (instancetype)decode:(NSData *)data {
-    return [CBORDecoder decode:data];
+    return [ATProtoCBORDecoder decode:data];
 }
 
 - (id)copyWithZone:(NSZone *)zone {
@@ -234,9 +234,9 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
 
 @end
 
-#pragma mark - CBOREncoder Implementation
+#pragma mark - ATProtoCBOREncoder Implementation
 
-@implementation CBOREncoder
+@implementation ATProtoCBOREncoder
 
 + (NSData *)encode:(CBORValue *)value {
     NSMutableData *data = [NSMutableData data];
@@ -428,9 +428,9 @@ static const NSUInteger kCBORMaxDecodeDepth = 64;
 
 @end
 
-#pragma mark - CBORDecoder Implementation
+#pragma mark - ATProtoCBORDecoder Implementation
 
-@implementation CBORDecoder
+@implementation ATProtoCBORDecoder
 
 + (CBORValue *)decode:(NSData *)data {
     // §3.4 option (c): the generic CBOR decoder is lenient; strict canonical-form

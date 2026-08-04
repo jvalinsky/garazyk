@@ -21,7 +21,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
 /*!
  @abstract §S19 candidate 4 — the `_isContentAddressed` ivar is the routing
  flag that decides between the strict DAG-CBOR path (ATProtoDagCBOR) and the
- legacy / CTAP2 / generic-CBOR path (CBORDecoder / CBOREncoder). Set at
+ legacy / CTAP2 / generic-CBOR path (ATProtoCBORDecoder / ATProtoCBOREncoder). Set at
  construction; immutable for the lifetime of the instance.
  */
 @interface ATProtoCBORSerialization ()
@@ -49,23 +49,23 @@ static NSData *CBORBase64URLDecode(NSString *string) {
                                }];
     return nil;
   }
-  return [CBOREncoder encode:cbor];
+  return [ATProtoCBOREncoder encode:cbor];
 }
 
 - (id)JSONObjectWithData:(NSData *)data error:(NSError **)error {
-  // §S19 candidate 4: branch the wrapped [CBORDecoder decode:] call on
+  // §S19 candidate 4: branch the wrapped [ATProtoCBORDecoder decode:] call on
   // _isContentAddressed. Content-addressed callers (RepoCommit, MST/CAR
   // blocks, Firehose, AppView ingest, sync, identity, profile records)
   // route through the strict [ATProtoDagCBOR decodeDataAsJSON:] path --
   // the same dispatch as the direct-from-DagCBOR identity at
   // AppViewBackfillWorker.m:422. CTAP2 / generic-CBOR callers (lexicon
   // schemas and similar non-CID'd payloads) stay on the legacy
-  // [CBORDecoder decode:] path.
+  // [ATProtoCBORDecoder decode:] path.
   if (self.isContentAddressed) {
     return [ATProtoDagCBOR decodeDataAsJSON:data error:error];
   }
   // Fallthrough: generic / CTAP2 callers stay on the legacy decoder.
-  CBORValue *cbor = [CBORDecoder decode:data];
+  CBORValue *cbor = [ATProtoCBORDecoder decode:data];
   if (!cbor) {
     if (error)
       *error = [NSError

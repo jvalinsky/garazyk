@@ -113,9 +113,9 @@
 
   if (jwt) {
     // Verify JWT signature
-    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     if ([verifier verifyJWT:jwt error:&jwtError]) {
-      JWTPayload *payload = jwt.payload;
+      ATProtoJWTPayload *payload = jwt.payload;
 
       // Check if token is expired
       NSDate *now = [NSDate date];

@@ -102,7 +102,7 @@
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/aturi_syntax_valid.txt"];
     for (NSString *aturi in valid) {
         NSError *error = nil;
-        ATURI *parsed = [ATURI uriWithString:aturi error:&error];
+        ATProtoATURI *parsed = [ATProtoATURI uriWithString:aturi error:&error];
         XCTAssertNotNil(parsed, @"Expected valid AT-URI per fixtures: %@ (error=%@)", aturi, error);
     }
 }
@@ -110,7 +110,7 @@
 - (void)testInteropATURISyntaxInvalid {
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/aturi_syntax_invalid.txt"];
     for (NSString *aturi in invalid) {
-        ATURI *parsed = [ATURI uriWithString:aturi error:nil];
+        ATProtoATURI *parsed = [ATProtoATURI uriWithString:aturi error:nil];
         XCTAssertNil(parsed, @"Expected invalid AT-URI per fixtures: %@", aturi);
     }
 }

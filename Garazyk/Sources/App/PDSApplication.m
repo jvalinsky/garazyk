@@ -77,7 +77,7 @@ NSString * const PDSApplicationErrorDomain = @"PDSApplicationErrorDomain";
 @property (nonatomic, strong, readwrite, nullable) PDSCollectionMembershipPruner *collectionMembershipPruner;
 @property (nonatomic, strong, readwrite, nullable) PDSPasswordResetTokenPruner *passwordResetTokenPruner;
 @property (nonatomic, strong, readwrite) JWTMinter *jwtMinter;
-@property (nonatomic, strong, readwrite, nullable) AuthVerifier *authVerifier;
+@property (nonatomic, strong, readwrite, nullable) ATProtoAuthVerifier *authVerifier;
 @property (nonatomic, strong, readwrite) HttpServer *httpServer;
 @property (nonatomic, strong, readwrite) PDSRelayService *relayService;
 @property (nonatomic, strong, readwrite) id<PDSAccountService> accountService;
@@ -555,7 +555,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     if (authDatabase && _adminController) {
         PDSAccountPolicy *accountPolicy = [[PDSAccountPolicy alloc] initWithDatabase:authDatabase
                                                                        adminController:_adminController];
-        _authVerifier = [[AuthVerifier alloc] initWithKeyResolver:nil
+        _authVerifier = [[ATProtoAuthVerifier alloc] initWithKeyResolver:nil
                                                      accountPolicy:accountPolicy
                                                         nonceStore:[PDSNonceManager sharedManager]];
         [_authVerifier setLocalPublicKey:_jwtMinter.publicKey];
@@ -565,7 +565,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         _authVerifier.requireDPoP = _configuration.requireDPoPNonce;
         _authVerifier.replayChecker = [PDSReplayCache sharedCache];
     } else {
-        GZ_LOG_AUTH_WARN(@"PDSApplication: AuthVerifier unavailable because auth database or admin controller is missing");
+        GZ_LOG_AUTH_WARN(@"PDSApplication: ATProtoAuthVerifier unavailable because auth database or admin controller is missing");
     }
     [PDSBlobAuditHandler sharedHandler].auditManager = _blobAuditManager;
     [PDSSystemDiagnosticsHandler sharedHandler].auditManager = _blobAuditManager;

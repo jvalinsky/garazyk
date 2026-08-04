@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthCryptoBase64URL.h
+ @file ATProtoAuthCryptoBase64URL.h
 
  @abstract Base64URL encoding and decoding utilities.
 
@@ -20,11 +20,11 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const AuthCryptoErrorDomain;
 
 /*!
- @class AuthCryptoBase64URL
+ @class ATProtoAuthCryptoBase64URL
 
  @abstract Base64URL encode/decode without padding.
  */
-@interface AuthCryptoBase64URL : NSObject
+@interface ATProtoAuthCryptoBase64URL : NSObject
 
 /*! Encodes data to base64url string (no padding). */
 + (NSString *)encode:(NSData *)data;

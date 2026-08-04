@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @abstract PDS-specific adapter for AuthVerifier's AccountPolicy protocol.
+ * @abstract PDS-specific adapter for ATProtoAuthVerifier's AccountPolicy protocol.
  *
- * @discussion Bridges AuthVerifier's generic account-status check to PDSDatabase
+ * @discussion Bridges ATProtoAuthVerifier's generic account-status check to PDSDatabase
  * and the admin controller.
  */
 

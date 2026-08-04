@@ -192,7 +192,7 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
         return NO;
     }
 
-    // Mute/block enforcement is handled by AuthVerifier and the XRPC handler
+    // Mute/block enforcement is handled by ATProtoAuthVerifier and the XRPC handler
     // layer, not by this basic repo-access check. The previous branch here
     // checked for account existence (which always succeeds for the owner) and
     // then returned NO, effectively denying owners reading their own posts.

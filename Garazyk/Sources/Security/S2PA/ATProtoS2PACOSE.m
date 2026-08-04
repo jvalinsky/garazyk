@@ -66,13 +66,13 @@ static BOOL S2PAExtractEnvelope(NSData *envelope,
     }
 
     NSUInteger offset = 0;
-    CBORValue *root = [CBORDecoder decode:envelope offset:&offset];
+    CBORValue *root = [ATProtoCBORDecoder decode:envelope offset:&offset];
     if (!root || offset != envelope.length || root.type != CBORTypeArray || root.array.count != 4) {
         S2PASetError(error, ATProtoS2PAErrorInvalidEnvelope,
                      @"COSE_Sign1 must be exactly one four-element CBOR array");
         return NO;
     }
-    // Generic CBORDecoder is intentionally lenient. Re-encoding the parsed
+    // Generic ATProtoCBORDecoder is intentionally lenient. Re-encoding the parsed
     // value and comparing bytes rejects non-minimal lengths, duplicate map keys,
     // and other alternate spellings before any signature is trusted.
     if (![root.encode isEqualToData:envelope]) {

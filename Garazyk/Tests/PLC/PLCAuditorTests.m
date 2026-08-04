@@ -496,7 +496,7 @@
     // Normalize to low-S form per PLC spec
     // https://web.plc.directory/spec/v0.1/did-plc — "high-S values rejected as invalid"
     NSError *normalizeError = nil;
-    rawSig = [AuthCryptoECDSA normalizeLowS:rawSig error:&normalizeError];
+    rawSig = [ATProtoAuthCryptoECDSA normalizeLowS:rawSig error:&normalizeError];
     XCTAssertNotNil(rawSig, @"Low-S normalization failed: %@", normalizeError);
     
     PLCOperation *op = [[PLCOperation alloc] init];
@@ -517,7 +517,7 @@
     // Same fixed P-256 keypair as testAuditorVerifiesP256Signature, but this
     // time the signature is deliberately denormalized to high-S. did:plc
     // requires low-S canonical signatures
-    // (https://web.plc.directory/spec/v0.1/did-plc); AuthCryptoJWK's shared
+    // (https://web.plc.directory/spec/v0.1/did-plc); ATProtoAuthCryptoJWK's shared
     // verifier accepts both forms per ADR 0007 (that fix is for DPoP/JWT/
     // WebAuthn callers, which must not reject high-S), so PLCAuditor must
     // enforce low-S itself rather than relying on the shared verifier.
@@ -586,12 +586,12 @@
     // guaranteed either way), then denormalize to guarantee a genuine,
     // otherwise-valid high-S signature over this exact data.
     NSError *normalizeError = nil;
-    NSData *lowS = [AuthCryptoECDSA normalizeLowS:rawSig error:&normalizeError];
+    NSData *lowS = [ATProtoAuthCryptoECDSA normalizeLowS:rawSig error:&normalizeError];
     XCTAssertNotNil(lowS, @"Low-S normalization failed: %@", normalizeError);
     NSError *denormalizeError = nil;
-    NSData *highS = [AuthCryptoECDSA denormalizeLowS:lowS error:&denormalizeError];
+    NSData *highS = [ATProtoAuthCryptoECDSA denormalizeLowS:lowS error:&denormalizeError];
     XCTAssertNotNil(highS, @"High-S denormalization failed: %@", denormalizeError);
-    XCTAssertFalse([AuthCryptoECDSA isLowS:highS error:nil], @"sanity: signature must actually be high-S");
+    XCTAssertFalse([ATProtoAuthCryptoECDSA isLowS:highS error:nil], @"sanity: signature must actually be high-S");
 
     PLCOperation *op = [[PLCOperation alloc] init];
     op.sig = [self base64URLEncode:highS];

@@ -6,8 +6,8 @@
  @abstract JWT (JSON Web Token) implementation for ATProto authentication.
 
  @discussion This file provides concrete implementations for JWT token parsing,
- encoding, verification, and minting. It includes ATProtoJWTHeader, JWTPayload, JWT,
- JWTVerifier, and JWTMinter classes.
+ encoding, verification, and minting. It includes ATProtoJWTHeader, ATProtoJWTPayload, JWT,
+ ATProtoJWTVerifier, and JWTMinter classes.
 
  @copyright Copyright (c) 2024-2026 Jack Valinsky
  */
@@ -65,10 +65,10 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 @end
 
-@implementation JWTPayload
+@implementation ATProtoJWTPayload
 
 + (nullable instancetype)payloadFromDictionary:(NSDictionary *)dictionary error:(NSError **)error {
-    JWTPayload *payload = [[JWTPayload alloc] init];
+    ATProtoJWTPayload *payload = [[ATProtoJWTPayload alloc] init];
     BOOL typeMismatch = NO;
     payload.iss = AuthTypedValue(dictionary, @"iss", [NSString class], &typeMismatch);
     payload.sub = AuthTypedValue(dictionary, @"sub", [NSString class], &typeMismatch);
@@ -183,7 +183,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 @interface JWT ()
 @property (nonatomic, strong) ATProtoJWTHeader *header;
-@property (nonatomic, strong) JWTPayload *payload;
+@property (nonatomic, strong) ATProtoJWTPayload *payload;
 @property (nonatomic, copy) NSString *rawHeader;
 @property (nonatomic, copy) NSString *rawPayload;
 @property (nonatomic, copy) NSString *signature;
@@ -236,7 +236,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     ATProtoJWTHeader *header = [ATProtoJWTHeader headerFromDictionary:headerDict error:error];
     if (!header) return nil;
 
-    JWTPayload *payload = [JWTPayload payloadFromDictionary:payloadDict error:error];
+    ATProtoJWTPayload *payload = [ATProtoJWTPayload payloadFromDictionary:payloadDict error:error];
     if (!payload) return nil;
 
     JWT *jwt = [[JWT alloc] init];
@@ -251,7 +251,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 + (nullable instancetype)jwtWithHeader:(ATProtoJWTHeader *)header
-                               payload:(JWTPayload *)payload
+                               payload:(ATProtoJWTPayload *)payload
                              signature:(NSString *)signature
                                   error:(NSError **)error {
     JWT *jwt = [[JWT alloc] init];
@@ -322,7 +322,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 
 @end
 
-@implementation JWTVerifier
+@implementation ATProtoJWTVerifier
 
 - (instancetype)init {
     self = [super init];
@@ -408,7 +408,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     return YES;
 }
 
-- (BOOL)validateClaims:(JWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error {
+- (BOOL)validateClaims:(ATProtoJWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error {
     // Use clockOffset as the reference time if set; otherwise use the live
     // clock. Tests can set clockOffset for deterministic expiry/nbf checks.
     NSDate *now = self.clockOffset ?: [NSDate date];
@@ -724,7 +724,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
                      sessionID:(nullable NSString *)sid
              dpopKeyThumbprint:(nullable NSString *)jkt
                            error:(NSError **)error {
-    JWTPayload *payload = [[JWTPayload alloc] init];
+    ATProtoJWTPayload *payload = [[ATProtoJWTPayload alloc] init];
     payload.iss = self.issuer;
     payload.sub = did;
     payload.aud = self.audience;
@@ -785,7 +785,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
                          handle:(NSString *)handle
                          scopes:(NSArray<NSString *> *)scopes
                            error:(NSError **)error {
-    JWTPayload *payload = [[JWTPayload alloc] init];
+    ATProtoJWTPayload *payload = [[ATProtoJWTPayload alloc] init];
     payload.iss = self.issuer;
     payload.sub = did;
     payload.aud = self.audience;

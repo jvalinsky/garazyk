@@ -293,7 +293,7 @@ BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         return NO;
     }
 
-    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     verifier.publicKey = publicKey;
     verifier.allowedAlgorithms = @[@"ES256K"];
     verifier.expectedIssuer = did;

@@ -15,7 +15,7 @@ static const int8_t kBase58Map[128] = {
     47,48,49,50,51,52,53,54,55,56,57,-1,-1,-1,-1,-1
 };
 
-@implementation Base58
+@implementation ATProtoBase58
 
 + (NSString *)encode:(NSData *)data {
     if (data.length == 0) return @"";

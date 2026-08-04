@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthVerifier.m
+ @file ATProtoAuthVerifier.m
 
- @abstract AuthVerifier implementation.
+ @abstract ATProtoAuthVerifier implementation.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -98,9 +98,9 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
 
 @end
 
-#pragma mark - AuthVerifier
+#pragma mark - ATProtoAuthVerifier
 
-@interface AuthVerifier ()
+@interface ATProtoAuthVerifier ()
 @property (nonatomic, strong, nullable) id<TokenKeyResolver> keyResolver;
 @property (nonatomic, strong) id<AccountPolicy> accountPolicy;
 @property (nonatomic, strong, nullable) id<DPoPNonceStore> nonceStore;
@@ -108,7 +108,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
 @property (nonatomic, copy) NSString *localIssuer;
 @end
 
-@implementation AuthVerifier
+@implementation ATProtoAuthVerifier
 
 - (instancetype)init {
     [self doesNotRecognizeSelector:_cmd];
@@ -251,7 +251,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
         }
 
         NSError *dpopError = nil;
-        BOOL validProof = [AuthCryptoDPoP verifyProof:dpopHeader
+        BOOL validProof = [ATProtoAuthCryptoDPoP verifyProof:dpopHeader
                                              method:request.methodString ?: @"GET"
                                                 url:dpopURL
                                               nonce:nil
@@ -298,7 +298,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
         return nil;
     }
 
-    JWTPayload *payload = jwt.payload;
+    ATProtoJWTPayload *payload = jwt.payload;
     NSString *issuer = payload.iss;
     NSString *subject = payload.sub;
     NSString *audience = payload.aud;
@@ -329,7 +329,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
                          [PDSSecurityCompare constantTimeEqualString:issuer string:self.expectedAudience];
 
     if (isLocalIssuer) {
-        JWTVerifier *verifier = [[JWTVerifier alloc] init];
+        ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
         verifier.publicKey = self.localPublicKey;
         verifier.keyManager = self.localKeyManager;
         verifier.expectedIssuer = self.localIssuer;
@@ -396,7 +396,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
         }
 
         NSError *verifyError = nil;
-        id<PDSPublicKeyProtocol> pubKey = [AuthCryptoJWK publicKeyFromJWK:targetKey error:&verifyError];
+        id<PDSPublicKeyProtocol> pubKey = [ATProtoAuthCryptoJWK publicKeyFromJWK:targetKey error:&verifyError];
         if (!pubKey) {
             if (error) {
                 *error = [NSError errorWithDomain:AuthVerifierErrorDomain
@@ -420,7 +420,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
         }
 
         // After successful signature check, we still need to validate standard claims
-        JWTVerifier *claimsVerifier = [[JWTVerifier alloc] init];
+        ATProtoJWTVerifier *claimsVerifier = [[ATProtoJWTVerifier alloc] init];
         claimsVerifier.expectedIssuer = issuer;
         claimsVerifier.expectedAudience = self.expectedAudience;
         claimsVerifier.allowedAlgorithms = @[@"ES256", @"RS256"];
@@ -434,7 +434,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
         // §4.4: Enforce allowedAlgorithms against the JWT's alg claim on the
         // remote-issuer path. validateClaims: does not check alg — it only
         // validates exp, nbf, iss, aud, token_use, and typ. The local-issuer
-        // path enforces alg in JWTVerifier.verifyJWT: via its own method, but
+        // path enforces alg in ATProtoJWTVerifier.verifyJWT: via its own method, but
         // the remote path verifies the signature manually and needs an
         // explicit alg check here to prevent cross-algorithm confusion.
         NSString *remoteAlg = jwt.header.alg ?: @"";

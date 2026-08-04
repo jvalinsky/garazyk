@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AuthCryptoECDSA.h
+ @file ATProtoAuthCryptoECDSA.h
 
  @abstract ECDSA signature format conversion utilities.
 
@@ -20,11 +20,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class AuthCryptoECDSA
+ @class ATProtoAuthCryptoECDSA
 
  @abstract ECDSA DER ↔ raw signature conversion.
  */
-@interface AuthCryptoECDSA : NSObject
+@interface ATProtoAuthCryptoECDSA : NSObject
 
 /*! Converts DER-encoded ECDSA signature to raw (r||s) format.
     @param der DER-encoded signature from Security framework.
