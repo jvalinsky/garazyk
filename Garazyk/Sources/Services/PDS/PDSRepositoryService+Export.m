@@ -835,19 +835,19 @@
                            commitCID:(CID *)commitCID
                          commitBlock:(NSData *)commitBlock {
     // Parse the commit block to extract rev, prev, sig, data
-    CBORValue *commitValue = [CBORValue decode:commitBlock];
+    ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlock];
     NSString *rev = @"";
     CID *dataCID = nil;
     CID *prevCID = nil;
     NSData *sig = nil;
 
     if (commitValue && commitValue.type == CBORTypeMap) {
-        CBORValue *revVal = commitValue.map[[CBORValue textString:@"rev"]];
+        ATProtoCBORValue *revVal = commitValue.map[[ATProtoCBORValue textString:@"rev"]];
         if (revVal && revVal.type == CBORTypeTextString) {
             rev = revVal.textString;
         }
 
-        CBORValue *dataVal = commitValue.map[[CBORValue textString:@"data"]];
+        ATProtoCBORValue *dataVal = commitValue.map[[ATProtoCBORValue textString:@"data"]];
         if (dataVal && dataVal.type == CBORTypeTag) {
             NSData *cidBytes = dataVal.tagValue.byteString;
             if (cidBytes.length > 1) {
@@ -855,7 +855,7 @@
             }
         }
 
-        CBORValue *prevVal = commitValue.map[[CBORValue textString:@"prev"]];
+        ATProtoCBORValue *prevVal = commitValue.map[[ATProtoCBORValue textString:@"prev"]];
         if (prevVal && prevVal.type == CBORTypeTag) {
             NSData *cidBytes = prevVal.tagValue.byteString;
             if (cidBytes.length > 1) {
@@ -863,7 +863,7 @@
             }
         }
 
-        CBORValue *sigVal = commitValue.map[[CBORValue textString:@"sig"]];
+        ATProtoCBORValue *sigVal = commitValue.map[[ATProtoCBORValue textString:@"sig"]];
         if (sigVal && sigVal.type == CBORTypeByteString) {
             sig = sigVal.byteString;
         }

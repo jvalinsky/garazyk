@@ -15,7 +15,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class Secp256k1KeyPair;
+@class ATProtoSecp256k1KeyPair;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -66,7 +66,7 @@ typedef NS_ENUM(NSInteger, PLCRotationKeyManagerError) {
 @property (nonatomic, copy, readonly, nullable) NSString *keyStoragePath;
 
 /*! The current rotation key pair. */
-@property (nonatomic, strong, readonly, nullable) Secp256k1KeyPair *rotationKeyPair;
+@property (nonatomic, strong, readonly, nullable) ATProtoSecp256k1KeyPair *rotationKeyPair;
 
 /*! The did:key representation of the rotation public key. */
 @property (nonatomic, copy, readonly, nullable) NSString *rotationKeyDidKey;

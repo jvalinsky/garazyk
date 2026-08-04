@@ -96,7 +96,7 @@
 }
 
 - (void)testStateReplayerUpdateHandle {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
     
     NSDictionary *createData = @{
@@ -155,7 +155,7 @@
 }
 
 - (void)testStateReplayerMultipleHandleUpdates {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
     
     NSDictionary *createData = @{
@@ -318,7 +318,7 @@
 }
 
 - (void)testSignatureVerificationTestVector {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     XCTAssertNotNil(keyPair, @"Key pair should be generated");
     
     NSData *message = [@"test message" dataUsingEncoding:NSUTF8StringEncoding];
@@ -337,7 +337,7 @@
 }
 
 - (void)testOperationSignatureRoundTrip {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     XCTAssertNotNil(keyPair);
     
     NSString *didKey = [keyPair didKeyString];

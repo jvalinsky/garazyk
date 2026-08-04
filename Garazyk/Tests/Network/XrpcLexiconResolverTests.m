@@ -84,7 +84,7 @@
     NSArray *services = @[
         @{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"}
     ];
-    DIDDocument *doc = [self documentWithServices:services];
+    ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
     NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertEqualObjects(endpoint, @"https://pds.example.com");
@@ -97,7 +97,7 @@
         @{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"},
         @{@"id": @"#second_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://second.example.com"},
     ];
-    DIDDocument *doc = [self documentWithServices:services];
+    ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
     NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertEqualObjects(endpoint, @"https://pds.example.com");
@@ -108,7 +108,7 @@
     NSArray *services = @[
         @{@"id": @"#atproto_labeler", @"type": @"AtprotoLabeler", @"serviceEndpoint": @"https://label.example.com"}
     ];
-    DIDDocument *doc = [self documentWithServices:services];
+    ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
     NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
@@ -117,7 +117,7 @@
 }
 
 - (void)testPdsEndpointFromDidDocument_NoServices_ReturnsNilError {
-    DIDDocument *doc = [self documentWithServices:@[]];
+    ATProtoDIDDocument *doc = [self documentWithServices:@[]];
     NSError *error = nil;
     NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
@@ -126,7 +126,7 @@
 
 - (void)testPdsEndpointFromDidDocument_EmptyServices_ReturnsNilError {
     // DID document with empty services array — no PDS endpoint to extract.
-    DIDDocument *doc = [self documentWithServices:@[]];
+    ATProtoDIDDocument *doc = [self documentWithServices:@[]];
     NSError *error = nil;
     NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
@@ -137,7 +137,7 @@
     NSArray *services = @[
         @{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer"}
     ];
-    DIDDocument *doc = [self documentWithServices:services];
+    ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
     NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
@@ -147,7 +147,7 @@
     NSArray *services = @[
         @{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @""}
     ];
-    DIDDocument *doc = [self documentWithServices:services];
+    ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
     NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
@@ -157,7 +157,7 @@
     NSArray *services = @[
         @{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"}
     ];
-    DIDDocument *doc = [self documentWithServices:services];
+    ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:NULL];
     XCTAssertEqualObjects(endpoint, @"https://pds.example.com");
 }
@@ -295,7 +295,7 @@
 
 - (void)testPdsEndpointFromDidDocument_NonArrayServices_ReturnsNilError {
     // When service is a dictionary instead of an array (malformed document)
-    DIDDocument *doc = [[DIDDocument alloc] init];
+    ATProtoDIDDocument *doc = [[ATProtoDIDDocument alloc] init];
     [doc setValue:@{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"} forKey:@"service"];
     NSError *error = nil;
     NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
@@ -351,9 +351,9 @@
 
 #pragma mark - Helpers
 
-- (DIDDocument *)documentWithServices:(NSArray *)services {
-    DIDDocument *doc = [[DIDDocument alloc] init];
-    // DIDDocument expects service entries in a specific format
+- (ATProtoDIDDocument *)documentWithServices:(NSArray *)services {
+    ATProtoDIDDocument *doc = [[ATProtoDIDDocument alloc] init];
+    // ATProtoDIDDocument expects service entries in a specific format
     // Use KVC to set the service property
     [doc setValue:services forKey:@"service"];
     return doc;

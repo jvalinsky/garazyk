@@ -20,7 +20,7 @@ static const NSUInteger kPDSImportRepoMaxMSTNodes = 100000;
 static const NSUInteger kPDSImportRepoMaxRecords = 100000;
 static const NSUInteger kPDSImportRepoMaxMSTDepth = 512;
 
-static CID *cidFromTaggedCBORValue(CBORValue *value) {
+static CID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
     if (!value) {
         return nil;
     }
@@ -63,7 +63,7 @@ static NSData *publicKeyFromDIDKeyString(NSString *didKey) {
     return [decoded subdataWithRange:NSMakeRange(2, 33)];
 }
 
-static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
+static NSData *atprotoSigningKeyFromDIDDocument(ATProtoDIDDocument *document) {
     NSDictionary *json = document.jsonDictionary;
     id verificationMethods = json[@"verificationMethods"];
     if ([verificationMethods isKindOfClass:[NSDictionary class]]) {
@@ -89,7 +89,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
 
 + (BOOL)validateCommitSignature:(RepoCommit *)commit did:(NSString *)did databasePool:(PDSDatabasePool *)databasePool allowLocalKeyFallback:(BOOL)allowLocalKeyFallback error:(NSError **)error {
     NSError *resolveError = nil;
-    DIDDocument *document = [[DIDResolver sharedResolver] resolveDIDSync:did error:&resolveError];
+    ATProtoDIDDocument *document = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:&resolveError];
     NSMutableArray<NSData *> *candidateKeys = [NSMutableArray array];
     NSData *didDocKey = atprotoSigningKeyFromDIDDocument(document);
     if (didDocKey) {
@@ -169,35 +169,35 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
             return nil;
         }
 
-        CBORValue *nodeValue = [CBORValue decode:block.data];
+        ATProtoCBORValue *nodeValue = [ATProtoCBORValue decode:block.data];
         if (!nodeValue || nodeValue.type != CBORTypeMap) {
             if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Imported MST node is invalid");
             return nil;
         }
 
         NSMutableArray<NSDictionary *> *childFrames = [NSMutableArray array];
-        CBORValue *leftTag = nodeValue.map[[CBORValue textString:@"l"]];
+        ATProtoCBORValue *leftTag = nodeValue.map[[ATProtoCBORValue textString:@"l"]];
         CID *leftCID = cidFromTaggedCBORValue(leftTag);
         if (leftCID) {
             [childFrames addObject:@{@"cid": leftCID, @"prevKey": prevKey, @"depth": @(depth + 1)}];
         }
 
-        CBORValue *entriesValue = nodeValue.map[[CBORValue textString:@"e"]];
-        NSArray<CBORValue *> *entriesArray = (entriesValue && entriesValue.type == CBORTypeArray) ? entriesValue.array : @[];
+        ATProtoCBORValue *entriesValue = nodeValue.map[[ATProtoCBORValue textString:@"e"]];
+        NSArray<ATProtoCBORValue *> *entriesArray = (entriesValue && entriesValue.type == CBORTypeArray) ? entriesValue.array : @[];
         NSString *currentPrevKey = prevKey;
 
-        for (CBORValue *entryMap in entriesArray) {
+        for (ATProtoCBORValue *entryMap in entriesArray) {
             if (entryMap.type != CBORTypeMap) continue;
 
-            NSData *suffixData = entryMap.map[[CBORValue textString:@"k"]].byteString ?: [NSData data];
-            CBORValue *prefixValue = entryMap.map[[CBORValue textString:@"p"]];
+            NSData *suffixData = entryMap.map[[ATProtoCBORValue textString:@"k"]].byteString ?: [NSData data];
+            ATProtoCBORValue *prefixValue = entryMap.map[[ATProtoCBORValue textString:@"p"]];
             NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
             NSUInteger safePrefixLen = MIN(prefixLen, currentPrevKey.length);
             NSString *prefix = [currentPrevKey substringToIndex:safePrefixLen];
             NSString *suffix = [[NSString alloc] initWithData:suffixData encoding:NSUTF8StringEncoding] ?: @"";
             NSString *fullKey = [prefix stringByAppendingString:suffix];
 
-            CID *valueCID = cidFromTaggedCBORValue(entryMap.map[[CBORValue textString:@"v"]]);
+            CID *valueCID = cidFromTaggedCBORValue(entryMap.map[[ATProtoCBORValue textString:@"v"]]);
             if (valueCID) {
                 CARBlock *valueBlock = [reader blockWithCID:valueCID];
                 if (!valueBlock) {
@@ -236,7 +236,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(DIDDocument *document) {
                 }
             }
 
-            CID *treeCID = cidFromTaggedCBORValue(entryMap.map[[CBORValue textString:@"t"]]);
+            CID *treeCID = cidFromTaggedCBORValue(entryMap.map[[ATProtoCBORValue textString:@"t"]]);
             if (treeCID) {
                 [childFrames addObject:@{@"cid": treeCID, @"prevKey": fullKey, @"depth": @(depth + 1)}];
             }

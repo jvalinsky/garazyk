@@ -1124,10 +1124,10 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // 2. Fallback: resolve remaining DIDs via DID resolver
     if (unresolvedDids.count > 0) {
-        DIDResolver *resolver = [DIDResolver sharedResolver];
+        ATProtoDIDResolver *resolver = [ATProtoDIDResolver sharedResolver];
         for (NSString *did in unresolvedDids) {
             NSError *error = nil;
-            DIDDocument *doc = [resolver resolveDIDSync:did error:&error];
+            ATProtoDIDDocument *doc = [resolver resolveDIDSync:did error:&error];
             if (doc && doc.alsoKnownAs.count > 0) {
                 for (id entry in doc.alsoKnownAs) {
                     if ([entry isKindOfClass:[NSString class]]) {

@@ -54,7 +54,7 @@
     return nil;
 }
 
-- (nullable CID *)cidFromTaggedValue:(CBORValue *)value {
+- (nullable CID *)cidFromTaggedValue:(ATProtoCBORValue *)value {
     if (!value || value.type != CBORTypeTag || !value.tagValue || value.tagValue.type != CBORTypeByteString) {
         return nil;
     }
@@ -74,18 +74,18 @@
         return reader.rootCID;
     }
 
-    CBORValue *decoded = [CBORValue decode:rootBlock.data];
+    ATProtoCBORValue *decoded = [ATProtoCBORValue decode:rootBlock.data];
     if (!decoded || decoded.type != CBORTypeMap) {
         return reader.rootCID;
     }
 
-    CBORValue *entries = decoded.map[[CBORValue textString:@"e"]];
-    CBORValue *left = decoded.map[[CBORValue textString:@"l"]];
+    ATProtoCBORValue *entries = decoded.map[[ATProtoCBORValue textString:@"e"]];
+    ATProtoCBORValue *left = decoded.map[[ATProtoCBORValue textString:@"l"]];
     if ((entries && entries.type == CBORTypeArray) || left) {
         return reader.rootCID;
     }
 
-    CBORValue *dataValue = decoded.map[[CBORValue textString:@"data"]];
+    ATProtoCBORValue *dataValue = decoded.map[[ATProtoCBORValue textString:@"data"]];
     if (!dataValue) {
         return reader.rootCID;
     }

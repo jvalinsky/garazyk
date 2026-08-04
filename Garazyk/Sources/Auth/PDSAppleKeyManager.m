@@ -80,7 +80,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 - (nullable NSDictionary *)publicKeyJWK {
     // For ES256K keys stored as raw secp256k1 data
     if ([self.algorithm isEqualToString:@"ES256K"] && self.secp256k1PrivateKeyData) {
-        Secp256k1KeyPair *kp = [Secp256k1KeyPair keyPairWithPrivateKey:self.secp256k1PrivateKeyData error:nil];
+        ATProtoSecp256k1KeyPair *kp = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:self.secp256k1PrivateKeyData error:nil];
         if (!kp) return nil;
 
         NSMutableDictionary *jwk = [NSMutableDictionary dictionary];
@@ -260,7 +260,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     // Generate using our secp256k1 library and store raw key bytes.
     if ([algorithm isEqualToString:@"ES256K"]) {
         NSError *genError = nil;
-        Secp256k1KeyPair *secpKeyPair = [Secp256k1KeyPair generateKeyPair:&genError];
+        ATProtoSecp256k1KeyPair *secpKeyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&genError];
         if (!secpKeyPair) {
             if (error) {
                 *error = genError ?: [NSError errorWithDomain:KeyManagerErrorDomain
@@ -732,7 +732,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     if ([keyPair.algorithm isEqualToString:@"ES256K"] && keyPair.secp256k1PrivateKeyData) {
         privateKeyData = keyPair.secp256k1PrivateKeyData;
         // Get public key from the secp256k1 key pair
-        Secp256k1KeyPair *kp = [Secp256k1KeyPair keyPairWithPrivateKey:keyPair.secp256k1PrivateKeyData error:nil];
+        ATProtoSecp256k1KeyPair *kp = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:keyPair.secp256k1PrivateKeyData error:nil];
         publicKeyData = kp.publicKey;  // Uncompressed public key
     } else {
         CFErrorRef exportError = NULL;
@@ -822,7 +822,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 
     // ES256K verification using secp256k1 library
     if ([keyPair.algorithm isEqualToString:@"ES256K"] && keyPair.secp256k1PrivateKeyData) {
-        Secp256k1KeyPair *kp = [Secp256k1KeyPair keyPairWithPrivateKey:keyPair.secp256k1PrivateKeyData error:nil];
+        ATProtoSecp256k1KeyPair *kp = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:keyPair.secp256k1PrivateKeyData error:nil];
         if (!kp) {
             if (error) {
                 *error = [NSError errorWithDomain:KeyManagerErrorDomain

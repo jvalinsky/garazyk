@@ -479,13 +479,13 @@ static NSData *CARHeaderDataForRootCID(CID *rootCID) {
     [taggedCIDBytes appendBytes:&marker length:1];
     [taggedCIDBytes appendData:rootCID.bytes];
 
-    CBORValue *rootsArray = [CBORValue array:@[
-        [CBORValue tag:42 value:[CBORValue byteString:taggedCIDBytes]]
+    ATProtoCBORValue *rootsArray = [ATProtoCBORValue array:@[
+        [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:taggedCIDBytes]]
     ]];
 
-    CBORValue *headerMap = [CBORValue map:@{
-        [CBORValue textString:@"roots"]: rootsArray,
-        [CBORValue textString:@"version"]: [CBORValue unsignedInteger:1]
+    ATProtoCBORValue *headerMap = [ATProtoCBORValue map:@{
+        [ATProtoCBORValue textString:@"roots"]: rootsArray,
+        [ATProtoCBORValue textString:@"version"]: [ATProtoCBORValue unsignedInteger:1]
     }];
 
     NSData *headerCBOR = [headerMap encode];

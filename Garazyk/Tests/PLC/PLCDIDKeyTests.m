@@ -12,7 +12,7 @@
 
 - (void)testParseSecp256k1DidKey {
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&error];
     XCTAssertNotNil(keyPair);
     XCTAssertNil(error);
 

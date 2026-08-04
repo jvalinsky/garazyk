@@ -57,7 +57,7 @@ static NSTimeInterval s_cacheTTL = 300; // 5 minutes
     // Use Core's DID resolver capability rather than constructing the PLC
     // transport client here. AppView only needs the resolved document; keeping
     // the concrete network client in PLC avoids an AppView -> PLC module edge.
-    DIDResolver *resolver = [[DIDResolver alloc] initWithRequestTimeout:3.0];
+    ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] initWithRequestTimeout:3.0];
     resolver.plcURL = s_plcURL;
     
     // Create a semaphore for sync resolution

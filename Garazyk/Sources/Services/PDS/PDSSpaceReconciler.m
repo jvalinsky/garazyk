@@ -102,7 +102,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
   if (!space || space.recordURI || author.length == 0 || rev.length == 0 || hash.length != 32 ||
       [space.authorityDID isEqualToString:author]) return;
 
-  DIDDocument *authorityDocument = [[DIDResolver sharedResolver] resolveDIDSync:space.authorityDID error:nil];
+  ATProtoDIDDocument *authorityDocument = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:space.authorityDID error:nil];
   NSURL *endpoint = [NSURL URLWithString:[ATProtoDIDDocumentFields spaceHostEndpointFromDocument:authorityDocument] ?: @""];
   PDSActorStore *actor = [self.userDatabasePool storeForDid:author error:nil];
   NSString *token = [self.jwtMinter mintServiceAuthJWTForDID:author
@@ -174,7 +174,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
   if (!space || space.recordURI || author.length == 0 || localRev.length == 0 ||
       [space.authorityDID isEqualToString:author]) return nil;
 
-  DIDDocument *authorityDocument = [[DIDResolver sharedResolver] resolveDIDSync:space.authorityDID error:nil];
+  ATProtoDIDDocument *authorityDocument = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:space.authorityDID error:nil];
   NSURL *endpoint = [NSURL URLWithString:[ATProtoDIDDocumentFields spaceHostEndpointFromDocument:authorityDocument] ?: @""];
   PDSActorStore *actor = [self.userDatabasePool storeForDid:author error:nil];
   NSString *token = [self.jwtMinter mintServiceAuthJWTForDID:author
@@ -485,7 +485,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
 }
 
 - (nullable NSData *)publicKeyForDID:(NSString *)did {
-  DIDDocument *document = [[DIDResolver sharedResolver] resolveDIDSync:did error:nil];
+  ATProtoDIDDocument *document = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:nil];
   NSString *key = document ? [ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:document] : nil;
   if ([key hasPrefix:@"did:key:"]) key = [key substringFromIndex:8];
   if (![key hasPrefix:@"z"]) return nil;

@@ -43,7 +43,7 @@ static NSString *PDSLabelSigningStorageDirectory(void) {
 
 @interface PDSLabelSigningKeyManager ()
 @property (nonatomic, copy, readwrite, nullable) NSString *keyStoragePath;
-@property (nonatomic, strong, readwrite, nullable) Secp256k1KeyPair *signingKeyPair;
+@property (nonatomic, strong, readwrite, nullable) ATProtoSecp256k1KeyPair *signingKeyPair;
 @property (nonatomic, copy, readwrite, nullable) NSString *signingKeyDidKey;
 - (void)ensureSecurePermissionsForPath:(NSString *)path isDirectory:(BOOL)isDir;
 - (nullable NSData *)encryptionKeyWithError:(NSError **)error;

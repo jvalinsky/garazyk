@@ -207,7 +207,7 @@
         return;
     }
 
-    DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:&error];
+    ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:&error];
     if (!doc) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"DidNotFound", @"message": error.localizedDescription ?: @"DID not found"}];
@@ -377,15 +377,15 @@
     return nil;
 }
 
-- (nullable NSString *)handleFromDocument:(DIDDocument *)doc {
+- (nullable NSString *)handleFromDocument:(ATProtoDIDDocument *)doc {
     return [ATProtoDIDDocumentFields normalizedHandleFromDocument:doc];
 }
 
-- (nullable NSString *)pdsEndpointFromDocument:(DIDDocument *)doc {
+- (nullable NSString *)pdsEndpointFromDocument:(ATProtoDIDDocument *)doc {
     return [ATProtoDIDDocumentFields pdsEndpointFromDocument:doc];
 }
 
-- (nullable NSString *)signingKeyFromDocument:(DIDDocument *)doc {
+- (nullable NSString *)signingKeyFromDocument:(ATProtoDIDDocument *)doc {
     return [ATProtoDIDDocumentFields atprotoSigningKeyMultibaseFromDocument:doc];
 }
 
@@ -397,7 +397,7 @@
                                              rkey:(NSString *)rkey
                                               cid:(nullable NSString *)cid {
     NSError *error = nil;
-    DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:&error];
+    ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:&error];
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
     NSString *endpointOverride = env[@"MIKRUS_PDS_URL"];
     NSString *endpoint = endpointOverride.length > 0 ? endpointOverride : (doc ? [self pdsEndpointFromDocument:doc] : nil);

@@ -13,7 +13,7 @@
 
 - (void)testGenerateKeyPairReturnsValidKeys {
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&error];
     
     XCTAssertNotNil(keyPair, @"Key pair should be generated");
     XCTAssertNil(error, @"No error should occur");
@@ -24,8 +24,8 @@
 
 - (void)testGenerateKeyPairProducesDifferentKeysEachTime {
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair1 = [Secp256k1KeyPair generateKeyPair:&error];
-    Secp256k1KeyPair *keyPair2 = [Secp256k1KeyPair generateKeyPair:&error];
+    ATProtoSecp256k1KeyPair *keyPair1 = [ATProtoSecp256k1KeyPair generateKeyPair:&error];
+    ATProtoSecp256k1KeyPair *keyPair2 = [ATProtoSecp256k1KeyPair generateKeyPair:&error];
     
     XCTAssertNotNil(keyPair1);
     XCTAssertNotNil(keyPair2);
@@ -43,7 +43,7 @@
     NSData *privateKey = [NSData dataWithBytes:testPrivateKey length:32];
     NSError *error = nil;
     
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:&error];
     
     XCTAssertNotNil(keyPair, @"Key pair should be created from valid private key");
     XCTAssertNil(error, @"No error should occur");
@@ -55,13 +55,13 @@
     NSData *longKey = [@"this_is_a_very_long_private_key_that_should_fail" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
     
-    XCTAssertNil([Secp256k1KeyPair keyPairWithPrivateKey:shortKey error:&error],
+    XCTAssertNil([ATProtoSecp256k1KeyPair keyPairWithPrivateKey:shortKey error:&error],
                  @"Should reject private key that is too short");
     XCTAssertNotNil(error, @"Error should be set for short key");
     XCTAssertEqual(error.code, Secp256k1ErrorInvalidPrivateKey);
     
     error = nil;
-    XCTAssertNil([Secp256k1KeyPair keyPairWithPrivateKey:longKey error:&error],
+    XCTAssertNil([ATProtoSecp256k1KeyPair keyPairWithPrivateKey:longKey error:&error],
                  @"Should reject private key that is too long");
     XCTAssertNotNil(error, @"Error should be set for long key");
     XCTAssertEqual(error.code, Secp256k1ErrorInvalidPrivateKey);
@@ -72,7 +72,7 @@
     NSData *privateKey = [NSData dataWithBytes:zeroKey length:32];
     NSError *error = nil;
     
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:&error];
     
     XCTAssertNil(keyPair, @"Should reject zero private key");
     XCTAssertNotNil(error, @"Error should occur for zero key");
@@ -81,7 +81,7 @@
 #pragma mark - Signing
 
 - (void)testSignHashReturnsValidSignature {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     uint8_t hashData[32] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -99,7 +99,7 @@
 }
 
 - (void)testSignHashRejectsInvalidHashLength {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     NSData *shortHash = [@"short" dataUsingEncoding:NSUTF8StringEncoding];
@@ -119,7 +119,7 @@
 }
 
 - (void)testSignHashProducesDeterministicOutput {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     uint8_t hashData[32] = {0xab};
@@ -136,7 +136,7 @@
 #pragma mark - Verification
 
 - (void)testVerifySignatureValidSignatureReturnsTrue {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     uint8_t hashData[32] = {0x01};
@@ -153,7 +153,7 @@
 }
 
 - (void)testVerifySignatureInvalidSignatureReturnsFalse {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     uint8_t hashData[32] = {0x01};
@@ -169,7 +169,7 @@
 }
 
 - (void)testVerifySignatureRejectsInvalidLength {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     uint8_t hashData[32] = {0x01};
@@ -184,7 +184,7 @@
 }
 
 - (void)testVerifySignatureWithWrongHash {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     uint8_t hash1[32] = {0x01};
@@ -204,7 +204,7 @@
 #pragma mark - DID Key
 
 - (void)testDidKeyStringFormat {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     NSString *didKey = keyPair.didKeyString;
@@ -228,7 +228,7 @@
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
     
-    Secp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     
     XCTAssertNotNil(keyPair, @"Should generate key pair via singleton");
     XCTAssertNil(error, @"No error should occur");
@@ -238,7 +238,7 @@
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
     
-    Secp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     XCTAssertNotNil(keyPair);
     
     NSData *hash = [@"test_data_for_signing" dataUsingEncoding:NSUTF8StringEncoding];
@@ -269,7 +269,7 @@
 #pragma mark - Public Key Normalization
 
 - (void)testNormalizedPublicKeyValidCompressed {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     NSData *compressed = keyPair.compressedPublicKey;
@@ -285,7 +285,7 @@
 }
 
 - (void)testNormalizedPublicKeyValidUncompressed {
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     XCTAssertNotNil(keyPair);
     
     NSData *uncompressed = keyPair.publicKey;

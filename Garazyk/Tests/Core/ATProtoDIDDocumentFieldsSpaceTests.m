@@ -12,7 +12,7 @@
 @implementation ATProtoDIDDocumentFieldsSpaceTests
 
 - (void)testPrefersExactSpaceKeyAndHostService {
-  DIDDocument *document = [self documentWithJSON:@{
+  ATProtoDIDDocument *document = [self documentWithJSON:@{
     @"verificationMethod" : @[
       @{ @"id" : @"did:example:authority#atproto", @"publicKeyMultibase" : @"znormal" },
       @{ @"id" : @"did:example:authority#atproto_space", @"publicKeyMultibase" : @"zspace" },
@@ -28,14 +28,14 @@
 }
 
 - (void)testUsesOnlyDocumentedFallbacksAndRejectsUnsafeEndpoints {
-  DIDDocument *fallback = [self documentWithJSON:@{
+  ATProtoDIDDocument *fallback = [self documentWithJSON:@{
     @"verificationMethods" : @{ @"atproto" : @"znormal" },
     @"service" : @[ @{ @"id" : @"#atproto_pds", @"serviceEndpoint" : @"http://localhost:3000" } ],
   }];
   XCTAssertEqualObjects([ATProtoDIDDocumentFields spaceSigningKeyMultibaseFromDocument:fallback], @"znormal");
   XCTAssertEqualObjects([ATProtoDIDDocumentFields spaceHostEndpointFromDocument:fallback], @"http://localhost:3000");
 
-  DIDDocument *invalid = [self documentWithJSON:@{
+  ATProtoDIDDocument *invalid = [self documentWithJSON:@{
     @"verificationMethod" : @[ @{ @"id" : @"#atproto_space_extra", @"publicKeyMultibase" : @"zwrong" } ],
     @"service" : @[ @{ @"id" : @"#atproto_space_host_extra", @"serviceEndpoint" : @"https://wrong.example" },
                        @{ @"id" : @"#atproto_pds", @"serviceEndpoint" : @"https://user@pds.example" } ],
@@ -44,11 +44,11 @@
   XCTAssertNil([ATProtoDIDDocumentFields spaceHostEndpointFromDocument:invalid]);
 }
 
-- (DIDDocument *)documentWithJSON:(NSDictionary *)additional {
+- (ATProtoDIDDocument *)documentWithJSON:(NSDictionary *)additional {
   NSMutableDictionary *json = [@{ @"id" : @"did:example:authority" } mutableCopy];
   [json addEntriesFromDictionary:additional];
   NSError *error = nil;
-  DIDDocument *document = [DIDDocument documentWithJSON:json error:&error];
+  ATProtoDIDDocument *document = [ATProtoDIDDocument documentWithJSON:json error:&error];
   XCTAssertNil(error);
   return document;
 }

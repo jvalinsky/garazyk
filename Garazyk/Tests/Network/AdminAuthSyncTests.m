@@ -29,14 +29,14 @@
     return nil;
   }
 
-  CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+  ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlock.data];
   XCTAssertNotNil(commitValue);
   XCTAssertEqual(commitValue.type, CBORTypeMap);
   if (!commitValue || commitValue.type != CBORTypeMap) {
     return nil;
   }
 
-  CBORValue *revValue = commitValue.map[[CBORValue textString:@"rev"]];
+  ATProtoCBORValue *revValue = commitValue.map[[ATProtoCBORValue textString:@"rev"]];
   XCTAssertNotNil(revValue);
   XCTAssertEqual(revValue.type, CBORTypeTextString);
   return revValue.textString;
@@ -57,21 +57,21 @@
     return nil;
   }
 
-  CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+  ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlock.data];
   XCTAssertNotNil(commitValue);
   XCTAssertEqual(commitValue.type, CBORTypeMap);
   if (!commitValue || commitValue.type != CBORTypeMap) {
     return nil;
   }
 
-  CBORValue *dataValue = commitValue.map[[CBORValue textString:@"data"]];
+  ATProtoCBORValue *dataValue = commitValue.map[[ATProtoCBORValue textString:@"data"]];
   XCTAssertNotNil(dataValue);
   XCTAssertEqual(dataValue.type, CBORTypeTag);
   if (!dataValue || dataValue.type != CBORTypeTag) {
     return nil;
   }
 
-  CBORValue *tagged = dataValue.tagValue;
+  ATProtoCBORValue *tagged = dataValue.tagValue;
   XCTAssertEqual(tagged.type, CBORTypeByteString);
   NSData *tagBytes = tagged.byteString;
   XCTAssertTrue(tagBytes.length > 1);

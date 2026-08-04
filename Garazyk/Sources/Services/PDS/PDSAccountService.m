@@ -191,7 +191,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
 
     // Fallback for test/sandbox environments where keychain-backed signing can fail.
     NSError *fallbackKeyError = nil;
-    Secp256k1KeyPair *fallbackKeyPair =
+    ATProtoSecp256k1KeyPair *fallbackKeyPair =
         [[Secp256k1 shared] generateKeyPairWithError:&fallbackKeyError];
     if (!fallbackKeyPair) {
         if (error) {
@@ -275,7 +275,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
 
     // Fallback for test/sandbox environments where keychain-backed signing can fail.
     NSError *fallbackKeyError = nil;
-    Secp256k1KeyPair *fallbackKeyPair =
+    ATProtoSecp256k1KeyPair *fallbackKeyPair =
         [[Secp256k1 shared] generateKeyPairWithError:&fallbackKeyError];
     if (!fallbackKeyPair) {
         if (error) {
@@ -347,10 +347,10 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     }
 
     NSString *resolvedDid;
-    Secp256k1KeyPair *userKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
+    ATProtoSecp256k1KeyPair *userKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
     if (!userKeyPair) return nil;
     
-    Secp256k1KeyPair *rotationKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
+    ATProtoSecp256k1KeyPair *rotationKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
     if (!rotationKeyPair) return nil;
 
     if (did) {
@@ -977,8 +977,8 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
 /// operation data without registering with a PLC server. This is the sans-IO
 /// core that can be tested without mocks.
 - (nullable NSString *)_generateDIDWithHandle:(NSString *)handle
-                                    signingKey:(Secp256k1KeyPair *)signingKey
-                                   rotationKey:(Secp256k1KeyPair *)rotationKey
+                                    signingKey:(ATProtoSecp256k1KeyPair *)signingKey
+                                   rotationKey:(ATProtoSecp256k1KeyPair *)rotationKey
                                          error:(NSError **)error {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *pdsURL = config.canonicalIssuer;
@@ -1039,8 +1039,8 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
 /// I/O adapter - generates DID then registers with PLC server.
 /// For tests that don't need actual registration, use _generateDIDWithHandle: directly.
 - (nullable NSString *)_registerDIDWithPLCWithHandle:(NSString *)handle
-                                           signingKey:(Secp256k1KeyPair *)signingKey
-                                          rotationKey:(Secp256k1KeyPair *)rotationKey
+                                           signingKey:(ATProtoSecp256k1KeyPair *)signingKey
+                                          rotationKey:(ATProtoSecp256k1KeyPair *)rotationKey
                                                 error:(NSError **)error {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *plcURLString = config.plcURL;

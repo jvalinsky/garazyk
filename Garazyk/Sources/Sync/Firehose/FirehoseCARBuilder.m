@@ -91,10 +91,10 @@
 
     [writer addBlock:[CARBlock blockWithCID:nodeCID data:blockData]];
 
-    CBORValue *nodeMap = [CBORValue decode:blockData];
+    ATProtoCBORValue *nodeMap = [ATProtoCBORValue decode:blockData];
     if (!nodeMap || nodeMap.type != CBORTypeMap) continue;
 
-    CBORValue *leftTag = nodeMap.map[[CBORValue textString:@"l"]];
+    ATProtoCBORValue *leftTag = nodeMap.map[[ATProtoCBORValue textString:@"l"]];
     if (leftTag && leftTag.type == CBORTypeTag) {
       NSData *lBytes = leftTag.tagValue.byteString;
       if (lBytes.length > 1) {
@@ -106,11 +106,11 @@
       }
     }
 
-    CBORValue *entriesValue = nodeMap.map[[CBORValue textString:@"e"]];
+    ATProtoCBORValue *entriesValue = nodeMap.map[[ATProtoCBORValue textString:@"e"]];
     if (entriesValue && entriesValue.type == CBORTypeArray) {
-      for (CBORValue *entryMap in entriesValue.array) {
+      for (ATProtoCBORValue *entryMap in entriesValue.array) {
         if (entryMap.type != CBORTypeMap) continue;
-        CBORValue *treeTag = entryMap.map[[CBORValue textString:@"t"]];
+        ATProtoCBORValue *treeTag = entryMap.map[[ATProtoCBORValue textString:@"t"]];
         if (treeTag && treeTag.type == CBORTypeTag) {
           NSData *tBytes = treeTag.tagValue.byteString;
           if (tBytes.length > 1) {

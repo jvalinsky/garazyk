@@ -197,12 +197,12 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
     if (data.length == 0) {
         return @"empty";
     }
-    CBORValue *value = [CBORValue decode:data];
+    ATProtoCBORValue *value = [ATProtoCBORValue decode:data];
     if (!value || value.type != CBORTypeMap) {
         return @"other";
     }
-    NSDictionary<CBORValue *, CBORValue *> *map = value.map;
-    if (map[[CBORValue textString:@"e"]]) {
+    NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *map = value.map;
+    if (map[[ATProtoCBORValue textString:@"e"]]) {
         return @"node";
     }
     return @"record";

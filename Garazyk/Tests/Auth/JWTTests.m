@@ -22,7 +22,7 @@
     self.minter.defaultExpiration = 3600;
 
     // Use a valid generated key pair
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     self.minter.privateKey = keyPair.privateKey;
 
     // Create verifier
@@ -43,11 +43,11 @@
 
 - (void)testKeyPairWithPrivateKeyDerivesMatchingPublicKey {
     NSError *error = nil;
-    Secp256k1KeyPair *generated = [Secp256k1KeyPair generateKeyPair:&error];
+    ATProtoSecp256k1KeyPair *generated = [ATProtoSecp256k1KeyPair generateKeyPair:&error];
     XCTAssertNotNil(generated);
     XCTAssertNil(error);
 
-    Secp256k1KeyPair *derived = [Secp256k1KeyPair keyPairWithPrivateKey:generated.privateKey error:&error];
+    ATProtoSecp256k1KeyPair *derived = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:generated.privateKey error:&error];
     XCTAssertNotNil(derived);
     XCTAssertNil(error);
     XCTAssertEqualObjects(derived.publicKey, generated.publicKey);

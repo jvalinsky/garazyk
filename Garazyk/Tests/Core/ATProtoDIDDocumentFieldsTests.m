@@ -11,15 +11,15 @@
 
 @implementation ATProtoDIDDocumentFieldsTests
 
-- (DIDDocument *)documentWithJSON:(NSDictionary *)json {
+- (ATProtoDIDDocument *)documentWithJSON:(NSDictionary *)json {
     NSError *error = nil;
-    DIDDocument *document = [DIDDocument documentWithJSON:json error:&error];
+    ATProtoDIDDocument *document = [ATProtoDIDDocument documentWithJSON:json error:&error];
     XCTAssertNotNil(document, @"DID document should parse: %@", error);
     return document;
 }
 
 - (void)testModernVerificationMethodPrefersAtprotoKey {
-    DIDDocument *document = [self documentWithJSON:@{
+    ATProtoDIDDocument *document = [self documentWithJSON:@{
         @"id": @"did:plc:alice",
         @"alsoKnownAs": @[@"at://Alice.Example/"],
         @"service": @[
@@ -37,7 +37,7 @@
 }
 
 - (void)testModernVerificationMethodFallsBackToFirstKey {
-    DIDDocument *document = [self documentWithJSON:@{
+    ATProtoDIDDocument *document = [self documentWithJSON:@{
         @"id": @"did:plc:alice",
         @"verificationMethod": @[
             @{@"id": @"did:plc:alice#other", @"publicKeyMultibase": @"zFallback"}
@@ -48,7 +48,7 @@
 }
 
 - (void)testLegacyVerificationMethodsDictionarySupportsAtprotoString {
-    DIDDocument *document = [self documentWithJSON:@{
+    ATProtoDIDDocument *document = [self documentWithJSON:@{
         @"id": @"did:plc:alice",
         @"verificationMethods": @{@"atproto": @"did:key:zLegacy"}
     }];
@@ -57,7 +57,7 @@
 }
 
 - (void)testLegacyVerificationMethodsDictionarySupportsNestedPublicKey {
-    DIDDocument *document = [self documentWithJSON:@{
+    ATProtoDIDDocument *document = [self documentWithJSON:@{
         @"id": @"did:plc:alice",
         @"verificationMethods": @{@"did:plc:alice#atproto": @{@"publicKeyMultibase": @"zNested"}}
     }];
@@ -66,7 +66,7 @@
 }
 
 - (void)testBadShapesReturnNil {
-    DIDDocument *document = [self documentWithJSON:@{
+    ATProtoDIDDocument *document = [self documentWithJSON:@{
         @"id": @"did:plc:alice",
         @"alsoKnownAs": @[@42],
         @"service": @[@{@"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @42}],

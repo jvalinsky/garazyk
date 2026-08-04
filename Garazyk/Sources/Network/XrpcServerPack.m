@@ -269,7 +269,7 @@ BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     }
 
     NSError *resolveError = nil;
-    NSDictionary *atprotoData = [[DIDResolver sharedResolver] resolveAtprotoDataForDID:did error:&resolveError];
+    NSDictionary *atprotoData = [[ATProtoDIDResolver sharedResolver] resolveAtprotoDataForDID:did error:&resolveError];
     NSString *signingKey = atprotoData[@"signingKey"];
     if (!signingKey) {
         response.statusCode = HttpStatusUnauthorized;
