@@ -1111,6 +1111,12 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     request.HTTPBody = postData;
     
     GZHTTPClientOptions *httpOptions = [GZHTTPClientOptions defaultOptions];
+    // The PLC directory URL is operator-configured (not user input): the PDS
+    // must submit signed operations to it even when it is a local HTTP
+    // endpoint (e.g. a test PLC server on loopback). Explicitly opt out of the
+    // HTTPS/private-host restrictions for this trusted control-plane target.
+    httpOptions.allowHTTP = YES;
+    httpOptions.allowPrivateHosts = YES;
 #if defined(GNUSTEP)
     // On GNUstep, NSURLSession cannot make outbound HTTPS requests.
     // Use a short timeout so it fails fast and falls back to curl.
