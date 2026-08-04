@@ -100,7 +100,7 @@
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     
@@ -122,7 +122,7 @@
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     ATProtoSecp256k1KeyPair *keyPair1 = [secp generateKeyPairWithError:&error];
     ATProtoSecp256k1KeyPair *keyPair2 = [secp generateKeyPairWithError:&error];
@@ -142,7 +142,7 @@
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     ATProtoSecp256k1KeyPair *keyPair1 = [secp generateKeyPairWithError:&error];
     ATProtoSecp256k1KeyPair *keyPair2 = [secp generateKeyPairWithError:&error];
@@ -160,7 +160,7 @@
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     
@@ -179,7 +179,7 @@
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     
@@ -196,7 +196,7 @@
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     
@@ -246,7 +246,7 @@
     RepoCommit *originalCommit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     
     // Sign the commit
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
     [originalCommit signWithPrivateKey:keyPair.privateKey error:&error];
@@ -284,7 +284,7 @@
                                                      prev:prevCID];
 
     NSError *error = nil;
-    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:&error];
     XCTAssertNotNil(keyPair);
     XCTAssertTrue([original signWithPrivateKey:keyPair.privateKey error:&error]);
 

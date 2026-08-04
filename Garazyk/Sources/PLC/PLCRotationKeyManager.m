@@ -141,7 +141,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
         
         if (privateKeyData && privateKeyData.length == 32) {
             NSError *keyError = nil;
-            self.rotationKeyPair = [[Secp256k1 shared] keyPairFromPrivateKey:privateKeyData error:&keyError];
+            self.rotationKeyPair = [[ATProtoSecp256k1 shared] keyPairFromPrivateKey:privateKeyData error:&keyError];
             if (self.rotationKeyPair) {
                 self.rotationKeyDidKey = self.rotationKeyPair.didKeyString;
                 GZ_LOG_INFO(@"Loaded rotation key: %@", self.rotationKeyDidKey);
@@ -152,7 +152,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
     }
     
     NSError *genError = nil;
-    self.rotationKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&genError];
+    self.rotationKeyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:&genError];
     if (!self.rotationKeyPair) {
         if (error) {
             *error = [NSError errorWithDomain:PLCRotationKeyManagerErrorDomain
@@ -214,7 +214,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
     }
     
     NSError *signError = nil;
-    NSData *signature = [[Secp256k1 shared] signHash:hash withPrivateKey:self.rotationKeyPair.privateKey error:&signError];
+    NSData *signature = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:self.rotationKeyPair.privateKey error:&signError];
     if (!signature) {
         if (error) {
             *error = [NSError errorWithDomain:PLCRotationKeyManagerErrorDomain

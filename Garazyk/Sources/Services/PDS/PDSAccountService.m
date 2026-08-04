@@ -192,7 +192,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     // Fallback for test/sandbox environments where keychain-backed signing can fail.
     NSError *fallbackKeyError = nil;
     ATProtoSecp256k1KeyPair *fallbackKeyPair =
-        [[Secp256k1 shared] generateKeyPairWithError:&fallbackKeyError];
+        [[ATProtoSecp256k1 shared] generateKeyPairWithError:&fallbackKeyError];
     if (!fallbackKeyPair) {
         if (error) {
             *error = primaryMintError ?: fallbackKeyError
@@ -276,7 +276,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     // Fallback for test/sandbox environments where keychain-backed signing can fail.
     NSError *fallbackKeyError = nil;
     ATProtoSecp256k1KeyPair *fallbackKeyPair =
-        [[Secp256k1 shared] generateKeyPairWithError:&fallbackKeyError];
+        [[ATProtoSecp256k1 shared] generateKeyPairWithError:&fallbackKeyError];
     if (!fallbackKeyPair) {
         if (error) {
             *error = primaryMintError ?: fallbackKeyError
@@ -347,10 +347,10 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     }
 
     NSString *resolvedDid;
-    ATProtoSecp256k1KeyPair *userKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
+    ATProtoSecp256k1KeyPair *userKeyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:error];
     if (!userKeyPair) return nil;
     
-    ATProtoSecp256k1KeyPair *rotationKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
+    ATProtoSecp256k1KeyPair *rotationKeyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:error];
     if (!rotationKeyPair) return nil;
 
     if (did) {

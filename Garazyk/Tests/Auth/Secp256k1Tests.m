@@ -217,15 +217,15 @@
 #pragma mark - Singleton Interface
 
 - (void)testSharedSingleton {
-    Secp256k1 *instance1 = [Secp256k1 shared];
-    Secp256k1 *instance2 = [Secp256k1 shared];
+    ATProtoSecp256k1 *instance1 = [ATProtoSecp256k1 shared];
+    ATProtoSecp256k1 *instance2 = [ATProtoSecp256k1 shared];
     
     XCTAssertNotNil(instance1);
     XCTAssertTrue(instance1 == instance2, @"Shared should return singleton");
 }
 
 - (void)testSharedGenerateKeyPair {
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     
     ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
@@ -235,7 +235,7 @@
 }
 
 - (void)testSharedSignAndVerify {
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     
     ATProtoSecp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];
@@ -253,7 +253,7 @@
 }
 
 - (void)testSharedVerifyRejectsInvalidPublicKeyLength {
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     
     NSData *fakePublicKey = [@"short" dataUsingEncoding:NSUTF8StringEncoding];
@@ -276,7 +276,7 @@
     XCTAssertEqual(compressed.length, 33, @"Compressed key should be 33 bytes");
     
     NSError *error = nil;
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSData *normalized = [secp normalizedPublicKey:compressed error:&error];
     
     XCTAssertNotNil(normalized, @"Should normalize compressed key");
@@ -292,7 +292,7 @@
     XCTAssertEqual(uncompressed.length, 65, @"Uncompressed key should be 65 bytes");
     
     NSError *error = nil;
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSData *normalized = [secp normalizedPublicKey:uncompressed error:&error];
     
     XCTAssertNotNil(normalized, @"Should normalize uncompressed key");
@@ -301,7 +301,7 @@
 }
 
 - (void)testNormalizedPublicKeyRejectsInvalidLength {
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
     
     NSData *shortKey = [@"short" dataUsingEncoding:NSUTF8StringEncoding];
