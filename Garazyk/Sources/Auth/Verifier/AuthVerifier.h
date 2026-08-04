@@ -54,14 +54,14 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
     AuthVerifierErrorAccountNotFound = -12
 };
 
-@class AuthVerifierPrincipal;
+@class ATProtoAuthVerifierPrincipal;
 
 /*!
- @class AuthVerifierPrincipal
+ @class ATProtoAuthVerifierPrincipal
  
  @abstract Represents an authenticated principal from token verification.
  */
-@interface AuthVerifierPrincipal : NSObject
+@interface ATProtoAuthVerifierPrincipal : NSObject
 
 /*! The authenticated DID. */
 @property (nonatomic, copy, readonly) NSString *did;
@@ -168,7 +168,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  @param error Set on failure.
  @return Authenticated principal, or nil if verification failed.
  */
-- (nullable AuthVerifierPrincipal *)verifyRequest:(HttpRequest *)request
+- (nullable ATProtoAuthVerifierPrincipal *)verifyRequest:(HttpRequest *)request
                                          response:(nullable HttpResponse *)response
                                             error:(NSError **)error;
 
@@ -178,7 +178,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
   @param error Set on failure.
   @return Authenticated principal, or nil if verification failed.
   */
-- (nullable AuthVerifierPrincipal *)verifyAccessToken:(nullable NSString *)token
+- (nullable ATProtoAuthVerifierPrincipal *)verifyAccessToken:(nullable NSString *)token
                                                error:(NSError **)error;
 
 /*!
@@ -190,7 +190,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  @param error Set on failure.
  @return Authenticated principal, or nil if verification failed.
  */
-- (nullable AuthVerifierPrincipal *)verifyAuthHeader:(nullable NSString *)authHeader
+- (nullable ATProtoAuthVerifierPrincipal *)verifyAuthHeader:(nullable NSString *)authHeader
                                             dpopHeader:(nullable NSString *)dpopHeader
                                               request:(nullable HttpRequest *)request
                                              response:(nullable HttpResponse *)response

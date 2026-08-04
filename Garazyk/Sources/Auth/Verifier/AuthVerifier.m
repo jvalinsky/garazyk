@@ -65,9 +65,9 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
     return AuthVerifierIsTrustedProxyRemoteAddress(request.remoteAddress);
 }
 
-#pragma mark - AuthVerifierPrincipal
+#pragma mark - ATProtoAuthVerifierPrincipal
 
-@interface AuthVerifierPrincipal ()
+@interface ATProtoAuthVerifierPrincipal ()
 @property (nonatomic, copy, readwrite) NSString *did;
 @property (nonatomic, copy, readwrite, nullable) NSString *accessTokenJWT;
 @property (nonatomic, copy, readwrite, nullable) NSDictionary *tokenClaims;
@@ -76,7 +76,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
 @property (nonatomic, assign, readwrite) BOOL isAdmin;
 @end
 
-@implementation AuthVerifierPrincipal
+@implementation ATProtoAuthVerifierPrincipal
 
 - (instancetype)initWithDID:(NSString *)did
               accessTokenJWT:(nullable NSString *)accessTokenJWT
@@ -141,7 +141,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
 
 #pragma mark - Public API
 
-- (nullable AuthVerifierPrincipal *)verifyRequest:(HttpRequest *)request
+- (nullable ATProtoAuthVerifierPrincipal *)verifyRequest:(HttpRequest *)request
                                         response:(nullable HttpResponse *)response
                                            error:(NSError **)error {
     NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -154,7 +154,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
                            error:error];
 }
 
-- (nullable AuthVerifierPrincipal *)verifyAccessToken:(nullable NSString *)token
+- (nullable ATProtoAuthVerifierPrincipal *)verifyAccessToken:(nullable NSString *)token
                                                error:(NSError **)error {
     if (!token) {
         if (error) {
@@ -172,7 +172,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
                            error:error];
 }
 
-- (nullable AuthVerifierPrincipal *)verifyAuthHeader:(nullable NSString *)authHeader
+- (nullable ATProtoAuthVerifierPrincipal *)verifyAuthHeader:(nullable NSString *)authHeader
                                             dpopHeader:(nullable NSString *)dpopHeader
                                               request:(nullable HttpRequest *)request
                                              response:(nullable HttpResponse *)response
@@ -510,7 +510,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
         isAdmin = [self.accountPolicy isAdmin:subject error:&adminError];
     }
 
-    return [[AuthVerifierPrincipal alloc] initWithDID:subject
+    return [[ATProtoAuthVerifierPrincipal alloc] initWithDID:subject
                                           accessTokenJWT:token
                                            tokenClaims:claims
                                         dpopThumbprint:dpopThumbprint

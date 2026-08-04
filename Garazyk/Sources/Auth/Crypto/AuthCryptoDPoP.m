@@ -19,7 +19,7 @@
 
 NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
 
-@implementation AuthCryptoDPoPResult
+@implementation ATProtoAuthCryptoDPoPResult
 @end
 
 @implementation AuthCryptoDPoP
