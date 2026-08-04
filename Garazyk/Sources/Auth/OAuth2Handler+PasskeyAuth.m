@@ -43,7 +43,7 @@
     return;
   }
 
-  NSData *challenge = [CryptoUtils randomBytes:32];
+  NSData *challenge = [ATProtoCryptoUtils randomBytes:32];
   if (!challenge) {
     response.statusCode = 500;
     [response setJsonBody:@{
@@ -66,7 +66,7 @@
 
   response.statusCode = 200;
   [response setJsonBody:@{
-    @"challenge" : [CryptoUtils base64URLEncode:challenge],
+    @"challenge" : [ATProtoCryptoUtils base64URLEncode:challenge],
     @"sessionId" : sessionId,
     @"rpId" : self.serverOrigin
   }];
@@ -140,7 +140,7 @@
   }
 
   NSString *challengeDid = challengeInfo[@"did"];
-  if (![CryptoUtils constantTimeCompare:did to:challengeDid]) {
+  if (![ATProtoCryptoUtils constantTimeCompare:did to:challengeDid]) {
     response.statusCode = 403;
     [response setJsonBody:@{
       @"ok" : @NO,

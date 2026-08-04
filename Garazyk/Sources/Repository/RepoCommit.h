@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Represents an atomic commit to an ATProto repository.
  * @discussion RepoCommit models the commit structure in ATProto repositories. Each commit
- * is identified by a revision string (TID) and contains a reference to the
+ * is identified by a revision string (ATProtoTID) and contains a reference to the
  * repository data (Merkle Search Tree root CID) and the previous commit's CID.
  * Commits are immutable and cryptographically signed.
  */
@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract CID of the repository data (MST root), or nil for empty repo. */
 @property (nonatomic, strong, nullable) CID *dataCID;
 
-/** @abstract Revision identifier (TID). */
+/** @abstract Revision identifier (ATProtoTID). */
 @property (nonatomic, copy) NSString *rev;
 
 /** @abstract CID of the previous commit, or nil for genesis commit. */
@@ -46,7 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Creates a new repository commit.
  * @param did Repository owner's DID.
  * @param dataCID CID of repository data.
- * @param rev Revision identifier (TID), or nil to auto-generate.
+ * @param rev Revision identifier (ATProtoTID), or nil to auto-generate.
  * @param prevCID Previous commit's CID.
  * @return Unsigned RepoCommit instance.
  */

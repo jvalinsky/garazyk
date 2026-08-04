@@ -162,7 +162,7 @@ static PDSSpaceWrite *SpaceWriteFromDictionary(NSDictionary *item, BOOL createDe
   if ([action isEqualToString:@"delete"]) writeAction = PDSSpaceWriteActionDelete;
   NSString *collection = SpaceString(item[@"collection"]);
   NSString *rkey = SpaceString(item[@"rkey"]);
-  if (writeAction == PDSSpaceWriteActionCreate && !rkey && createDefaultRkey) rkey = TID.tid.stringValue;
+  if (writeAction == PDSSpaceWriteActionCreate && !rkey && createDefaultRkey) rkey = ATProtoTID.tid.stringValue;
   if (!writeAction || ![ATProtoValidator validateNSID:collection error:nil] || rkey.length == 0 || rkey.length > 512) {
     SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"Invalid space write");
     return nil;
@@ -545,7 +545,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_deleteRecord handler:^(HttpRequest *r, HttpResponse *p) { singleWrite(r, p, PDSSpaceWriteActionDelete); }];
 
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_createSpace handler:^(HttpRequest *request, HttpResponse *response) {
-    NSDictionary *body = request.jsonBody; NSString *did = SpaceString(body[@"did"]), *type = SpaceString(body[@"type"]), *skey = SpaceString(body[@"skey"] ?: TID.tid.stringValue);
+    NSDictionary *body = request.jsonBody; NSString *did = SpaceString(body[@"did"]), *type = SpaceString(body[@"type"]), *skey = SpaceString(body[@"skey"] ?: ATProtoTID.tid.stringValue);
     if (![ATProtoValidator validateDID:did error:nil] || ![ATProtoValidator validateNSID:type error:nil]) { SpaceError(response, HttpStatusBadRequest, @"InvalidType", @"did and type must be valid"); return; }
     PDSSpaceURI *space = [PDSSpaceURI URIWithString:[NSString stringWithFormat:@"at://%@/space/%@/%@", did, type, skey] error:nil]; if (!space) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"Invalid space key"); return; }
     NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return; if (!SpaceAllowsManage(auth, space, @"create")) { SpaceError(response, HttpStatusForbidden, @"Forbidden", @"manage=create scope is required"); return; }

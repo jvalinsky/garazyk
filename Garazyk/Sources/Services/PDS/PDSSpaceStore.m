@@ -757,7 +757,7 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
     if (error) *error = [self invalidWriteError:@"A non-empty write commit needs a space and author"];
     return nil;
   }
-  NSString *rev = requestedRev.length > 0 ? requestedRev : [TID tid].stringValue;
+  NSString *rev = requestedRev.length > 0 ? requestedRev : [ATProtoTID tid].stringValue;
   NSString *timestamp = PDSSpaceTimestamp(nil);
   __block NSDictionary *result = nil;
   __block NSError *localError = nil;

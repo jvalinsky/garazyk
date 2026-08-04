@@ -310,7 +310,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         }
         // Compute expected ath = base64url(SHA-256(accessToken))
         NSData *tokenData = [expectedAccessToken dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *tokenHash = [CryptoUtils sha256:tokenData];
+        NSData *tokenHash = [ATProtoCryptoUtils sha256:tokenData];
         if (!tokenHash) {
             if (error) {
                 *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain

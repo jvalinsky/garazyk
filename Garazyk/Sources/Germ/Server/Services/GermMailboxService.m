@@ -325,7 +325,7 @@ static const NSInteger kGermAddressByteLength = 32;
 }
 
 - (NSString *)generateMessageId {
-    // TID-style message ID for internal use
+    // ATProtoTID-style message ID for internal use
     return [NSString stringWithFormat:@"germ-msg-%@", [[NSUUID UUID] UUIDString]];
 }
 

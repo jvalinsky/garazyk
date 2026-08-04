@@ -67,7 +67,7 @@ typedef NS_ENUM(NSInteger, GZValidationError) {
 - (BOOL)isValidRecordKey:(NSString *)rkey;
 
 /**
- * @abstract Validates a TID.
+ * @abstract Validates a ATProtoTID.
  */
 - (BOOL)isValidTID:(NSString *)tid;
 

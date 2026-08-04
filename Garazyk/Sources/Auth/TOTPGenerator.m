@@ -49,9 +49,9 @@
     // 3. HMAC computation based on algorithm
     NSData *hash;
     if ([_algorithm isEqualToString:@"SHA256"]) {
-        hash = [CryptoUtils hmacSHA256WithKey:_secret data:counterData];
+        hash = [ATProtoCryptoUtils hmacSHA256WithKey:_secret data:counterData];
     } else if ([_algorithm isEqualToString:@"SHA1"]) {
-        hash = [CryptoUtils hmacSHA1WithKey:_secret data:counterData];
+        hash = [ATProtoCryptoUtils hmacSHA1WithKey:_secret data:counterData];
     } else {
         return nil; // Unsupported algorithm
     }

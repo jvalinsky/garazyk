@@ -78,7 +78,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*! Repo commit object CID. */
 @property (nonatomic, strong) CID *commit;
 
-/*! The rev of the emitted commit (TID). */
+/*! The rev of the emitted commit (ATProtoTID). */
 @property (nonatomic, copy) NSString *rev;
 
 /*! The rev of the last emitted commit from this repo (nullable). */

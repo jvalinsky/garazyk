@@ -88,8 +88,8 @@ static NSTimeInterval const PDSSecondFactorProofTTL = 300.0;
         return nil;
     }
 
-    NSData *challenge = [CryptoUtils randomBytes:32];
-    NSString *sessionID = [CryptoUtils base64URLEncode:[CryptoUtils randomBytes:32]];
+    NSData *challenge = [ATProtoCryptoUtils randomBytes:32];
+    NSString *sessionID = [ATProtoCryptoUtils base64URLEncode:[ATProtoCryptoUtils randomBytes:32]];
     if (challenge.length == 0 || sessionID.length == 0) {
         if (error) *error = [self unavailableError:@"Failed to create WebAuthn challenge"];
         return nil;
@@ -110,7 +110,7 @@ static NSTimeInterval const PDSSecondFactorProofTTL = 300.0;
         if ([credentialID isKindOfClass:[NSData class]]) {
             [allowCredentials addObject:@{
                 @"type": @"public-key",
-                @"id": [CryptoUtils base64URLEncode:credentialID]
+                @"id": [ATProtoCryptoUtils base64URLEncode:credentialID]
             }];
         }
     }
@@ -118,7 +118,7 @@ static NSTimeInterval const PDSSecondFactorProofTTL = 300.0;
     return @{
         @"sessionId": sessionID,
         @"publicKey": @{
-            @"challenge": [CryptoUtils base64URLEncode:challenge],
+            @"challenge": [ATProtoCryptoUtils base64URLEncode:challenge],
             @"timeout": @(PDSSecondFactorChallengeTTL * 1000),
             @"rpId": [self rpID],
             @"allowCredentials": allowCredentials,
@@ -188,7 +188,7 @@ static NSTimeInterval const PDSSecondFactorProofTTL = 300.0;
                                         error:nil];
     }
 
-    NSString *authFactorToken = [CryptoUtils base64URLEncode:[CryptoUtils randomBytes:32]];
+    NSString *authFactorToken = [ATProtoCryptoUtils base64URLEncode:[ATProtoCryptoUtils randomBytes:32]];
     if (authFactorToken.length == 0) {
         if (error) *error = [self unavailableError:@"Failed to create auth factor token"];
         return nil;
@@ -307,7 +307,7 @@ static NSTimeInterval const PDSSecondFactorProofTTL = 300.0;
 
 - (NSData *)hashToken:(NSString *)token {
     NSData *data = [token dataUsingEncoding:NSUTF8StringEncoding];
-    return data ? [CryptoUtils sha256:data] : nil;
+    return data ? [ATProtoCryptoUtils sha256:data] : nil;
 }
 
 - (BOOL)isSixDigitCode:(NSString *)code {

@@ -4,19 +4,19 @@
 #import <Security/Security.h>
 #include <string.h>
 
-@interface TID ()
+@interface ATProtoTID ()
 @property (nonatomic, strong) NSString *internalStringValue;
 @property (nonatomic) uint64_t internalTimestamp;
 @end
 
-@implementation TID
+@implementation ATProtoTID
 
 + (instancetype)tid {
     return [self tidWithTimestamp:0];
 }
 
 + (instancetype)tidWithTimestamp:(uint64_t)timestamp {
-    TID *tid = [[TID alloc] init];
+    ATProtoTID *tid = [[ATProtoTID alloc] init];
     // ATProto TIDs are 13 characters:
     // - First 11 chars: base32-sortable timestamp (microseconds-ish)
     // - Last 2 chars: base32-sortable clock id (padded with '2')
@@ -70,7 +70,7 @@
 
     uint64_t timestamp = [self decodeTimestamp:normalized];
 
-    TID *tid = [[TID alloc] init];
+    ATProtoTID *tid = [[ATProtoTID alloc] init];
     tid.internalTimestamp = timestamp;
     tid.internalStringValue = normalized;
     return tid;
@@ -179,7 +179,7 @@
     return self.internalTimestamp;
 }
 
-- (NSComparisonResult)compare:(TID *)other {
+- (NSComparisonResult)compare:(ATProtoTID *)other {
     if (self.internalTimestamp < other.internalTimestamp) {
         return NSOrderedAscending;
     } else if (self.internalTimestamp > other.internalTimestamp) {
@@ -188,16 +188,16 @@
     return NSOrderedSame;
 }
 
-- (BOOL)isBefore:(TID *)other {
+- (BOOL)isBefore:(ATProtoTID *)other {
     return self.internalTimestamp < other.internalTimestamp;
 }
 
-- (BOOL)isAfter:(TID *)other {
+- (BOOL)isAfter:(ATProtoTID *)other {
     return self.internalTimestamp > other.internalTimestamp;
 }
 
 - (id)copyWithZone:(NSZone *)zone {
-    TID *copy = [[TID allocWithZone:zone] init];
+    ATProtoTID *copy = [[ATProtoTID allocWithZone:zone] init];
     copy.internalTimestamp = self.internalTimestamp;
     copy.internalStringValue = self.internalStringValue;
     return copy;
@@ -223,8 +223,8 @@
 
 - (BOOL)isEqual:(id)object {
     if (self == object) return YES;
-    if (![object isKindOfClass:[TID class]]) return NO;
-    return [self.internalStringValue isEqualToString:((TID *)object).internalStringValue];
+    if (![object isKindOfClass:[ATProtoTID class]]) return NO;
+    return [self.internalStringValue isEqualToString:((ATProtoTID *)object).internalStringValue];
 }
 
 - (NSUInteger)hash {
@@ -232,7 +232,7 @@
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"TID(%@)", self.internalStringValue];
+    return [NSString stringWithFormat:@"ATProtoTID(%@)", self.internalStringValue];
 }
 
 @end

@@ -42,8 +42,8 @@
     }
     
     // Hash both strings to obscure length and provide a fixed-size 32-byte comparison
-    NSData *aHash = [CryptoUtils sha256:aData];
-    NSData *bHash = [CryptoUtils sha256:bData];
+    NSData *aHash = [ATProtoCryptoUtils sha256:aData];
+    NSData *bHash = [ATProtoCryptoUtils sha256:bData];
     
     if (!aHash || !bHash) {
         return NO;

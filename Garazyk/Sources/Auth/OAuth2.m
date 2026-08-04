@@ -639,7 +639,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         }
     }
     if (request.webauthn) {
-        NSData *webauthnChallenge = [CryptoUtils randomBytes:32];
+        NSData *webauthnChallenge = [ATProtoCryptoUtils randomBytes:32];
         if (webauthnChallenge) {
             codeData[@"webauthn_challenge"] = webauthnChallenge;
         }
@@ -922,7 +922,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
     NSString *expectedDPoPJKT = codeData[@"dpop_jwk"];
     if (expectedDPoPJKT.length > 0 &&
-        ![CryptoUtils constantTimeCompare:expectedDPoPJKT
+        ![ATProtoCryptoUtils constantTimeCompare:expectedDPoPJKT
                                        to:request.dpopKeyThumbprint]) {
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidDPoPProof

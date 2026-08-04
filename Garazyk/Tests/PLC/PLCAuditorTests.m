@@ -717,7 +717,7 @@
         @"CBOR encoding must match @ipld/dag-cbor reference. Got: %@", cborHex);
 
     // Verify SHA-256 hash matches reference
-    NSData *hash = [CryptoUtils sha256:cborData];
+    NSData *hash = [ATProtoCryptoUtils sha256:cborData];
     NSString *hashHex = [self hexStringFromData:hash];
     NSString *referenceHashHex = @"8fe117c12e21f8e40cd83d95df85c9589c880619a93e96de1da31d17c84f60c9";
 
@@ -766,7 +766,7 @@
     XCTAssertEqualObjects(cborHex, referenceCBORHex,
         @"CBOR encoding must match @ipld/dag-cbor reference. Got: %@", cborHex);
 
-    NSData *hash = [CryptoUtils sha256:cborData];
+    NSData *hash = [ATProtoCryptoUtils sha256:cborData];
     NSString *hashHex = [self hexStringFromData:hash];
     NSString *referenceHashHex = @"58839a04feb4d0eae2feae37c8d37eb352abd30a342b6bc2ff92f36d065aeff7";
 

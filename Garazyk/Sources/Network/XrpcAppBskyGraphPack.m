@@ -819,8 +819,8 @@
         };
 
         NSError *error = nil;
-        // Use a TID as rkey for verification records
-        NSString *rkey = [[TID tid] stringValue];
+        // Use a ATProtoTID as rkey for verification records
+        NSString *rkey = [[ATProtoTID tid] stringValue];
         if (![services.recordService putRecord:@"app.bsky.graph.verification"
                                 rkey:rkey
                                value:record

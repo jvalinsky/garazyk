@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testValidRecordPathWithTID {
     NSString *path = @"app.bsky.feed.post/3k5f2x7a8c9d1e2b3c4d5e6f";
-    XCTAssertTrue([self isValidRecordPath:path], @"TID format should be valid");
+    XCTAssertTrue([self isValidRecordPath:path], @"ATProtoTID format should be valid");
 }
 
 - (void)testValidRecordPathWithCustomKey {
@@ -64,12 +64,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testValidTIDFormat {
     NSString *tid = @"3k5f2x7a8c9d1e2b";
-    XCTAssertTrue([self isValidTID:tid], @"Valid TID should be accepted");
+    XCTAssertTrue([self isValidTID:tid], @"Valid ATProtoTID should be accepted");
 }
 
 - (void)testInvalidTIDTooShort {
     NSString *tid = @"3k5f2";
-    XCTAssertFalse([self isValidTID:tid], @"Too short TID should be rejected");
+    XCTAssertFalse([self isValidTID:tid], @"Too short ATProtoTID should be rejected");
 }
 
 - (void)testInvalidTIDLowercaseL {
@@ -130,9 +130,9 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *earlier = @"3jqfcqzm3fo2j";
     NSString *later = @"3k5f2x7a8c9d1";
     
-    // Later TID should compare greater
+    // Later ATProtoTID should compare greater
     NSComparisonResult result = [later compare:earlier];
-    XCTAssertEqual(result, NSOrderedDescending, @"Later TID should be lexically greater");
+    XCTAssertEqual(result, NSOrderedDescending, @"Later ATProtoTID should be lexically greater");
 }
 
 

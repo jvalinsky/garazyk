@@ -120,9 +120,9 @@
         if ([collection isEqualToString:@"app.bsky.feed.post"]) {
             NSString *createdAtString = [value[@"createdAt"] isKindOfClass:[NSString class]] ? value[@"createdAt"] : nil;
             NSDate *createdAt = [NSDateFormatter atproto_dateFromString:createdAtString];
-            rkey = createdAt ? [TID tidWithDate:createdAt].stringValue : [TID tid].stringValue;
+            rkey = createdAt ? [ATProtoTID tidWithDate:createdAt].stringValue : [ATProtoTID tid].stringValue;
         } else {
-            [context printError:@"rkey is required for non-post collections. For app.bsky.feed.post, omit rkey to auto-generate a TID."];
+            [context printError:@"rkey is required for non-post collections. For app.bsky.feed.post, omit rkey to auto-generate a ATProtoTID."];
             return;
         }
     }
@@ -341,7 +341,7 @@
         return;
     }
     
-    NSString *rev = [[TID tid] stringValue];
+    NSString *rev = [[ATProtoTID tid] stringValue];
     RepoCommit *commit = [RepoCommit createCommitWithDid:did
                                                     data:dataCID
                                                      rev:rev
