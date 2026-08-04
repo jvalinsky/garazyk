@@ -176,19 +176,21 @@ TMK+PDQF producer, perceptual comparison metric, or Ozone storage integration is
   column is wired by this bounded slice.
 - Rollback: additive identifier type and test registration; no existing moderation or media caller depends on PFP.
 
-**Phase 9 — MUXL.** Deterministic ISO-BMFF: `[uuid-muxl][moof][mdat]…` fragments with a DRISL
-catalog in the `uuid` atom, plus fMP4 and flat-MP4 presentation synthesis. Lands in
-`Garazyk/Sources/MediaCore` + `Video` (jelcz). Current backends
-(`Video/FFmpegTranscoder.m`, `Video/AVFoundationTranscoder.m`) shell out and emit HLS — MUXL
-requires an in-repo muxer for byte-stability. **Largest item in this workstream** — a full
-deterministic MP4 muxer, not a wrapper.
+**Phase 9 — MUXL — PARTIAL (catalog atom and opaque fragment envelope).**
+`MediaCore/ATProtoMUXLBox` validates a canonical single-track video or audio catalog, encodes and
+decodes the normative fixed `uuid-muxl` BMFF atom with DRISL bytes, and composes
+`[uuid-muxl][moof][mdat]...` segments while preserving each opaque fragment byte-for-byte. It
+requires each supplied fragment to be exactly one standard-size `moof` followed by one `mdat`, but
+does not reinterpret their sample tables.
 
-- Owner boundary: `Garazyk/Sources/MediaCore`, `Garazyk/Sources/Video`. Does not change the
-  existing HLS transcode paths, which stay as fallback/alternative output.
-- Gate: byte-stable re-mux test (same input twice → identical bytes), fMP4/flat-MP4 playback
-  sanity check, DRISL catalog round-trip test.
-- Rollback: new muxer is an additional output path; existing transcoders untouched, so reverting
-  drops the new path without affecting current video delivery.
+- Owner boundary: `Garazyk/Sources/MediaCore` for catalog/box primitives; future sample minting
+  belongs in `Garazyk/Sources/Video`. Existing HLS/transcoder paths are unchanged.
+- Evidence: `ATProtoMUXLBoxTests` covers deterministic catalog round-trip, fixed UUID/type bytes,
+  single-track/rendition and catalog-field validation, opaque fragment preservation, and malformed
+  box/fragment rejection. Registered in `Tests/test_main.m`.
+- Explicit remainder: fragment minting (`mfhd`/`traf`/`trun`), fMP4 init-header synthesis, flat-MP4
+  indexing, and playback sanity remain open; this slice does not claim to be a complete muxer.
+- Rollback: additive MediaCore primitive and test registration; existing HLS/transcoder output is untouched.
 
 **Phase 10 — S2PA.** ES256K and DID key handling already exist (`PLC/PLCDIDKey.m`,
 `vendor/secp256k1`). New: C2PA manifest structure (JUMBF), COSE_Sign1, and the deterministic
