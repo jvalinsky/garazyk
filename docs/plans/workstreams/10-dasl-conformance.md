@@ -98,9 +98,21 @@ drops files fails loudly). Registered in `Garazyk/Tests/test_main.m`.
 
 ## Outstanding — cross-platform DASL evidence
 
-1. Verify UTF-8 rejection (`_decodeTextString:` on `62c328`) on GNUstep/Linux, not just macOS.
-2. Complete the GNUstep/Linux full-suite run; the existing XCTest object-pointer boxing blocker
-   in `PDSAdminServiceTests.m` and `PDSBlobAuditHandlerTests.m` must be repaired first.
+1. **Partially closed.** UTF-8 rejection (`_decodeTextString:` on `62c328` / bytes `0xC3 0x28`) was
+   verified directly against GNUstep's `-[NSString initWithData:encoding:NSUTF8StringEncoding]` in
+   the `garazyk-gnustep` toolchain image (a standalone probe linked only against
+   `gnustep-base`, not the full decoder) — it returns `nil`, matching macOS. That case is now also
+   pinned as a permanent regression, `testInvalidUTF8TextStringIsRejected` in
+   `ATProtoDagCBOREdgeCaseTests.m`, **currently uncommitted in the working tree** alongside an
+   `XCTAssertEqual`→`XCTAssertEqualObjects` fix in `PDSAdminServiceTests.m` and
+   `PDSBlobAuditHandlerTests.m` — object-pointer comparisons GNUstep's XCTest shim boxes
+   differently than Apple's, which is the blocker item 2 below refers to. Land these three files
+   before closing this item for real: the standalone Foundation probe proves the underlying
+   platform behavior, not that `ATProtoDagCBOREdgeCaseTests` itself compiles and passes as part of
+   a full GNUstep `AllTests` binary.
+2. **Still open.** A full GNUstep/Linux `AllTests --gated=run` has not completed in this workstream.
+   The fix in item 1 removes the known compile blocker; a GNUstep build/run pass after it lands is
+   the remaining gate.
 
 ## Phases 5–11 — the remaining specs
 
