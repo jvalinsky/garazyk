@@ -51,7 +51,7 @@ NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSIntege
     SearchIndexService *_searchIndexService;
     AppViewWriteProxy *_writeProxy;
     id<PDSQueryDatabase> _database;
-    JWTMinter *_jwtMinter;
+    ATProtoJWTMinter *_jwtMinter;
 }
 
 - (instancetype)initWithFeedService:(FeedService *)feedService
@@ -65,7 +65,7 @@ NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSIntege
                   searchIndexService:(nullable SearchIndexService *)searchIndexService
                          writeProxy:(nullable AppViewWriteProxy *)writeProxy
                           database:(nullable id<PDSQueryDatabase>)database
-                         jwtMinter:(nullable JWTMinter *)jwtMinter
+                         jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
 {
     self = [super init];
     if (self) {

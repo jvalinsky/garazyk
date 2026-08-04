@@ -37,7 +37,7 @@
     return NO;
   }
 
-  JWTMinter *jwtMinter = _services.jwtMinter;
+  ATProtoJWTMinter *jwtMinter = _services.jwtMinter;
   id<PDSAdminController> adminController = _services.adminController;
   if (jwtMinter && adminController) {
     NSString *resolvedDID =

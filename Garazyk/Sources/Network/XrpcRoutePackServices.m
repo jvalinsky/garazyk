@@ -14,7 +14,7 @@
 @implementation XrpcRoutePackServiceBag
 
 - (instancetype)initWithDispatcher:(XrpcDispatcher *)dispatcher
-                         jwtMinter:(JWTMinter *)jwtMinter
+                         jwtMinter:(ATProtoJWTMinter *)jwtMinter
                    adminController:(id<PDSAdminController>)adminController
                       configuration:(ATProtoServiceConfiguration *)configuration
                         adminSecret:(NSString *)adminSecret

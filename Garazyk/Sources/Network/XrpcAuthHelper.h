@@ -13,7 +13,7 @@
 
 @class HttpRequest;
 @class HttpResponse;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class PDSController;
 @class PDSServiceDatabases;
 /**
@@ -50,7 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @return Authenticated DID or nil on failure.
  */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
-                                       jwtMinter:(JWTMinter *)jwtMinter
+                                       jwtMinter:(ATProtoJWTMinter *)jwtMinter
                                  adminController:(id<PDSAdminController>)adminController
                                          request:(HttpRequest *)request;
 
@@ -64,7 +64,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @return Authenticated DID or nil on failure.
  */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
-                                       jwtMinter:(JWTMinter *)jwtMinter
+                                       jwtMinter:(ATProtoJWTMinter *)jwtMinter
                                  adminController:(nullable id<PDSAdminController>)adminController
                                          request:(HttpRequest *)request
                                         response:(nullable HttpResponse *)response;
@@ -73,7 +73,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Extract and validate DID from Authorization header with response object and session repository.
  */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
-                                      jwtMinter:(JWTMinter *)jwtMinter
+                                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                                 adminController:(nullable id<PDSAdminController>)adminController
                               sessionRepository:(nullable id<PDSSessionRepository>)sessionRepository
                                         request:(HttpRequest *)request
@@ -104,7 +104,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (BOOL)authorizeAdminRequest:(HttpRequest *)request
                       response:(HttpResponse *)response
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                     jwtMinter:(JWTMinter *)jwtMinter
+                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController;
 
 @end

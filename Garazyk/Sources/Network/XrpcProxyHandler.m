@@ -12,7 +12,7 @@
 
 @implementation XrpcProxyHandler
 
-- (instancetype)initWithMinter:(JWTMinter *)minter {
+- (instancetype)initWithMinter:(ATProtoJWTMinter *)minter {
     self = [super init];
     if (self) {
         _minter = minter;
@@ -22,7 +22,7 @@
 
 - (instancetype)initWithProxyURL:(NSURL *)proxyURL
                      upstreamDID:(NSString *)upstreamDID
-                          minter:(JWTMinter *)minter {
+                          minter:(ATProtoJWTMinter *)minter {
     self = [super init];
     if (self) {
         _proxyURL = [proxyURL copy];

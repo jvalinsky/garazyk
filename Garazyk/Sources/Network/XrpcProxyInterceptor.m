@@ -296,7 +296,7 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
                              ATProtoServiceConfiguration *config,
                              BOOL explicitProxyHeader,
                              BOOL isTrusted,
-                             JWTMinter *jwtMinter,
+                             ATProtoJWTMinter *jwtMinter,
                              id<PDSAdminController> adminController,
                              PDSServiceDatabases *serviceDatabases,
                              PDSDatabasePool *userDatabasePool) {
@@ -490,7 +490,7 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
 
 + (void)installOnDispatcher:(XrpcDispatcher *)dispatcher
               configuration:(ATProtoServiceConfiguration *)configuration
-                  jwtMinter:(JWTMinter *)jwtMinter
+                  jwtMinter:(ATProtoJWTMinter *)jwtMinter
             adminController:(id<PDSAdminController>)adminController
            serviceDatabases:(PDSServiceDatabases *)serviceDatabases
            userDatabasePool:(PDSDatabasePool *)userDatabasePool {

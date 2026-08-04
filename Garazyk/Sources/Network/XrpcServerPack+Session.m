@@ -31,7 +31,7 @@
 + (void)registerAccountCreationAndSessionEndpoints:(XrpcDispatcher *)dispatcher
                                           services:(id<XrpcRoutePackServices>)services
                                  registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
-    JWTMinter *jwtMinter = services.jwtMinter;
+    ATProtoJWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
     id<PDSAccountService> accountService = services.accountService;
     PDSRepositoryService *repositoryService = services.repositoryService;

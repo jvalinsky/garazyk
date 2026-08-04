@@ -3,7 +3,7 @@
 #import <Foundation/Foundation.h>
 #import "Video/VideoAuthProvider.h"
 
-@class JWTMinter;
+@class ATProtoJWTMinter;
 /**
  * @abstract Defines the PDSAdminController protocol contract.
  */
@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract The JWT minter instance for issuing tokens.
  */
-@property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
+@property (nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 
 /**
  * @abstract Optional PDS admin controller interface.
@@ -28,10 +28,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Initializes a new PDS auth provider.
- * @param jwtMinter The JWTMinter to use for token operations.
+ * @param jwtMinter The ATProtoJWTMinter to use for token operations.
  * @param adminController Optional admin controller reference.
  */
-- (instancetype)initWithJwtMinter:(JWTMinter *)jwtMinter
+- (instancetype)initWithJwtMinter:(ATProtoJWTMinter *)jwtMinter
                    adminController:(nullable id<PDSAdminController>)adminController;
 
 @end

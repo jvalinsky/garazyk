@@ -76,7 +76,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
 @interface AuthMiddleware ()
 @property (nonatomic, strong, nullable) PDSController *controller;
-@property (nonatomic, strong, nullable) JWTMinter *jwtMinter;
+@property (nonatomic, strong, nullable) ATProtoJWTMinter *jwtMinter;
 @property (nonatomic, strong, nullable) id<PDSAdminController> adminController;
 @property (nonatomic, strong, nullable) id serviceDatabases;
 @property (nonatomic, assign) BOOL requireAdmin;
@@ -104,7 +104,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     return middleware;
 }
 
-+ (instancetype)userAuthWithJwtMinter:(JWTMinter *)jwtMinter
++ (instancetype)userAuthWithJwtMinter:(ATProtoJWTMinter *)jwtMinter
                      adminController:(id<PDSAdminController>)adminController {
     AuthMiddleware *middleware = [[AuthMiddleware alloc] init];
     middleware.jwtMinter = jwtMinter;
@@ -117,7 +117,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
              response:(HttpResponse *)response
                 error:(NSError **)error {
     // Get auth components
-    JWTMinter *jwtMinter = self.jwtMinter ?: self.controller.jwtMinter;
+    ATProtoJWTMinter *jwtMinter = self.jwtMinter ?: self.controller.jwtMinter;
     id<PDSAdminController> adminController = self.adminController ?: self.controller.adminController;
 
     if (!jwtMinter || !adminController) {

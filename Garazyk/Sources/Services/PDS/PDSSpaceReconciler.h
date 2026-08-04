@@ -3,7 +3,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @class PDSDatabasePool;
 @class PDSSpaceStore;
 
@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)initWithSpaceStore:(PDSSpaceStore *)spaceStore
                    userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                         jwtMinter:(JWTMinter *)jwtMinter
+                         jwtMinter:(ATProtoJWTMinter *)jwtMinter
                 intervalInSeconds:(NSTimeInterval)interval;
 
 /** @abstract Unavailable; use `initWithSpaceStore:userDatabasePool:jwtMinter:intervalInSeconds:`. */

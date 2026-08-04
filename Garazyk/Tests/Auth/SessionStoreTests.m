@@ -7,7 +7,7 @@
 
 @interface SessionStoreTests : XCTestCase
 @property (nonatomic, strong) SessionStore *store;
-@property (nonatomic, strong) JWTMinter *minter;
+@property (nonatomic, strong) ATProtoJWTMinter *minter;
 @property (nonatomic, strong) ATProtoJWTVerifier *verifier;
 @end
 
@@ -30,7 +30,7 @@
 #pragma mark - JWT Fixtures
 
 - (void)configureJWTSigning {
-    self.minter = [[JWTMinter alloc] init];
+    self.minter = [[ATProtoJWTMinter alloc] init];
     self.minter.issuer = @"test.issuer";
     self.minter.signingAlgorithm = @"ES256K";
     self.minter.defaultExpiration = 3600;

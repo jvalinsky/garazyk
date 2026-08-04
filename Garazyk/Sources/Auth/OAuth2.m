@@ -510,7 +510,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         _activeSessions = [NSMutableDictionary dictionary];
         _authorizationQueue = dispatch_queue_create("com.atproto.oauth2.authorization", DISPATCH_QUEUE_SERIAL);
         _sessionQueue = dispatch_queue_create("com.atproto.oauth2.session", DISPATCH_QUEUE_SERIAL);
-        _jwtMinter = [[JWTMinter alloc] init];
+        _jwtMinter = [[ATProtoJWTMinter alloc] init];
         _keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:database];
         _jwtMinter.keyManager = _keyManager;
         _jwtMinter.signingAlgorithm = @"ES256K";

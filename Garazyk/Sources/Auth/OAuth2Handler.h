@@ -23,7 +23,7 @@
 @class PDSDatabase;
 @class HttpRequest;
 @class HttpResponse;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 
 /**
  * @abstract Defines the PDSAccountService protocol contract.
@@ -65,7 +65,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) OAuth2Server *oauthServer;
 
 /*! JWT minting service for token generation. */
-@property (nonatomic, strong, nullable) JWTMinter *minter;
+@property (nonatomic, strong, nullable) ATProtoJWTMinter *minter;
 
 /*! Data directory for static assets (HTML templates, etc.). */
 @property (nonatomic, copy, nullable) NSString *dataDirectory;

@@ -11,7 +11,7 @@
 #import "Network/XrpcRoutePack.h"
 
 @class XrpcDispatcher;
-@class JWTMinter;
+@class ATProtoJWTMinter;
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -32,19 +32,19 @@ NS_ASSUME_NONNULL_BEGIN
 /** Registers PDS-level notification handlers using explicit dependencies. */
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                                     jwtMinter:(nullable JWTMinter *)jwtMinter
+                                     jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
                                adminController:(nullable id<PDSAdminController>)adminController;
 
 /** Registers AppView notification handlers using explicit dependencies. */
 + (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                                    jwtMinter:(nullable JWTMinter *)jwtMinter
+                                    jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
                               adminController:(nullable id<PDSAdminController>)adminController;
 
 /** Registers all notification handlers supported by this pack. */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                     jwtMinter:(nullable JWTMinter *)jwtMinter
+                     jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
                adminController:(nullable id<PDSAdminController>)adminController;
 
 @end
