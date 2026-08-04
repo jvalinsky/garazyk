@@ -364,7 +364,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     // which key is configured.
     if (self.publicKey) {
         // self.publicKey is always a secp256k1 public key.
-        Secp256k1 *secp = [Secp256k1 shared];
+        ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
         unsigned char hash[32];
         CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
         NSData *hashData = [NSData dataWithBytes:hash length:32];
@@ -698,7 +698,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     }
     
     if (self.privateKey) {
-        // Use Secp256k1 signing
+        // Use ATProtoSecp256k1 signing
         unsigned char hash[32];
         CC_SHA256(dataBytes.bytes, (CC_LONG)dataBytes.length, hash);
         NSData *hashData = [NSData dataWithBytes:hash length:32];

@@ -659,8 +659,8 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                 return keyString;
             }
         } else {
-            NSData *normalizedKey = [[Secp256k1 shared] normalizedPublicKey:pubKey error:nil];
-            if (normalizedKey && [[Secp256k1 shared] verifySignature:sigData forHash:opDataHash withPublicKey:normalizedKey error:nil]) {
+            NSData *normalizedKey = [[ATProtoSecp256k1 shared] normalizedPublicKey:pubKey error:nil];
+            if (normalizedKey && [[ATProtoSecp256k1 shared] verifySignature:sigData forHash:opDataHash withPublicKey:normalizedKey error:nil]) {
                 return keyString;
             }
         }

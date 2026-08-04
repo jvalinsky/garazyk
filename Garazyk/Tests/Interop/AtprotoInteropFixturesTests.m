@@ -178,7 +178,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
 
         BOOL verified = NO;
         if ([algorithm isEqualToString:@"ES256K"]) {
-            verified = [[Secp256k1 shared] verifySignature:sig ?: [NSData data]
+            verified = [[ATProtoSecp256k1 shared] verifySignature:sig ?: [NSData data]
                                                   forHash:hash
                                             withPublicKey:didKey.publicKeyBytes
                                                     error:nil];

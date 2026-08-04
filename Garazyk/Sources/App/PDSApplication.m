@@ -390,7 +390,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     BOOL hasProvisionedSigningKey = NO;
     if (PDSApplicationShouldUseEphemeralJWTKeyForTests()) {
         NSError *fallbackError = nil;
-        ATProtoSecp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+        ATProtoSecp256k1KeyPair *fallbackKeyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:&fallbackError];
         if (fallbackKeyPair) {
             _jwtMinter.keyManager = nil;
             _jwtMinter.signingAlgorithm = @"ES256K";
@@ -416,7 +416,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
             _jwtMinter.keyManager = keyManager;
         } else if (!isProduction) {
             NSError *fallbackError = nil;
-            ATProtoSecp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+            ATProtoSecp256k1KeyPair *fallbackKeyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:&fallbackError];
             if (fallbackKeyPair) {
                 _jwtMinter.keyManager = nil;
                 _jwtMinter.signingAlgorithm = @"ES256K";

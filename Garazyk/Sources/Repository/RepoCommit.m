@@ -101,7 +101,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         return NO;
     }
 
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSData *signature = [secp signHash:hash withPrivateKey:privateKey error:error];
     if (!signature) {
         return NO;
@@ -131,7 +131,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         return NO;
     }
 
-    Secp256k1 *secp = [Secp256k1 shared];
+    ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     return [secp verifySignature:self.signature forHash:hash withPublicKey:publicKey error:error];
 }
 

@@ -136,7 +136,7 @@ static NSString * const kSpaceSigningKeyAccountPrefix = @"space-signing-key-";
     }
 
     NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-    return [[Secp256k1 shared] signHash:hashData withPrivateKey:privateKey error:error];
+    return [[ATProtoSecp256k1 shared] signHash:hashData withPrivateKey:privateKey error:error];
 }
 
 - (nullable NSData *)publicSigningKeyWithError:(NSError **)error {

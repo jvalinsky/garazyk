@@ -154,10 +154,10 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
 
 @end
 
-@implementation Secp256k1
+@implementation ATProtoSecp256k1
 
 + (instancetype)shared {
-    static Secp256k1 *sharedInstance = nil;
+    static ATProtoSecp256k1 *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[self alloc] init];

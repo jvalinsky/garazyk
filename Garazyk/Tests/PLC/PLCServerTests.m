@@ -207,7 +207,7 @@
 }
 
 - (void)testGetDID {
-    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[[keyPair didKeyString]],
@@ -217,7 +217,7 @@
         @"prev": [NSNull null]
     };
     NSData *hash = [self.auditor hashForOperationData:opData];
-    NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
+    NSData *sig = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
@@ -247,7 +247,7 @@
 }
 
 - (void)testPostDID {
-    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[[keyPair didKeyString]],
@@ -257,7 +257,7 @@
         @"prev": [NSNull null]
     };
     NSData *hash = [self.auditor hashForOperationData:opData];
-    NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
+    NSData *sig = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
@@ -309,7 +309,7 @@
 
 - (void)testPostInvalidDID {
     NSString *wrongDid = @"did:plc:wrong";
-    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[[keyPair didKeyString]],
@@ -319,7 +319,7 @@
         @"prev": [NSNull null]
     };
     NSData *hash = [self.auditor hashForOperationData:opData];
-    NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
+    NSData *sig = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
@@ -392,7 +392,7 @@
 #pragma mark - /:did/data endpoint
 
 - (PLCOperation *)insertTestOperationForDID:(NSString *)did {
-    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[keyPair.didKeyString, @"did:key:zQ3shP5TBe1sQfSttXty15FAEHV1DZgcxRZNxvEWnPfLFwLxJ"],
@@ -402,7 +402,7 @@
         @"prev": [NSNull null]
     };
     NSData *hash = [self.auditor hashForOperationData:opData];
-    NSData *sig = [[Secp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
+    NSData *sig = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:nil];
 
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];

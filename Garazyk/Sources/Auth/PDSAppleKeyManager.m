@@ -504,7 +504,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
         uint8_t hash[CC_SHA256_DIGEST_LENGTH];
         CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
         NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-        return [[Secp256k1 shared] signHash:hashData withPrivateKey:keyPair.secp256k1PrivateKeyData error:error];
+        return [[ATProtoSecp256k1 shared] signHash:hashData withPrivateKey:keyPair.secp256k1PrivateKeyData error:error];
     }
 
     // Select the correct SecKeyAlgorithm based on the key pair's algorithm
@@ -834,7 +834,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
         uint8_t hash[CC_SHA256_DIGEST_LENGTH];
         CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
         NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-        return [[Secp256k1 shared] verifySignature:signature forHash:hashData withPublicKey:kp.compressedPublicKey error:error];
+        return [[ATProtoSecp256k1 shared] verifySignature:signature forHash:hashData withPublicKey:kp.compressedPublicKey error:error];
     }
 
     return [self verifySignature:signature forData:data withPublicKey:keyPair.publicKey error:error];
