@@ -563,6 +563,8 @@ file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
   "Garazyk/Sources/Admin/PDSInstallerCommand.m"
   "Garazyk/Sources/Admin/Diagnostics/PDSSystemDiagnosticsHandler.m"
   "Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m"
+  "Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m"
+  "Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m"
 )
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/ATProtoServiceConfiguration\\.m$")
@@ -628,6 +630,12 @@ file(GLOB_RECURSE ATPROTO_MEDIA_CORE_SOURCES
   "Garazyk/Sources/MediaCore/*.m"
   "Garazyk/Sources/MediaCore/*.c"
 )
+# MediaCore composition: the media service runtime and its XRPC route pack
+# construct XrpcDispatcher/XrpcRoutePackServiceBag and register XRPC routes,
+# so they are Runtime composition, not MediaCore implementations (same
+# carve-out precedent as ChatRuntime/GermRuntime/PDSInstallerCommand).
+list(FILTER ATPROTO_MEDIA_CORE_SOURCES EXCLUDE REGEX ".*/MediaCore/ATProtoMediaServiceRuntime\\.m$")
+list(FILTER ATPROTO_MEDIA_CORE_SOURCES EXCLUDE REGEX ".*/MediaCore/ATProtoMediaXrpcPack\\.m$")
 pds_filter_common_sources(ATPROTO_MEDIA_CORE_SOURCES)
 
 set(ATPROTO_ALL_RUNTIME_SOURCES
