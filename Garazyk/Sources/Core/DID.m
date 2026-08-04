@@ -244,8 +244,8 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         }
     }
 
-    // Parse DID method using ATDID primitive
-    ATDID *parsedDID = [ATDID didWithString:did error:nil];
+    // Parse DID method using ATProtoATDID primitive
+    ATProtoATDID *parsedDID = [ATProtoATDID didWithString:did error:nil];
     if (!parsedDID) {
         NSError *error = [NSError errorWithDomain:DIDErrorDomain
                                           code:DIDErrorInvalidIdentifier
@@ -467,7 +467,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     // did:web:example.com -> https://example.com/.well-known/did.json
     // did:web:example.com:user -> https://example.com/user/did.json
     
-    ATDID *parsedDID = [ATDID didWithString:did error:nil];
+    ATProtoATDID *parsedDID = [ATProtoATDID didWithString:did error:nil];
     if (!parsedDID) {
         NSError *error = [NSError errorWithDomain:DIDErrorDomain
                                          code:DIDErrorInvalidIdentifier

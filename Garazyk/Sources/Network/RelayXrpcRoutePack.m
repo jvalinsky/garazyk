@@ -35,14 +35,14 @@ static BOOL parseStrictNonNegativeInteger(NSString *value, NSInteger *result) {
 
 // DID validation helper
 static BOOL isValidDID(NSString *did) {
-    ATDID *parsedDID = [ATDID didWithString:did error:nil];
+    ATProtoATDID *parsedDID = [ATProtoATDID didWithString:did error:nil];
     return parsedDID != nil &&
         ([parsedDID.method isEqualToString:@"plc"] ||
          [parsedDID.method isEqualToString:@"web"]);
 }
 
 static NSURL *didWebDocumentURL(NSString *did) {
-    ATDID *parsedDID = [ATDID didWithString:did error:nil];
+    ATProtoATDID *parsedDID = [ATProtoATDID didWithString:did error:nil];
     if (![parsedDID.method isEqualToString:@"web"]) {
         return nil;
     }

@@ -424,7 +424,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
             return nil;
         } else {
             NSError *verifierError = nil;
-            AuthVerifierPrincipal *principal = [verifier verifyRequest:request
+            ATProtoAuthVerifierPrincipal *principal = [verifier verifyRequest:request
                                                               response:response
                                                                  error:&verifierError];
             if (principal) {
@@ -466,7 +466,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
         }
         if (verifier) {
             NSError *verifierError = nil;
-            AuthVerifierPrincipal *principal = [verifier verifyRequest:request
+            ATProtoAuthVerifierPrincipal *principal = [verifier verifyRequest:request
                                                               response:response
                                                                  error:&verifierError];
             if (principal) {

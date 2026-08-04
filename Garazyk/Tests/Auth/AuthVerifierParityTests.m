@@ -161,7 +161,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
                                            response:[[HttpResponse alloc] init]];
 }
 
-- (AuthVerifierPrincipal *)newPrincipalForAuthorization:(NSString *)authorization request:(HttpRequest *)request {
+- (ATProtoAuthVerifierPrincipal *)newPrincipalForAuthorization:(NSString *)authorization request:(HttpRequest *)request {
     NSError *error = nil;
     return [self.verifier verifyAuthHeader:authorization
                                 dpopHeader:[request headerForKey:@"DPoP"]
@@ -174,7 +174,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     NSString *authorization = [@"Bearer " stringByAppendingString:token];
     HttpRequest *request = [self requestWithAuthorization:authorization dpop:nil];
     NSString *legacyDID = [self legacyDIDForAuthorization:authorization request:request];
-    AuthVerifierPrincipal *principal = [self newPrincipalForAuthorization:authorization request:request];
+    ATProtoAuthVerifierPrincipal *principal = [self newPrincipalForAuthorization:authorization request:request];
     XCTAssertEqualObjects(legacyDID, expectedDID);
     XCTAssertEqualObjects(principal.did, expectedDID);
 }
@@ -404,7 +404,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     [self assertParityForToken:token.encodedToken expectedDID:@"did:web:pds.example.com%3A8443"];
 
     NSString *authorization = [@"Bearer " stringByAppendingString:token.encodedToken];
-    AuthVerifierPrincipal *principal = [self newPrincipalForAuthorization:authorization
+    ATProtoAuthVerifierPrincipal *principal = [self newPrincipalForAuthorization:authorization
                                                                     request:[self requestWithAuthorization:authorization dpop:nil]];
     XCTAssertTrue(principal.isAdmin);
 }
@@ -449,7 +449,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     XCTAssertNotNil(token, @"Failed to sign remote token: %@", error);
 
     NSError *verifyError = nil;
-    AuthVerifierPrincipal *principal = [remoteVerifier verifyAccessToken:token error:&verifyError];
+    ATProtoAuthVerifierPrincipal *principal = [remoteVerifier verifyAccessToken:token error:&verifyError];
     XCTAssertNil(principal, @"A remote-issued refresh token must not be accepted as an access token");
     XCTAssertNotNil(verifyError);
 
@@ -495,7 +495,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     XCTAssertNotNil(token, @"Failed to sign remote token: %@", error);
 
     NSError *verifyError = nil;
-    AuthVerifierPrincipal *principal = [remoteVerifier verifyAccessToken:token error:&verifyError];
+    ATProtoAuthVerifierPrincipal *principal = [remoteVerifier verifyAccessToken:token error:&verifyError];
     XCTAssertNil(principal, @"A token whose header alg is outside the remote allowlist must be rejected");
     XCTAssertNotNil(verifyError);
 

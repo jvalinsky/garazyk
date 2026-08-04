@@ -108,7 +108,7 @@
     NSError *error = nil;
 
     // Create header
-    JWTHeader *header = [[JWTHeader alloc] init];
+    ATProtoJWTHeader *header = [[ATProtoJWTHeader alloc] init];
     header.alg = @"HS256";
     header.typ = @"JWT";
 
@@ -214,7 +214,7 @@
     NSError *error = nil;
 
     // Create a JWT with "none" algorithm (unsigned)
-    JWTHeader *header = [[JWTHeader alloc] init];
+    ATProtoJWTHeader *header = [[ATProtoJWTHeader alloc] init];
     header.alg = @"none";
     header.typ = @"JWT";
 
