@@ -5,6 +5,8 @@
 #import <objc/runtime.h>
 
 @interface AppDelegate (TestHooks)
+- (void)applicationDidFinishLaunching:(NSNotification *)notification;
+- (void)applicationWillTerminate:(NSNotification *)notification;
 - (void)startServer:(id)sender;
 - (void)stopServer:(id)sender;
 #if TARGET_OS_OSX || defined(__APPLE__)

@@ -251,10 +251,10 @@
     
     PDSController *legacy = self.application.legacyController;
     
-    XCTAssertEqual(legacy.serviceDatabases, self.application.serviceDatabases);
-    XCTAssertEqual(legacy.userDatabasePool, self.application.userDatabasePool);
-    XCTAssertEqual(legacy.jwtMinter, self.application.jwtMinter);
-    XCTAssertEqual(legacy.rateLimiter, self.application.rateLimiter);
+    XCTAssertTrue(legacy.serviceDatabases == self.application.serviceDatabases);
+    XCTAssertTrue(legacy.userDatabasePool == self.application.userDatabasePool);
+    XCTAssertTrue(legacy.jwtMinter == self.application.jwtMinter);
+    XCTAssertTrue(legacy.rateLimiter == self.application.rateLimiter);
 }
 
 #pragma mark - Port Configuration Tests
