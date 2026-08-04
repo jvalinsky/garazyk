@@ -460,7 +460,10 @@ remaining program does not depend on items 1-2.
     `docs/module-boundary-baseline.txt` is empty, meeting M4's zero-baseline
     acceptance gate. M5 (namespace the exported symbols) is the active
     milestone — first step is the shrink-only namespace gate over the ~283
-    unprefixed classes; M5.3's rename batches have not started. **M7 is now
+    unprefixed classes; M5.3's first rename batch (internal migration
+    classes, the low-risk pilot) is complete, ratcheting the namespace
+    baseline 283 → 253 — batches 2-6 (Core, Storage/Transport, PLC/Sync/
+    Services/MediaCore, XRPC/VideoService, Runtime) remain open. **M7 is now
     complete (2026-08-04):** the remaining host-process `exit()`/`abort()`
     calls in `PDSApplication.m`/`PDSCLIServeCommand.m`/
     `PDSCLIDaemonCommand.m` and the installer's hard-coded
