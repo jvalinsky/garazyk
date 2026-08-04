@@ -18,7 +18,7 @@
     PDSSequencerHealthHandler *first = [PDSSequencerHealthHandler sharedHandler];
     PDSSequencerHealthHandler *second = [PDSSequencerHealthHandler sharedHandler];
     XCTAssertNotNil(first);
-    XCTAssertEqual(first, second);
+    XCTAssertTrue(first == second);
 }
 
 - (void)testStatsEndpointReturnsValidJSON {

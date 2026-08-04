@@ -74,6 +74,21 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
     [self assertDecodeFailsForBytes:attack length:sizeof(attack)];
 }
 
+- (void)testInvalidUTF8TextStringIsRejected {
+    // 0x62 declares a two-byte text string, but C3 28 is not a valid UTF-8
+    // sequence. Foundation must not replace it and let malformed bytes enter
+    // a content-addressed document.
+    const uint8_t invalidUTF8[] = {0x62, 0xC3, 0x28};
+    NSError *error = nil;
+    id decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(invalidUTF8, sizeof(invalidUTF8))
+                                      error:&error];
+    XCTAssertNil(decoded);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, ATProtoDagCBORErrorDomain);
+    XCTAssertEqual(error.code, ATProtoDagCBORErrorCodeDecodingFailed);
+    XCTAssertEqualObjects(error.localizedDescription, @"Invalid UTF-8 in text string");
+}
+
 - (void)testCanonicalMapKeysAccepted {
     // Positive control: the canonical encoding of {"a": 1, "b": 2} must
     // decode cleanly. If this fails after the fix, the comparison is wrong

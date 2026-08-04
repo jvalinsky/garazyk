@@ -63,7 +63,7 @@
     PDSSystemDiagnosticsHandler *first = [PDSSystemDiagnosticsHandler sharedHandler];
     PDSSystemDiagnosticsHandler *second = [PDSSystemDiagnosticsHandler sharedHandler];
     XCTAssertNotNil(first);
-    XCTAssertEqual(first, second);
+    XCTAssertTrue(first == second);
 }
 
 - (void)testUnknownPathReturns404 {

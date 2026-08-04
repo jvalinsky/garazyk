@@ -80,8 +80,8 @@
 
 - (void)testServiceInitialization {
     XCTAssertNotNil(self.blobService);
-    XCTAssertEqual(self.blobService.databasePool, self.databasePool);
-    XCTAssertEqual(self.blobService.blobStorage, self.blobStorage);
+    XCTAssertTrue(self.blobService.databasePool == self.databasePool);
+    XCTAssertTrue(self.blobService.blobStorage == self.blobStorage);
 }
 
 - (void)testUploadBlob {

@@ -255,6 +255,10 @@ NS_ASSUME_NONNULL_BEGIN
 #define XCTAssertEqualObjects(a, b, ...) \
     do { if (![(a) isEqual:(b)]) { _PDSXCTFail(@"XCTAssertEqualObjects failed: %@ != %@", (a), (b)); } } while(0)
 
+/*! Assert objects are not equal via isEqual:. */
+#define XCTAssertNotEqualObjects(a, b, ...) \
+    do { if ([(a) isEqual:(b)]) { _PDSXCTFail(@"XCTAssertNotEqualObjects failed: %@ == %@", (a), (b)); } } while(0)
+
 /*! Assert object is not nil. */
 #define XCTAssertNotNil(obj, ...) \
     do { if ((obj) == nil) { _PDSXCTFail(@"XCTAssertNotNil failed: %s is nil", #obj); } } while(0)
