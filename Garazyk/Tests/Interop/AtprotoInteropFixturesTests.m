@@ -112,15 +112,15 @@ static NSData *InteropBase64URLDecode(NSString *string) {
     for (NSString *tidStr in valid) {
         NSError *error = nil;
         BOOL ok = [ATProtoValidator validateTID:tidStr error:&error];
-        XCTAssertTrue(ok, @"Expected valid TID per fixtures: %@ (error=%@)", tidStr, error);
-        XCTAssertNotNil([TID tidFromString:tidStr], @"TID class should accept fixture-valid TID: %@", tidStr);
+        XCTAssertTrue(ok, @"Expected valid ATProtoTID per fixtures: %@ (error=%@)", tidStr, error);
+        XCTAssertNotNil([ATProtoTID tidFromString:tidStr], @"ATProtoTID class should accept fixture-valid ATProtoTID: %@", tidStr);
     }
 
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/tid_syntax_invalid.txt"];
     for (NSString *tidStr in invalid) {
         BOOL ok = [ATProtoValidator validateTID:tidStr error:nil];
-        XCTAssertFalse(ok, @"Expected invalid TID per fixtures: %@", tidStr);
-        XCTAssertNil([TID tidFromString:tidStr], @"TID class should reject fixture-invalid TID: %@", tidStr);
+        XCTAssertFalse(ok, @"Expected invalid ATProtoTID per fixtures: %@", tidStr);
+        XCTAssertNil([ATProtoTID tidFromString:tidStr], @"ATProtoTID class should reject fixture-invalid ATProtoTID: %@", tidStr);
     }
 }
 
@@ -162,7 +162,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
         XCTAssertNotNil(message, @"Failed to decode messageBase64 in fixture: %@", comment);
         if (!message) continue;
 
-        NSData *hash = [CryptoUtils sha256:message];
+        NSData *hash = [ATProtoCryptoUtils sha256:message];
         XCTAssertEqual(hash.length, (NSUInteger)32);
 
         NSData *sig = [[NSData alloc] initWithBase64EncodedString:signatureBase64 options:0];

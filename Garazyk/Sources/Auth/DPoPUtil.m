@@ -144,7 +144,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     token.exp = [NSDate dateWithTimeIntervalSinceNow:300];
     if (accessToken.length > 0) {
         NSData *tokenData = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *tokenHash = [CryptoUtils sha256:tokenData];
+        NSData *tokenHash = [ATProtoCryptoUtils sha256:tokenData];
         if (!tokenHash) {
             if (error) {
                 *error = [NSError errorWithDomain:DPoPErrorDomain

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file CryptoUtils.m
+ @file ATProtoCryptoUtils.m
 
  @abstract Cryptographic utility functions for the PDS.
 
@@ -35,7 +35,7 @@ uint32_t ATProtoPBKDF2IterationCount(void) {
     return ATProtoPBKDF2ProductionIterations;
 }
 
-@implementation CryptoUtils
+@implementation ATProtoCryptoUtils
 
 /*!
  @method hmacSHA1WithKey:data:

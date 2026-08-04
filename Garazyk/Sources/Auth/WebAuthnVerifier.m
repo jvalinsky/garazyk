@@ -224,7 +224,7 @@
     // 3. Verify Signature
     // signedData = authenticatorData || SHA256(clientDataJSON)
     NSMutableData *signedData = [authenticatorData mutableCopy];
-    NSData *clientDataHash = [CryptoUtils sha256:clientDataJSON];
+    NSData *clientDataHash = [ATProtoCryptoUtils sha256:clientDataJSON];
     [signedData appendData:clientDataHash];
     
     // Import Public Key - convert to JWK format
@@ -292,7 +292,7 @@
         }
         
         // Hash the signed data and verify
-        NSData *hash = [CryptoUtils sha256:signedData];
+        NSData *hash = [ATProtoCryptoUtils sha256:signedData];
         NSError *verifyError = nil;
         BOOL verified = [pubKey verifyDigestSignature:rawSig forHash:hash error:&verifyError];
         

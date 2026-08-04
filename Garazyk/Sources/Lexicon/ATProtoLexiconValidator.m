@@ -420,7 +420,7 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
         if (![ATProtoValidator validateTID:str error:&formatError]) {
             if (error) {
                 *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorConstraintViolation
-                                                    message:[NSString stringWithFormat:@"Invalid TID format in '%@': %@",
+                                                    message:[NSString stringWithFormat:@"Invalid ATProtoTID format in '%@': %@",
                                                             context, formatError.localizedDescription]
                                                     context:context];
             }

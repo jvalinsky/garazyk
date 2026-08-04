@@ -100,7 +100,7 @@
     }
 
     // Pre-validate all writes and build records before entering the transaction
-    NSString *batchRev = [TID tid].stringValue;
+    NSString *batchRev = [ATProtoTID tid].stringValue;
 
     NSMutableArray *preparedOps = [NSMutableArray arrayWithCapacity:writes.count];
     NSMutableArray *resultOps = [NSMutableArray arrayWithCapacity:writes.count];
@@ -146,7 +146,7 @@
 
         if ([action isEqualToString:@"create"]) {
             if (!rkey || rkey.length == 0) {
-                rkey = [TID tid].stringValue;
+                rkey = [ATProtoTID tid].stringValue;
             }
             if (!record) {
                 GZ_LOG_ERROR(@"[PDSRecordService] applyWrites: create write missing record value for collection: %@ rkey: %@", collection ?: @"nil", rkey ?: @"nil");

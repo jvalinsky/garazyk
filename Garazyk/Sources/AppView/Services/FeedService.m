@@ -942,7 +942,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
         }
         return hashString;
     }
-    return [TID tid].stringValue;
+    return [ATProtoTID tid].stringValue;
 }
 
 #pragma mark - Indexing

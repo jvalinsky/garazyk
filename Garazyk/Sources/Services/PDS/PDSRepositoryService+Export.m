@@ -942,7 +942,7 @@
         if (latestMutationRev.length > 0) {
             currentRev = latestMutationRev;
         } else if (currentRev.length == 0) {
-            currentRev = [TID tid].stringValue;
+            currentRev = [ATProtoTID tid].stringValue;
         }
     }
     NSString *defaultRecordRev = (storedRev.length > 0) ? storedRev : currentRev;
@@ -1196,7 +1196,7 @@
 
         // Choose a revision that does not go backwards.
         NSString *revCandidate = currentRev;
-        NSString *freshRev = [TID tid].stringValue;
+        NSString *freshRev = [ATProtoTID tid].stringValue;
         if (freshRev.length > 0 && [freshRev compare:revCandidate] == NSOrderedDescending) {
             revCandidate = freshRev;
         }

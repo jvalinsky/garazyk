@@ -29,7 +29,7 @@
 }
 
 + (NSString *)generateSecret {
-    NSData *randomBytes = [CryptoUtils randomBytes:20]; // 160 bits (recommended min)
+    NSData *randomBytes = [ATProtoCryptoUtils randomBytes:20]; // 160 bits (recommended min)
     return [Base32Utils base32StringFromData:randomBytes];
 }
 

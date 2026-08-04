@@ -219,17 +219,17 @@
 
 @end
 
-#pragma mark - TID Tests
+#pragma mark - ATProtoTID Tests
 
 @interface TIDTests : XCTestCase
 @end
 
 @implementation TIDTests
 
-#pragma mark - TID Creation
+#pragma mark - ATProtoTID Creation
 
 - (void)testTidCreation {
-    TID *tid = [TID tid];
+    ATProtoTID *tid = [ATProtoTID tid];
     XCTAssertNotNil(tid);
     XCTAssertNotNil(tid.stringValue);
     XCTAssertEqual(tid.stringValue.length, 13);
@@ -237,7 +237,7 @@
 
 - (void)testTidWithTimestamp {
     uint64_t ts = 1700000000000000ULL; // A microsecond timestamp
-    TID *tid = [TID tidWithTimestamp:ts];
+    ATProtoTID *tid = [ATProtoTID tidWithTimestamp:ts];
     XCTAssertNotNil(tid);
     XCTAssertEqual(tid.stringValue.length, 13);
     XCTAssertEqual(tid.timestamp, ts);
@@ -245,104 +245,104 @@
 
 - (void)testTidWithDate {
     NSDate *date = [NSDate dateWithTimeIntervalSince1970:1700000000];
-    TID *tid = [TID tidWithDate:date];
+    ATProtoTID *tid = [ATProtoTID tidWithDate:date];
     XCTAssertNotNil(tid);
     XCTAssertEqual(tid.stringValue.length, 13);
     XCTAssertTrue(tid.timestamp > 0);
 }
 
 - (void)testTidFromString {
-    TID *tid = [TID tidFromString:@"3zz2zzzzzzzzz"];
+    ATProtoTID *tid = [ATProtoTID tidFromString:@"3zz2zzzzzzzzz"];
     XCTAssertNotNil(tid);
     XCTAssertEqualObjects(tid.stringValue, @"3zz2zzzzzzzzz");
 }
 
 - (void)testTidFromStringNil {
-    TID *tid = [TID tidFromString:nil];
+    ATProtoTID *tid = [ATProtoTID tidFromString:nil];
     XCTAssertNil(tid);
 }
 
 - (void)testTidFromStringEmpty {
-    TID *tid = [TID tidFromString:@""];
+    ATProtoTID *tid = [ATProtoTID tidFromString:@""];
     XCTAssertNil(tid);
 }
 
 - (void)testTidFromStringTooShort {
-    TID *tid = [TID tidFromString:@"3zz2zzzzzzzz"];
+    ATProtoTID *tid = [ATProtoTID tidFromString:@"3zz2zzzzzzzz"];
     XCTAssertNil(tid);
 }
 
 - (void)testTidFromStringTooLong {
-    TID *tid = [TID tidFromString:@"3zz2zzzzzzzzzz"];
+    ATProtoTID *tid = [ATProtoTID tidFromString:@"3zz2zzzzzzzzzz"];
     XCTAssertNil(tid);
 }
 
 - (void)testTidFromStringInvalidChars {
-    TID *tid = [TID tidFromString:@"3zz2zzzzzzz0z"]; // '0' is not in TID alphabet
+    ATProtoTID *tid = [ATProtoTID tidFromString:@"3zz2zzzzzzz0z"]; // '0' is not in ATProtoTID alphabet
     XCTAssertNil(tid);
 }
 
 - (void)testTidFromStringHighBitSet {
     // First char must be < 8 in the base32 alphabet (positions 0-7)
     // 'z' is position 31, which is >= 8, so this should be invalid
-    TID *tid = [TID tidFromString:@"zzz2zzzzzzzzz"];
+    ATProtoTID *tid = [ATProtoTID tidFromString:@"zzz2zzzzzzzzz"];
     XCTAssertNil(tid);
 }
 
-#pragma mark - TID Comparison
+#pragma mark - ATProtoTID Comparison
 
 - (void)testTidComparisonSame {
-    TID *tid1 = [TID tidWithTimestamp:1000];
-    TID *tid2 = [TID tidWithTimestamp:1000];
+    ATProtoTID *tid1 = [ATProtoTID tidWithTimestamp:1000];
+    ATProtoTID *tid2 = [ATProtoTID tidWithTimestamp:1000];
     XCTAssertEqual([tid1 compare:tid2], NSOrderedSame);
 }
 
 - (void)testTidComparisonBefore {
-    TID *tid1 = [TID tidWithTimestamp:999];
-    TID *tid2 = [TID tidWithTimestamp:1000];
+    ATProtoTID *tid1 = [ATProtoTID tidWithTimestamp:999];
+    ATProtoTID *tid2 = [ATProtoTID tidWithTimestamp:1000];
     XCTAssertEqual([tid1 compare:tid2], NSOrderedAscending);
     XCTAssertTrue([tid1 isBefore:tid2]);
     XCTAssertFalse([tid1 isAfter:tid2]);
 }
 
 - (void)testTidComparisonAfter {
-    TID *tid1 = [TID tidWithTimestamp:1001];
-    TID *tid2 = [TID tidWithTimestamp:1000];
+    ATProtoTID *tid1 = [ATProtoTID tidWithTimestamp:1001];
+    ATProtoTID *tid2 = [ATProtoTID tidWithTimestamp:1000];
     XCTAssertEqual([tid1 compare:tid2], NSOrderedDescending);
     XCTAssertTrue([tid1 isAfter:tid2]);
     XCTAssertFalse([tid1 isBefore:tid2]);
 }
 
-#pragma mark - TID Copy
+#pragma mark - ATProtoTID Copy
 
 - (void)testTidCopy {
-    TID *original = [TID tidWithTimestamp:12345];
-    TID *copy = [original copy];
+    ATProtoTID *original = [ATProtoTID tidWithTimestamp:12345];
+    ATProtoTID *copy = [original copy];
     XCTAssertNotNil(copy);
     XCTAssertEqualObjects(copy.stringValue, original.stringValue);
     XCTAssertEqual(copy.timestamp, original.timestamp);
     XCTAssertNotEqual(original, copy); // Different instances
 }
 
-#pragma mark - TID Equality
+#pragma mark - ATProtoTID Equality
 
 - (void)testTidEquality {
-    TID *tid1 = [TID tidWithTimestamp:5000];
-    TID *tid2 = [TID tidWithTimestamp:5000];
+    ATProtoTID *tid1 = [ATProtoTID tidWithTimestamp:5000];
+    ATProtoTID *tid2 = [ATProtoTID tidWithTimestamp:5000];
     XCTAssertEqualObjects(tid1, tid2);
     XCTAssertEqual(tid1.hash, tid2.hash);
 }
 
 - (void)testTidInequality {
-    TID *tid1 = [TID tidWithTimestamp:5000];
-    TID *tid2 = [TID tidWithTimestamp:6000];
+    ATProtoTID *tid1 = [ATProtoTID tidWithTimestamp:5000];
+    ATProtoTID *tid2 = [ATProtoTID tidWithTimestamp:6000];
     XCTAssertNotEqualObjects(tid1, tid2);
 }
 
-#pragma mark - TID String Format
+#pragma mark - ATProtoTID String Format
 
 - (void)testTidStringOnlyValidChars {
-    TID *tid = [TID tid];
+    ATProtoTID *tid = [ATProtoTID tid];
     NSString *str = tid.stringValue;
     NSString *validChars = @"234567abcdefghijklmnopqrstuvwxyz";
     NSCharacterSet *validSet = [NSCharacterSet characterSetWithCharactersInString:validChars];
@@ -351,9 +351,9 @@
 }
 
 - (void)testTidRoundTrip {
-    TID *original = [TID tidWithTimestamp:1700000000000000ULL];
+    ATProtoTID *original = [ATProtoTID tidWithTimestamp:1700000000000000ULL];
     NSString *str = original.stringValue;
-    TID *parsed = [TID tidFromString:str];
+    ATProtoTID *parsed = [ATProtoTID tidFromString:str];
     XCTAssertNotNil(parsed);
     XCTAssertEqualObjects(parsed.stringValue, str);
     XCTAssertEqual(parsed.timestamp, original.timestamp);

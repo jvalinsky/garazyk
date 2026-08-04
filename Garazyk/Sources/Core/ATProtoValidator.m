@@ -103,12 +103,12 @@
 
 + (BOOL)validateTID:(NSString *)tid error:(NSError **)error {
     if (!tid) {
-        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:1 userInfo:@{NSLocalizedDescriptionKey: @"TID cannot be nil"}];
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:1 userInfo:@{NSLocalizedDescriptionKey: @"ATProtoTID cannot be nil"}];
         return NO;
     }
 
     if (tid.length != 13) {
-        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:11 userInfo:@{NSLocalizedDescriptionKey: @"TID must be 13 characters"}];
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:11 userInfo:@{NSLocalizedDescriptionKey: @"ATProtoTID must be 13 characters"}];
         return NO;
     }
 
@@ -116,13 +116,13 @@
     static NSString * const allowedFirstChars = @"234567ab";
     unichar first = [tid characterAtIndex:0];
     if ([allowedFirstChars rangeOfString:[NSString stringWithCharacters:&first length:1]].location == NSNotFound) {
-        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Invalid TID format (high bit cannot be set)"}];
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Invalid ATProtoTID format (high bit cannot be set)"}];
         return NO;
     }
     for (NSUInteger i = 0; i < tid.length; i++) {
         unichar c = [tid characterAtIndex:i];
         if ([alphabet rangeOfString:[NSString stringWithCharacters:&c length:1]].location == NSNotFound) {
-            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Invalid TID format (must be base32-sortable)"}];
+            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Invalid ATProtoTID format (must be base32-sortable)"}];
             return NO;
         }
     }

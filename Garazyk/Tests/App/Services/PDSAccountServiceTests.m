@@ -72,7 +72,7 @@
     if (!db) return NO;
 
     NSData *tokenData = [token dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *tokenHash = [CryptoUtils sha256:tokenData];
+    NSData *tokenHash = [ATProtoCryptoUtils sha256:tokenData];
     NSString *sql = @"INSERT INTO pending_factor_tokens (id, token_hash, account_did, method, challenge, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     return [db executeParameterizedUpdate:sql

@@ -191,11 +191,11 @@
     XCTAssertEqualObjects(parsed.stringValue, stringValue);
 }
 
-#pragma mark - TID Tests
+#pragma mark - ATProtoTID Tests
 
 - (void)testTIDGeneration {
-    NSString *tid1 = [[TID tid] stringValue];
-    NSString *tid2 = [[TID tid] stringValue];
+    NSString *tid1 = [[ATProtoTID tid] stringValue];
+    NSString *tid2 = [[ATProtoTID tid] stringValue];
 
     XCTAssertNotNil(tid1);
     XCTAssertNotNil(tid2);
@@ -205,15 +205,15 @@
 - (void)testTIDUniqueness {
     NSMutableSet<NSString *> *tids = [NSMutableSet set];
     for (int i = 0; i < 100; i++) {
-        [tids addObject:[[TID tid] stringValue]];
+        [tids addObject:[[ATProtoTID tid] stringValue]];
     }
     XCTAssertEqual(tids.count, 100);
 }
 
 - (void)testTIDOrderingYieldsDescending {
-    NSString *tid1 = [[TID tid] stringValue];
+    NSString *tid1 = [[ATProtoTID tid] stringValue];
     [NSThread sleepForTimeInterval:0.01];
-    NSString *tid2 = [[TID tid] stringValue];
+    NSString *tid2 = [[ATProtoTID tid] stringValue];
 
     XCTAssertTrue([tid2 compare:tid1] == NSOrderedDescending);
 }

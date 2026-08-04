@@ -88,7 +88,7 @@
     NSError *error = nil;
 
     // 1. Create initial record (Genesis + 1)
-    NSDictionary *record1 = @{@"text": @"post 1", @"createdAt": [[TID tid] stringValue]};
+    NSDictionary *record1 = @{@"text": @"post 1", @"createdAt": [[ATProtoTID tid] stringValue]};
     BOOL success1 = [self.controller putRecord:@"app.bsky.feed.post"
                                           rkey:@"post1"
                                          value:record1
@@ -117,7 +117,7 @@
     XCTAssertNotNil(map1[@"sig"], @"Commit 1 should be signed");
     
     // 4. Create another record
-    NSDictionary *record2 = @{@"text": @"post 2", @"createdAt": [[TID tid] stringValue]};
+    NSDictionary *record2 = @{@"text": @"post 2", @"createdAt": [[ATProtoTID tid] stringValue]};
     BOOL success2 = [self.controller putRecord:@"app.bsky.feed.post"
                                           rkey:@"post2"
                                          value:record2
@@ -190,7 +190,7 @@
     }
 
     // Create record 1
-    NSDictionary *record1 = @{@"text": @"since test 1", @"createdAt": [[TID tid] stringValue]};
+    NSDictionary *record1 = @{@"text": @"since test 1", @"createdAt": [[ATProtoTID tid] stringValue]};
     BOOL success1 = [self.controller putRecord:@"app.bsky.feed.post"
                                           rkey:@"since1"
                                          value:record1
@@ -220,7 +220,7 @@
     XCTAssertNotNil(rev1, @"Message 1 should have rev");
 
     // Create record 2
-    NSDictionary *record2 = @{@"text": @"since test 2", @"createdAt": [[TID tid] stringValue]};
+    NSDictionary *record2 = @{@"text": @"since test 2", @"createdAt": [[ATProtoTID tid] stringValue]};
     BOOL success2 = [self.controller putRecord:@"app.bsky.feed.post"
                                           rkey:@"since2"
                                          value:record2

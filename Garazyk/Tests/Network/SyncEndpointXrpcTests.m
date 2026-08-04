@@ -213,7 +213,7 @@
 
     // --- Create records in two collections via the controller ---
     NSError *error = nil;
-    NSString *rkeyA = [TID tid].stringValue;
+    NSString *rkeyA = [ATProtoTID tid].stringValue;
     BOOL createdA = [self.controller putRecord:collectionA
                                           rkey:rkeyA
                                          value:@{@"text": @"index test post", @"createdAt": @"2025-01-01T00:00:00.000Z"}
@@ -223,7 +223,7 @@
     XCTAssertTrue(createdA, @"Failed to create record in %@: %@", collectionA, error.localizedDescription);
     XCTAssertNil(error);
 
-    NSString *rkeyB = [TID tid].stringValue;
+    NSString *rkeyB = [ATProtoTID tid].stringValue;
     BOOL createdB = [self.controller putRecord:collectionB
                                           rkey:rkeyB
                                          value:@{@"subject": self.userDid, @"createdAt": @"2025-01-01T00:00:00.000Z"}
@@ -344,7 +344,7 @@
 
     // --- Create a record for the setUp account so it appears in the index ---
     BOOL createdSelf = [self.controller putRecord:collection
-                                             rkey:[TID tid].stringValue
+                                             rkey:[ATProtoTID tid].stringValue
                                             value:@{@"text": @"pagination test self",
                                                     @"createdAt": @"2025-01-01T00:00:00.000Z"}
                                            forDid:self.userDid
@@ -373,7 +373,7 @@
 
         // Create a record so this DID appears in the collection_membership index
         BOOL created = [self.controller putRecord:collection
-                                             rkey:[TID tid].stringValue
+                                             rkey:[ATProtoTID tid].stringValue
                                             value:@{@"text": [NSString stringWithFormat:@"pagination test %@", handle],
                                                     @"createdAt": @"2025-01-01T00:00:00.000Z"}
                                            forDid:did
@@ -429,7 +429,7 @@
 
     // --- Create a record ---
     NSError *error = nil;
-    NSString *rkey = [TID tid].stringValue;
+    NSString *rkey = [ATProtoTID tid].stringValue;
     BOOL created = [self.controller putRecord:collection
                                          rkey:rkey
                                         value:@{@"text": @"prune-on-delete test", @"createdAt": @"2025-01-01T00:00:00.000Z"}
