@@ -27,7 +27,8 @@ now met**: `docs/module-boundary-baseline.txt` is empty and
 all ten modules.
 M7 is partially complete: dependency injection and most data-path work landed,
 but module sources still contain host-process exits and an installer
-`/var/db/kaszlak` fallback. M5 and M6 have not started.
+`/var/db/kaszlak` fallback. M5 has started (namespace gate landed, see
+below); M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -696,8 +697,33 @@ passed, and the admin-auth/CLI focus passed **70/70** with zero failures or
 skips. `git diff --check` passed.
 
 M0 (third-party consumption goal) is now answered yes under the bounded package
-contract in the verified-status section above. M5/M6 remain gated on the real
-completion of M4.
+contract in the verified-status section above. M4 is complete; M5 has started
+(see below).
+
+**M5.1/M5.2 namespace gate landed (2026-08-04).** M4's zero-baseline gate is
+met, so M5 (namespace the exported symbols) is the active milestone. Its first
+step is the enforceable gate that M5.3's rename batches will be measured
+against:
+- **Policy (M5.1):** project-owned Objective-C classes carry one of three
+  reserved prefixes — `ATProto` (protocol/domain primitives), `PDS`
+  (PDS-specific types), or `GZ` (Garazyk infrastructure).
+- **Gate (M5.2):** `scripts/check_namespace.sh` scans the ten archives for
+  defined `_OBJC_CLASS_$_` symbols, excludes system/vendored classes by
+  provenance (only project-compiled code is visible to nm on the archives),
+  classifies the rest by the reserved prefixes, and ratchets against
+  `docs/namespace-baseline.txt` (shrink-only, same discipline as the M1
+  boundary baseline). `--init` regenerates the baseline.
+- **Baseline:** the 2026-08-04 build inventories **515 total classes, of
+  which 283 are unprefixed** — matching the 283-class starting figure the
+  M5 scope named (the count has not drifted). The gate fails (exit 1) on a
+  newly introduced unprefixed class and passes when the class is removed,
+  verified by injecting a synthetic class into a test archive.
+- **CI:** wired into `.github/workflows/ci.yml` as "Check Symbol Namespace
+  (M5)" right after the link-time boundary check.
+
+Next M5 step: extend the gate to protocols, categories, and externally visible
+C symbols (the broader inventory M5.2 names), then begin M5.3 rename batches
+in dependency order.
 
 # Module Boundaries and Library Consumption
 
