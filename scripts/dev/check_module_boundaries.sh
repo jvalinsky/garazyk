@@ -114,7 +114,10 @@ allowed_links_for_module() {
     ATProtoServices) echo "ATProtoStorage ATProtoCore" ;;
     ATProtoSync) echo "ATProtoStorage ATProtoTransport ATProtoCore" ;;
     ATProtoXRPC) echo "ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoPLC ATProtoCore" ;;
-    ATProtoPLC) echo "ATProtoTransport ATProtoCore" ;;
+    # PLCPersistentStore owns the serialized SQLite/query-runner lifecycle;
+    # PLC -> Storage is the deliberate acyclic edge documented in workstream 08
+    # and exercised by plc_persistent_store_link_tests.
+    ATProtoPLC) echo "ATProtoStorage ATProtoTransport ATProtoCore" ;;
     ATProtoVideoService) echo "ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport" ;;
     ATProtoRuntime) echo "ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService" ;;
     *) echo "" ;;
