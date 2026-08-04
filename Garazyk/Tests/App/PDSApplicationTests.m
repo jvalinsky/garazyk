@@ -72,10 +72,75 @@
 
 - (void)testInitWithNilConfiguration {
     PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:nil];
-    
+
     XCTAssertNotNil(app);
     XCTAssertNotNil(app.dataDirectory);
     XCTAssertTrue([app isKindOfClass:[PDSApplication class]], @"Should create a valid app instance");
+}
+
+#pragma mark - Production Issuer Refusal Tests
+
+// PDSApplication used to call exit(1) directly from initializeInfrastructure
+// when these production safety checks failed (workstream 08 M7: a library
+// must not unilaterally terminate the host process). It now defers to
+// -startWithError:, which these tests exercise without killing the test
+// process.
+
+- (void)testStartFailsInProductionWithoutIssuer {
+    setenv("PDS_ENV", "production", 1);
+    unsetenv("PDS_ISSUER");
+    unsetenv("PDS_REQUIRE_ISSUER");
+
+    ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
+    PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config
+                                                            dataDirectory:self.tempDirectory];
+
+    NSError *error = nil;
+    BOOL started = [app startWithError:&error];
+    [app stop];
+    unsetenv("PDS_ENV");
+
+    XCTAssertFalse(started);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, PDSApplicationErrorDomain);
+    XCTAssertEqual(error.code, 1);
+}
+
+- (void)testStartFailsInProductionWithLocalPlaceholderIssuer {
+    setenv("PDS_ENV", "production", 1);
+    unsetenv("PDS_REQUIRE_ISSUER");
+
+    ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
+    config.issuer = @"https://pds.local";
+    PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config
+                                                            dataDirectory:self.tempDirectory];
+
+    NSError *error = nil;
+    BOOL started = [app startWithError:&error];
+    [app stop];
+    unsetenv("PDS_ENV");
+
+    XCTAssertFalse(started);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, PDSApplicationErrorDomain);
+    XCTAssertEqual(error.code, 2);
+}
+
+- (void)testStartSucceedsInProductionWithValidIssuer {
+    setenv("PDS_ENV", "production", 1);
+    unsetenv("PDS_REQUIRE_ISSUER");
+
+    ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
+    config.issuer = @"https://pds.example.com";
+    PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config
+                                                            dataDirectory:self.tempDirectory];
+
+    NSError *error = nil;
+    BOOL started = [app startWithError:&error];
+    [app stop];
+    unsetenv("PDS_ENV");
+
+    XCTAssertTrue(started, @"%@", error);
 }
 
 - (void)testDefaultPortValues {

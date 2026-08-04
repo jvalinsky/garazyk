@@ -18,6 +18,7 @@
 #import "Services/PDS/PDSRelayService.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
+#import <signal.h>
 
 @interface PDSCLIServeCommand : PDSBaseCommand
 @end
@@ -449,11 +450,15 @@
     printf("\nShutting down server...\n");
     [subscribeReposHandler stop];
     [httpServer stop];
-    // Give async operations 2 seconds to complete before forcing exit
+    // Give async operations 2 seconds to complete before forcing termination.
+    // Re-raise with the default disposition rather than calling exit()
+    // directly, matching GZServiceLifecycle's sigabrtHandler: the OS decides
+    // process termination here, not this library.
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC),
                    dispatch_get_main_queue(), ^{
-                     printf("Forced exit after timeout.\n");
-                     exit(0);
+                     printf("Forced shutdown after timeout.\n");
+                     signal(sig, SIG_DFL);
+                     raise(sig);
                    });
   }];
 
@@ -462,11 +467,15 @@
     printf("\nShutting down server...\n");
     [subscribeReposHandler stop];
     [httpServer stop];
-    // Give async operations 2 seconds to complete before forcing exit
+    // Give async operations 2 seconds to complete before forcing termination.
+    // Re-raise with the default disposition rather than calling exit()
+    // directly, matching GZServiceLifecycle's sigabrtHandler: the OS decides
+    // process termination here, not this library.
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC),
                    dispatch_get_main_queue(), ^{
-                     printf("Forced exit after timeout.\n");
-                     exit(0);
+                     printf("Forced shutdown after timeout.\n");
+                     signal(sig, SIG_DFL);
+                     raise(sig);
                    });
   }];
 
