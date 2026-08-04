@@ -462,11 +462,12 @@ remaining program does not depend on items 1-2.
     milestone — first step is the shrink-only namespace gate over the ~283
     unprefixed classes; M5.3's first rename batch (internal migration
     classes, the low-risk pilot) is complete and batch 2 (Core primitives)
-    is done except its four largest classes (21 of ~25 classes renamed),
-    ratcheting the namespace baseline 283 → 253 → 249 → 238 → 234 → 232 —
-    the remaining batch-2 classes (`CID` with 265 consumers, `JWT` with 136,
-    `JWTMinter` with 80, `Secp256k1` with 53, each needing its own reviewed
-    session) and batches 3-6 (Storage/Transport, PLC/Sync/Services/MediaCore,
+    is done except its three largest classes (22 of ~25 classes renamed),
+    ratcheting the namespace baseline
+    283 → 253 → 249 → 238 → 234 → 232 → 231 — the remaining batch-2 classes
+    (`CID` with 265 consumers, `JWT` with 136, `JWTMinter` with 80, each
+    needing its own reviewed session) and batches 3-6
+    (Storage/Transport, PLC/Sync/Services/MediaCore,
     XRPC/VideoService,
     Runtime) remain open.
     **M7 is now
