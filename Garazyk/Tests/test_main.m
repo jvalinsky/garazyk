@@ -1203,6 +1203,7 @@ int main(int argc, char *argv[]) {
       @"DASLConformanceTests",
       @"ATProtoBDASLVerifierTests",
       @"ATProtoMASLDocumentTests",
+      @"ATProtoPFPTests",
       @"ATProtoRASLURLTests",
       @"ATProtoRASLClientTests",
       @"PDSRASLResolverTests",

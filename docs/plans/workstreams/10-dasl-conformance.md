@@ -159,16 +159,22 @@ metadata integration contract is selected.
   this bounded slice does not invent a new CAR metadata transport or web runtime.
 - Rollback: additive document type and test registration; no existing CAR consumer depends on MASL fields being present.
 
-**Phase 8 — PFP.** Identifier type (`p` prefix, algo byte, length, inline hash or CID) plus the
-`{"__pfp": "p…"}` JSON pseudo-type. ADR 0013 (claim-type rejection at JSON boundaries) governs
-adding a new pseudo-type — must be read before implementation. Ships identifier, storage, and
-comparison plumbing for Ozone moderation; PDQ / TMK+PDQF perceptual hashers are separate work (none
-exists in-tree) — this phase only implements the identifier format the spec defines.
+**Phase 8 — PFP — PARTIAL (strict identifier format).** `Core/ATProtoPFP` implements the
+registered PDQ (`0x01`, 32-byte inline hash) and TMK+PDQF (`0x02`, 36-byte strict base-DASL CID)
+forms. It enforces the lowercase `p` prefix, lowercase RFC4648 base32 with zero trailing padding
+bits, canonical unsigned varints, exact algorithm-specific lengths, no trailing bytes, and strict
+CID validation. It also exposes the exact `{"__pfp": "p…"}` JSON pseudo-type boundary. No PDQ or
+TMK+PDQF producer, perceptual comparison metric, or Ozone storage integration is invented here.
 
-- Owner boundary: `Garazyk/Sources/Core` (identifier type), Ozone moderation storage/comparison
-  call sites.
-- Gate: identifier round-trip tests, JSON pseudo-type boundary rejection test per ADR 0013.
-- Rollback: additive identifier type; no perceptual-hash producer exists yet to depend on it.
+- Owner boundary: `Garazyk/Sources/Core` for the immutable identifier and JSON boundary; future
+  comparison/storage integration belongs to Ozone moderation only after a producer/metric contract
+  is selected.
+- Evidence: `ATProtoPFPTests` covers PDQ and TMK+PDQF byte/string round-trips, exact pseudo-type
+  parsing, unknown algorithms, length/truncation/trailing-data failures, non-canonical varints,
+  strict CID rejection, and lowercase/padding base32 rejection. Registered in `Tests/test_main.m`.
+- Explicit remainder: no perceptual-hash producer, similarity comparator, or moderation database
+  column is wired by this bounded slice.
+- Rollback: additive identifier type and test registration; no existing moderation or media caller depends on PFP.
 
 **Phase 9 — MUXL.** Deterministic ISO-BMFF: `[uuid-muxl][moof][mdat]…` fragments with a DRISL
 catalog in the `uuid` atom, plus fMP4 and flat-MP4 presentation synthesis. Lands in
