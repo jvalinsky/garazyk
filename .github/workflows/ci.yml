@@ -93,6 +93,10 @@ jobs:
         run: |
           ./scripts/check-recursive-setters.sh
 
+      - name: Check No Host-Process exit()/abort() (M7)
+        run: |
+          ./scripts/check_no_host_process_exit.sh
+
       - name: Check Module Boundaries
         run: |
           ./scripts/dev/check_module_boundaries.sh .
