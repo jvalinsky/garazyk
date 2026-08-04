@@ -30,6 +30,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
+ * @abstract Error domain for fatal PDSApplication configuration failures.
+ */
+extern NSString * const PDSApplicationErrorDomain;
+
+/**
  * PDSApplication is the root object of the PDS server. It initializes and manages
  * the lifecycle of all services.
  */

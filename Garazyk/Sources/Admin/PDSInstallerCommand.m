@@ -449,12 +449,12 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
         logPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Logs/kaszlak/agent.log"];
         NSFileManager *fm = [NSFileManager defaultManager];
         if (![fm fileExistsAtPath:logPath]) {
-            if (context.dataDir) {
-                ATProtoDataPaths *dataPaths = [ATProtoDataPaths pathsForBaseDirectory:context.dataDir];
-                logPath = [dataPaths.logDirectory stringByAppendingPathComponent:@"daemon.log"];
-            } else {
-                logPath = @"/var/db/kaszlak/log/daemon.log";
-            }
+            // Matches this command's own default data directory (see the
+            // purge and status actions above) rather than an unrelated
+            // hardcoded system path.
+            NSString *fallbackDataDir = [(context.dataDir ?: @"~/.config/kaszlak") stringByExpandingTildeInPath];
+            ATProtoDataPaths *dataPaths = [ATProtoDataPaths pathsForBaseDirectory:fallbackDataDir];
+            logPath = [dataPaths.logDirectory stringByAppendingPathComponent:@"daemon.log"];
         }
 
         if ([fm fileExistsAtPath:logPath]) {
