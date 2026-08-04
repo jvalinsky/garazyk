@@ -50,7 +50,7 @@
     "exclude": ["packages/gruszka/lexicons.ts"]
   },
   "tasks": {
-    "check": "deno check packages/*/mod.ts",
+    "check": "deno check packages/*/mod.ts packages/**/*_test.ts packages/**/*.test.ts",
     "lint": "deno lint packages/ --ignore=packages/gruszka/lexicons.ts",
     "fmt": "deno fmt packages/",
     "test": "deno run -A packages/hamownia/cli.ts test",
