@@ -269,7 +269,7 @@
     XCTAssertNil(error);
     XCTAssertEqual(rows.count, 1U);
     XCTAssertGreaterThan([rows[0][@"raw_envelope"] length], 0U);
-    XCTAssertNotEqual(rows[0][@"indexed_at"], [NSNull null]);
+    XCTAssertFalse([rows[0][@"indexed_at"] isEqual:[NSNull null]]);
     XCTAssertNil(rows[0][@"terminal_error"]);
     XCTAssertEqual([rows[0][@"attempts"] integerValue], 1);
 }

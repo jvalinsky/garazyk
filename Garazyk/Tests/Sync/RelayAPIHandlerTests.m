@@ -49,7 +49,7 @@
     RelayAPIHandler *handler1 = [RelayAPIHandler sharedHandler];
     RelayAPIHandler *handler2 = [RelayAPIHandler sharedHandler];
     
-    XCTAssertEqual(handler1, handler2, @"Shared handler should return same instance");
+    XCTAssertTrue(handler1 == handler2, @"Shared handler should return same instance");
 }
 
 - (void)testCanHandleRequestRelayMetrics {

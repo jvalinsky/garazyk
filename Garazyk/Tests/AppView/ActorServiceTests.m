@@ -64,7 +64,7 @@
 
 - (void)testServiceInitializationConfiguresDatabase {
     XCTAssertNotNil(self.service);
-    XCTAssertEqual(self.service.database, self.database);
+    XCTAssertTrue(self.service.database == self.database);
 }
 
 - (void)testGetProfileForActorMissingDID {

@@ -64,7 +64,7 @@
 
 - (void)testBlobStorageInitialization {
     XCTAssertNotNil(self.blobStorage, @"BlobStorage should be initialized");
-    XCTAssertEqual(self.blobStorage.databasePool, self.databasePool, @"Database pool should be set");
+    XCTAssertTrue(self.blobStorage.databasePool == self.databasePool, @"Database pool should be set");
     XCTAssertNotNil(self.blobStorage.provider, @"Provider should be set");
 }
 
