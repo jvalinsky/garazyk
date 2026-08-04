@@ -35,13 +35,22 @@ list, and consequences: [ADR 0032](../../adr/0032-dasl-conformance-profiles.md).
 
 ## Status (2026-08-03)
 
-Phases 1–5 are implemented as a bounded base-DASL slice. Phase 0 (this doc + ADR 0032) landed
-alongside the initial implementation, deliberately after implementation so it records what was
-built rather than what was predicted. Phase 5 now has strict URL parsing, a registered GET/HEAD
-well-known route, bounded local block/blob resolution, mandatory SHA-256 CID verification, and an
-SSRF-safe parallel client. BLAKE3/Big DASL is rejected at the RASL boundary until Phase 6 supplies
-its streaming verifier. Full regression and cross-platform (GNUstep/Linux) UTF-8 verification
-remain pending.
+Phases 1–11 have bounded, independently gated slices; the macOS portion of the Phase 0 close-out is verified.
+Phase 0 (this doc + ADR 0032) landed alongside the initial implementation, deliberately after
+implementation so it records what was built rather than what was predicted. Phase 5 has strict URL
+parsing, a registered GET/HEAD well-known route, bounded local block/blob resolution, mandatory
+SHA-256 CID verification, and an SSRF-safe parallel client. Phase 6 has the reusable BLAKE3
+streaming verifier and range mapper, but no invented HTTP sidecar transport. Phases 7–11 are
+bounded document, identifier, media, COSE, and data-protocol/policy slices; their explicit
+production integration remainders remain open.
+
+Phase 0 evidence: `build/tests/AllTests --gated=run` passes 4,955 tests with 0 failures;
+`scripts/check_module_boundaries.sh build` reports no new violations with 26 baseline
+violations remaining; `scripts/dev/check_module_boundaries.sh .` and
+`scripts/check-recursive-setters.sh` pass. The source-boundary checker now permits the
+intentional acyclic PLC→Storage edge documented in workstream 08 M4.2 (`06c0c8f5`). GNUstep
+full-suite verification and the previously documented cross-platform UTF-8 follow-up remain
+separate evidence gaps.
 
 ## DONE — Phase 1: DRISL conformance
 
@@ -87,12 +96,11 @@ drops files fails loudly). Registered in `Garazyk/Tests/test_main.m`.
 **Result:** `./build/tests/AllTests --filter 'DASLConformanceTests' --gated=run` → 16 tests,
 0 failures.
 
-## Outstanding — Phase 0 close-out
+## Outstanding — cross-platform DASL evidence
 
-1. Full regression run (`ctest --test-dir build --output-on-failure`), compared against the
-   15-known-unrelated-failure baseline (DPoP-nonce, X-Forwarded-For) from workstream 01 §S19.
-2. UTF-8 rejection (`_decodeTextString:` on `62c328`) verified on GNUstep/Linux, not just macOS.
-3. `./scripts/dev/check_module_boundaries.sh .` and `./scripts/check-recursive-setters.sh`.
+1. Verify UTF-8 rejection (`_decodeTextString:` on `62c328`) on GNUstep/Linux, not just macOS.
+2. Complete the GNUstep/Linux full-suite run; the existing XCTest object-pointer boxing blocker
+   in `PDSAdminServiceTests.m` and `PDSBlobAuditHandlerTests.m` must be repaired first.
 
 ## Phases 5–11 — the remaining specs
 
