@@ -96,7 +96,7 @@
 }
 
 - (void)testStateReplayerUpdateHandle {
-    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
     
     NSDictionary *createData = @{
@@ -155,7 +155,7 @@
 }
 
 - (void)testStateReplayerMultipleHandleUpdates {
-    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
     
     NSDictionary *createData = @{
@@ -318,7 +318,7 @@
 }
 
 - (void)testSignatureVerificationTestVector {
-    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     XCTAssertNotNil(keyPair, @"Key pair should be generated");
     
     NSData *message = [@"test message" dataUsingEncoding:NSUTF8StringEncoding];
@@ -327,17 +327,17 @@
     XCTAssertNotNil(signature, @"Signature should be created");
     XCTAssertEqual(signature.length, 64, @"Signature should be 64 bytes (R || S)");
     
-    BOOL verified = [[Secp256k1 shared] verifySignature:signature forHash:hash withPublicKey:keyPair.publicKey error:nil];
+    BOOL verified = [[ATProtoSecp256k1 shared] verifySignature:signature forHash:hash withPublicKey:keyPair.publicKey error:nil];
     XCTAssertTrue(verified, @"Signature should verify");
     
     NSData *wrongMessage = [@"wrong message" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *wrongHash = [ATProtoCryptoUtils sha256:wrongMessage];
-    BOOL wrongVerified = [[Secp256k1 shared] verifySignature:signature forHash:wrongHash withPublicKey:keyPair.publicKey error:nil];
+    BOOL wrongVerified = [[ATProtoSecp256k1 shared] verifySignature:signature forHash:wrongHash withPublicKey:keyPair.publicKey error:nil];
     XCTAssertFalse(wrongVerified, @"Wrong message should not verify");
 }
 
 - (void)testOperationSignatureRoundTrip {
-    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     XCTAssertNotNil(keyPair);
     
     NSString *didKey = [keyPair didKeyString];
@@ -358,7 +358,7 @@
     NSData *signature = [keyPair signHash:hash error:&error];
     XCTAssertNil(error);
     
-    BOOL verified = [[Secp256k1 shared] verifySignature:signature forHash:hash withPublicKey:keyPair.publicKey error:&error];
+    BOOL verified = [[ATProtoSecp256k1 shared] verifySignature:signature forHash:hash withPublicKey:keyPair.publicKey error:&error];
     XCTAssertTrue(verified, @"Operation signature should verify");
 }
 

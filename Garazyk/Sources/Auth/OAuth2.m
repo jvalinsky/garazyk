@@ -524,7 +524,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         BOOL hasProvisionedSigningKey = NO;
         if (OAuth2ShouldUseEphemeralJWTKeyForTests()) {
             NSError *fallbackError = nil;
-            ATProtoSecp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+            ATProtoSecp256k1KeyPair *fallbackKeyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:&fallbackError];
             if (fallbackKeyPair) {
                 _keyManager = nil;
                 _jwtMinter.keyManager = nil;
@@ -549,7 +549,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                                     [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
                 if (!isProduction) {
                     NSError *fallbackError = nil;
-                    ATProtoSecp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+                    ATProtoSecp256k1KeyPair *fallbackKeyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:&fallbackError];
                     if (fallbackKeyPair) {
                         _keyManager = nil;
                         _jwtMinter.keyManager = nil;

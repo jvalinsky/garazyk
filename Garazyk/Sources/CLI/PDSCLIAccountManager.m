@@ -226,7 +226,7 @@
     }
     
     // Generate Identity Keys
-    Secp256k1 *signer = [Secp256k1 shared];
+    ATProtoSecp256k1 *signer = [ATProtoSecp256k1 shared];
     NSError *keyError = nil;
     ATProtoSecp256k1KeyPair *keyPair = [signer generateKeyPairWithError:&keyError];
 
@@ -410,7 +410,7 @@
         }
     } else {
         // Fallback to the user's rotation key
-        signature = [[Secp256k1 shared] signHash:sha256Hash withPrivateKey:rotationKeyPair.privateKey error:&sigError];
+        signature = [[ATProtoSecp256k1 shared] signHash:sha256Hash withPrivateKey:rotationKeyPair.privateKey error:&sigError];
     }
     
     if (!signature) {
@@ -702,7 +702,7 @@
     
     NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:newOpData error:&error];
     NSData *sha256 = [ATProtoCryptoUtils sha256:cborData];
-    NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:privKeyData error:&error];
+    NSData *signature = [[ATProtoSecp256k1 shared] signHash:sha256 withPrivateKey:privKeyData error:&error];
     
     if (!signature) {
         if (context.verbose) GZ_LOG_ERROR(@"Failed to sign new PLC op: %@", error.localizedDescription);

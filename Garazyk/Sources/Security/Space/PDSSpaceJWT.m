@@ -197,7 +197,7 @@ static const NSTimeInterval PDSSpaceClockSkew = 30.0;
   NSData *inputData = [input dataUsingEncoding:NSUTF8StringEncoding];
   unsigned char digest[CC_SHA256_DIGEST_LENGTH];
   CC_SHA256(inputData.bytes, (CC_LONG)inputData.length, digest);
-  if (![[Secp256k1 shared] verifySignature:signature
+  if (![[ATProtoSecp256k1 shared] verifySignature:signature
                                    forHash:[NSData dataWithBytes:digest length:sizeof(digest)]
                              withPublicKey:publicKey
                                     error:nil]) {

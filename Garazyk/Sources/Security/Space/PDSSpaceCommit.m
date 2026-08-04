@@ -113,7 +113,7 @@ static NSString *const PDSSpaceCommitDomain = @"atproto-space-v1";
   if (!context) return NO;
   unsigned char digest[CC_SHA256_DIGEST_LENGTH];
   CC_SHA256(context.bytes, (CC_LONG)context.length, digest);
-  if (![[Secp256k1 shared] verifySignature:self.signature
+  if (![[ATProtoSecp256k1 shared] verifySignature:self.signature
                                    forHash:[NSData dataWithBytes:digest length:sizeof(digest)]
                              withPublicKey:publicKey
                                     error:nil]) {

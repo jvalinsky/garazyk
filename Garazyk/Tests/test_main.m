@@ -372,7 +372,7 @@ static NSDictionary<NSString *, NSString *> *PDSBuildCategoryMap(void) {
                            @"ATProtoDataPaths", @"PDSAccountManager",
                            @"ATProtoServiceContainer", @"GZProviderRegistry"],
       @"Auth":           @[@"Crypto", @"JWT", @"OAuth", @"TOTP",
-                           @"Secp256k1", @"PDSNonce", @"YubiKey",
+                           @"ATProtoSecp256k1", @"PDSNonce", @"YubiKey",
                            @"WebAuthn", @"PDSOpenSSLKeyManager", @"PDSAppleKeyPair",
                            @"Session", @"PDSReplayCache", @"Refresh",
                            @"AuthCrypto", @"Base32Utils"],

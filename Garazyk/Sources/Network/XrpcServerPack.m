@@ -286,7 +286,7 @@ BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     }
 
     NSError *keyError = nil;
-    NSData *publicKey = [[Secp256k1 shared] normalizedPublicKey:signingKeyBytes error:&keyError];
+    NSData *publicKey = [[ATProtoSecp256k1 shared] normalizedPublicKey:signingKeyBytes error:&keyError];
     if (!publicKey) {
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Unable to normalize signing key"}];

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file Secp256k1.h
+ @file ATProtoSecp256k1.h
 
- @abstract Secp256k1 elliptic curve cryptography for ATProto signing.
+ @abstract ATProtoSecp256k1 elliptic curve cryptography for ATProto signing.
 
  @discussion Provides key generation, signing, and verification using the
  secp256k1 curve. Used for repository commit signatures and DID key operations.
@@ -55,13 +55,13 @@ extern NSString * const Secp256k1ErrorDomain;
 @end
 
 /*!
- @class Secp256k1
+ @class ATProtoSecp256k1
 
  @abstract Singleton interface for secp256k1 operations.
 
  @discussion Provides a shared context for key generation and cryptographic operations.
  */
-@interface Secp256k1 : NSObject
+@interface ATProtoSecp256k1 : NSObject
 
 /*! Returns the shared secp256k1 instance. */
 + (instancetype)shared;
