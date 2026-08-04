@@ -3,6 +3,10 @@
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
 
+#ifndef CF_RETURNS_RETAINED
+#define CF_RETURNS_RETAINED
+#endif
+
 NS_ASSUME_NONNULL_BEGIN
 
 static inline NSData *_Nullable PDSTestDataFromHexString(NSString *hex, NSUInteger expectedLength) {

@@ -169,8 +169,11 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Human-readable description used in timeout failure messages. */
 @property (nonatomic, readonly, copy) NSString *expectationDescription;
 
-/*! YES once -fulfill has been called. */
+/*! YES once the fulfillment target has been reached. */
 @property (atomic, assign, readonly, getter=isFulfilled) BOOL fulfilled;
+
+/*! Number of fulfill calls required before the expectation is complete. */
+@property (atomic, assign) NSUInteger expectedFulfillmentCount;
 
 /*! Create an expectation with a description. */
 - (instancetype)initWithDescription:(NSString *)description;
@@ -257,7 +260,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Assert objects are not equal via isEqual:. */
 #define XCTAssertNotEqualObjects(a, b, ...) \
-    do { if ([(a) isEqual:(b)]) { _PDSXCTFail(@"XCTAssertNotEqualObjects failed: %@ == %@", (a), (b)); } } while(0)
+    do { if (((a) == nil && (b) == nil) || ((a) != nil && [(a) isEqual:(b)])) { _PDSXCTFail(@"XCTAssertNotEqualObjects failed: %@ == %@", (a), (b)); } } while(0)
 
 /*! Assert object is not nil. */
 #define XCTAssertNotNil(obj, ...) \

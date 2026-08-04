@@ -36,7 +36,7 @@
 - (void)testSingletonTest {
     RateLimiter *singleton1 = [RateLimiter sharedLimiter];
     RateLimiter *singleton2 = [RateLimiter sharedLimiter];
-    XCTAssertEqual(singleton1, singleton2, @"Shared limiter should be the same instance");
+    XCTAssertTrue(singleton1 == singleton2, @"Shared limiter should be the same instance");
 }
 
 - (void)testDefaultLimitsTest {

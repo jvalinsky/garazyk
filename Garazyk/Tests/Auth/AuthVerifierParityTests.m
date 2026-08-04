@@ -17,6 +17,20 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
 
+static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) {
+#if defined(__APPLE__) && !defined(GNUSTEP)
+    return [AuthCryptoJWK publicJWKFromSecKey:key error:error];
+#else
+    (void)key;
+    if (error) {
+        *error = [NSError errorWithDomain:@"AuthVerifierParityTests"
+                                     code:1
+                                 userInfo:@{NSLocalizedDescriptionKey: @"SecKey JWK export is unavailable on GNUstep"}];
+    }
+    return nil;
+#endif
+}
+
 @interface AuthParityAdminController : NSObject
 @property (nonatomic, assign) BOOL takedownActive;
 @property (nonatomic, assign) BOOL admin;
@@ -316,8 +330,12 @@
     NSString *athValue = [AuthCryptoBase64URL encode:tokenHash];
 
     // Build the DPoP proof manually with ath in the payload
-    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:key error:&error];
-    XCTAssertNotNil(jwk, @"Failed to get public JWK: %@", error);
+    NSDictionary *jwk = PDSTestPublicJWKFromSecKey(key, &error);
+    if (!jwk) {
+        XCTSkip(@"SecKey JWK export unavailable: %@", error);
+        CFRelease(key);
+        return;
+    }
     NSDictionary *headerDict = @{@"typ": @"dpop+jwt", @"alg": @"ES256", @"jwk": jwk};
     NSString *canonicalHTU = [AuthCryptoDPoP canonicalHTUFromURL:[NSURL URLWithString:url]];
     NSDictionary *payloadDict = @{
@@ -396,11 +414,15 @@
 // path — phase-29 slice 4.
 
 - (void)testRemoteIssuerRejectsRefreshTokenAtAccessTokenBoundary {
+#if defined(GNUSTEP)
+    XCTSkip(@"Remote SecKey JWK parity requires the Apple Security API");
+    return;
+#endif
     NSError *error = nil;
     SecKeyRef privateKey = PDSTestCreateFixedP256PrivateKey(&error);
     XCTAssertNotNil((__bridge id)privateKey, @"Failed to create fixed P-256 key: %@", error);
     SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
-    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:publicKey error:&error];
+    NSDictionary *jwk = PDSTestPublicJWKFromSecKey(publicKey, &error);
     XCTAssertNotNil(jwk, @"Failed to derive public JWK: %@", error);
 
     NSString *remoteIssuer = @"https://other-pds.example.com";
@@ -436,11 +458,15 @@
 }
 
 - (void)testRemoteIssuerRejectsDisallowedAlgorithm {
+#if defined(GNUSTEP)
+    XCTSkip(@"Remote SecKey JWK parity requires the Apple Security API");
+    return;
+#endif
     NSError *error = nil;
     SecKeyRef privateKey = PDSTestCreateFixedP256PrivateKey(&error);
     XCTAssertNotNil((__bridge id)privateKey, @"Failed to create fixed P-256 key: %@", error);
     SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
-    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:publicKey error:&error];
+    NSDictionary *jwk = PDSTestPublicJWKFromSecKey(publicKey, &error);
     XCTAssertNotNil(jwk, @"Failed to derive public JWK: %@", error);
 
     NSString *remoteIssuer = @"https://other-pds.example.com";

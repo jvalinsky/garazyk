@@ -89,7 +89,7 @@
 
     XCTAssertNil(jwt, @"Malformed JWT should not parse");
     XCTAssertNotNil(error, @"Error should be returned for malformed JWT");
-    XCTAssertEqual(error.domain, JWTErrorDomain, @"Error should be in JWT domain");
+    XCTAssertEqualObjects(error.domain, JWTErrorDomain, @"Error should be in JWT domain");
 }
 
 - (void)testJWTWithMissingParts {
@@ -367,7 +367,7 @@
     JWT *jwt = [JWT jwtWithToken:token error:&error];
     XCTAssertNil(jwt, @"Header claim '%@' with wrong type should be rejected, not crash", claim);
     XCTAssertNotNil(error, @"Rejection should set an error for claim '%@'", claim);
-    XCTAssertEqual(error.domain, JWTErrorDomain);
+    XCTAssertEqualObjects(error.domain, JWTErrorDomain);
 }
 
 - (void)assertTokenRejectedWithPayload:(NSDictionary *)payloadDict claim:(NSString *)claim {
@@ -377,7 +377,7 @@
     JWT *jwt = [JWT jwtWithToken:token error:&error];
     XCTAssertNil(jwt, @"Payload claim '%@' with wrong type should be rejected, not crash", claim);
     XCTAssertNotNil(error, @"Rejection should set an error for claim '%@'", claim);
-    XCTAssertEqual(error.domain, JWTErrorDomain);
+    XCTAssertEqualObjects(error.domain, JWTErrorDomain);
 }
 
 - (void)testHeaderClaimTypeMismatchesAreRejected {

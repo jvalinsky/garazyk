@@ -302,6 +302,7 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
 @interface XCTestExpectation ()
 @property (nonatomic, readwrite, copy) NSString *expectationDescription;
 @property (atomic, assign, readwrite, getter=isFulfilled) BOOL fulfilled;
+@property (atomic, assign) NSUInteger fulfillmentCount;
 @end
 
 @implementation XCTestExpectation
@@ -310,13 +311,20 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
     self = [super init];
     if (self) {
         _expectationDescription = [description copy] ?: @"";
+        _expectedFulfillmentCount = 1;
+        _fulfillmentCount = 0;
         _fulfilled = NO;
     }
     return self;
 }
 
 - (void)fulfill {
-    self.fulfilled = YES;
+    @synchronized (self) {
+        if (self.fulfillmentCount < self.expectedFulfillmentCount) {
+            self.fulfillmentCount += 1;
+        }
+        self.fulfilled = self.fulfillmentCount >= MAX(self.expectedFulfillmentCount, 1U);
+    }
 }
 
 @end
