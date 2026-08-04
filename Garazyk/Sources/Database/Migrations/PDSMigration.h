@@ -33,10 +33,10 @@ NS_ASSUME_NONNULL_BEGIN
 
  Example implementation:
  @code
- @interface V1InitialSchema : NSObject <PDSMigration>
+ @interface PDSV1InitialSchema : NSObject <PDSMigration>
  @end
 
- @implementation V1InitialSchema
+ @implementation PDSV1InitialSchema
  - (NSInteger)version { return 1; }
  - (NSString *)name { return @"initial_schema"; }
  - (BOOL)up:(sqlite3 *)db error:(NSError **)error { ... }

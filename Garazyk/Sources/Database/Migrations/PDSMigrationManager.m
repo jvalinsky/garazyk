@@ -21,10 +21,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V2 Ozone Schema Migration
 
-@interface V2OzoneSchema : NSObject <PDSMigration>
+@interface PDSV2OzoneSchema : NSObject <PDSMigration>
 @end
 
-@implementation V2OzoneSchema
+@implementation PDSV2OzoneSchema
 
 - (NSInteger)version {
     return 2;
@@ -81,10 +81,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V3 Diagnostics Schema Migration
 
-@interface V3DiagnosticsSchema : NSObject <PDSMigration>
+@interface PDSV3DiagnosticsSchema : NSObject <PDSMigration>
 @end
 
-@implementation V3DiagnosticsSchema
+@implementation PDSV3DiagnosticsSchema
 
 - (NSInteger)version {
     return 3;
@@ -139,10 +139,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V4 Ozone Scheduled Actions Schema Migration
 
-@interface V4OzoneScheduledActionsSchema : NSObject <PDSMigration>
+@interface PDSV4OzoneScheduledActionsSchema : NSObject <PDSMigration>
 @end
 
-@implementation V4OzoneScheduledActionsSchema
+@implementation PDSV4OzoneScheduledActionsSchema
 
 - (NSInteger)version {
     return 4;
@@ -185,10 +185,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V5 Hosting Events Schema Migration
 
-@interface V5HostingEventsSchema : NSObject <PDSMigration>
+@interface PDSV5HostingEventsSchema : NSObject <PDSMigration>
 @end
 
-@implementation V5HostingEventsSchema
+@implementation PDSV5HostingEventsSchema
 
 - (NSInteger)version {
     return 5;
@@ -232,10 +232,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V6 Drafts Schema Migration (Actor Store)
 
-@interface V6DraftsSchema : NSObject <PDSMigration>
+@interface PDSV6DraftsSchema : NSObject <PDSMigration>
 @end
 
-@implementation V6DraftsSchema
+@implementation PDSV6DraftsSchema
 
 - (NSInteger)version {
     return 6;
@@ -283,10 +283,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V7 Search FTS5 Schema Migration (Service DB)
 
-@interface V7SearchFTS5Schema : NSObject <PDSMigration>
+@interface PDSV7SearchFTS5Schema : NSObject <PDSMigration>
 @end
 
-@implementation V7SearchFTS5Schema
+@implementation PDSV7SearchFTS5Schema
 
 - (NSInteger)version {
     return 7;
@@ -371,10 +371,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V8 Ozone Subjects & Safelinks Schema
 
-@interface V8OzoneSubjectsSchema : NSObject <PDSMigration>
+@interface PDSV8OzoneSubjectsSchema : NSObject <PDSMigration>
 @end
 
-@implementation V8OzoneSubjectsSchema
+@implementation PDSV8OzoneSubjectsSchema
 
 - (NSInteger)version {
     return 8;
@@ -421,12 +421,12 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V1 Initial Schema Migration
 
-@interface V1InitialSchema : NSObject <PDSMigration>
+@interface PDSV1InitialSchema : NSObject <PDSMigration>
 @property (nonatomic, copy) NSString *schemaType;  // "service" or "actor"
 - (instancetype)initWithSchemaType:(NSString *)schemaType;
 @end
 
-@implementation V1InitialSchema
+@implementation PDSV1InitialSchema
 
 - (instancetype)initWithSchemaType:(NSString *)schemaType {
     if ((self = [super init])) {
@@ -510,10 +510,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V4 Dedicated Space Signing Key Schema (Actor Store)
 
-@interface V4DedicatedSpaceSigningKeySchema : NSObject <PDSMigration>
+@interface PDSV4DedicatedSpaceSigningKeySchema : NSObject <PDSMigration>
 @end
 
-@implementation V4DedicatedSpaceSigningKeySchema
+@implementation PDSV4DedicatedSpaceSigningKeySchema
 
 - (NSInteger)version { return 4; }
 
@@ -557,10 +557,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V5 Records Revision Covering Index (Actor Store)
 
-@interface V5RecordsRevisionCoveringIndex : NSObject <PDSMigration>
+@interface PDSV5RecordsRevisionCoveringIndex : NSObject <PDSMigration>
 @end
 
-@implementation V5RecordsRevisionCoveringIndex
+@implementation PDSV5RecordsRevisionCoveringIndex
 
 - (NSInteger)version { return 5; }
 - (NSString *)name { return @"records_revision_covering_index"; }
@@ -595,10 +595,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V6 Blob Lifecycle Schema Migration (Actor Store)
 
-@interface V6BlobLifecycleSchema : NSObject <PDSMigration>
+@interface PDSV6BlobLifecycleSchema : NSObject <PDSMigration>
 @end
 
-@implementation V6BlobLifecycleSchema
+@implementation PDSV6BlobLifecycleSchema
 
 - (NSInteger)version { return 6; }
 - (NSString *)name { return @"blob_lifecycle_schema"; }
@@ -912,10 +912,10 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 
 #pragma mark - V7 Account Usage Triggers + Backfill
 
-@interface V7AccountUsageTriggers : NSObject <PDSMigration>
+@interface PDSV7AccountUsageTriggers : NSObject <PDSMigration>
 @end
 
-@implementation V7AccountUsageTriggers
+@implementation PDSV7AccountUsageTriggers
 
 - (NSInteger)version { return 7; }
 - (NSString *)name { return @"account_usage_triggers"; }
@@ -1103,10 +1103,10 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 
 #pragma mark - V8 Block Usage Attribution (Actor Store)
 
-@interface V8BlockUsageAttribution : NSObject <PDSMigration>
+@interface PDSV8BlockUsageAttribution : NSObject <PDSMigration>
 @end
 
-@implementation V8BlockUsageAttribution
+@implementation PDSV8BlockUsageAttribution
 
 - (NSInteger)version { return 8; }
 - (NSString *)name { return @"block_usage_attribution"; }
@@ -1251,10 +1251,10 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 
 #pragma mark - V18 Refresh Token Grace Period Column Migration
 
-@interface V18RefreshTokenFamilyColumns : NSObject <PDSMigration>
+@interface PDSV18RefreshTokenFamilyColumns : NSObject <PDSMigration>
 @end
 
-@implementation V18RefreshTokenFamilyColumns
+@implementation PDSV18RefreshTokenFamilyColumns
 
 - (NSInteger)version {
     return 18;
@@ -2272,10 +2272,10 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 
 #pragma mark - V3 Record Tombstones Without Rowid (Actor Store)
 
-@interface V3RecordTombstonesWithoutRowid : NSObject <PDSMigration>
+@interface PDSV3RecordTombstonesWithoutRowid : NSObject <PDSMigration>
 @end
 
-@implementation V3RecordTombstonesWithoutRowid
+@implementation PDSV3RecordTombstonesWithoutRowid
 
 - (NSInteger)version { return 3; }
 
@@ -2367,10 +2367,10 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 
 #pragma mark - V13 Collection Membership Index
 
-@interface V13CollectionMembershipSchema : NSObject <PDSMigration>
+@interface PDSV13CollectionMembershipSchema : NSObject <PDSMigration>
 @end
 
-@implementation V13CollectionMembershipSchema
+@implementation PDSV13CollectionMembershipSchema
 
 - (NSInteger)version { return 13; }
 
@@ -2453,10 +2453,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - V12 Legacy Chat Tables Without Rowid
 
-@interface V12LegacyChatWithoutRowid : NSObject <PDSMigration>
+@interface PDSV12LegacyChatWithoutRowid : NSObject <PDSMigration>
 @end
 
-@implementation V12LegacyChatWithoutRowid
+@implementation PDSV12LegacyChatWithoutRowid
 
 - (NSInteger)version { return 12; }
 - (NSString *)name { return @"legacy_chat_without_rowid"; }
@@ -2553,10 +2553,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - V15 Collection Membership Without Rowid
 
-@interface V15CollectionMembershipWithoutRowid : NSObject <PDSMigration>
+@interface PDSV15CollectionMembershipWithoutRowid : NSObject <PDSMigration>
 @end
 
-@implementation V15CollectionMembershipWithoutRowid
+@implementation PDSV15CollectionMembershipWithoutRowid
 
 - (NSInteger)version { return 15; }
 - (NSString *)name { return @"collection_membership_without_rowid"; }
@@ -2589,10 +2589,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - V14 Moderation Tables Without Rowid (Service DB)
 
-@interface V14ModerationWithoutRowid : NSObject <PDSMigration>
+@interface PDSV14ModerationWithoutRowid : NSObject <PDSMigration>
 @end
 
-@implementation V14ModerationWithoutRowid
+@implementation PDSV14ModerationWithoutRowid
 
 - (NSInteger)version { return 14; }
 
@@ -2716,10 +2716,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - V10 Pending Factor Tokens
 
-@interface V10PendingFactorTokensSchema : NSObject <PDSMigration>
+@interface PDSV10PendingFactorTokensSchema : NSObject <PDSMigration>
 @end
 
-@implementation V10PendingFactorTokensSchema
+@implementation PDSV10PendingFactorTokensSchema
 
 - (NSInteger)version { return 10; }
 
@@ -2776,10 +2776,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - V10 Legacy Schema Version Bridge
 
-@interface V10LegacySchemaBridge : NSObject <PDSMigration>
+@interface PDSV10LegacySchemaBridge : NSObject <PDSMigration>
 @end
 
-@implementation V10LegacySchemaBridge
+@implementation PDSV10LegacySchemaBridge
 
 - (NSInteger)version { return 10; }
 
@@ -2863,10 +2863,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - V11 Legacy Column Additions
 
-@interface V11AddLegacyColumns : NSObject <PDSMigration>
+@interface PDSV11AddLegacyColumns : NSObject <PDSMigration>
 @end
 
-@implementation V11AddLegacyColumns
+@implementation PDSV11AddLegacyColumns
 
 - (NSInteger)version { return 11; }
 
@@ -2910,7 +2910,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     if (error) {
         *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                      code:PDSMigrationErrorMigrationFailed
-                                 userInfo:@{NSLocalizedDescriptionKey: @"V11AddLegacyColumns is not reversible"}];
+                                 userInfo:@{NSLocalizedDescriptionKey: @"PDSV11AddLegacyColumns is not reversible"}];
     }
     return NO;
 }
@@ -2919,10 +2919,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - V12 Session Revocation Migration
 
-@interface V12SessionRevocationSchema : NSObject <PDSMigration>
+@interface PDSV12SessionRevocationSchema : NSObject <PDSMigration>
 @end
 
-@implementation V12SessionRevocationSchema
+@implementation PDSV12SessionRevocationSchema
 
 - (NSInteger)version { return 12; }
 
@@ -2965,7 +2965,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     if (error) {
         *error = [NSError errorWithDomain:PDSMigrationErrorDomain
                                      code:PDSMigrationErrorMigrationFailed
-                                 userInfo:@{NSLocalizedDescriptionKey: @"V12SessionRevocationSchema is not reversible"}];
+                                 userInfo:@{NSLocalizedDescriptionKey: @"PDSV12SessionRevocationSchema is not reversible"}];
     }
     return NO;
 }
@@ -2974,10 +2974,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - AppView V1 Initial Schema
 
-@interface AppViewV1InitialSchema : NSObject <PDSMigration>
+@interface PDSAppViewV1InitialSchema : NSObject <PDSMigration>
 @end
 
-@implementation AppViewV1InitialSchema
+@implementation PDSAppViewV1InitialSchema
 
 - (NSInteger)version { return 1; }
 - (NSString *)name { return @"appview_initial"; }
@@ -3097,10 +3097,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - AppView V2 Threadgate URI
 
-@interface AppViewV2ThreadgateURI : NSObject <PDSMigration>
+@interface PDSAppViewV2ThreadgateURI : NSObject <PDSMigration>
 @end
 
-@implementation AppViewV2ThreadgateURI
+@implementation PDSAppViewV2ThreadgateURI
 
 - (NSInteger)version { return 2; }
 - (NSString *)name { return @"appview_threadgate_uri"; }
@@ -3156,10 +3156,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - AppView V3 Pending Index Events
 
-@interface AppViewV3PendingIndexEvents : NSObject <PDSMigration>
+@interface PDSAppViewV3PendingIndexEvents : NSObject <PDSMigration>
 @end
 
-@implementation AppViewV3PendingIndexEvents
+@implementation PDSAppViewV3PendingIndexEvents
 
 - (NSInteger)version { return 3; }
 - (NSString *)name { return @"appview_pending_index_events"; }
@@ -3208,10 +3208,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - AppView V4 Legacy Schema Bridge
 
-@interface AppViewV4LegacySchemaBridge : NSObject <PDSMigration>
+@interface PDSAppViewV4LegacySchemaBridge : NSObject <PDSMigration>
 @end
 
-@implementation AppViewV4LegacySchemaBridge
+@implementation PDSAppViewV4LegacySchemaBridge
 
 - (NSInteger)version { return 4; }
 - (NSString *)name { return @"appview_legacy_bridge"; }
@@ -3286,10 +3286,10 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - AppView V5 Actor Counts
 
-@interface AppViewV5ActorCounts : NSObject <PDSMigration>
+@interface PDSAppViewV5ActorCounts : NSObject <PDSMigration>
 @end
 
-@implementation AppViewV5ActorCounts
+@implementation PDSAppViewV5ActorCounts
 
 - (NSInteger)version { return 5; }
 - (NSString *)name { return @"appview_actor_counts"; }
@@ -3327,13 +3327,13 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 #pragma mark - V16 Password Reset Tokens Migration
 
-@interface V16PasswordResetTokens : NSObject <PDSMigration>
+@interface PDSV16PasswordResetTokens : NSObject <PDSMigration>
 @end
 
-@interface V17EmailConfirmationTokens : NSObject <PDSMigration>
+@interface PDSV17EmailConfirmationTokens : NSObject <PDSMigration>
 @end
 
-@implementation V16PasswordResetTokens
+@implementation PDSV16PasswordResetTokens
 
 - (NSInteger)version {
     return 16;
@@ -3376,7 +3376,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 @end
 
-@implementation V17EmailConfirmationTokens
+@implementation PDSV17EmailConfirmationTokens
 
 - (NSInteger)version {
     return 17;
@@ -3449,54 +3449,54 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 + (instancetype)serviceDatabaseMigrationManager {
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
-    [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"service"]];
-    [manager registerMigration:[[V2OzoneSchema alloc] init]];
-    [manager registerMigration:[[V3DiagnosticsSchema alloc] init]];
-    [manager registerMigration:[[V4OzoneScheduledActionsSchema alloc] init]];
-    [manager registerMigration:[[V5HostingEventsSchema alloc] init]];
-    [manager registerMigration:[[V6DraftsSchema alloc] init]];
-    [manager registerMigration:[[V7SearchFTS5Schema alloc] init]];
-    [manager registerMigration:[[V8OzoneSubjectsSchema alloc] init]];
+    [manager registerMigration:[[PDSV1InitialSchema alloc] initWithSchemaType:@"service"]];
+    [manager registerMigration:[[PDSV2OzoneSchema alloc] init]];
+    [manager registerMigration:[[PDSV3DiagnosticsSchema alloc] init]];
+    [manager registerMigration:[[PDSV4OzoneScheduledActionsSchema alloc] init]];
+    [manager registerMigration:[[PDSV5HostingEventsSchema alloc] init]];
+    [manager registerMigration:[[PDSV6DraftsSchema alloc] init]];
+    [manager registerMigration:[[PDSV7SearchFTS5Schema alloc] init]];
+    [manager registerMigration:[[PDSV8OzoneSubjectsSchema alloc] init]];
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:9]];
-    [manager registerMigration:[[V10PendingFactorTokensSchema alloc] init]];
-    [manager registerMigration:[[V13CollectionMembershipSchema alloc] init]];
-    [manager registerMigration:[[V12SessionRevocationSchema alloc] init]];
-    [manager registerMigration:[[V14ModerationWithoutRowid alloc] init]];
-    [manager registerMigration:[[V15CollectionMembershipWithoutRowid alloc] init]];
-    [manager registerMigration:[[V16PasswordResetTokens alloc] init]];
-    [manager registerMigration:[[V17EmailConfirmationTokens alloc] init]];
-    [manager registerMigration:[[V18RefreshTokenFamilyColumns alloc] init]];
+    [manager registerMigration:[[PDSV10PendingFactorTokensSchema alloc] init]];
+    [manager registerMigration:[[PDSV13CollectionMembershipSchema alloc] init]];
+    [manager registerMigration:[[PDSV12SessionRevocationSchema alloc] init]];
+    [manager registerMigration:[[PDSV14ModerationWithoutRowid alloc] init]];
+    [manager registerMigration:[[PDSV15CollectionMembershipWithoutRowid alloc] init]];
+    [manager registerMigration:[[PDSV16PasswordResetTokens alloc] init]];
+    [manager registerMigration:[[PDSV17EmailConfirmationTokens alloc] init]];
+    [manager registerMigration:[[PDSV18RefreshTokenFamilyColumns alloc] init]];
     return manager;
 }
 
 + (instancetype)actorStoreMigrationManager {
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
-    [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"actor"]];
+    [manager registerMigration:[[PDSV1InitialSchema alloc] initWithSchemaType:@"actor"]];
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:2]];
-    [manager registerMigration:[[V3RecordTombstonesWithoutRowid alloc] init]];
-    [manager registerMigration:[[V4DedicatedSpaceSigningKeySchema alloc] init]];
-    [manager registerMigration:[[V5RecordsRevisionCoveringIndex alloc] init]];
-    [manager registerMigration:[[V6BlobLifecycleSchema alloc] init]];
-    [manager registerMigration:[[V7AccountUsageTriggers alloc] init]];
-    [manager registerMigration:[[V8BlockUsageAttribution alloc] init]];
+    [manager registerMigration:[[PDSV3RecordTombstonesWithoutRowid alloc] init]];
+    [manager registerMigration:[[PDSV4DedicatedSpaceSigningKeySchema alloc] init]];
+    [manager registerMigration:[[PDSV5RecordsRevisionCoveringIndex alloc] init]];
+    [manager registerMigration:[[PDSV6BlobLifecycleSchema alloc] init]];
+    [manager registerMigration:[[PDSV7AccountUsageTriggers alloc] init]];
+    [manager registerMigration:[[PDSV8BlockUsageAttribution alloc] init]];
     return manager;
 }
 
 + (instancetype)pdsDatabaseMigrationManager {
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
-    [manager registerMigration:[[V10LegacySchemaBridge alloc] init]];
-    [manager registerMigration:[[V11AddLegacyColumns alloc] init]];
-    [manager registerMigration:[[V12LegacyChatWithoutRowid alloc] init]];
+    [manager registerMigration:[[PDSV10LegacySchemaBridge alloc] init]];
+    [manager registerMigration:[[PDSV11AddLegacyColumns alloc] init]];
+    [manager registerMigration:[[PDSV12LegacyChatWithoutRowid alloc] init]];
     return manager;
 }
 
 + (instancetype)appViewDatabaseMigrationManager {
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
-    [manager registerMigration:[[AppViewV1InitialSchema alloc] init]];
-    [manager registerMigration:[[AppViewV2ThreadgateURI alloc] init]];
-    [manager registerMigration:[[AppViewV3PendingIndexEvents alloc] init]];
-    [manager registerMigration:[[AppViewV4LegacySchemaBridge alloc] init]];
-    [manager registerMigration:[[AppViewV5ActorCounts alloc] init]];
+    [manager registerMigration:[[PDSAppViewV1InitialSchema alloc] init]];
+    [manager registerMigration:[[PDSAppViewV2ThreadgateURI alloc] init]];
+    [manager registerMigration:[[PDSAppViewV3PendingIndexEvents alloc] init]];
+    [manager registerMigration:[[PDSAppViewV4LegacySchemaBridge alloc] init]];
+    [manager registerMigration:[[PDSAppViewV5ActorCounts alloc] init]];
     return manager;
 }
 
