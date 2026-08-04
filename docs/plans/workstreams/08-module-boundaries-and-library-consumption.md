@@ -1,7 +1,7 @@
 ---
 title: Module Boundaries and Library Consumption
 status: active
-last_verified: 2026-07-30
+last_verified: 2026-08-03
 ---
 
 ## Verified status (2026-07-30)
@@ -770,16 +770,49 @@ baseline each time:
    `ATProtoSafeHTTPClient`, PLC, Transport, Runtime, and XRPC construction with
    lower-layer protocols or move the composition object to the module that
    already owns both sides.
-2. **Video/XRPC integration cycle (8 total across XRPC, VideoService, and
-   MediaCore).** Keep media abstractions independent of XRPC. Move route-pack
-   registration and concrete video-worker/auth-provider composition to Runtime,
-   or introduce one narrowly scoped integration target if Runtime ownership
-   would be false. `ATProtoMediaCore` must not depend on XRPC.
-3. **PLC persistence (2).** Decide explicitly whether
-   `PLCPersistentStore` makes Storage a fundamental PLC dependency. If yes, add
-   the acyclic `ATProtoPLC -> ATProtoStorage` edge and test standalone PLC
-   linking. If no, inject a persistence protocol and keep the concrete adapter
-   in Runtime.
+2. **Video/XRPC integration cycle (9 in the current baseline: 3 in
+   ATProtoMediaCore, 2 in ATProtoVideoService, 4 in ATProtoXRPC referencing
+   ATProtoVideoService).** Keep media abstractions independent of XRPC. Move
+   route-pack registration and concrete video-worker/auth-provider composition
+   to Runtime, or introduce one narrowly scoped integration target if Runtime
+   ownership would be false. `ATProtoMediaCore` must not depend on XRPC.
+
+   **Scoping investigation (2026-08-03, no code changed):** this is deeper
+   than a single composition-object move. The video construction lives in
+   `[XrpcAppBskyPack registerWithDispatcher:services:]`
+   (`Network/XrpcAppBskyPack.m`, compiled into ATProtoXRPC), which directly
+   constructs `PDSLocalVideoJobStore`/`VideoPDSAuthProvider` and calls
+   `[ATProtoVideoXrpcPack registerWithDispatcher:services:]` (all three types
+   owned by ATProtoVideoService). That method is reached from
+   `XrpcMethodRegistry` (also ATProtoXRPC), which in turn is called from two
+   places: `App/server_main.m` (ATProtoRuntime, the expected caller) **and**
+   `Network/ATProtoHttpXrpcRoutePack.m` — which, despite living under
+   `Network/` and compiling into ATProtoXRPC, already `#import`s
+   `App/PDSApplication.h` and `App/PDSController.h` directly. That import is
+   the source of the separate `ATProtoXRPC:PDSController` /
+   `ATProtoXRPC:PDSAccountPolicy` baseline entries (dependency-inversion
+   cluster, not part of this one), but it means the route-registration
+   orchestration layer (`XrpcMethodRegistry.m` +
+   `ATProtoHttpXrpcRoutePack.m`) already has a foot in Runtime, blurring where
+   "the caller in Runtime" that this cluster's fix wants to hoist video
+   composition into actually is. A narrow fix that only moves the video
+   construction out of `XrpcAppBskyPack.m` would still leave
+   `ATProtoHttpXrpcRoutePack.m`'s own Runtime imports unaddressed, and could
+   not simply call video registration from "the Runtime caller" because one
+   of the two callers of the shared registration path is itself inside
+   ATProtoXRPC. Resolving this cluster for real means first deciding whether
+   `XrpcMethodRegistry`/`ATProtoHttpXrpcRoutePack` are source-misowned
+   (composition code that belongs in ATProtoRuntime despite the `Network/`
+   directory, per the M4.1 classification key) rather than treating this as
+   a self-contained 9-symbol move. Do not attempt this cluster as a single
+   sitting change — it touches the live PDS HTTP route-registration path and
+   needs the same source-evidence pass extended to the registration
+   orchestration files before a commit boundary can be drawn.
+3. **PLC persistence (2, complete in `06c0c8f5`).** Decided yes:
+   `PLCPersistentStore` makes Storage a fundamental PLC dependency. Added the
+   acyclic `ATProtoPLC -> ATProtoStorage` edge (documented inline in
+   `scripts/dev/check_module_boundaries.sh`); the baseline dropped from 28 to
+   26.
 4. **Storage key-manager construction (1, complete; commit pending).**
    `PDSAppleActorKeyManager`, `PDSOpenSSLKeyManager`, and the shared
    blob-reference parser are Core primitives used by Storage; their CMake
