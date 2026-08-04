@@ -192,16 +192,24 @@ does not reinterpret their sample tables.
   indexing, and playback sanity remain open; this slice does not claim to be a complete muxer.
 - Rollback: additive MediaCore primitive and test registration; existing HLS/transcoder output is untouched.
 
-**Phase 10 — S2PA.** ES256K and DID key handling already exist (`PLC/PLCDIDKey.m`,
-`vendor/secp256k1`). New: C2PA manifest structure (JUMBF), COSE_Sign1, and the deterministic
-self-signed X.509 leaf derived from a DID + public key, with verifiers explicitly *not* chaining to
-trust anchors. Depends on Phase 9 for video embedding.
+**Phase 10 — S2PA — PARTIAL (strict COSE_Sign1 ES256K core).**
+`Security/S2PA/ATProtoS2PACOSE` implements an attached COSE_Sign1 envelope with the normative
+ES256K algorithm (`-47`), canonical protected header `{1: -47}`, empty unprotected headers, the
+COSE `Sig_structure`, and 64-byte low-S secp256k1 signatures through the existing primitive. It
+rejects alternate CBOR encodings, unsupported algorithms, malformed fields, and signature/payload
+mismatch. Verification consumes a supplied public key and intentionally does not consult X.509
+trust anchors, matching S2PA's self-certifying trust model.
 
-- Owner boundary: new `Garazyk/Sources/Security/S2PA` (or similar), consuming `PLC/PLCDIDKey.m`
-  read-only.
-- Gate: manifest round-trip test, COSE_Sign1 verify test, explicit test that verification does
-  *not* chain to a trust anchor (the deliberate deviation from standard C2PA trust behavior).
-- Rollback: additive signing/verification path; nothing else depends on manifests existing.
+- Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope; it consumes
+  `Auth/Crypto/Secp256k1` read-only and does not alter repository signatures or auth JWTs.
+- Evidence: `ATProtoS2PACOSETests` covers exact protected-header bytes, Sig_structure shape,
+  deterministic signing, attached-payload extraction, payload/key tampering, unsupported
+  algorithms, non-canonical CBOR rejection, and explicit no-trust-anchor verification.
+- Explicit remainder: the C2PA claim/manifest-store schema, JUMBF embedding, S2PA deterministic
+  self-signed secp256k1 X.509 leaf, DID-to-certificate identity binding, and video integration
+  remain open. This slice is a cryptographic COSE core, not a complete C2PA/S2PA asset manifest.
+- Rollback: remove the additive S2PA directory and test registration; existing signing and media
+  paths are unchanged.
 
 **Phase 11 — Web Tiles + Tiles Protocols + TP Data.** A tile is a MASL bundle-mode manifest
 packaged as a CAR (`.tile`) or as PDS blobs — Phase 7 first. Needs a unique-origin sandboxed iframe
