@@ -411,7 +411,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
                                   data:stringToSign.UTF8String
                               dataLen:strlen(stringToSign.UTF8String)];
 
-    return [CryptoUtils hexStringFromData:signature];
+    return [ATProtoCryptoUtils hexStringFromData:signature];
 }
 
 #pragma mark - Crypto Helpers

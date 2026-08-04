@@ -535,9 +535,9 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         return nil;
     }
     GZ_LOG_CORE_DEBUG(@"Unsigned data for hash: %@", data);
-    GZ_LOG_CORE_DEBUG(@"Unsigned CBOR bytes: %@", [CryptoUtils hexStringFromData:cbor]);
-    NSData *hash = [CryptoUtils sha256:cbor];
-    GZ_LOG_CORE_DEBUG(@"Calculated hash: %@", [CryptoUtils hexStringFromData:hash]);
+    GZ_LOG_CORE_DEBUG(@"Unsigned CBOR bytes: %@", [ATProtoCryptoUtils hexStringFromData:cbor]);
+    NSData *hash = [ATProtoCryptoUtils sha256:cbor];
+    GZ_LOG_CORE_DEBUG(@"Calculated hash: %@", [ATProtoCryptoUtils hexStringFromData:hash]);
     return hash;
 }
 

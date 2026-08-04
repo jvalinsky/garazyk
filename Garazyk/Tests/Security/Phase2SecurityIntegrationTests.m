@@ -28,15 +28,15 @@
 #pragma mark - PDSSecurityCompare Integration
 
 - (void)testConstantTimeCompareDelegatesToSecurityCompare {
-    // CryptoUtils.constantTimeCompare should delegate to PDSSecurityCompare
+    // ATProtoCryptoUtils.constantTimeCompare should delegate to PDSSecurityCompare
     // which correctly handles UTF-8 byte comparison (not Unicode code units)
     NSString *asciiA = @"hello";
     NSString *asciiB = @"hello";
-    XCTAssertTrue([CryptoUtils constantTimeCompare:asciiA to:asciiB],
+    XCTAssertTrue([ATProtoCryptoUtils constantTimeCompare:asciiA to:asciiB],
                   @"ASCII strings should match");
 
     NSString *asciiC = @"world";
-    XCTAssertFalse([CryptoUtils constantTimeCompare:asciiA to:asciiC],
+    XCTAssertFalse([ATProtoCryptoUtils constantTimeCompare:asciiA to:asciiC],
                    @"Different strings should not match");
 }
 
@@ -46,27 +46,27 @@
     // "café" in UTF-8 is 5 bytes (é = 2 bytes), but NSString.length = 4.
     NSString *a = @"café";
     NSString *b = @"café";
-    XCTAssertTrue([CryptoUtils constantTimeCompare:a to:b],
+    XCTAssertTrue([ATProtoCryptoUtils constantTimeCompare:a to:b],
                   @"Unicode strings should match correctly");
 
     NSString *c = @"cafe";
-    XCTAssertFalse([CryptoUtils constantTimeCompare:a to:c],
+    XCTAssertFalse([ATProtoCryptoUtils constantTimeCompare:a to:c],
                    @"Different Unicode strings should not match");
 }
 
 - (void)testConstantTimeCompareNilHandling {
-    XCTAssertFalse([CryptoUtils constantTimeCompare:nil to:@"test"],
+    XCTAssertFalse([ATProtoCryptoUtils constantTimeCompare:nil to:@"test"],
                    @"nil vs non-nil should be NO");
-    XCTAssertFalse([CryptoUtils constantTimeCompare:@"test" to:nil],
+    XCTAssertFalse([ATProtoCryptoUtils constantTimeCompare:@"test" to:nil],
                    @"non-nil vs nil should be NO");
-    XCTAssertTrue([CryptoUtils constantTimeCompare:nil to:nil],
+    XCTAssertTrue([ATProtoCryptoUtils constantTimeCompare:nil to:nil],
                   @"nil vs nil should be YES");
 }
 
 - (void)testConstantTimeCompareEmptyStrings {
-    XCTAssertTrue([CryptoUtils constantTimeCompare:@"" to:@""],
+    XCTAssertTrue([ATProtoCryptoUtils constantTimeCompare:@"" to:@""],
                   @"Empty strings should match");
-    XCTAssertFalse([CryptoUtils constantTimeCompare:@"" to:@"a"],
+    XCTAssertFalse([ATProtoCryptoUtils constantTimeCompare:@"" to:@"a"],
                    @"Empty vs non-empty should not match");
 }
 

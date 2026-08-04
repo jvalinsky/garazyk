@@ -326,7 +326,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     // Create a fresh DPoP proof with ath so the new verifier accepts it.
     // Keep the same token/key binding with a new JTI to avoid replay rejection.
     NSData *tokenData = [token.encodedToken dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *tokenHash = [CryptoUtils sha256:tokenData];
+    NSData *tokenHash = [ATProtoCryptoUtils sha256:tokenData];
     NSString *athValue = [ATProtoAuthCryptoBase64URL encode:tokenHash];
 
     // Build the DPoP proof manually with ath in the payload

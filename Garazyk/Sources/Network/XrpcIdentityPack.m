@@ -520,7 +520,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
         }
 
         NSMutableDictionary *operation = [operationData mutableCopy];
-        operation[@"sig"] = [CryptoUtils base64URLEncode:sig];
+        operation[@"sig"] = [ATProtoCryptoUtils base64URLEncode:sig];
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"operation": operation}];
@@ -972,7 +972,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
                     // Sign operation
                     NSError *signError = nil;
                     NSData *opData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:op error:&signError];
-                    NSData *hash = [CryptoUtils sha256:opData];
+                    NSData *hash = [ATProtoCryptoUtils sha256:opData];
                     NSData *sigData = nil;
                     
                     if (perDidRotationKey) {
@@ -989,7 +989,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
                         [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to sign operation"}];
                         return;
                     }
-                    op[@"sig"] = [CryptoUtils base64URLEncode:sigData];
+                    op[@"sig"] = [ATProtoCryptoUtils base64URLEncode:sigData];
 
                     // Submit to PLC
                     GZ_LOG_DEBUG(@"updateHandle: Submitting PLC operation for DID=%@", did);

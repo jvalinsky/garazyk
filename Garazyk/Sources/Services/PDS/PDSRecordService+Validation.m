@@ -132,7 +132,7 @@ BOOL validateCreatedAtCoherence(NSString *collection,
         return YES;
     }
     // Guardrail for AppView compatibility: app.bsky.feed.post should have a createdAt
-    // timestamp that is reasonably close to the rkey TID timestamp.
+    // timestamp that is reasonably close to the rkey ATProtoTID timestamp.
     if (![collection isEqualToString:@"app.bsky.feed.post"]) {
         return YES;
     }
@@ -140,7 +140,7 @@ BOOL validateCreatedAtCoherence(NSString *collection,
     if (![createdAtValue isKindOfClass:[NSString class]] || ((NSString *)createdAtValue).length == 0) {
         return YES;
     }
-    TID *tid = [TID tidFromString:rkey];
+    ATProtoTID *tid = [ATProtoTID tidFromString:rkey];
     if (!tid) {
         return YES;
     }

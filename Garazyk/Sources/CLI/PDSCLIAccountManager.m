@@ -393,7 +393,7 @@
         return nil;
     }
     
-    NSData *sha256Hash = [CryptoUtils sha256:cborData];
+    NSData *sha256Hash = [ATProtoCryptoUtils sha256:cborData];
     if (!sha256Hash) {
         if (error) *error = [NSError errorWithDomain:@"PDSCLI" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Hash failure"}];
         return nil;
@@ -419,7 +419,7 @@
     }
     
     NSMutableDictionary *signedOp = [opData mutableCopy];
-    signedOp[@"sig"] = [CryptoUtils base64URLEncode:signature];
+    signedOp[@"sig"] = [ATProtoCryptoUtils base64URLEncode:signature];
     
     // 5. Generate DID from the signed operation (per did-method-plc spec v0.3.0).
     NSString *did = [PLCOperation calculateDIDForSignedOperation:signedOp];
@@ -701,7 +701,7 @@
     }
     
     NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:newOpData error:&error];
-    NSData *sha256 = [CryptoUtils sha256:cborData];
+    NSData *sha256 = [ATProtoCryptoUtils sha256:cborData];
     NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:privKeyData error:&error];
     
     if (!signature) {
@@ -709,7 +709,7 @@
         return NO;
     }
     
-    newOpData[@"sig"] = [CryptoUtils base64URLEncode:signature];
+    newOpData[@"sig"] = [ATProtoCryptoUtils base64URLEncode:signature];
     
     // Post to PLC
     NSString *postUrl = [NSString stringWithFormat:@"%@/%@", plcUrl, did];

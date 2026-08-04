@@ -181,7 +181,7 @@
     NSMutableDictionary<NSString *, CID *> *expected = [NSMutableDictionary dictionary];
     int count = 20;
 
-    // Use random TID keys (will produce multi-node MST at various depths)
+    // Use random ATProtoTID keys (will produce multi-node MST at various depths)
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];

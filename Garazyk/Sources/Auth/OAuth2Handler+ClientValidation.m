@@ -89,7 +89,7 @@
                                        ? validatedClient[@"client_id"]
                                        : nil;
       if (metadataClientID.length == 0 ||
-          ![CryptoUtils constantTimeCompare:metadataClientID to:clientID]) {
+          ![ATProtoCryptoUtils constantTimeCompare:metadataClientID to:clientID]) {
         NSError *mismatchError = [NSError errorWithDomain:@"OAuth2"
                                                      code:400
                                                  userInfo:@{

@@ -234,7 +234,7 @@
     NSError *error = nil;
     NSData *cbor = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:data error:&error];
     if (!cbor) return [NSData data];
-    return [CryptoUtils sha256:cbor];
+    return [ATProtoCryptoUtils sha256:cbor];
 }
 
 #pragma mark - Test Vectors (Reference: reference/indigo/plc/client_test.go)
@@ -322,7 +322,7 @@
     XCTAssertNotNil(keyPair, @"Key pair should be generated");
     
     NSData *message = [@"test message" dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *hash = [CryptoUtils sha256:message];
+    NSData *hash = [ATProtoCryptoUtils sha256:message];
     NSData *signature = [keyPair signHash:hash error:nil];
     XCTAssertNotNil(signature, @"Signature should be created");
     XCTAssertEqual(signature.length, 64, @"Signature should be 64 bytes (R || S)");
@@ -331,7 +331,7 @@
     XCTAssertTrue(verified, @"Signature should verify");
     
     NSData *wrongMessage = [@"wrong message" dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *wrongHash = [CryptoUtils sha256:wrongMessage];
+    NSData *wrongHash = [ATProtoCryptoUtils sha256:wrongMessage];
     BOOL wrongVerified = [[Secp256k1 shared] verifySignature:signature forHash:wrongHash withPublicKey:keyPair.publicKey error:nil];
     XCTAssertFalse(wrongVerified, @"Wrong message should not verify");
 }
@@ -354,7 +354,7 @@
     NSData *cbor = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:opData error:&error];
     XCTAssertNil(error);
     
-    NSData *hash = [CryptoUtils sha256:cbor];
+    NSData *hash = [ATProtoCryptoUtils sha256:cbor];
     NSData *signature = [keyPair signHash:hash error:&error];
     XCTAssertNil(error);
     

@@ -47,7 +47,7 @@
         return NO;
     }
 
-    NSString *rev = [[TID tid] stringValue];
+    NSString *rev = [[ATProtoTID tid] stringValue];
     RepoCommit *commit = [RepoCommit createCommitWithDid:did
                                                     data:dataCID
                                                      rev:rev

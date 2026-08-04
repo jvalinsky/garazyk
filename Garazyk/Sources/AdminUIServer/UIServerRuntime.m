@@ -53,8 +53,8 @@ NSUInteger UISafeLength(id value) {
 
 
 NSString *UIGenerateNonce(void) {
-    NSData *data = [CryptoUtils randomBytes:16];
-    return [CryptoUtils base64URLEncode:data];
+    NSData *data = [ATProtoCryptoUtils randomBytes:16];
+    return [ATProtoCryptoUtils base64URLEncode:data];
 }
 
 void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigin) {

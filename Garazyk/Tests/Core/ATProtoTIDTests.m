@@ -16,10 +16,10 @@
     [super tearDown];
 }
 
-#pragma mark - TID Generation
+#pragma mark - ATProtoTID Generation
 
 - (void)testTIDGenerationFormat {
-    TID *tid = [TID tid];
+    ATProtoTID *tid = [ATProtoTID tid];
     XCTAssertNotNil(tid);
 
     NSString *stringValue = tid.stringValue;
@@ -36,10 +36,10 @@
 }
 
 - (void)testTIDMonotonicOrdering {
-    TID *previous = [TID tid];
+    ATProtoTID *previous = [ATProtoTID tid];
 
     for (NSUInteger i = 0; i < 256; i++) {
-        TID *current = [TID tid];
+        ATProtoTID *current = [ATProtoTID tid];
 
         XCTAssertEqual([previous compare:current], NSOrderedAscending);
         XCTAssertEqual([previous.stringValue compare:current.stringValue], NSOrderedAscending);
@@ -52,9 +52,9 @@
     NSMutableSet<NSString *> *tids = [NSMutableSet setWithCapacity:10000];
 
     for (NSUInteger i = 0; i < 10000; i++) {
-        NSString *tidString = [TID tid].stringValue;
+        NSString *tidString = [ATProtoTID tid].stringValue;
         XCTAssertNotNil(tidString);
-        XCTAssertFalse([tids containsObject:tidString], @"Duplicate TID generated at iteration %lu: %@", (unsigned long)i, tidString);
+        XCTAssertFalse([tids containsObject:tidString], @"Duplicate ATProtoTID generated at iteration %lu: %@", (unsigned long)i, tidString);
         [tids addObject:tidString];
     }
 
@@ -63,8 +63,8 @@
 
 - (void)testTIDParsing {
     uint64_t timestamp = 1700000000123456ULL;
-    TID *original = [TID tidWithTimestamp:timestamp];
-    TID *parsed = [TID tidFromString:original.stringValue];
+    ATProtoTID *original = [ATProtoTID tidWithTimestamp:timestamp];
+    ATProtoTID *parsed = [ATProtoTID tidFromString:original.stringValue];
 
     XCTAssertNotNil(parsed);
     XCTAssertEqual(parsed.timestamp, timestamp);
@@ -72,14 +72,14 @@
 }
 
 - (void)testTIDInvalidFormats {
-    XCTAssertNil([TID tidFromString:@"3zz2zzzzzzzz"], @"Should reject TIDs that are too short");
-    XCTAssertNil([TID tidFromString:@"3zz2zzzzzzzzzz"], @"Should reject TIDs that are too long");
-    XCTAssertNil([TID tidFromString:@"3zz2zzzzzzz0z"], @"Should reject TIDs with invalid base32 characters");
+    XCTAssertNil([ATProtoTID tidFromString:@"3zz2zzzzzzzz"], @"Should reject TIDs that are too short");
+    XCTAssertNil([ATProtoTID tidFromString:@"3zz2zzzzzzzzzz"], @"Should reject TIDs that are too long");
+    XCTAssertNil([ATProtoTID tidFromString:@"3zz2zzzzzzz0z"], @"Should reject TIDs with invalid base32 characters");
 }
 
 - (void)testTIDSortOrder {
-    TID *earlier = [TID tidWithTimestamp:1700000000123456ULL];
-    TID *later = [TID tidWithTimestamp:1700000000123457ULL];
+    ATProtoTID *earlier = [ATProtoTID tidWithTimestamp:1700000000123456ULL];
+    ATProtoTID *later = [ATProtoTID tidWithTimestamp:1700000000123457ULL];
 
     XCTAssertEqual([earlier compare:later], NSOrderedAscending);
     XCTAssertEqual([earlier.stringValue compare:later.stringValue], NSOrderedAscending);

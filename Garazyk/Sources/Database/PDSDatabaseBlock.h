@@ -35,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** Date when the block was stored. */
 @property (nonatomic, strong) NSDate *createdAt;
 
-/** Revision TID when this block was first written/materialized. */
+/** Revision ATProtoTID when this block was first written/materialized. */
 @property (nonatomic, copy, nullable) NSString *rev;
 
 @end

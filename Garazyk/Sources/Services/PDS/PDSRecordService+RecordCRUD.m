@@ -207,7 +207,7 @@
         previousRecordCID.length > 0 ? @"update" : @"create";
 
     PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
-    NSString *writeRev = [TID tid].stringValue;
+    NSString *writeRev = [ATProtoTID tid].stringValue;
     record.uri = uri;
     GZ_LOG_INFO(@"PDSRecordService putRecord: saving uri=%@ for did=%@", uri, did);
     record.did = did;
@@ -361,7 +361,7 @@
     }
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-    NSString *writeRev = [TID tid].stringValue;
+    NSString *writeRev = [ATProtoTID tid].stringValue;
     PDSDatabaseRecord *existingRecord = [self.databasePool getRecord:uri forDid:did error:nil];
     BOOL hadExistingRecord = (existingRecord != nil);
     NSString *previousRecordCID = ([existingRecord.cid isKindOfClass:[NSString class]] &&

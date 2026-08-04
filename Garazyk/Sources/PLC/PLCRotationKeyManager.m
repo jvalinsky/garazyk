@@ -123,7 +123,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
                 if ([PDSKeyEnvelope isVersionedEnvelope:keyData]) {
                     privateKeyData = [PDSKeyEnvelope openEnvelope:keyData withKey:encKey error:nil];
                 } else {
-                    privateKeyData = [CryptoUtils decryptData:keyData withKey:encKey];
+                    privateKeyData = [ATProtoCryptoUtils decryptData:keyData withKey:encKey];
                 }
                 if (!privateKeyData) {
                     GZ_LOG_ERROR(@"Failed to decrypt rotation key. Possible invalid master secret.");
@@ -292,7 +292,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
     static uint8_t saltBytes[] = { 0x41, 0x54, 0x50, 0x52, 0x4f, 0x54, 0x4f, 0x5f, 0x50, 0x44, 0x53, 0x5f, 0x4b, 0x45, 0x59, 0x53 };
     NSData *salt = [NSData dataWithBytes:saltBytes length:sizeof(saltBytes)];
     
-    return [CryptoUtils deriveKeyFromPassword:secret salt:salt];
+    return [ATProtoCryptoUtils deriveKeyFromPassword:secret salt:salt];
 }
 
 @end

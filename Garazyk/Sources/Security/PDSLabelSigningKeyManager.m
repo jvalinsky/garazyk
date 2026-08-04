@@ -99,7 +99,7 @@ static NSString *PDSLabelSigningStorageDirectory(void) {
                 if ([PDSKeyEnvelope isVersionedEnvelope:keyData]) {
                     privateKeyData = [PDSKeyEnvelope openEnvelope:keyData withKey:encKey error:nil];
                 } else {
-                    privateKeyData = [CryptoUtils decryptData:keyData withKey:encKey];
+                    privateKeyData = [ATProtoCryptoUtils decryptData:keyData withKey:encKey];
                 }
                 if (!privateKeyData) {
                     GZ_LOG_ERROR(@"Failed to decrypt label signing key.");
@@ -183,7 +183,7 @@ static NSString *PDSLabelSigningStorageDirectory(void) {
         }
         return nil;
     }
-    NSData *hash = [CryptoUtils sha256:data];
+    NSData *hash = [ATProtoCryptoUtils sha256:data];
     NSError *signError = nil;
     NSData *signature = [[Secp256k1 shared] signHash:hash withPrivateKey:self.signingKeyPair.privateKey error:&signError];
     if (!signature) {
@@ -201,7 +201,7 @@ static NSString *PDSLabelSigningStorageDirectory(void) {
     if (!self.signingKeyPair) {
         if (![self loadOrGenerateKeyWithError:error]) return NO;
     }
-    NSData *hash = [CryptoUtils sha256:data];
+    NSData *hash = [ATProtoCryptoUtils sha256:data];
     return [[Secp256k1 shared] verifySignature:signature forHash:hash withPublicKey:self.signingKeyPair.publicKey error:error];
 }
 
@@ -251,7 +251,7 @@ static NSString *PDSLabelSigningStorageDirectory(void) {
     }
     static uint8_t saltBytes[] = { 0x47, 0x41, 0x52, 0x41, 0x5a, 0x59, 0x4b, 0x5f, 0x4c, 0x42, 0x4c, 0x5f, 0x53, 0x49, 0x47, 0x4e };
     NSData *salt = [NSData dataWithBytes:saltBytes length:sizeof(saltBytes)];
-    return [CryptoUtils deriveKeyFromPassword:secret salt:salt];
+    return [ATProtoCryptoUtils deriveKeyFromPassword:secret salt:salt];
 }
 
 @end

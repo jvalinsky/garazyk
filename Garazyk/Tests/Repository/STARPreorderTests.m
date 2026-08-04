@@ -100,7 +100,7 @@
 }
 
 - (MST *)buildSmallDeterministicFixture {
-    // Eight TID-format keys; their SHA-256 depths span multiple levels so the
+    // Eight ATProtoTID-format keys; their SHA-256 depths span multiple levels so the
     // MST is multi-level. The exact tree shape is irrelevant — invariants are
     // cross-checked against the MST pre-order walker for these exact keys.
     //
@@ -334,7 +334,7 @@
     XCTAssertEqualObjects(kinds.firstObject, @"node",
         @"Root MST node must be emitted first, before any record.");
     XCTAssertEqual(recordCount, (NSUInteger)8,
-        @"Eight TID-format leaves: every entry's record must be emitted (each at the spot its entry appears in the DFS).");
+        @"Eight ATProtoTID-format leaves: every entry's record must be emitted (each at the spot its entry appears in the DFS).");
 }
 
 #pragma mark - STAR-Lite (separate format)

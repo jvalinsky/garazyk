@@ -249,9 +249,9 @@
             XCTAssertTrue([cid hasPrefix:@"bafy"], @"CID should be a valid CIDv1: %@", cid);
             XCTAssertGreaterThan(cid.length, 10, @"CID should be a reasonable length");
             
-            // Verify revision format (should be a TID - 13 characters)
+            // Verify revision format (should be a ATProtoTID - 13 characters)
             NSString *rev = json[@"rev"];
-            XCTAssertEqual(rev.length, 13, @"Revision should be a 13-character TID: %@", rev);
+            XCTAssertEqual(rev.length, 13, @"Revision should be a 13-character ATProtoTID: %@", rev);
         }
         
         [exp fulfill];

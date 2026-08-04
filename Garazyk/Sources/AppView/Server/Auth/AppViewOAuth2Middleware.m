@@ -293,7 +293,7 @@ static NSURL *AppViewOAuthExpectedDPoPURL(HttpRequest *request) {
 
     // Enforce DPoP binding: cnf.jkt from access token must match proof thumbprint
     if (tokenJkt.length > 0) {
-        if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
+        if (![ATProtoCryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
             GZ_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP thumbprint mismatch");
             if (error) {
                 *error = [NSError errorWithDomain:AppViewOAuth2MiddlewareErrorDomain
