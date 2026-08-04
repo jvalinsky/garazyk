@@ -16,6 +16,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+#import "AdminUIServer/UITileDataProtocol.h"
 
 @interface UIServerRuntimeBackendStub : UIBackendClient
 @property(nonatomic, strong) NSMutableArray<NSString *> *calls;
@@ -299,6 +300,29 @@
     XCTAssertNotNil(self.runtime);
     XCTAssertEqualObjects(self.runtime.configuration, self.config);
     XCTAssertFalse(self.runtime.isRunning);
+}
+
+- (void)testWebTilesDataProtocolRouteUsesReservedPathAndRestrictedHeaders {
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/.well-known/web-tiles/data.js"
+                                                   queryString:@""
+                                                    queryParams:@{}
+                                                        version:@"HTTP/1.1"
+                                                        headers:@{}
+                                                           body:[NSData data]
+                                                   remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.contentType, @"application/javascript; charset=utf-8");
+    XCTAssertNil([response headerForKey:@"cross-origin-opener-policy"]);
+    NSString *routeCSP = [response headerForKey:@"content-security-policy"];
+    XCTAssertNotNil(routeCSP);
+    XCTAssertFalse([routeCSP containsString:@"sandbox"]);
+    XCTAssertTrue([response.bodyString containsString:@"export function listen"]);
+    XCTAssertTrue([response.bodyString containsString:UITileDataProtocolReadyAction]);
+    XCTAssertFalse([response.bodyString containsString:@"fetch("]);
 }
 
 /*!

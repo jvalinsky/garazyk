@@ -209,20 +209,31 @@ trust anchors, matching S2PA's self-certifying trust model.
   self-signed secp256k1 X.509 leaf, DID-to-certificate identity binding, and video integration
   remain open. This slice is a cryptographic COSE core, not a complete C2PA/S2PA asset manifest.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
-  paths are unchanged.
+  paths are unchanged.**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (data protocol and execution policy).**
+`AdminUIServer/UITileDataProtocol` serves the reserved `/.well-known/web-tiles/data.js` module with
+`addDataHandler`, `removeDataHandler`, `listen`, and `sendData`, using the normative
+`tiles-protocol-up-data-ready`, `tiles-protocol-up-data-payload`, and
+`tiles-protocol-down-data-payload` structured-clone message actions. `UITileExecutionPolicy` exposes
+the normative restrictive CSP and isolation/security headers: no explicit `connect-src` or external
+network origin, `object-src 'none'`, `base-uri 'none'`, and the required sandbox/COOP/CORP/referrer/
+permission/DNS-prefetch headers. The policy is not itself a network boundary on a normal origin;
+unique-origin hosting is still required before arbitrary tile execution. The reserved route is
+additive and does not serve arbitrary tile resources.
 
-**Phase 11 — Web Tiles + Tiles Protocols + TP Data.** A tile is a MASL bundle-mode manifest
-packaged as a CAR (`.tile`) or as PDS blobs — Phase 7 first. Needs a unique-origin sandboxed iframe
-host with strict CSP (`'self'`, `blob:`, `data:`, no network); `garazyk-ui`
-(`Sources/AdminUIServer`) is the natural first host, plus `/.well-known/web-tiles/data.js` serving
-the protocol module and the `tiles-protocol-up-*` / `tiles-protocol-down-*` postMessage envelope.
-JS protocol modules belong in a `packages/` Deno workspace member.
-
-- Owner boundary: `Garazyk/Sources/AdminUIServer` (host), new `packages/` member (protocol JS).
-  Sandboxing/CSP changes must not weaken existing admin-UI CSP.
-- Gate: CSP header test (no network origins permitted), postMessage envelope round-trip test,
-  sandboxed-iframe escape test (confirm no `document.domain` / top-navigation access).
-- Rollback: new route + new package; delete both, existing admin-UI routes unaffected.
+- Owner boundary: `Garazyk/Sources/AdminUIServer` owns the host-selected protocol module and pure
+  policy helpers. The route is registered with the existing Lab route group; existing authenticated
+  Admin UI CSP and routes are unchanged.
+- Evidence: `UITileExecutionPolicyTests` checks the exact restrictive policy, isolation headers,
+  protocol exports, action directions, payload requirements, and malformed-message rejection.
+  `UIServerRuntimeTests` checks the reserved route, JavaScript content type, protocol exports,
+  parent-window source filtering, and absence of a network fetch sink. `UITileExecutionPolicyTests`
+  checks the policy helper independently; it is not applied to `data.js`, because CSP and sandboxing
+  must protect the tile document rather than the imported protocol module.
+- Explicit remainder: unique-origin iframe creation, CAR/MASL tile loading, blob resource mapping,
+  host-side origin authentication, and a separate Deno protocol package remain open. This slice
+  does not claim to execute arbitrary tile content or provide a full tile host.
+- Rollback: remove the additive policy/protocol helpers, reserved route, and test registration;
+  existing Admin UI routes and CSP remain unchanged.
 
 **Optional, out of tree:** contribute an Objective-C harness to hyphacoop/dasl-testing so Garazyk
 appears in the published conformance report.
