@@ -1180,6 +1180,7 @@ int main(int argc, char *argv[]) {
       @"UIAuthManagerTests",
       @"UIBackendClientTests",
       @"UIServerRuntimeTests",
+      @"UITileExecutionPolicyTests",
       @"GarazykUICommandTests",
       @"UILabAuthTests",
       @"UILabIntegrationTests",
