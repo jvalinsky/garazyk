@@ -62,8 +62,11 @@
 #import "Admin/PDSAdminAuth.h"
 #import "Admin/Diagnostics/PDSSystemDiagnosticsHandler.h"
 
+NSString * const PDSApplicationErrorDomain = @"PDSApplicationErrorDomain";
+
 @interface PDSApplication ()
 
+@property (nonatomic, strong, nullable) NSError *startupConfigurationError;
 @property (nonatomic, strong, readwrite) ATProtoServiceConfiguration *configuration;
 @property (nonatomic, copy, readwrite) NSString *dataDirectory;
 @property (nonatomic, strong, readwrite) PDSServiceDatabases *serviceDatabases;
@@ -100,7 +103,9 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
                   exception.name,
                   exception.reason,
                   exception.callStackSymbols);
-    exit(1);
+    // Do not call exit() here: the runtime aborts once this handler returns
+    // (matching GZServiceLifecycle's uncaughtExceptionHandler), so process
+    // termination stays the runtime's decision, not this library's.
 }
 
 static BOOL PDSApplicationShouldUseEphemeralJWTKeyForTests(void) {
@@ -364,12 +369,20 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                         [[pdsEnv[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
                         [[pdsEnv[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
     if (isProduction && configuredIssuer.length == 0) {
-        GZ_LOG_ERROR(@"Core", @"PDS_ISSUER must be set to your public HTTPS domain in production (e.g. PDS_ISSUER=https://pds.example.com). Refusing to start.");
-        exit(1);
+        NSString *message = @"PDS_ISSUER must be set to your public HTTPS domain in production (e.g. PDS_ISSUER=https://pds.example.com). Refusing to start.";
+        GZ_LOG_ERROR(@"Core", @"%@", message);
+        self.startupConfigurationError = [NSError errorWithDomain:PDSApplicationErrorDomain
+                                                               code:1
+                                                           userInfo:@{NSLocalizedDescriptionKey: message}];
+        return;
     }
     if (isProduction && [configuredIssuer containsString:@"pds.local"]) {
-        GZ_LOG_ERROR(@"Core", @"PDS_ISSUER cannot use a local placeholder domain in production. Refusing to start.");
-        exit(1);
+        NSString *message = @"PDS_ISSUER cannot use a local placeholder domain in production. Refusing to start.";
+        GZ_LOG_ERROR(@"Core", @"%@", message);
+        self.startupConfigurationError = [NSError errorWithDomain:PDSApplicationErrorDomain
+                                                               code:2
+                                                           userInfo:@{NSLocalizedDescriptionKey: message}];
+        return;
     }
     _jwtMinter.issuer = [_configuration canonicalIssuerWithPortHint:_httpPort];
     _jwtMinter.signingAlgorithm = @"ES256K";
@@ -585,6 +598,11 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
 - (BOOL)startWithError:(NSError **)error {
     GZ_LOG_CORE_INFO(@"Starting PDSApplication...");
+
+    if (self.startupConfigurationError) {
+        if (error) *error = self.startupConfigurationError;
+        return NO;
+    }
 
     // Startup readiness checks
     NSError *readinessError = nil;

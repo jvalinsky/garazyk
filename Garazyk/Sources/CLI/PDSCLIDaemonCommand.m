@@ -150,7 +150,10 @@
         };
         
         execv(execPath, (char *const *)argv);
-        exit(1); // Should never reach here
+        // execv only returns on failure. Use _exit(), not exit(): this is a
+        // forked child that must not run atexit handlers or flush stdio
+        // buffers inherited from the parent.
+        _exit(1);
     }
 
     // Parent
