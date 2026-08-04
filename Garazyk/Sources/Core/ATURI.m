@@ -137,7 +137,7 @@ NSString *const ATURIErrorDomain = @"com.atproto.uri";
 
 @end
 
-@implementation ATDID
+@implementation ATProtoATDID
 
 - (instancetype)init {
     [self doesNotRecognizeSelector:_cmd];
@@ -156,7 +156,7 @@ NSString *const ATURIErrorDomain = @"com.atproto.uri";
         return nil;
     }
     
-    ATDID *didObj = [[ATDID alloc] initPrivate];
+    ATProtoATDID *didObj = [[ATProtoATDID alloc] initPrivate];
     didObj->_didString = [string copy];
     didObj->_method = [parts[1] copy];
     didObj->_identifier = [[parts subarrayWithRange:NSMakeRange(2, parts.count - 2)] componentsJoinedByString:@":"];

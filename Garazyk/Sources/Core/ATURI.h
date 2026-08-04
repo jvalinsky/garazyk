@@ -36,9 +36,9 @@ extern NSString *const ATURIErrorDomain;
 @end
 
 /**
- * @abstract Declares the ATDID public API.
+ * @abstract Declares the ATProtoATDID public API.
  */
-@interface ATDID : NSObject
+@interface ATProtoATDID : NSObject
 
 /**
  * @abstract Exposes the did string value.

@@ -6,8 +6,7 @@
 # the class is prefixed or this file is edited in the same commit that
 # introduces it, so review sees the regression.
 #
-# Starting inventory: 253 unprefixed classes out of 515 total.
-ATDID
+# Starting inventory: 249 unprefixed classes out of 515 total.
 ATURI
 AVFoundationTranscoder
 ActorService
@@ -19,12 +18,10 @@ AppViewVideoUriBuilder
 AppViewXRpcRoutePack
 AuthCryptoBase64URL
 AuthCryptoDPoP
-AuthCryptoDPoPResult
 AuthCryptoECDSA
 AuthCryptoJWK
 AuthMiddleware
 AuthVerifier
-AuthVerifierPrincipal
 Base32Utils
 Base58
 BlobStorage
@@ -99,7 +96,6 @@ HttpRouteTrie
 HttpServer
 HttpStreamingBody
 JWT
-JWTHeader
 JWTMinter
 JWTPayload
 JWTVerifier
