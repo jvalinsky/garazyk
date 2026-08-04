@@ -364,6 +364,18 @@ extern NSString * const kGZXrpcNSID_app_bsky_video_getUploadLimits;
 /*! NSID for app.bsky.video.uploadVideo. */
 extern NSString * const kGZXrpcNSID_app_bsky_video_uploadVideo;
 
+/*! NSID for blog.pckt.domain.getStatus. */
+extern NSString * const kGZXrpcNSID_blog_pckt_domain_getStatus;
+
+/*! NSID for blog.pckt.domain.remove. */
+extern NSString * const kGZXrpcNSID_blog_pckt_domain_remove;
+
+/*! NSID for blog.pckt.domain.set. */
+extern NSString * const kGZXrpcNSID_blog_pckt_domain_set;
+
+/*! NSID for blog.pckt.domain.verify. */
+extern NSString * const kGZXrpcNSID_blog_pckt_domain_verify;
+
 /*! NSID for chat.bsky.actor.deleteAccount. */
 extern NSString * const kGZXrpcNSID_chat_bsky_actor_deleteAccount;
 
