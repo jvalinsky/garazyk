@@ -343,7 +343,7 @@ function(pds_filter_common_sources source_var)
   set(${source_var} "${${source_var}}" PARENT_SCOPE)
 endfunction()
 
-file(GLOB_RECURSE ATPROTO_CORE_SOURCES
+file(GLOB_RECURSE ATPROTO_CORE_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/Core/*.m"
   "Garazyk/Sources/Core/*.c"
   "Garazyk/Sources/Shared/*.m"
@@ -394,7 +394,7 @@ list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Au
 # Storage migrations as well as admin diagnostics. They depend only on Core.
 list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.m")
 
-file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES
+file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/Database/*.m"
   "Garazyk/Sources/Database/*.c"
   "Garazyk/Sources/Repository/*.m"
@@ -403,7 +403,7 @@ file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES
   "Garazyk/Sources/Core/Repositories/*.c"
 )
 
-file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES
+file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/Auth/*.m"
   "Garazyk/Sources/Auth/*.c"
   "Garazyk/Sources/Blob/*.m"
@@ -462,7 +462,7 @@ list(APPEND ATPROTO_SERVICES_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Source
 # ATProtoSafeHTTPClient/SSRFValidator) — carved out to ATProtoCore below.
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Identity/ATProtoHandleValidator\\.m$")
 
-file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES
+file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/Network/*.m"
   "Garazyk/Sources/Network/*.c"
 )
@@ -504,7 +504,7 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpRetryPolicy\
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpParsing\\.m$")
 # UI route packs migrated to garazyk-ui — exclude from service binaries
 
-file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
+file(GLOB_RECURSE ATPROTO_XRPC_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/Network/Xrpc*.m"
   "Garazyk/Sources/Network/Xrpc*.c"
   "Garazyk/Sources/Video/VideoPDSAuthProvider.m"
@@ -529,7 +529,7 @@ file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
 # XRPCError.m is included in ATPROTO_TRANSPORT_SOURCES, exclude from here to avoid duplicate
 list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Network/XRPCError\\.m$")
 
-file(GLOB_RECURSE ATPROTO_SYNC_SOURCES
+file(GLOB_RECURSE ATPROTO_SYNC_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/Sync/Firehose/*.m"
   "Garazyk/Sources/Sync/Firehose/*.c"
   "Garazyk/Sources/Sync/Relay/*.m"
@@ -538,12 +538,12 @@ file(GLOB_RECURSE ATPROTO_SYNC_SOURCES
   "Garazyk/Sources/Sync/WebSocket/*.c"
 )
 
-file(GLOB_RECURSE ATPROTO_PLC_SOURCES
+file(GLOB_RECURSE ATPROTO_PLC_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/PLC/*.m"
   "Garazyk/Sources/PLC/*.c"
 )
 
-file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
+file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/App/*.m"
   "Garazyk/Sources/App/*.c"
   "Garazyk/Sources/CLI/*.m"
@@ -613,7 +613,7 @@ pds_filter_common_sources(ATPROTO_PLC_SOURCES)
 pds_filter_common_sources(ATPROTO_RUNTIME_SOURCES)
 
 # Video service library (side-car compatible)
-file(GLOB_RECURSE ATPROTO_VIDEO_SOURCES
+file(GLOB_RECURSE ATPROTO_VIDEO_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/Video/*.m"
   "Garazyk/Sources/Video/*.c"
 )
@@ -626,7 +626,7 @@ list(FILTER ATPROTO_VIDEO_SOURCES EXCLUDE REGEX ".*/Video/VideoXrpcPack\\.m$")
 pds_filter_common_sources(ATPROTO_VIDEO_SOURCES)
 
 # MediaCore framework — reusable AT Protocol media CDN abstractions
-file(GLOB_RECURSE ATPROTO_MEDIA_CORE_SOURCES
+file(GLOB_RECURSE ATPROTO_MEDIA_CORE_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/MediaCore/*.m"
   "Garazyk/Sources/MediaCore/*.c"
 )
@@ -873,7 +873,7 @@ set_target_properties(zuk PROPERTIES
 )
 
 # AppView server source library
-file(GLOB_RECURSE ATPROTO_APPVIEW_SERVER_SOURCES
+file(GLOB_RECURSE ATPROTO_APPVIEW_SERVER_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/AppView/Server/*.m"
   "Garazyk/Sources/AppView/Server/*.c"
 )
@@ -900,7 +900,7 @@ target_link_libraries(ATProtoAppViewServer PRIVATE
 )
 
 # Mikrus-style link index service library
-file(GLOB_RECURSE ATPROTO_MIKRUS_SOURCES
+file(GLOB_RECURSE ATPROTO_MIKRUS_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/Mikrus/*.m"
   "Garazyk/Sources/Mikrus/*.c"
 )
@@ -927,7 +927,7 @@ target_link_libraries(ATProtoMikrus PRIVATE
 )
 
 # Beskid-style edge record and identity cache service library
-file(GLOB_RECURSE ATPROTO_BESKID_SOURCES
+file(GLOB_RECURSE ATPROTO_BESKID_SOURCES CONFIGURE_DEPENDS
   "Garazyk/Sources/Beskid/*.m"
   "Garazyk/Sources/Beskid/*.c"
 )
@@ -950,6 +950,50 @@ target_link_libraries(ATProtoBeskid PRIVATE
   ATProtoPLC
   ATProtoCore
 )
+
+#=============================
+# M4.5: deterministic module membership
+#=============================
+# Configure-time assertion that no source file is claimed by two package
+# targets. All thirteen GLOB_RECURSE source lists are finalized by this
+# point (their platform filters and pds_filter_common_sources calls have
+# already run). See docs/plans/workstreams/08-module-boundaries-and-library-consumption.md M4.5.
+set(PDS_MODULE_SOURCE_VARS
+  ATPROTO_CORE_SOURCES
+  ATPROTO_STORAGE_SOURCES
+  ATPROTO_SERVICES_SOURCES
+  ATPROTO_TRANSPORT_SOURCES
+  ATPROTO_XRPC_SOURCES
+  ATPROTO_SYNC_SOURCES
+  ATPROTO_PLC_SOURCES
+  ATPROTO_RUNTIME_SOURCES
+  ATPROTO_VIDEO_SOURCES
+  ATPROTO_MEDIA_CORE_SOURCES
+  ATPROTO_APPVIEW_SERVER_SOURCES
+  ATPROTO_MIKRUS_SOURCES
+  ATPROTO_BESKID_SOURCES
+)
+
+set(PDS_SEEN_SOURCE_FILES "")
+set(PDS_SEEN_SOURCE_OWNERS "")
+foreach(module_var IN LISTS PDS_MODULE_SOURCE_VARS)
+  foreach(src IN LISTS ${module_var})
+    list(FIND PDS_SEEN_SOURCE_FILES "${src}" pds_existing_index)
+    if(NOT pds_existing_index EQUAL -1)
+      list(GET PDS_SEEN_SOURCE_OWNERS ${pds_existing_index} pds_prior_owner)
+      message(FATAL_ERROR
+        "M4.5 violation: '${src}' is claimed by both ${pds_prior_owner} and "
+        "${module_var}. Every package-target source must belong to exactly "
+        "one module target.")
+    endif()
+    list(APPEND PDS_SEEN_SOURCE_FILES "${src}")
+    list(APPEND PDS_SEEN_SOURCE_OWNERS "${module_var}")
+  endforeach()
+endforeach()
+list(LENGTH PDS_SEEN_SOURCE_FILES PDS_MODULE_SOURCE_FILE_COUNT)
+message(STATUS "M4.5: ${PDS_MODULE_SOURCE_FILE_COUNT} package-target sources each claimed by exactly one module")
+unset(PDS_SEEN_SOURCE_FILES)
+unset(PDS_SEEN_SOURCE_OWNERS)
 
 # AppView Server binary (syrena)
 add_executable(syrena
