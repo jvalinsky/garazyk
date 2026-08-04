@@ -89,6 +89,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Extract and validate DID from Authorization header using PDSController.
+ *
+ * @discussion Compatibility API for legacy callers. New route packs should use
+ * the services overload so authentication remains application-composed.
  */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                      controller:(PDSController *)controller

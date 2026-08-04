@@ -86,6 +86,14 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 @interface DIDResolver : NSObject
 
 /*!
+ @method initWithRequestTimeout:
+ @abstract Creates a resolver with a bounded per-request timeout.
+ @param timeout The timeout in seconds used when creating the resolver's HTTP session.
+ @return A configured resolver.
+ */
+- (instancetype)initWithRequestTimeout:(NSTimeInterval)timeout NS_DESIGNATED_INITIALIZER;
+
+/*!
  @method sharedResolver
  @abstract Returns a shared resolver configured with the PLC URL from ATProtoServiceConfiguration.
  @discussion Reuses a single NSURLSession and DID document cache across all callers.

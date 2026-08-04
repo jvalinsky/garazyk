@@ -27,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSSpaceStore;
 @class PDSSpaceReconciler;
 @class JWTMinter;
+@class AuthVerifier;
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
 @class RateLimiter;
@@ -51,6 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, readonly, nullable) XrpcDispatcher *dispatcher;
 @property (nonatomic, readonly, nullable) JWTMinter *jwtMinter;
+@property (nonatomic, readonly, nullable) AuthVerifier *authVerifier;
 @property (nonatomic, readonly, nullable) id<PDSAdminController> adminController;
 @property (nonatomic, readonly, nullable) ATProtoServiceConfiguration *configuration;
 @property (nonatomic, readonly, nullable) NSString *adminSecret;
@@ -93,6 +95,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, readonly, nullable) XrpcDispatcher *dispatcher;
 @property (nonatomic, readonly, nullable) JWTMinter *jwtMinter;
+@property (nonatomic, strong, nullable) AuthVerifier *authVerifier;
 @property (nonatomic, readonly, nullable) id<PDSAdminController> adminController;
 @property (nonatomic, readonly, nullable) ATProtoServiceConfiguration *configuration;
 @property (nonatomic, readonly, nullable) NSString *adminSecret;

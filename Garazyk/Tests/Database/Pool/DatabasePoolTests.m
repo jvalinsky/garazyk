@@ -194,8 +194,9 @@
     NSString *did = @"did:plc:tttttttttttttttttttttttt";
     NSError *error = nil;
     BOOL success = [self.pool transactWithDid:did
-                                        block:^(__unused id<PDSActorStoreTransactor> transactor,
+                                        block:^(id<PDSActorStoreTransactor> transactor,
                                                 NSError **blockError) {
+        (void)transactor;
         *blockError = [NSError errorWithDomain:@"DatabasePoolTests"
                                          code:1
                                      userInfo:@{NSLocalizedDescriptionKey: @"Simulated block failure"}];
@@ -328,7 +329,7 @@
 - (void)testDispatchTimerEvictsPoolConstructedWithoutRunLoop {
     __block PDSDatabasePool *backgroundPool = nil;
     dispatch_semaphore_t constructed = dispatch_semaphore_create(0);
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         backgroundPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory
                                                                maxSize:1
                                                       evictionInterval:0.02
@@ -343,7 +344,7 @@
     lastAccessTime[did] = [NSDate distantPast];
 
     dispatch_group_t waitForTimer = dispatch_group_create();
-    dispatch_group_async(waitForTimer, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+    dispatch_group_async(waitForTimer, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         usleep(250000);
     });
     XCTAssertEqual(dispatch_group_wait(waitForTimer, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC)), 0);
@@ -360,7 +361,7 @@
     dispatch_group_t group = dispatch_group_create();
     __block NSError *transactionError = nil;
 
-    dispatch_group_async(group, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+    dispatch_group_async(group, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [smallPool transactWithDid:activeDID block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
             dispatch_semaphore_signal(started);
             dispatch_semaphore_wait(release, DISPATCH_TIME_FOREVER);

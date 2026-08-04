@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Auth/OAuth2Handler+ClientMetadataFetch.h"
 #import "Auth/OAuth2.h"
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Debug/GZLogger.h"
 
@@ -91,7 +91,7 @@
   [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
   request.timeoutInterval = 10.0;
 
-  ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
+  GZHTTPClientOptions *safeOptions = [[GZHTTPClientOptions alloc] init];
   safeOptions.timeout = 10.0;
   safeOptions.maxResponseBytes = 256 * 1024; // 256 KB
   
@@ -106,24 +106,24 @@
   safeOptions.allowPrivateHosts = allowPrivate;
   safeOptions.followRedirects = YES;
 
-  [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+  [[GZHTTPClientRegistry sharedClient] performDataTaskWithRequest:request
                                                  options:safeOptions
                                               completion:^(NSData *data, NSHTTPURLResponse *httpResponse, NSError *err) {
     // Map ATProtoSafeHTTPClient SSRF errors to OAuth error codes
-    if (err && [err.domain isEqualToString:ATProtoSafeHTTPClientErrorDomain]) {
+    if (err && [err.domain isEqualToString:GZHTTPClientErrorDomain]) {
       NSInteger oauthErrorCode = 500;
       NSString *oauthMessage = @"Failed to fetch client metadata";
-      if (err.code == ATProtoSafeHTTPClientErrorSSRFBlocked) {
+      if (err.code == GZHTTPClientErrorSSRFBlocked) {
         oauthErrorCode = 403;
         oauthMessage = @"SSRF Protection: Host resolves to private IP address";
         GZ_LOG_AUTH_ERROR(@"Blocked SSRF attempt for dynamic discovery: %@", urlStr);
-      } else if (err.code == ATProtoSafeHTTPClientErrorInvalidURL) {
+      } else if (err.code == GZHTTPClientErrorInvalidURL) {
         oauthErrorCode = 400;
         oauthMessage = @"Invalid client_id URL";
-      } else if (err.code == ATProtoSafeHTTPClientErrorUnsupportedScheme) {
+      } else if (err.code == GZHTTPClientErrorUnsupportedScheme) {
         oauthErrorCode = 400;
         oauthMessage = @"Only HTTPS is allowed for client metadata";
-      } else if (err.code == ATProtoSafeHTTPClientErrorRedirectBlocked) {
+      } else if (err.code == GZHTTPClientErrorRedirectBlocked) {
         oauthErrorCode = 403;
         oauthMessage = @"SSRF Protection: Redirect target resolves to private IP address";
         GZ_LOG_AUTH_ERROR(@"Blocked SSRF redirect attempt for dynamic discovery: %@", urlStr);

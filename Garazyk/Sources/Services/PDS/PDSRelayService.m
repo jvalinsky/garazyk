@@ -4,7 +4,7 @@
 #import "Compat/PDSTypes.h"
 #import "Debug/GZLogger.h"
 #import "PDSRecordService.h"
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 
 #ifndef MSEC_PER_SEC
 #define MSEC_PER_SEC 1000ULL
@@ -34,7 +34,7 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
 - (void)sendRequest:(NSURLRequest *)request
    completionHandler:(void (^)(NSData * _Nullable, NSURLResponse * _Nullable,
                                 NSError * _Nullable))handler {
-  [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+  [[GZHTTPClientRegistry sharedClient] performDataTaskWithRequest:request
                                                            options:nil
                                                         completion:handler];
 }

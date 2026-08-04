@@ -13,6 +13,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcIdentityHelper.h"
+#import "Video/VideoJobStore.h"
 
 @interface XrpcMethodRegistryTests : XCTestCase
 @end
@@ -39,6 +40,21 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
 }
 
 @implementation XrpcMethodRegistryTests
+
+- (void)testApplicationExposesProtocolBackedVideoJobStore {
+    NSURL *tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
+    tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    PDSApplication *app = nil;
+    @try {
+        app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
+        XCTAssertNotNil(app.videoJobStore);
+        XCTAssertTrue([app.videoJobStore conformsToProtocol:@protocol(VideoJobStore)]);
+        XCTAssertEqual(app.videoJobStore, app.legacyController.application.videoJobStore);
+    } @finally {
+        [app stop];
+        [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
+    }
+}
 
 - (void)testPublicKeyBytesFromMultibaseDecodesBase58 {
     NSError *error = nil;

@@ -100,14 +100,19 @@ static size_t pds_curl_header_cb(void *contents, size_t size, size_t nmemb, void
 
 #endif // defined(GNUSTEP)
 
-NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
-
 static BOOL PDSIsLoopbackHost(NSString *host) {
     NSString *normalized = host.lowercaseString;
     return [normalized isEqualToString:@"127.0.0.1"] ||
            [normalized isEqualToString:@"localhost"] ||
            [normalized isEqualToString:@"::1"];
 }
+
+@interface ATProtoSafeHTTPClient (PrivateSynchronousRequest)
+- (nullable NSData *)sendSafeSynchronousRequest:(NSURLRequest *)request
+                                         options:(nullable ATProtoSafeHTTPClientOptions *)options
+                                        response:(NSHTTPURLResponse * _Nullable * _Nullable)response
+                                           error:(NSError **)error;
+@end
 
 @implementation ATProtoSafeHTTPClientOptions
 
@@ -189,9 +194,8 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
     NSString *host = url.host.lowercaseString;
     BOOL isLoopback = PDSIsLoopbackHost(host);
 
-    if (!isLoopback) {
-        NSString *scheme = url.scheme.lowercaseString;
-        BOOL allowHTTP = effective.allowHTTP;
+    NSString *scheme = url.scheme.lowercaseString;
+    BOOL allowHTTP = effective.allowHTTP;
         if (!allowHTTP) {
             NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_HTTP"];
             if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
@@ -199,18 +203,18 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
             }
         }
 
-        BOOL schemeAllowed = [scheme isEqualToString:@"https"] ||
-                             (allowHTTP && [scheme isEqualToString:@"http"]);
-        if (!schemeAllowed) {
-            if (error) {
-                *error = [self errorWithCode:ATProtoSafeHTTPClientErrorUnsupportedScheme
-                                 description:@"Only HTTPS is allowed for this outbound request"
-                             underlyingError:nil];
-            }
-            return NO;
+    BOOL schemeAllowed = [scheme isEqualToString:@"https"] ||
+                         (allowHTTP && [scheme isEqualToString:@"http"]);
+    if (!schemeAllowed) {
+        if (error) {
+            *error = [self errorWithCode:ATProtoSafeHTTPClientErrorUnsupportedScheme
+                             description:@"Only HTTPS is allowed for this outbound request"
+                         underlyingError:nil];
         }
+        return NO;
+    }
 
-        BOOL allowPrivate = effective.allowPrivateHosts;
+    BOOL allowPrivate = effective.allowPrivateHosts;
         if (!allowPrivate) {
             NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_SSRF"];
             if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
@@ -218,16 +222,15 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
             }
         }
 
-        if (!allowPrivate) {
-            NSError *ssrfError = nil;
-            if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
-                if (error) {
-                    *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
-                                     description:@"Outbound request target failed SSRF validation"
-                                 underlyingError:ssrfError];
-                }
-                return NO;
+    if (!allowPrivate) {
+        NSError *ssrfError = nil;
+        if (isLoopback || ![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+            if (error) {
+                *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
+                                 description:@"Outbound request target failed SSRF validation"
+                             underlyingError:ssrfError];
             }
+            return NO;
         }
     }
 
@@ -482,10 +485,10 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
     });
 }
 
-- (NSData *)sendSynchronousRequest:(NSURLRequest *)request
-                           options:(ATProtoSafeHTTPClientOptions *)options
-                          response:(NSHTTPURLResponse **)response
-                             error:(NSError **)error {
+- (NSData *)sendSafeSynchronousRequest:(NSURLRequest *)request
+                               options:(ATProtoSafeHTTPClientOptions *)options
+                              response:(NSHTTPURLResponse **)response
+                                 error:(NSError **)error {
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     __block NSData *resultData = nil;
     __block NSHTTPURLResponse *resultResponse = nil;
@@ -747,9 +750,8 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
     NSString *host = url.host.lowercaseString;
     BOOL isLoopback = PDSIsLoopbackHost(host);
 
-    if (!isLoopback) {
-        NSString *scheme = url.scheme.lowercaseString;
-        BOOL allowHTTP = effective.allowHTTP;
+    NSString *scheme = url.scheme.lowercaseString;
+    BOOL allowHTTP = effective.allowHTTP;
         if (!allowHTTP) {
             NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_HTTP"];
             if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
@@ -757,18 +759,18 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
             }
         }
 
-        BOOL schemeAllowed = [scheme isEqualToString:@"https"] ||
-                             (allowHTTP && [scheme isEqualToString:@"http"]);
-        if (!schemeAllowed) {
-            if (error) {
-                *error = [self errorWithCode:ATProtoSafeHTTPClientErrorUnsupportedScheme
-                                 description:@"Only HTTPS is allowed for this outbound request"
-                             underlyingError:nil];
-            }
-            return NO;
+    BOOL schemeAllowed = [scheme isEqualToString:@"https"] ||
+                         (allowHTTP && [scheme isEqualToString:@"http"]);
+    if (!schemeAllowed) {
+        if (error) {
+            *error = [self errorWithCode:ATProtoSafeHTTPClientErrorUnsupportedScheme
+                             description:@"Only HTTPS is allowed for this outbound request"
+                         underlyingError:nil];
         }
+        return NO;
+    }
 
-        BOOL allowPrivate = effective.allowPrivateHosts;
+    BOOL allowPrivate = effective.allowPrivateHosts;
         if (!allowPrivate) {
             NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_SSRF"];
             if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
@@ -776,16 +778,15 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
             }
         }
 
-        if (!allowPrivate) {
-            NSError *ssrfError = nil;
-            if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
-                if (error) {
-                    *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
-                                     description:@"Outbound request target failed SSRF validation"
-                                 underlyingError:ssrfError];
-                }
-                return NO;
+    if (!allowPrivate) {
+        NSError *ssrfError = nil;
+        if (isLoopback || ![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+            if (error) {
+                *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
+                                 description:@"Outbound request target failed SSRF validation"
+                             underlyingError:ssrfError];
             }
+            return NO;
         }
     }
 
@@ -948,10 +949,10 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
     });
 }
 
-- (NSData *)sendSynchronousRequest:(NSURLRequest *)request
-                           options:(ATProtoSafeHTTPClientOptions *)options
-                          response:(NSHTTPURLResponse **)response
-                             error:(NSError **)error {
+- (NSData *)sendSafeSynchronousRequest:(NSURLRequest *)request
+                               options:(ATProtoSafeHTTPClientOptions *)options
+                              response:(NSHTTPURLResponse **)response
+                                 error:(NSError **)error {
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     __block NSData *resultData = nil;
     __block NSHTTPURLResponse *resultResponse = nil;
@@ -1021,6 +1022,35 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 @end
 
 @implementation ATProtoSafeHTTPClient (GZHTTPClient)
+
+- (void)performDataTaskWithRequest:(NSURLRequest *)request
+                            options:(GZHTTPClientOptions *)options
+                         completion:(void (^)(NSData * _Nullable, NSHTTPURLResponse * _Nullable, NSError * _Nullable))completion {
+    ATProtoSafeHTTPClientOptions *safeOptions = [ATProtoSafeHTTPClientOptions defaultOptions];
+    if (options) {
+        safeOptions.timeout = options.timeout;
+        safeOptions.maxResponseBytes = options.maxResponseBytes;
+        safeOptions.allowHTTP = options.allowHTTP;
+        safeOptions.allowPrivateHosts = options.allowPrivateHosts;
+        safeOptions.followRedirects = options.followRedirects;
+    }
+    [self performSafeDataTaskWithRequest:request options:safeOptions completion:completion];
+}
+
+- (nullable NSData *)sendSynchronousRequest:(NSURLRequest *)request
+                                    options:(GZHTTPClientOptions *)options
+                                   response:(NSHTTPURLResponse * _Nullable * _Nullable)response
+                                      error:(NSError **)error {
+    ATProtoSafeHTTPClientOptions *safeOptions = [ATProtoSafeHTTPClientOptions defaultOptions];
+    if (options) {
+        safeOptions.timeout = options.timeout;
+        safeOptions.maxResponseBytes = options.maxResponseBytes;
+        safeOptions.allowHTTP = options.allowHTTP;
+        safeOptions.allowPrivateHosts = options.allowPrivateHosts;
+        safeOptions.followRedirects = options.followRedirects;
+    }
+    return [self sendSafeSynchronousRequest:request options:safeOptions response:response error:error];
+}
 
 + (void)load {
     [GZHTTPClientRegistry setSharedClient:(id<GZHTTPClient>)[self sharedClient]];

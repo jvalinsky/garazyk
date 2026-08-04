@@ -331,6 +331,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
     if (isLocalIssuer) {
         JWTVerifier *verifier = [[JWTVerifier alloc] init];
         verifier.publicKey = self.localPublicKey;
+        verifier.keyManager = self.localKeyManager;
         verifier.expectedIssuer = self.localIssuer;
         verifier.expectedAudience = self.expectedAudience;
         verifier.allowedAlgorithms = @[@"ES256K", @"ES256"];

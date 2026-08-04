@@ -85,7 +85,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+        if (rejectUnavailableRepoDid(did, services, response)) {
             return;
         }
 
@@ -150,7 +150,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
         }
 
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-        if (rejectRecordTakedown(uri, serviceDatabases, response)) {
+        if (rejectRecordTakedown(uri, services, response)) {
             return;
         }
         GZ_LOG_INFO(@"getRecord: resolving uri=%@ for did=%@", uri, did);
@@ -164,7 +164,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        if (rejectUnavailableRepoDidIfKnown(did, serviceDatabases, adminController, response)) {
+        if (rejectUnavailableRepoDidIfKnown(did, services, response)) {
             return;
         }
 
@@ -198,7 +198,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+        if (rejectUnavailableRepoDid(did, services, response)) {
             return;
         }
 
@@ -269,7 +269,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+        if (rejectUnavailableRepoDid(did, services, response)) {
             return;
         }
 
@@ -332,7 +332,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+        if (rejectUnavailableRepoDid(did, services, response)) {
             return;
         }
 
@@ -464,7 +464,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
             return;
         }
 
-        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+        if (rejectUnavailableRepoDid(did, services, response)) {
             return;
         }
 

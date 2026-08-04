@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "PDSAccountService.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -11,12 +11,8 @@
 #import "Auth/Crypto/JWT.h"
 #import "Auth/PDSSecondFactorService.h"
 #import "Debug/GZLogger.h"
-#import "PLC/PLCOperation.h"
-#import "PLC/PLCRotationKeyManager.h"
 #import "Auth/Crypto/Secp256k1.h"
 #import "Auth/Crypto/CryptoUtils.h"
-#import "Core/CID.h"
-#import "Core/ATProtoCBORSerialization.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import <Security/Security.h>
 #import "Core/ATProtoError.h"
@@ -990,15 +986,31 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     NSString *signingKeyMultibase = [signingKey didKeyString];
     NSString *rotationKeyMultibase = [rotationKey didKeyString];
     
-    PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+    id<PDSPLCAccountOperationProvider> operationProvider = self.plcOperationProvider;
+    if (!operationProvider) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server"
+                                         code:503
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PLC account-operation provider unavailable"}];
+        }
+        return nil;
+    }
     NSError *keyLoadError = nil;
-    if (![keyManager loadOrGenerateKeyWithError:&keyLoadError]) {
+    if (![operationProvider loadOrGenerateKeyWithError:&keyLoadError]) {
         if (error) {
             *error = keyLoadError;
         }
         return nil;
     }
-    NSString *serverRotationKey = keyManager.rotationKeyDidKey;
+    NSString *serverRotationKey = operationProvider.rotationKeyDidKey;
+    if (serverRotationKey.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server"
+                                         code:503
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PLC rotation key unavailable"}];
+        }
+        return nil;
+    }
     
     NSArray *rotationKeys = @[serverRotationKey, rotationKeyMultibase];
     
@@ -1012,26 +1024,11 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         @"prev": [NSNull null]
     };
     
-    // Encode unsigned operation as DAG-CBOR and sign
-    NSData *unsignedCBOR = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:NO] encodeDataWithJSONObject:unsignedData error:error];
-    if (!unsignedCBOR) return nil;
-    
-    GZ_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Unsigned CBOR prepared for signing (length: %lu)", (unsigned long)unsignedCBOR.length);
-
-    NSData *hash = [CID rawSha256:unsignedCBOR];
-    
-    NSData *sig = nil;
-    if (![keyManager signHash:hash result:&sig error:error]) {
-        return nil;
-    }
-    if (!sig) return nil;
-    
-    // Create signed operation (with sig field)
-    NSMutableDictionary *signedData = [unsignedData mutableCopy];
-    signedData[@"sig"] = [CryptoUtils base64URLEncode:sig];
+    NSDictionary *signedData = [operationProvider signedOperationForUnsignedData:unsignedData error:error];
+    if (!signedData) return nil;
     
     // Calculate DID from the SIGNED operation (per did-method-plc spec v0.3.0)
-    NSString *did = [PLCOperation calculateDIDForSignedOperation:signedData];
+    NSString *did = [operationProvider didForSignedOperation:signedData error:error];
     GZ_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Calculated DID %@ for signed operation", did);
     
     return did;
@@ -1057,17 +1054,35 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         plcURLString = @"http://127.0.0.1:2582";
     }
     
-    // Generate the DID (pure, sans-IO)
-    NSString *did = [self _generateDIDWithHandle:handle signingKey:signingKey rotationKey:rotationKey error:error];
-    if (!did) return nil;
-    
-    // Build the operation for submission (I/O layer needs full operation)
+    // Build and sign the operation once. The submitted signed operation must be
+    // the same bytes from which the DID was derived; signing a second copy can
+    // produce a different signature with a different content-addressed DID.
     NSString *pdsURL = config.canonicalIssuer;
     NSString *signingKeyMultibase = [signingKey didKeyString];
     NSString *rotationKeyMultibase = [rotationKey didKeyString];
-    
-    PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
-    NSString *serverRotationKey = keyManager.rotationKeyDidKey;
+    id<PDSPLCAccountOperationProvider> operationProvider = self.plcOperationProvider;
+    if (!operationProvider) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server"
+                                         code:503
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PLC account-operation provider unavailable"}];
+        }
+        return nil;
+    }
+    NSError *keyLoadError = nil;
+    if (![operationProvider loadOrGenerateKeyWithError:&keyLoadError]) {
+        if (error) *error = keyLoadError;
+        return nil;
+    }
+    NSString *serverRotationKey = operationProvider.rotationKeyDidKey;
+    if (serverRotationKey.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server"
+                                         code:503
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PLC rotation key unavailable"}];
+        }
+        return nil;
+    }
     NSArray *rotationKeys = @[serverRotationKey, rotationKeyMultibase];
     
     // Rebuild unsigned data for the operation
@@ -1080,23 +1095,11 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         @"prev": [NSNull null]
     };
     
-    // Re-sign for the operation
-    NSData *unsignedCBOR = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:NO] encodeDataWithJSONObject:unsignedData error:error];
-    if (!unsignedCBOR) return nil;
-    
-    NSData *hash = [CID rawSha256:unsignedCBOR];
-    NSData *sig = nil;
-    if (![keyManager signHash:hash result:&sig error:error]) {
-        return nil;
-    }
-    
-    PLCOperation *op = [[PLCOperation alloc] init];
-    op.did = did;
-    op.data = [unsignedData copy];
-    op.sig = [CryptoUtils base64URLEncode:sig];
-    op.prev = nil;
-    
-    NSDictionary *opDict = [op toDictionary];
+    // Sign the operation through the PLC-owned provider.
+    NSDictionary *opDict = [operationProvider signedOperationForUnsignedData:unsignedData error:error];
+    if (!opDict) return nil;
+    NSString *did = [operationProvider didForSignedOperation:opDict error:error];
+    if (did.length == 0) return nil;
     GZ_LOG_AUTH_INFO(@"[PDS ACCOUNT] Registering DID %@ with PLC at %@", did, plcURLString);
     NSData *postData = [NSJSONSerialization dataWithJSONObject:opDict options:0 error:error];
     if (!postData) return nil;
@@ -1107,7 +1110,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     request.HTTPBody = postData;
     
-    ATProtoSafeHTTPClientOptions *httpOptions = [ATProtoSafeHTTPClientOptions defaultOptions];
+    GZHTTPClientOptions *httpOptions = [GZHTTPClientOptions defaultOptions];
 #if defined(GNUSTEP)
     // On GNUstep, NSURLSession cannot make outbound HTTPS requests.
     // Use a short timeout so it fails fast and falls back to curl.
@@ -1118,7 +1121,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     __block NSString *resultDid = nil;
     __block NSError *innerError = nil;
     
-    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:httpOptions completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[GZHTTPClientRegistry sharedClient] performDataTaskWithRequest:request options:httpOptions completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         if (error) {
             innerError = error;

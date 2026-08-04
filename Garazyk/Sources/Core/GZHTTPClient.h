@@ -20,6 +20,29 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/** Error domain for policy-aware outbound HTTP requests. */
+FOUNDATION_EXPORT NSErrorDomain const GZHTTPClientErrorDomain;
+
+typedef NS_ENUM(NSInteger, GZHTTPClientErrorCode) {
+    GZHTTPClientErrorInvalidURL = 1,
+    GZHTTPClientErrorUnsupportedScheme = 2,
+    GZHTTPClientErrorSSRFBlocked = 3,
+    GZHTTPClientErrorResponseTooLarge = 4,
+    GZHTTPClientErrorRedirectBlocked = 5,
+    /** No transport implementation has been registered in this process. */
+    GZHTTPClientErrorUnavailable = 6,
+};
+
+/** Transport-independent policy passed to the safe HTTP implementation. */
+@interface GZHTTPClientOptions : NSObject <NSCopying>
+@property (nonatomic, assign) NSTimeInterval timeout;
+@property (nonatomic, assign) NSUInteger maxResponseBytes;
+@property (nonatomic, assign) BOOL allowHTTP;
+@property (nonatomic, assign) BOOL allowPrivateHosts;
+@property (nonatomic, assign) BOOL followRedirects;
++ (instancetype)defaultOptions;
+@end
+
 /*!
  @protocol GZHTTPClient
 
@@ -29,6 +52,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @protocol GZHTTPClient <NSObject>
 
+- (void)performDataTaskWithRequest:(NSURLRequest *)request
+                            options:(nullable GZHTTPClientOptions *)options
+                         completion:(void (^)(NSData * _Nullable data,
+                                              NSHTTPURLResponse * _Nullable response,
+                                              NSError * _Nullable error))completion;
+
+- (nullable NSData *)sendSynchronousRequest:(NSURLRequest *)request
+                                    options:(nullable GZHTTPClientOptions *)options
+                                   response:(NSHTTPURLResponse * _Nullable * _Nullable)response
+                                      error:(NSError **)error;
+
+/** Compatibility convenience for Core callers that only need a timeout. */
 - (void)performDataTaskWithRequest:(NSURLRequest *)request
                             timeout:(NSTimeInterval)timeout
                          completion:(void (^)(NSData * _Nullable data,
@@ -51,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! The default client. Set automatically by Transport at load time; nil if
     nothing has registered one (e.g. a binary that never links Transport). */
-+ (nullable id<GZHTTPClient>)sharedClient;
++ (id<GZHTTPClient>)sharedClient;
 
 /*! Registers the default client. Transport calls this from `+load`; tests
     may call it directly to inject a fake. */

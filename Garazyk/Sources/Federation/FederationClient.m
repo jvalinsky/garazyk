@@ -7,7 +7,7 @@
 #import "Lexicon/ATProtoLexiconSchema.h"
 #import "Lexicon/ATProtoLexiconDef.h"
 #import "App/ATProtoServiceConfiguration.h"
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/HttpRetryPolicy.h"
 
@@ -54,14 +54,14 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 - (void)executeRequestWithRetry:(NSURLRequest *)request
                         attempt:(NSInteger)attempt
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
-    ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
+    GZHTTPClientOptions *safeOptions = [[GZHTTPClientOptions alloc] init];
     safeOptions.timeout = 30.0;
     safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
     safeOptions.allowHTTP = NO;
     safeOptions.allowPrivateHosts = NO;
     safeOptions.followRedirects = YES;
 
-    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+    [[GZHTTPClientRegistry sharedClient] performDataTaskWithRequest:request
                                                    options:safeOptions
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         NSInteger statusCode = response ? response.statusCode : 0;
@@ -240,14 +240,14 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 
     request.HTTPBody = body;
 
-    ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
+    GZHTTPClientOptions *safeOptions = [[GZHTTPClientOptions alloc] init];
     safeOptions.timeout = 30.0;
     safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
     safeOptions.allowHTTP = NO;
     safeOptions.allowPrivateHosts = NO;
     safeOptions.followRedirects = YES;
 
-    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+    [[GZHTTPClientRegistry sharedClient] performDataTaskWithRequest:request
                                                    options:safeOptions
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         completion(data, response, error);

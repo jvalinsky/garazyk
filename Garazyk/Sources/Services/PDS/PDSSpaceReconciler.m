@@ -12,7 +12,7 @@
 #import "Core/NSDictionary+CID.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "Repository/CAR.h"
 #import "Security/Space/PDSSpaceURI.h"
 #import "Services/PDS/PDSSpaceStore.h"
@@ -129,7 +129,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
   request.HTTPBody = body;
   [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
   [request setValue:[@"Bearer " stringByAppendingString:token] forHTTPHeaderField:@"Authorization"];
-  [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:nil completion:
+  [[GZHTTPClientRegistry sharedClient] performDataTaskWithRequest:request options:nil completion:
       ^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         if (error || response.statusCode < 200 || response.statusCode >= 300) {
           GZ_LOG_SYNC_WARN(@"permissioned-space event=replay_failed status=%ld error=%@",
@@ -301,7 +301,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
                              space.spaceURI, author] relativeToURL:endpoint]];
   [request setValue:[@"Bearer " stringByAppendingString:token] forHTTPHeaderField:@"Authorization"];
   NSError *fetchError = nil;
-  NSData *carData = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
+  NSData *carData = [[GZHTTPClientRegistry sharedClient] sendSynchronousRequest:request
                                                                         options:nil
                                                                        response:nil
                                                                           error:&fetchError];
@@ -473,7 +473,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
   [request setValue:[@"Bearer " stringByAppendingString:token] forHTTPHeaderField:@"Authorization"];
   NSError *fetchError = nil;
-  NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
+  NSData *data = [[GZHTTPClientRegistry sharedClient] sendSynchronousRequest:request
                                                                     options:nil
                                                                    response:nil
                                                                       error:&fetchError];

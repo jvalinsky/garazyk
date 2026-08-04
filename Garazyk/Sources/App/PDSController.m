@@ -61,6 +61,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   PDSAccountService *_accountService;
   PDSRecordService *_recordService;
   PDSBlobService *_blobService;
+  id<VideoJobStore> _videoJobStore;
   PDSRecordService *_serviceRecordService;
   PDSRepositoryService *_repositoryService;
   PDSRelayService *_relayService;
@@ -108,6 +109,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   return _relayService;
 }
 
+- (id<VideoJobStore>)videoJobStore {
+  return _videoJobStore;
+}
+
 - (BOOL)isRunning {
   if (_backingApplication) {
     return _backingApplication.isRunning;
@@ -131,6 +136,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     _accountService = (PDSAccountService *)application.accountService;
     _recordService = application.recordService;
     _blobService = application.blobService;
+    _videoJobStore = application.videoJobStore;
     _repositoryService = application.repositoryService;
     _relayService = application.relayService;
     _adminController = (PDSAdminController *)application.adminController;
