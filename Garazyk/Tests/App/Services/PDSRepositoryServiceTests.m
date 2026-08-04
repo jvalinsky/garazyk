@@ -73,14 +73,14 @@
         return nil;
     }
 
-    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+    ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlock.data];
     XCTAssertNotNil(commitValue);
     XCTAssertEqual(commitValue.type, CBORTypeMap);
     if (!commitValue || commitValue.type != CBORTypeMap) {
         return nil;
     }
 
-    CBORValue *revValue = commitValue.map[[CBORValue textString:@"rev"]];
+    ATProtoCBORValue *revValue = commitValue.map[[ATProtoCBORValue textString:@"rev"]];
     XCTAssertNotNil(revValue);
     XCTAssertEqual(revValue.type, CBORTypeTextString);
     return revValue.textString;
@@ -101,21 +101,21 @@
         return nil;
     }
 
-    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+    ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlock.data];
     XCTAssertNotNil(commitValue);
     XCTAssertEqual(commitValue.type, CBORTypeMap);
     if (!commitValue || commitValue.type != CBORTypeMap) {
         return nil;
     }
 
-    CBORValue *dataValue = commitValue.map[[CBORValue textString:@"data"]];
+    ATProtoCBORValue *dataValue = commitValue.map[[ATProtoCBORValue textString:@"data"]];
     XCTAssertNotNil(dataValue);
     XCTAssertEqual(dataValue.type, CBORTypeTag);
     if (!dataValue || dataValue.type != CBORTypeTag) {
         return nil;
     }
 
-    CBORValue *tagged = dataValue.tagValue;
+    ATProtoCBORValue *tagged = dataValue.tagValue;
     XCTAssertEqual(tagged.type, CBORTypeByteString);
     NSData *tagBytes = tagged.byteString;
     XCTAssertTrue(tagBytes.length > 1);
@@ -1011,29 +1011,29 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
     XCTAssertTrue(commitBlock.data.length > 0, @"Commit block must have data");
 
     // Parse commit to verify structure
-    CBORValue *commitValue = [CBORValue decode:commitBlock.data];
+    ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlock.data];
     XCTAssertNotNil(commitValue);
     XCTAssertEqual(commitValue.type, CBORTypeMap, @"Commit must be a CBOR map");
 
     // Commit must have required fields: did, version, data, rev, sig
-    CBORValue *didVal = commitValue.map[[CBORValue textString:@"did"]];
+    ATProtoCBORValue *didVal = commitValue.map[[ATProtoCBORValue textString:@"did"]];
     XCTAssertNotNil(didVal);
     XCTAssertEqualObjects(didVal.textString, goldenDID, @"Commit did must match");
 
-    CBORValue *versionVal = commitValue.map[[CBORValue textString:@"version"]];
+    ATProtoCBORValue *versionVal = commitValue.map[[ATProtoCBORValue textString:@"version"]];
     XCTAssertNotNil(versionVal);
     XCTAssertEqual([versionVal.unsignedInteger integerValue], 3, @"Commit version must be 3");
 
-    CBORValue *dataVal = commitValue.map[[CBORValue textString:@"data"]];
+    ATProtoCBORValue *dataVal = commitValue.map[[ATProtoCBORValue textString:@"data"]];
     XCTAssertNotNil(dataVal, @"Commit must have a data field (MST root CID)");
     XCTAssertEqual(dataVal.type, CBORTypeTag, @"Commit data must be a CID tag");
 
-    CBORValue *revVal = commitValue.map[[CBORValue textString:@"rev"]];
+    ATProtoCBORValue *revVal = commitValue.map[[ATProtoCBORValue textString:@"rev"]];
     XCTAssertNotNil(revVal, @"Commit must have a rev field");
     XCTAssertEqual(revVal.type, CBORTypeTextString, @"Commit rev must be a string");
     XCTAssertTrue(revVal.textString.length > 0, @"Commit rev must be non-empty");
 
-    CBORValue *sigVal = commitValue.map[[CBORValue textString:@"sig"]];
+    ATProtoCBORValue *sigVal = commitValue.map[[ATProtoCBORValue textString:@"sig"]];
     XCTAssertNotNil(sigVal, @"Commit must have a sig field");
     XCTAssertEqual(sigVal.type, CBORTypeByteString, @"Commit sig must be bytes");
     XCTAssertTrue(sigVal.byteString.length > 0, @"Commit sig must be non-empty");

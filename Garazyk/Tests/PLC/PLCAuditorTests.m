@@ -49,7 +49,7 @@
 }
 
 - (void)testAuditorRejectsInvalidSignature {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     XCTAssertNotNil(keyPair);
 
     NSString *didKey = [keyPair didKeyString];
@@ -79,7 +79,7 @@
 }
 
 - (void)testAuditorRejectsMismatchedPrevHash {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
 
     // 1. Genesis operation
@@ -128,8 +128,8 @@
 }
 
 - (void)testAuditorValidatesMultiStepChainWithKeyRotation {
-    Secp256k1KeyPair *key1 = [[Secp256k1 shared] generateKeyPairWithError:nil];
-    Secp256k1KeyPair *key2 = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *key1 = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *key2 = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSString *key1Did = [key1 didKeyString];
     NSString *key2Did = [key2 didKeyString];
 
@@ -198,7 +198,7 @@
 }
 
 - (void)testAuditorValidatesHandleUpdate {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
 
     NSDictionary *op1Data = @{
@@ -246,7 +246,7 @@
 #pragma mark - verifyChain:did:error: (store-free audit-log verification)
 
 - (void)testVerifyChainAcceptsValidNonTombstoneChain {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
 
     NSDictionary *op1Data = @{
@@ -272,7 +272,7 @@
 }
 
 - (void)testVerifyChainAcceptsSignedTombstoneAtEnd {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
 
     NSDictionary *op1Data = @{
@@ -318,8 +318,8 @@
     // +verifyChain:did:error: returned YES for a trailing tombstone as
     // soon as ordering was confirmed, without ever calling
     // verifySignatureForOperation: on it.
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
-    Secp256k1KeyPair *attackerKeyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *attackerKeyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
 
     NSDictionary *op1Data = @{
@@ -362,7 +362,7 @@
 }
 
 - (void)testVerifyChainRejectsTombstoneNotLast {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSString *didKey = [keyPair didKeyString];
 
     NSDictionary *op1Data = @{

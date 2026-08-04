@@ -81,7 +81,7 @@
 }
 
 - (PLCOperation *)insertTestOperation {
-    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[keyPair.didKeyString],

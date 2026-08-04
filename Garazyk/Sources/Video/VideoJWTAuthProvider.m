@@ -41,7 +41,7 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
 
         // Create a DID resolver for verifying Service Auth JWTs.
         // The resolver needs the PLC URL to resolve did:plc DIDs.
-        _didResolver = [[DIDResolver alloc] init];
+        _didResolver = [[ATProtoDIDResolver alloc] init];
         _didResolver.plcURL = plcURL ?: @"https://plc.directory";
     }
     return self;
@@ -240,7 +240,7 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
     // Resolve the issuer's DID document to get their signing key
     NSDictionary *atprotoData = nil;
     if (forceRefresh) {
-        DIDDocument *doc = [self.didResolver resolveDIDSync:iss forceRefresh:YES error:error];
+        ATProtoDIDDocument *doc = [self.didResolver resolveDIDSync:iss forceRefresh:YES error:error];
         if (!doc) {
             GZ_LOG_WARN(@"Service Auth: DID resolution failed for %@ (forceRefresh): %@", iss, error ? *error : @"unknown");
             return NO;
@@ -282,7 +282,7 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
     return [verifier verifyJWT:jwt error:error];
 }
 
-- (nullable NSDictionary *)atprotoDataFromDocument:(DIDDocument *)doc {
+- (nullable NSDictionary *)atprotoDataFromDocument:(ATProtoDIDDocument *)doc {
     // Re-implement the key extraction logic from resolveAtprotoDataForDID:
     // since that method doesn't take a pre-resolved document.
     NSMutableDictionary *result = [NSMutableDictionary dictionary];

@@ -3,7 +3,7 @@
 #import <Foundation/Foundation.h>
 #import "Video/VideoAuthProvider.h"
 
-@class DIDResolver;
+@class ATProtoDIDResolver;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract The DID resolver instance for key-based authentication.
  */
-@property (nonatomic, strong, nullable, readonly) DIDResolver *didResolver;
+@property (nonatomic, strong, nullable, readonly) ATProtoDIDResolver *didResolver;
 
 /**
  * @abstract Initializes with an expected audience and static JWK.

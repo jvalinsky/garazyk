@@ -254,7 +254,7 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
   return nil;
 }
 
-+ (nullable NSString *)pdsEndpointFromDidDocument:(DIDDocument *)document
++ (nullable NSString *)pdsEndpointFromDidDocument:(ATProtoDIDDocument *)document
                                             error:(NSError **)error {
   for (id serviceEntry in document.service ?: @[]) {
     if (![serviceEntry isKindOfClass:[NSDictionary class]]) {
@@ -492,9 +492,9 @@ static BOOL PDSLexiconResolverRunningTests(void) {
     return nil;
   }
 
-  DIDResolver *resolver = [DIDResolver sharedResolver];
+  ATProtoDIDResolver *resolver = [ATProtoDIDResolver sharedResolver];
   NSError *resolveError = nil;
-  DIDDocument *didDocument =
+  ATProtoDIDDocument *didDocument =
       [resolver resolveDIDSync:authorityDID error:&resolveError];
   if (!didDocument) {
     if (error) {

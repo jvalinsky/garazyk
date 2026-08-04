@@ -20,13 +20,13 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const Secp256k1ErrorDomain;
 
 /*!
- @class Secp256k1KeyPair
+ @class ATProtoSecp256k1KeyPair
 
  @abstract Represents a secp256k1 public/private key pair.
 
  @discussion Provides signing and verification methods for ECDSA signatures.
  */
-@interface Secp256k1KeyPair : NSObject
+@interface ATProtoSecp256k1KeyPair : NSObject
 
 /*! The 32-byte private key. */
 @property (nonatomic, copy, readonly) NSData *privateKey;
@@ -67,10 +67,10 @@ extern NSString * const Secp256k1ErrorDomain;
 + (instancetype)shared;
 
 /*! Generates a new key pair using the shared context. */
-- (nullable Secp256k1KeyPair *)generateKeyPairWithError:(NSError **)error;
+- (nullable ATProtoSecp256k1KeyPair *)generateKeyPairWithError:(NSError **)error;
 
 /*! Creates a key pair from private key bytes. */
-- (nullable Secp256k1KeyPair *)keyPairFromPrivateKey:(NSData *)privateKey error:(NSError **)error;
+- (nullable ATProtoSecp256k1KeyPair *)keyPairFromPrivateKey:(NSData *)privateKey error:(NSError **)error;
 
 /*! Signs a hash with a private key. */
 - (nullable NSData *)signHash:(NSData *)hash withPrivateKey:(NSData *)privateKey error:(NSError **)error;

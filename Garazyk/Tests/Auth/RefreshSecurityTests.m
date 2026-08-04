@@ -40,7 +40,7 @@
     self.server.jwtMinter.audience = self.server.issuer;
     self.server.jwtMinter.signingAlgorithm = @"ES256K";
     
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:nil];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:nil];
     self.server.jwtMinter.privateKey = keyPair.privateKey;
 }
 

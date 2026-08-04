@@ -36,7 +36,7 @@
     self.minter.defaultExpiration = 3600;
 
     NSError *error = nil;
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&error];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&error];
     XCTAssertNotNil(keyPair, @"Failed to generate key pair: %@", error);
     self.minter.privateKey = keyPair.privateKey;
 

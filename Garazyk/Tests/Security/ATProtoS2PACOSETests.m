@@ -9,12 +9,12 @@
 
 @implementation ATProtoS2PACOSETests
 
-- (Secp256k1KeyPair *)testKeyPair {
+- (ATProtoSecp256k1KeyPair *)testKeyPair {
     uint8_t privateKeyBytes[32] = {0};
     privateKeyBytes[31] = 1;
     NSData *privateKey = [NSData dataWithBytes:privateKeyBytes length:sizeof(privateKeyBytes)];
     NSError *error = nil;
-    Secp256k1KeyPair *pair = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:&error];
+    ATProtoSecp256k1KeyPair *pair = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:&error];
     XCTAssertNotNil(pair, @"Fixed test key must be valid: %@", error);
     return pair;
 }
@@ -31,7 +31,7 @@
     XCTAssertNotNil(structure);
 
     NSUInteger offset = 0;
-    CBORValue *decoded = [ATProtoCBORDecoder decode:structure offset:&offset];
+    ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:structure offset:&offset];
     XCTAssertEqual(offset, structure.length);
     XCTAssertEqual(decoded.type, CBORTypeArray);
     XCTAssertEqual(decoded.array.count, 4U);
@@ -42,7 +42,7 @@
 }
 
 - (void)testSignAndVerifyAttachedPayload {
-    Secp256k1KeyPair *pair = [self testKeyPair];
+    ATProtoSecp256k1KeyPair *pair = [self testKeyPair];
     NSData *payload = [@"deterministic claim" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
     NSData *envelope = [ATProtoS2PACOSE signPayload:payload withKeyPair:pair error:&error];
@@ -54,7 +54,7 @@
 }
 
 - (void)testSigningIsDeterministic {
-    Secp256k1KeyPair *pair = [self testKeyPair];
+    ATProtoSecp256k1KeyPair *pair = [self testKeyPair];
     NSData *payload = [@"same bytes" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *first = [ATProtoS2PACOSE signPayload:payload withKeyPair:pair error:nil];
     NSData *second = [ATProtoS2PACOSE signPayload:payload withKeyPair:pair error:nil];
@@ -62,7 +62,7 @@
 }
 
 - (void)testPayloadTamperingFailsVerification {
-    Secp256k1KeyPair *pair = [self testKeyPair];
+    ATProtoSecp256k1KeyPair *pair = [self testKeyPair];
     NSData *originalPayload = [@"original" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *signedEnvelope = [ATProtoS2PACOSE signPayload:originalPayload
                                              withKeyPair:pair
@@ -72,13 +72,13 @@
     // payload. This deliberately preserves a valid envelope so the assertion
     // exercises cryptographic failure rather than parser rejection.
     NSUInteger offset = 0;
-    CBORValue *decoded = [ATProtoCBORDecoder decode:signedEnvelope offset:&offset];
+    ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:signedEnvelope offset:&offset];
     XCTAssertEqual(offset, signedEnvelope.length);
     NSMutableData *tamperedPayload = [originalPayload mutableCopy];
     ((uint8_t *)tamperedPayload.mutableBytes)[0] ^= 0x01;
-    CBORValue *tampered = [CBORValue array:@[
+    ATProtoCBORValue *tampered = [ATProtoCBORValue array:@[
         decoded.array[0], decoded.array[1],
-        [CBORValue byteString:tamperedPayload], decoded.array[3]
+        [ATProtoCBORValue byteString:tamperedPayload], decoded.array[3]
     ]];
 
     NSError *error = nil;
@@ -89,8 +89,8 @@
 }
 
 - (void)testWrongPublicKeyFailsVerification {
-    Secp256k1KeyPair *signer = [self testKeyPair];
-    Secp256k1KeyPair *other = [Secp256k1KeyPair keyPairWithPrivateKey:
+    ATProtoSecp256k1KeyPair *signer = [self testKeyPair];
+    ATProtoSecp256k1KeyPair *other = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:
         [NSData dataWithBytes:(uint8_t[32]){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2} length:32]
                                                                  error:nil];
     NSData *envelope = [ATProtoS2PACOSE signPayload:[NSData data] withKeyPair:signer error:nil];
@@ -100,14 +100,14 @@
 }
 
 - (void)testRejectsUnsupportedAlgorithm {
-    CBORValue *protectedMap = [CBORValue map:@{
-        [CBORValue unsignedInteger:1]: [CBORValue negativeInteger:-7]
+    ATProtoCBORValue *protectedMap = [ATProtoCBORValue map:@{
+        [ATProtoCBORValue unsignedInteger:1]: [ATProtoCBORValue negativeInteger:-7]
     }];
-    CBORValue *envelope = [CBORValue array:@[
-        [CBORValue byteString:protectedMap.encode],
-        [CBORValue map:@{}],
-        [CBORValue byteString:[NSData data]],
-        [CBORValue byteString:[NSMutableData dataWithLength:64]]
+    ATProtoCBORValue *envelope = [ATProtoCBORValue array:@[
+        [ATProtoCBORValue byteString:protectedMap.encode],
+        [ATProtoCBORValue map:@{}],
+        [ATProtoCBORValue byteString:[NSData data]],
+        [ATProtoCBORValue byteString:[NSMutableData dataWithLength:64]]
     ]];
     NSError *error = nil;
     XCTAssertNil([ATProtoS2PACOSE payloadFromEnvelope:envelope.encode error:&error]);
@@ -131,7 +131,7 @@
 }
 
 - (void)testVerificationDoesNotConsultTrustAnchors {
-    Secp256k1KeyPair *pair = [self testKeyPair];
+    ATProtoSecp256k1KeyPair *pair = [self testKeyPair];
     NSData *envelope = [ATProtoS2PACOSE signPayload:[NSData data] withKeyPair:pair error:nil];
     NSError *error = nil;
     XCTAssertTrue([ATProtoS2PACOSE verifyEnvelope:envelope withPublicKey:pair.publicKey error:&error]);

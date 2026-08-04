@@ -17,7 +17,7 @@
 
 - (JWTMinter *)testMinterWithPublicKey:(NSData **)publicKeyOut {
     NSError *keyError = nil;
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&keyError];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&keyError];
     XCTAssertNotNil(keyPair, @"Failed to generate test key pair: %@", keyError);
     if (!keyPair) return nil;
 
@@ -240,7 +240,7 @@
 #pragma mark - CBOR Tests
 
 - (void)testCBORIntegerEncoding {
-    CBORValue *value = [CBORValue unsignedInteger:42];
+    ATProtoCBORValue *value = [ATProtoCBORValue unsignedInteger:42];
     NSData *encoded = [value encode];
 
     XCTAssertNotNil(encoded);
@@ -250,7 +250,7 @@
 }
 
 - (void)testEncodeTextStringReturnsNonEmptyData {
-    CBORValue *value = [CBORValue textString:@"hello"];
+    ATProtoCBORValue *value = [ATProtoCBORValue textString:@"hello"];
     NSData *encoded = [value encode];
 
     XCTAssertNotNil(encoded);
@@ -258,12 +258,12 @@
 }
 
 - (void)testEncodeArrayReturnsNonEmptyData {
-    NSArray<CBORValue *> *array = @[
-        [CBORValue unsignedInteger:1],
-        [CBORValue unsignedInteger:2],
-        [CBORValue unsignedInteger:3]
+    NSArray<ATProtoCBORValue *> *array = @[
+        [ATProtoCBORValue unsignedInteger:1],
+        [ATProtoCBORValue unsignedInteger:2],
+        [ATProtoCBORValue unsignedInteger:3]
     ];
-    CBORValue *value = [CBORValue array:array];
+    ATProtoCBORValue *value = [ATProtoCBORValue array:array];
     NSData *encoded = [value encode];
 
     XCTAssertNotNil(encoded);
@@ -271,9 +271,9 @@
 }
 
 - (void)testEncodeMapReturnsNonEmptyData {
-    NSMutableDictionary<CBORValue *, CBORValue *> *map = [NSMutableDictionary dictionary];
-    map[[CBORValue textString:@"key"]] = [CBORValue textString:@"value"];
-    CBORValue *value = [CBORValue map:map];
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *map = [NSMutableDictionary dictionary];
+    map[[ATProtoCBORValue textString:@"key"]] = [ATProtoCBORValue textString:@"value"];
+    ATProtoCBORValue *value = [ATProtoCBORValue map:map];
     NSData *encoded = [value encode];
 
     XCTAssertNotNil(encoded);
@@ -281,15 +281,15 @@
 }
 
 - (void)testCBORRoundTripYieldsMap {
-    NSMutableDictionary<CBORValue *, CBORValue *> *original = [NSMutableDictionary dictionary];
-    original[[CBORValue textString:@"name"]] = [CBORValue textString:@"test"];
-    original[[CBORValue textString:@"count"]] = [CBORValue unsignedInteger:42];
-    original[[CBORValue textString:@"nested"]] = [CBORValue map:@{
-        [CBORValue textString:@"inner"]: [CBORValue textString:@"value"]
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *original = [NSMutableDictionary dictionary];
+    original[[ATProtoCBORValue textString:@"name"]] = [ATProtoCBORValue textString:@"test"];
+    original[[ATProtoCBORValue textString:@"count"]] = [ATProtoCBORValue unsignedInteger:42];
+    original[[ATProtoCBORValue textString:@"nested"]] = [ATProtoCBORValue map:@{
+        [ATProtoCBORValue textString:@"inner"]: [ATProtoCBORValue textString:@"value"]
     }];
 
-    NSData *encoded = [[CBORValue map:original] encode];
-    CBORValue *decoded = [CBORValue decode:encoded];
+    NSData *encoded = [[ATProtoCBORValue map:original] encode];
+    ATProtoCBORValue *decoded = [ATProtoCBORValue decode:encoded];
 
     XCTAssertNotNil(decoded);
     XCTAssertEqual(decoded.type, CBORTypeMap);

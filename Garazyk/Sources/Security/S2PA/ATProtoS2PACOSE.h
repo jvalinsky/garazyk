@@ -58,7 +58,7 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAErrorCode) {
  Signs a payload as an attached ES256K COSE_Sign1 message.
  */
 + (nullable NSData *)signPayload:(NSData *)payload
-                    withKeyPair:(Secp256k1KeyPair *)keyPair
+                    withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
                            error:(NSError **)error;
 
 /**

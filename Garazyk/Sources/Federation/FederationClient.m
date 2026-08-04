@@ -44,8 +44,8 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
             _retryPolicy.initialDelay = 0.01;
         }
 
-        _didResolver = [[DIDResolver alloc] init];
-        ((DIDResolver *)_didResolver).plcURL = [ATProtoServiceConfiguration sharedConfiguration].plcURL;
+        _didResolver = [[ATProtoDIDResolver alloc] init];
+        ((ATProtoDIDResolver *)_didResolver).plcURL = [ATProtoServiceConfiguration sharedConfiguration].plcURL;
         _preferredRepoFormat = PDSRepoFormatSTARL0;
     }
     return self;
@@ -124,7 +124,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     if (!completion) return;
 
     // Resolve the DID to find the PDS endpoint
-    NSDictionary *atprotoData = [(DIDResolver *)self.didResolver resolveAtprotoDataForDID:did error:nil];
+    NSDictionary *atprotoData = [(ATProtoDIDResolver *)self.didResolver resolveAtprotoDataForDID:did error:nil];
     if (!atprotoData || !atprotoData[@"pds"]) {
         NSError *error = [NSError errorWithDomain:FederationErrorDomain
                                          code:FederationErrorDIDResolutionFailed
@@ -262,7 +262,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     if (!completion) return;
 
     // Resolve the DID to find the PDS endpoint
-    NSDictionary *atprotoData = [(DIDResolver *)self.didResolver resolveAtprotoDataForDID:did error:nil];
+    NSDictionary *atprotoData = [(ATProtoDIDResolver *)self.didResolver resolveAtprotoDataForDID:did error:nil];
     if (!atprotoData || !atprotoData[@"pds"]) {
         NSError *error = [NSError errorWithDomain:FederationErrorDomain
                                          code:FederationErrorDIDResolutionFailed

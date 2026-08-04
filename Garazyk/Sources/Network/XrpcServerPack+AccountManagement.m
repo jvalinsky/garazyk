@@ -661,7 +661,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
             }
             signingKey = storedKey;
         } else {
-            Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:&error];
+            ATProtoSecp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:&error];
             if (keyPair) {
                 signingKey = keyPair.didKeyString;
             }

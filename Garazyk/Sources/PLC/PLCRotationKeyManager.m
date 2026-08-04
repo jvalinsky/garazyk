@@ -55,7 +55,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
 @interface PLCRotationKeyManager ()
 
 @property (nonatomic, copy, readwrite, nullable) NSString *keyStoragePath;
-@property (nonatomic, strong, readwrite, nullable) Secp256k1KeyPair *rotationKeyPair;
+@property (nonatomic, strong, readwrite, nullable) ATProtoSecp256k1KeyPair *rotationKeyPair;
 @property (nonatomic, copy, readwrite, nullable) NSString *rotationKeyDidKey;
 
 - (void)ensureSecurePermissionsForPath:(NSString *)path isDirectory:(BOOL)isDir;

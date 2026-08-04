@@ -52,14 +52,14 @@ typedef NS_ENUM(NSInteger, CBORType) {
 };
 
 /*!
- @class CBORValue
+ @class ATProtoCBORValue
 
  @abstract Represents a typed CBOR value.
 
  @discussion Wraps any CBOR data type with accessors for the underlying value.
  Supports encoding to bytes and decoding from bytes.
  */
-@interface CBORValue : NSObject <NSCopying>
+@interface ATProtoCBORValue : NSObject <NSCopying>
 
 /*! The CBOR major type of this value. */
 @property (nonatomic, assign, readonly) CBORType type;
@@ -76,17 +76,17 @@ typedef NS_ENUM(NSInteger, CBORType) {
 /*! Text string for type 3. */
 @property (nonatomic, copy, readonly, nullable) NSString *textString;
 
-/*! Array of CBORValue items for type 4. */
-@property (nonatomic, copy, readonly, nullable) NSArray<CBORValue *> *array;
+/*! Array of ATProtoCBORValue items for type 4. */
+@property (nonatomic, copy, readonly, nullable) NSArray<ATProtoCBORValue *> *array;
 
 /*! Map of CBOR key-value pairs for type 5. */
-@property (nonatomic, copy, readonly, nullable) NSDictionary<CBORValue *, CBORValue *> *map;
+@property (nonatomic, copy, readonly, nullable) NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *map;
 
 /*! Semantic tag number for type 6. */
 @property (nonatomic, strong, readonly, nullable) NSNumber *tag;
 
 /*! Tagged value content for type 6. */
-@property (nonatomic, strong, readonly, nullable) CBORValue *tagValue;
+@property (nonatomic, strong, readonly, nullable) ATProtoCBORValue *tagValue;
 
 /*! Simple value for type 7 (false, true, null, undefined). */
 @property (nonatomic, strong, readonly, nullable) NSNumber *simpleValue;
@@ -103,11 +103,11 @@ typedef NS_ENUM(NSInteger, CBORType) {
 /** Creates a text-string CBOR value. */
 + (instancetype)textString:(NSString *)string;
 /** Creates an array CBOR value. */
-+ (instancetype)array:(NSArray<CBORValue *> *)array;
++ (instancetype)array:(NSArray<ATProtoCBORValue *> *)array;
 /** Creates a map CBOR value. */
-+ (instancetype)map:(NSDictionary<CBORValue *, CBORValue *> *)map;
++ (instancetype)map:(NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *)map;
 /** Creates a tagged CBOR value. */
-+ (instancetype)tag:(NSUInteger)tag value:(CBORValue *)value;
++ (instancetype)tag:(NSUInteger)tag value:(ATProtoCBORValue *)value;
 /** Creates a simple-value CBOR value. */
 + (instancetype)simple:(NSUInteger)value;
 /** Creates a floating-point CBOR value. */
@@ -127,11 +127,11 @@ typedef NS_ENUM(NSInteger, CBORType) {
 /** Initializes a text-string CBOR value. */
 - (instancetype)initWithTextString:(NSString *)string;
 /** Initializes an array CBOR value. */
-- (instancetype)initWithArray:(NSArray<CBORValue *> *)array;
+- (instancetype)initWithArray:(NSArray<ATProtoCBORValue *> *)array;
 /** Initializes a map CBOR value. */
-- (instancetype)initWithMap:(NSDictionary<CBORValue *, CBORValue *> *)map;
+- (instancetype)initWithMap:(NSDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *)map;
 /** Initializes a tagged CBOR value. */
-- (instancetype)initWithTag:(NSNumber *)tag value:(CBORValue *)value;
+- (instancetype)initWithTag:(NSNumber *)tag value:(ATProtoCBORValue *)value;
 /** Initializes a simple-value CBOR value. */
 - (instancetype)initWithSimpleValue:(NSNumber *)value;
 /** Initializes a floating-point CBOR value. */
@@ -151,27 +151,27 @@ typedef NS_ENUM(NSInteger, CBORType) {
 /*!
  @class ATProtoCBOREncoder
 
- @abstract Encodes CBORValue objects to bytes.
+ @abstract Encodes ATProtoCBORValue objects to bytes.
  */
 @interface ATProtoCBOREncoder : NSObject
 
 /*! Encodes a CBOR value to byte data. */
-+ (NSData *)encode:(CBORValue *)value;
++ (NSData *)encode:(ATProtoCBORValue *)value;
 
 @end
 
 /*!
  @class ATProtoCBORDecoder
 
- @abstract Decodes CBOR bytes to CBORValue objects.
+ @abstract Decodes CBOR bytes to ATProtoCBORValue objects.
  */
 @interface ATProtoCBORDecoder : NSObject
 
 /*! Decodes CBOR data to a value. */
-+ (nullable CBORValue *)decode:(NSData *)data;
++ (nullable ATProtoCBORValue *)decode:(NSData *)data;
 
 /*! Decodes CBOR data starting at offset, updates offset after decoding. */
-+ (nullable CBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset;
++ (nullable ATProtoCBORValue *)decode:(NSData *)data offset:(NSUInteger *)offset;
 
 @end
 

@@ -6,7 +6,7 @@
 
 @implementation ATProtoDIDDocumentFields
 
-+ (nullable NSString *)normalizedHandleFromDocument:(DIDDocument *)document {
++ (nullable NSString *)normalizedHandleFromDocument:(ATProtoDIDDocument *)document {
     for (id entry in document.alsoKnownAs ?: @[]) {
         if (![entry isKindOfClass:[NSString class]]) continue;
         NSString *candidate = (NSString *)entry;
@@ -23,7 +23,7 @@
     return nil;
 }
 
-+ (nullable NSString *)pdsEndpointFromDocument:(DIDDocument *)document {
++ (nullable NSString *)pdsEndpointFromDocument:(ATProtoDIDDocument *)document {
     for (id entry in document.service ?: @[]) {
         if (![entry isKindOfClass:[NSDictionary class]]) continue;
         NSDictionary *service = (NSDictionary *)entry;
@@ -36,31 +36,31 @@
     return nil;
 }
 
-+ (nullable NSString *)atprotoSigningKeyMultibaseFromDocument:(DIDDocument *)document {
++ (nullable NSString *)atprotoSigningKeyMultibaseFromDocument:(ATProtoDIDDocument *)document {
     NSString *modernKey = [self signingKeyFromModernVerificationMethods:document.jsonDictionary[@"verificationMethod"]];
     if (modernKey.length > 0) return modernKey;
     return [self signingKeyFromLegacyVerificationMethods:document.jsonDictionary[@"verificationMethods"]];
 }
 
-+ (nullable NSString *)strictAtprotoSigningKeyMultibaseFromDocument:(DIDDocument *)document {
++ (nullable NSString *)strictAtprotoSigningKeyMultibaseFromDocument:(ATProtoDIDDocument *)document {
     return [self signingKeyFromDocument:document fragment:@"#atproto"];
 }
 
-+ (nullable NSString *)spaceSigningKeyMultibaseFromDocument:(DIDDocument *)document {
++ (nullable NSString *)spaceSigningKeyMultibaseFromDocument:(ATProtoDIDDocument *)document {
     NSString *key = [self dedicatedSpaceSigningKeyMultibaseFromDocument:document];
     return key.length > 0 ? key : [self signingKeyFromDocument:document fragment:@"#atproto"];
 }
 
-+ (nullable NSString *)dedicatedSpaceSigningKeyMultibaseFromDocument:(DIDDocument *)document {
++ (nullable NSString *)dedicatedSpaceSigningKeyMultibaseFromDocument:(ATProtoDIDDocument *)document {
     return [self signingKeyFromDocument:document fragment:@"#atproto_space"];
 }
 
-+ (nullable NSString *)spaceHostEndpointFromDocument:(DIDDocument *)document {
++ (nullable NSString *)spaceHostEndpointFromDocument:(ATProtoDIDDocument *)document {
     NSString *endpoint = [self endpointFromDocument:document fragment:@"#atproto_space_host"];
     return endpoint.length > 0 ? endpoint : [self endpointFromDocument:document fragment:@"#atproto_pds"];
 }
 
-+ (nullable NSString *)signingKeyFromDocument:(DIDDocument *)document fragment:(NSString *)fragment {
++ (nullable NSString *)signingKeyFromDocument:(ATProtoDIDDocument *)document fragment:(NSString *)fragment {
     NSDictionary *json = document.jsonDictionary;
     id modern = json[@"verificationMethod"];
     if ([modern isKindOfClass:[NSArray class]]) {
@@ -86,7 +86,7 @@
     return nil;
 }
 
-+ (nullable NSString *)endpointFromDocument:(DIDDocument *)document fragment:(NSString *)fragment {
++ (nullable NSString *)endpointFromDocument:(ATProtoDIDDocument *)document fragment:(NSString *)fragment {
     for (id entry in document.service ?: @[]) {
         if (![entry isKindOfClass:[NSDictionary class]]) continue;
         NSDictionary *service = (NSDictionary *)entry;
@@ -99,12 +99,12 @@
     return nil;
 }
 
-+ (BOOL)identifier:(NSString *)identifier matchesDocument:(DIDDocument *)document fragment:(NSString *)fragment {
++ (BOOL)identifier:(NSString *)identifier matchesDocument:(ATProtoDIDDocument *)document fragment:(NSString *)fragment {
     return [identifier isEqualToString:fragment] ||
            [identifier isEqualToString:[document.id stringByAppendingString:fragment]];
 }
 
-+ (NSArray<NSString *> *)legacyNamesForDocument:(DIDDocument *)document fragment:(NSString *)fragment {
++ (NSArray<NSString *> *)legacyNamesForDocument:(ATProtoDIDDocument *)document fragment:(NSString *)fragment {
     NSString *bare = [fragment substringFromIndex:1];
     return @[bare, fragment, [document.id stringByAppendingString:fragment]];
 }

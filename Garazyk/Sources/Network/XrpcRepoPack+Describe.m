@@ -52,7 +52,7 @@
         NSDictionary *stats = [recordService getRepoStatsForDid:did error:nil];
 
         // Resolve full DID document (required by lexicon).
-        DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:nil];
+        ATProtoDIDDocument *doc = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:nil];
         NSDictionary *didDocJson = nil;
 
         if (doc) {

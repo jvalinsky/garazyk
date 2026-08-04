@@ -26,7 +26,7 @@ extern NSString * const OAuth2ErrorDomain;
  * @abstract Defines the PDSKeyManager protocol contract.
  */
 @protocol PDSKeyManager;
-@class DIDResolver;
+@class ATProtoDIDResolver;
 @class HandleResolver;
 @class Session;
 @class PDSDatabase;
@@ -519,7 +519,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @property (nonatomic, strong) id<PDSKeyManager> keyManager;
 
 /*! DID resolution service for identity verification. */
-@property (nonatomic, strong) DIDResolver *didResolver;
+@property (nonatomic, strong) ATProtoDIDResolver *didResolver;
 
 /*! Handle resolution service. */
 @property (nonatomic, strong) HandleResolver *handleResolver;

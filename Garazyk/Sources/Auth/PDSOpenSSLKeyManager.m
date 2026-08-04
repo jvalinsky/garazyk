@@ -45,7 +45,7 @@ NSString * const PDSOpenSSLActorKeyPurposeSpace = @"space";
 
 - (BOOL)generateSigningKeyWithError:(NSError **)error {
     NSError *genError = nil;
-    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&genError];
+    ATProtoSecp256k1KeyPair *keyPair = [ATProtoSecp256k1KeyPair generateKeyPair:&genError];
     if (!keyPair) {
         if (error) {
             *error = genError;
@@ -102,7 +102,7 @@ NSString * const PDSOpenSSLActorKeyPurposeSpace = @"space";
         return nil;
     }
 
-    Secp256k1KeyPair *pair = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
+    ATProtoSecp256k1KeyPair *pair = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
     if (!pair) {
         return nil;
     }
@@ -115,7 +115,7 @@ NSString * const PDSOpenSSLActorKeyPurposeSpace = @"space";
         return nil;
     }
 
-    Secp256k1KeyPair *pair = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
+    ATProtoSecp256k1KeyPair *pair = [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:privateKey error:error];
     if (!pair) {
         return nil;
     }

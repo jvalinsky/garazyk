@@ -62,7 +62,7 @@ static BOOL serviceIdentifierMatchesFragment(NSString *serviceIdentifier,
   return [normalizedIdentifier isEqualToString:fullyQualified];
 }
 
-static NSDictionary *proxyServiceEntryFromDocument(DIDDocument *document,
+static NSDictionary *proxyServiceEntryFromDocument(ATProtoDIDDocument *document,
                                                    NSString *did,
                                                    NSString *serviceFragment) {
   NSArray<NSDictionary *> *services = document.service ?: @[];
@@ -182,13 +182,13 @@ static NSURL *proxyBaseURLFromDescriptor(NSString *descriptor,
     }
   }
 
-  DIDResolver *resolver = [[DIDResolver alloc] init];
+  ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] init];
   if (config.plcURL.length > 0) {
     resolver.plcURL = config.plcURL;
   }
 
   NSError *resolveError = nil;
-  DIDDocument *document = [resolver resolveDIDSync:did error:&resolveError];
+  ATProtoDIDDocument *document = [resolver resolveDIDSync:did error:&resolveError];
   if (!document) {
     if (error) {
       *error = resolveError

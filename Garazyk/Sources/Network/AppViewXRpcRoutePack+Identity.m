@@ -20,7 +20,7 @@
         return;
     }
 
-    DIDResolver *resolver = [[DIDResolver alloc] init];
+    ATProtoDIDResolver *resolver = [[ATProtoDIDResolver alloc] init];
     NSError *error = nil;
     NSString *did = [resolver resolveHandleSync:handle error:&error];
 
