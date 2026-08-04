@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-07-26
+last_verified: 2026-08-03
 ---
 
 # Garazyk Mega Plan
@@ -494,12 +494,12 @@ for full traceability; mirrored in the
     [ADR 0032](../adr/0032-dasl-conformance-profiles.md). Also supersedes
     workstream 01 §S19 row 10 (`Repository/CAR.m` was recorded importer-only;
     its header decoder has now actually migrated to `ATProtoDagCBOR`,
-    closing that row for real). Full regression run and GNUstep/Linux
-    UTF-8 verification still open before this slice is finishable; Phases
-    5–11 (RASL, BDASL, MASL, PFP, MUXL, S2PA, Web Tiles) are each additive,
-    multi-week, and require their own evidence/gate/rollback slice in the
-    workstream doc before implementation starts — MUXL (a deterministic MP4
-    muxer) is the largest single item in the whole workstream.
+    closing that row for real). A macOS full regression run passes 4,955 tests;
+    GNUstep/Linux UTF-8 and full-suite evidence remain open. Bounded slices for
+    Phases 5–11 (RASL, BDASL, MASL, PFP, MUXL, S2PA, Web Tiles) are now recorded
+    with their own evidence/gate/rollback notes; their explicit production
+    integration remainders remain open. MUXL's complete deterministic MP4
+    muxer remains the largest single item in the workstream.
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
