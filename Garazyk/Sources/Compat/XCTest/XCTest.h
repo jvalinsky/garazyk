@@ -76,6 +76,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Called after each test method. Override in subclasses. */
 - (void)tearDown;
 
+/*! Register cleanup to run after the test method and before tearDown. */
+- (void)addTeardownBlock:(void (^)(void))block;
+
 /*! Invoke the test method with setUp/tearDown wrapping. */
 - (void)invokeTest;
 
@@ -172,8 +175,14 @@ NS_ASSUME_NONNULL_BEGIN
 /*! YES once the fulfillment target has been reached. */
 @property (atomic, assign, readonly, getter=isFulfilled) BOOL fulfilled;
 
+/*! Internal waiter cancellation marker, exposed for the GNUstep shim only. */
+@property (atomic, assign, getter=isCancelled) BOOL cancelled;
+
 /*! Number of fulfill calls required before the expectation is complete. */
 @property (atomic, assign) NSUInteger expectedFulfillmentCount;
+
+/*! Inverted expectations succeed when they remain unfulfilled until timeout. */
+@property (atomic, assign, getter=isInverted) BOOL inverted;
 
 /*! Create an expectation with a description. */
 - (instancetype)initWithDescription:(NSString *)description;
@@ -218,6 +227,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)waitForExpectations:(NSArray<XCTestExpectation *> *)expectations
                     timeout:(NSTimeInterval)timeout;
 
+/*! Create an expectation fulfilled when a predicate matches an object. */
+- (XCTestExpectation *)expectationForPredicate:(NSPredicate *)predicate
+                         evaluatedWithObject:(nullable id)object
+                                       handler:(void (^ _Nullable)(XCTestExpectation *expectation))handler;
+
 @end
 
 // ── Assertion macros ──────────────────────────────────────────────────
@@ -252,7 +266,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Assert values are equal (scalar). */
 #define XCTAssertEqual(a, b, ...) \
-    do { if ((a) != (b)) { _PDSXCTFail(@"XCTAssertEqual failed: %@ != %@", @(a), @(b)); } } while(0)
+    do { if ((a) != (b)) { _PDSXCTFail(@"XCTAssertEqual failed: %s != %s", #a, #b); } } while(0)
 
 /*! Assert objects are equal via isEqual:. */
 #define XCTAssertEqualObjects(a, b, ...) \
@@ -272,23 +286,23 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Assert values are not equal (scalar). */
 #define XCTAssertNotEqual(a, b, ...) \
-    do { if ((a) == (b)) { _PDSXCTFail(@"XCTAssertNotEqual failed: %@ == %@", @(a), @(b)); } } while(0)
+    do { if ((a) == (b)) { _PDSXCTFail(@"XCTAssertNotEqual failed: %s == %s", #a, #b); } } while(0)
 
 /*! Assert first value is greater than second. */
 #define XCTAssertGreaterThan(a, b, ...) \
-    do { if ((a) <= (b)) { _PDSXCTFail(@"XCTAssertGreaterThan failed: %@ <= %@", @(a), @(b)); } } while(0)
+    do { if ((a) <= (b)) { _PDSXCTFail(@"XCTAssertGreaterThan failed: %s <= %s", #a, #b); } } while(0)
 
 /*! Assert first value is less than second. */
 #define XCTAssertLessThan(a, b, ...) \
-    do { if ((a) >= (b)) { _PDSXCTFail(@"XCTAssertLessThan failed: %@ >= %@", @(a), @(b)); } } while(0)
+    do { if ((a) >= (b)) { _PDSXCTFail(@"XCTAssertLessThan failed: %s >= %s", #a, #b); } } while(0)
 
 /*! Assert first value is greater than or equal to second. */
 #define XCTAssertGreaterThanOrEqual(a, b, ...) \
-    do { if ((a) < (b)) { _PDSXCTFail(@"XCTAssertGreaterThanOrEqual failed: %@ < %@", @(a), @(b)); } } while(0)
+    do { if ((a) < (b)) { _PDSXCTFail(@"XCTAssertGreaterThanOrEqual failed: %s < %s", #a, #b); } } while(0)
 
 /*! Assert first value is less than or equal to second. */
 #define XCTAssertLessThanOrEqual(a, b, ...) \
-    do { if ((a) > (b)) { _PDSXCTFail(@"XCTAssertLessThanOrEqual failed: %@ > %@", @(a), @(b)); } } while(0)
+    do { if ((a) > (b)) { _PDSXCTFail(@"XCTAssertLessThanOrEqual failed: %s > %s", #a, #b); } } while(0)
 
 /*! Assert expression does not throw exception. */
 #define XCTAssertNoThrow(expr, ...) \
@@ -297,6 +311,33 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Assert expression throws exception. */
 #define XCTAssertThrows(expr, ...) \
     do { @try { expr; _PDSXCTFail(@"XCTAssertThrows failed: did not throw"); } @catch (id e) { } } while(0)
+
+/*! Mark the current test as skipped with a reason. */
+#define XCTSkip(...) \
+    do { \
+        @throw [[NSException alloc] initWithName:@"XCTestSkip" \
+                                           reason:[NSString stringWithFormat:__VA_ARGS__] \
+                                         userInfo:@{@"XCTestSkip": @YES}]; \
+    } while(0)
+
+/*! Assert expression throws an exception with the requested class and name. */
+#define XCTAssertThrowsSpecificNamed(expr, exceptionClass, exceptionName, ...) \
+    do { \
+        BOOL _caughtExpectedException = NO; \
+        @try { \
+            expr; \
+        } @catch (id _exception) { \
+            if ([_exception isKindOfClass:(exceptionClass)] && \
+                [[_exception name] isEqualToString:(exceptionName)]) { \
+                _caughtExpectedException = YES; \
+            } else { \
+                _PDSXCTFail(@"XCTAssertThrowsSpecificNamed failed: unexpected exception %@", _exception); \
+            } \
+        } \
+        if (!_caughtExpectedException) { \
+            _PDSXCTFail(@"XCTAssertThrowsSpecificNamed failed: no matching exception"); \
+        } \
+    } while(0)
 
 /*! Unconditional test failure with message. */
 #define XCTFail(...) _PDSXCTFail(__VA_ARGS__)

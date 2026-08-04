@@ -43,7 +43,8 @@
     TestHTTPTask *task = [[TestHTTPTask alloc] init];
     __weak typeof(self) weakSelf = self;
     task.onResume = ^{
-        __unused typeof(weakSelf) strongSelf = weakSelf;
+        typeof(weakSelf) strongSelf = weakSelf;
+        (void)strongSelf;
         completionHandler(outcome[@"data"], outcome[@"response"], outcome[@"error"]);
     };
     return task;
@@ -118,7 +119,8 @@
     PDSEmailHTTPClient *client = [self clientWithSession:session];
 
     NSError *error = nil;
-    NSDictionary *result = [client postPath:@"emails" body:@{@"invalid": [NSObject new]} error:&error];
+    NSDictionary *invalidBody = [NSDictionary dictionaryWithObject:@"value" forKey:@1];
+    NSDictionary *result = [client postPath:@"emails" body:invalidBody error:&error];
 
     XCTAssertNil(result);
     XCTAssertNotNil(error);

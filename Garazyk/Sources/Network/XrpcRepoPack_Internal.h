@@ -9,6 +9,8 @@
 #import "Admin/PDSAdminController.h"
 #import "Services/PDS/PDSRecordService.h"
 
+@protocol XrpcRoutePackServices;
+
 typedef NS_ENUM(NSInteger, PDSRepoPackValidationErrorCode) {
     PDSRepoPackValidationErrorInvalidRequest = 1,
     PDSRepoPackValidationErrorPayloadTooLarge = 2,
@@ -18,15 +20,13 @@ extern NSString * const _Nonnull PDSRepoPackValidationErrorDomain;
 
 BOOL isReplyNotAllowedError(NSError * _Nonnull error);
 BOOL rejectUnavailableRepoDid(NSString * _Nonnull did,
-                              PDSServiceDatabases * _Nullable serviceDatabases,
-                              id<PDSAdminController> _Nullable adminController,
+                              id<XrpcRoutePackServices> _Nonnull services,
                               HttpResponse * _Nonnull response);
 BOOL rejectUnavailableRepoDidIfKnown(NSString * _Nonnull did,
-                                     PDSServiceDatabases * _Nullable serviceDatabases,
-                                     id<PDSAdminController> _Nullable adminController,
+                                     id<XrpcRoutePackServices> _Nonnull services,
                                      HttpResponse * _Nonnull response);
 BOOL rejectRecordTakedown(NSString * _Nonnull uri,
-                          PDSServiceDatabases * _Nullable serviceDatabases,
+                          id<XrpcRoutePackServices> _Nonnull services,
                           HttpResponse * _Nonnull response);
 PDSValidationMode validationModeFromValidateParameter(id _Nullable validateParam);
 NSString * _Nonnull normalizedMimeType(NSString * _Nullable contentType);

@@ -171,7 +171,7 @@
         [connections addObject:[[TestWebSocketConnection alloc] init]];
     }
 
-    dispatch_queue_t workerQueue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+    dispatch_queue_t workerQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
     dispatch_apply(connectionCount, workerQueue, ^(size_t idx) {
         [self.server addConnection:connections[idx]];
     });

@@ -112,12 +112,17 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 }
 
 - (instancetype)init {
+    return [self initWithRequestTimeout:10.0];
+}
+
+- (instancetype)initWithRequestTimeout:(NSTimeInterval)timeout {
     self = [super init];
     if (self) {
         _cacheQueue = dispatch_queue_create("com.atproto.did.cache", DISPATCH_QUEUE_SERIAL);
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-        config.timeoutIntervalForRequest = 10.0;
-        config.timeoutIntervalForResource = 15.0;
+        NSTimeInterval boundedTimeout = timeout > 0.0 ? timeout : 10.0;
+        config.timeoutIntervalForRequest = boundedTimeout;
+        config.timeoutIntervalForResource = boundedTimeout + 5.0;
         _session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
 
         _cache = [[NSCache alloc] init];

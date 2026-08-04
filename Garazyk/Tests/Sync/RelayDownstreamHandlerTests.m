@@ -304,8 +304,8 @@
                               @"https://inventory.test/xrpc/com.atproto.sync.listRepos?limit=1000");
         NSURLComponents *secondRequestComponents =
             [NSURLComponents componentsWithURL:client.requests[1].URL resolvingAgainstBaseURL:NO];
-        XCTAssertEqualObjects(secondRequestComponents.queryItems[1].value,
-                              @"next::did:plc:two");
+        NSURLQueryItem *cursorItem = (NSURLQueryItem *)secondRequestComponents.queryItems[1];
+        XCTAssertEqualObjects(cursorItem.value, @"next::did:plc:two");
         XCTAssertEqualObjects([repoStateManager rootCIDForRepo:@"did:plc:one"], @"bafyreone");
         XCTAssertEqualObjects([repoStateManager revForRepo:@"did:plc:one"], @"3mone");
         XCTAssertEqual([repoStateManager statusForRepo:@"did:plc:one"], RelayRepoStatusActive);

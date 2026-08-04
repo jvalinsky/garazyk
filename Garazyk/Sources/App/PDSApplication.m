@@ -14,6 +14,7 @@
 #import "PDSController.h"
 #import "Admin/PDSAdminController.h"
 #import "Services/PDS/PDSAccountService.h"
+#import "PLC/PDSPLCAccountOperationProvider.h"
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRepositoryService.h"
@@ -31,6 +32,10 @@
 #import "Database/PDSRepositoryFactory.h"
 #import "Services/PDS/PDSRelayService.h"
 #import "Auth/Crypto/JWT.h"
+#import "Auth/Verifier/AuthVerifier.h"
+#import "Auth/PDS/PDSAuth.h"
+#import "Auth/PDSNonceManager.h"
+#import "Auth/PDSReplayCache.h"
 #import "Auth/Crypto/Secp256k1.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Blob/BlobStorage.h"
@@ -69,11 +74,13 @@
 @property (nonatomic, strong, readwrite, nullable) PDSCollectionMembershipPruner *collectionMembershipPruner;
 @property (nonatomic, strong, readwrite, nullable) PDSPasswordResetTokenPruner *passwordResetTokenPruner;
 @property (nonatomic, strong, readwrite) JWTMinter *jwtMinter;
+@property (nonatomic, strong, readwrite, nullable) AuthVerifier *authVerifier;
 @property (nonatomic, strong, readwrite) HttpServer *httpServer;
 @property (nonatomic, strong, readwrite) PDSRelayService *relayService;
 @property (nonatomic, strong, readwrite) id<PDSAccountService> accountService;
 @property (nonatomic, strong, readwrite) PDSRecordService *recordService;
 @property (nonatomic, strong, readwrite) PDSBlobService *blobService;
+@property (nonatomic, strong, readwrite, nullable) id<VideoJobStore> videoJobStore;
 @property (nonatomic, strong, readwrite) PDSRepositoryService *repositoryService;
 @property (nonatomic, strong, readwrite, nullable) id<PDSEmailProvider> emailProvider;
 @property (nonatomic, strong, readwrite) id<PDSAdminController> adminController;
@@ -483,6 +490,9 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                                                                             sessionRepository:sessionRepo
                                                                                         minter:_jwtMinter
                                                                                  emailProvider:emailProvider];
+    // PLC signing is owned by the PLC module; account service consumes only
+    // the Core protocol so Services does not depend upward on PLC.
+    accountService.plcOperationProvider = [[PDSPLCAccountOperationProvider alloc] init];
     accountService.databasePool = _userDatabasePool;
     accountService.serviceDatabases = _serviceDatabases;
     [container registerInstance:accountService forProtocol:@protocol(PDSAccountService)];
@@ -509,6 +519,8 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     id<PDSBlobRepository> blobRepo = [PDSRepositoryFactory blobRepositoryWithDatabasePool:_userDatabasePool];
     _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool storage:blobStorage];
     _blobService.blobRepository = blobRepo;
+    PDSDatabase *videoJobDatabase = [_serviceDatabases serviceDatabaseWithError:nil];
+    _videoJobStore = [[PDSLocalVideoJobStore alloc] initWithDatabase:videoJobDatabase];
     
     // Repository Service
     id<PDSBlockRepository> blockRepo = [PDSRepositoryFactory blockRepositoryWithDatabasePool:_userDatabasePool];
@@ -525,6 +537,23 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // Blob Audit Manager
     _blobAuditManager = [[PDSBlobAuditManager alloc] initWithBlobStorage:_blobService.blobStorage
                                                          serviceDatabases:_serviceDatabases];
+
+    PDSDatabase *authDatabase = [_serviceDatabases serviceDatabaseWithError:nil];
+    if (authDatabase && _adminController) {
+        PDSAccountPolicy *accountPolicy = [[PDSAccountPolicy alloc] initWithDatabase:authDatabase
+                                                                       adminController:_adminController];
+        _authVerifier = [[AuthVerifier alloc] initWithKeyResolver:nil
+                                                     accountPolicy:accountPolicy
+                                                        nonceStore:[PDSNonceManager sharedManager]];
+        [_authVerifier setLocalPublicKey:_jwtMinter.publicKey];
+        _authVerifier.localKeyManager = _jwtMinter.keyManager;
+        [_authVerifier setLocalIssuer:_jwtMinter.issuer ?: @""];
+        _authVerifier.expectedAudience = _jwtMinter.issuer ?: @"";
+        _authVerifier.requireDPoP = _configuration.requireDPoPNonce;
+        _authVerifier.replayChecker = [PDSReplayCache sharedCache];
+    } else {
+        GZ_LOG_AUTH_WARN(@"PDSApplication: AuthVerifier unavailable because auth database or admin controller is missing");
+    }
     [PDSBlobAuditHandler sharedHandler].auditManager = _blobAuditManager;
     [PDSSystemDiagnosticsHandler sharedHandler].auditManager = _blobAuditManager;
 
@@ -625,7 +654,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // Video worker
     if ([_configuration.videoMode isEqualToString:@"internal"]) {
         PDSDatabase *serviceDB = [_serviceDatabases serviceDatabaseWithError:nil];
-        id<VideoJobStore> jobStore = [[PDSLocalVideoJobStore alloc] initWithDatabase:serviceDB];
+        id<VideoJobStore> jobStore = self.videoJobStore;
         id<VideoBlobUploader> uploader = [[VideoLocalBlobUploader alloc] initWithBlobProvider:[ATProtoVideoWorker sharedWorker].blobProvider];
         id<VideoAuthProvider> authProvider = [[VideoPDSAuthProvider alloc] initWithJwtMinter:_jwtMinter
                                                                                adminController:_adminController];

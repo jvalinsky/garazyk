@@ -244,6 +244,36 @@ static void ATProtoDatabaseQueryRunnerFail(sqlite3_context *context,
     XCTAssertEqualObjects(error.domain, @"blue.microcosm.tests.custom-query-runner");
 }
 
+- (BOOL)runFirstContentionTransactionWithRunner:(ATProtoDatabaseQueryRunner *)runner
+                                           ready:(dispatch_semaphore_t)ready
+                                          release:(dispatch_semaphore_t)release
+                                             error:(NSError **)error {
+    return [runner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+        if (![tx executeUpdate:@"INSERT INTO contention_test(value) VALUES(?)"
+                        params:@[@"first"]
+                         error:innerError]) {
+            return NO;
+        }
+        dispatch_semaphore_signal(ready);
+        return dispatch_semaphore_wait(release,
+                                       dispatch_time(DISPATCH_TIME_NOW,
+                                                     2 * NSEC_PER_SEC)) == 0;
+    } error:error];
+}
+
+- (BOOL)runSecondContentionTransactionWithRunner:(ATProtoDatabaseQueryRunner *)runner
+                                            error:(NSError **)error {
+    return [runner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+        NSArray *rows = [tx executeQuery:@"SELECT value FROM contention_test"
+                                  params:nil
+                                   error:innerError];
+        if (!rows) return NO;
+        return [tx executeUpdate:@"INSERT INTO contention_test(value) VALUES(?)"
+                          params:@[@"second"]
+                           error:innerError];
+    } error:error];
+}
+
 - (void)testSerialManagersWaitBeforeReadThenWriteTransaction {
     NSString *path = [NSTemporaryDirectory()
         stringByAppendingPathComponent:[NSString stringWithFormat:@"serial-manager-%@.sqlite",
@@ -278,19 +308,11 @@ static void ATProtoDatabaseQueryRunnerFail(sqlite3_context *context,
     __block NSError *firstError = nil;
     __block NSError *secondError = nil;
 
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        firstOK = [firstRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx,
-                                                              NSError **innerError) {
-            if (![tx executeUpdate:@"INSERT INTO contention_test(value) VALUES(?)"
-                            params:@[@"first"]
-                             error:innerError]) {
-                return NO;
-            }
-            dispatch_semaphore_signal(firstWriterReady);
-            return dispatch_semaphore_wait(releaseFirstWriter,
-                                           dispatch_time(DISPATCH_TIME_NOW,
-                                                         2 * NSEC_PER_SEC)) == 0;
-        } error:&firstError];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        firstOK = [self runFirstContentionTransactionWithRunner:firstRunner
+                                                          ready:firstWriterReady
+                                                         release:releaseFirstWriter
+                                                            error:&firstError];
         [firstFinished fulfill];
     });
 
@@ -298,22 +320,13 @@ static void ATProtoDatabaseQueryRunnerFail(sqlite3_context *context,
                                            dispatch_time(DISPATCH_TIME_NOW,
                                                          2 * NSEC_PER_SEC)), 0);
 
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        secondOK = [secondRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx,
-                                                                NSError **innerError) {
-            NSArray *rows = [tx executeQuery:@"SELECT value FROM contention_test"
-                                      params:nil
-                                       error:innerError];
-            if (!rows) return NO;
-            return [tx executeUpdate:@"INSERT INTO contention_test(value) VALUES(?)"
-                              params:@[@"second"]
-                               error:innerError];
-        } error:&secondError];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        secondOK = [self runSecondContentionTransactionWithRunner:secondRunner error:&secondError];
         [secondFinished fulfill];
     });
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC),
-                   dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         dispatch_semaphore_signal(releaseFirstWriter);
     });
 

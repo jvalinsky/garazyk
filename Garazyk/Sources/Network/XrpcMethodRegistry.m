@@ -5,6 +5,9 @@
 #import "App/PDSApplication.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
+#import "Services/PDS/PDSBlobService.h"
+#import "Blob/BlobStorage.h"
+#import "Blob/PDSBlobProvider.h"
 #import "Debug/GZLogger.h"
 #import "Network/XrpcAdminPack.h"
 #import "Network/XrpcAppBskyPack.h"
@@ -18,6 +21,7 @@
 #import "Network/XrpcLexiconResolver.h"
 #import "Network/XrpcProxyInterceptor.h"
 #import "Network/XrpcRoutePackServices.h"
+#import "Auth/Verifier/AuthVerifier.h"
 #import "Network/XrpcRoutePackRegistrar.h"
 #import "Network/XrpcServerPack.h"
 #import "Network/XrpcSyncPack.h"
@@ -28,10 +32,31 @@
 
 @implementation XrpcMethodRegistry
 
+static id<PDSBlobProvider> XrpcBlobProviderFromService(PDSBlobService *blobService) {
+  if (!blobService) {
+    GZ_LOG_WARN(@"XRPC route registration has no blob service; video uploads will fail closed");
+    return nil;
+  }
+
+  BlobStorage *blobStorage = blobService.blobStorage;
+  if (!blobStorage) {
+    GZ_LOG_WARN(@"XRPC route registration has no blob storage; video uploads will fail closed");
+    return nil;
+  }
+
+  id<PDSBlobProvider> provider = blobStorage.provider;
+  if (!provider) {
+    GZ_LOG_WARN(@"XRPC route registration has no blob provider; video uploads will fail closed");
+  }
+  return provider;
+}
+
 static void registerMethodsWithDispatcherUsingServices(
     Class registryClass, XrpcDispatcher *dispatcher,
     id<PDSAccountService> accountService, PDSRecordService *recordService,
-    PDSBlobService *blobService, PDSRepositoryService *repositoryService,
+    PDSBlobService *blobService, id<VideoJobStore> videoJobStore,
+    AuthVerifier *authVerifier,
+    PDSRepositoryService *repositoryService,
     PDSRelayService *relayService, id<PDSAdminController> adminController,
     PDSBlobAuditManager *blobAuditManager,
     PDSServiceDatabases *serviceDatabases, PDSDatabasePool *userDatabasePool,
@@ -64,9 +89,14 @@ static void registerMethodsWithDispatcherUsingServices(
                                          serviceDatabases:serviceDatabases
                                          userDatabasePool:userDatabasePool
                                                rateLimiter:rateLimiter];
+  routePackServices.authVerifier = authVerifier;
   routePackServices.accountService = accountService;
   routePackServices.recordService = recordService;
   routePackServices.blobService = blobService;
+  // Route packs consume the protocol-backed provider through the blob service;
+  // XRPC must not reach into the VideoService worker singleton to obtain it.
+  routePackServices.blobProvider = XrpcBlobProviderFromService(blobService);
+  routePackServices.videoJobStore = videoJobStore;
   routePackServices.repositoryService = repositoryService;
   routePackServices.relayService = relayService;
   routePackServices.emailProvider = emailProvider;
@@ -105,8 +135,11 @@ static void registerMethodsWithDispatcherUsingServices(
   }
   ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   registerMethodsWithDispatcherUsingServices(
-      self, dispatcher, controller.accountService, controller.recordService,
-      controller.blobService, controller.repositoryService,
+      self, dispatcher,      controller.accountService, controller.recordService,
+      controller.blobService, controller.videoJobStore,
+      controller.application.authVerifier,
+      controller.repositoryService,
+
       controller.relayService, controller.adminController,
       controller.application.blobAuditManager,
       controller.serviceDatabases, controller.userDatabasePool,
@@ -121,8 +154,11 @@ static void registerMethodsWithDispatcherUsingServices(
     return;
   }
   registerMethodsWithDispatcherUsingServices(
-      self, dispatcher, application.accountService, application.recordService,
-      application.blobService, application.repositoryService,
+      self, dispatcher,      application.accountService, application.recordService,
+      application.blobService, application.videoJobStore,
+      application.authVerifier,
+      application.repositoryService,
+
       application.relayService, application.adminController,
       application.blobAuditManager,
       application.serviceDatabases, application.userDatabasePool,

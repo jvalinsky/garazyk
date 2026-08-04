@@ -17,14 +17,14 @@
 #import "Registration/PDSCaptchaRegistrationGate.h"
 #import "Registration/PDSRegistrationGate.h"
 #import "App/ATProtoServiceConfiguration.h"
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "Debug/GZLogger.h"
 
 @interface PDSCaptchaRegistrationGate ()
 @property (nonatomic, copy) NSString *provider;
 @property (nonatomic, copy, nullable) NSString *siteKey;
 @property (nonatomic, copy, nullable) NSString *secretKey;
-@property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
+@property (nonatomic, strong) id<GZHTTPClient> safeHTTPClient;
 @property (nonatomic, assign) NSTimeInterval siteverifyTimeout;
 @end
 
@@ -38,7 +38,7 @@
         _provider = [provider copy] ?: @"turnstile";
         _siteKey = [siteKey copy];
         _secretKey = [secretKey copy];
-        _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
+        _safeHTTPClient = [GZHTTPClientRegistry sharedClient];
         _siteverifyTimeout = 5.0;
     }
     return self;
@@ -156,7 +156,7 @@
     request.HTTPBody = bodyData;
     request.timeoutInterval = 3.0;
 
-    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    GZHTTPClientOptions *options = [GZHTTPClientOptions defaultOptions];
     options.timeout = 3.0;
     options.maxResponseBytes = 64 * 1024; // siteverify responses are small
 
@@ -169,7 +169,7 @@
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-    [self.safeHTTPClient performSafeDataTaskWithRequest:request
+    [self.safeHTTPClient performDataTaskWithRequest:request
                                                 options:options
                                              completion:^(NSData * _Nullable data,
                                                           NSHTTPURLResponse * _Nullable resp,

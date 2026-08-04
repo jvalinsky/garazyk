@@ -247,12 +247,29 @@
 - (void)testLexiconRecordURL_NilEndpoint_ThrowsException {
     // lexiconRecordURLForEndpoint: is annotated nonnull — passing nil is
     // undefined behavior. Verify the method rejects it gracefully.
-    XCTAssertThrowsSpecificNamed(({
+#if defined(__APPLE__)
+    BOOL raisedExpectedException = NO;
+    @try {
         [XrpcLexiconResolver lexiconRecordURLForEndpoint:(NSString *)nil
                                                      did:@"did:plc:abc"
                                                     nsid:@"com.example.record"
                                                    error:nil];
-    }), NSException, NSInvalidArgumentException);
+    } @catch (NSException *exception) {
+        raisedExpectedException = [exception isKindOfClass:[NSException class]] &&
+            [exception.name isEqualToString:NSInvalidArgumentException];
+    }
+    XCTAssertTrue(raisedExpectedException);
+#else
+    NSError *error = nil;
+    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:(NSString *)nil
+                                                              did:@"did:plc:abc"
+                                                             nsid:@"com.example.record"
+                                                            error:&error];
+    // GNUstep does not emit Apple's nonnull exception; the portable contract
+    // is a nil URL plus an error for an invalid endpoint.
+    XCTAssertNil(url);
+    XCTAssertNotNil(error);
+#endif
 }
 
 - (void)testLexiconRecordURL_NilDid_ReturnsURL {

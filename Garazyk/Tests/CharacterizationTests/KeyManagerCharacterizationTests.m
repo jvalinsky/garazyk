@@ -52,7 +52,7 @@
     keyPair.isActive = YES;
     self.subject.signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
 
-    dispatch_queue_t accessQueue = [self.subject valueForKey:@"accessQueue"];
+    dispatch_queue_t accessQueue = (dispatch_queue_t)[self.subject valueForKey:@"accessQueue"];
     NSMutableDictionary *keyPairs = [self.subject valueForKey:@"keyPairs"];
     if (!accessQueue || ![keyPairs isKindOfClass:[NSMutableDictionary class]]) {
         if (error) {
