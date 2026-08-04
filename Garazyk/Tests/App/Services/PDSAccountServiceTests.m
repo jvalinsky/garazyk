@@ -12,10 +12,54 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 
+@interface PDSAccountServiceTestPLCProvider : NSObject <PDSPLCAccountOperationProvider>
+@property (nonatomic, copy) NSString *rotationKeyDidKey;
+@property (nonatomic, assign) NSUInteger loadCount;
+@property (nonatomic, assign) NSUInteger signCount;
+@property (nonatomic, assign) NSUInteger didCount;
+@end
+
+@implementation PDSAccountServiceTestPLCProvider
+
+- (BOOL)loadOrGenerateKeyWithError:(NSError **)error {
+    self.loadCount += 1;
+    return YES;
+}
+
+- (NSDictionary *)signedOperationForUnsignedData:(NSDictionary *)unsignedData
+                                            error:(NSError **)error {
+    self.signCount += 1;
+    NSMutableDictionary *signedOperation = [unsignedData mutableCopy];
+    signedOperation[@"sig"] = @"test-signature";
+    return [signedOperation copy];
+}
+
+- (NSString *)didForSignedOperation:(NSDictionary *)signedOperation
+                               error:(NSError **)error {
+    self.didCount += 1;
+    if (![signedOperation[@"sig"] isKindOfClass:[NSString class]] ||
+        [signedOperation[@"sig"] length] == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSAccountServiceTests"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Provider received an unsigned operation"}];
+        }
+        return nil;
+    }
+    NSString *lastCharacter = self.didCount == 1 ? @"b" : @"c";
+    NSString *prefix = [@"" stringByPaddingToLength:23
+                                           withString:@"a"
+                                      startingAtIndex:0];
+    return [NSString stringWithFormat:@"did:plc:%@%@", prefix, lastCharacter];
+}
+
+@end
+
 @interface PDSAccountServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabasePool *pool;
 @property (nonatomic, strong) PDSAccountService *service;
+@property (nonatomic, strong) PDSAccountServiceTestPLCProvider *plcProvider;
 @end
 
 @implementation PDSAccountServiceTests
@@ -63,6 +107,9 @@
     id<PDSKeyManager> keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:[self.service.serviceDatabases serviceDatabaseWithError:nil]];
     minter.keyManager = keyManager;
     self.service.minter = minter;
+    self.plcProvider = [[PDSAccountServiceTestPLCProvider alloc] init];
+    self.plcProvider.rotationKeyDidKey = @"did:key:zTestRotationKey";
+    self.service.plcOperationProvider = self.plcProvider;
 }
 
 - (void)tearDown {
@@ -87,6 +134,37 @@
     XCTAssertNotNil(result[@"did"]);
     XCTAssertEqualObjects(result[@"handle"], @"test.example.com");
     XCTAssertEqualObjects(result[@"email"], @"test@example.com");
+}
+
+- (void)testCreateAccountWithoutPLCProviderFailsClosed {
+    self.service.plcOperationProvider = nil;
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service createAccountForEmail:@"missing-provider@example.com"
+                                                      password:@"password123"
+                                                        handle:@"missing-provider.example.com"
+                                                           did:nil
+                                                         error:&error];
+
+    XCTAssertNil(result);
+    XCTAssertEqualObjects(error.domain, @"com.atproto.server");
+    XCTAssertEqual(error.code, 503);
+}
+
+- (void)testCreateAccountUsesInjectedPLCProvider {
+    NSError *error = nil;
+    NSDictionary *result = [self.service createAccountForEmail:@"provider@example.com"
+                                                      password:@"password123"
+                                                        handle:@"provider.example.com"
+                                                           did:nil
+                                                         error:&error];
+
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+    XCTAssertEqual(self.plcProvider.loadCount, 1U);
+    XCTAssertEqual(self.plcProvider.signCount, 1U);
+    XCTAssertEqual(self.plcProvider.didCount, 1U);
+    XCTAssertEqualObjects(result[@"did"], @"did:plc:aaaaaaaaaaaaaaaaaaaaaaab");
 }
 
 - (void)testCreateAccountDuplicate {

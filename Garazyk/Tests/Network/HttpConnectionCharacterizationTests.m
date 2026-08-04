@@ -90,8 +90,13 @@
 
 @interface HttpServer (Testing)
 - (void)handleNewConnection:(id<ATProtoNetworkConnection>)connection;
+#if defined(GNUSTEP)
+@property (nonatomic, assign) dispatch_queue_t serverQueue;
+@property (nonatomic, assign) dispatch_group_t taskGroup;
+#else
 @property (nonatomic, strong) dispatch_queue_t serverQueue;
 @property (nonatomic, strong) dispatch_group_t taskGroup;
+#endif
 @property (nonatomic, strong) NSMutableArray<id<ATProtoNetworkConnection>> *activeConnections;
 @end
 

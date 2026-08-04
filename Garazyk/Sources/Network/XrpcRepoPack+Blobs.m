@@ -145,7 +145,7 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
             return;
         }
 
-        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+        if (rejectUnavailableRepoDid(did, services, response)) {
             return;
         }
 
@@ -312,7 +312,7 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
             return;
         }
 
-        if (rejectUnavailableRepoDid(blobDid, serviceDatabases, adminController, response)) {
+        if (rejectUnavailableRepoDid(blobDid, services, response)) {
             return;
         }
 
@@ -383,7 +383,7 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
         }
 
         NSDictionary *body = request.jsonBody ?: @{};
-        if (rejectUnavailableRepoDid(did, serviceDatabases, adminController, response)) {
+        if (rejectUnavailableRepoDid(did, services, response)) {
             return;
         }
         BOOL typeMismatch = NO;

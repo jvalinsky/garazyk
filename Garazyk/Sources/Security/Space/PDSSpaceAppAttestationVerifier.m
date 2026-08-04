@@ -8,7 +8,7 @@
 #import "Auth/Crypto/JWT.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/PDSKeyProtocol.h"
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "Services/PDS/PDSSpaceStore.h"
 #import "Debug/GZLogger.h"
 
@@ -109,7 +109,7 @@ static const NSUInteger PDSSpaceAppAttestationMaxMetadataBytes = 64 * 1024;
 }
 
 - (nullable NSDictionary *)fetchJSONFromURL:(NSURL *)url maxBytes:(NSUInteger)maxBytes error:(NSError **)error {
-  ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+  GZHTTPClientOptions *options = [GZHTTPClientOptions defaultOptions];
   options.timeout = 10.0;
   options.maxResponseBytes = maxBytes;
   options.allowHTTP = NO;
@@ -128,7 +128,7 @@ static const NSUInteger PDSSpaceAppAttestationMaxMetadataBytes = 64 * 1024;
   [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
   NSError *fetchError = nil;
-  NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
+  NSData *data = [[GZHTTPClientRegistry sharedClient] sendSynchronousRequest:request
                                                                 options:options
                                                                response:nil
                                                                   error:&fetchError];

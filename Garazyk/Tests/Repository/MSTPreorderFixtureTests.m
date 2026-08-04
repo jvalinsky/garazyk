@@ -45,16 +45,25 @@
 //   - depth-2 entry:   3jzfcijpj2zep (forces a sub-tree level)
 // Replacing any of these without re-running testFixtureKeysSpanMultipleDepths
 // would silently flatten the regression coverage.
-static NSArray<NSString *> *const kFixtureKeys = @[
-    @"app.bsky.feed.post/3jzfcijpj2zek",  // depth 0
-    @"app.bsky.feed.post/3jzfcijpj2zel",  // depth 0
-    @"app.bsky.feed.post/3jzfcijpj2zep",  // depth 2 (subtree level)
-    @"post/aaa",                          // depth 0
-    @"post/bbb",                          // depth 1
-    @"post/ccc",                          // depth 0
-    @"post/ddd",                          // depth 0
-    @"test/key.005",                      // depth 1
-];
+static NSArray<NSString *> *FixtureKeys(void) {
+    // GNUstep does not allow Objective-C literals in file-scope constant
+    // initializers. Keep the fixture immutable while constructing it lazily.
+    static NSArray<NSString *> *keys;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        keys = @[
+            @"app.bsky.feed.post/3jzfcijpj2zek",  // depth 0
+            @"app.bsky.feed.post/3jzfcijpj2zel",  // depth 0
+            @"app.bsky.feed.post/3jzfcijpj2zep",  // depth 2 (subtree level)
+            @"post/aaa",                          // depth 0
+            @"post/bbb",                          // depth 1
+            @"post/ccc",                          // depth 0
+            @"post/ddd",                          // depth 0
+            @"test/key.005",                      // depth 1
+        ];
+    });
+    return keys;
+}
 
 static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 
@@ -73,7 +82,7 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 
 - (MST *)buildFixtureMST {
     MST *tree = [[MST alloc] init];
-    for (NSString *key in kFixtureKeys) {
+    for (NSString *key in FixtureKeys()) {
         [tree put:key valueCID:[self fixtureValueCIDForKey:key]];
     }
     return tree;
@@ -81,7 +90,7 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 
 - (MSTBlockProvider)recordProviderForFixture {
     NSMutableDictionary<NSString *, NSData *> *cache = [NSMutableDictionary dictionary];
-    for (NSString *key in kFixtureKeys) {
+    for (NSString *key in FixtureKeys()) {
         CID *cid = [self fixtureValueCIDForKey:key];
         cache[cid.stringValue] = [self fixtureRecordBytesForKey:key];
     }
@@ -340,10 +349,10 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 - (void)testFixtureKeysSpanMultipleDepths {
     // Uses the canonical [MST keyDepthString:] API so depth parity with the
     // MST's own algorithm is automatic. Span must be exactly {0, 1, 2}; any
-    // future maintainer editing kFixtureKeys must preserve this or the
+    // future maintainer editing FixtureKeys() must preserve this or the
     // regression coverage degrades.
     NSMutableSet<NSNumber *> *depths = [NSMutableSet set];
-    for (NSString *key in kFixtureKeys) {
+    for (NSString *key in FixtureKeys()) {
         NSUInteger d = [MST keyDepthString:key];
         [depths addObject:@(d)];
     }

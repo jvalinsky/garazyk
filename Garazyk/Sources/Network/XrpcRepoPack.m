@@ -11,7 +11,6 @@
 #import "Core/ATProtoValidator.h"
 #import "Database/PDSDatabase.h"
 #import "Database/PDSDatabaseAccount.h"
-#import "App/PDSController.h"
 #import "Debug/GZLogger.h"
 
 NSString * const PDSRepoPackValidationErrorDomain = @"com.atproto.pds.xrpc.repo.validation";
@@ -21,17 +20,18 @@ BOOL isReplyNotAllowedError(NSError *error) {
 }
 
 BOOL rejectUnavailableRepoDid(NSString *did,
-                              PDSServiceDatabases *serviceDatabases,
-                              id<PDSAdminController> adminController,
+                              id<XrpcRoutePackServices> services,
                               HttpResponse *response) {
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    id<PDSAdminController> adminController = services.adminController;
     if (did.length == 0) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
         return YES;
     }
 
-    PDSServiceDatabases *resolvedDatabases = serviceDatabases ?: [PDSController sharedController].serviceDatabases;
-    id<PDSAdminController> resolvedAdminController = adminController ?: [PDSController sharedController].adminController;
+    PDSServiceDatabases *resolvedDatabases = serviceDatabases;
+    id<PDSAdminController> resolvedAdminController = adminController;
 
     NSError *accountError = nil;
     PDSDatabaseAccount *account = [resolvedDatabases getAccountByDid:did error:&accountError];
@@ -64,17 +64,18 @@ BOOL rejectUnavailableRepoDid(NSString *did,
 }
 
 BOOL rejectUnavailableRepoDidIfKnown(NSString *did,
-                                     PDSServiceDatabases *serviceDatabases,
-                                     id<PDSAdminController> adminController,
+                                     id<XrpcRoutePackServices> services,
                                      HttpResponse *response) {
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    id<PDSAdminController> adminController = services.adminController;
     if (did.length == 0) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
         return YES;
     }
 
-    PDSServiceDatabases *resolvedDatabases = serviceDatabases ?: [PDSController sharedController].serviceDatabases;
-    id<PDSAdminController> resolvedAdminController = adminController ?: [PDSController sharedController].adminController;
+    PDSServiceDatabases *resolvedDatabases = serviceDatabases;
+    id<PDSAdminController> resolvedAdminController = adminController;
 
     NSError *accountError = nil;
     PDSDatabaseAccount *account = [resolvedDatabases getAccountByDid:did error:&accountError];
@@ -105,8 +106,9 @@ BOOL rejectUnavailableRepoDidIfKnown(NSString *did,
 }
 
 BOOL rejectRecordTakedown(NSString *uri,
-                          PDSServiceDatabases *serviceDatabases,
+                          id<XrpcRoutePackServices> services,
                           HttpResponse *response) {
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     NSError *dbError = nil;
     PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&dbError];
     if (!database) {

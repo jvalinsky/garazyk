@@ -102,9 +102,11 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
 // ── XCTestCase ────────────────────────────────────────────────────────
 
 @interface XCTestCase ()
+- (void)runTeardownBlocks;
 @property (nonatomic, readwrite) SEL selector;
 @property (nonatomic, readwrite, copy) NSString *name;
 @property (nonatomic, strong) NSMutableArray<XCTestExpectation *> *pendingExpectations;
+@property (nonatomic, strong) NSMutableArray *teardownBlocks;
 @end
 
 @implementation XCTestCase
@@ -112,6 +114,7 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
 @synthesize selector = _selector;
 @synthesize name = _name;
 @synthesize pendingExpectations = _pendingExpectations;
+@synthesize teardownBlocks = _teardownBlocks;
 
 - (nullable instancetype)initWithSelector:(SEL)selector {
     self = [super init];
@@ -122,6 +125,7 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
         NSString *methodName = NSStringFromSelector(selector);
         self.name = [NSString stringWithFormat:@"-[%@ %@]", className, methodName];
         _pendingExpectations = [NSMutableArray array];
+        _teardownBlocks = [NSMutableArray array];
     }
     return self;
 }
@@ -129,16 +133,51 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
 - (void)setUp {
     // Default no-op; subclasses override
     [self.pendingExpectations removeAllObjects];
+    [self.teardownBlocks removeAllObjects];
+}
+
+- (void)addTeardownBlock:(void (^)(void))block {
+    if (block) {
+        [self.teardownBlocks addObject:[block copy]];
+    }
 }
 
 - (void)tearDown {
     // Default no-op; subclasses override
+    [self runTeardownBlocks];
     [self.pendingExpectations removeAllObjects];
+}
+
+- (void)runTeardownBlocks {
+    NSArray *blocks = [self.teardownBlocks copy];
+    [self.teardownBlocks removeAllObjects];
+    for (void (^block)(void) in [blocks reverseObjectEnumerator]) {
+        block();
+    }
 }
 
 - (XCTestExpectation *)expectationWithDescription:(NSString *)description {
     XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:description ?: @""];
     [self.pendingExpectations addObject:expectation];
+    return expectation;
+}
+
+- (XCTestExpectation *)expectationForPredicate:(NSPredicate *)predicate
+                         evaluatedWithObject:(id)object
+                                       handler:(void (^)(XCTestExpectation *))handler {
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Predicate expectation"];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        while (!expectation.isFulfilled && !expectation.isCancelled) {
+            if ([predicate evaluateWithObject:object]) {
+                [expectation fulfill];
+                if (handler) {
+                    handler(expectation);
+                }
+                return;
+            }
+            [NSThread sleepForTimeInterval:0.01];
+        }
+    });
     return expectation;
 }
 
@@ -168,6 +207,9 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
         // Re-throw so performTest: can catch and record it
         @throw exception;
     } @finally {
+        // Run registered blocks independently of subclass tearDown super-calls,
+        // matching native XCTest cleanup guarantees.
+        [self runTeardownBlocks];
         [self tearDown];
     }
 }
@@ -181,10 +223,12 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
     @try {
         [self invokeTest];
     } @catch (NSException *exception) {
-        NSString *description = exception.reason ?: @"unknown assertion failure";
-        NSString *filePath = exception.userInfo[@"XCTestFile"] ?: @"(unknown)";
-        NSUInteger line = [exception.userInfo[@"XCTestLine"] unsignedIntegerValue];
-        PDSNotifyObserversTestCaseDidFail(self, description, filePath, line);
+        if (![[exception name] isEqualToString:@"XCTestSkip"]) {
+            NSString *description = exception.reason ?: @"unknown assertion failure";
+            NSString *filePath = exception.userInfo[@"XCTestFile"] ?: @"(unknown)";
+            NSUInteger line = [exception.userInfo[@"XCTestLine"] unsignedIntegerValue];
+            PDSNotifyObserversTestCaseDidFail(self, description, filePath, line);
+        }
     }
     PDSNotifyObserversTestCaseDidFinish(self);
 }
@@ -314,6 +358,8 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
         _expectedFulfillmentCount = 1;
         _fulfillmentCount = 0;
         _fulfilled = NO;
+        _cancelled = NO;
+        _inverted = NO;
     }
     return self;
 }
@@ -335,7 +381,7 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
 
 + (BOOL)pds_allFulfilled:(NSArray<XCTestExpectation *> *)expectations {
     for (XCTestExpectation *expectation in expectations) {
-        if (!expectation.isFulfilled) {
+        if (!expectation.isInverted && !expectation.isFulfilled) {
             return NO;
         }
     }
@@ -348,13 +394,53 @@ static void PDSNotifyObserversTestSuiteDidFinish(XCTestSuite *testSuite) {
         return;
     }
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:MAX(timeout, 0)];
-    while ([XCTWaiter pds_allFulfilled:expectations] == NO) {
-        if ([[NSDate date] compare:deadline] != NSOrderedAscending) {
-            NSMutableArray *outstanding = [NSMutableArray array];
-            for (XCTestExpectation *expectation in expectations) {
-                if (!expectation.isFulfilled) {
-                    [outstanding addObject:expectation.expectationDescription ?: @"(unnamed)"];
+    while (YES) {
+        NSMutableArray *outstanding = [NSMutableArray array];
+        BOOL normalExpectationsReady = YES;
+        BOOL invertedExpectationFailed = NO;
+        for (XCTestExpectation *expectation in expectations) {
+            if (expectation.isInverted) {
+                if (expectation.isFulfilled) {
+                    invertedExpectationFailed = YES;
+                    [outstanding addObject:[NSString stringWithFormat:@"%@ (inverted expectation fulfilled)", expectation.expectationDescription ?: @"(unnamed)"]];
                 }
+            } else if (!expectation.isFulfilled) {
+                normalExpectationsReady = NO;
+                [outstanding addObject:expectation.expectationDescription ?: @"(unnamed)"];
+            }
+        }
+        if (invertedExpectationFailed) {
+            for (XCTestExpectation *expectation in expectations) {
+                expectation.cancelled = YES;
+            }
+            _PDSXCTFail(@"Asynchronous wait failed: inverted expectation fulfilled: %@",
+                        [outstanding componentsJoinedByString:@", "]);
+            return;
+        }
+        if (normalExpectationsReady) {
+            BOOL hasInvertedExpectation = NO;
+            for (XCTestExpectation *expectation in expectations) {
+                if (expectation.isInverted) {
+                    hasInvertedExpectation = YES;
+                    break;
+                }
+            }
+            if (!hasInvertedExpectation) {
+                for (XCTestExpectation *expectation in expectations) {
+                    expectation.cancelled = YES;
+                }
+                return;
+            }
+            if ([[NSDate date] compare:deadline] != NSOrderedAscending) {
+                for (XCTestExpectation *expectation in expectations) {
+                    expectation.cancelled = YES;
+                }
+                return;
+            }
+        }
+        if ([[NSDate date] compare:deadline] != NSOrderedAscending) {
+            for (XCTestExpectation *expectation in expectations) {
+                expectation.cancelled = YES;
             }
             _PDSXCTFail(@"Asynchronous wait failed: Exceeded timeout of %g seconds, with unmet expectations: %@",
                         timeout, [outstanding componentsJoinedByString:@", "]);

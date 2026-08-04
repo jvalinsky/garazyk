@@ -12,6 +12,7 @@
 @class PDSController;
 @class RateLimiter;
 @class JWTMinter;
+@class AuthVerifier;
 @class SubscribeReposHandler;
 @class PDSRecordService;
 @class PDSBlobAuditManager;
@@ -24,6 +25,7 @@
 @protocol PDSAccountService;
 @protocol PDSEmailProvider;
 @protocol PDSAdminController;
+@protocol VideoJobStore;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -103,6 +105,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Blob management service. */
 @property (nonatomic, strong, readonly) PDSBlobService *blobService;
 
+/*! Protocol-backed video job store used by the XRPC route layer and worker. */
+@property (nonatomic, strong, readonly, nullable) id<VideoJobStore> videoJobStore;
+
 /*! Repository management service. */
 @property (nonatomic, strong, readonly) PDSRepositoryService *repositoryService;
 
@@ -129,6 +134,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! JWT minting for access tokens. */
 @property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
+
+/*! Protocol-backed request verifier shared with XRPC route registration. */
+@property (nonatomic, strong, readonly, nullable) AuthVerifier *authVerifier;
 
 /*! Handler for the subscribeRepos firehose. */
 @property (nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;

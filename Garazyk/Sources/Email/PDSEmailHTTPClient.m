@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/ATProtoSafeHTTPClient.h"
+#import "Core/GZHTTPClient.h"
 #import "PDSEmailHTTPClient.h"
 #import "Debug/GZLogger.h"
 
@@ -20,7 +20,7 @@
         _timeoutInterval = 30.0;
         _maxRetries = 3;
         
-        _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
+        _safeHTTPClient = [GZHTTPClientRegistry sharedClient];
     }
     return self;
 }
@@ -37,8 +37,15 @@
     
     NSError *jsonError = nil;
     NSData *jsonData = nil;
+    if (![NSJSONSerialization isValidJSONObject:body]) {
+        jsonError = [NSError errorWithDomain:@"PDSEmailHTTPClientErrorDomain"
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize JSON body"}];
+    }
     @try {
-        jsonData = [NSJSONSerialization dataWithJSONObject:body options:0 error:&jsonError];
+        if (!jsonError) {
+            jsonData = [NSJSONSerialization dataWithJSONObject:body options:0 error:&jsonError];
+        }
     } @catch (NSException *exception) {
         NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
         userInfo[NSLocalizedDescriptionKey] = @"Failed to serialize JSON body";
@@ -72,7 +79,7 @@
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         __block NSError *blockError = nil;
         
-        [self.safeHTTPClient performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable taskError) {
+        [self.safeHTTPClient performDataTaskWithRequest:request options:[GZHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable taskError) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
             
             if (taskError) {

@@ -147,7 +147,7 @@
 }
 
 - (void)testResolverDeadlineBoundsInjectedResolver {
-    CFAbsoluteTime started = CFAbsoluteTimeGetCurrent();
+    NSTimeInterval started = [[NSDate date] timeIntervalSinceReferenceDate];
     NSError *error = nil;
     NSArray<NSString *> *addresses = nil;
     BOOL succeeded = [SSRFValidator resolvePinnedAddressesForHost:@"example.test"
@@ -163,7 +163,7 @@
     XCTAssertFalse(succeeded);
     XCTAssertNil(addresses);
     XCTAssertEqual(error.code, SSRFValidatorErrorResolutionTimedOut);
-    XCTAssertLessThan(CFAbsoluteTimeGetCurrent() - started, 0.20);
+    XCTAssertLessThan([[NSDate date] timeIntervalSinceReferenceDate] - started, 0.20);
 }
 
 - (void)testResolverReturnsTheCompleteVettedAddressSet {
