@@ -114,10 +114,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderOzoneSignatureResultsPartial:(NSDictionary *)result;
 /** @abstract Renders Ozone hosting history, optionally scoped to a DID. */
 - (NSString *)renderOzoneHostingPartial:(NSDictionary *)result did:(nullable NSString *)did;
-/** @abstract Renders the lab shell with the response CSP nonce. */
-- (NSString *)labShellHTML:(NSString *)nonce;
-/** @abstract Serializes safe client metadata for the lab shell. */
-- (NSString *)labClientMetadataJSON;
 @end
 
 /** @abstract Registers authenticated route groups on the runtime HTTP server. */
