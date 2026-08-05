@@ -9,7 +9,8 @@
  */
 
 #import <XCTest/XCTest.h>
-#import "AdminUIServer/UIServerRuntime.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/GZAdminUIDefaultPacks.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
@@ -19,7 +20,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 
 @interface UILabAuthTests : XCTestCase
 @property(nonatomic, strong) UIServiceConfig *config;
-@property(nonatomic, strong) UIServerRuntime *runtime;
+@property(nonatomic, strong) GZAdminUIHost *runtime;
 @property(nonatomic, strong) UIAuthManager *authManager;
 @end
 
@@ -43,7 +44,8 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
     self.config.appViewAdminToken = @"admin-token";
     self.config.chatAdminToken = @"admin-token";
 
-    self.runtime = [[UIServerRuntime alloc] initWithConfiguration:self.config];
+    self.runtime = [[GZAdminUIHost alloc] initWithConfiguration:self.config
+                                                            packs:GZAdminUIDefaultPacks()];
     self.authManager = [[UIAuthManager alloc] initWithPassword:@"test-admin-password"];
 }
 

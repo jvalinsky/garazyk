@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIServerRuntime.h"
+#import "AdminUIServer/GZAdminUIHost.h"
 
+#import "AdminUIServer/GZAdminUIPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
@@ -12,7 +13,7 @@
 #import "Network/Generated/GZXrpcNSID.h"
 #import "Auth/Crypto/CryptoUtils.h"
 #import "Debug/GZLogger.h"
-#import "AdminUIServer/UIServerRuntime+Private.h"
+#import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/UITemplateEngine.h"
 
 NSString *UIEscaped(NSString *value) {
@@ -81,16 +82,18 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigi
 }
 
 
-@interface HttpServer (UIServerRuntimeTesting)
+@interface HttpServer (GZAdminUIHostTesting)
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request;
 @end
 
-@implementation UIServerRuntime
+@implementation GZAdminUIHost
 
-- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
+- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration
+                                 packs:(NSArray<Class> *)packs {
     self = [super init];
     if (self) {
         _configuration = configuration;
+        _packs = [packs copy];
         _authManager = [[UIAuthManager alloc] initWithPassword:configuration.adminPassword ?: @""];
         _backendClient = [[UIBackendClient alloc] initWithConfiguration:configuration];
         // Auto-obtain PDS admin ATProtoJWT if a password is configured but no token
@@ -109,7 +112,7 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigi
     self.httpServer = [HttpServer serverWithHost:self.configuration.host port:self.configuration.port];
     if (!self.httpServer) {
         if (error) {
-            *error = [NSError errorWithDomain:@"UIServerRuntime"
+            *error = [NSError errorWithDomain:@"GZAdminUIHost"
                                          code:1
                                      userInfo:@{NSLocalizedDescriptionKey: @"Failed to create HTTP server"}];
         }
@@ -248,17 +251,9 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigi
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf adminShellHTML:nonce csrfNonce:csrfNonce]];
     }];
-    [self registerPDSRoutes];
-    [self registerAppViewRoutes];
-    [self registerRelayRoutes];
-    [self registerPLCRoutes];
-    [self registerDataExplorerRoutes];
-    [self registerLabRoutes];
-    [self registerOzoneRoutes];
-    [self registerSecurityRoutes];
-    [self registerChatRoutes];
-    [self registerVideoRoutes];
-    [self registerMSTRoutes];
+    for (Class packClass in self.packs) {
+        [packClass registerRoutesWithHost:self];
+    }
 }
 
 - (BOOL)ensureAuthorized:(HttpRequest *)request response:(HttpResponse *)response {
