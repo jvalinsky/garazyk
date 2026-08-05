@@ -93,68 +93,6 @@
     return [UITemplateEngine renderTemplate:@"ozone-config" context:ctx];
 }
 
-#pragma mark - Render Methods
-
-- (NSString *)renderConnectionsPartial {
-    NSDictionary *fields = @{
-        @"pdsURL": [self.configuration.pdsBaseURL absoluteString] ?: @"",
-        @"pdsToken": self.configuration.pdsAdminToken ?: @"",
-        @"appViewURL": [self.configuration.appViewBaseURL absoluteString] ?: @"",
-        @"appViewToken": self.configuration.appViewAdminToken ?: @"",
-        @"relayURL": [self.configuration.relayBaseURL absoluteString] ?: @"",
-        @"relayToken": self.configuration.relayAdminToken ?: @"",
-        @"plcURL": [self.configuration.plcBaseURL absoluteString] ?: @"",
-        @"plcToken": self.configuration.plcAdminToken ?: @"",
-        @"chatURL": [self.configuration.chatBaseURL absoluteString] ?: @"",
-        @"chatToken": self.configuration.chatAdminToken ?: @"",
-        @"videoURL": [self.configuration.videoBaseURL absoluteString] ?: @"",
-        @"videoToken": self.configuration.videoAdminToken ?: @""
-    };
-    NSArray *order = @[
-        @{@"id": @"pds", @"key": @"pds", @"label": @"PDS"},
-        @{@"id": @"appview", @"key": @"appView", @"label": @"APPVIEW"},
-        @{@"id": @"relay", @"key": @"relay", @"label": @"RELAY"},
-        @{@"id": @"plc", @"key": @"plc", @"label": @"PLC"},
-        @{@"id": @"chat", @"key": @"chat", @"label": @"CHAT"},
-        @{@"id": @"video", @"key": @"video", @"label": @"VIDEO"}
-    ];
-    NSMutableArray *services = [NSMutableArray array];
-    for (NSDictionary *entry in order) {
-        NSString *urlKey = [entry[@"key"] stringByAppendingString:@"URL"];
-        NSString *tokenKey = [entry[@"key"] stringByAppendingString:@"Token"];
-        [services addObject:@{
-            @"id": entry[@"id"],
-            @"label": entry[@"label"],
-            @"urlKey": urlKey,
-            @"urlVal": fields[urlKey],
-            @"tokenKey": tokenKey,
-            @"tokenVal": fields[tokenKey]
-        }];
-    }
-    return [UITemplateEngine renderTemplate:@"connections" context:@{@"services": services}];
-}
-
-- (NSString *)renderOverviewPartial:(NSDictionary *)result {
-    NSMutableDictionary *ctx = [result mutableCopy];
-    if (result[@"services"]) {
-        NSMutableArray *mapped = [NSMutableArray array];
-        for (NSDictionary *svc in result[@"services"]) {
-            NSMutableDictionary *ms = [svc mutableCopy];
-            NSString *name = svc[@"name"] ?: @"unknown";
-            ms[@"nameUpper"] = [name uppercaseString];
-            NSString *status = svc[@"status"] ?: @"unknown";
-            if ([status isEqualToString:@"online"]) ms[@"statusClass"] = @"status-online";
-            else if ([status isEqualToString:@"offline"]) ms[@"statusClass"] = @"status-offline";
-            else if ([status isEqualToString:@"error"]) ms[@"statusClass"] = @"status-error";
-            else ms[@"statusClass"] = @"status-unknown";
-            ms[@"url"] = svc[@"url"] ?: @"-";
-            [mapped addObject:ms];
-        }
-        ctx[@"services"] = mapped;
-    }
-    return [UITemplateEngine renderTemplate:@"overview" context:ctx];
-}
-
 
 #pragma mark - Phase 1 Render Methods
 
