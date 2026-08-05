@@ -63,7 +63,7 @@ static NSDictionary *SpaceOAuthAuthentication(HttpRequest *request, HttpResponse
   NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:[request headerForKey:@"Authorization"]
                                                   services:services request:request response:response];
   if (!did) return nil;
-  JWT *jwt = [JWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
+  ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
   NSMutableArray<PDSSpaceScope *> *scopes = [NSMutableArray array];
   for (NSString *candidate in [jwt.payload.scope componentsSeparatedByCharactersInSet:
           [NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
@@ -242,7 +242,7 @@ static id<PDSActorKeyManager> SpaceCredentialSignerForAuthorityDocument(PDSActor
 static NSDictionary *SpaceCredentialAuthentication(HttpRequest *request, HttpResponse *response,
                                                     PDSSpaceURI *space) {
   NSString *token = SpaceAuthorizationToken(request);
-  JWT *jwt = [JWT jwtWithToken:token error:nil];
+  ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
   if (![jwt.header.typ isEqualToString:PDSSpaceCredentialJWTType]) return nil;
   NSString *keyID = jwt.header.kid;
   if (!([keyID isEqualToString:@"#atproto_space"] || [keyID isEqualToString:@"#atproto"])) {
@@ -272,7 +272,7 @@ static NSString *SpaceServiceAuthentication(HttpRequest *request, HttpResponse *
 static NSDictionary *SpaceReadAuthentication(HttpRequest *request, HttpResponse *response,
                                              id<XrpcRoutePackServices> services, PDSSpaceURI *space,
                                              NSString *repo, NSString *collection) {
-  JWT *unverified = [JWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
+  ATProtoJWT *unverified = [ATProtoJWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
   if (unverified.payload.lxm.length > 0) {
     /* The reconciler mints this single, writer-bound service capability once
      * and uses it for its read-only recovery sequence.  Keep it bound to the
@@ -358,7 +358,7 @@ static NSData *SpaceRepoCAR(PDSSpaceStore *store, PDSDatabasePool *pool, PDSSpac
 
 static NSString *SpaceServiceAuthentication(HttpRequest *request, HttpResponse *response,
                                             NSString *expectedAudience, NSString *expectedMethod) {
-  JWT *jwt = [JWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
+  ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
   NSString *issuer = jwt.payload.iss;
   if (![ATProtoValidator validateDID:issuer error:nil] ||
       (expectedAudience.length > 0 && ![jwt.payload.aud isEqualToString:expectedAudience]) ||
@@ -605,7 +605,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
       }
       attestedAppClientID = appClientID;
     }
-    NSString *token = SpaceAuthorizationToken(request); JWT *unverified = [JWT jwtWithToken:token error:nil];
+    NSString *token = SpaceAuthorizationToken(request); ATProtoJWT *unverified = [ATProtoJWT jwtWithToken:token error:nil];
     NSString *issuer = unverified.payload.iss; if (![ATProtoValidator validateDID:issuer error:nil]) { SpaceError(response, HttpStatusUnauthorized, @"InvalidDelegationToken", @"Delegation issuer is invalid"); return; }
     ATProtoDIDDocument *userDocument = SpaceResolveDID(issuer, NO, response); if (!userDocument) return;
     NSData *key = SpacePublicKeyFromDIDKey([ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:userDocument]);

@@ -280,7 +280,7 @@
         NSString *sessionID = nil;
         if ([authHeader hasPrefix:@"Bearer "]) {
             NSString *token = [authHeader substringFromIndex:7];
-            JWT *jwt = [JWT jwtWithToken:token error:nil];
+            ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
             NSDictionary *payload = jwt ? payloadDictionaryFromJWT(jwt, nil) : nil;
             sessionID = [payload[@"sid"] isKindOfClass:[NSString class]] ? payload[@"sid"] : nil;
         }

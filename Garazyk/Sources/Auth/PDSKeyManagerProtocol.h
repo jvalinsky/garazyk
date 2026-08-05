@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion
     Provides a common interface for key pair metadata and JWK export.
-    Used for JWT signing and verification in OAuth 2.0 flows.
+    Used for ATProtoJWT signing and verification in OAuth 2.0 flows.
  */
 @protocol PDSKeyPair <NSObject>
 
@@ -159,12 +159,12 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method signPayload:withKeyID:error:
 
- @abstract Sign a JSON payload (creates a JWT).
+ @abstract Sign a JSON payload (creates a ATProtoJWT).
 
  @param payload The JSON payload to sign.
  @param keyID The unique identifier of the signing key.
  @param error On failure, set to an error describing the failure.
- @return The signed JWT as a dictionary, or nil on failure.
+ @return The signed ATProtoJWT as a dictionary, or nil on failure.
  */
 - (nullable NSDictionary *)signPayload:(NSDictionary *)payload
                               withKeyID:(NSString *)keyID

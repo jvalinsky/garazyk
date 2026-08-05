@@ -29,7 +29,7 @@
   return [result copy];
 }
 
-+ (NSArray<ATProtoPermissionScope *> *)scopesFromJWT:(JWT *)jwt {
++ (NSArray<ATProtoPermissionScope *> *)scopesFromJWT:(ATProtoJWT *)jwt {
   NSString *scopeString = jwt.payload.scope;
   return [self scopesFromScopeString:scopeString];
 }

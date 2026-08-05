@@ -7,7 +7,7 @@
 
  @discussion ATProtoAuthVerifier provides token verification logic that can be used by
  PDS, AppView, Relay, or any ATProto resource server. It verifies:
- - JWT access tokens (signature, expiration, issuer, audience)
+ - ATProtoJWT access tokens (signature, expiration, issuer, audience)
  - DPoP proofs (binding to access token)
  - Account policies (takedown status, admin)
 
@@ -32,7 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class HttpRequest;
 @class HttpResponse;
-@class JWT;
+@class ATProtoJWT;
 
 extern NSString * const AuthVerifierErrorDomain;
 
@@ -66,7 +66,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
 /*! The authenticated DID. */
 @property (nonatomic, copy, readonly) NSString *did;
 
-/*! The access token JWT (for audit logging). */
+/*! The access token ATProtoJWT (for audit logging). */
 @property (nonatomic, copy, readonly, nullable) NSString *accessTokenJWT;
 
 /*! Token claims dictionary. */
@@ -142,7 +142,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
 @property (nonatomic, strong, nullable) id<AuthCryptoDPoPReplayChecker> replayChecker;
 
 /*!
- @brief Key manager for local JWT signature verification.
+ @brief Key manager for local ATProtoJWT signature verification.
  @discussion Used when the host stores signing keys behind a key manager rather
  than exposing raw public-key bytes. If set, it is preferred by the local
  issuer path when `localPublicKey` is nil.
@@ -174,7 +174,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
 
  /*!
   @abstract Verify an access token (without DPoP).
-  @param token The JWT access token string.
+  @param token The ATProtoJWT access token string.
   @param error Set on failure.
   @return Authenticated principal, or nil if verification failed.
   */
@@ -204,7 +204,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
 - (nullable NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request;
 
 /*!
- @brief Set the JWT verification key for local issuer.
+ @brief Set the ATProtoJWT verification key for local issuer.
  @param publicKey The public key for verifying tokens.
  */
 - (void)setLocalPublicKey:(nullable id)publicKey;

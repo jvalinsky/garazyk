@@ -4,7 +4,7 @@
 #import <Foundation/Foundation.h>
 
 @class ATProtoPermissionScope;
-@class JWT;
+@class ATProtoJWT;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -26,18 +26,18 @@ NS_ASSUME_NONNULL_BEGIN
  * Filters out space: prefixes (handled by PDSSpaceScope) and returns
  * only standard resource-type scopes (repo:, rpc:, blob:, account:, identity:, include:).
  *
- * @param scopeString The JWT scope claim value (space-separated).
+ * @param scopeString The ATProtoJWT scope claim value (space-separated).
  * @return Array of parsed ATProtoPermissionScope objects. Empty if none found.
  */
 + (NSArray<ATProtoPermissionScope *> *)scopesFromScopeString:(nullable NSString *)scopeString;
 
 /**
- * Extract and parse permission scopes from a verified JWT.
+ * Extract and parse permission scopes from a verified ATProtoJWT.
  *
- * @param jwt A parsed JWT with a scope claim.
+ * @param jwt A parsed ATProtoJWT with a scope claim.
  * @return Array of parsed ATProtoPermissionScope objects. Empty if none found.
  */
-+ (NSArray<ATProtoPermissionScope *> *)scopesFromJWT:(JWT *)jwt;
++ (NSArray<ATProtoPermissionScope *> *)scopesFromJWT:(ATProtoJWT *)jwt;
 
 /**
  * Validate the complete OAuth scope string accepted by this PDS.

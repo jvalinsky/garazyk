@@ -48,7 +48,7 @@ typedef NS_ENUM(NSInteger, PDSReadinessError) {
  @discussion Checks:
  1. Database connection pools are initialized and responding
  2. PLC directory is reachable (network connectivity)
- 3. JWT signing keys are available
+ 3. ATProtoJWT signing keys are available
  4. Blob storage (disk/S3) is accessible
  5. Sufficient disk space (>= 1GB warning threshold)
 

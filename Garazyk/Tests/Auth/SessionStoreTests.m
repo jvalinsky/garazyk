@@ -27,7 +27,7 @@
     [super tearDown];
 }
 
-#pragma mark - JWT Fixtures
+#pragma mark - ATProtoJWT Fixtures
 
 - (void)configureJWTSigning {
     self.minter = [[ATProtoJWTMinter alloc] init];
@@ -50,7 +50,7 @@
 
 - (void)assertValidJWTAccessToken:(NSString *)accessToken {
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:accessToken error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:accessToken error:&error];
     XCTAssertNotNil(jwt, @"Access token should parse as JWT");
     XCTAssertNil(error, @"No JWT parsing error expected");
 

@@ -8,7 +8,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/** @abstract Error domain returned by the space-JWT minting and verification methods. */
+/** @abstract Error domain returned by the space-ATProtoJWT minting and verification methods. */
 extern NSString *const PDSSpaceJWTErrorDomain;
 
 /** @abstract Required `typ` header value for a short-lived reader delegation. */
@@ -18,12 +18,12 @@ extern NSString *const PDSSpaceDelegationJWTType;
 extern NSString *const PDSSpaceCredentialJWTType;
 
 /**
- * @abstract Failures produced while minting or verifying a space JWT.
+ * @abstract Failures produced while minting or verifying a space ATProtoJWT.
  */
 typedef NS_ENUM(NSInteger, PDSSpaceJWTError) {
-  /** The compact JWT, key material, or protected header is invalid. */
+  /** The compact ATProtoJWT, key material, or protected header is invalid. */
   PDSSpaceJWTErrorMalformed = 1,
-  /** A required JWT claim is absent or has an invalid type. */
+  /** A required ATProtoJWT claim is absent or has an invalid type. */
   PDSSpaceJWTErrorClaims,
   /** The requested signing key is unavailable or a signature does not verify. */
   PDSSpaceJWTErrorSignature,
@@ -37,7 +37,7 @@ typedef NS_ENUM(NSInteger, PDSSpaceJWTError) {
   PDSSpaceJWTErrorIssuer,
   /** The subject does not match the expected space URI. */
   PDSSpaceJWTErrorSubject,
-  /** Reserved for callers that persist and reject reused JWT IDs. */
+  /** Reserved for callers that persist and reject reused ATProtoJWT IDs. */
   PDSSpaceJWTErrorReplay,
 };
 
@@ -56,11 +56,11 @@ typedef NS_ENUM(NSInteger, PDSSpaceJWTError) {
  * @param issuer The actor DID written to `iss`.
  * @param audience The exact space-host audience written to `aud`.
  * @param space The space URI written to `sub`.
- * @param actorKeyManager The key manager that signs the compact JWT.
+ * @param actorKeyManager The key manager that signs the compact ATProtoJWT.
  * @param now The issue time, or nil for the current time.
  * @param expiration The expiry time, or nil for the 60-second default.
  * @param error Receives a `PDSSpaceJWTErrorDomain` failure.
- * @return A signed compact JWT, or nil when inputs, lifetime, or signing fail.
+ * @return A signed compact ATProtoJWT, or nil when inputs, lifetime, or signing fail.
  */
 + (nullable NSString *)mintDelegationWithIssuer:(NSString *)issuer
                                         audience:(NSString *)audience
@@ -78,7 +78,7 @@ typedef NS_ENUM(NSInteger, PDSSpaceJWTError) {
  * @param now The issue time, or nil for the current time.
  * @param expiration The expiry time, or nil for the two-hour default.
  * @param error Receives a `PDSSpaceJWTErrorDomain` failure.
- * @return A signed compact JWT, or nil when inputs, lifetime, or signing fail.
+ * @return A signed compact ATProtoJWT, or nil when inputs, lifetime, or signing fail.
  */
 + (nullable NSString *)mintCredentialWithAuthority:(NSString *)authority
                                              space:(NSString *)space
@@ -89,7 +89,7 @@ typedef NS_ENUM(NSInteger, PDSSpaceJWTError) {
                                              error:(NSError **)error;
 
 /** @abstract Verifies a 60-second ES256K delegation without consuming its `jti`; the caller supplies the trust-boundary key, which this method does not resolve or bind to the expected DID.
- * @param token The compact delegation JWT.
+ * @param token The compact delegation ATProtoJWT.
  * @param publicKey The expected issuer's compressed public key.
  * @param issuer The exact expected `iss` value.
  * @param audience The exact expected `aud` value.
@@ -107,7 +107,7 @@ typedef NS_ENUM(NSInteger, PDSSpaceJWTError) {
                                                     error:(NSError **)error;
 
 /** @abstract Verifies a two-hour ES256K credential without consuming its `jti`; it requires credential type, supplied `keyID`, expected issuer and subject, and no audience claim.
- * @param token The compact credential JWT.
+ * @param token The compact credential ATProtoJWT.
  * @param publicKey The expected authority key selected by the caller.
  * @param authority The exact expected `iss` value.
  * @param space The exact expected `sub` value.

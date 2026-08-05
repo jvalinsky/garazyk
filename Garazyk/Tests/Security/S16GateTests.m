@@ -11,7 +11,7 @@
 
 @implementation S16GateTests
 
-#pragma mark - V1/V2: Non-string JWT claims must return 401
+#pragma mark - V1/V2: Non-string ATProtoJWT claims must return 401
 
 - (void)testNonStringSubClaimReturns401 {
     // Access token with non-string sub (number instead of DID string).
@@ -74,7 +74,7 @@
 }
 
 - (void)testNonStringIssClaimReturns401 {
-    // Service auth token (typ: JWT) with non-string iss claim.
+    // Service auth token (typ: ATProtoJWT) with non-string iss claim.
     NSString *header = @"{\"alg\":\"ES256K\",\"typ\":\"JWT\"}";
     NSString *payload = @"{\"iss\":[1,2,3],\"sub\":\"did:plc:test\",\"aud\":\"did:plc:aud\",\"exp\":9999999999,\"lxm\":\"com.atproto.test\"}";
     NSString *token = [NSString stringWithFormat:@"Bearer %@.%@.fakesig",

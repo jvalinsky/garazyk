@@ -214,7 +214,7 @@
 
 #pragma mark - Fail-Closed Claim Typing (workstream 01 S8 slice 1)
 
-// Builds an unsigned compact DPoP-shaped JWT from raw header/payload
+// Builds an unsigned compact DPoP-shaped ATProtoJWT from raw header/payload
 // dictionaries so tests can inject claim values of the wrong JSON type.
 // The signature segment is a fixed placeholder; these tests only need to
 // reach ATProtoAuthCryptoDPoP's type-checking of the header/payload claims, which
@@ -306,7 +306,7 @@
                                       error:&error];
     XCTAssertTrue(firstValid, @"First verification should succeed");
 
-    // Second verification of the same JWT should fail (replay detected)
+    // Second verification of the same ATProtoJWT should fail (replay detected)
     error = nil;
     BOOL replayValid = [DPoPUtil verifyDPoP:token.jwt
                               withPublicKey:_publicKey

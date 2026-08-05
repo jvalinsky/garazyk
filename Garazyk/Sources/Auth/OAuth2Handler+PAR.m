@@ -78,7 +78,7 @@
     return;
   }
 
-  // JWT assertion authentication (private_key_jwt)
+  // ATProtoJWT assertion authentication (private_key_jwt)
   NSString *clientAssertion = params[@"client_assertion"];
   NSString *clientAssertionType = params[@"client_assertion_type"];
   NSString *clientSecret = params[@"client_secret"];
@@ -88,7 +88,7 @@
       [tokenEndpointAuthMethod isEqualToString:@"private_key_jwt"];
 
   if (clientAssertion.length > 0) {
-    // JWT assertion provided - validate it
+    // ATProtoJWT assertion provided - validate it
     if (![clientAssertionType
             isEqualToString:
                 @"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"]) {

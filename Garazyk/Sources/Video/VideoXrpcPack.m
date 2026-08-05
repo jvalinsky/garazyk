@@ -100,7 +100,7 @@
     }
 
     // The browser may authenticate the video-service upload with service auth,
-    // while Garazyk's PDS blob upload path still expects the user's access JWT.
+    // while Garazyk's PDS blob upload path still expects the user's access ATProtoJWT.
     NSString *workerUploadToken = [request headerForKey:@"X-Garazyk-Access-JWT"];
     if (workerUploadToken.length == 0) {
         workerUploadToken = [request headerForKey:@"X-Garazyk-Access-Token"];

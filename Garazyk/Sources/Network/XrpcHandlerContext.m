@@ -57,7 +57,7 @@
   }
 
   // No jwtMinter/adminController — this is a standalone service (e.g., chat).
-  // Use ChatAuthManager to validate the service auth JWT.
+  // Use ChatAuthManager to validate the service auth ATProtoJWT.
   NSString *methodNSID = _request.pathParameters[@"method"] ?: @"";
   NSString *resolvedDID = [[ChatAuthManager sharedManager] authenticateRequest:_request
                                                                       response:_response

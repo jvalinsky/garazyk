@@ -284,7 +284,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*! The access token for DPoP-bound requests. */
 @property (nonatomic, copy, nullable) NSString *accessToken;
 
-/*! The DPoP proof JWT. */
+/*! The DPoP proof ATProtoJWT. */
 @property (nonatomic, copy, nullable) NSString *dpopProof;
 
 /*! Thumbprint of the DPoP proof key. */
@@ -376,13 +376,13 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*!
  @method createProofForURL:method:key:error:
  
- @abstract Creates a DPoP proof JWT for a request.
+ @abstract Creates a DPoP proof ATProtoJWT for a request.
  
  @param url The URL the proof will be used for.
  @param method The HTTP method (GET, POST, etc.).
  @param key The JWK to sign the proof with.
  @param error On return, contains an error if creation failed.
- @return The DPoP proof JWT string.
+ @return The DPoP proof ATProtoJWT string.
  */
 /**
  * @abstract Performs the createProofForURL operation.
@@ -395,9 +395,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*!
  @method verifyProof:method:url:nonce:outThumbprint:error:
  
- @abstract Verifies a DPoP proof JWT and validates its claims.
+ @abstract Verifies a DPoP proof ATProtoJWT and validates its claims.
  
- @param dpopJwt The proof JWT from the DPoP header.
+ @param dpopJwt The proof ATProtoJWT from the DPoP header.
  @param method The HTTP method the proof is for.
  @param url The URL the proof is for.
  @param nonce Optional server-provided nonce.
@@ -440,7 +440,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 
  @abstract Verifies a DPoP proof without requiring a server nonce.
 
- @param dpopJwt The proof JWT from the DPoP header.
+ @param dpopJwt The proof ATProtoJWT from the DPoP header.
  @param method The HTTP method the proof is for.
  @param url The URL the proof is for.
  @param nonce Optional server-provided nonce.
@@ -467,7 +467,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
  
  @discussion OAuth2Server handles all authorization server operations
  including authorization requests, token issuance, and token refresh.
- It integrates with JWT minting, key management, and identity resolution.
+ It integrates with ATProtoJWT minting, key management, and identity resolution.
  
  @code
  OAuth2Server *server = [[OAuth2Server alloc] init];
@@ -512,7 +512,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*! Serial queue for thread-safe session access. */
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t sessionQueue;
 
-/*! JWT minting service. */
+/*! ATProtoJWT minting service. */
 @property (nonatomic, strong, nullable) ATProtoJWTMinter *jwtMinter;
 
 /*! Key management service. */

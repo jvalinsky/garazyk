@@ -75,9 +75,9 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
         return nil;
     }
 
-    // Parse the JWT
+    // Parse the ATProtoJWT
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     if (!jwt) {
         GZ_LOG_WARN(@"Service Auth JWT parsing failed: %@", error);
         response.statusCode = HttpStatusUnauthorized;
@@ -160,7 +160,7 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
         return nil;
     }
 
-    // Verify JWT signature
+    // Verify ATProtoJWT signature
     if (isAccessToken) {
         // Access tokens are signed by the PDS's server key, not the user's actor key.
         // We can't fully verify them without the PDS's JWKS, but we trust them in
@@ -233,7 +233,7 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
 
 #pragma mark - DID-based Signature Verification
 
-- (BOOL)verifyJWTSignature:(JWT *)jwt
+- (BOOL)verifyJWTSignature:(ATProtoJWT *)jwt
                   issuerDID:(NSString *)iss
                forceRefresh:(BOOL)forceRefresh
                       error:(NSError **)error {
@@ -275,7 +275,7 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
         return NO;
     }
 
-    // Verify the JWT signature using the resolved public key
+    // Verify the ATProtoJWT signature using the resolved public key
     ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     verifier.allowedAlgorithms = @[@"ES256K"];
     verifier.publicKey = signingKeyBytes;

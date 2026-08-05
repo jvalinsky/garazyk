@@ -210,7 +210,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     }
 
     // Check Rate Limit (per-DID) — extract DID from Authorization header
-    // without full JWT verification. The per-DID limit is only enforced when
+    // without full ATProtoJWT verification. The per-DID limit is only enforced when
     // the rate limiter is enabled and the request carries a Bearer token.
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (authHeader.length > 0) {
@@ -379,7 +379,7 @@ static XrpcDispatcher *_sharedInstance = nil;
                 token = [authHeader substringFromIndex:5];
             }
             if (token.length > 0) {
-                JWT *jwt = [JWT jwtWithToken:token error:nil];
+                ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
                 if (jwt) {
                     NSArray *scopes = [ATProtoPermissionScopeEvaluator scopesFromJWT:jwt];
                     [request setPermissionScopes:scopes];
@@ -631,7 +631,7 @@ static XrpcDispatcher *_sharedInstance = nil;
 #pragma mark - Private Helpers
 
 - (NSString *)_extractDIDFromAuthHeader:(NSString *)authHeader {
-    // Lightweight DID extraction from Bearer token — decodes the JWT payload
+    // Lightweight DID extraction from Bearer token — decodes the ATProtoJWT payload
     // without signature verification. This is sufficient for rate limiting
     // because the per-DID limit is a soft guard, not a security boundary.
     if (!authHeader) return nil;
@@ -645,7 +645,7 @@ static XrpcDispatcher *_sharedInstance = nil;
         return nil;
     }
 
-    // JWT format: header.payload.signature
+    // ATProtoJWT format: header.payload.signature
     NSArray *parts = [token componentsSeparatedByString:@"."];
     if (parts.count != 3) return nil;
 

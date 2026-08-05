@@ -67,7 +67,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! The PDS application for service-based handlers (preferred). */
 @property (nonatomic, weak, nullable) PDSApplication *application;
 
-/*! JWT minter for OAuth handlers. */
+/*! ATProtoJWT minter for OAuth handlers. */
 @property (nonatomic, strong, nullable) ATProtoJWTMinter *jwtMinter;
 
 /*! Service databases for OAuth and other handlers. */

@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
  database tables used in the PDS. The manager supports two database types:
 
  - **Service Database**: Shared tables for accounts, invite codes, refresh
-   tokens, JWT keys, DID cache, and sequencer.
+   tokens, ATProtoJWT keys, DID cache, and sequencer.
  - **Actor Store**: Per-user tables for repository roots, records, blocks,
    and blobs.
 
@@ -96,9 +96,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method serviceJWTSigningKeysTableSchema
 
- @abstract Schema for JWT signing keys table (kid, key_data, algorithm).
+ @abstract Schema for ATProtoJWT signing keys table (kid, key_data, algorithm).
 
- @return CREATE TABLE SQL for JWT keys.
+ @return CREATE TABLE SQL for ATProtoJWT keys.
  */
 - (NSString *)serviceJWTSigningKeysTableSchema;
 

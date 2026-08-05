@@ -88,7 +88,7 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 /*! DPoP key thumbprint for binding. */
 @property (nonatomic, copy, nullable) NSString *dpopKeyThumbprint;
 
-/*! DPoP JWT proof. */
+/*! DPoP ATProtoJWT proof. */
 @property (nonatomic, copy, nullable) NSString *dpopJwt;
 
 /*! Associated account DID after authentication. */
@@ -146,7 +146,7 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 /*! Requested OAuth scope. */
 @property (nonatomic, copy) NSString *scope;
 
-/*! Client assertion JWT for authentication. */
+/*! Client assertion ATProtoJWT for authentication. */
 @property (nonatomic, copy, nullable) NSString *clientAssertion;
 
 /*! Client assertion type (urn:ietf:params:oauth:client-assertion-type:jwt-bearer). */
@@ -155,7 +155,7 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 /*! Login hint for pre-filling. */
 @property (nonatomic, copy, nullable) NSString *loginHint;
 
-/*! DPoP proof JWT. */
+/*! DPoP proof ATProtoJWT. */
 @property (nonatomic, copy, nullable) NSString *dpopJwt;
 
 /*! Validate request parameters. */
@@ -188,10 +188,10 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 /*! OAuth client ID. */
 @property (nonatomic, copy, nullable) NSString *clientId;
 
-/*! Client assertion JWT for authentication. */
+/*! Client assertion ATProtoJWT for authentication. */
 @property (nonatomic, copy, nullable) NSString *clientAssertion;
 
-/*! DPoP proof JWT for token binding. */
+/*! DPoP proof ATProtoJWT for token binding. */
 @property (nonatomic, copy, nullable) NSString *dpopJwt;
 
 /*! Refresh token for token refresh grant. */

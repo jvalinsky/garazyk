@@ -35,7 +35,7 @@
             data = [CID base32Decode:payload];
             break;
         case 'u':
-            data = [JWT base64URLDecode:payload error:error];
+            data = [ATProtoJWT base64URLDecode:payload error:error];
             break;
         default:
             if (error) {

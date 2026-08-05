@@ -179,7 +179,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     XCTAssertEqualObjects(principal.did, expectedDID);
 }
 
-/// Manually constructs a JWT signed with a P-256 key, letting the caller set the
+/// Manually constructs a ATProtoJWT signed with a P-256 key, letting the caller set the
 /// header's alg independently of the key's real curve — needed to test §4.4's
 /// algorithm-confusion defense on the remote-issuer path, where a genuinely
 /// valid P-256 signature can be mislabeled with a disallowed alg.
@@ -239,7 +239,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
 
 - (void)testParityValidSessionToken {
     NSError *error = nil;
-    JWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
+    ATProtoJWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
                                              handle:@"alice.example.com"
                                              scopes:@[]
                                           sessionID:@"session-1"
@@ -263,7 +263,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
 
 - (void)testParitySuspendedAndTakenDownAccount {
     NSError *error = nil;
-    JWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
+    ATProtoJWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
                                              handle:@"alice.example.com"
                                              scopes:@[]
                                           sessionID:@"session-1"
@@ -282,7 +282,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
 
 - (void)testParityRejectsDpopBoundTokenWithoutProofAndOnRequestlessPath {
     NSError *error = nil;
-    JWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
+    ATProtoJWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
                                              handle:@"alice.example.com"
                                              scopes:@[]
                                   dpopKeyThumbprint:@"bound-thumbprint"
@@ -304,7 +304,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     NSString *url = @"https://pds.example.com/xrpc/com.atproto.server.getSession";
     DPoPToken *legacyProof = [DPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
     NSString *thumbprint = [self thumbprintFromProof:legacyProof.jwt error:&error];
-    JWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
+    ATProtoJWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
                                              handle:@"alice.example.com"
                                              scopes:@[]
                                   dpopKeyThumbprint:thumbprint
@@ -381,7 +381,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     }
     NSString *url = @"https://pds.example.com/xrpc/com.atproto.server.getSession";
     DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
-    JWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
+    ATProtoJWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
                                              handle:@"alice.example.com"
                                              scopes:@[]
                                   dpopKeyThumbprint:@"wrong-thumbprint"
@@ -395,7 +395,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
 
 - (void)testParitySupportsDidWebSubjectAndCapturesAdminScope {
     NSError *error = nil;
-    JWT *token = [self.minter mintAccessTokenForDID:@"did:web:pds.example.com%3A8443"
+    ATProtoJWT *token = [self.minter mintAccessTokenForDID:@"did:web:pds.example.com%3A8443"
                                              handle:@"alice.example.com"
                                              scopes:@[@"admin:write"]
                                                error:&error];

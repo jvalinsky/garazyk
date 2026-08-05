@@ -436,7 +436,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // The Minter implementation now prefers keyManager. 
     // If Minter implementation fallback to privateKey/publicKey is removed or deprecated, 
     // we don't need to set them. 
-    // Based on my review of JWT.m, it prefers keyManager.
+    // Based on my review of ATProtoJWT.m, it prefers keyManager.
     // However, for completeness if Minter exposes them: 
     // _jwtMinter.privateKey = ... (can't easily access raw ref from protocol without cast)
     // So we rely on keyManager assignment.

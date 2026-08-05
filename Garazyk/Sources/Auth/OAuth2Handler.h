@@ -64,7 +64,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! The underlying OAuth 2.0 server implementation. */
 @property (nonatomic, strong) OAuth2Server *oauthServer;
 
-/*! JWT minting service for token generation. */
+/*! ATProtoJWT minting service for token generation. */
 @property (nonatomic, strong, nullable) ATProtoJWTMinter *minter;
 
 /*! Data directory for static assets (HTML templates, etc.). */

@@ -166,9 +166,9 @@ static NSURL *AppViewOAuthExpectedDPoPURL(HttpRequest *request) {
         }
     }
 
-    // Try to parse as JWT
+    // Try to parse as ATProtoJWT
     NSError *jwtError = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&jwtError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&jwtError];
     if (!jwt || !jwt.payload.sub) {
         if (error) {
             *error = [NSError errorWithDomain:AppViewOAuth2MiddlewareErrorDomain

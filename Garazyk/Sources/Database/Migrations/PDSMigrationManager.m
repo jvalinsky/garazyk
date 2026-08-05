@@ -1962,7 +1962,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
             }
         }
 
-        // Access JWT
+        // Access ATProtoJWT
         if (sqlite3_column_type(stmt, 5) == SQLITE_BLOB) {
             const void *jwtBytes = sqlite3_column_blob(stmt, 5);
             int jwtLen = sqlite3_column_bytes(stmt, 5);
@@ -1971,7 +1971,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
             }
         }
 
-        // Refresh JWT
+        // Refresh ATProtoJWT
         if (sqlite3_column_type(stmt, 6) == SQLITE_BLOB) {
             const void *refreshBytes = sqlite3_column_blob(stmt, 6);
             int refreshLen = sqlite3_column_bytes(stmt, 6);

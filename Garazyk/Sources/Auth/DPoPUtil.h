@@ -30,13 +30,13 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @class DPoPToken
 
- @abstract Represents a DPoP proof JWT.
+ @abstract Represents a DPoP proof ATProtoJWT.
 
  @discussion Contains the proof components for binding a request to a key pair.
  */
 @interface DPoPToken : NSObject
 
-/*! The signed DPoP proof JWT. */
+/*! The signed DPoP proof ATProtoJWT. */
 @property (nonatomic, copy) NSString *jwt;
 
 /*! HTTP method the proof is for (GET, POST, etc.). */
@@ -66,10 +66,10 @@ NS_ASSUME_NONNULL_BEGIN
                                     nonce:(nullable NSString *)nonce
                                     error:(NSError **)error;
 
-/*! Returns the JWT header claims. */
+/*! Returns the ATProtoJWT header claims. */
 - (NSDictionary *)header;
 
-/*! Returns the JWT payload claims. */
+/*! Returns the ATProtoJWT payload claims. */
 - (NSDictionary *)payload;
 
 @end
@@ -121,9 +121,9 @@ NS_ASSUME_NONNULL_BEGIN
                                        error:(NSError **)error;
 
 /*!
- @brief Verifies a DPoP proof JWT.
+ @brief Verifies a DPoP proof ATProtoJWT.
 
- @param dpopJwt The proof JWT string
+ @param dpopJwt The proof ATProtoJWT string
  @param publicKey Optional SecKeyRef to verify against (macOS only)
  @param htm HTTP method
  @param htu HTTP URI

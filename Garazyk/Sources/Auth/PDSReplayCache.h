@@ -6,7 +6,7 @@
  @abstract Caches JTI and nonces to prevent replay attacks.
 
  @discussion
-    Provides persistent storage for JWT IDs (JTI) and nonces to detect
+    Provides persistent storage for ATProtoJWT IDs (JTI) and nonces to detect
     and prevent replay attacks in OAuth 2.0 and DPoP flows. Uses SQLite
     for persistence across server restarts.
 
@@ -24,8 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Caches JTI and nonces to prevent replay attacks.
 
  @discussion
-    Maintains a cache of seen JWT IDs (JTI) to detect replay attacks.
-    When a JWT is received, its JTI is checked against the cache. If
+    Maintains a cache of seen ATProtoJWT IDs (JTI) to detect replay attacks.
+    When a ATProtoJWT is received, its JTI is checked against the cache. If
     already present, the request is rejected as a replay.
 
     The cache uses SQLite for persistence with automatic cleanup of
@@ -78,8 +78,8 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Checks if a JTI has been seen. If not, adds it to the cache.
 
- @param jti The JWT ID to check (unique identifier from the JWT).
- @param expiration The expiration time of the JWT.
+ @param jti The ATProtoJWT ID to check (unique identifier from the ATProtoJWT).
+ @param expiration The expiration time of the ATProtoJWT.
 
  @return YES if the JTI is new and was added to the cache.
          NO if the JTI was already seen (potential replay attack).

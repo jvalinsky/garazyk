@@ -29,7 +29,7 @@ typedef _Nullable id<PDSActorKeyManager> (^ServiceAuthSigningKeyResolver)(NSStri
  
  @abstract Handles proxying XRPC requests to an upstream service.
  
- @discussion When proxying requests, the handler mints a service auth JWT
+ @discussion When proxying requests, the handler mints a service auth ATProtoJWT
  per the AT Protocol XRPC spec: signed with the user's repo signing key,
  with iss=userDID, aud=serviceDID#fragment, lxm=method, exp=60s, jti=nonce.
  */

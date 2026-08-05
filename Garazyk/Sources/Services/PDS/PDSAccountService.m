@@ -173,7 +173,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     }
     NSError *primaryMintError = nil;
     if (self.minter) {
-        JWT *jwt = [self.minter mintAccessTokenForDID:did
+        ATProtoJWT *jwt = [self.minter mintAccessTokenForDID:did
                                                handle:handle
                                                scopes:@[@"atproto"]
                                             sessionID:sessionID
@@ -216,7 +216,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     fallbackMinter.publicKey = fallbackKeyPair.publicKey;
 
     NSError *fallbackMintError = nil;
-    JWT *fallbackJWT = [fallbackMinter mintAccessTokenForDID:did
+    ATProtoJWT *fallbackJWT = [fallbackMinter mintAccessTokenForDID:did
                                                       handle:handle
                                                       scopes:@[@"atproto"]
                                                    sessionID:sessionID
@@ -259,7 +259,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     }
     NSError *primaryMintError = nil;
     if (self.minter) {
-        JWT *jwt = [self.minter mintRefreshTokenForDID:did
+        ATProtoJWT *jwt = [self.minter mintRefreshTokenForDID:did
                                                  handle:handle
                                                  scopes:@[@"atproto"]
                                                   error:&primaryMintError];
@@ -300,7 +300,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     fallbackMinter.publicKey = fallbackKeyPair.publicKey;
 
     NSError *fallbackMintError = nil;
-    JWT *fallbackJWT = [fallbackMinter mintRefreshTokenForDID:did
+    ATProtoJWT *fallbackJWT = [fallbackMinter mintRefreshTokenForDID:did
                                                         handle:handle
                                                         scopes:@[@"atproto"]
                                                          error:&fallbackMintError];
@@ -734,7 +734,7 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
 
     // §4.1: refresh tokens are now minted as JWTs (mintRefreshTokenForDID:);
     // verify shape, signature, and claims before trusting the token at all.
-    JWT *jwt = [JWT jwtWithToken:refreshToken error:nil];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:refreshToken error:nil];
     if (!jwt) {
         if (error) {
             *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials

@@ -1094,7 +1094,7 @@ static BOOL PLCP256UncompressPublicKey(const uint8_t compressed[33], uint8_t out
     // normalizeLowS discussion / https://web.plc.directory/spec/v0.1/did-plc);
     // libsecp256k1 enforces this for free on the ES256K path, but the shared
     // P-256 JOSE verifier (ATProtoAuthCryptoJWK) deliberately accepts both S forms
-    // per ADR 0007 (DPoP/JWT/WebAuthn callers must not reject high-S). PLC
+    // per ADR 0007 (DPoP/ATProtoJWT/WebAuthn callers must not reject high-S). PLC
     // operation verification is not one of those callers, so it must reject
     // non-canonical signatures explicitly here.
     if (![ATProtoAuthCryptoECDSA isLowS:rawSig error:nil]) {
