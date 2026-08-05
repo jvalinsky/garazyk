@@ -38,7 +38,7 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
     _rateLimiterStorageFactory = [factory copy];
 }
 
-@implementation RateLimiterStorageHandle
+@implementation ATProtoRateLimiterStorageHandle
 
 - (instancetype)initWithConnectionManager:(id<ATProtoConnectionManager>)connectionManager
                               queryRunner:(id<ATProtoQueryRunning>)queryRunner {
@@ -73,7 +73,7 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
 @interface RateLimiter ()
 
 @property (nonatomic, copy, nullable) NSString *databasePath;
-@property (nonatomic, strong, nullable) RateLimiterStorageHandle *storageHandle;
+@property (nonatomic, strong, nullable) ATProtoRateLimiterStorageHandle *storageHandle;
 
 @end
 
@@ -164,7 +164,7 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
 
         ATProtoDBConfig dbConfig = ATProtoDBConfigDefault;
         NSError *openError = nil;
-        RateLimiterStorageHandle *handle = _rateLimiterStorageFactory(self.databasePath, dbConfig, &openError);
+        ATProtoRateLimiterStorageHandle *handle = _rateLimiterStorageFactory(self.databasePath, dbConfig, &openError);
         if (!handle) {
             GZ_LOG_DB_ERROR(@"Failed to open rate limit database at path %@: %@", self.databasePath, openError);
             return NO;

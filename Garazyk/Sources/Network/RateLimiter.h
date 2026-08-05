@@ -34,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpResponse;
 
 /*!
- @class RateLimiterStorageHandle
+ @class ATProtoRateLimiterStorageHandle
 
  @abstract Bundles the connection manager and query runner a @c RateLimiter
  needs, without naming any concrete Storage class.
@@ -46,7 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
  registered by whichever Storage/Services code links into the running
  process (see @c ATProtoDatabaseQueryRunner.m's own `+load` registration).
  */
-@interface RateLimiterStorageHandle : NSObject
+@interface ATProtoRateLimiterStorageHandle : NSObject
 
 @property (nonatomic, strong, readonly) id<ATProtoConnectionManager> connectionManager;
 @property (nonatomic, strong, readonly) id<ATProtoQueryRunning> queryRunner;
@@ -62,7 +62,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Returns nil and sets @c error on failure to open. Called at most
  once per distinct database path — @c RateLimiter caches the result.
  */
-typedef RateLimiterStorageHandle * _Nullable (^RateLimiterStorageFactory)(NSString *path,
+typedef ATProtoRateLimiterStorageHandle * _Nullable (^RateLimiterStorageFactory)(NSString *path,
                                                                           ATProtoDBConfig config,
                                                                           NSError **error);
 

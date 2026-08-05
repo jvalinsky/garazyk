@@ -8,7 +8,7 @@
 #import "Network/SSLPinningManager.h"
 #import <Security/Security.h>
 
-@interface SSLPinningManager (TestHooks)
+@interface ATProtoSSLPinningManager (TestHooks)
 - (BOOL)validateServerTrust:(SecTrustRef)serverTrust forDomain:(NSString *)domain;
 - (SecKeyRef)publicKeyFromCertificate:(SecCertificateRef)certificate;
 - (NSData *)dataFromPublicKey:(SecKeyRef)publicKey;
@@ -16,7 +16,7 @@
 
 @interface SSLPinningTests : XCTestCase
 
-@property (nonatomic, strong) SSLPinningManager *pinningManager;
+@property (nonatomic, strong) ATProtoSSLPinningManager *pinningManager;
 
 @end
 
@@ -24,7 +24,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.pinningManager = [[SSLPinningManager alloc] initWithPinningEnabled:YES];
+    self.pinningManager = [[ATProtoSSLPinningManager alloc] initWithPinningEnabled:YES];
 }
 
 - (void)tearDown {
@@ -33,15 +33,15 @@
 }
 
 - (void)testSharedManager {
-    SSLPinningManager *manager1 = [SSLPinningManager sharedManager];
-    SSLPinningManager *manager2 = [SSLPinningManager sharedManager];
+    ATProtoSSLPinningManager *manager1 = [ATProtoSSLPinningManager sharedManager];
+    ATProtoSSLPinningManager *manager2 = [ATProtoSSLPinningManager sharedManager];
     XCTAssertTrue(manager1 == manager2, @"Shared manager should return the same instance");
 }
 
 - (void)testPinningEnabled {
     XCTAssertTrue(self.pinningManager.isPinningEnabled, @"Pinning should be enabled by default");
 
-    SSLPinningManager *disabledManager = [[SSLPinningManager alloc] initWithPinningEnabled:NO];
+    ATProtoSSLPinningManager *disabledManager = [[ATProtoSSLPinningManager alloc] initWithPinningEnabled:NO];
     XCTAssertFalse(disabledManager.isPinningEnabled, @"Pinning should be disabled when initialized with NO");
 }
 
@@ -81,7 +81,7 @@
 }
 
 - (void)testValidateChallengeWithDisabledPinning {
-    SSLPinningManager *disabledManager = [[SSLPinningManager alloc] initWithPinningEnabled:NO];
+    ATProtoSSLPinningManager *disabledManager = [[ATProtoSSLPinningManager alloc] initWithPinningEnabled:NO];
     id<NSURLAuthenticationChallengeSender> sender = (id<NSURLAuthenticationChallengeSender>)nil;
     NSURLProtectionSpace *space = [[NSURLProtectionSpace alloc] initWithHost:@"example.com"
                                                                          port:443
@@ -114,7 +114,7 @@
 }
 
 - (void)testValidateServerTrustWithDisabledPinningAlwaysAllows {
-    SSLPinningManager *disabledManager = [[SSLPinningManager alloc] initWithPinningEnabled:NO];
+    ATProtoSSLPinningManager *disabledManager = [[ATProtoSSLPinningManager alloc] initWithPinningEnabled:NO];
     XCTAssertTrue([disabledManager validateServerTrust:NULL forDomain:@"example.com"]);
 }
 
@@ -163,7 +163,7 @@
     /*
     XCTestExpectation *expectation = [self expectationWithDescription:@"Network request"];
 
-    SSLPinningManager *manager = [[SSLPinningManager alloc] initWithPinningEnabled:YES];
+    ATProtoSSLPinningManager *manager = [[ATProtoSSLPinningManager alloc] initWithPinningEnabled:YES];
     // Add known good public key for a test domain
     // manager addPinnedPublicKey:... forDomain:@"example.com"
 

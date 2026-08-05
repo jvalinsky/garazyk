@@ -23,7 +23,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
 - (instancetype)initWithKey:(NSString *)key value:(ATProtoCID *)value tree:(nullable MSTNode *)tree;
 @end
 
-@interface MSTPersistence ()
+@interface ATProtoMSTPersistence ()
 - (nullable MSTNode *)loadNodeWithCID:(ATProtoCID *)cid
                                repoDid:(NSString *)repoDid
                              database:(PDSDatabase *)database
@@ -34,10 +34,10 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
 - (nullable ATProtoCID *)cidFromTaggedValue:(ATProtoCBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error;
 @end
 
-@implementation MSTPersistence
+@implementation ATProtoMSTPersistence
 
 + (instancetype)shared {
-    static MSTPersistence *sharedInstance = nil;
+    static ATProtoMSTPersistence *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[self alloc] init];

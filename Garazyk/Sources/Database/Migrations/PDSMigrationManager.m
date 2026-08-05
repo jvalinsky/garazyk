@@ -2210,12 +2210,12 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 
 #pragma mark - Blobs MimeType Column Rename
 
-@interface BlobsMimeTypeRename : NSObject <PDSMigration>
+@interface PDSBlobsMimeTypeRename : NSObject <PDSMigration>
 @property (nonatomic) NSInteger migrationVersion;
 - (instancetype)initWithVersion:(NSInteger)version;
 @end
 
-@implementation BlobsMimeTypeRename
+@implementation PDSBlobsMimeTypeRename
 
 - (instancetype)initWithVersion:(NSInteger)version {
     if ((self = [super init])) {
@@ -3457,7 +3457,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[PDSV6DraftsSchema alloc] init]];
     [manager registerMigration:[[PDSV7SearchFTS5Schema alloc] init]];
     [manager registerMigration:[[PDSV8OzoneSubjectsSchema alloc] init]];
-    [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:9]];
+    [manager registerMigration:[[PDSBlobsMimeTypeRename alloc] initWithVersion:9]];
     [manager registerMigration:[[PDSV10PendingFactorTokensSchema alloc] init]];
     [manager registerMigration:[[PDSV13CollectionMembershipSchema alloc] init]];
     [manager registerMigration:[[PDSV12SessionRevocationSchema alloc] init]];
@@ -3472,7 +3472,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 + (instancetype)actorStoreMigrationManager {
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
     [manager registerMigration:[[PDSV1InitialSchema alloc] initWithSchemaType:@"actor"]];
-    [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:2]];
+    [manager registerMigration:[[PDSBlobsMimeTypeRename alloc] initWithVersion:2]];
     [manager registerMigration:[[PDSV3RecordTombstonesWithoutRowid alloc] init]];
     [manager registerMigration:[[PDSV4DedicatedSpaceSigningKeySchema alloc] init]];
     [manager registerMigration:[[PDSV5RecordsRevisionCoveringIndex alloc] init]];
