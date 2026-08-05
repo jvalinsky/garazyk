@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUIPDSPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIBackendClient.h"
 #import "Network/HttpRequest.h"
@@ -18,14 +19,14 @@
         NSDictionary *overview = [weakSelf.backendClient fetchServiceOverview];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOverviewPartial:overview]];
+        [response setBodyString:[GZAdminUIPDSPack renderOverviewPartial:overview]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/connections" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderConnectionsPartial]];
+        [response setBodyString:[GZAdminUIPDSPack renderConnectionsPartialWithConfiguration:weakSelf.configuration]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/accounts" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -34,7 +35,7 @@
         NSDictionary *result = [weakSelf.backendClient searchAccountsWithQuery:query];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderAccountsPartial:result]];
+        [response setBodyString:[GZAdminUIPDSPack renderAccountsPartial:result]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/invites" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -42,7 +43,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchInviteCodes];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderInvitesPartial:result]];
+        [response setBodyString:[GZAdminUIPDSPack renderInvitesPartial:result]];
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/disable-invites" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -86,7 +87,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchAccountInfoForDID:did];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderAccountDetailPartial:result]];
+        [response setBodyString:[GZAdminUIPDSPack renderAccountDetailPartial:result]];
     }];
 
     // PDS: Server stats
@@ -95,7 +96,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchServerStats];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderServerStatsPartial:result]];
+        [response setBodyString:[GZAdminUIPDSPack renderServerStatsPartial:result]];
     }];
 
     // PDS: Audit log
@@ -105,7 +106,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchAuditLogWithCursor:cursor limit:25];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderAuditLogPartial:result]];
+        [response setBodyString:[GZAdminUIPDSPack renderAuditLogPartial:result]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/blobs" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -115,7 +116,7 @@
         NSDictionary *result = did && did.length > 0 ? [weakSelf.backendClient fetchBlobsForDID:did limit:25 cursor:cursor] : @{@"blobs": @[]};
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderBlobsPartial:result did:did]];
+        [response setBodyString:[GZAdminUIPDSPack renderBlobsPartial:result did:did]];
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/enable-invites" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -161,7 +162,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchReportsWithCursor:cursor limit:25];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderPDSReportsPartial:result]];
+        [response setBodyString:[GZAdminUIPDSPack renderPDSReportsPartial:result]];
     }];
 
     // PDS: Resolve report
@@ -196,7 +197,7 @@
             [response setBodyString:@"<div class=\"alert alert-destructive\">Some URLs were invalid and could not be applied. Other values were saved.</div>"];
         }
         // Re-render the form with updated values
-        [response setBodyString:[response.bodyString stringByAppendingString:[weakSelf renderConnectionsPartial]]];
+        [response setBodyString:[response.bodyString stringByAppendingString:[GZAdminUIPDSPack renderConnectionsPartialWithConfiguration:weakSelf.configuration]]];
     }];
 }
 
