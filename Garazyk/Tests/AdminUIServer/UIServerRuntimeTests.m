@@ -13,6 +13,7 @@
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/GZAdminUIDefaultPacks.h"
+#import "AdminUIServer/Packs/GZAdminUIChatPack.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -785,7 +786,7 @@
             @{@"text": payload, @"sender": @"did:plc:alice", @"createdAt": @"2026-04-28T00:00:00Z"}
         ]
     };
-    NSString *html = [self.runtime renderChatMessagesPartial:result];
+    NSString *html = [GZAdminUIChatPack renderChatMessagesPartial:result];
 
     XCTAssertFalse([html containsString:payload], @"Raw script tag must not appear unescaped in rendered output");
     XCTAssertTrue([html containsString:@"&lt;script&gt;alert(1)&lt;/script&gt;"], @"Message text must be HTML-escaped");
@@ -798,7 +799,7 @@
             @{@"id": @"convo-1", @"lastMessage": @{@"text": payload}}
         ]
     };
-    NSString *html = [self.runtime renderChatConvosPartial:result];
+    NSString *html = [GZAdminUIChatPack renderChatConvosPartial:result];
 
     XCTAssertFalse([html containsString:payload], @"Raw img/onerror payload must not appear unescaped in rendered output");
     XCTAssertTrue([html containsString:@"&lt;img src=x onerror=alert(1)&gt;"], @"Last-message text must be HTML-escaped");

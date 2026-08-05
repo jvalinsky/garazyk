@@ -7,6 +7,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /** @abstract Admin UI pack for the Chat surface. */
 @interface GZAdminUIChatPack : NSObject <GZAdminUIPack>
+
+/** @abstract Renders chat-conversation results. */
++ (NSString *)renderChatConvosPartial:(NSDictionary *)result;
+/** @abstract Renders chat-message results. */
++ (NSString *)renderChatMessagesPartial:(NSDictionary *)result;
+
 @end
 
 NS_ASSUME_NONNULL_END
