@@ -83,12 +83,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderPLCDIDPartial:(NSDictionary *)result;
 /** @abstract Renders PLC operation-log entries. */
 - (NSString *)renderPLCLogPartial:(NSDictionary *)result;
-/** @abstract Renders PDS repository metadata. */
-- (NSString *)renderDescribeRepoPartial:(NSDictionary *)result;
-/** @abstract Renders a PDS record-list result. */
-- (NSString *)renderListRecordsPartial:(NSDictionary *)result;
-/** @abstract Renders a single PDS record result. */
-- (NSString *)renderGetRecordPartial:(NSDictionary *)result;
 
 /** @abstract Renders Ozone subject-status results. */
 - (NSString *)renderOzoneStatusesPartial:(NSDictionary *)result;
