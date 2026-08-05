@@ -75,8 +75,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderIngestHealthPartial:(NSDictionary *)result;
 /** @abstract Renders the AppView backfill queue. */
 - (NSString *)renderBackfillQueuePartial:(NSDictionary *)result;
-/** @abstract Renders relay metrics. */
-- (NSString *)renderRelayMetricsPartial:(NSDictionary *)result;
 /** @abstract Renders one PDS account detail result. */
 - (NSString *)renderAccountDetailPartial:(NSDictionary *)result;
 /** @abstract Renders blob metadata, optionally scoped to a DID. */
@@ -87,8 +85,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderAuditLogPartial:(NSDictionary *)result;
 /** @abstract Renders PDS moderation reports. */
 - (NSString *)renderPDSReportsPartial:(NSDictionary *)result;
-/** @abstract Renders relay upstream status. */
-- (NSString *)renderRelayUpstreamsPartial:(NSDictionary *)result;
 /** @abstract Renders a PLC DID lookup result. */
 - (NSString *)renderPLCDIDPartial:(NSDictionary *)result;
 /** @abstract Renders PLC operation-log entries. */
@@ -124,8 +120,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderMSTTreePartial:(NSDictionary *)result;
 /** @abstract Renders Merkle-search-tree statistics. */
 - (NSString *)renderMSTStatsPartial:(NSDictionary *)result;
-/** @abstract Renders relay health. */
-- (NSString *)renderRelayHealthPartial:(NSDictionary *)result;
 /** @abstract Renders Ozone moderation reports. */
 - (NSString *)renderOzoneModerationReportsPartial:(NSDictionary *)result;
 /** @abstract Renders PLC health. */

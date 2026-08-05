@@ -7,6 +7,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 /** @abstract Admin UI pack for the Relay surface. */
 @interface GZAdminUIRelayPack : NSObject <GZAdminUIPack>
+
+/** @abstract Renders relay metrics. */
++ (NSString *)renderRelayMetricsPartial:(NSDictionary *)result;
+/** @abstract Renders relay upstream status. */
++ (NSString *)renderRelayUpstreamsPartial:(NSDictionary *)result;
+/** @abstract Renders relay health. */
++ (NSString *)renderRelayHealthPartial:(NSDictionary *)result;
+
 @end
 
 NS_ASSUME_NONNULL_END
