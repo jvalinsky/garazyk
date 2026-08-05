@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUILabPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIBackendClient.h"
 #import "Network/HttpRequest.h"
@@ -21,7 +22,7 @@
         UIApplyNonceCSP(response, nonce, [weakSelf.configuration.pdsBaseURL absoluteString]);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf labShellHTML:nonce]];
+        [response setBodyString:[GZAdminUILabPack labShellHTMLWithNonce:nonce configuration:weakSelf.configuration]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/lab/callback" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -29,13 +30,13 @@
         UIApplyNonceCSP(response, nonce, [weakSelf.configuration.pdsBaseURL absoluteString]);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf labShellHTML:nonce]];
+        [response setBodyString:[GZAdminUILabPack labShellHTMLWithNonce:nonce configuration:weakSelf.configuration]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/lab/client-metadata.json" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = 200;
         response.contentType = @"application/json; charset=utf-8";
-        [response setBodyString:[weakSelf labClientMetadataJSON]];
+        [response setBodyString:[GZAdminUILabPack labClientMetadataJSONWithConfiguration:weakSelf.configuration]];
     }];
 
     // Reserved Web Tiles protocol endpoint. It serves only the host-selected
