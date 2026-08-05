@@ -114,10 +114,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderOzoneTemplatesPartial:(NSDictionary *)result;
 /** @abstract Renders Ozone configuration. */
 - (NSString *)renderOzoneConfigPartial:(NSDictionary *)result;
-/** @abstract Renders chat-conversation results. */
-- (NSString *)renderChatConvosPartial:(NSDictionary *)result;
-/** @abstract Renders chat-message results. */
-- (NSString *)renderChatMessagesPartial:(NSDictionary *)result;
 /** @abstract Renders configured backend connection status. */
 - (NSString *)renderConnectionsPartial;
 /** @abstract Renders the server overview result. */
