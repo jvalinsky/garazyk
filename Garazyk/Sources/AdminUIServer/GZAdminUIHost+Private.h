@@ -102,12 +102,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderConnectionsPartial;
 /** @abstract Renders the server overview result. */
 - (NSString *)renderOverviewPartial:(NSDictionary *)result;
-/** @abstract Renders Merkle-search-tree account results. */
-- (NSString *)renderMSTAccountsPartial:(NSDictionary *)result;
-/** @abstract Renders Merkle-search-tree nodes. */
-- (NSString *)renderMSTTreePartial:(NSDictionary *)result;
-/** @abstract Renders Merkle-search-tree statistics. */
-- (NSString *)renderMSTStatsPartial:(NSDictionary *)result;
 /** @abstract Renders Ozone moderation reports. */
 - (NSString *)renderOzoneModerationReportsPartial:(NSDictionary *)result;
 /** @abstract Renders PLC health. */
