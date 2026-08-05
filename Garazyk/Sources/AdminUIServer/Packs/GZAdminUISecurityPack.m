@@ -3,6 +3,7 @@
 #import "AdminUIServer/Packs/GZAdminUISecurityPack.h"
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/UITemplateEngine.h"
 
 @implementation GZAdminUISecurityPack
 
@@ -21,6 +22,18 @@
 
 + (void)registerRoutesWithHost:(GZAdminUIHost *)host {
     [host registerSecurityRoutes];
+}
+
++ (NSString *)renderSessionsPartial:(NSDictionary *)result {
+    NSMutableDictionary *ctx = [result mutableCopy];
+    if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
+    return [UITemplateEngine renderTemplate:@"sessions" context:ctx];
+}
+
++ (NSString *)renderAppPasswordsPartial:(NSDictionary *)result {
+    NSMutableDictionary *ctx = [result mutableCopy];
+    if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
+    return [UITemplateEngine renderTemplate:@"app-passwords" context:ctx];
 }
 
 @end
