@@ -10,7 +10,8 @@
 
 #import <XCTest/XCTest.h>
 #import <dispatch/dispatch.h>
-#import "AdminUIServer/UIServerRuntime.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/GZAdminUIDefaultPacks.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -36,7 +37,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 
 @interface UILabIntegrationTests : XCTestCase
 @property (nonatomic, strong) UIServiceConfig *config;
-@property (nonatomic, strong) UIServerRuntime *runtime;
+@property (nonatomic, strong) GZAdminUIHost *runtime;
 @end
 
 @implementation UILabIntegrationTests
@@ -59,7 +60,8 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
     self.config.appViewAdminToken = @"admin-token";
     self.config.chatAdminToken = @"admin-token";
 
-    self.runtime = [[UIServerRuntime alloc] initWithConfiguration:self.config];
+    self.runtime = [[GZAdminUIHost alloc] initWithConfiguration:self.config
+                                                            packs:GZAdminUIDefaultPacks()];
 }
 
 - (void)tearDown {

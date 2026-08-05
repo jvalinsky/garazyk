@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIServerRuntime.h"
+#import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpServer.h"
 
@@ -32,13 +32,15 @@ NSString *UIGenerateNonce(void);
 void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullable pdsOrigin);
 
 /** @abstract The HTTP server that owns registered admin routes. */
-@interface UIServerRuntime ()
+@interface GZAdminUIHost ()
 
 
 /** @abstract Server instance used to register and serve admin routes. */
 @property(nonatomic, strong) HttpServer *httpServer;
 /** @abstract Immutable configuration for local UI routing and backend access. */
 @property(nonatomic, strong, readwrite) UIServiceConfig *configuration;
+/** @abstract Backing storage for the composed pack list. */
+@property(nonatomic, copy, readwrite) NSArray<Class> *packs;
 /** @abstract Session and credential authority used by `ensureAuthorized:response:`. */
 @property(nonatomic, strong) UIAuthManager *authManager;
 /** @abstract Synchronous proxy for configured PDS, AppView, and Ozone operations. */
@@ -54,7 +56,7 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 @end
 
 /** @abstract Serves packaged browser assets without applying admin-page rendering. */
-@interface UIServerRuntime (StaticAssets)
+@interface GZAdminUIHost (StaticAssets)
 
 /** @abstract Resolves a static asset path and writes its content or an HTTP error to the response. */
 - (void)serveStaticAssetForPath:(NSString *)path response:(HttpResponse *)response;
@@ -62,7 +64,7 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 @end
 
 /** @abstract Escaped HTML partial renderers for already-authorized admin requests. */
-@interface UIServerRuntime (Renderers)
+@interface GZAdminUIHost (Renderers)
 /** @abstract Renders the PDS account-search result. */
 - (NSString *)renderAccountsPartial:(NSDictionary *)result;
 /** @abstract Renders the PDS invite-code result. */
@@ -170,7 +172,7 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 @end
 
 /** @abstract Registers authenticated route groups on the runtime HTTP server. */
-@interface UIServerRuntime (Routes)
+@interface GZAdminUIHost (Routes)
 /** @abstract Registers PDS administration routes. */
 - (void)registerPDSRoutes;
 /** @abstract Registers AppView administration routes. */

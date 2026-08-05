@@ -3,15 +3,16 @@
 /*!
  @file UIServerRuntimeTests.m
 
- @abstract Unit tests for UIServerRuntime.
+ @abstract Unit tests for GZAdminUIHost.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <XCTest/XCTest.h>
 #import "AdminUIServer/UIBackendClient.h"
-#import "AdminUIServer/UIServerRuntime.h"
-#import "AdminUIServer/UIServerRuntime+Private.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZAdminUIDefaultPacks.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -97,7 +98,7 @@
 
 @interface UIServerRuntimeTests : XCTestCase
 @property (nonatomic, strong) UIServiceConfig *config;
-@property (nonatomic, strong) UIServerRuntime *runtime;
+@property (nonatomic, strong) GZAdminUIHost *runtime;
 @end
 
 @implementation UIServerRuntimeTests
@@ -120,7 +121,8 @@
     self.config.appViewAdminToken = @"admin-token";
     self.config.chatAdminToken = @"admin-token";
 
-    self.runtime = [[UIServerRuntime alloc] initWithConfiguration:self.config];
+    self.runtime = [[GZAdminUIHost alloc] initWithConfiguration:self.config
+                                                            packs:GZAdminUIDefaultPacks()];
 }
 
 - (void)tearDown {
@@ -294,7 +296,7 @@
 /*!
  @test testRuntimeInitialization
 
- @abstract Verify that UIServerRuntime initializes with the provided configuration.
+ @abstract Verify that GZAdminUIHost initializes with the provided configuration.
  */
 - (void)testRuntimeInitialization {
     XCTAssertNotNil(self.runtime);

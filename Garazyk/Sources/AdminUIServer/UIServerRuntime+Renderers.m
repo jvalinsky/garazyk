@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIServerRuntime.h"
+#import "AdminUIServer/GZAdminUIHost.h"
 
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIBackendClient.h"
@@ -12,9 +12,9 @@
 #import "Network/Generated/GZXrpcNSID.h"
 #import "Auth/Crypto/CryptoUtils.h"
 #import "Debug/GZLogger.h"
-#import "AdminUIServer/UIServerRuntime+Private.h"
+#import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/UITemplateEngine.h"
-@implementation UIServerRuntime (Renderers)
+@implementation GZAdminUIHost (Renderers)
 
 #pragma mark - Ozone Render Methods
 
