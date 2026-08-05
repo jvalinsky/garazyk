@@ -32,10 +32,9 @@ complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
 a configure-time disjoint-source assertion); item 2 (glob-to-manifest
 conversion) remains open. M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
-and **batch 2 is done except `CID` and `JWT`** (23 of ~25 classes
+and **batch 2 is done except `CID`** (24 of ~25 classes
 renamed) — namespace baseline ratcheted
-283 → 253 → 249 → 238 → 234 → 232 → 231 → 230. The remaining batch-2
-classes (`CID` at 265 consumers, `JWT` at 136)
+283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229. `CID` (265 consumers)
 and batches 3-6
 remain open. M6 has not started.
 
@@ -1585,13 +1584,43 @@ as prior batches. Namespace baseline ratchets 231 → 230. Verified:
 and link-time module boundary checks clean; `deno task check`/`lint`
 clean; full `AllTests --gated=run`: 4,966 tests, 0 failures, 686s.
 
-This closes out M5.3 batch 2 to the point where only the two largest,
-riskiest classes remain: `CID` (265 consumers) and `JWT` (136) — each
-deliberately deferred to its own dedicated, carefully reviewed session.
-`CID` in particular touches roughly half the file discovery surface of the
-whole batch-2 group and warrants fresh, focused review rather than being
-folded into this session's pattern. **Before attempting either, apply the
-`Tests/fixtures/` exclusion lesson above.**
+**Batch 2g (2026-08-04): JWT, the second-largest class overall.** `JWT` →
+`ATProtoJWT` (136 consumers). **Found a new class of risk the earlier
+batches didn't need to worry about**: bare `"JWT"` is also the RFC 7519
+wire-protocol `typ` header value (`header[@"typ"] = @"JWT"` appears
+throughout `Auth/Crypto/JWT.m` and elsewhere) — a plain word-boundary
+substitution would have corrupted a real protocol constant into
+`"ATProtoJWT"`, breaking interop with every standard-compliant JWT
+producer/consumer. Used a string-literal-aware substitution instead: for
+each line, string literals (`@"..."`/`"..."`, handling `\"` escapes) are
+located first and excluded from the class-name replacement, so `@"JWT"`
+values stay untouched while actual symbol references
+(`@interface JWT`, `JWT *token`, `[JWT alloc]`, etc.) get renamed. Verified
+directly: `test_main.m`'s category-classifier table entry `@"JWT"` (present
+in every earlier batch's file list too, always correctly left alone by luck
+since it happened to be a longer/more specific class name elsewhere) shows
+0 replacements with this method, and every `header[@"typ"] = @"JWT"`
+assignment in `JWT.m` is confirmed byte-identical after the rename.
+
+Also reverted an incidental match in `Garazyk/Sources/Database/README.md`
+(`"JWT tokens"` in prose) — documentation prose, not a source file, doesn't
+belong in a class-symbol rename. **Future M5.3 batches should exclude
+non-`.m`/`.h` files by extension**, not just `Tests/fixtures/` by path, to
+avoid this class of near-miss.
+
+Namespace baseline ratchets 230 → 229. Verified: `JWTTests` (34/34) and 19 other
+targeted suites spanning admin auth, OAuth2, DPoP, session, XRPC
+moderation/ozone, PLC, and space attestation, all 0 failures; source and
+link-time module boundary checks clean; `deno task check`/`lint` clean;
+full `AllTests --gated=run`: 4,966 tests, 0 failures, 707s.
+
+This closes out M5.3 batch 2 to the point where only `CID` (265 consumers)
+remains — deliberately deferred to its own dedicated, carefully reviewed
+session. `CID` touches roughly half the file discovery surface of the
+whole batch-2 group and needs the same string-literal-aware care `JWT` did,
+likely more (CID string representations appear throughout serialization
+and test fixture code). **Before attempting it, apply both the
+`Tests/fixtures/` and non-`.m`/`.h` exclusion lessons above.**
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
