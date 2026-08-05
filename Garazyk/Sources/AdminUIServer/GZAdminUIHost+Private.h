@@ -69,12 +69,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderAccountsPartial:(NSDictionary *)result;
 /** @abstract Renders the PDS invite-code result. */
 - (NSString *)renderInvitesPartial:(NSDictionary *)result;
-/** @abstract Renders AppView aggregate metrics. */
-- (NSString *)renderAppViewMetricsPartial:(NSDictionary *)result;
-/** @abstract Renders AppView ingest health. */
-- (NSString *)renderIngestHealthPartial:(NSDictionary *)result;
-/** @abstract Renders the AppView backfill queue. */
-- (NSString *)renderBackfillQueuePartial:(NSDictionary *)result;
 /** @abstract Renders one PDS account detail result. */
 - (NSString *)renderAccountDetailPartial:(NSDictionary *)result;
 /** @abstract Renders blob metadata, optionally scoped to a DID. */
