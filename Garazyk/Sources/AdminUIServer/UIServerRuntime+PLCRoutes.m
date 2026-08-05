@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUIPLCPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIBackendClient.h"
 #import "Network/HttpRequest.h"
@@ -20,7 +21,7 @@
         NSDictionary *result = [weakSelf.backendClient lookupDID:did];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderPLCDIDPartial:result]];
+        [response setBodyString:[GZAdminUIPLCPack renderPLCDIDPartial:result]];
     }];
 
     // PLC: DID log
@@ -30,7 +31,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchPLCLogForDID:did];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderPLCLogPartial:result]];
+        [response setBodyString:[GZAdminUIPLCPack renderPLCLogPartial:result]];
     }];
 
     // PLC: Health check
@@ -39,7 +40,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchPLCHealth];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderPLCHealthPartial:result]];
+        [response setBodyString:[GZAdminUIPLCPack renderPLCHealthPartial:result]];
     }];
 
     // PLC: Metrics
@@ -48,7 +49,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchPLCMetrics];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderPLCMetricsPartial:result]];
+        [response setBodyString:[GZAdminUIPLCPack renderPLCMetricsPartial:result]];
     }];
 
     // PLC: List DIDs
@@ -58,7 +59,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchPLCList];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderPLCListPartial:result cursor:cursor]];
+        [response setBodyString:[GZAdminUIPLCPack renderPLCListPartial:result cursor:cursor]];
     }];
 
     // PLC: Export action
