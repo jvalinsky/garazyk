@@ -197,18 +197,6 @@
 
 #pragma mark - Phase 1 Render Methods
 
-- (NSString *)renderRelayHealthPartial:(NSDictionary *)result {
-    NSMutableDictionary *ctx = [result mutableCopy];
-    if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    NSString *status = result[@"status"] ?: @"unknown";
-    ctx[@"status"] = status;
-    ctx[@"statusBadge"] = [status isEqualToString:@"ok"] ? @"badge badge-success" : ([status isEqualToString:@"error"] ? @"badge badge-destructive" : @"badge badge-secondary");
-    NSString *checkedAt = result[@"checkedAt"] ?: result[@"lastChecked"] ?: @"";
-    if (checkedAt.length > 0) ctx[@"checkedAt"] = checkedAt;
-    else [ctx removeObjectForKey:@"checkedAt"];
-    return [UITemplateEngine renderTemplate:@"relay-health" context:ctx];
-}
-
 - (NSString *)renderOzoneModerationReportsPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
