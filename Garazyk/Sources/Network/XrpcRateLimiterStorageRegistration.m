@@ -21,7 +21,7 @@
 @implementation XrpcRateLimiterStorageRegistration
 
 + (void)load {
-    RateLimiterSetStorageFactory(^RateLimiterStorageHandle * _Nullable(NSString *path, ATProtoDBConfig config, NSError **error) {
+    RateLimiterSetStorageFactory(^ATProtoRateLimiterStorageHandle * _Nullable(NSString *path, ATProtoDBConfig config, NSError **error) {
         ATProtoConnectionManagerSerial *connectionManager =
             [[ATProtoConnectionManagerSerial alloc] initWithLabel:@"com.atproto.ratelimiter.db"];
         if (![connectionManager openWithPath:path config:config error:error]) {
@@ -30,7 +30,7 @@
         ATProtoDatabaseQueryRunner *queryRunner =
             [[ATProtoDatabaseQueryRunner alloc] initWithConnectionManager:connectionManager
                                                                 errorDomain:@"RateLimiterErrorDomain"];
-        return [[RateLimiterStorageHandle alloc] initWithConnectionManager:connectionManager
+        return [[ATProtoRateLimiterStorageHandle alloc] initWithConnectionManager:connectionManager
                                                                 queryRunner:queryRunner];
     });
 }

@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 @implementation HttpStreamingBodyTests
 
 - (void)testSmallBodyBuffersInMemory {
-    HttpStreamingBody *handler = [[HttpStreamingBody alloc] initWithMemoryThreshold:1024];
+    ATProtoHttpStreamingBody *handler = [[ATProtoHttpStreamingBody alloc] initWithMemoryThreshold:1024];
 
     NSData *data = [@"Hello World" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -26,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testLargeBodyStreamsToFile {
-    HttpStreamingBody *handler = [[HttpStreamingBody alloc] initWithMemoryThreshold:10];
+    ATProtoHttpStreamingBody *handler = [[ATProtoHttpStreamingBody alloc] initWithMemoryThreshold:10];
 
     NSData *data = [@"Hello World" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -42,7 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testFinalizeCompletes {
-    HttpStreamingBody *handler = [[HttpStreamingBody alloc] initWithMemoryThreshold:1024];
+    ATProtoHttpStreamingBody *handler = [[ATProtoHttpStreamingBody alloc] initWithMemoryThreshold:1024];
 
     NSData *data = [@"Hello World" dataUsingEncoding:NSUTF8StringEncoding];
     [handler appendData:data error:nil];
@@ -57,7 +57,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testCreateInputStreamYieldsMatch {
-    HttpStreamingBody *handler = [[HttpStreamingBody alloc] initWithMemoryThreshold:1024];
+    ATProtoHttpStreamingBody *handler = [[ATProtoHttpStreamingBody alloc] initWithMemoryThreshold:1024];
 
     NSData *data = [@"Hello World" dataUsingEncoding:NSUTF8StringEncoding];
     [handler appendData:data error:nil];
@@ -82,7 +82,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testMultipleAppends {
-    HttpStreamingBody *handler = [[HttpStreamingBody alloc] initWithMemoryThreshold:1024];
+    ATProtoHttpStreamingBody *handler = [[ATProtoHttpStreamingBody alloc] initWithMemoryThreshold:1024];
 
     NSError *error = nil;
     XCTAssertTrue([handler appendData:[@"Hello " dataUsingEncoding:NSUTF8StringEncoding] error:&error]);
@@ -95,7 +95,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testReset {
-    HttpStreamingBody *handler = [[HttpStreamingBody alloc] initWithMemoryThreshold:10];
+    ATProtoHttpStreamingBody *handler = [[ATProtoHttpStreamingBody alloc] initWithMemoryThreshold:10];
 
     NSData *data = [@"Hello World" dataUsingEncoding:NSUTF8StringEncoding];
     [handler appendData:data error:nil];
@@ -110,7 +110,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testEmptyData {
-    HttpStreamingBody *handler = [[HttpStreamingBody alloc] init];
+    ATProtoHttpStreamingBody *handler = [[ATProtoHttpStreamingBody alloc] init];
 
     NSError *error = nil;
     BOOL result = [handler appendData:[NSData data] error:&error];
@@ -121,7 +121,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testLargeBodyThreshold {
-    HttpStreamingBody *handler = [[HttpStreamingBody alloc] initWithMemoryThreshold:5];
+    ATProtoHttpStreamingBody *handler = [[ATProtoHttpStreamingBody alloc] initWithMemoryThreshold:5];
 
     XCTAssertTrue([handler appendData:[@"12345" dataUsingEncoding:NSUTF8StringEncoding] error:nil]);
     XCTAssertNil(handler.filePath);
@@ -133,7 +133,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testBoundaryCondition {
-    HttpStreamingBody *handler = [[HttpStreamingBody alloc] initWithMemoryThreshold:10];
+    ATProtoHttpStreamingBody *handler = [[ATProtoHttpStreamingBody alloc] initWithMemoryThreshold:10];
 
     XCTAssertTrue([handler appendData:[@"1234567890" dataUsingEncoding:NSUTF8StringEncoding] error:nil]);
     XCTAssertNil(handler.filePath);

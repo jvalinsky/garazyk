@@ -93,7 +93,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 #pragma mark - STAR MST Entry (wire format)
 
 /*!
- @class STARMstEntry
+ @class ATProtoSTARMstEntry
 
  @abstract A single entry in a STAR MST node (wire format).
 
@@ -102,7 +102,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  record follows in the stream. Similarly, `T` indicates that the subtree
  follows in the archive.
  */
-@interface STARMstEntry : NSObject
+@interface ATProtoSTARMstEntry : NSObject
 
 /**
  * @abstract Exposes the prefix len value.
@@ -129,31 +129,31 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 #pragma mark - STAR MST Node (wire format)
 
 /*!
- @class STARMstNode
+ @class ATProtoSTARMstNode
 
  @abstract A MST node in STAR wire format.
 
  @discussion STAR MST nodes differ from repo-spec MST nodes:
  - `l` is the left pointer ATProtoCID (optional)
  - `L` is a bool flag indicating the left subtree is in the archive
- - `e` is the array of entries (STARMstEntry)
+ - `e` is the array of entries (ATProtoSTARMstEntry)
  - Layer-0 entries may omit `v` when records are included
  */
-@interface STARMstNode : NSObject
+@interface ATProtoSTARMstNode : NSObject
 
 /**
  * @abstract Exposes the left value.
  */
 @property (nonatomic, strong, nullable) ATProtoCID *left;
 @property (nonatomic, assign) BOOL leftArchived;
-@property (nonatomic, copy) NSArray<STARMstEntry *> *entries;
+@property (nonatomic, copy) NSArray<ATProtoSTARMstEntry *> *entries;
 
 /**
  * @abstract Performs the nodeWithLeft operation.
  */
 + (instancetype)nodeWithLeft:(nullable ATProtoCID *)left
                 leftArchived:(BOOL)leftArchived
-                    entries:(NSArray<STARMstEntry *> *)entries;
+                    entries:(NSArray<ATProtoSTARMstEntry *> *)entries;
 
 /**
  * @abstract Performs the serializeToDagCBOR operation.

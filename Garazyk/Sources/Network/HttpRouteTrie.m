@@ -12,16 +12,16 @@
 #import "Compat/PDSTypes.h"
 #import "HttpRoute.h"
 
-@interface HttpRouteNode : NSObject
+@interface ATProtoHttpRouteNode : NSObject
 
-@property (nonatomic, strong) NSMutableDictionary<NSString *, HttpRouteNode *> *children;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoHttpRouteNode *> *children;
 @property (nonatomic, strong, nullable) NSMutableDictionary<NSString *, HttpRoute *> *methodRoutes;
 @property (nonatomic, strong, nullable) HttpRoute *wildcardRoute;
 @property (nonatomic, copy, nullable) NSString *paramName;
 
 @end
 
-@implementation HttpRouteNode
+@implementation ATProtoHttpRouteNode
 
 - (instancetype)init {
     self = [super init];
@@ -38,7 +38,7 @@
 
 @interface HttpRouteTrie ()
 
-@property (nonatomic, strong) HttpRouteNode *root;
+@property (nonatomic, strong) ATProtoHttpRouteNode *root;
 @property (nonatomic, strong) NSMutableArray<HttpRoute *> *allRoutes;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t trieQueue;
 
@@ -49,7 +49,7 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _root = [[HttpRouteNode alloc] init];
+        _root = [[ATProtoHttpRouteNode alloc] init];
         _allRoutes = [NSMutableArray array];
         _trieQueue = dispatch_queue_create("com.atproto.pds.trie", DISPATCH_QUEUE_CONCURRENT);
     }
@@ -71,18 +71,18 @@
     });
 }
 
-- (void)insertRouteIntoTrie:(HttpRoute *)route atNode:(HttpRouteNode *)node {
+- (void)insertRouteIntoTrie:(HttpRoute *)route atNode:(ATProtoHttpRouteNode *)node {
     NSArray<NSString *> *components = [self splitPattern:route.pattern];
 
-    HttpRouteNode *current = node;
+    ATProtoHttpRouteNode *current = node;
     for (NSUInteger i = 0; i < components.count; i++) {
         NSString *component = components[i];
 
         if ([component hasPrefix:@":"]) {
             NSString *paramName = [component substringFromIndex:1];
 
-            HttpRouteNode *paramNode = nil;
-            for (HttpRouteNode *child in current.children.allValues) {
+            ATProtoHttpRouteNode *paramNode = nil;
+            for (ATProtoHttpRouteNode *child in current.children.allValues) {
                 if (child.paramName) {
                     paramNode = child;
                     break;
@@ -90,7 +90,7 @@
             }
 
             if (!paramNode) {
-                paramNode = [[HttpRouteNode alloc] init];
+                paramNode = [[ATProtoHttpRouteNode alloc] init];
                 paramNode.paramName = paramName;
                 current.children[@"*"] = paramNode;
             }
@@ -102,9 +102,9 @@
             }
             return;
         } else {
-            HttpRouteNode *child = current.children[component];
+            ATProtoHttpRouteNode *child = current.children[component];
             if (!child) {
-                child = [[HttpRouteNode alloc] init];
+                child = [[ATProtoHttpRouteNode alloc] init];
                 current.children[component] = child;
             }
             current = child;
@@ -125,7 +125,7 @@
 
     dispatch_sync(self.trieQueue, ^{
         NSArray<NSString *> *components = [self splitPath:path];
-        HttpRouteNode *current = self.root;
+        ATProtoHttpRouteNode *current = self.root;
 
         NSMutableDictionary<NSString *, NSString *> *params = [NSMutableDictionary dictionary];
 
@@ -133,7 +133,7 @@
             NSString *component = components[i];
             
             
-            HttpRouteNode *child = current.children[component];
+            ATProtoHttpRouteNode *child = current.children[component];
             if (child) {
                 current = child;
             } else if (current.children[@"*"] && current.children[@"*"].paramName) {

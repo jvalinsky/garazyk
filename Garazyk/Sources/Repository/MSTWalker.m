@@ -5,18 +5,18 @@
 #import "Repository/MSTInternal.h"
 #import "Repository/MSTWalker.h"
 
-#pragma mark - MSTWalkerStatus
+#pragma mark - ATProtoMSTWalkerStatus
 
-@interface MSTWalkerStatus ()
+@interface ATProtoMSTWalkerStatus ()
 @property (nonatomic, assign, readwrite) MSTWalkerStatusTag tag;
 @property (nonatomic, assign, readwrite) MSTWalkerStatusDone doneStatus;
 @property (nonatomic, assign, readwrite) MSTWalkerStatusProgress progressStatus;
 @end
 
-@implementation MSTWalkerStatus
+@implementation ATProtoMSTWalkerStatus
 
 + (instancetype)doneStatus {
-    MSTWalkerStatus *status = [[MSTWalkerStatus alloc] init];
+    ATProtoMSTWalkerStatus *status = [[ATProtoMSTWalkerStatus alloc] init];
     status.tag = MSTWalkerStatusTagDone;
     status.doneStatus = (MSTWalkerStatusDone){ .done = YES };
     return status;
@@ -26,7 +26,7 @@
                           walking:(MSTNode *)walking
                             index:(NSUInteger)index
                        isTreeNode:(BOOL)isTreeNode {
-    MSTWalkerStatus *status = [[MSTWalkerStatus alloc] init];
+    ATProtoMSTWalkerStatus *status = [[ATProtoMSTWalkerStatus alloc] init];
     status.tag = MSTWalkerStatusTagProgress;
     status.progressStatus = (MSTWalkerStatusProgress){
         .done = NO,
@@ -77,7 +77,7 @@
 @interface MSTWalker ()
 
 /// Stack of states for backtracking when stepping out of subtrees
-@property (nonatomic, strong) NSMutableArray<MSTWalkerStatus *> *stack;
+@property (nonatomic, strong) NSMutableArray<ATProtoMSTWalkerStatus *> *stack;
 @property (nonatomic, strong) NSArray<MSTNodeEntry *> *flatEntries;
 @property (nonatomic, assign) NSUInteger flatIndex;
 
@@ -98,9 +98,9 @@
         _flatIndex = 0;
         
         if (_flatEntries.count == 0) {
-            _status = [MSTWalkerStatus doneStatus];
+            _status = [ATProtoMSTWalkerStatus doneStatus];
         } else {
-            _status = [MSTWalkerStatus progressWithEntry:_flatEntries[0]
+            _status = [ATProtoMSTWalkerStatus progressWithEntry:_flatEntries[0]
                                                   walking:root
                                                     index:0
                                                isTreeNode:NO];
@@ -148,9 +148,9 @@
     if (self.flatEntries.count > 0) {
         self.flatIndex++;
         if (self.flatIndex >= self.flatEntries.count) {
-            self.status = [MSTWalkerStatus doneStatus];
+            self.status = [ATProtoMSTWalkerStatus doneStatus];
         } else {
-            self.status = [MSTWalkerStatus progressWithEntry:self.flatEntries[self.flatIndex]
+            self.status = [ATProtoMSTWalkerStatus progressWithEntry:self.flatEntries[self.flatIndex]
                                                       walking:self.root
                                                         index:self.flatIndex
                                                    isTreeNode:NO];
@@ -162,7 +162,7 @@
     
     // If walking is nil, we're at the root - stepping over means done
     if (walking == nil) {
-        self.status = [MSTWalkerStatus doneStatus];
+        self.status = [ATProtoMSTWalkerStatus doneStatus];
         return;
     }
     
@@ -172,12 +172,12 @@
     
     if (nextIndex >= entries.count) {
         // No more entries at this level, pop stack
-        MSTWalkerStatus *popped = self.stack.lastObject;
+        ATProtoMSTWalkerStatus *popped = self.stack.lastObject;
         [self.stack removeLastObject];
         
         if (popped == nil) {
             // Nothing to pop, we're done
-            self.status = [MSTWalkerStatus doneStatus];
+            self.status = [ATProtoMSTWalkerStatus doneStatus];
         } else {
             // Restore previous state and step over there too
             self.status = popped;
@@ -187,7 +187,7 @@
         // Move to next entry at this level
         MSTNodeEntry *nextEntry = entries[nextIndex];
         BOOL isTree = (nextEntry.internalTree != nil);
-        self.status = [MSTWalkerStatus progressWithEntry:nextEntry
+        self.status = [ATProtoMSTWalkerStatus progressWithEntry:nextEntry
                                                   walking:walking
                                                     index:nextIndex
                                                isTreeNode:isTree];
@@ -214,7 +214,7 @@
         // Also need to consider internalLeft first
         if (self.root.internalLeft != nil) {
             // Root has a left subtree - start there
-            self.status = [MSTWalkerStatus progressWithEntry:nil
+            self.status = [ATProtoMSTWalkerStatus progressWithEntry:nil
                                                       walking:self.root
                                                         index:NSNotFound
                                                    isTreeNode:YES];
@@ -225,10 +225,10 @@
         
         MSTNodeEntry *first = entries.firstObject;
         if (first == nil) {
-            self.status = [MSTWalkerStatus doneStatus];
+            self.status = [ATProtoMSTWalkerStatus doneStatus];
         } else {
             BOOL isTree = (first.internalTree != nil);
-            self.status = [MSTWalkerStatus progressWithEntry:first
+            self.status = [ATProtoMSTWalkerStatus progressWithEntry:first
                                                       walking:self.root
                                                         index:0
                                                    isTreeNode:isTree];
@@ -269,7 +269,7 @@
     // Check for left subtree first
     if (subtree.internalLeft != nil) {
         // Start by walking into left subtree
-        self.status = [MSTWalkerStatus progressWithEntry:nil
+        self.status = [ATProtoMSTWalkerStatus progressWithEntry:nil
                                                   walking:subtree
                                                     index:NSNotFound
                                                    isTreeNode:YES];
@@ -287,7 +287,7 @@
     }
     
     BOOL isTree = (first.internalTree != nil);
-    self.status = [MSTWalkerStatus progressWithEntry:first
+    self.status = [ATProtoMSTWalkerStatus progressWithEntry:first
                                               walking:subtree
                                                 index:0
                                            isTreeNode:isTree];
