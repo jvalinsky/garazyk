@@ -102,7 +102,7 @@ pico.save
 did_cache/
 sequencer/
 /service/
-plc/
+/plc/
 plc_data/
 
 # ─── Coverage / Profiling ────────────────────────────────────────────────────
