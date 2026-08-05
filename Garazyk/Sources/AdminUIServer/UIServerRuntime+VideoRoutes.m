@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUIVideoPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIBackendClient.h"
 #import "Network/HttpRequest.h"
@@ -19,7 +20,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchVideoHealth];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderVideoHealthPartial:result]];
+        [response setBodyString:[GZAdminUIVideoPack renderVideoHealthPartial:result]];
     }];
 
     // Video: Job list
@@ -31,7 +32,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchVideoJobsWithState:state limit:25 cursor:cursor];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderVideoJobsPartial:result]];
+        [response setBodyString:[GZAdminUIVideoPack renderVideoJobsPartial:result]];
     }];
 
     // Video: Job detail
@@ -41,7 +42,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchVideoJobById:jobId];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderVideoJobDetailPartial:result]];
+        [response setBodyString:[GZAdminUIVideoPack renderVideoJobDetailPartial:result]];
     }];
 
     // Video: Upload quotas
@@ -50,7 +51,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchVideoUploadLimits];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderVideoQuotasPartial:result]];
+        [response setBodyString:[GZAdminUIVideoPack renderVideoQuotasPartial:result]];
     }];
 
     // Video: Retry job
