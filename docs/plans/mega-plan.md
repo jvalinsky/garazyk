@@ -552,6 +552,22 @@ for full traceability; mirrored in the
     behavior itself (`0xC3 0x28` rejection) was independently confirmed
     against a standalone GNUstep Foundation probe outside the full suite.
 
+13. **Open (added 2026-08-04):** dissolve the single `garazyk-ui` process into
+    an admin UI owned by each service binary. Complete
+    [workstream 11](workstreams/11-per-service-admin-uis.md). One process
+    currently holds admin credentials for the PDS, PLC, relay, AppView, chat,
+    and video services simultaneously; `Garazyk/Sources/AdminUIServer/` belongs
+    to no static library, so its ~15 `UI*` classes escape both the ADR 0031
+    link-time boundary gate and `scripts/check_namespace.sh` (each enumerates
+    ten `ATProto*` archives). Decision and constraints:
+    [ADR 0033](../adr/0033-per-service-embedded-admin-uis.md). M1 (per-instance
+    `HttpServer` concurrency, service-scoped session cookies) unblocks
+    embedding; M2 extracts `ATProtoAdminUI` and is validated by rebuilding
+    `garazyk-ui` as its first consumer before any service is touched; M3 pilots
+    on `campagnola`, which has no admin credential today. Coordinate the Web
+    Tiles files (`UITileDataProtocol`, `UITileExecutionPolicy`) with
+    workstream 10, and the `UI*` → `GZAdminUI*` rename with workstream 08 M5.3.
+
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
 
