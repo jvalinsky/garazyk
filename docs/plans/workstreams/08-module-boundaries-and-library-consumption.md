@@ -32,10 +32,9 @@ complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
 a configure-time disjoint-source assertion); item 2 (glob-to-manifest
 conversion) remains open. M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
-and **batch 2 is done except `CID`** (24 of ~25 classes
+and **batch 2 is complete in full** (all ~25 classes
 renamed) — namespace baseline ratcheted
-283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229. `CID` (265 consumers)
-and batches 3-6
+283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228. Batches 3-6
 remain open. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
@@ -1614,13 +1613,38 @@ moderation/ozone, PLC, and space attestation, all 0 failures; source and
 link-time module boundary checks clean; `deno task check`/`lint` clean;
 full `AllTests --gated=run`: 4,966 tests, 0 failures, 707s.
 
-This closes out M5.3 batch 2 to the point where only `CID` (265 consumers)
-remains — deliberately deferred to its own dedicated, carefully reviewed
-session. `CID` touches roughly half the file discovery surface of the
-whole batch-2 group and needs the same string-literal-aware care `JWT` did,
-likely more (CID string representations appear throughout serialization
-and test fixture code). **Before attempting it, apply both the
-`Tests/fixtures/` and non-`.m`/`.h` exclusion lessons above.**
+**Batch 2h (2026-08-04): CID, closing out batch 2 in full.** `CID` →
+`ATProtoCID` (265 consumers — by far the largest single rename attempted in
+this workstream). `CID.h` declares `NSSecureCoding` like `JWT`/
+`DIDDocument`/`TID` before it — same finding applies, including the one
+live `decodeObjectOfClass:[CID class]` call site in `RepoCommit`'s
+`-initWithCoder:`, itself never invoked by any archiving call anywhere in
+this codebase (declared but dead code from a persistence standpoint).
+
+Applied every lesson from the preceding batches up front rather than
+discovering them mid-pass:
+- File discovery restricted to `*.m`/`*.h` only — a plain path-based grep
+  also matched admin-UI JS/HTML assets, two `README.md`s, and DASL/interop
+  JSON conformance vectors, all correctly excluded.
+- `Tests/fixtures/` excluded explicitly (would also have matched
+  `dasl-testing/cid.json` and `tags.json`).
+- The `JWT` batch's string-literal-aware substitution: `CID` appears in
+  many `NSError` `userInfo` description strings (`"CID mismatch"`,
+  `"Failed to parse CID from CAR block"`, etc.) and a CLI `printf` column
+  header (`"URI", "CID"`) — all confirmed byte-identical after the rename,
+  only the 1,953 real symbol references across 231 files were touched.
+
+Namespace baseline ratchets 229 → 228. Verified: 30 targeted test suites
+spanning Core primitives, CBOR/CAR/MST/STAR parsing and security-exploit
+tests, PLC, DID resolution, repository/record services, XRPC lexicon/sync/
+admin routes, and interop fixtures, all 0 failures; source and link-time
+module boundary checks clean; `deno task check`/`lint` clean; full
+`AllTests --gated=run`: 4,966 tests, 0 failures, 730s.
+
+**M5.3 batch 2 is now complete in full**: all ~25 originally-scoped
+Core-primitive and crypto/security-helper classes are `ATProto`/`PDS`/
+`GZ`-prefixed. Batches 3-6 (Storage/Transport, PLC/Sync/Services/MediaCore,
+XRPC/VideoService, Runtime) remain open for future sessions.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
