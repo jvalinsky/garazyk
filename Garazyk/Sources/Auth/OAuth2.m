@@ -253,7 +253,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 @implementation OAuth2DPoPProof
 
 + (nullable NSData *)decodeBase64URL:(NSString *)value error:(NSError **)error {
-    return [JWT base64URLDecode:value error:error];
+    return [ATProtoJWT base64URLDecode:value error:error];
 }
 
 + (nullable NSData *)decodeJWKComponent:(NSString *)value expectedLength:(NSUInteger)expectedLength error:(NSError **)error {
@@ -994,9 +994,9 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         }
     }
 
-    // 3. Verify token_use claim if it's a JWT (H3)
+    // 3. Verify token_use claim if it's a ATProtoJWT (H3)
     NSError *jwtError = nil;
-    JWT *refreshTokenJWT = [JWT jwtWithToken:request.refreshToken error:&jwtError];
+    ATProtoJWT *refreshTokenJWT = [ATProtoJWT jwtWithToken:request.refreshToken error:&jwtError];
     if (refreshTokenJWT) {
         if (![PDSSecurityCompare constantTimeEqualString:refreshTokenJWT.payload.token_use string:@"refresh"]) {
             GZ_LOG_AUTH_ERROR(@"Token usage mismatch: expected 'refresh', got '%@'", refreshTokenJWT.payload.token_use ?: @"none");

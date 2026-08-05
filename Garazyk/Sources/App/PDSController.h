@@ -56,7 +56,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion Provides high-level APIs for managing accounts, repositories,
  records, and blobs. Coordinates between database pools, service layers,
- and JWT minting.
+ and ATProtoJWT minting.
 
  For new code, prefer using the service classes directly:
  - PDSAccountService for account operations
@@ -114,7 +114,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! The rate limiter for throttling requests. */
 @property(nonatomic, strong, readonly) RateLimiter *rateLimiter;
 
-/*! JWT minting for access tokens. */
+/*! ATProtoJWT minting for access tokens. */
 @property(nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 
 /*! Handler for the subscribeRepos firehose. */

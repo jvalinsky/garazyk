@@ -71,9 +71,9 @@
         return nil;
     }
 
-    // Parse the JWT
+    // Parse the ATProtoJWT
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     if (!jwt) {
         if (response) {
             response.statusCode = 401;
@@ -214,13 +214,13 @@
 
 #pragma mark - Signature Verification
 
-- (nullable NSString *)verifyServiceAuthJWT:(JWT *)jwt
+- (nullable NSString *)verifyServiceAuthJWT:(ATProtoJWT *)jwt
                                  issuerDID:(NSString *)issDID
                                      error:(NSError **)error {
     return [self verifyServiceAuthJWT:jwt issuerDID:issDID forceRefresh:NO error:error];
 }
 
-- (nullable NSString *)verifyServiceAuthJWT:(JWT *)jwt
+- (nullable NSString *)verifyServiceAuthJWT:(ATProtoJWT *)jwt
                                  issuerDID:(NSString *)issDID
                              forceRefresh:(BOOL)forceRefresh
                                      error:(NSError **)error {
@@ -246,10 +246,10 @@
         return nil;
     }
 
-    // Verify the JWT signature using the resolved signing key
+    // Verify the ATProtoJWT signature using the resolved signing key
     NSString *alg = jwt.header.alg ?: @"";
     NSData *signingInputData = [jwt.signingInput dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *signatureData = [JWT base64URLDecode:jwt.encodedSignature error:error];
+    NSData *signatureData = [ATProtoJWT base64URLDecode:jwt.encodedSignature error:error];
     if (!signatureData) return nil;
 
     BOOL verified = NO;
@@ -297,7 +297,7 @@
 
 /*! Validate a legacy PDS-signed token (iss=PDS DID, sub=user DID).
     This supports gradual migration from the old format. */
-- (nullable NSString *)validateLegacyPDSToken:(JWT *)jwt {
+- (nullable NSString *)validateLegacyPDSToken:(ATProtoJWT *)jwt {
     // Legacy tokens have sub=user DID and are signed with the PDS key.
     // We can't verify the PDS key here, but we can trust the sub claim
     // if the token came from a PDS we trust (configured via pdsUrl).

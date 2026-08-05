@@ -356,7 +356,7 @@
 
         // Mint a DPoP-bound access token tied to the proof's key thumbprint.
         error = nil;
-        JWT *accessToken = [controller.jwtMinter mintAccessTokenForDID:did
+        ATProtoJWT *accessToken = [controller.jwtMinter mintAccessTokenForDID:did
                                                                 handle:@"nonce.user"
                                                                 scopes:@[@"com.atproto.access"]
                                                       dpopKeyThumbprint:thumbprint
@@ -417,7 +417,7 @@
     //   1. Send a nonce-less DPoP proof. The handler responds with 401 and a
     //      challenge carrying a fresh `DPoP-Nonce` value.
     //   2. Parse the challenge nonce. Build a second DPoP proof that carries
-    //      it both as the JWT `nonce` claim AND in a `dpop-nonce` HTTP header
+    //      it both as the ATProtoJWT `nonce` claim AND in a `dpop-nonce` HTTP header
     //      (the verifier reads either path; setting both is safe).
     //   3. Replay to the same endpoint. The proof now carries the challenge
     //      nonce, so the auth helper accepts it and responds 200.
@@ -488,7 +488,7 @@
         XCTAssertNotNil(thumbprint, @"Could not derive thumbprint from the proof JWT: %@", error);
 
         error = nil;
-        JWT *accessToken = [controller.jwtMinter mintAccessTokenForDID:did
+        ATProtoJWT *accessToken = [controller.jwtMinter mintAccessTokenForDID:did
                                                                 handle:@"nonce.retry"
                                                                 scopes:@[@"com.atproto.access"]
                                                       dpopKeyThumbprint:thumbprint
@@ -542,7 +542,7 @@
                               @"DPoP error=\"use_dpop_nonce\"",
                               @"Challenge must name the use_dpop_nonce challenge");
 
-        // (2) Retry proof carries the challenge nonce in both the proof JWT and
+        // (2) Retry proof carries the challenge nonce in both the proof ATProtoJWT and
         // the `dpop-nonce` HTTP header. Both paths are equivalent to the
         // verifier; setting both is defensive across server variants.
         error = nil;
@@ -745,8 +745,8 @@
 }
 
 // Extract the RFC 7638 thumbprint from the public JWK embedded in a signed DPoP
-// proof JWT. `DPoPToken.header` returns a placeholder JWK (empty x/y coordinates);
-// the real coordinates live in the JWT's signed header. Decoding the header
+// proof ATProtoJWT. `DPoPToken.header` returns a placeholder JWK (empty x/y coordinates);
+// the real coordinates live in the ATProtoJWT's signed header. Decoding the header
 // directly ensures the access token's `cnf.jkt` claim matches the JWK the auth
 // helper's DPoP verifier actually saw — otherwise it rejects the bound token with
 // a thumbprint mismatch.

@@ -67,7 +67,7 @@
 
   // Validate client authentication
   // In ATProto, client authentication can use DPoP binding, client_secret,
-  // or JWT assertion (private_key_jwt)
+  // or ATProtoJWT assertion (private_key_jwt)
   NSString *clientSecret = params[@"client_secret"];
   NSString *clientAssertion = params[@"client_assertion"];
   NSString *clientAssertionType = params[@"client_assertion_type"];
@@ -77,12 +77,12 @@
   NSString *expectedSecret = client[@"client_secret"];
   NSString *tokenEndpointAuthMethod = client[@"token_endpoint_auth_method"];
 
-  // JWT assertion authentication (private_key_jwt)
+  // ATProtoJWT assertion authentication (private_key_jwt)
   BOOL clientUsesPrivateKeyJWT =
       [tokenEndpointAuthMethod isEqualToString:@"private_key_jwt"];
 
   if (clientAssertion.length > 0) {
-    // JWT assertion provided - validate it
+    // ATProtoJWT assertion provided - validate it
     if (![clientAssertionType
             isEqualToString:
                 @"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"]) {

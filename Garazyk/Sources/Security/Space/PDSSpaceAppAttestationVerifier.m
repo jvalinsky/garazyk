@@ -148,7 +148,7 @@ static const NSUInteger PDSSpaceAppAttestationMaxMetadataBytes = 64 * 1024;
   return parsed;
 }
 
-#pragma mark - JWT verification
+#pragma mark - ATProtoJWT verification
 
 - (BOOL)verifyJWT:(NSString *)token
              jwks:(NSDictionary *)jwks
@@ -160,9 +160,9 @@ static const NSUInteger PDSSpaceAppAttestationMaxMetadataBytes = 64 * 1024;
     if (error) *error = [self errorWithCode:PDSSpaceAppAttestationErrorMalformed message:@"Malformed compact JWT"];
     return NO;
   }
-  NSData *headerData = [JWT base64URLDecode:parts[0] error:nil];
-  NSData *payloadData = [JWT base64URLDecode:parts[1] error:nil];
-  NSData *signature = [JWT base64URLDecode:parts[2] error:nil];
+  NSData *headerData = [ATProtoJWT base64URLDecode:parts[0] error:nil];
+  NSData *payloadData = [ATProtoJWT base64URLDecode:parts[1] error:nil];
+  NSData *signature = [ATProtoJWT base64URLDecode:parts[2] error:nil];
   NSDictionary *header = headerData ? [NSJSONSerialization JSONObjectWithData:headerData options:0 error:nil] : nil;
   NSDictionary *payload = payloadData ? [NSJSONSerialization JSONObjectWithData:payloadData options:0 error:nil] : nil;
   if (![header isKindOfClass:[NSDictionary class]] || ![payload isKindOfClass:[NSDictionary class]] ||
@@ -190,7 +190,7 @@ static const NSUInteger PDSSpaceAppAttestationMaxMetadataBytes = 64 * 1024;
   }
   // Self-asserted app identity per ADR 0004: the app attests to its own
   // identity, so sub must equal iss - there is no third party being
-  // identified here the way a delegation JWT identifies a space member.
+  // identified here the way a delegation ATProtoJWT identifies a space member.
   if (![payload[@"sub"] isEqualToString:issuer]) {
     if (error) *error = [self errorWithCode:PDSSpaceAppAttestationErrorSubject message:@"Attestation subject must equal its own issuer (app identity)"];
     return NO;

@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Error domain returned by app-attestation verification. */
 extern NSString *const PDSSpaceAppAttestationErrorDomain;
 
-/** @abstract Required value of the `typ` header for an app-attestation JWT. */
+/** @abstract Required value of the `typ` header for an app-attestation ATProtoJWT. */
 extern NSString *const PDSSpaceAppAttestationJWTType;
 
 /**
@@ -23,9 +23,9 @@ typedef NS_ENUM(NSInteger, PDSSpaceAppAttestationError) {
   PDSSpaceAppAttestationErrorMetadataInvalid,
   /** The referenced JWK set could not be fetched or is not a JWK set. */
   PDSSpaceAppAttestationErrorJWKSUnreachable,
-  /** No usable published key matches the JWT's `kid`. */
+  /** No usable published key matches the ATProtoJWT's `kid`. */
   PDSSpaceAppAttestationErrorKeyNotFound,
-  /** The compact JWT or its protected header has an unsupported shape. */
+  /** The compact ATProtoJWT or its protected header has an unsupported shape. */
   PDSSpaceAppAttestationErrorMalformed,
   /** A required claim is absent or has the wrong JSON type. */
   PDSSpaceAppAttestationErrorClaims,
@@ -33,7 +33,7 @@ typedef NS_ENUM(NSInteger, PDSSpaceAppAttestationError) {
   PDSSpaceAppAttestationErrorSignature,
   /** The issue and expiry timestamps exceed the allowed lifetime window. */
   PDSSpaceAppAttestationErrorLifetime,
-  /** The JWT expired, allowing for the verifier's clock-skew tolerance. */
+  /** The ATProtoJWT expired, allowing for the verifier's clock-skew tolerance. */
   PDSSpaceAppAttestationErrorExpired,
   /** The `iss` claim differs from the expected app client identifier. */
   PDSSpaceAppAttestationErrorIssuer,
@@ -41,7 +41,7 @@ typedef NS_ENUM(NSInteger, PDSSpaceAppAttestationError) {
   PDSSpaceAppAttestationErrorSubject,
   /** The `aud` claim differs from the receiving PDS audience. */
   PDSSpaceAppAttestationErrorAudience,
-  /** The JWT ID was already consumed or could not be persisted as consumed. */
+  /** The ATProtoJWT ID was already consumed or could not be persisted as consumed. */
   PDSSpaceAppAttestationErrorReplay,
 };
 
@@ -63,9 +63,9 @@ typedef NS_ENUM(NSInteger, PDSSpaceAppAttestationError) {
 - (instancetype)init NS_UNAVAILABLE;
 
 /**
- * @abstract Resolves published app keys and verifies one five-minute JWT.
+ * @abstract Resolves published app keys and verifies one five-minute ATProtoJWT.
  * @discussion Metadata and remote `jwks_uri` use the safe HTTP client's production restrictions; an inline JWK set is accepted. The `jti` is consumed only after every check succeeds.
- * @param attestationJWT The compact JWT presented by the app.
+ * @param attestationJWT The compact ATProtoJWT presented by the app.
  * @param appClientID The expected HTTPS metadata URL, `iss`, and `sub` value.
  * @param serviceDID The exact PDS audience expected in `aud`.
  * @param error Receives a `PDSSpaceAppAttestationErrorDomain` failure.
@@ -79,7 +79,7 @@ typedef NS_ENUM(NSInteger, PDSSpaceAppAttestationError) {
 /**
  * @abstract Verifies an attestation against already-resolved JWK material.
  * @discussion Callers establish that `jwks` belongs to `issuer`; this method enforces the ES256 header, claims, lifetime, signature, and replay protections. YES consumes `jti`.
- * @param token The compact app-attestation JWT.
+ * @param token The compact app-attestation ATProtoJWT.
  * @param jwks The trusted JWK-set dictionary from which to select `kid`.
  * @param issuer The exact expected `iss` and `sub` value.
  * @param audience The exact expected `aud` value.

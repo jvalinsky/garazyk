@@ -296,9 +296,9 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jw
         XrpcAuthAttachDPoPNonceToResponseIfMissing(response);
     }
 
-    // Parse the JWT token
+    // Parse the ATProtoJWT token
     NSError *parseError = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&parseError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
         GZ_LOG_HTTP_WARN(@"Failed to parse JWT token from authorization header");
         [self setAuthRequiredResponse:response];
@@ -319,7 +319,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jw
     // Do not set expectedAudience here; we do custom validation to support did:web variants
     verifier.allowedAlgorithms = [self allowedAlgorithmsForMinter:jwtMinter];
 
-    // Verify the JWT
+    // Verify the ATProtoJWT
     NSError *verifyError = nil;
     BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
     if (!isValid || verifyError) {

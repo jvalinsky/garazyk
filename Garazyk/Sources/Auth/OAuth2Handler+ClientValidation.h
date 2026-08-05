@@ -5,7 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Implements OAuth client metadata, redirect URI, and private-key JWT validation.
+ * @abstract Implements OAuth client metadata, redirect URI, and private-key ATProtoJWT validation.
  * @discussion Client identifiers, metadata, and assertions remain untrusted until these methods
  * return successfully.
  */
@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Extracts usable public verification keys from validated client metadata. */
 - (NSDictionary *)getClientPublicKeys:(NSDictionary *)client
                                 error:(NSError **)error;
-/** @abstract Verifies a private-key JWT client assertion against the validated client metadata. */
+/** @abstract Verifies a private-key ATProtoJWT client assertion against the validated client metadata. */
 - (BOOL)validateJWTAssertion:(NSString *)assertion
                    withClient:(NSDictionary *)client
                         error:(NSError **)error;

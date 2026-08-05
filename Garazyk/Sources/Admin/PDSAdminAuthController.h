@@ -13,11 +13,11 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * This protocol keeps admin authentication independent from the Runtime
  * compatibility facade. The application supplies the concrete controller at
- * composition time; authentication only needs JWT material and audit storage.
+ * composition time; authentication only needs ATProtoJWT material and audit storage.
  */
 @protocol PDSAdminAuthController <NSObject>
 
-/** JWT signer and verifier used for admin tokens. */
+/** ATProtoJWT signer and verifier used for admin tokens. */
 @property (nonatomic, strong, readonly, nullable) ATProtoJWTMinter *jwtMinter;
 
 /** Opens the service database used for admin audit entries. */

@@ -80,7 +80,7 @@
     XCTAssertEqualObjects(session.tokenType, @"DPoP");
 
     NSError *parseError = nil;
-    JWT *jwt = [JWT jwtWithToken:session.accessToken error:&parseError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:session.accessToken error:&parseError];
     XCTAssertNotNil(jwt, @"Expected access token to parse as JWT");
     XCTAssertNil(parseError);
     XCTAssertEqualObjects(jwt.header.alg, @"ES256K");

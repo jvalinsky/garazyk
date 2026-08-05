@@ -81,7 +81,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Create middleware that requires valid user authentication.
  *
- * Validates JWT or DPoP token, extracts DID, checks takedown status.
+ * Validates ATProtoJWT or DPoP token, extracts DID, checks takedown status.
  * Injects "X-Authenticated-DID" header into request for downstream handlers.
  *
  * @param controller PDS controller with jwtMinter and adminController

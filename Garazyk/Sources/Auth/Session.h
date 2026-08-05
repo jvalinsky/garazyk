@@ -62,7 +62,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  */
 @interface SessionToken : NSObject
 
-/*! The token value (JWT for access tokens, opaque string for refresh tokens). */
+/*! The token value (ATProtoJWT for access tokens, opaque string for refresh tokens). */
 @property (nonatomic, copy) NSString *value;
 
 /*! The date and time when the token was issued. */
@@ -213,7 +213,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param did The user's DID.
  @param handle The user's handle.
  @param scope The OAuth scope for the session.
- @param minter The JWT minter to use for access tokens.
+ @param minter The ATProtoJWT minter to use for access tokens.
  @return A new Session instance.
  */
 /**
@@ -271,7 +271,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param did The user's DID.
  @param handle The user's handle.
  @param scope The OAuth scope for the session.
- @param minter The JWT minter to use for access tokens.
+ @param minter The ATProtoJWT minter to use for access tokens.
  @param jkt The DPoP key thumbprint.
  @return An initialized Session instance.
  */

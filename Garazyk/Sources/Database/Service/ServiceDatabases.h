@@ -36,7 +36,7 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @discussion PDSServiceDatabases provides a unified interface for accessing
  service-level data across multiple database pools:
 
- - **Service Pool**: Accounts, refresh tokens, invite codes, JWT keys
+ - **Service Pool**: Accounts, refresh tokens, invite codes, ATProtoJWT keys
  - **DID Cache Pool**: Cached DID documents with expiration
  - **Sequencer Pool**: Repository event sequencing
 

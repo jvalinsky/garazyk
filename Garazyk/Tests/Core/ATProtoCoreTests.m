@@ -361,7 +361,7 @@
     XCTAssertEqualObjects([deserialized get:@"testKey"], cid);
 }
 
-#pragma mark - JWT Tests
+#pragma mark - ATProtoJWT Tests
 
 - (void)testJWTMintingProducesThreeParts {
     ATProtoJWTMinter *minter = [self testMinterWithPublicKey:nil];
@@ -386,7 +386,7 @@
         @"exp": @([[NSDate dateWithTimeIntervalSinceNow:3600] timeIntervalSince1970])
     } error:nil];
 
-    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
     XCTAssertNotNil(jwt);
     XCTAssertNotNil(jwt.header);
     XCTAssertNotNil(jwt.payload);
@@ -409,7 +409,7 @@
         @"exp": @([[NSDate dateWithTimeIntervalSinceNow:3600] timeIntervalSince1970])
     } error:nil];
 
-    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
     XCTAssertNotNil(jwt);
 
     NSError *error = nil;
@@ -433,7 +433,7 @@
         @"exp": @([[NSDate dateWithTimeIntervalSinceNow:-1000] timeIntervalSince1970])
     } error:nil];
 
-    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
     XCTAssertNotNil(jwt);
 
     NSError *error = nil;
@@ -446,7 +446,7 @@
 - (void)testAccessTokenMinting {
     ATProtoJWTMinter *minter = [self testMinterWithPublicKey:nil];
 
-    JWT *token = [minter mintAccessTokenForDID:@"did:web:test.com"
+    ATProtoJWT *token = [minter mintAccessTokenForDID:@"did:web:test.com"
                                         handle:@"test.bsky.social"
                                         scopes:@[@"atproto", @"app.bsky"]
                                           error:nil];

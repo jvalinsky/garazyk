@@ -95,7 +95,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, copy, nullable) NSString *dataDirectory;
 /**
- * @brief The controller used for JWT signing and verification.
+ * @brief The controller used for ATProtoJWT signing and verification.
  *
  * The application must inject this protocol-backed controller before
  * authentication or audit logging. Authentication fails closed when it is nil.

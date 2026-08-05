@@ -36,11 +36,11 @@
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:&error];
     XCTAssertNil(error);
 
-    NSString *encodedHeader = [JWT base64URLEncodeData:headerData error:&error];
+    NSString *encodedHeader = [ATProtoJWT base64URLEncodeData:headerData error:&error];
     XCTAssertNil(error);
-    NSString *encodedPayload = [JWT base64URLEncodeData:payloadData error:&error];
+    NSString *encodedPayload = [ATProtoJWT base64URLEncodeData:payloadData error:&error];
     XCTAssertNil(error);
-    NSString *encodedSignature = [JWT base64URLEncodeData:[@"invalid-signature" dataUsingEncoding:NSUTF8StringEncoding]
+    NSString *encodedSignature = [ATProtoJWT base64URLEncodeData:[@"invalid-signature" dataUsingEncoding:NSUTF8StringEncoding]
                                                     error:&error];
     XCTAssertNil(error);
 

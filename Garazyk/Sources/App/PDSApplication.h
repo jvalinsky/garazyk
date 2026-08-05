@@ -137,7 +137,7 @@ extern NSString * const PDSApplicationErrorDomain;
 /*! The rate limiter for throttling requests. */
 @property (nonatomic, strong, readonly) RateLimiter *rateLimiter;
 
-/*! JWT minting for access tokens. */
+/*! ATProtoJWT minting for access tokens. */
 @property (nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 
 /*! Protocol-backed request verifier shared with XRPC route registration. */

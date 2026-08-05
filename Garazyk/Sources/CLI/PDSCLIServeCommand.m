@@ -192,8 +192,8 @@
   }
 
   // CRITICAL: Set serverPort BEFORE creating PDSController so that
-  // PDSApplication uses the correct port for JWT issuer calculation.
-  // Without this, JWT minter defaults to port 8080 while server runs on --port.
+  // PDSApplication uses the correct port for ATProtoJWT issuer calculation.
+  // Without this, ATProtoJWT minter defaults to port 8080 while server runs on --port.
   [[ATProtoServiceConfiguration sharedConfiguration] setServerPort:port];
 
   GZ_LOG_INFO_C(GZLogComponentCLI,
@@ -250,7 +250,7 @@
   NSString *canonicalIssuer = [[ATProtoServiceConfiguration sharedConfiguration] canonicalIssuerWithPortHint:port];
   serverBuilder.issuer = canonicalIssuer;
 
-  // Ensure JWT minter issuer matches the server port (belt and suspenders)
+  // Ensure ATProtoJWT minter issuer matches the server port (belt and suspenders)
   controller.jwtMinter.issuer = canonicalIssuer;
 
   NSError *builderError = nil;
@@ -280,7 +280,7 @@
                    [response setJsonBody:health];
                  }];
 
-  // Admin Login: accepts admin password, returns admin-scoped JWT
+  // Admin Login: accepts admin password, returns admin-scoped ATProtoJWT
   [httpServer addRoute:@"POST"
                   path:@"/admin/login"
                handler:^(HttpRequest *request, HttpResponse *response) {

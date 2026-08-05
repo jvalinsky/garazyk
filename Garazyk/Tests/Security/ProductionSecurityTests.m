@@ -17,7 +17,7 @@
     GZAuthzManager *authz = [GZAuthzManager sharedManager];
     NSError *error = nil;
     
-    // Valid looking admin handle/did but NO JWT logic here (GZAuthzManager was the old heuristic way)
+    // Valid looking admin handle/did but NO ATProtoJWT logic here (GZAuthzManager was the old heuristic way)
     // We expect this to fail now.
     BOOL authorized = [authz isAuthorizedForAdminOperation:@"did:plc:admin" error:&error];
     XCTAssertFalse(authorized, @"GZAuthzManager must return NO for heuristic admin checks");

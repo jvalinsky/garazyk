@@ -67,12 +67,12 @@
     XCTAssertNil(error);
 }
 
-#pragma mark - JWT Parsing Tests
+#pragma mark - ATProtoJWT Parsing Tests
 
 - (void)testValidJWTTokenParsing {
-    // Test successful JWT parsing and claims extraction
+    // Test successful ATProtoJWT parsing and claims extraction
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:@"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:@"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" error:&error];
 
     XCTAssertNotNil(jwt, @"JWT should parse successfully");
     XCTAssertNil(error, @"No error should occur during parsing");
@@ -83,9 +83,9 @@
 }
 
 - (void)testMalformedJWTTokenRejection {
-    // Test malformed JWT rejection
+    // Test malformed ATProtoJWT rejection
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:@"invalid.jwt.token" error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:@"invalid.jwt.token" error:&error];
 
     XCTAssertNil(jwt, @"Malformed JWT should not parse");
     XCTAssertNotNil(error, @"Error should be returned for malformed JWT");
@@ -93,18 +93,18 @@
 }
 
 - (void)testJWTWithMissingParts {
-    // Test JWT with missing signature
+    // Test ATProtoJWT with missing signature
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:@"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0" error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:@"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0" error:&error];
 
     XCTAssertNil(jwt, @"JWT with missing signature should not parse");
     XCTAssertNotNil(error, @"Error should be returned for incomplete JWT");
 }
 
-#pragma mark - JWT Creation Tests
+#pragma mark - ATProtoJWT Creation Tests
 
 - (void)testJWTTokenCreationAndEncoding {
-    // Test creating a JWT and encoding it back
+    // Test creating a ATProtoJWT and encoding it back
     NSError *error = nil;
 
     // Create header
@@ -118,8 +118,8 @@
     payload.iss = @"test-issuer";
     payload.aud = @"test-audience";
 
-    // Create JWT
-    JWT *jwt = [JWT jwtWithHeader:header payload:payload signature:@"test-signature" error:&error];
+    // Create ATProtoJWT
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithHeader:header payload:payload signature:@"test-signature" error:&error];
 
     XCTAssertNotNil(jwt, @"JWT should be created successfully");
     XCTAssertNil(error, @"No error should occur during creation");
@@ -132,10 +132,10 @@
     XCTAssertTrue([encoded containsString:@"."], @"Encoded JWT should contain dots");
 }
 
-#pragma mark - JWT Verification Tests
+#pragma mark - ATProtoJWT Verification Tests
 
 - (void)testJWTVerificationWithValidToken {
-    // Test successful JWT verification
+    // Test successful ATProtoJWT verification
     NSError *error = nil;
 
     // Create a valid token
@@ -152,7 +152,7 @@
     XCTAssertNil(error, @"No error during token creation");
 
     // Parse and verify
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt, @"JWT should parse");
     XCTAssertNil(error, @"No error during parsing");
 
@@ -162,7 +162,7 @@
 }
 
 - (void)testJWTVerificationWithExpiredToken {
-    // Test expired JWT rejection
+    // Test expired ATProtoJWT rejection
     NSError *error = nil;
 
     // Create an expired token
@@ -178,7 +178,7 @@
     XCTAssertNotNil(token, @"Expired token should still be created");
 
     // Parse and verify
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt, @"Expired JWT should still parse");
 
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
@@ -188,7 +188,7 @@
 }
 
 - (void)testJWTVerificationWithWrongIssuer {
-    // Test JWT with wrong issuer
+    // Test ATProtoJWT with wrong issuer
     self.verifier.expectedIssuer = @"wrong.issuer";
 
     NSError *error = nil;
@@ -202,7 +202,7 @@
     };
 
     NSString *token = [self.minter signPayload:payload error:&error];
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
 
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
     XCTAssertFalse(verified, @"JWT with wrong issuer should not verify");
@@ -210,10 +210,10 @@
 }
 
 - (void)testJWTVerificationRejectsNoneAlgorithm {
-    // Test JWT with "none" algorithm is rejected
+    // Test ATProtoJWT with "none" algorithm is rejected
     NSError *error = nil;
 
-    // Create a JWT with "none" algorithm (unsigned)
+    // Create a ATProtoJWT with "none" algorithm (unsigned)
     ATProtoJWTHeader *header = [[ATProtoJWTHeader alloc] init];
     header.alg = @"none";
     header.typ = @"JWT";
@@ -224,8 +224,8 @@
     payload.aud = @"test.audience";
     payload.exp = [[NSDate date] dateByAddingTimeInterval:3600];
 
-    // Create JWT with empty signature (none algorithm)
-    JWT *jwt = [JWT jwtWithHeader:header payload:payload signature:@"" error:&error];
+    // Create ATProtoJWT with empty signature (none algorithm)
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithHeader:header payload:payload signature:@"" error:&error];
     XCTAssertNotNil(jwt, @"JWT should be created");
 
     // Set allowed algorithms (excluding none)
@@ -239,7 +239,7 @@
 }
 
 - (void)testJWTVerificationWithWrongAudience {
-    // Test JWT with wrong audience
+    // Test ATProtoJWT with wrong audience
     self.verifier.expectedAudience = @"wrong.audience";
 
     NSError *error = nil;
@@ -253,7 +253,7 @@
     };
 
     NSString *token = [self.minter signPayload:payload error:&error];
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
 
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
     XCTAssertFalse(verified, @"JWT with wrong audience should not verify");
@@ -261,7 +261,7 @@
 }
 
 - (void)testJWTNotBeforeClaim {
-    // Test JWT with future nbf is rejected
+    // Test ATProtoJWT with future nbf is rejected
     NSError *error = nil;
 
     // Create a token not valid yet (starts in 1 hour)
@@ -277,7 +277,7 @@
     NSString *token = [self.minter signPayload:payload error:&error];
     XCTAssertNotNil(token);
 
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt);
 
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
@@ -292,7 +292,7 @@
     // Test minting an access token
     NSError *error = nil;
 
-    JWT *token = [self.minter mintAccessTokenForDID:@"did:example:test"
+    ATProtoJWT *token = [self.minter mintAccessTokenForDID:@"did:example:test"
                                              handle:@"test.handle"
                                              scopes:@[@"read", @"write"]
                                                error:&error];
@@ -309,7 +309,7 @@
     // Test minting a refresh token
     NSError *error = nil;
 
-    JWT *token = [self.minter mintRefreshTokenForDID:@"did:example:test"
+    ATProtoJWT *token = [self.minter mintRefreshTokenForDID:@"did:example:test"
                                               handle:@"test.handle"
                                               scopes:@[@"read", @"write"]
                                                 error:&error];
@@ -327,7 +327,7 @@
     NSError *error = nil;
     NSData *data = [@"Hello World" dataUsingEncoding:NSUTF8StringEncoding];
 
-    NSString *encoded = [JWT base64URLEncodeData:data error:&error];
+    NSString *encoded = [ATProtoJWT base64URLEncodeData:data error:&error];
 
     XCTAssertNotNil(encoded, @"Data should be encoded");
     XCTAssertNil(error, @"No error during encoding");
@@ -337,7 +337,7 @@
 
 - (void)testBase64URLDecodeHandlesModThreeLength {
     NSError *error = nil;
-    NSData *decoded = [JWT base64URLDecode:@"YWI" error:&error];
+    NSData *decoded = [ATProtoJWT base64URLDecode:@"YWI" error:&error];
 
     XCTAssertNotNil(decoded, @"Base64URL decode should handle length %% 4 == 3");
     XCTAssertNil(error, @"No error expected while decoding valid mod-3 input");
@@ -347,7 +347,7 @@
 
 #pragma mark - Fail-Closed Claim Typing (workstream 01 S8 slice 1)
 
-// Builds an unsigned compact JWT string from raw header/payload dictionaries
+// Builds an unsigned compact ATProtoJWT string from raw header/payload dictionaries
 // so tests can inject claim values of the wrong JSON type. Signature
 // verification is never reached by these tests, so the signature segment is
 // a fixed placeholder.
@@ -355,8 +355,8 @@
     NSError *error = nil;
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:headerDict options:0 error:&error];
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payloadDict options:0 error:&error];
-    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:&error];
-    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:&error];
+    NSString *headerEncoded = [ATProtoJWT base64URLEncodeData:headerData error:&error];
+    NSString *payloadEncoded = [ATProtoJWT base64URLEncodeData:payloadData error:&error];
     return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, payloadEncoded, @"sig"];
 }
 
@@ -364,7 +364,7 @@
     NSString *token = [self tokenWithHeaderDict:headerDict
                                      payloadDict:@{@"sub": @"test-user"}];
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNil(jwt, @"Header claim '%@' with wrong type should be rejected, not crash", claim);
     XCTAssertNotNil(error, @"Rejection should set an error for claim '%@'", claim);
     XCTAssertEqualObjects(error.domain, JWTErrorDomain);
@@ -374,7 +374,7 @@
     NSString *token = [self tokenWithHeaderDict:@{@"alg": @"ES256", @"typ": @"JWT"}
                                      payloadDict:payloadDict];
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNil(jwt, @"Payload claim '%@' with wrong type should be rejected, not crash", claim);
     XCTAssertNotNil(error, @"Rejection should set an error for claim '%@'", claim);
     XCTAssertEqualObjects(error.domain, JWTErrorDomain);
@@ -429,7 +429,7 @@
     NSString *token = [self tokenWithHeaderDict:@{@"alg": @"ES256", @"typ": @"JWT"}
                                      payloadDict:@{@"sub": @"test-user", @"aud": @[@"aud-one", @"aud-two"]}];
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt, @"Array-valued aud is RFC 7519-legal and must parse");
     XCTAssertNil(error);
     XCTAssertEqualObjects(jwt.payload.aud, @"aud-one", @"aud should hold the first element for single-value consumers");
@@ -440,7 +440,7 @@
     NSString *token = [self tokenWithHeaderDict:@{@"alg": @"ES256", @"typ": @"JWT"}
                                      payloadDict:@{@"sub": @"test-user", @"aud": @"solo-aud"}];
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt);
     XCTAssertNil(error);
     XCTAssertEqualObjects(jwt.payload.aud, @"solo-aud");
@@ -478,7 +478,7 @@
     };
     NSString *token = [self.minter signPayload:payload error:&error];
     XCTAssertNotNil(token);
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt);
 
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
@@ -499,7 +499,7 @@
     };
     NSString *token = [self.minter signPayload:payload error:&error];
     XCTAssertNotNil(token);
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt);
 
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
@@ -520,7 +520,7 @@
     };
     NSString *token = [self.minter signPayload:payload error:&error];
     XCTAssertNotNil(token);
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt);
 
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
@@ -541,7 +541,7 @@
         @"iat": @([[NSDate date] timeIntervalSince1970])
     };
     NSString *token = [self.minter signPayload:payload error:&error];
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
 
     ATProtoJWTVerifier *unrestrictedVerifier = [[ATProtoJWTVerifier alloc] init];
     unrestrictedVerifier.expectedIssuer = @"test.issuer";
@@ -570,7 +570,7 @@
     };
     NSString *token = [self.minter signPayload:payload error:&error];
     XCTAssertNotNil(token);
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt);
     XCTAssertEqualObjects(jwt.payload.audiences, (@[@"other.audience", @"test.audience"]));
 
@@ -590,7 +590,7 @@
         @"iat": @([[NSDate date] timeIntervalSince1970])
     };
     NSString *token = [self.minter signPayload:payload error:&error];
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
 
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
     XCTAssertFalse(verified, @"Token with no matching audience in array should be rejected");
@@ -611,7 +611,7 @@
         @"iat": @([[NSDate date] timeIntervalSince1970])
     };
     NSString *token = [self.minter signPayload:payload error:&error];
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
 
     // Set clockOffset 2 hours in the future: the token's exp (1 hour
     // from now) is in the past relative to clockOffset.
@@ -637,7 +637,7 @@
     };
     NSString *token = [self.minter signPayload:payload error:&error];
     XCTAssertNotNil(token, @"Token signing failed: %@", error);
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     XCTAssertNotNil(jwt, @"Token parsing failed: %@", error);
 
     [NSThread sleepForTimeInterval:0.02];

@@ -518,7 +518,7 @@
     // time the signature is deliberately denormalized to high-S. did:plc
     // requires low-S canonical signatures
     // (https://web.plc.directory/spec/v0.1/did-plc); ATProtoAuthCryptoJWK's shared
-    // verifier accepts both forms per ADR 0007 (that fix is for DPoP/JWT/
+    // verifier accepts both forms per ADR 0007 (that fix is for DPoP/ATProtoJWT/
     // WebAuthn callers, which must not reject high-S), so PLCAuditor must
     // enforce low-S itself rather than relying on the shared verifier.
     NSData *xData = [self dataFromHexString:@"44073c1c6da8c2c9736c011ff13a2b3602a1d819e687582bdf87262ad1b12f50" expectedLength:32];

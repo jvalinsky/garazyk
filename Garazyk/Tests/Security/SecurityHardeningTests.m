@@ -42,13 +42,13 @@
 
 - (void)testAdminAuthorizationDenyByDefault {
     // Verify that authorization is deny-by-default
-    // Even with a valid DID, authorization should fail unless JWT scope is verified
+    // Even with a valid DID, authorization should fail unless ATProtoJWT scope is verified
     // This is enforced by the calling code (XrpcMethodRegistry)
 
     GZAuthzManager *manager = [GZAuthzManager sharedManager];
 
     // With a valid-looking DID (even though account doesn't exist),
-    // the method should still return NO and encourage JWT scope checking
+    // the method should still return NO and encourage ATProtoJWT scope checking
     NSError *error = nil;
     BOOL result = [manager isAuthorizedForAdminOperation:@"did:plc:example" error:&error];
     XCTAssertFalse(result, @"Should deny by default");

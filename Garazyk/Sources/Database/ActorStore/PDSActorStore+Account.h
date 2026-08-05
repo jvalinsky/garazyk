@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
  - Email address
  - Password credentials (hashed)
  - 2FA settings
- - JWT tokens
+ - ATProtoJWT tokens
 
  All methods in this category should be called within a transaction
  using transactWithBlock:error:.

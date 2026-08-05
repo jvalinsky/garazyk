@@ -5,7 +5,7 @@
 //  ATProtoPDS
 //
 //  Authentication helper for XRPC endpoints.
-//  Centralizes JWT and DPoP authentication logic for extracting and validating DIDs
+//  Centralizes ATProtoJWT and DPoP authentication logic for extracting and validating DIDs
 //  from Authorization headers.
 //
 
@@ -44,7 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Extracts and validates a DID from an Authorization header.
  * @param authHeader Authorization header value (Bearer or DPoP).
- * @param jwtMinter JWT minter for signature verification.
+ * @param jwtMinter ATProtoJWT minter for signature verification.
  * @param adminController Admin controller for takedown checks.
  * @param request HTTP request for DPoP URL construction.
  * @return Authenticated DID or nil on failure.
@@ -57,7 +57,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Extracts and validates a DID with optional response for DPoP nonce handling.
  * @param authHeader Authorization header value (Bearer or DPoP).
- * @param jwtMinter JWT minter for signature verification.
+ * @param jwtMinter ATProtoJWT minter for signature verification.
  * @param adminController Admin controller for takedown checks (nullable).
  * @param request HTTP request for DPoP URL construction.
  * @param response Optional response for DPoP nonce challenges.

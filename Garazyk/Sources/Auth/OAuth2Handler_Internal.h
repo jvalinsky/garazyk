@@ -82,7 +82,7 @@ extern dispatch_once_t sClientCacheOnceToken;
 /** @abstract Extracts usable public verification keys from validated client metadata. */
 - (NSDictionary *)getClientPublicKeys:(NSDictionary *)client
                                 error:(NSError **)error;
-/** @abstract Verifies a private-key JWT assertion against validated client metadata and registered keys. */
+/** @abstract Verifies a private-key ATProtoJWT assertion against validated client metadata and registered keys. */
 - (BOOL)validateJWTAssertion:(NSString *)assertion
                    withClient:(NSDictionary *)client
                         error:(NSError **)error;

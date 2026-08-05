@@ -74,7 +74,7 @@ BOOL updateAccountHandle(PDSServiceDatabases *serviceDatabases,
                                 NSString *handle,
                                 NSError **error);
 NSData *pbkdf2HashPassword(NSString *password, NSData *salt, NSError **error);
-NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error);
+NSDictionary *payloadDictionaryFromJWT(ATProtoJWT *jwt, NSError **error);
 
 
 
@@ -216,8 +216,8 @@ BOOL updateAccountHandle(PDSServiceDatabases *serviceDatabases,
     return success;
 }
 
-NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error) {
-    NSData *payloadData = [JWT base64URLDecode:jwt.rawPayload error:error];
+NSDictionary *payloadDictionaryFromJWT(ATProtoJWT *jwt, NSError **error) {
+    NSData *payloadData = [ATProtoJWT base64URLDecode:jwt.rawPayload error:error];
     if (!payloadData) return nil;
     NSDictionary *payload = [NSJSONSerialization JSONObjectWithData:payloadData options:0 error:error];
     if (![payload isKindOfClass:[NSDictionary class]]) {
@@ -246,7 +246,7 @@ BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 
     NSString *token = [authHeader substringFromIndex:7];
     NSError *parseError = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&parseError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Unable to parse service auth token"}];
