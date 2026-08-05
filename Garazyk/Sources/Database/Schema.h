@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion This header defines the database schema version, table names,
  and CREATE TABLE statements for all PDS database tables:
  - accounts: User accounts with credentials
- - repos: Repository root CID storage
+ - repos: Repository root ATProtoCID storage
  - records: Repository records
  - blocks: CAR blocks
  - blobs: Blob metadata

@@ -16,7 +16,7 @@
 
 @implementation ATProtoMASLDocumentTests
 
-- (CID *)sampleCID {
+- (ATProtoCID *)sampleCID {
     NSData *bytes = [NSData dataWithBytes:(const uint8_t[]) {
         0x01, 0x55, 0x12, 0x20,
         0x58, 0x91, 0xb5, 0xb5, 0x22, 0xd5, 0xdf, 0x08,
@@ -24,11 +24,11 @@
         0x1b, 0xb4, 0xfc, 0x71, 0x63, 0xaf, 0x34, 0xd0,
         0x82, 0x86, 0xa2, 0xe8, 0x46, 0xf6, 0xbe, 0x03
     } length:36];
-    return [CID daslCIDFromBytes:bytes];
+    return [ATProtoCID daslCIDFromBytes:bytes];
 }
 
 - (void)testSingleModeRoundTripsAndPreservesApplicationMetadata {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSDictionary *object = @{
         @"$type": @"ing.dasl.masl",
         @"src": cid,
@@ -54,7 +54,7 @@
 }
 
 - (void)testBundleRequiresRootAndResourceSources {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSError *error = nil;
     NSDictionary *missingRoot = @{
         @"resources": @{@"/index.html": @{@"src": cid}}
@@ -83,7 +83,7 @@
 }
 
 - (void)testResourcesModeTakesPrecedenceOverRootSource {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSError *error = nil;
     NSDictionary *object = @{
         @"src": cid,
@@ -97,7 +97,7 @@
 }
 
 - (void)testBundleDRISLRoundTrips {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSDictionary *object = @{
         @"name": @"bundle",
         @"resources": @{
@@ -116,7 +116,7 @@
 }
 
 - (void)testInvalidRootSourceIsIgnoredInBundleMode {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSError *error = nil;
     NSDictionary *object = @{
         @"src": @"not-a-cid",
@@ -129,7 +129,7 @@
 }
 
 - (void)testBundleRejectsRelativeResourcePath {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSError *error = nil;
     NSDictionary *object = @{
         @"resources": @{
@@ -142,7 +142,7 @@
 }
 
 - (void)testHeaderProjectionIsAllowListedAndPathAware {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSDictionary *object = @{
         @"content-type": @"text/plain",
         @"Content-Type": @"text/html",
@@ -173,7 +173,7 @@
 }
 
 - (void)testManifestReferencesMustNameBundleResources {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSDictionary *object = @{
         @"icons": @[@{@"src": @"/missing.svg"}],
         @"resources": @{@"/": @{@"src": cid}}
@@ -198,7 +198,7 @@
 }
 
 - (void)testRejectsNonStringTopLevelKeys {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSError *error = nil;
     NSDictionary *object = @{@1: cid};
     XCTAssertNil([ATProtoMASLDocument documentWithObject:object error:&error]);
@@ -206,7 +206,7 @@
 }
 
 - (void)testCARCompatibilityRequiresVersionOneAndCIDRoots {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSError *error = nil;
     ATProtoMASLDocument *valid = [ATProtoMASLDocument documentWithObject:@{
         @"version": @1,
@@ -238,7 +238,7 @@
 }
 
 - (void)testPrevAndTypeAreValidated {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSError *error = nil;
     ATProtoMASLDocument *document = [ATProtoMASLDocument documentWithObject:@{
         @"$type": @"ing.dasl.masl", @"src": cid, @"prev": cid

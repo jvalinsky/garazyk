@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Format a post record into an AppView post structure. */
 - (nullable NSDictionary *)formatPostRecord:(NSString *)uri cid:(NSString *)cid record:(NSDictionary *)record;
 
-/*! Generate a CID string for a record dictionary. */
+/*! Generate a ATProtoCID string for a record dictionary. */
 - (NSString *)generateCIDForRecord:(NSDictionary *)record;
 
 #pragma mark - Indexing

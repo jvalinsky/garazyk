@@ -26,12 +26,12 @@
     return [NSData dataWithBytes:digest length:sizeof(digest)];
 }
 
-- (CID *)blake3CIDForData:(NSData *)data {
+- (ATProtoCID *)blake3CIDForData:(NSData *)data {
     NSMutableData *bytes = [NSMutableData dataWithCapacity:36];
     uint8_t prefix[] = {0x01, ATProtoDASLCodecRaw, ATProtoDASLMultihashBLAKE3, 0x20};
     [bytes appendBytes:prefix length:sizeof(prefix)];
     [bytes appendData:[self blake3DigestForData:data]];
-    return [CID daslCIDFromBytes:bytes profile:ATProtoDASLCIDProfileBig];
+    return [ATProtoCID daslCIDFromBytes:bytes profile:ATProtoDASLCIDProfileBig];
 }
 
 - (NSArray<NSData *> *)chunkDigestsForData:(NSData *)data {
@@ -61,7 +61,7 @@
 
 - (void)testIncrementalVerificationAcceptsSplitInput {
     NSData *payload = [self payload];
-    CID *cid = [self blake3CIDForData:payload];
+    ATProtoCID *cid = [self blake3CIDForData:payload];
     NSError *error = nil;
     ATProtoBDASLVerifier *verifier = [[ATProtoBDASLVerifier alloc]
         initWithCID:cid
@@ -82,7 +82,7 @@
 
 - (void)testCorruptedChunkFailsBeforeFinalize {
     NSData *payload = [self payload];
-    CID *cid = [self blake3CIDForData:payload];
+    ATProtoCID *cid = [self blake3CIDForData:payload];
     NSMutableArray<NSData *> *digests = [[self chunkDigestsForData:payload] mutableCopy];
     NSMutableData *wrong = [digests[1] mutableCopy];
     uint8_t *wrongBytes = wrong.mutableBytes;
@@ -102,7 +102,7 @@
     NSData *originalPayload = [self payload];
     NSMutableData *corruptedPayload = [originalPayload mutableCopy];
     ((uint8_t *)corruptedPayload.mutableBytes)[corruptedPayload.length - 1] ^= 0x80;
-    CID *cid = [self blake3CIDForData:originalPayload];
+    ATProtoCID *cid = [self blake3CIDForData:originalPayload];
     NSError *error = nil;
     ATProtoBDASLVerifier *verifier = [[ATProtoBDASLVerifier alloc]
         initWithCID:cid
@@ -119,7 +119,7 @@
 
 - (void)testTruncatedStreamFailsClosed {
     NSData *payload = [self payload];
-    CID *cid = [self blake3CIDForData:payload];
+    ATProtoCID *cid = [self blake3CIDForData:payload];
     NSError *error = nil;
     ATProtoBDASLVerifier *verifier = [[ATProtoBDASLVerifier alloc]
         initWithCID:cid
@@ -136,7 +136,7 @@
     NSData *payload = [self payload];
     NSMutableData *differentPayload = [payload mutableCopy];
     ((uint8_t *)differentPayload.mutableBytes)[differentPayload.length - 1] ^= 0x01;
-    CID *wrongCID = [self blake3CIDForData:differentPayload];
+    ATProtoCID *wrongCID = [self blake3CIDForData:differentPayload];
     NSError *error = nil;
     ATProtoBDASLVerifier *verifier = [[ATProtoBDASLVerifier alloc]
         initWithCID:wrongCID
@@ -150,7 +150,7 @@
 
 - (void)testEmptyPayloadVerifies {
     NSData *payload = [NSData data];
-    CID *cid = [self blake3CIDForData:payload];
+    ATProtoCID *cid = [self blake3CIDForData:payload];
     NSError *error = nil;
     ATProtoBDASLVerifier *verifier = [[ATProtoBDASLVerifier alloc]
         initWithCID:cid chunkDigests:[self chunkDigestsForData:payload]

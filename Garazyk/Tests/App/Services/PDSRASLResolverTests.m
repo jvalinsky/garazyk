@@ -132,7 +132,7 @@
     XCTAssertTrue(stored, @"%@", error);
 }
 
-- (void)putBlockData:(NSData *)data cid:(CID *)cid forDid:(NSString *)did {
+- (void)putBlockData:(NSData *)data cid:(ATProtoCID *)cid forDid:(NSString *)did {
     NSError *error = nil;
     PDSActorStore *store = [self.databasePool storeForDid:did error:&error];
     XCTAssertNotNil(store, @"%@", error);
@@ -150,7 +150,7 @@
     self.accountService.accountDIDs = @[did];
 
     NSData *content = [@"a repo block" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID sha256:content];
+    ATProtoCID *cid = [ATProtoCID sha256:content];
     [self putBlockData:content cid:cid forDid:did];
 
     NSData *found = [self.resolver dataForCID:cid maxAccountsToScan:10];
@@ -166,7 +166,7 @@
     NSDictionary *result = [self.blobService uploadBlob:content forDid:did mimeType:@"application/octet-stream" error:&error];
     XCTAssertNotNil(result, @"%@", error);
     NSString *cidString = result[@"blob"][@"ref"][@"$link"];
-    CID *cid = [CID cidFromString:cidString];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
     XCTAssertNotNil(cid);
     [self referenceBlobWithCIDString:cidString forDid:did];
 
@@ -180,7 +180,7 @@
     self.accountService.accountDIDs = @[emptyDid, ownerDid];
 
     NSData *content = [@"owned by the second account" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID sha256:content];
+    ATProtoCID *cid = [ATProtoCID sha256:content];
     [self putBlockData:content cid:cid forDid:ownerDid];
 
     NSData *found = [self.resolver dataForCID:cid maxAccountsToScan:10];
@@ -190,7 +190,7 @@
 - (void)testMissingCIDReturnsNil {
     self.accountService.accountDIDs = @[@"did:web:rasl-miss.example.com"];
     NSData *content = [@"never stored" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID sha256:content];
+    ATProtoCID *cid = [ATProtoCID sha256:content];
 
     XCTAssertNil([self.resolver dataForCID:cid maxAccountsToScan:10]);
 }
@@ -205,7 +205,7 @@
     self.accountService.accountDIDs = dids;
 
     NSData *content = [@"beyond the scan bound" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID sha256:content];
+    ATProtoCID *cid = [ATProtoCID sha256:content];
     [self putBlockData:content cid:cid forDid:ownerDid];
 
     // ownerDid is the 6th account; a bound of 3 must not reach it.

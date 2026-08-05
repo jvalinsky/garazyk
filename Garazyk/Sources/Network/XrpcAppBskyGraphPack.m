@@ -161,7 +161,7 @@
         for (NSDictionary *row in rows) {
             NSString *rkey = row[@"rkey"];
             NSString *cidStr = row[@"cid"];
-            CID *cid = [CID cidFromString:cidStr];
+            ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
             if (!cid) continue;
 
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:actorDID error:nil];
@@ -385,7 +385,7 @@
         NSMutableArray *items = [NSMutableArray array];
         for (NSDictionary *itemRow in itemRows) {
             NSString *itemCidStr = itemRow[@"cid"];
-            CID *itemCid = [CID cidFromString:itemCidStr];
+            ATProtoCID *itemCid = [ATProtoCID cidFromString:itemCidStr];
             if (!itemCid) continue;
             PDSDatabaseBlock *itemBlock = [services.appViewDatabase getBlockWithCid:itemCid.bytes repoDid:did error:nil];
             if (!itemBlock || !itemBlock.blockData) continue;

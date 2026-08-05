@@ -49,7 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                                error:(NSError **)error;
 /** @abstract Decodes the repository head commit into the STAR archive representation. */
 - (STARCommit *)starCommitFromExport:(NSString *)did
-                           commitCID:(CID *)commitCID
+                           commitCID:(ATProtoCID *)commitCID
                          commitBlock:(NSData *)commitBlock;
 /**
  * @abstract Loads and derives all state required for a CAR export.
@@ -60,7 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
                           since:(nullable NSString *)sinceRev
                           store:(PDSActorStore * _Nullable * _Nonnull)storeOut
                             mst:(MST * _Nullable * _Nonnull)mstOut
-                      commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
+                      commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCIDOut
                     commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
                  noChangesSince:(BOOL *)noChangesSinceOut
                  includeFullMST:(BOOL *)includeFullMSTOut
@@ -72,9 +72,9 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Loads the stored head commit, data root, revision, and signature state for did. */
 - (BOOL)loadStoredHeadCommitForDid:(NSString *)did
                               store:(PDSActorStore *)store
-                          commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
+                          commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCIDOut
                         commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
-                            dataCID:(CID * _Nullable * _Nonnull)dataCIDOut
+                            dataCID:(ATProtoCID * _Nullable * _Nonnull)dataCIDOut
                                 rev:(NSString * _Nullable * _Nonnull)revOut
                            isSigned:(BOOL *)isSignedOut;
 /** @abstract Builds a CAR writer rooted at did's stored head commit. */

@@ -30,7 +30,7 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
     return self;
 }
 
-- (BOOL)storeBlobData:(NSData *)data forCID:(CID *)cid error:(NSError **)error {
+- (BOOL)storeBlobData:(NSData *)data forCID:(ATProtoCID *)cid error:(NSError **)error {
     NSURL *blobURL = [self blobURLForCID:cid];
     NSURL *dirURL = [blobURL URLByDeletingLastPathComponent];
     
@@ -54,7 +54,7 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
     return [data writeToURL:blobURL options:NSDataWritingAtomic error:error];
 }
 
-- (nullable NSData *)retrieveBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSData *)retrieveBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     NSURL *blobURL = [self blobURLForCID:cid];
     
     if (![_fileManager fileExistsAtPath:blobURL.path]) {
@@ -70,7 +70,7 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
     return [NSData dataWithContentsOfURL:blobURL options:NSDataReadingMappedIfSafe error:error];
 }
 
-- (nullable NSInputStream *)retrieveBlobStreamForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSInputStream *)retrieveBlobStreamForCID:(ATProtoCID *)cid error:(NSError **)error {
     NSURL *blobURL = [self blobURLForCID:cid];
     if (![_fileManager fileExistsAtPath:blobURL.path]) {
         if (error) {
@@ -83,7 +83,7 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
     return [NSInputStream inputStreamWithURL:blobURL];
 }
 
-- (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (BOOL)deleteBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     NSURL *blobURL = [self blobURLForCID:cid];
     
     // If it doesn't exist, we consider deletion successful (idempotent)
@@ -94,12 +94,12 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
     return [_fileManager removeItemAtURL:blobURL error:error];
 }
 
-- (BOOL)hasBlobDataForCID:(CID *)cid {
+- (BOOL)hasBlobDataForCID:(ATProtoCID *)cid {
     NSURL *blobURL = [self blobURLForCID:cid];
     return [_fileManager fileExistsAtPath:blobURL.path];
 }
 
-- (nullable NSURL *)blobFileURLForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSURL *)blobFileURLForCID:(ATProtoCID *)cid error:(NSError **)error {
     NSURL *blobURL = [self blobURLForCID:cid];
     if (![_fileManager fileExistsAtPath:blobURL.path]) {
         if (error) {
@@ -114,7 +114,7 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
 
 #pragma mark - Helper
 
-- (NSURL *)blobURLForCID:(CID *)cid {
+- (NSURL *)blobURLForCID:(ATProtoCID *)cid {
     NSString *cidString = cid.stringValue;
     
     if (cidString.length < 3) {
@@ -129,7 +129,7 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
     return [dirURL URLByAppendingPathComponent:fileName];
 }
 
-- (nullable NSArray<CID *> *)listAllCIDsWithError:(NSError **)error {
+- (nullable NSArray<ATProtoCID *> *)listAllCIDsWithError:(NSError **)error {
     NSMutableArray *cids = [NSMutableArray array];
     
     // Disk storage is sharded: /storage/aa/bbccddeeff
@@ -157,7 +157,7 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
                 if (dirName.length != 2) continue;
                 
                 NSString *cidString = [dirName stringByAppendingString:fileName];
-                CID *cid = [CID cidFromString:cidString];
+                ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
                 if (cid) {
                     [cids addObject:cid];
                 }

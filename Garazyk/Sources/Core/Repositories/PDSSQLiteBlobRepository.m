@@ -126,7 +126,7 @@
 }
 
 - (nullable NSData *)blobForId:(NSString *)blobId error:(NSError **)error {
-    // blobId is CID string
+    // blobId is ATProtoCID string
     NSData *cidBytes = [self dataFromCidString:blobId];
     if (!cidBytes) return nil;
     
@@ -166,7 +166,7 @@
 }
 
 - (NSData *)dataFromCidString:(NSString *)cidString {
-    CID *cid = [CID cidFromString:cidString];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
     return cid.bytes;
 }
 

@@ -66,15 +66,15 @@ NS_ASSUME_NONNULL_BEGIN
                                store:(PDSActorStore *)store
                                error:(NSError **)error;
 
-/** @abstract Computes the current MST root CID for a DID from its actor store. */
-- (nullable CID *)computeRepoRootCIDForDid:(NSString *)did
+/** @abstract Computes the current MST root ATProtoCID for a DID from its actor store. */
+- (nullable ATProtoCID *)computeRepoRootCIDForDid:(NSString *)did
                                       store:(PDSActorStore *)store
                                       error:(NSError **)error;
 
 /**
  * @abstract Updates the MST, signed commit, persisted blocks, and repository root after mutations.
  * @discussion Must run in the DID's serialized write lane. It reloads or rebuilds cached MST state,
- * applies the supplied CID mutations, signs a new commit, and writes blocks and root atomically.
+ * applies the supplied ATProtoCID mutations, signs a new commit, and writes blocks and root atomically.
  * @return Metadata for the new repository root, or nil when loading, signing, or the transaction fails.
  */
 - (nullable NSDictionary<NSString *, NSString *> *)refreshRepoRootMetadataForDid:(NSString *)did
@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Materializes the updated MST root and proof-path nodes for changed record keys.
- * @discussion Returned blocks are deduplicated by CID and carry rev for transactional persistence.
+ * @discussion Returned blocks are deduplicated by ATProtoCID and carry rev for transactional persistence.
  */
 - (nullable NSArray<PDSDatabaseBlock *> *)changedMSTBlocksForMST:(MST *)mst
                                                      changedKeys:(NSArray<NSString *> *)changedKeys
@@ -107,7 +107,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Returns whether authorDID follows targetDID for threadgate follower checks. */
 - (BOOL)authorDID:(NSString *)authorDID hasFollowForDID:(NSString *)targetDID error:(NSError **)error;
 
-/** @abstract Produces the canonical CID string for record block data, or an error on failure. */
+/** @abstract Produces the canonical ATProtoCID string for record block data, or an error on failure. */
 - (NSString *)generateCIDForData:(NSData *)data error:(NSError **)error;
 
 @end

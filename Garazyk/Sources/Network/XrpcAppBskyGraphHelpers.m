@@ -196,7 +196,7 @@ NSDictionary *XrpcLoadListItemViewForListAndSubject(PDSDatabase *appViewDatabase
     NSDictionary *subjectProfile = [actorService getProfileForActor:subjectDid error:nil] ?: @{@"did": subjectDid};
     for (NSDictionary *itemRow in itemRows) {
         NSString *cidStr = itemRow[@"cid"];
-        CID *cid = [CID cidFromString:cidStr];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
         if (!cid) continue;
 
         PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:creatorDid error:nil];
@@ -236,7 +236,7 @@ NSDictionary *XrpcLoadListViewForURI(PDSDatabase *appViewDatabase, ActorService 
     }
 
     NSString *cidStr = rows.firstObject[@"cid"];
-    CID *cid = [CID cidFromString:cidStr];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
     NSDictionary *record = nil;
     if (cid) {
         PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];

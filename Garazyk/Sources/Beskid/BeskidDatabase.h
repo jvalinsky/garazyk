@@ -44,7 +44,7 @@ extern NSString * const BeskidDatabaseErrorDomain;
 /**
  * @abstract Retrieves a cached record by its URI.
  * @param uri Record URI (e.g., at://did:plc:.../collection/rkey).
- * @param cid Optional CID string for strict version checking.
+ * @param cid Optional ATProtoCID string for strict version checking.
  * @param error Receives failure details.
  * @return Record dictionary, or nil if not found or expired.
  */
@@ -58,7 +58,7 @@ extern NSString * const BeskidDatabaseErrorDomain;
  * @param did Account DID.
  * @param collection Collection path (NSID).
  * @param rkey Record key.
- * @param cid Target CID.
+ * @param cid Target ATProtoCID.
  * @param ttl Time-to-live in seconds.
  * @param error Receives failure details.
  * @return YES if cached successfully.

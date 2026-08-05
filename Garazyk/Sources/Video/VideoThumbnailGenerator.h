@@ -5,7 +5,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class CID;
+@class ATProtoCID;
 
 /**
  * @abstract Error domain for video thumbnail generation.
@@ -71,9 +71,9 @@ typedef NS_ENUM(NSInteger, ATProtoVideoThumbnailError) {
  * @param thumbnailData JPEG thumbnail data.
  * @param jobId The associated job identifier.
  * @param error Receives failure details.
- * @return The CID of the stored thumbnail, or nil on failure.
+ * @return The ATProtoCID of the stored thumbnail, or nil on failure.
  */
-- (nullable CID *)storeThumbnailData:(NSData *)thumbnailData
+- (nullable ATProtoCID *)storeThumbnailData:(NSData *)thumbnailData
                              forJob:(NSString *)jobId
                              error:(NSError **)error;
 

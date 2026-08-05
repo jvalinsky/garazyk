@@ -58,7 +58,7 @@
         };
         NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
         XCTAssertNotNil(blockData, @"CBOR encode failed: %@", error);
-        CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
+        ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:blockData] codec:0x71];
         XCTAssertTrue([self.database saveBlockWithCid:cid.bytes repoDid:did blockData:blockData contentType:@"application/cbor" error:&error], @"saveBlock failed: %@", error);
         NSString *rkey = [NSString stringWithFormat:@"%03ld", (long)index];
         NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", did, rkey];
@@ -78,7 +78,7 @@
         };
         NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:record error:&error];
         XCTAssertNotNil(blockData, @"CBOR encode failed: %@", error);
-        CID *cid = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
+        ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:blockData] codec:0x71];
         XCTAssertTrue([self.database saveBlockWithCid:cid.bytes repoDid:did blockData:blockData contentType:@"application/cbor" error:&error], @"saveBlock failed: %@", error);
         NSString *rkey = [NSString stringWithFormat:@"%03ld", (long)index];
         NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.follow/%@", did, rkey];

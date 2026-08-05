@@ -23,7 +23,7 @@
 @class PDSServiceDatabases;
 @class EventFormatter;
 @class RepoCommit;
-@class CID;
+@class ATProtoCID;
 @class HttpRequest;
 /**
  * @abstract Defines the ATProtoNetworkConnection protocol contract.
@@ -122,7 +122,7 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit 
                           forRepo:(NSString *)repoDid 
                               ops:(NSArray<NSDictionary *> *)ops 
-                            blobs:(NSArray<CID *> *)blobs;
+                            blobs:(NSArray<ATProtoCID *> *)blobs;
 
 /*! Broadcasts an identity change event. */
 - (void)broadcastIdentityChange:(NSString *)did handle:(nullable NSString *)handle;

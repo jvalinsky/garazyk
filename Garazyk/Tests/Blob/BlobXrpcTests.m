@@ -332,7 +332,7 @@
 }
 
 - (void)testGetBlobNotFound {
-    CID *missingCID = [CID cidWithDigest:[CID sha256Digest:[@"missing blob" dataUsingEncoding:NSUTF8StringEncoding]]
+    ATProtoCID *missingCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:[@"missing blob" dataUsingEncoding:NSUTF8StringEncoding]]
                                    codec:0x55];
     XCTAssertNotNil(missingCID);
     NSDictionary *queryParams = @{@"did": self.did, @"cid": missingCID.stringValue};

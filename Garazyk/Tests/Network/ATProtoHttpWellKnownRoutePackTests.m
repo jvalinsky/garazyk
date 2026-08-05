@@ -8,7 +8,7 @@
  @discussion Starts the configured HTTP server on an ephemeral loopback port,
  retrieves a referenced blob through GET and HEAD, then corrupts the stored
  provider bytes and verifies that the route no longer serves them under the
- original CID.
+ original ATProtoCID.
  */
 
 #import <XCTest/XCTest.h>
@@ -182,10 +182,10 @@ static NSDictionary *LiveRASLRawResponse(NSString *method, NSString *path,
     }
 
     NSData *payload = [@"RASL live route payload" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID sha256:payload];
+    ATProtoCID *cid = [ATProtoCID sha256:payload];
     NSString *cidString = cid.stringValue;
 
-    // Store a repository block directly under its CID. Unlike BlobStorage's
+    // Store a repository block directly under its ATProtoCID. Unlike BlobStorage's
     // read path, ActorStore block lookup does not verify the payload; the
     // route's explicit digest check must therefore be observable here.
     PDSActorStore *store = [self.controller.userDatabasePool storeForDid:did error:&error];
@@ -240,7 +240,7 @@ static NSDictionary *LiveRASLRawResponse(NSString *method, NSString *path,
     XCTAssertEqualObjects(headResponse[@"headers"][@"content-type"],
                           @"application/octet-stream");
 
-    // Corrupt the block bytes while retaining the original CID key. `putBlock:`
+    // Corrupt the block bytes while retaining the original ATProtoCID key. `putBlock:`
     // intentionally uses INSERT OR IGNORE, so update the existing row directly
     // through the actor-store transaction API.
     NSData *corruptPayload = [@"corrupt RASL payload" dataUsingEncoding:NSUTF8StringEncoding];

@@ -74,27 +74,27 @@
 
 @implementation RuntimeTestBlobProvider
 
-- (BOOL)storeBlobData:(NSData *)data forCID:(CID *)cid error:(NSError **)error {
+- (BOOL)storeBlobData:(NSData *)data forCID:(ATProtoCID *)cid error:(NSError **)error {
     return YES;
 }
 
-- (nullable NSData *)retrieveBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSData *)retrieveBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     return [@"test blob data" dataUsingEncoding:NSUTF8StringEncoding];
 }
 
-- (nullable NSInputStream *)retrieveBlobStreamForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSInputStream *)retrieveBlobStreamForCID:(ATProtoCID *)cid error:(NSError **)error {
     return [NSInputStream inputStreamWithData:[@"test blob data" dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
-- (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (BOOL)deleteBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     return YES;
 }
 
-- (BOOL)hasBlobDataForCID:(CID *)cid {
+- (BOOL)hasBlobDataForCID:(ATProtoCID *)cid {
     return YES;
 }
 
-- (nullable NSURL *)blobFileURLForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSURL *)blobFileURLForCID:(ATProtoCID *)cid error:(NSError **)error {
     return nil;
 }
 

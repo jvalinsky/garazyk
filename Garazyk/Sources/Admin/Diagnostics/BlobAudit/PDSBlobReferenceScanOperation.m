@@ -152,7 +152,7 @@
         for (NSDictionary<NSString *, id> *candidate in sweepCandidates) {
             NSString *did = candidate[@"did"];
             NSString *cidString = candidate[@"cid"];
-            CID *cid = [CID cidFromString:cidString];
+            ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
             NSError *deleteError = nil;
             if (!cid || ![self.blobStorage deleteBlobWithCID:cid did:did error:&deleteError]) {
                 GZ_LOG_ERROR(@"TemporaryBlobSweep: Failed to delete metadata %@ for %@: %@", cidString, did, deleteError);
@@ -165,7 +165,7 @@
         for (NSDictionary<NSString *, id> *candidate in sweepCandidates) {
             NSString *cidString = candidate[@"cid"];
             if ([retainedProviderCIDs containsObject:cidString] || [deletedProviderCIDs containsObject:cidString]) continue;
-            CID *cid = [CID cidFromString:cidString];
+            ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
             NSError *providerError = nil;
             if (!cid || ![self.blobStorage.provider deleteBlobDataForCID:cid error:&providerError]) {
                 GZ_LOG_ERROR(@"TemporaryBlobSweep: Failed to delete provider data %@: %@", cidString, providerError);

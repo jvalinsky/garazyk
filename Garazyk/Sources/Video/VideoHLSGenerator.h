@@ -82,7 +82,7 @@ typedef NS_ENUM(NSInteger, ATProtoVideoHLSError) {
  * @abstract Generate HLS segments and playlists from a video file.
  * @param inputURL URL to the source video file (typically the transcoded MP4).
  * @param did DID of the video owner.
- * @param cid CID of the original video blob.
+ * @param cid ATProtoCID of the original video blob.
  * @param thumbnailData Optional thumbnail JPEG data to store alongside HLS.
  * @param error On failure, contains the error.
  * @return VideoHLSResult with paths to generated files, or nil on failure.
@@ -94,22 +94,22 @@ typedef NS_ENUM(NSInteger, ATProtoVideoHLSError) {
                                                   error:(NSError **)error;
 
 /**
- * @abstract Remove all HLS files for a given DID+CID.
+ * @abstract Remove all HLS files for a given DID+ATProtoCID.
  */
 - (void)removeHLSForDID:(NSString *)did cid:(NSString *)cid;
 
 /**
- * @abstract Get the file system path for the HLS directory of a DID+CID.
+ * @abstract Get the file system path for the HLS directory of a DID+ATProtoCID.
  */
 - (NSString *)hlsDirectoryForDID:(NSString *)did cid:(NSString *)cid;
 
 /**
- * @abstract Get the file system path for the master playlist of a DID+CID.
+ * @abstract Get the file system path for the master playlist of a DID+ATProtoCID.
  */
 - (NSString *)masterPlaylistPathForDID:(NSString *)did cid:(NSString *)cid;
 
 /**
- * @abstract Get the file system path for the thumbnail of a DID+CID.
+ * @abstract Get the file system path for the thumbnail of a DID+ATProtoCID.
  */
 - (NSString *)thumbnailPathForDID:(NSString *)did cid:(NSString *)cid;
 

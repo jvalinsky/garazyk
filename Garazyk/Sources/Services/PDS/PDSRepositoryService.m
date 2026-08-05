@@ -34,9 +34,9 @@
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) return nil;
     
-    CID *rootCid = nil;
+    ATProtoCID *rootCid = nil;
     if (cids.count > 0) {
-        rootCid = [CID cidFromString:cids.firstObject];
+        rootCid = [ATProtoCID cidFromString:cids.firstObject];
     }
     
     CARWriter *writer = [CARWriter writerWithRootCID:rootCid];
@@ -44,7 +44,7 @@
     __block BOOL success = YES;
     
     for (NSString *cidStr in cids) {
-        CID *cid = [CID cidFromString:cidStr];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
         if (!cid) continue;
         
         PDSDatabaseBlock *block = [self.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];

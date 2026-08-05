@@ -7,7 +7,7 @@
 
  @discussion This file implements CAR v1 format for ATProto repository
  serialization. CAR archives contain content-addressable blocks with
- CID references, used for MST export and import operations.
+ ATProtoCID references, used for MST export and import operations.
 
  @copyright Copyright (c) 2024 Jack Valinsky
  */
@@ -22,11 +22,11 @@
 
 @implementation CARBlock
 
-+ (instancetype)blockWithCID:(CID *)cid data:(NSData *)data {
++ (instancetype)blockWithCID:(ATProtoCID *)cid data:(NSData *)data {
     return [[self alloc] initWithCID:cid data:data];
 }
 
-- (instancetype)initWithCID:(CID *)cid data:(NSData *)data {
+- (instancetype)initWithCID:(ATProtoCID *)cid data:(NSData *)data {
     self = [super init];
     if (self) {
         _cid = cid;
@@ -41,7 +41,7 @@
 
 @interface CARReader ()
 
-@property (nonatomic, copy, readwrite) NSArray<CID *> *roots;
+@property (nonatomic, copy, readwrite) NSArray<ATProtoCID *> *roots;
 @property (nonatomic, strong, readwrite) NSArray<CARBlock *> *blocks;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, CARBlock *> *blockIndex;
 
@@ -79,9 +79,9 @@ static NSUInteger ReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_
     return 0;
 }
 
-static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **cidOut, NSUInteger *cidLengthOut) {
+static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoCID **cidOut, NSUInteger *cidLengthOut) {
     NSUInteger consumed = 0;
-    CID *cid = [CID cidFromBuffer:bytes length:length consumed:&consumed];
+    ATProtoCID *cid = [ATProtoCID cidFromBuffer:bytes length:length consumed:&consumed];
     if (!cid) {
         return NO;
     }
@@ -90,7 +90,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     return YES;
 }
 
-- (CID *)rootCID {
+- (ATProtoCID *)rootCID {
   return self.roots.firstObject;
 }
 
@@ -178,7 +178,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     // The CAR header is a DRISL object. Decoding it with the DAG-CBOR decoder
     // rather than the generic one gets canonical-form enforcement (minimal
     // lengths, sorted string keys, no trailing bytes, tag 42 only) and hands
-    // back CID objects directly.
+    // back ATProtoCID objects directly.
     NSError *headerError = nil;
     id header = [ATProtoDagCBOR decodeData:headerData error:&headerError];
     if (![header isKindOfClass:[NSDictionary class]]) {
@@ -202,9 +202,9 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     }
 
     NSArray *rootEntries = (NSArray *)rootsValue;
-    NSMutableArray<CID *> *parsedRoots = [NSMutableArray arrayWithCapacity:rootEntries.count];
+    NSMutableArray<ATProtoCID *> *parsedRoots = [NSMutableArray arrayWithCapacity:rootEntries.count];
     for (id rootEntry in rootEntries) {
-        if (![rootEntry isKindOfClass:[CID class]]) {
+        if (![rootEntry isKindOfClass:[ATProtoCID class]]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.car"
                                              code:-10
@@ -212,7 +212,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
             }
             return NO;
         }
-        CID *rootCID = (CID *)rootEntry;
+        ATProtoCID *rootCID = (ATProtoCID *)rootEntry;
         if (strict && !rootCID.isDASLConformant) {
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.car"
@@ -263,7 +263,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         NSData *blockBytes = [data subdataWithRange:NSMakeRange(offset, (NSUInteger)blockLen)];
         offset += (NSUInteger)blockLen;
 
-        CID *blockCID = nil;
+        ATProtoCID *blockCID = nil;
         NSUInteger cidLength = 0;
         if (!DecodeCIDFromBlock(blockBytes.bytes, blockBytes.length, &blockCID, &cidLength)) {
             if (error) {
@@ -285,9 +285,9 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
                 }
                 return NO;
             }
-            // Without this the CID is just a label: a peer can ship any bytes
-            // under any CID and every downstream lookup silently trusts it.
-            NSData *actualDigest = [CID sha256Digest:blockData];
+            // Without this the ATProtoCID is just a label: a peer can ship any bytes
+            // under any ATProtoCID and every downstream lookup silently trusts it.
+            NSData *actualDigest = [ATProtoCID sha256Digest:blockData];
             NSData *statedDigest = [blockCID.multihash subdataWithRange:NSMakeRange(2, blockCID.multihash.length - 2)];
             if (![actualDigest isEqualToData:statedDigest]) {
                 if (error) {
@@ -308,7 +308,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         // The spec allows verifying roots after the body has been read, which
         // is what this does — the body has to be indexed before the check can
         // be made at all.
-        for (CID *rootCID in parsedRoots) {
+        for (ATProtoCID *rootCID in parsedRoots) {
             if (!index[rootCID.stringValue]) {
                 if (error) {
                     *error = [NSError errorWithDomain:@"com.atproto.car"
@@ -370,7 +370,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     NSData *rootCidData = [data subdataWithRange:NSMakeRange(offset, rootCidLength)];
     offset += rootCidLength;
 
-    CID *rootCID = [CID cidFromBytes:rootCidData];
+    ATProtoCID *rootCID = [ATProtoCID cidFromBytes:rootCidData];
     if (!rootCID) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
@@ -406,7 +406,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
         NSData *blockData = [data subdataWithRange:NSMakeRange(offset, blockLen)];
         offset += blockLen;
 
-        CID *blockCID = [self computeBlockCID:blockData];
+        ATProtoCID *blockCID = [self computeBlockCID:blockData];
         if (blockCID) {
             CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
             [blocks addObject:block];
@@ -420,12 +420,12 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
     return YES;
 }
 
-- (CID *)computeBlockCID:(NSData *)blockData {
-    NSData *digest = [CID sha256Digest:blockData];
-    return [CID cidWithDigest:digest codec:0x71];
+- (ATProtoCID *)computeBlockCID:(NSData *)blockData {
+    NSData *digest = [ATProtoCID sha256Digest:blockData];
+    return [ATProtoCID cidWithDigest:digest codec:0x71];
 }
 
-- (CARBlock *)blockWithCID:(CID *)cid {
+- (CARBlock *)blockWithCID:(ATProtoCID *)cid {
     return self.blockIndex[cid.stringValue];
 }
 
@@ -435,18 +435,18 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **ci
 
 @interface CARWriter ()
 
-@property (nonatomic, strong, readwrite) CID *rootCID;
+@property (nonatomic, strong, readwrite) ATProtoCID *rootCID;
 @property (nonatomic, strong, readwrite) NSMutableArray<CARBlock *> *blocks;
 
 @end
 
 @implementation CARWriter
 
-+ (instancetype)writerWithRootCID:(CID *)rootCID {
++ (instancetype)writerWithRootCID:(ATProtoCID *)rootCID {
     return [[self alloc] initWithRootCID:rootCID];
 }
 
-- (instancetype)initWithRootCID:(CID *)rootCID {
+- (instancetype)initWithRootCID:(ATProtoCID *)rootCID {
     self = [super init];
     if (self) {
         _rootCID = rootCID;
@@ -469,7 +469,7 @@ static NSUInteger WriteVarint(uint64_t value, uint8_t *buffer) {
     return bytesWritten;
 }
 
-static NSData *CARHeaderDataForRootCID(CID *rootCID) {
+static NSData *CARHeaderDataForRootCID(ATProtoCID *rootCID) {
     if (!rootCID) {
         return nil;
     }
@@ -536,7 +536,7 @@ static NSData *CARBlockEntryData(CARBlock *block) {
     return [data copy];
 }
 
-+ (nullable NSData *)encodedHeaderWithRootCID:(CID *)rootCID error:(NSError **)error {
++ (nullable NSData *)encodedHeaderWithRootCID:(ATProtoCID *)rootCID error:(NSError **)error {
     NSData *headerData = CARHeaderDataForRootCID(rootCID);
     if (!headerData) {
         if (error) {
@@ -562,7 +562,7 @@ static NSData *CARBlockEntryData(CARBlock *block) {
     return entryData;
 }
 
-+ (BOOL)writeHeaderWithRootCID:(CID *)rootCID
++ (BOOL)writeHeaderWithRootCID:(ATProtoCID *)rootCID
                  toFileHandle:(NSFileHandle *)fileHandle
                         error:(NSError **)error {
     NSData *headerData = [[self class] encodedHeaderWithRootCID:rootCID error:error];

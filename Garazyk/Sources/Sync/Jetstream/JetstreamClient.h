@@ -49,7 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion Connects to wss://jetstream2.us-east.bsky.network/subscribe,
  optionally with `?wantedCollections=` and `?cursor=` query params.
- Events are plain JSON — no CAR/CBOR, no CID link resolution.
+ Events are plain JSON — no CAR/CBOR, no ATProtoCID link resolution.
  */
 @interface JetstreamClient : NSObject
 

@@ -61,7 +61,7 @@ static BOOL isBase32Char(unichar c) {
     }
     GZ_LOG_CORE_DEBUG(@"DID derivation CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
     
-    NSData *hash = [CID rawSha256:cborData];
+    NSData *hash = [ATProtoCID rawSha256:cborData];
     
     // Debug: print SHA256 hex
     NSMutableString *hashHex = [NSMutableString stringWithCapacity:hash.length * 2];
@@ -97,7 +97,7 @@ static BOOL isBase32Char(unichar c) {
     }
     GZ_LOG_CORE_DEBUG(@"DID derivation (signed) CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
     
-    NSData *hash = [CID rawSha256:cborData];
+    NSData *hash = [ATProtoCID rawSha256:cborData];
     
     NSMutableString *hashHex = [NSMutableString stringWithCapacity:hash.length * 2];
     const unsigned char *hashBytes = hash.bytes;
@@ -159,8 +159,8 @@ static BOOL isBase32Char(unichar c) {
         }
         return nil;
     }
-    NSData *digest = [CID sha256Digest:cborData];
-    CID *cid = [CID cidWithDigest:digest codec:0x71];
+    NSData *digest = [ATProtoCID sha256Digest:cborData];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:digest codec:0x71];
     return cid.stringValue;
 }
 

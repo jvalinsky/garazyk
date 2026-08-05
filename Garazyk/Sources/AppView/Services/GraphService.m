@@ -108,7 +108,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
 }
 
 - (nullable NSDictionary *)getRecordBodyFromCID:(NSString *)cidStr did:(NSString *)did error:(NSError **)error {
-    CID *cid = [CID cidFromString:cidStr];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
     if (!cid) return nil;
     PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:did error:error];
     if (!block || !block.blockData) return nil;
@@ -135,7 +135,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
     for (NSArray<NSString *> *pair in cidDidPairs) {
         NSString *cidStr = pair.firstObject;
         if (cidStr.length == 0) continue;
-        CID *cid = [CID cidFromString:cidStr];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
         NSData *bytes = cid.bytes;
         if (!bytes || cidStringByBytes[bytes]) continue;
         cidStringByBytes[bytes] = cidStr;
@@ -858,7 +858,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
     NSString *name = record[@"name"];
     NSString *purpose = record[@"purpose"];
     NSString *description = record[@"description"];
-    NSString *avatar = record[@"avatar"]; // CID
+    NSString *avatar = record[@"avatar"]; // ATProtoCID
     
     NSString *sql = @"INSERT OR REPLACE INTO bsky_graph_lists (uri, did, name, purpose, description, avatar_cid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];

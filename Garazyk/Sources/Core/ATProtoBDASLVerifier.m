@@ -52,7 +52,7 @@ static NSError *BDASLError(ATProtoBDASLVerifierErrorCode code, NSString *message
 @end
 
 @interface ATProtoBDASLVerifier ()
-@property (nonatomic, strong, readwrite) CID *cid;
+@property (nonatomic, strong, readwrite) ATProtoCID *cid;
 @property (nonatomic, copy) NSArray<NSData *> *chunkDigests;
 @property (nonatomic, assign, readwrite) NSUInteger totalLength;
 @property (nonatomic, assign, readwrite) NSUInteger bytesReceived;
@@ -66,13 +66,13 @@ static NSError *BDASLError(ATProtoBDASLVerifierErrorCode code, NSString *message
 
 @implementation ATProtoBDASLVerifier
 
-- (nullable instancetype)initWithCID:(CID *)cid
+- (nullable instancetype)initWithCID:(ATProtoCID *)cid
                         chunkDigests:(NSArray<NSData *> *)chunkDigests
                          totalLength:(NSUInteger)totalLength
                                error:(NSError **)error {
-    NSData *multihash = [cid isKindOfClass:[CID class]] ? cid.multihash : nil;
+    NSData *multihash = [cid isKindOfClass:[ATProtoCID class]] ? cid.multihash : nil;
     const uint8_t *multihashBytes = multihash.bytes;
-    if (![cid isKindOfClass:[CID class]] ||
+    if (![cid isKindOfClass:[ATProtoCID class]] ||
         ![cid isDASLConformantForProfile:ATProtoDASLCIDProfileBig] ||
         multihash.length < 2 || multihashBytes[0] != ATProtoDASLMultihashBLAKE3) {
         if (error) *error = BDASLError(ATProtoBDASLVerifierErrorInvalidCID,

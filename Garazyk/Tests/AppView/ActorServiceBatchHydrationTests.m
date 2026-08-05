@@ -64,7 +64,7 @@
     };
     NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:profileValue error:&error];
     XCTAssertNotNil(cborData, @"CBOR encode failed: %@", error);
-    CID *cid = [CID cidWithDigest:[CID sha256Digest:cborData] codec:0x71];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:cborData] codec:0x71];
     XCTAssertNotNil(cid);
 
     XCTAssertTrue([self.database saveBlockWithCid:cid.bytes

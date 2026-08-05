@@ -17,11 +17,11 @@
     [super tearDown];
 }
 
-#pragma mark - CID Generation and Parsing
+#pragma mark - ATProtoCID Generation and Parsing
 
 - (void)testCIDv1FromSHA256 {
-    NSData *digest = [CID sha256Digest:[@"hello world" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID cidWithDigest:digest codec:0x71];
+    NSData *digest = [ATProtoCID sha256Digest:[@"hello world" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:digest codec:0x71];
 
     XCTAssertNotNil(cid);
     XCTAssertEqual(cid.version, 1U);
@@ -31,7 +31,7 @@
 
 - (void)testCIDParsing {
     NSString *cidString = @"bafyreifzjut3te2nhyekklss27nh3k72ysco7y32koao5eei66wof36n5e";
-    CID *parsed = [CID cidFromString:cidString];
+    ATProtoCID *parsed = [ATProtoCID cidFromString:cidString];
 
     XCTAssertNotNil(parsed);
     XCTAssertEqual(parsed.version, 1U);
@@ -41,22 +41,22 @@
 }
 
 - (void)testCIDInvalidFormats {
-    XCTAssertNil([CID cidFromString:@"xafyreifzjut3te2nhyekklss27nh3k72ysco7y32koao5eei66wof36n5e"], @"Should reject CID strings with the wrong multibase prefix");
-    XCTAssertNil([CID cidFromString:@"bafyre"], @"Should reject truncated CID strings");
-    XCTAssertNil([CID cidFromString:@"bafyrgifzjut3te2nhyekklss27nh3k72ysco7y32koao5eei66wof36n5e"], @"Should reject unsupported multihash algorithms");
+    XCTAssertNil([ATProtoCID cidFromString:@"xafyreifzjut3te2nhyekklss27nh3k72ysco7y32koao5eei66wof36n5e"], @"Should reject CID strings with the wrong multibase prefix");
+    XCTAssertNil([ATProtoCID cidFromString:@"bafyre"], @"Should reject truncated CID strings");
+    XCTAssertNil([ATProtoCID cidFromString:@"bafyrgifzjut3te2nhyekklss27nh3k72ysco7y32koao5eei66wof36n5e"], @"Should reject unsupported multihash algorithms");
     
     // Type safety tests
-    XCTAssertNil([CID cidFromString:(id)@[@"not a string"]], @"Should return nil for non-string input (NSArray)");
-    XCTAssertNil([CID cidFromString:(id)@{@"$link": @"bafy..."}], @"Should return nil for non-string input (NSDictionary)");
-    XCTAssertNil([CID cidFromString:(id)[NSNull null]], @"Should return nil for NSNull");
+    XCTAssertNil([ATProtoCID cidFromString:(id)@[@"not a string"]], @"Should return nil for non-string input (NSArray)");
+    XCTAssertNil([ATProtoCID cidFromString:(id)@{@"$link": @"bafy..."}], @"Should return nil for non-string input (NSDictionary)");
+    XCTAssertNil([ATProtoCID cidFromString:(id)[NSNull null]], @"Should return nil for NSNull");
 }
 
-#pragma mark - CID Equality
+#pragma mark - ATProtoCID Equality
 
 - (void)testCIDEquality {
     NSData *input = [@"same content" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid1 = [CID sha256:input];
-    CID *cid2 = [CID sha256:input];
+    ATProtoCID *cid1 = [ATProtoCID sha256:input];
+    ATProtoCID *cid2 = [ATProtoCID sha256:input];
 
     XCTAssertEqualObjects(cid1, cid2);
     XCTAssertTrue([cid1 isEqualToCID:cid2]);
@@ -64,8 +64,8 @@
 }
 
 - (void)testCIDInequality {
-    CID *cid1 = [CID sha256:[@"content one" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid2 = [CID sha256:[@"content two" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid1 = [ATProtoCID sha256:[@"content one" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid2 = [ATProtoCID sha256:[@"content two" dataUsingEncoding:NSUTF8StringEncoding]];
 
     XCTAssertNotEqualObjects(cid1, cid2);
     XCTAssertFalse([cid1 isEqualToCID:cid2]);
@@ -74,8 +74,8 @@
 #pragma mark - DAG-CBOR Integration
 
 - (void)testCIDIntegrationWithDAGCBOR {
-    CID *left = [CID sha256:[@"left" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *right = [CID sha256:[@"right" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *left = [ATProtoCID sha256:[@"left" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *right = [ATProtoCID sha256:[@"right" dataUsingEncoding:NSUTF8StringEncoding]];
 
     NSDictionary *object = @{
         @"left": left,
@@ -95,14 +95,14 @@
     XCTAssertTrue([decoded isKindOfClass:[NSDictionary class]]);
 
     NSDictionary *decodedDict = (NSDictionary *)decoded;
-    CID *decodedLeft = decodedDict[@"left"];
-    XCTAssertTrue([decodedLeft isKindOfClass:[CID class]]);
+    ATProtoCID *decodedLeft = decodedDict[@"left"];
+    XCTAssertTrue([decodedLeft isKindOfClass:[ATProtoCID class]]);
     XCTAssertEqualObjects(decodedLeft.stringValue, left.stringValue);
 
     NSDictionary *decodedNested = decodedDict[@"nested"];
     XCTAssertTrue([decodedNested isKindOfClass:[NSDictionary class]]);
-    CID *decodedRight = decodedNested[@"right"];
-    XCTAssertTrue([decodedRight isKindOfClass:[CID class]]);
+    ATProtoCID *decodedRight = decodedNested[@"right"];
+    XCTAssertTrue([decodedRight isKindOfClass:[ATProtoCID class]]);
     XCTAssertEqualObjects(decodedRight.stringValue, right.stringValue);
 }
 

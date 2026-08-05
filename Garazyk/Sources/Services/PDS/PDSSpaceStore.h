@@ -487,7 +487,7 @@ typedef NS_ENUM(NSInteger, PDSSpaceWriteAction) {
 #pragma mark - Local record index (lightweight recovery diff)
 
 /**
- * @abstract Retrieves a collection-rkey to CID mapping for all records.
+ * @abstract Retrieves a collection-rkey to ATProtoCID mapping for all records.
  * @discussion Used by the reconciler to diff against a remote
  * listRecords(excludeValues=true) listing.
  * @param space The space identifier.

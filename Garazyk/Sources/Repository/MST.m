@@ -24,7 +24,7 @@ static BOOL MSTCBORValueIsNull(ATProtoCBORValue *value) {
     return value.type == CBORTypeSimpleOrFloat && value.simpleValue.unsignedIntegerValue == 22;
 }
 
-static CID * _Nullable MSTCIDFromCBORTag(ATProtoCBORValue *value) {
+static ATProtoCID * _Nullable MSTCIDFromCBORTag(ATProtoCBORValue *value) {
     if (value.type != CBORTypeTag || value.tag.unsignedIntegerValue != 42 ||
         value.tagValue.type != CBORTypeByteString) {
         return nil;
@@ -32,7 +32,7 @@ static CID * _Nullable MSTCIDFromCBORTag(ATProtoCBORValue *value) {
 
     NSData *bytes = value.tagValue.byteString;
     if (bytes.length <= 1 || ((const uint8_t *)bytes.bytes)[0] != 0) return nil;
-    return [CID cidFromBytes:[bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)]];
+    return [ATProtoCID cidFromBytes:[bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)]];
 }
 
 static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
@@ -49,19 +49,19 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 
 @interface MSTNodeEntry ()
 @property (nonatomic, strong, readwrite, nullable) MSTNode *internalTree;
-@property (nonatomic, strong, readwrite, nullable) CID *treeCID;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCID *treeCID;
 @property (nonatomic, copy, readwrite) NSString *fullKey;
 @end
 
 @interface MSTNode ()
 @property (nonatomic, assign, readwrite) uint32_t level;
 @property (nonatomic, strong, readwrite, nullable) MSTNode *internalLeft;
-@property (nonatomic, strong, readwrite, nullable) CID *leftCID;
-@property (nonatomic, strong, readwrite, nullable) CID *originalCID;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCID *leftCID;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCID *originalCID;
 @property (nonatomic, strong, readwrite, nullable) NSData *originalCBOR;
 @property (nonatomic, strong, readwrite) NSMutableArray<MSTNodeEntry *> *internalEntries;
 - (instancetype)initWithLevel:(uint32_t)level;
-- (CID *)getCID:(NSMapTable<MSTNode *, CID *> *)cache;
+- (ATProtoCID *)getCID:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
 - (void)split:(NSString *)key left:(MSTNode **)leftOut right:(MSTNode **)rightOut;
 - (MSTNode *)trim;
 - (NSInteger)binarySearchIndexForKey:(NSString *)key;
@@ -70,15 +70,15 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 
 @implementation MSTEntry
 
-+ (instancetype)entryWithKey:(NSString *)key valueCID:(CID *)valueCID {
++ (instancetype)entryWithKey:(NSString *)key valueCID:(ATProtoCID *)valueCID {
     return [self entryWithKey:key valueCID:valueCID subKey:nil];
 }
 
-+ (instancetype)entryWithKey:(NSString *)key valueCID:(CID *)valueCID subKey:(NSString *)subKey {
++ (instancetype)entryWithKey:(NSString *)key valueCID:(ATProtoCID *)valueCID subKey:(NSString *)subKey {
     return [[self alloc] initWithKey:key valueCID:valueCID subKey:subKey];
 }
 
-- (instancetype)initWithKey:(NSString *)key valueCID:(CID *)valueCID subKey:(NSString *)subKey {
+- (instancetype)initWithKey:(NSString *)key valueCID:(ATProtoCID *)valueCID subKey:(NSString *)subKey {
     self = [super init];
     if (self) {
         _key = [key copy];
@@ -123,7 +123,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 
 @implementation MSTDiffOperation
 
-+ (instancetype)addOperationWithKey:(NSString *)key currentCID:(CID *)currentCID {
++ (instancetype)addOperationWithKey:(NSString *)key currentCID:(ATProtoCID *)currentCID {
     MSTDiffOperation *op = [[MSTDiffOperation alloc] init];
     op.key = key;
     op.type = MSTDiffOperationTypeAdd;
@@ -132,7 +132,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     return op;
 }
 
-+ (instancetype)updateOperationWithKey:(NSString *)key previousCID:(CID *)previousCID currentCID:(CID *)currentCID {
++ (instancetype)updateOperationWithKey:(NSString *)key previousCID:(ATProtoCID *)previousCID currentCID:(ATProtoCID *)currentCID {
     MSTDiffOperation *op = [[MSTDiffOperation alloc] init];
     op.key = key;
     op.type = MSTDiffOperationTypeUpdate;
@@ -141,7 +141,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     return op;
 }
 
-+ (instancetype)deleteOperationWithKey:(NSString *)key previousCID:(CID *)previousCID {
++ (instancetype)deleteOperationWithKey:(NSString *)key previousCID:(ATProtoCID *)previousCID {
     MSTDiffOperation *op = [[MSTDiffOperation alloc] init];
     op.key = key;
     op.type = MSTDiffOperationTypeDelete;
@@ -158,8 +158,8 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                           keySuffix:(NSData *)keySuffix
-                              value:(CID *)value
-                              tree:(CID *)tree {
+                              value:(ATProtoCID *)value
+                              tree:(ATProtoCID *)tree {
     MSTNodeEntry *entry = [[MSTNodeEntry alloc] init];
     entry.prefixLen = prefixLen;
     entry.keySuffix = keySuffix;
@@ -168,7 +168,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     return entry;
 }
 
-- (instancetype)initWithKey:(NSString *)key value:(CID *)value tree:(MSTNode *)tree {
+- (instancetype)initWithKey:(NSString *)key value:(ATProtoCID *)value tree:(MSTNode *)tree {
     self = [super init];
     if (self) {
         _value = value;
@@ -193,7 +193,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     [data appendBytes:&vLen length:2];
     [data appendData:vBytes];
 
-    CID *tCID = self.tree;
+    ATProtoCID *tCID = self.tree;
     uint16_t tLen = tCID ? htons((uint16_t)[tCID bytes].length) : 0;
     [data appendBytes:&tLen length:2];
     if (tCID) {
@@ -255,28 +255,28 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     return nil;
 }
 
-- (CID *)left {
+- (ATProtoCID *)left {
     return [self.internalLeft getCID:[NSMapTable strongToStrongObjectsMapTable]];
 }
 
-- (CID *)getCID:(NSMapTable<MSTNode *, CID *> *)cache {
+- (ATProtoCID *)getCID:(NSMapTable<MSTNode *, ATProtoCID *> *)cache {
     if (!self) return nil;
-    CID *cached = [cache objectForKey:self];
+    ATProtoCID *cached = [cache objectForKey:self];
     if (cached) return cached;
     
-    // Preserve original CID if the node hasn't been modified
+    // Preserve original ATProtoCID if the node hasn't been modified
     if (self.originalCID) {
         [cache setObject:self.originalCID forKey:self];
         return self.originalCID;
     }
     
     NSData *cbor = [self serializeToCBOR:cache];
-    CID *cid = [CID cidWithDigest:[CID sha256Digest:cbor] codec:0x71];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:cbor] codec:0x71];
     [cache setObject:cid forKey:self];
     return cid;
 }
 
-- (NSData *)serializeToCBOR:(NSMapTable<MSTNode *, CID *> *)cache {
+- (NSData *)serializeToCBOR:(NSMapTable<MSTNode *, ATProtoCID *> *)cache {
     // Preserve original CBOR if the node hasn't been modified
     if (self.originalCBOR) return self.originalCBOR;
 
@@ -307,7 +307,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
         dict[[ATProtoCBORValue textString:@"p"]] = [ATProtoCBORValue unsignedInteger:p];
         
         if (entry.internalTree) {
-            CID *tCID = [entry.internalTree getCID:cache];
+            ATProtoCID *tCID = [entry.internalTree getCID:cache];
             NSMutableData *tData = [NSMutableData dataWithBytes:"\x00" length:1];
             [tData appendData:tCID.bytes];
             dict[[ATProtoCBORValue textString:@"t"]] = [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:tData]];
@@ -331,7 +331,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *nodeDict = [NSMutableDictionary dictionary];
     nodeDict[[ATProtoCBORValue textString:@"e"]] = [ATProtoCBORValue array:entriesCBOR];
     if (self.internalLeft) {
-        CID *lCID = [self.internalLeft getCID:cache];
+        ATProtoCID *lCID = [self.internalLeft getCID:cache];
         NSMutableData *lData = [NSMutableData dataWithBytes:"\x00" length:1];
         [lData appendData:lCID.bytes];
         nodeDict[[ATProtoCBORValue textString:@"l"]] = [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:lData]];
@@ -408,7 +408,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
 }
 
-- (void)setNodeHash:(CID *)hash {
+- (void)setNodeHash:(ATProtoCID *)hash {
     // Store the computed hash (used for caching)
     // Note: In our implementation, hashes are computed on-demand via getCID:
     // Kept for API compatibility; current code paths do not persist nodeHash here.
@@ -424,8 +424,8 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     return [entries copy];
 }
 
-- (instancetype)initWithKind:(MSTNodeKind)kind entries:(NSArray<MSTNodeEntry *> *)entries left:(nullable CID *)left {
-    // Legacy init - convert CID left to node (not fully supported, use initWithLevel:left:entries: instead)
+- (instancetype)initWithKind:(MSTNodeKind)kind entries:(NSArray<MSTNodeEntry *> *)entries left:(nullable ATProtoCID *)left {
+    // Legacy init - convert ATProtoCID left to node (not fully supported, use initWithLevel:left:entries: instead)
     uint32_t level = (kind == MSTNodeKindLeaf) ? 0 : 1;
     return [self initWithLevel:level left:nil entries:entries];
 }
@@ -434,9 +434,9 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     return [[self alloc] initWithLevel:0 left:nil entries:entries];
 }
 
-+ (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries left:(nullable CID *)left {
-    // Note: left is a CID, but our internal representation uses MSTNode
-    // This factory method creates a non-leaf without resolving the CID
++ (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries left:(nullable ATProtoCID *)left {
+    // Note: left is a ATProtoCID, but our internal representation uses MSTNode
+    // This factory method creates a non-leaf without resolving the ATProtoCID
     return [[self alloc] initWithLevel:1 left:nil entries:entries];
 }
 
@@ -455,7 +455,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 @property (strong, readwrite, nullable) MSTNode *root;
 @property (nonatomic, copy, readwrite) NSData *emptyTreeHash;
 @property (nonatomic, copy, nullable) MSTBlockProvider blockProvider;
-/// Per-instance cache of lazy-resolved MSTNode subtrees indexed by their CID.
+/// Per-instance cache of lazy-resolved MSTNode subtrees indexed by their ATProtoCID.
 /// Populated by -collectProofNodes:on-the-fly during proof collection so
 /// repeated proofs for the same key skip redundant deserialize work.
 /// Invalidated by -put:/-delete: when the published tree changes; the cache
@@ -466,13 +466,13 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 /// MSTNode._internalLeft / MSTNodeEntry.internalTree ivars. Read and
 /// written under @synchronized(self) for thread-safe publish-during-proof.
 @property (nonatomic, strong, nullable)
-    NSMutableDictionary<CID *, MSTNode *> *lazySubtreeCache;
+    NSMutableDictionary<ATProtoCID *, MSTNode *> *lazySubtreeCache;
 /// Recency order for the bounded lazy-subtree cache (least recent first).
-@property (nonatomic, strong, nullable) NSMutableArray<CID *> *lazySubtreeCacheOrder;
+@property (nonatomic, strong, nullable) NSMutableArray<ATProtoCID *> *lazySubtreeCacheOrder;
 - (BOOL)enumerateStreamableNode:(MSTNode *)node
-                          cache:(NSMapTable<MSTNode *, CID *> *)cache
+                          cache:(NSMapTable<MSTNode *, ATProtoCID *> *)cache
                      addedCIDs:(NSMutableSet<NSString *> *)addedCIDs
-                          block:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
+                          block:(BOOL (^)(ATProtoCID *cid, NSData *data, NSError **error))block
                 recordProvider:(nullable MSTBlockProvider)recordProvider
                           error:(NSError **)error;
 @end
@@ -583,7 +583,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     objc_release(oldRoot);
 }
 
-- (instancetype)initWithRootCID:(CID *)rootCID {
+- (instancetype)initWithRootCID:(ATProtoCID *)rootCID {
     return [self initWithRootNode:nil];
 }
 
@@ -597,10 +597,10 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         [ATProtoCBORValue textString:@"l"]: [ATProtoCBORValue nilValue]
     };
     NSData *cbor = [[ATProtoCBORValue map:dict] encode];
-    return [CID sha256Digest:cbor];
+    return [ATProtoCID sha256Digest:cbor];
 }
 
-- (CID *)rootCID {
+- (ATProtoCID *)rootCID {
     return [self.root getCID:[NSMapTable strongToStrongObjectsMapTable]];
 }
 
@@ -642,16 +642,16 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     return [self keyDepthFromBytes:keyBytes.bytes length:keyBytes.length];
 }
 
-- (nullable CID *)get:(NSString *)key {
+- (nullable ATProtoCID *)get:(NSString *)key {
     return [self get:key subKey:nil];
 }
 
-- (nullable CID *)get:(NSString *)key subKey:(NSString *)subKey {
+- (nullable ATProtoCID *)get:(NSString *)key subKey:(NSString *)subKey {
     NSString *fullKey = subKey ? [NSString stringWithFormat:@"%@/%@", key, subKey] : key;
     return [self getRecursive:self.root key:fullKey];
 }
 
-- (CID *)getRecursive:(MSTNode *)node key:(NSString *)key {
+- (ATProtoCID *)getRecursive:(MSTNode *)node key:(NSString *)key {
     if (!node) return nil;
     NSInteger idx = [node binarySearchIndexForKey:key];
     
@@ -663,11 +663,11 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     return [self getRecursive:subtree key:key];
 }
 
-- (void)put:(NSString *)key valueCID:(CID *)valueCID {
+- (void)put:(NSString *)key valueCID:(ATProtoCID *)valueCID {
     [self put:key valueCID:valueCID subKey:nil];
 }
 
-- (void)put:(NSString *)key valueCID:(CID *)valueCID subKey:(NSString *)subKey {
+- (void)put:(NSString *)key valueCID:(ATProtoCID *)valueCID subKey:(NSString *)subKey {
     // Invalidate any cached lazy-resolved subtrees before publishing a new
     // root. The cache holds subtrees consistent with the *previous* published
     // root; without invalidation, future proof queries would walk OLD data.
@@ -686,7 +686,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     }
 }
 
-- (MSTNode *)addRecursive:(MSTNode *)node key:(NSString *)key value:(CID *)value depth:(uint32_t)depth {
+- (MSTNode *)addRecursive:(MSTNode *)node key:(NSString *)key value:(ATProtoCID *)value depth:(uint32_t)depth {
     if (!node) node = [[MSTNode alloc] initWithLevel:0];
     
     if (depth > node.level) {
@@ -904,12 +904,12 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 - (NSData *)exportCAR {
     if (!self.root) return nil;
 
-    CID *rootCID = self.rootCID;
+    ATProtoCID *rootCID = self.rootCID;
     if (!rootCID) return nil;
 
     CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
 
-    BOOL traversed = [self enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+    BOOL traversed = [self enumerateNodeCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         (void)error;
         [writer addBlock:[CARBlock blockWithCID:cid data:data]];
         return YES;
@@ -921,7 +921,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     return [writer serialize];
 }
 
-- (BOOL)enumerateNodeCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
+- (BOOL)enumerateNodeCARBlocksUsingBlock:(BOOL (^)(ATProtoCID *cid, NSData *data, NSError **error))block
                                    error:(NSError **)error {
     if (!block) {
         return YES;
@@ -935,7 +935,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         return YES;
     }
 
-    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    NSMapTable<MSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
     NSMutableArray<MSTNode *> *queue = [NSMutableArray arrayWithObject:rootSnapshot];
     NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
     NSUInteger queueHead = 0;
@@ -943,7 +943,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     while (queueHead < queue.count) {
         MSTNode *node = queue[queueHead++];
 
-        CID *cid = [node getCID:cache];
+        ATProtoCID *cid = [node getCID:cache];
         if (!cid) {
             continue;
         }
@@ -1012,7 +1012,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     MSTNode *node = [self deserializeNodeFromCBOR:data];
     if (!node) return nil;
     
-    // Recursively resolve left subtree CID
+    // Recursively resolve left subtree ATProtoCID
     if (node.leftCID && blockProvider) {
         NSData *leftData = blockProvider(node.leftCID);
         if (leftData) {
@@ -1020,7 +1020,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         }
     }
     
-    // Recursively resolve each entry's subtree CID
+    // Recursively resolve each entry's subtree ATProtoCID
     for (NSUInteger i = 0; i < node.internalEntries.count; i++) {
         MSTNodeEntry *entry = node.internalEntries[i];
         if (entry.treeCID && blockProvider) {
@@ -1071,10 +1071,10 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         prevKeyData = [fullKeyData copy];
 
         ATProtoCBORValue *valueTag = entryMap.map[[ATProtoCBORValue textString:@"v"]];
-        CID *valueCID = MSTCIDFromCBORTag(valueTag);
+        ATProtoCID *valueCID = MSTCIDFromCBORTag(valueTag);
         if (!valueCID) return nil;
 
-        CID *treeCID = nil;
+        ATProtoCID *treeCID = nil;
         ATProtoCBORValue *treeValue = entryMap.map[[ATProtoCBORValue textString:@"t"]];
         if (!treeValue) return nil;
         if (!MSTCBORValueIsNull(treeValue)) {
@@ -1087,14 +1087,14 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         [entries addObject:entry];
     }
 
-    CID *leftCID = nil;
+    ATProtoCID *leftCID = nil;
     if (!MSTCBORValueIsNull(leftValue)) {
         leftCID = MSTCIDFromCBORTag(leftValue);
         if (!leftCID) return nil;
     }
 
     // An empty leaf has no canonical MST representation. An empty node with a
-    // left CID is a structural forwarding node and must remain decodable.
+    // left ATProtoCID is a structural forwarding node and must remain decodable.
     if (entries.count == 0 && !leftCID) return nil;
 
     // NodeData has no serialized layer field. Its canonical entry order makes
@@ -1104,7 +1104,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     MSTNode *node = [[MSTNode alloc] initWithLevel:level left:nil entries:entries];
     node.leftCID = leftCID;
     node.originalCBOR = data;
-    node.originalCID = [CID cidWithDigest:[CID sha256Digest:data] codec:0x71];
+    node.originalCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:data] codec:0x71];
     return node;
 }
 
@@ -1114,10 +1114,10 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     if (!self.root) return nil;
 
     // Cache for CIDs
-    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    NSMapTable<MSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
 
-    // Compute root CID
-    CID *rootCID = [self.root getCID:cache];
+    // Compute root ATProtoCID
+    ATProtoCID *rootCID = [self.root getCID:cache];
     if (!rootCID) return nil;
 
     // BFS traversal to collect all nodes
@@ -1131,7 +1131,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     while (queueHead < queue.count) {
         MSTNode *node = queue[queueHead++];
 
-        CID *cid = [node getCID:cache];
+        ATProtoCID *cid = [node getCID:cache];
         if (!cid) continue;
 
         NSString *cidString = [cid stringValue];
@@ -1167,7 +1167,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 
         // Add left pointer
         if (node.internalLeft) {
-            CID *leftCID = [node.internalLeft getCID:cache];
+            ATProtoCID *leftCID = [node.internalLeft getCID:cache];
             if (leftCID) {
                 nodeDict[@"left"] = [leftCID stringValue];
             }
@@ -1211,8 +1211,8 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     }
 
     // Cache for CIDs
-    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
-    CID *rootCID = [self.root getCID:cache];
+    NSMapTable<MSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    ATProtoCID *rootCID = [self.root getCID:cache];
 
     // BFS traversal to collect statistics
     NSMutableArray *queue = [NSMutableArray arrayWithObject:self.root];
@@ -1229,7 +1229,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     while (queueHead < queue.count) {
         MSTNode *node = queue[queueHead++];
 
-        CID *cid = [node getCID:cache];
+        ATProtoCID *cid = [node getCID:cache];
         if (!cid) continue;
 
         NSString *cidString = [cid stringValue];
@@ -1286,8 +1286,8 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     if (!self.root) return nil;
 
     // Cache for CIDs
-    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
-    CID *rootCID = [self.root getCID:cache];
+    NSMapTable<MSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    ATProtoCID *rootCID = [self.root getCID:cache];
     if (!rootCID) return nil;
 
     NSMutableString *dot = [NSMutableString stringWithString:@"digraph MST {\n"];
@@ -1306,7 +1306,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     while (queueHead < queue.count) {
         MSTNode *node = queue[queueHead++];
 
-        CID *cid = [node getCID:cache];
+        ATProtoCID *cid = [node getCID:cache];
         if (!cid) continue;
 
         NSString *cidString = [cid stringValue];
@@ -1323,7 +1323,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 
         // Add left edge
         if (node.internalLeft) {
-            CID *leftCID = [node.internalLeft getCID:cache];
+            ATProtoCID *leftCID = [node.internalLeft getCID:cache];
             if (leftCID) {
                 NSString *leftID = [[leftCID stringValue] substringToIndex:MIN(12, [[leftCID stringValue] length])];
                 [edges addObject:[NSString stringWithFormat:@"  \"%@\" -> \"%@\" [label=\"left\", color=\"#666666\"];\n",
@@ -1336,7 +1336,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         for (NSUInteger i = 0; i < node.internalEntries.count; i++) {
             MSTNodeEntry *entry = node.internalEntries[i];
             if (entry.internalTree) {
-                CID *treeCID = [entry.internalTree getCID:cache];
+                ATProtoCID *treeCID = [entry.internalTree getCID:cache];
                 if (treeCID) {
                     NSString *treeID = [[treeCID stringValue] substringToIndex:MIN(12, [[treeCID stringValue] length])];
                     NSString *entryKey = entry.fullKey ?: @"";
@@ -1407,14 +1407,14 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 #pragma mark - Diff Operations
 
 - (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree {
-    NSMutableDictionary<NSString *, CID *> *oldEntriesByKey = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, ATProtoCID *> *oldEntriesByKey = [NSMutableDictionary dictionary];
     for (MSTEntry *entry in [oldTree allEntries]) {
         if (entry.key.length > 0 && entry.valueCID) {
             oldEntriesByKey[entry.key] = entry.valueCID;
         }
     }
 
-    NSMutableDictionary<NSString *, CID *> *newEntriesByKey = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, ATProtoCID *> *newEntriesByKey = [NSMutableDictionary dictionary];
     for (MSTEntry *entry in [self allEntries]) {
         if (entry.key.length > 0 && entry.valueCID) {
             newEntriesByKey[entry.key] = entry.valueCID;
@@ -1427,8 +1427,8 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 
     NSMutableArray<MSTDiffOperation *> *operations = [NSMutableArray array];
     for (NSString *key in sortedKeys) {
-        CID *oldCID = oldEntriesByKey[key];
-        CID *newCID = newEntriesByKey[key];
+        ATProtoCID *oldCID = oldEntriesByKey[key];
+        ATProtoCID *newCID = newEntriesByKey[key];
 
         if (!oldCID && newCID) {
             [operations addObject:[MSTDiffOperation addOperationWithKey:key currentCID:newCID]];
@@ -1551,7 +1551,7 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
     
     // Recurse into appropriate subtree
     MSTNode *subtree = nil;
-    CID *subtreeCID = nil;
+    ATProtoCID *subtreeCID = nil;
     
     if (idx == 0) {
         subtree = node.internalLeft;
@@ -1597,7 +1597,7 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
             MSTNode *existing = self.lazySubtreeCache[subtreeCID];
             if (!existing) {
                 if (self.lazySubtreeCacheOrder.count >= kMSTLazySubtreeCacheCapacity) {
-                    CID *leastRecentCID = self.lazySubtreeCacheOrder.firstObject;
+                    ATProtoCID *leastRecentCID = self.lazySubtreeCacheOrder.firstObject;
                     if (leastRecentCID) {
                         [self.lazySubtreeCache removeObjectForKey:leastRecentCID];
                         [self.lazySubtreeCacheOrder removeObjectAtIndex:0];
@@ -1635,7 +1635,7 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
                            memory_order_release);
 }
 
-- (BOOL)enumerateStreamableCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
+- (BOOL)enumerateStreamableCARBlocksUsingBlock:(BOOL (^)(ATProtoCID *cid, NSData *data, NSError **error))block
                                 recordProvider:(nullable MSTBlockProvider)recordProvider
                                          error:(NSError **)error {
     // Snapshot the C11 atomic-enabled flag exactly once at entry. Concurrent
@@ -1680,7 +1680,7 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
         return YES;
     }
 
-    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+    NSMapTable<MSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
     NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
 
     return [self enumerateStreamableNode:rootSnapshot
@@ -1692,16 +1692,16 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
 }
 
 - (BOOL)enumerateStreamableNode:(MSTNode *)node
-                          cache:(NSMapTable<MSTNode *, CID *> *)cache
+                          cache:(NSMapTable<MSTNode *, ATProtoCID *> *)cache
                      addedCIDs:(NSMutableSet<NSString *> *)addedCIDs
-                          block:(BOOL (^)(CID *cid, NSData *data, NSError **error))block
+                          block:(BOOL (^)(ATProtoCID *cid, NSData *data, NSError **error))block
                 recordProvider:(nullable MSTBlockProvider)recordProvider
                           error:(NSError **)error {
     if (!node) {
         return YES;
     }
 
-    CID *nodeCID = [node getCID:cache];
+    ATProtoCID *nodeCID = [node getCID:cache];
     NSString *nodeCIDString = nodeCID.stringValue ?: @"";
     if (nodeCIDString.length == 0) {
         if (error) {
@@ -1746,7 +1746,7 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
         }
     }
 
-    // Per entry: every entry has a value (the CID of the record at this key);
+    // Per entry: every entry has a value (the ATProtoCID of the record at this key);
     // entries may additionally have an internalTree pointing to a subtree of
     // keys >= entry.fullKey and < the next entry's key. Emit the record for
     // entry.value (via recordProvider), then recurse into entry.internalTree

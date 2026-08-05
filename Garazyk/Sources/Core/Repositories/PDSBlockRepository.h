@@ -33,8 +33,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)saveBlocks:(NSArray<PDSDatabaseBlock *> *)blocks error:(NSError **)error;
 
 /**
- * @abstract Retrieves a block by CID and repo owner.
- * @param cid The block CID.
+ * @abstract Retrieves a block by ATProtoCID and repo owner.
+ * @param cid The block ATProtoCID.
  * @param repoDid The repository owner DID.
  * @param error Receives failure details.
  * @return The block, or nil if not found.
@@ -64,7 +64,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Deletes a block.
- * @param cid The block CID.
+ * @param cid The block ATProtoCID.
  * @param repoDid The repository owner DID.
  * @param error Receives failure details.
  * @return YES if successful.

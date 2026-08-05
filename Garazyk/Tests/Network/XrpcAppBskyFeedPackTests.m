@@ -173,9 +173,9 @@
     XCTAssertNil(cborError);
     XCTAssertNotNil(cborData);
 
-    // Compute CID from CBOR data (same as PDSController does)
-    NSData *digest = [CID sha256Digest:cborData];
-    CID *cid = [CID cidWithDigest:digest codec:0x71]; // dag-cbor codec
+    // Compute ATProtoCID from CBOR data (same as PDSController does)
+    NSData *digest = [ATProtoCID sha256Digest:cborData];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:digest codec:0x71]; // dag-cbor codec
 
     // Insert into records table
     NSString *valueJSON = [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:record options:0 error:nil] encoding:NSUTF8StringEncoding];

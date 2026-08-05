@@ -240,7 +240,7 @@
 
 - (void)testAuthorFeedFallsBackToContentAddressedBlockWhenRepoDidDiffers {
     NSString *sharedCID = @"bafyreicvquiivqmob5wgowdn5rcz6n2mntllvdpcbe45k3jvqiq6tosw4u";
-    CID *cid = [CID cidFromString:sharedCID];
+    ATProtoCID *cid = [ATProtoCID cidFromString:sharedCID];
     XCTAssertNotNil(cid);
 
     NSDictionary *record = @{

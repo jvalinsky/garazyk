@@ -5,11 +5,11 @@
 
  @abstract Parser for `rasl://` URLs (https://dasl.ing/rasl.html).
 
- @discussion RASL ("Retrievable As Self-describing Location") turns a bare CID
+ @discussion RASL ("Retrievable As Self-describing Location") turns a bare ATProtoCID
  into a URL: `rasl://<cid>/?hint=<host>&hint=<host2>`. The authority is a DASL
- CID string (not a domain); the path is empty or `/` and carries no meaning;
+ ATProtoCID string (not a domain); the path is empty or `/` and carries no meaning;
  zero or more repeated `hint` query parameters name HTTPS hosts a client may
- try when resolving the CID to bytes. This file only parses the URL — it does
+ try when resolving the ATProtoCID to bytes. This file only parses the URL — it does
  not fetch anything and does not perform SSRF validation; that belongs to
  `ATProtoRASLClient` (Transport) at actual-fetch time, reusing the existing
  pinned-egress `ATProtoSafeHTTPClient` (ADR 0016) rather than duplicating it.
@@ -19,7 +19,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class CID;
+@class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -30,23 +30,23 @@ typedef NS_ENUM(NSInteger, ATProtoRASLURLErrorCode) {
     ATProtoRASLURLErrorInvalidScheme = 1,
     /** The authority component is empty. */
     ATProtoRASLURLErrorMissingCID = 2,
-    /** The authority component is not a valid DASL CID. */
+    /** The authority component is not a valid DASL ATProtoCID. */
     ATProtoRASLURLErrorInvalidCID = 3,
 };
 
 /**
- * @abstract A parsed `rasl://` URL: a CID plus zero or more retrieval hints.
+ * @abstract A parsed `rasl://` URL: a ATProtoCID plus zero or more retrieval hints.
  */
 @interface ATProtoRASLURL : NSObject
 
-/** The CID being located. Always DASL-conformant (base or Big DASL profile). */
-@property (nonatomic, strong, readonly) CID *cid;
+/** The ATProtoCID being located. Always DASL-conformant (base or Big DASL profile). */
+@property (nonatomic, strong, readonly) ATProtoCID *cid;
 
 /**
  Syntactically valid HTTPS hint hosts, in the order they appeared in the URL,
  with duplicates removed. May be empty. Per spec, individual `hint` values
  that are not valid HTTPS host syntax are dropped rather than causing parse
- failure — only the CID (authority) is load-bearing for a valid URL.
+ failure — only the ATProtoCID (authority) is load-bearing for a valid URL.
  */
 @property (nonatomic, copy, readonly) NSArray<NSString *> *hints;
 
@@ -54,13 +54,13 @@ typedef NS_ENUM(NSInteger, ATProtoRASLURLErrorCode) {
  Parses a `rasl://` URL string.
 
  @param string The URL, e.g. `rasl://bafybei.../?hint=example.com`.
- @param error On failure, describes why (bad scheme, missing/invalid CID).
+ @param error On failure, describes why (bad scheme, missing/invalid ATProtoCID).
  @return A parsed URL, or nil on failure.
  */
 + (nullable instancetype)raslURLFromString:(NSString *)string error:(NSError **)error;
 
 /**
- The `.well-known` retrieval path for this URL's CID: `/.well-known/rasl/<cid>`.
+ The `.well-known` retrieval path for this URL's ATProtoCID: `/.well-known/rasl/<cid>`.
  Does not include a host — combine with a hint to form a fetchable URL.
  */
 - (NSString *)wellKnownPath;
@@ -68,10 +68,10 @@ typedef NS_ENUM(NSInteger, ATProtoRASLURLErrorCode) {
 @end
 
 /**
- The `.well-known` retrieval path for an arbitrary CID, independent of any
+ The `.well-known` retrieval path for an arbitrary ATProtoCID, independent of any
  parsed `ATProtoRASLURL`. Used by both the client (building fetch URLs from
  hints) and the server (registering the route).
  */
-FOUNDATION_EXPORT NSString *ATProtoRASLWellKnownPathForCID(CID *cid);
+FOUNDATION_EXPORT NSString *ATProtoRASLWellKnownPathForCID(ATProtoCID *cid);
 
 NS_ASSUME_NONNULL_END

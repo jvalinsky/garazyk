@@ -48,7 +48,7 @@ static BOOL PLCValidateDidKey(NSString *key, NSError **error) {
         return NO;
     }
     NSString *base58 = [multibase substringFromIndex:1];
-    NSData *decoded = [CID base58btcDecode:base58];
+    NSData *decoded = [ATProtoCID base58btcDecode:base58];
     if (!decoded || decoded.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"

@@ -5,7 +5,7 @@
  * @abstract ATProto repository commit structure.
  * @discussion RepoCommit represents an atomic commit to a user's ATProto repository.
  * Commits form a cryptographically-signed chain where each commit references the
- * previous commit's CID (content identifier), creating an immutable history.
+ * previous commit's ATProtoCID (content identifier), creating an immutable history.
  */
 
 #import <Foundation/Foundation.h>
@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Represents an atomic commit to an ATProto repository.
  * @discussion RepoCommit models the commit structure in ATProto repositories. Each commit
  * is identified by a revision string (ATProtoTID) and contains a reference to the
- * repository data (Merkle Search Tree root CID) and the previous commit's CID.
+ * repository data (Merkle Search Tree root ATProtoCID) and the previous commit's ATProtoCID.
  * Commits are immutable and cryptographically signed.
  */
 @interface RepoCommit : NSObject <NSSecureCoding>
@@ -30,14 +30,14 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Commit format version (currently 3). */
 @property (nonatomic, assign) NSInteger version;
 
-/** @abstract CID of the repository data (MST root), or nil for empty repo. */
-@property (nonatomic, strong, nullable) CID *dataCID;
+/** @abstract ATProtoCID of the repository data (MST root), or nil for empty repo. */
+@property (nonatomic, strong, nullable) ATProtoCID *dataCID;
 
 /** @abstract Revision identifier (ATProtoTID). */
 @property (nonatomic, copy) NSString *rev;
 
-/** @abstract CID of the previous commit, or nil for genesis commit. */
-@property (nonatomic, strong, nullable) CID *prevCID;
+/** @abstract ATProtoCID of the previous commit, or nil for genesis commit. */
+@property (nonatomic, strong, nullable) ATProtoCID *prevCID;
 
 /** @abstract Cryptographic signature (secp256k1). */
 @property (nonatomic, copy, nullable) NSData *signature;
@@ -45,15 +45,15 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Creates a new repository commit.
  * @param did Repository owner's DID.
- * @param dataCID CID of repository data.
+ * @param dataCID ATProtoCID of repository data.
  * @param rev Revision identifier (ATProtoTID), or nil to auto-generate.
- * @param prevCID Previous commit's CID.
+ * @param prevCID Previous commit's ATProtoCID.
  * @return Unsigned RepoCommit instance.
  */
 + (instancetype)createCommitWithDid:(NSString *)did
-                              data:(nullable CID *)dataCID
+                              data:(nullable ATProtoCID *)dataCID
                                rev:(nullable NSString *)rev
-                             prev:(nullable CID *)prevCID;
+                             prev:(nullable ATProtoCID *)prevCID;
 
 /**
  * @abstract Serializes unsigned commit to DAG-CBOR.
@@ -80,10 +80,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSData *)computeHash;
 
 /**
- * @abstract Computes the CID for this commit.
- * @return CID v1 identifying this commit.
+ * @abstract Computes the ATProtoCID for this commit.
+ * @return ATProtoCID v1 identifying this commit.
  */
-- (CID *)computeCID;
+- (ATProtoCID *)computeCID;
 
 /**
  * @abstract Signs the commit with a private key.

@@ -64,7 +64,7 @@ static BOOL ATProtoRASLIsValidHTTPSHost(NSString *hint, NSString **normalizedOut
 }
 
 @interface ATProtoRASLURL ()
-@property (nonatomic, strong, readwrite) CID *cid;
+@property (nonatomic, strong, readwrite) ATProtoCID *cid;
 @property (nonatomic, copy, readwrite) NSArray<NSString *> *hints;
 @end
 
@@ -98,7 +98,7 @@ static BOOL ATProtoRASLIsValidHTTPSHost(NSString *hint, NSString **normalizedOut
         return nil;
     }
 
-    CID *cid = [CID daslCIDFromString:authority profile:ATProtoDASLCIDProfileBig];
+    ATProtoCID *cid = [ATProtoCID daslCIDFromString:authority profile:ATProtoDASLCIDProfileBig];
     if (!cid) {
         if (error) {
             *error = ATProtoRASLURLMakeError(ATProtoRASLURLErrorInvalidCID,
@@ -152,6 +152,6 @@ static BOOL ATProtoRASLIsValidHTTPSHost(NSString *hint, NSString **normalizedOut
 
 @end
 
-NSString *ATProtoRASLWellKnownPathForCID(CID *cid) {
+NSString *ATProtoRASLWellKnownPathForCID(ATProtoCID *cid) {
     return [NSString stringWithFormat:@"/.well-known/rasl/%@", cid.stringValue];
 }

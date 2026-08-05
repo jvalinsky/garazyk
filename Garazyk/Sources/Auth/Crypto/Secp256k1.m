@@ -110,7 +110,7 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
     [data appendBytes:codec length:2];
     [data appendData:self.compressedPublicKey];
     
-    NSString *base58 = [CID base58btcEncode:data];
+    NSString *base58 = [ATProtoCID base58btcEncode:data];
     return [NSString stringWithFormat:@"did:key:z%@", base58];
 }
 

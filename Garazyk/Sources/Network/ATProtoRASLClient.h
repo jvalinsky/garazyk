@@ -7,7 +7,7 @@
 
  @discussion Given a parsed `ATProtoRASLURL`, fetches
  `https://<hint>/.well-known/rasl/<cid>` from every hint in parallel, verifies
- the retrieved bytes hash to the requested CID, and returns the first
+ the retrieved bytes hash to the requested ATProtoCID, and returns the first
  verified success — matching the spec's "run them all in parallel and abort
  with the first success response." True network-level cancellation of the
  losing requests is not available: the underlying `ATProtoSafeHTTPClient`
@@ -32,21 +32,21 @@ extern NSErrorDomain const ATProtoRASLClientErrorDomain;
 typedef NS_ENUM(NSInteger, ATProtoRASLClientErrorCode) {
     /** The URL carried no hints, so there is nothing to fetch from. */
     ATProtoRASLClientErrorNoHints = 1,
-    /** Every hint failed (network error, non-200 response, or CID mismatch). */
+    /** Every hint failed (network error, non-200 response, or ATProtoCID mismatch). */
     ATProtoRASLClientErrorAllHintsFailed = 2,
     /**
-     The CID uses a hash algorithm this client cannot verify yet. Only
+     The ATProtoCID uses a hash algorithm this client cannot verify yet. Only
      SHA-256 (base DASL) CIDs are verified today; BLAKE3 (Big DASL)
      verification lands with the Phase 6 streaming verifier. Data is never
      returned unverified, so this fails closed instead of skipping the check.
      */
     ATProtoRASLClientErrorUnsupportedHashAlgorithm = 3,
-    /** One hint's own attempt failed (network error, bad status, CID mismatch, or unbuildable URL). Only ever appears nested under `ATProtoRASLHintFailures` on the aggregate error. */
+    /** One hint's own attempt failed (network error, bad status, ATProtoCID mismatch, or unbuildable URL). Only ever appears nested under `ATProtoRASLHintFailures` on the aggregate error. */
     ATProtoRASLClientErrorHintFailed = 4,
 };
 
 /**
- * @abstract Fetches CID-addressed content over RASL, verifying every result.
+ * @abstract Fetches ATProtoCID-addressed content over RASL, verifying every result.
  */
 @interface ATProtoRASLClient : NSObject
 
@@ -54,13 +54,13 @@ typedef NS_ENUM(NSInteger, ATProtoRASLClientErrorCode) {
 + (instancetype)sharedClient;
 
 /**
- Fetches and CID-verifies the content a `rasl://` URL points to.
+ Fetches and ATProtoCID-verifies the content a `rasl://` URL points to.
 
  @param url A parsed RASL URL.
  @param maxResponseBytes Per-hint response size cap.
  @param timeout Per-hint request timeout, in seconds.
  @param completion Called once, on an arbitrary queue, with the verified
- bytes or an error. Never invoked with non-nil data that failed CID
+ bytes or an error. Never invoked with non-nil data that failed ATProtoCID
  verification.
  */
 - (void)fetchDataForRASLURL:(ATProtoRASLURL *)url

@@ -22,7 +22,7 @@
     [super tearDown];
 }
 
-#pragma mark - Seq in CBOR payload (identity/account/sync — no CID decode issues)
+#pragma mark - Seq in CBOR payload (identity/account/sync — no ATProtoCID decode issues)
 
 - (void)testEncodeIdentityEventSetsSeqInPayload {
     FirehoseProtocolSession *session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:20];
@@ -103,7 +103,7 @@
 
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:testseq";
-    event.commit = [CID sha256:[@"seq-test" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.commit = [ATProtoCID sha256:[@"seq-test" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"3kseqtest";
     event.time = @"2024-01-01T00:00:00Z";
     event.ops = @[];

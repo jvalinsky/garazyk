@@ -43,19 +43,19 @@ NS_ASSUME_NONNULL_BEGIN
                                         store:(PDSActorStore *)store
                                         error:(NSError **)error;
 /**
- * @abstract Inserts, replaces, or removes one collection/rkey entry and stores the resulting root CID.
+ * @abstract Inserts, replaces, or removes one collection/rkey entry and stores the resulting root ATProtoCID.
  * @discussion A nonnull cid is stored at key; a nil cid removes key. The cached MST is mutated before the root is persisted, and a failed write neither creates a signed commit nor rolls back the cache.
  * @param did The actor DID whose repository is updated.
  * @param key The MST collection/rkey key to insert, replace, or remove.
- * @param cid The record CID to store, or nil to remove key.
+ * @param cid The record ATProtoCID to store, or nil to remove key.
  * @param error Receives MST-root computation, actor-store, or repository-root persistence failures.
- * @return YES when the computed root CID was persisted; otherwise NO.
+ * @return YES when the computed root ATProtoCID was persisted; otherwise NO.
  */
-- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable CID *)cid error:(NSError **)error;
+- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable ATProtoCID *)cid error:(NSError **)error;
 /**
  * @abstract Builds an MST from valid persisted record entries.
- * @discussion Each record with a nonempty collection, rkey, and parseable CID contributes a
- * collection/rkey-to-CID entry. Malformed or incomplete records are omitted.
+ * @discussion Each record with a nonempty collection, rkey, and parseable ATProtoCID contributes a
+ * collection/rkey-to-ATProtoCID entry. Malformed or incomplete records are omitted.
  * @param records The records from which to build the tree.
  * @return A new MST containing the valid record entries.
  */

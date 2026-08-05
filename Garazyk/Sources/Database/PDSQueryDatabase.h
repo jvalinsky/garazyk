@@ -58,7 +58,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @method getBlockWithCid:repoDid:error:
- @abstract Retrieve a content block by CID and repo DID.
+ @abstract Retrieve a content block by ATProtoCID and repo DID.
  */
 - (nullable PDSDatabaseBlock *)getBlockWithCid:(NSData *)cid 
                                       repoDid:(NSString *)repoDid 

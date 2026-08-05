@@ -181,7 +181,7 @@
             return;
         }
 
-        // Read transcoded data for CID computation
+        // Read transcoded data for ATProtoCID computation
         NSData *transcodedData = [NSData dataWithContentsOfURL:transcodedURL
                                                        options:NSDataReadingMappedIfSafe
                                                          error:nil];
@@ -195,7 +195,7 @@
             return;
         }
 
-        CID *processedCid = [CID sha256:transcodedData];
+        ATProtoCID *processedCid = [ATProtoCID sha256:transcodedData];
         NSString *processedCidStr = processedCid.stringValue;
 
         // ── Step 3: Generate thumbnail ──────────────────────────────
@@ -209,7 +209,7 @@
 
             NSString *thumbnailCidStr = nil;
             if (thumbnailData) {
-                CID *thumbnailCid = [[ATProtoVideoThumbnailGenerator sharedGenerator] storeThumbnailData:thumbnailData
+                ATProtoCID *thumbnailCid = [[ATProtoVideoThumbnailGenerator sharedGenerator] storeThumbnailData:thumbnailData
                                                                                                   forJob:@""
                                                                                                   error:nil];
                 thumbnailCidStr = thumbnailCid.stringValue;
@@ -226,7 +226,7 @@
                 hlsGenerator.outputBaseDirectory = outputDirectory;
                 hlsGenerator.include1080p = self.include1080p;
 
-                // HLS generation requires DID and blob CID for path construction
+                // HLS generation requires DID and blob ATProtoCID for path construction
                 NSString *hlsDid = self.did ?: @"did:plc:unknown";
                 NSString *hlsCid = self.blobCid ?: processedCidStr;
 

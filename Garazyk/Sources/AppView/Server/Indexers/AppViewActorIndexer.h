@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @class AppViewActorIndexer
 
- @abstract Materializes actor profiles (display name, bio, avatar CID, banner CID).
+ @abstract Materializes actor profiles (display name, bio, avatar ATProtoCID, banner ATProtoCID).
 
  Handles:
   - app.bsky.actor.profile (create / update / delete)

@@ -13,7 +13,7 @@
 
 @class MSTNode;
 @class MSTNodeEntry;
-@class CID;
+@class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
 

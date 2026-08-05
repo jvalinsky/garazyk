@@ -47,7 +47,7 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @param did Account DID.
  * @param collection Collection path.
  * @param rkey Record key.
- * @param cid Optional CID string.
+ * @param cid Optional ATProtoCID string.
  * @param seq Sequence number.
  * @param error Receives failure details.
  * @return YES if successful.
@@ -188,7 +188,7 @@ extern NSString * const MikrusDatabaseErrorDomain;
 /**
  * @abstract Retrieves a record by its URI.
  * @param uri Record URI.
- * @param cid Optional CID string.
+ * @param cid Optional ATProtoCID string.
  * @param error Receives failure details.
  * @return Record dictionary.
  */

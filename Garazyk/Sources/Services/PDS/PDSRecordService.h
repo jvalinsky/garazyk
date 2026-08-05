@@ -29,7 +29,7 @@ typedef NS_ENUM(NSInteger, PDSRecordServiceError) {
 };
 
 @class MST;
-@class CID;
+@class ATProtoCID;
 
 /**
  * @abstract Defines the PDSRecordRepository protocol contract.
@@ -185,11 +185,11 @@ typedef NS_ENUM(NSInteger, PDSValidationMode) {
 /**
  * @abstract Atomically applies a batch of writes in a single transaction.
  * @discussion If any write fails, all preceding writes in the batch are rolled back.
- * @param writes Array of write operations, each a dictionary with keys: action, collection, rkey (required for update/delete), and value (for create/update). Optional key 'swapRecord' (CID string) is supported for update/delete. Legacy key 'record' is also accepted for compatibility.
+ * @param writes Array of write operations, each a dictionary with keys: action, collection, rkey (required for update/delete), and value (for create/update). Optional key 'swapRecord' (ATProtoCID string) is supported for update/delete. Legacy key 'record' is also accepted for compatibility.
  * @param did The repository DID.
  * @param actorDid The authenticated actor's DID (for authorization). Must equal did for self-modification.
  * @param mode Validation mode.
- * @param swapCommit If non-nil, the expected current repo root CID. Fails if it doesn't match.
+ * @param swapCommit If non-nil, the expected current repo root ATProtoCID. Fails if it doesn't match.
  * @param error On failure, describes what went wrong.
  * @return Result dictionary with commit info on success, nil on failure.
  */
@@ -206,7 +206,7 @@ typedef NS_ENUM(NSInteger, PDSValidationMode) {
  * @param writes Array of write operations.
  * @param did The repository DID.
  * @param mode Validation mode.
- * @param swapCommit If non-nil, the expected current repo root CID. Fails if it doesn't match.
+ * @param swapCommit If non-nil, the expected current repo root ATProtoCID. Fails if it doesn't match.
  * @param error On failure, describes what went wrong.
  * @return Result dictionary with commit info on success, nil on failure.
  */

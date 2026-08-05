@@ -420,7 +420,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     return nil;
   GZ_LOG_CORE_DEBUG(@"Service call success, calculating record CID");
 
-  // Use DAG-CBOR for record CID calculation
+  // Use DAG-CBOR for record ATProtoCID calculation
   NSError *cborError = nil;
   GZ_LOG_CORE_DEBUG(@"Encoding record with CBOR");
   NSData *recordData =
@@ -441,11 +441,11 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   }
 
   GZ_LOG_CORE_DEBUG(@"Calculating SHA-256 digest");
-  NSData *digest = [CID sha256Digest:recordData];
+  NSData *digest = [ATProtoCID sha256Digest:recordData];
   GZ_LOG_CORE_DEBUG(@"Digest calculated: %@", digest ?: @"NIL");
 
   GZ_LOG_CORE_DEBUG(@"Creating CID with dag-cbor codec");
-  CID *cid = [CID cidWithDigest:digest codec:0x71]; // Use dag-cbor codec
+  ATProtoCID *cid = [ATProtoCID cidWithDigest:digest codec:0x71]; // Use dag-cbor codec
   GZ_LOG_CORE_DEBUG(@"CID created: %@", cid.stringValue);
 
   if (!cid || !cid.stringValue) {

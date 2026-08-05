@@ -46,7 +46,7 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
     return nil;
   }
 
-  CID *schemaCID = [CID cidWithDigest:[CID sha256Digest:cborData] codec:0x71];
+  ATProtoCID *schemaCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:cborData] codec:0x71];
   if (!schemaCID) {
     if (error) {
       *error = [NSError errorWithDomain:XrpcLexiconResolverErrorDomain

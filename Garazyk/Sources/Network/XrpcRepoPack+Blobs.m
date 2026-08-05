@@ -295,8 +295,8 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
             return;
         }
 
-        // §6.1: parse CID before interpolating into Location (blocks open redirect / CRLF).
-        CID *parsedCID = [CID cidFromString:cid];
+        // §6.1: parse ATProtoCID before interpolating into Location (blocks open redirect / CRLF).
+        ATProtoCID *parsedCID = [ATProtoCID cidFromString:cid];
         if (!parsedCID) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Invalid cid"}];

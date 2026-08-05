@@ -85,8 +85,8 @@
             }
             return nil;
         }
-        CID *currentRootCID = [CID cidFromBytes:currentRoot];
-        NSString *currentRootStr = currentRootCID.stringValue ?: [CID base32Encode:currentRoot];
+        ATProtoCID *currentRootCID = [ATProtoCID cidFromBytes:currentRoot];
+        NSString *currentRootStr = currentRootCID.stringValue ?: [ATProtoCID base32Encode:currentRoot];
         if (![swapCommit isEqualToString:currentRootStr]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
@@ -499,7 +499,7 @@
                     return;
                 }
                 NSData *recordCBOR = [op[@"recordCBOR"] isKindOfClass:[NSData class]] ? op[@"recordCBOR"] : nil;
-                CID *recordCID = dbRecord.cid.length > 0 ? [CID cidFromString:dbRecord.cid] : nil;
+                ATProtoCID *recordCID = dbRecord.cid.length > 0 ? [ATProtoCID cidFromString:dbRecord.cid] : nil;
                 if (recordCBOR.length > 0 && recordCID) {
                     PDSDatabaseBlock *recordBlock = [[PDSDatabaseBlock alloc] init];
                     recordBlock.cid = recordCID.bytes;
@@ -521,7 +521,7 @@
                     return;
                 }
                 NSData *recordCBOR = [op[@"recordCBOR"] isKindOfClass:[NSData class]] ? op[@"recordCBOR"] : nil;
-                CID *recordCID = dbRecord.cid.length > 0 ? [CID cidFromString:dbRecord.cid] : nil;
+                ATProtoCID *recordCID = dbRecord.cid.length > 0 ? [ATProtoCID cidFromString:dbRecord.cid] : nil;
                 if (recordCBOR.length > 0 && recordCID) {
                     PDSDatabaseBlock *recordBlock = [[PDSDatabaseBlock alloc] init];
                     recordBlock.cid = recordCID.bytes;
@@ -592,7 +592,7 @@
     NSError *storeError = nil;
     PDSActorStore *store = [self.databasePool storeForDid:did error:&storeError];
     NSData *prevRootData = [store getRepoRootForDid:did error:nil];
-    CID *prevRoot = prevRootData ? [CID cidFromBytes:prevRootData] : nil;
+    ATProtoCID *prevRoot = prevRootData ? [ATProtoCID cidFromBytes:prevRootData] : nil;
 
     NSMutableDictionary<NSString *, id> *mutationCIDsByKey = [NSMutableDictionary dictionary];
     NSMutableOrderedSet<NSString *> *changedKeys = [NSMutableOrderedSet orderedSet];

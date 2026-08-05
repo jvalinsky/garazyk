@@ -14,15 +14,15 @@
 
 @interface MSTNodeEntry ()
 @property (nonatomic, strong, readwrite, nullable) MSTNode *internalTree;
-@property (nonatomic, strong, readwrite, nullable) CID *treeCID;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCID *treeCID;
 @end
 
 @interface MSTNode ()
 @property (nonatomic, assign, readwrite) uint32_t level;
 @property (nonatomic, strong, readwrite, nullable) MSTNode *internalLeft;
-@property (nonatomic, strong, readwrite, nullable) CID *leftCID;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCID *leftCID;
 @property (nonatomic, strong, readwrite) NSMutableArray<MSTNodeEntry *> *internalEntries;
-- (CID *)getCID:(NSMapTable<MSTNode *, CID *> *)cache;
+- (ATProtoCID *)getCID:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
 @end
 
 // ---------------------------------------------------------------------------
@@ -64,10 +64,10 @@ static NSData *STARVarintData(uint64_t value) {
 }
 
 // ---------------------------------------------------------------------------
-// CID helper: encode a CID as a DAG-CBOR tag-42 byte string (with 0x00 prefix)
+// ATProtoCID helper: encode a ATProtoCID as a DAG-CBOR tag-42 byte string (with 0x00 prefix)
 // ---------------------------------------------------------------------------
 
-static ATProtoCBORValue *CIDToTaggedCBOR(CID *cid) {
+static ATProtoCBORValue *CIDToTaggedCBOR(ATProtoCID *cid) {
     if (!cid) return [ATProtoCBORValue nilValue];
     NSMutableData *tagged = [NSMutableData dataWithCapacity:1 + cid.bytes.length];
     uint8_t zero = 0x00;
@@ -101,9 +101,9 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
 + (instancetype)commitWithDid:(NSString *)did
                       version:(NSInteger)version
-                        data:(nullable CID *)data
+                        data:(nullable ATProtoCID *)data
                          rev:(NSString *)rev
-                        prev:(nullable CID *)prev
+                        prev:(nullable ATProtoCID *)prev
                          sig:(nullable NSData *)sig {
     STARCommit *c = [[self alloc] init];
     c.did = [did copy];
@@ -149,9 +149,9 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                          keySuffix:(NSData *)keySuffix
-                             value:(nullable CID *)value
+                             value:(nullable ATProtoCID *)value
                       valueArchived:(BOOL)valueArchived
-                              tree:(nullable CID *)tree
+                              tree:(nullable ATProtoCID *)tree
                        treeArchived:(BOOL)treeArchived {
     STARMstEntry *e = [[self alloc] init];
     e.prefixLen = prefixLen;
@@ -171,7 +171,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
 @implementation STARMstNode
 
-+ (instancetype)nodeWithLeft:(nullable CID *)left
++ (instancetype)nodeWithLeft:(nullable ATProtoCID *)left
                 leftArchived:(BOOL)leftArchived
                     entries:(NSArray<STARMstEntry *> *)entries {
     STARMstNode *n = [[self alloc] init];
@@ -237,12 +237,12 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @interface MSTNode (STARInternal)
 @property (nonatomic, assign, readonly) uint32_t level;
 @property (nonatomic, strong, readonly, nullable) MSTNode *internalLeft;
-@property (nonatomic, strong, readonly, nullable) CID *leftCID;
+@property (nonatomic, strong, readonly, nullable) ATProtoCID *leftCID;
 @end
 
 @interface MSTNodeEntry (STARInternal)
 @property (nonatomic, strong, readonly, nullable) MSTNode *internalTree;
-@property (nonatomic, strong, readonly, nullable) CID *treeCID;
+@property (nonatomic, strong, readonly, nullable) ATProtoCID *treeCID;
 @end
 
 // ---------------------------------------------------------------------------
@@ -275,7 +275,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 }
 
 - (BOOL)writeFromMST:(MST *)mst
-       blockProvider:(nullable NSData * _Nullable (^)(CID *cid))blockProvider
+       blockProvider:(nullable NSData * _Nullable (^)(ATProtoCID *cid))blockProvider
                error:(NSError **)error {
     if (!mst || !mst.root) {
         // Empty tree: just write the header
@@ -286,7 +286,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     if (![self writeHeaderWithError:error]) return NO;
 
     // Walk MST depth-first, interleaved with records and subtrees
-    NSMapTable<MSTNode *, CID *> *cidCache = [NSMapTable strongToStrongObjectsMapTable];
+    NSMapTable<MSTNode *, ATProtoCID *> *cidCache = [NSMapTable strongToStrongObjectsMapTable];
     return [self writeMSTNode:mst.root
                         depth:0
                      cidCache:cidCache
@@ -353,8 +353,8 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
 - (BOOL)writeMSTNode:(MSTNode *)node
                 depth:(NSUInteger)depth
-             cidCache:(NSMapTable<MSTNode *, CID *> *)cidCache
-          blockProvider:(nullable NSData * _Nullable (^)(CID *cid))blockProvider
+             cidCache:(NSMapTable<MSTNode *, ATProtoCID *> *)cidCache
+          blockProvider:(nullable NSData * _Nullable (^)(ATProtoCID *cid))blockProvider
                   error:(NSError **)error {
     if (!node) return YES;
 
@@ -378,9 +378,9 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
         NSData *keySuffix = [fullKeyData subdataWithRange:NSMakeRange(prefixLen, fullKeyData.length - prefixLen)];
         prevKeyData = fullKeyData;
 
-        CID *valueCID = entry.value;
+        ATProtoCID *valueCID = entry.value;
         BOOL valueArchived = NO;
-        CID *treeCID = nil;
+        ATProtoCID *treeCID = nil;
         BOOL treeArchived = NO;
 
         // Harden: only archive if record is actually available
@@ -414,7 +414,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
         [starEntries addObject:starEntry];
     }
 
-    CID *leftCID = nil;
+    ATProtoCID *leftCID = nil;
     BOOL leftArchived = NO;
     if (node.internalLeft) {
         leftCID = [node.internalLeft getCID:cidCache];
@@ -503,7 +503,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 }
 
 - (BOOL)writeFromMST:(MST *)mst
-       blockProvider:(nullable NSData * _Nullable (^)(CID *cid))blockProvider
+       blockProvider:(nullable NSData * _Nullable (^)(ATProtoCID *cid))blockProvider
                error:(NSError **)error {
     if (!mst) {
         return [self writeHeaderWithError:error];
@@ -591,12 +591,12 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 // ---------------------------------------------------------------------------
 
 @interface STARReader ()
-@property (nonatomic, strong, readwrite, nullable) CID *rootCID;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCID *rootCID;
 @property (nonatomic, strong, readwrite) NSArray<CARBlock *> *blocks;
 @property (nonatomic, assign, readwrite) STARVariant variant;
 @property (nonatomic, strong, readwrite, nullable) STARCommit *commit;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, CARBlock *> *blockIndex;
-- (BOOL)parseL0Node:(CID *)expectedCID
+- (BOOL)parseL0Node:(ATProtoCID *)expectedCID
               bytes:(const uint8_t *)bytes
              length:(NSUInteger)length
              offset:(NSUInteger *)offset
@@ -620,7 +620,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     return [self readFromData:data error:error];
 }
 
-- (nullable CARBlock *)blockWithCID:(CID *)cid {
+- (nullable CARBlock *)blockWithCID:(ATProtoCID *)cid {
     if (!cid) return nil;
     return self.blockIndex[cid.stringValue];
 }
@@ -722,12 +722,12 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
         commit.version = ver.unsignedInteger.integerValue;
     }
 
-    // data (CID)
+    // data (ATProtoCID)
     ATProtoCBORValue *dataVal = root.map[[ATProtoCBORValue textString:@"data"]];
     if (dataVal && dataVal.type == CBORTypeTag) {
         NSData *cidBytes = dataVal.tagValue.byteString;
         if (cidBytes.length > 1) {
-            commit.data = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+            commit.data = [ATProtoCID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
         }
     }
 
@@ -737,12 +737,12 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
         commit.rev = rev.textString;
     }
 
-    // prev (CID)
+    // prev (ATProtoCID)
     ATProtoCBORValue *prev = root.map[[ATProtoCBORValue textString:@"prev"]];
     if (prev && prev.type == CBORTypeTag) {
         NSData *cidBytes = prev.tagValue.byteString;
         if (cidBytes.length > 1) {
-            commit.prev = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+            commit.prev = [ATProtoCID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
         }
     }
 
@@ -755,17 +755,17 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     return commit;
 }
 
-/// Extract a CID from a CBOR tag-42 value (0x00-prefixed byte string).
-static CID * _Nullable CIDFromCBORTag(ATProtoCBORValue *tagVal) {
+/// Extract a ATProtoCID from a CBOR tag-42 value (0x00-prefixed byte string).
+static ATProtoCID * _Nullable CIDFromCBORTag(ATProtoCBORValue *tagVal) {
     if (!tagVal || tagVal.type != CBORTypeTag) return nil;
     NSData *cidBytes = tagVal.tagValue.byteString;
     if (cidBytes.length <= 1) return nil;
-    return [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+    return [ATProtoCID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
 }
 
-/// Reinsert a CID as a tagged CBOR v-link in a mutable entry map.
+/// Reinsert a ATProtoCID as a tagged CBOR v-link in a mutable entry map.
 static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *entryDict,
-                            ATProtoCBORValue *key, CID *cid) {
+                            ATProtoCBORValue *key, ATProtoCID *cid) {
     if (!cid) return;
     entryDict[key] = CIDToTaggedCBOR(cid);
 }
@@ -774,7 +774,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
               length:(NSUInteger)length
                offset:(NSUInteger)offset
                 error:(NSError **)error {
-    // Empty tree: commit has no data CID, archive has only a header
+    // Empty tree: commit has no data ATProtoCID, archive has only a header
     if (!self.commit.data) {
         self.blocks = @[];
         // Reject trailing body bytes after an empty-tree header
@@ -804,7 +804,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
     return YES;
 }
 
-- (BOOL)parseL0Node:(CID *)expectedCID
+- (BOOL)parseL0Node:(ATProtoCID *)expectedCID
               bytes:(const uint8_t *)bytes
              length:(NSUInteger)length
              offset:(NSUInteger *)offsetInOut
@@ -858,7 +858,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
     }
 
     NSMutableArray<ATProtoCBORValue *> *entries = [entriesVal.array mutableCopy];
-    NSMutableArray<CID *> *entryRecordCIDs = [NSMutableArray arrayWithCapacity:entries.count];
+    NSMutableArray<ATProtoCID *> *entryRecordCIDs = [NSMutableArray arrayWithCapacity:entries.count];
     for (NSUInteger i = 0; i < entries.count; i++) {
         [entryRecordCIDs addObject:(id)[NSNull null]];
     }
@@ -870,7 +870,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
     *offsetInOut = offset;
 
     // 1. Walk left child
-    CID *leftCID = CIDFromCBORTag(nodeDict[[ATProtoCBORValue textString:@"l"]]);
+    ATProtoCID *leftCID = CIDFromCBORTag(nodeDict[[ATProtoCBORValue textString:@"l"]]);
     if (leftCID && hasLFlag) {
         if (![self parseL0Node:leftCID bytes:bytes length:length offset:offsetInOut blocks:blocks error:error]) {
             return NO;
@@ -921,7 +921,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
             currOff += recLen;
             *offsetInOut = currOff;
 
-            CID *recordCID = [CID cidWithDigest:[CID sha256Digest:recordData] codec:0x71];
+            ATProtoCID *recordCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:recordData] codec:0x71];
             CARBlock *recordBlock = [CARBlock blockWithCID:recordCID data:recordData];
             [blocks addObject:recordBlock];
             self.blockIndex[recordCID.stringValue] = recordBlock;
@@ -930,7 +930,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
         }
 
         // Emit tree child if inline
-        CID *treeCID = CIDFromCBORTag(entry.map[[ATProtoCBORValue textString:@"t"]]);
+        ATProtoCID *treeCID = CIDFromCBORTag(entry.map[[ATProtoCBORValue textString:@"t"]]);
         if (treeCID && entryHasTFlag) {
             if (![self parseL0Node:treeCID bytes:bytes length:length offset:offsetInOut blocks:blocks error:error]) {
                 return NO;
@@ -938,7 +938,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
         }
     }
 
-    // 3. Patch node and verify CID
+    // 3. Patch node and verify ATProtoCID
     NSMutableArray<ATProtoCBORValue *> *patchedEntries = [NSMutableArray array];
     for (NSUInteger i = 0; i < entries.count; i++) {
         ATProtoCBORValue *entry = entries[i];
@@ -953,7 +953,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
 
         id recCidObj = entryRecordCIDs[i];
         if (recCidObj != [NSNull null]) {
-            EntryMapSetCID(repoEntry, [ATProtoCBORValue textString:@"v"], (CID *)recCidObj);
+            EntryMapSetCID(repoEntry, [ATProtoCBORValue textString:@"v"], (ATProtoCID *)recCidObj);
         } else {
             repoEntry[[ATProtoCBORValue textString:@"v"]] = entry.map[[ATProtoCBORValue textString:@"v"]];
         }
@@ -972,7 +972,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
 
     ATProtoCBORValue *repoNode = [ATProtoCBORValue map:nodeDict];
     NSData *repoData = [repoNode encode];
-    CID *computedCID = [CID cidWithDigest:[CID sha256Digest:repoData] codec:0x71];
+    ATProtoCID *computedCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:repoData] codec:0x71];
     
     if (![computedCID isEqualToCID:expectedCID]) {
         if (error) *error = STARError(42, @"CID mismatch: expected %@, computed %@", expectedCID.stringValue, computedCID.stringValue);
@@ -1027,8 +1027,8 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
         NSData *recordData = [NSData dataWithBytes:bytes + offset length:(NSUInteger)dataLen];
         offset += (NSUInteger)dataLen;
 
-        // Compute CID from record content
-        CID *cid = [CID cidWithDigest:[CID sha256Digest:recordData] codec:0x71];
+        // Compute ATProtoCID from record content
+        ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:recordData] codec:0x71];
         CARBlock *block = [CARBlock blockWithCID:cid data:recordData];
         [blocks addObject:block];
         self.blockIndex[cid.stringValue] = block;
@@ -1062,7 +1062,7 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
         return nil;
     }
 
-    // Serialize the repo-spec commit block and compute its CID
+    // Serialize the repo-spec commit block and compute its ATProtoCID
     NSError *cborErr = nil;
     NSData *commitData = [commit serializeToDagCBOR:&cborErr];
     if (!commitData) {
@@ -1070,9 +1070,9 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
         return nil;
     }
 
-    CID *commitCID = [CID cidWithDigest:[CID sha256Digest:commitData] codec:0x71];
+    ATProtoCID *commitCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:commitData] codec:0x71];
 
-    // CAR root is the commit CID, not the MST root
+    // CAR root is the commit ATProtoCID, not the MST root
     CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
     [writer addBlock:[CARBlock blockWithCID:commitCID data:commitData]];
 

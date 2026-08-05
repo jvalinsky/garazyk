@@ -15,7 +15,7 @@
 - (void)testPublicKeyBytesStripsSecp256k1MulticodecPrefix {
     const uint8_t encodedBytes[] = { 0xE7, 0x01, 0x03, 0x04, 0x05 };
     NSData *encoded = [NSData dataWithBytes:encodedBytes length:sizeof(encodedBytes)];
-    NSString *multibase = [@"z" stringByAppendingString:[CID base58btcEncode:encoded]];
+    NSString *multibase = [@"z" stringByAppendingString:[ATProtoCID base58btcEncode:encoded]];
 
     NSError *error = nil;
     NSData *decoded = [ATProtoMultibase publicKeyBytesFromMultibase:multibase error:&error];

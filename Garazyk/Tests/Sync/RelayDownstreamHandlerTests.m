@@ -65,11 +65,11 @@
 @implementation RelayDownstreamHandlerTests
 
 - (FirehoseCommitEvent *)commitEventForRepo:(NSString *)repo
-                                    dataCID:(CID *)dataCID
+                                    dataCID:(ATProtoCID *)dataCID
                                         rev:(NSString *)rev
-                              prevCommitCID:(nullable CID *)prevCommitCID
+                              prevCommitCID:(nullable ATProtoCID *)prevCommitCID
                                       since:(nullable NSString *)since
-                                   prevData:(nullable CID *)prevData
+                                   prevData:(nullable ATProtoCID *)prevData
                                         seq:(int64_t)seq {
     RepoCommit *commit = [RepoCommit createCommitWithDid:repo
                                                     data:dataCID
@@ -235,7 +235,7 @@
     RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
-    CID *dataCID = [CID sha256:[@"relay state test data"
+    ATProtoCID *dataCID = [ATProtoCID sha256:[@"relay state test data"
         dataUsingEncoding:NSUTF8StringEncoding]];
     FirehoseCommitEvent *commitEvent =
         [self commitEventForRepo:@"did:plc:relay-state-test"
@@ -418,8 +418,8 @@
     RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
-    CID *dataCID =
-        [CID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *dataCID =
+        [ATProtoCID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
     FirehoseCommitEvent *event =
         [self commitEventForRepo:@"did:plc:newrepo"
                         dataCID:dataCID
@@ -446,12 +446,12 @@
     RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
-    CID *commit1 =
-        [CID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *data1 =
-        [CID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *data2 =
-        [CID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *commit1 =
+        [ATProtoCID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *data1 =
+        [ATProtoCID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *data2 =
+        [ATProtoCID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
 
     [repoStateManager handleCommitForRepo:@"did:plc:test"
                                commitCID:commit1.stringValue
@@ -485,10 +485,10 @@
 
     downstreamHandler.chainValidationMode = RelayValidationModeStrict;
 
-    CID *commit1 = [CID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *data1 = [CID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *wrongPrev = [CID sha256:[@"wrongprev" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *data2 = [CID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *commit1 = [ATProtoCID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *data1 = [ATProtoCID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *wrongPrev = [ATProtoCID sha256:[@"wrongprev" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *data2 = [ATProtoCID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
 
     [repoStateManager handleCommitForRepo:@"did:plc:test"
                                commitCID:commit1.stringValue
@@ -521,9 +521,9 @@
     RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
-    CID *commit1 = [CID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *data1 = [CID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *data2 = [CID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *commit1 = [ATProtoCID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *data1 = [ATProtoCID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *data2 = [ATProtoCID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
     [repoStateManager handleCommitForRepo:@"did:plc:test"
                                commitCID:commit1.stringValue
                                  dataCID:data1.stringValue
@@ -555,7 +555,7 @@
 
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:test";
-    event.commit = [CID sha256:[@"root" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.commit = [ATProtoCID sha256:[@"root" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"1";
     event.seq = 1;
 
@@ -579,10 +579,10 @@
     downstreamHandler.chainValidationMode = RelayValidationModeStrict;
 
     NSString *did = @"did:plc:recovery-test";
-    CID *oldCommit =
-        [CID sha256:[@"old-commit" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *oldData =
-        [CID sha256:[@"old-data" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *oldCommit =
+        [ATProtoCID sha256:[@"old-commit" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *oldData =
+        [ATProtoCID sha256:[@"old-data" dataUsingEncoding:NSUTF8StringEncoding]];
     [repoStateManager handleCommitForRepo:did
                                commitCID:oldCommit.stringValue
                                  dataCID:oldData.stringValue
@@ -591,7 +591,7 @@
 
     RepoCommit *recoveryCommit =
         [RepoCommit createCommitWithDid:did
-                                   data:[CID sha256:[@"recovery-data"
+                                   data:[ATProtoCID sha256:[@"recovery-data"
                                        dataUsingEncoding:NSUTF8StringEncoding]]
                                     rev:@"3"
                                    prev:oldCommit];
@@ -602,12 +602,12 @@
 
     FirehoseCommitEvent *broken =
         [self commitEventForRepo:did
-                        dataCID:[CID sha256:[@"broken-data"
+                        dataCID:[ATProtoCID sha256:[@"broken-data"
                             dataUsingEncoding:NSUTF8StringEncoding]]
                             rev:@"2"
                   prevCommitCID:oldCommit
                           since:@"1"
-                       prevData:[CID sha256:[@"wrong-data"
+                       prevData:[ATProtoCID sha256:[@"wrong-data"
                             dataUsingEncoding:NSUTF8StringEncoding]]
                             seq:2];
     RelayUpstreamManager *manager =

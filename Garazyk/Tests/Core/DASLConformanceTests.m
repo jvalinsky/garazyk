@@ -4,7 +4,7 @@
  @file DASLConformanceTests.m
 
  @abstract Runs the upstream DASL conformance vectors against Core's DRISL and
- CID implementations.
+ ATProtoCID implementations.
 
  @discussion Vectors come from https://github.com/hyphacoop/dasl-testing and
  live in Garazyk/Tests/fixtures/dasl-testing/. Each has a type:
@@ -172,7 +172,7 @@ static id DASLLenientDecode(const uint8_t *bytes, NSUInteger length, NSUInteger 
             }
             NSData *linkBytes = (NSData *)tagged;
             if (linkBytes.length < 1 || ((const uint8_t *)linkBytes.bytes)[0] != 0x00) return nil;
-            return [CID cidFromBytes:[linkBytes subdataWithRange:NSMakeRange(1, linkBytes.length - 1)]];
+            return [ATProtoCID cidFromBytes:[linkBytes subdataWithRange:NSMakeRange(1, linkBytes.length - 1)]];
         }
         case 7: {
             switch (additional) {
@@ -501,13 +501,13 @@ static id DASLLenientDecode(const uint8_t *bytes, NSUInteger length, NSUInteger 
                           positiveZero);
 }
 
-#pragma mark - Strict CID profile
+#pragma mark - Strict ATProtoCID profile
 
 - (void)testDASLCIDRejectsNonConformantForms {
-    // A conformant CID, for contrast: CIDv1 + raw + sha2-256 + 32 bytes.
+    // A conformant ATProtoCID, for contrast: CIDv1 + raw + sha2-256 + 32 bytes.
     NSData *valid = [self dataFromHex:
         @"015512205891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"];
-    CID *cid = [CID daslCIDFromBytes:valid];
+    ATProtoCID *cid = [ATProtoCID daslCIDFromBytes:valid];
     XCTAssertNotNil(cid, @"raw + sha2-256 is the canonical DASL CID shape");
     XCTAssertTrue(cid.isDASLConformant);
 
@@ -527,48 +527,48 @@ static id DASLLenientDecode(const uint8_t *bytes, NSUInteger length, NSUInteger 
         NSString *hex = [rejected[label] stringByReplacingOccurrencesOfString:@" " withString:@""];
         NSData *data = [self dataFromHex:hex];
         XCTAssertNotNil(data, @"bad test hex for %@", label);
-        XCTAssertNil([CID daslCIDFromBytes:data], @"strict profile must reject: %@", label);
+        XCTAssertNil([ATProtoCID daslCIDFromBytes:data], @"strict profile must reject: %@", label);
     }
 
     // BLAKE3 is Big DASL only — accepting it in the base profile would let a
-    // non-interoperable CID into repository data.
+    // non-interoperable ATProtoCID into repository data.
     NSData *blake3 = [self dataFromHex:
         @"01551e208e4c7c1b99dbfd50e7a95185fead5ee1448fa904a2fdd778eaf5f2dbfd629a99"];
-    XCTAssertNil([CID daslCIDFromBytes:blake3 profile:ATProtoDASLCIDProfileBase],
+    XCTAssertNil([ATProtoCID daslCIDFromBytes:blake3 profile:ATProtoDASLCIDProfileBase],
                  @"BLAKE3 is not part of the base DASL CID spec");
-    XCTAssertNotNil([CID daslCIDFromBytes:blake3 profile:ATProtoDASLCIDProfileBig],
+    XCTAssertNotNil([ATProtoCID daslCIDFromBytes:blake3 profile:ATProtoDASLCIDProfileBig],
                     @"BLAKE3 is a valid Big DASL CID");
 }
 
 - (void)testDASLCIDStringFormIsSingleSpelling {
     NSData *valid = [self dataFromHex:
         @"015512205891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"];
-    CID *cid = [CID daslCIDFromBytes:valid];
+    ATProtoCID *cid = [ATProtoCID daslCIDFromBytes:valid];
     XCTAssertNotNil(cid);
 
     NSString *canonical = cid.stringValue;
     XCTAssertEqual(canonical.length, ATProtoDASLCIDStringLength);
-    XCTAssertEqualObjects([CID daslCIDFromString:canonical], cid);
+    XCTAssertEqualObjects([ATProtoCID daslCIDFromString:canonical], cid);
 
     // Each of these decodes to the same bytes under a permissive parser, and
-    // each is a second spelling of one CID — which is exactly what a strict
+    // each is a second spelling of one ATProtoCID — which is exactly what a strict
     // profile exists to prevent.
-    XCTAssertNil([CID daslCIDFromString:canonical.uppercaseString], @"uppercase base32");
-    XCTAssertNil([CID daslCIDFromString:[canonical stringByAppendingString:@"="]], @"padding");
-    XCTAssertNil([CID daslCIDFromString:[@"f" stringByAppendingString:
+    XCTAssertNil([ATProtoCID daslCIDFromString:canonical.uppercaseString], @"uppercase base32");
+    XCTAssertNil([ATProtoCID daslCIDFromString:[canonical stringByAppendingString:@"="]], @"padding");
+    XCTAssertNil([ATProtoCID daslCIDFromString:[@"f" stringByAppendingString:
                                          [canonical substringFromIndex:1]]], @"base16 prefix");
 
     // The final character carries two padding bits that must be zero; `b` is
     // index 1, whose low bit is set.
     NSString *nonZeroTrailingBits =
         [[canonical substringToIndex:canonical.length - 1] stringByAppendingString:@"b"];
-    XCTAssertNil([CID daslCIDFromString:nonZeroTrailingBits], @"non-zero trailing bits");
+    XCTAssertNil([ATProtoCID daslCIDFromString:nonZeroTrailingBits], @"non-zero trailing bits");
 
     // Still permissive where ATProto needs it to be: the syntax fixtures and
     // legacy blob references depend on this parser accepting dag-pb.
-    XCTAssertNotNil([CID cidFromString:@"bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi"],
+    XCTAssertNotNil([ATProtoCID cidFromString:@"bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi"],
                     @"the permissive parser must keep accepting dag-pb CIDs");
-    XCTAssertNil([CID daslCIDFromString:@"bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi"],
+    XCTAssertNil([ATProtoCID daslCIDFromString:@"bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi"],
                  @"the strict profile must not");
 }
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
  * @file BlobStorage.h
- * @abstract Blob storage management with CID-based addressing.
+ * @abstract Blob storage management with ATProtoCID-based addressing.
  * @discussion Provides persistent blob storage with CIDv1 identification using raw codec and SHA-256 hashing.
  * Manages blob lifecycle including upload, retrieval, listing, deletion, and validation.
  * Implements magic number verification to prevent MIME type spoofing.
@@ -15,7 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabase;
 @class PDSDatabasePool;
 @class PDSDatabaseBlob;
-@class CID;
+@class ATProtoCID;
 @class HttpRequest;
 @class HttpResponse;
 /**
@@ -65,39 +65,39 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool provider:(id<PDSBlobProvider>)provider;
 
 /**
- * @abstract Uploads a blob and returns its CID.
+ * @abstract Uploads a blob and returns its ATProtoCID.
  * @param data The blob data to store.
  * @param mimeType The MIME type of the blob.
  * @param did The DID of the account uploading the blob.
  * @param error Receives failure details.
- * @return The CID of the uploaded blob, or nil on failure.
+ * @return The ATProtoCID of the uploaded blob, or nil on failure.
  */
-- (nullable CID *)uploadBlob:(NSData *)data
+- (nullable ATProtoCID *)uploadBlob:(NSData *)data
                     mimeType:(NSString *)mimeType
                          did:(NSString *)did
                        error:(NSError **)error;
 
 /**
- * @abstract Retrieves a blob by its CID.
- * @param cid The CID of the blob to retrieve.
+ * @abstract Retrieves a blob by its ATProtoCID.
+ * @param cid The ATProtoCID of the blob to retrieve.
  * @param did The DID that owns the blob (optional, for verification/access control).
  * @param error Receives failure details.
  * @return The blob data, or nil if not found.
  */
-- (nullable NSData *)getBlobWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error;
+- (nullable NSData *)getBlobWithCID:(ATProtoCID *)cid did:(nullable NSString *)did error:(NSError **)error;
 
 /**
  * @abstract Retrieves a local blob file path when available from the configured provider.
- * @param cid The CID of the blob to locate.
+ * @param cid The ATProtoCID of the blob to locate.
  * @param did The DID that owns the blob (optional, for verification/access control).
  * @param error Receives failure details.
  * @return Absolute file path if available, or nil if the provider is not file-backed.
  */
-- (nullable NSString *)blobFilePathWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error;
+- (nullable NSString *)blobFilePathWithCID:(ATProtoCID *)cid did:(nullable NSString *)did error:(NSError **)error;
 
 /**
- * @abstract Retrieves blob metadata by its CID string.
- * @param cidString The CID string of the blob.
+ * @abstract Retrieves blob metadata by its ATProtoCID string.
+ * @param cidString The ATProtoCID string of the blob.
  * @param did The DID that owns the blob (optional, for verification/access control).
  * @param error Receives failure details.
  * @return The blob metadata object, or nil if not found.
@@ -118,13 +118,13 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
                                                   error:(NSError **)error;
 
 /**
- * @abstract Deletes a blob by CID for a specific DID.
- * @param cid The CID of the blob to delete.
+ * @abstract Deletes a blob by ATProtoCID for a specific DID.
+ * @param cid The ATProtoCID of the blob to delete.
  * @param did The DID that owns the blob.
  * @param error Receives failure details.
  * @return YES if deletion was successful.
  */
-- (BOOL)deleteBlobWithCID:(CID *)cid did:(NSString *)did error:(NSError **)error;
+- (BOOL)deleteBlobWithCID:(ATProtoCID *)cid did:(NSString *)did error:(NSError **)error;
 
 /**
  * @abstract Validates blob data according to ATProto constraints.

@@ -16,7 +16,7 @@ static const uint64_t kCIDv1Multicodec = 0x01;
 /// Maximum varint size (9 bytes for 64-bit values)
 static const NSUInteger kMaxVarintSize = 9;
 
-@implementation CID
+@implementation ATProtoCID
 
 #pragma mark - Initialization
 
@@ -39,7 +39,7 @@ static const NSUInteger kMaxVarintSize = 9;
         return nil;
     }
     
-    CID *cid = [[CID alloc] init];
+    ATProtoCID *cid = [[ATProtoCID alloc] init];
     if (cid) {
         cid->_version = 1;
         cid->_codec = codec;
@@ -131,7 +131,7 @@ static const NSUInteger kMaxVarintSize = 9;
     }
 
     NSUInteger consumed = 0;
-    CID *cid = [self cidFromBuffer:data.bytes length:data.length consumed:&consumed];
+    ATProtoCID *cid = [self cidFromBuffer:data.bytes length:data.length consumed:&consumed];
     if (!cid || consumed != data.length) {
         return nil;
     }
@@ -147,7 +147,7 @@ static const NSUInteger kMaxVarintSize = 9;
 
     // CIDv0 fast-path: sha2-256 (0x12) + length 32 (0x20) + 32-byte digest.
     if (length >= 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
-        CID *cid = [[CID alloc] init];
+        ATProtoCID *cid = [[ATProtoCID alloc] init];
         if (cid) {
             cid->_version = 0;
             cid->_codec = 0x70; // dag-pb (standard for CIDv0)
@@ -233,7 +233,7 @@ static const NSUInteger kMaxVarintSize = 9;
     NSUInteger multihashLen = (offset - multihashStart) + digestLen;
     NSData *multihash = [NSData dataWithBytes:(bytes + multihashStart) length:multihashLen];
 
-    CID *cid = [self cidWithMultihash:multihash codec:(NSUInteger)codec];
+    ATProtoCID *cid = [self cidWithMultihash:multihash codec:(NSUInteger)codec];
     if (!cid) {
         return nil;
     }
@@ -244,10 +244,10 @@ static const NSUInteger kMaxVarintSize = 9;
 
 - (NSString *)stringValue {
     NSMutableData *binaryData = [NSMutableData data];
-    [binaryData appendData:[CID encodeVarint:kCIDv1Multicodec]];
-    [binaryData appendData:[CID encodeVarint:self.codec]];
+    [binaryData appendData:[ATProtoCID encodeVarint:kCIDv1Multicodec]];
+    [binaryData appendData:[ATProtoCID encodeVarint:self.codec]];
     [binaryData appendData:self.multihash];
-    NSString *base32String = [CID base32Encode:binaryData];
+    NSString *base32String = [ATProtoCID base32Encode:binaryData];
     return [@"b" stringByAppendingString:base32String];
 }
 
@@ -257,7 +257,7 @@ static const NSUInteger kMaxVarintSize = 9;
 
 #pragma mark - Comparison and Equality
 
-- (BOOL)isEqualToCID:(CID *)other {
+- (BOOL)isEqualToCID:(ATProtoCID *)other {
     if (!other) return NO;
     return self.version == other.version &&
            self.codec == other.codec &&
@@ -266,7 +266,7 @@ static const NSUInteger kMaxVarintSize = 9;
 
 - (BOOL)isEqual:(id)object {
     if (self == object) return YES;
-    if (![object isKindOfClass:[CID class]]) return NO;
+    if (![object isKindOfClass:[ATProtoCID class]]) return NO;
     return [self isEqualToCID:object];
 }
 
@@ -278,8 +278,8 @@ static const NSUInteger kMaxVarintSize = 9;
 
 - (NSData *)bytes {
     NSMutableData *data = [NSMutableData data];
-    [data appendData:[CID encodeVarint:kCIDv1Multicodec]];
-    [data appendData:[CID encodeVarint:self.codec]];
+    [data appendData:[ATProtoCID encodeVarint:kCIDv1Multicodec]];
+    [data appendData:[ATProtoCID encodeVarint:self.codec]];
     [data appendData:self.multihash];
     return [data copy];
 }
@@ -334,7 +334,7 @@ static const NSUInteger kMaxVarintSize = 9;
     NSUInteger length = data.length;
     // ceil(length * 8 / 5) output characters; build into a C buffer and
     // construct the NSString once instead of parsing a format string per
-    // character via -appendFormat: (CID.stringValue runs for every block
+    // character via -appendFormat: (ATProtoCID.stringValue runs for every block
     // touched by MST, CAR, and block storage).
     NSUInteger capacity = ((length * 8) + 4) / 5;
     char *buf = malloc(capacity);
@@ -426,7 +426,7 @@ static const NSUInteger kMaxVarintSize = 9;
 
 #pragma mark - Hashing
 
-+ (CID *)sha256:(NSData *)data {
++ (ATProtoCID *)sha256:(NSData *)data {
     NSData *digest = [self sha256Digest:data];
     return [self cidWithDigest:digest codec:0x55];
 }
@@ -468,7 +468,7 @@ static const NSUInteger kMaxVarintSize = 9;
         return nil;
     }
     
-    self = [CID cidWithMultihash:multihash codec:codec];
+    self = [ATProtoCID cidWithMultihash:multihash codec:codec];
     if (self) {
         // Version is implicit in v1 format
     }

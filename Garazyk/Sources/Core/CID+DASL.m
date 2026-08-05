@@ -15,12 +15,12 @@ const NSUInteger ATProtoDASLCIDStringLength = 59;
 static const uint8_t kDASLCIDVersion = 0x01;
 static const uint8_t kDASLDigestLength = 0x20;
 
-/// Lowercase RFC 4648 base32, matching the alphabet CID.m encodes with.
+/// Lowercase RFC 4648 base32, matching the alphabet ATProtoCID.m encodes with.
 static const char kDASLBase32Alphabet[] = "abcdefghijklmnopqrstuvwxyz234567";
 
 /// Returns the alphabet index of `c`, or -1 if it is not a base32 character.
 /// Deliberately case-sensitive: uppercase decodes to the same bytes but is a
-/// second spelling of the same CID, which the spec does not allow.
+/// second spelling of the same ATProtoCID, which the spec does not allow.
 static int DASLBase32Index(unichar c) {
     if (c >= 'a' && c <= 'z') return (int)(c - 'a');
     if (c >= '2' && c <= '7') return (int)(c - '2' + 26);
@@ -34,13 +34,13 @@ static BOOL DASLProfileAllowsMultihash(uint8_t code, ATProtoDASLCIDProfile profi
     return profile == ATProtoDASLCIDProfileBig && code == ATProtoDASLMultihashBLAKE3;
 }
 
-@implementation CID (DASL)
+@implementation ATProtoCID (DASL)
 
-+ (nullable CID *)daslCIDFromString:(NSString *)string {
++ (nullable ATProtoCID *)daslCIDFromString:(NSString *)string {
     return [self daslCIDFromString:string profile:ATProtoDASLCIDProfileBase];
 }
 
-+ (nullable CID *)daslCIDFromString:(NSString *)string
++ (nullable ATProtoCID *)daslCIDFromString:(NSString *)string
                             profile:(ATProtoDASLCIDProfile)profile {
     if (![string isKindOfClass:[NSString class]] ||
         string.length != ATProtoDASLCIDStringLength) {
@@ -75,9 +75,9 @@ static BOOL DASLProfileAllowsMultihash(uint8_t code, ATProtoDASLCIDProfile profi
         return nil;
     }
 
-    // 58 characters carry 290 bits but a CID is 288, so the last two bits are
+    // 58 characters carry 290 bits but a ATProtoCID is 288, so the last two bits are
     // padding and must be zero. A non-zero remainder decodes to the same bytes
-    // yet re-encodes to a different final character — one CID, two spellings.
+    // yet re-encodes to a different final character — one ATProtoCID, two spellings.
     if (bitsLeft != 2 || (buffer & 0x03) != 0) {
         return nil;
     }
@@ -86,11 +86,11 @@ static BOOL DASLProfileAllowsMultihash(uint8_t code, ATProtoDASLCIDProfile profi
                           profile:profile];
 }
 
-+ (nullable CID *)daslCIDFromBytes:(NSData *)data {
++ (nullable ATProtoCID *)daslCIDFromBytes:(NSData *)data {
     return [self daslCIDFromBytes:data profile:ATProtoDASLCIDProfileBase];
 }
 
-+ (nullable CID *)daslCIDFromBytes:(NSData *)data
++ (nullable ATProtoCID *)daslCIDFromBytes:(NSData *)data
                            profile:(ATProtoDASLCIDProfile)profile {
     if (![data isKindOfClass:[NSData class]] ||
         data.length != ATProtoDASLCIDByteLength) {
@@ -100,7 +100,7 @@ static BOOL DASLProfileAllowsMultihash(uint8_t code, ATProtoDASLCIDProfile profi
     const uint8_t *bytes = data.bytes;
 
     // Byte equality, not varint parsing. Every field here is a single byte in
-    // a conformant CID, so refusing to run a varint decoder is what rejects
+    // a conformant ATProtoCID, so refusing to run a varint decoder is what rejects
     // the padded spellings (0x81 0x00) that decode to the same numbers.
     if (bytes[0] != kDASLCIDVersion) {
         return nil;
@@ -116,7 +116,7 @@ static BOOL DASLProfileAllowsMultihash(uint8_t code, ATProtoDASLCIDProfile profi
     }
 
     NSData *multihash = [data subdataWithRange:NSMakeRange(2, ATProtoDASLCIDByteLength - 2)];
-    return [CID cidWithMultihash:multihash codec:bytes[1]];
+    return [ATProtoCID cidWithMultihash:multihash codec:bytes[1]];
 }
 
 - (BOOL)isDASLConformant {

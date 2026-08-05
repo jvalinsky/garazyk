@@ -17,48 +17,48 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @method storeBlobData:forCID:error:
- @abstract Stores raw blob data with the given CID.
+ @abstract Stores raw blob data with the given ATProtoCID.
  @param data The raw data to store.
- @param cid The Content Identifier (CID) for the data.
+ @param cid The Content Identifier (ATProtoCID) for the data.
  @param error Output error if operation fails.
  @return YES if successful, NO otherwise.
  */
-- (BOOL)storeBlobData:(NSData *)data forCID:(CID *)cid error:(NSError **)error;
+- (BOOL)storeBlobData:(NSData *)data forCID:(ATProtoCID *)cid error:(NSError **)error;
 
 /*!
  @method retrieveBlobDataForCID:error:
- @abstract Retrieves raw blob data for the given CID.
- @param cid The CID to retrieve.
+ @abstract Retrieves raw blob data for the given ATProtoCID.
+ @param cid The ATProtoCID to retrieve.
  @param error Output error if operation fails (e.g. not found).
  @return The data if found, nil otherwise.
  */
-- (nullable NSData *)retrieveBlobDataForCID:(CID *)cid error:(NSError **)error;
+- (nullable NSData *)retrieveBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error;
 
 /*!
  @method retrieveBlobStreamForCID:error:
  @abstract Returns an input stream for reading blob data.
- @param cid The CID to retrieve.
+ @param cid The ATProtoCID to retrieve.
  @param error Output error if operation fails.
  @return An NSInputStream for the blob, or nil on failure.
  */
-- (nullable NSInputStream *)retrieveBlobStreamForCID:(CID *)cid error:(NSError **)error;
+- (nullable NSInputStream *)retrieveBlobStreamForCID:(ATProtoCID *)cid error:(NSError **)error;
 
 /*!
  @method deleteBlobDataForCID:error:
- @abstract Deletes blob data for the given CID.
- @param cid The CID to delete.
+ @abstract Deletes blob data for the given ATProtoCID.
+ @param cid The ATProtoCID to delete.
  @param error Output error if operation fails.
  @return YES if successful or if file didn't exist, NO on failure.
  */
-- (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error;
+- (BOOL)deleteBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error;
 
 /*!
  @method hasBlobDataForCID:
- @abstract Checks if blob data exists for the given CID.
- @param cid The CID to check.
+ @abstract Checks if blob data exists for the given ATProtoCID.
+ @param cid The ATProtoCID to check.
  @return YES if exists, NO otherwise.
  */
-- (BOOL)hasBlobDataForCID:(CID *)cid;
+- (BOOL)hasBlobDataForCID:(ATProtoCID *)cid;
 
 @optional
 
@@ -68,19 +68,19 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion
     This method is optional and only implemented by file-based providers.
     Network-based providers should return nil.
- @param cid The CID to locate.
+ @param cid The ATProtoCID to locate.
  @param error Output error if operation fails.
  @return File URL if available, nil otherwise.
  */
-- (nullable NSURL *)blobFileURLForCID:(CID *)cid error:(NSError **)error;
+- (nullable NSURL *)blobFileURLForCID:(ATProtoCID *)cid error:(NSError **)error;
 
 /*!
  @method listAllCIDsWithError:
  @abstract Lists all CIDs currently stored by the provider.
  @param error Output error if operation fails.
- @return Array of CID objects, or nil on failure.
+ @return Array of ATProtoCID objects, or nil on failure.
  */
-- (nullable NSArray<CID *> *)listAllCIDsWithError:(NSError **)error;
+- (nullable NSArray<ATProtoCID *> *)listAllCIDsWithError:(NSError **)error;
 
 @end
 

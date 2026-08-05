@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// DID of the media owner (set by worker before processing).
 @property (nonatomic, copy, nullable) NSString *did;
 
-/// CID of the original source blob (set by worker before processing).
+/// ATProtoCID of the original source blob (set by worker before processing).
 @property (nonatomic, copy, nullable) NSString *blobCid;
 
 /// Blob provider for thumbnail storage (propagated to video singletons).

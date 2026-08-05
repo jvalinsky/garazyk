@@ -34,8 +34,8 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Update video job results.
  * @param jobId Video job identifier.
- * @param processedBlobCid CID of the processed video blob.
- * @param thumbnailBlobCid CID of the thumbnail blob.
+ * @param processedBlobCid ATProtoCID of the processed video blob.
+ * @param thumbnailBlobCid ATProtoCID of the thumbnail blob.
  * @param error Receives details when the operation fails.
  * @return YES when the operation succeeds; otherwise NO.
  */

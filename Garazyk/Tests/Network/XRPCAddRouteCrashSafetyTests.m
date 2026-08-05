@@ -156,7 +156,7 @@
     addCase(@"updateHandle.handle", @"/xrpc/com.atproto.identity.updateHandle",
             @{}, @"handle", stringWrongTypes, YES);
 
-    // com.atproto.repo.deleteBlob — blob (NSString CID)
+    // com.atproto.repo.deleteBlob — blob (NSString ATProtoCID)
     addCase(@"deleteBlob.blob", @"/xrpc/com.atproto.repo.deleteBlob",
             @{}, @"blob", stringWrongTypes, YES);
 

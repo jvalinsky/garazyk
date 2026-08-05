@@ -381,7 +381,7 @@
     XCTAssertEqual([result[@"blob"][@"size"] integerValue], 1024 * 500);
 }
 
-#pragma mark - Get Blob (raw CID)
+#pragma mark - Get Blob (raw ATProtoCID)
 
 - (void)testGetBlobWithRawCID {
     NSError *error = nil;
@@ -394,8 +394,8 @@
     XCTAssertNotNil(cidString);
     [self referenceBlobWithCIDString:cidString did:self.testDID];
 
-    // Convert CID string to raw bytes
-    CID *cid = [CID cidFromString:cidString];
+    // Convert ATProtoCID string to raw bytes
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
     XCTAssertNotNil(cid);
 
     error = nil;
@@ -469,7 +469,7 @@
                                                  error:&error];
     XCTAssertNotNil(second);
 
-    // Same data should produce the same CID (content-addressed)
+    // Same data should produce the same ATProtoCID (content-addressed)
     XCTAssertEqualObjects(first[@"blob"][@"ref"][@"$link"],
                           second[@"blob"][@"ref"][@"$link"],
                           @"Content-addressed: same data = same CID");

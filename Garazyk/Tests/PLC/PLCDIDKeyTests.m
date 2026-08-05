@@ -52,7 +52,7 @@
     // Construct a did:key with an unsupported multicodec prefix (ed25519-pub: 0xed 0x01)
     uint8_t bytes[] = {0xED, 0x01, 0x02, 0xAA};
     NSData *data = [NSData dataWithBytes:bytes length:sizeof(bytes)];
-    NSString *payload = [CID base58btcEncode:data];
+    NSString *payload = [ATProtoCID base58btcEncode:data];
     NSString *didKey = [NSString stringWithFormat:@"did:key:z%@", payload];
 
     NSError *error = nil;

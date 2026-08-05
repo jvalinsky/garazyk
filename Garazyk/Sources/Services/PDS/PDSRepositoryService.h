@@ -25,7 +25,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 @class PDSActorStore;
 
 @class MST;
-@class CID;
+@class ATProtoCID;
 
 /**
  * @abstract Defines the PDSBlockRepository protocol contract.
@@ -110,11 +110,11 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  * @param error Error pointer for update failures.
  * @return YES if update succeeded, NO on failure.
  */
-- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable CID *)cid error:(NSError **)error;
+- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable ATProtoCID *)cid error:(NSError **)error;
 
 /**
  * @abstract Returns the repository root data for a DID.
- * @discussion Returns the CID of the repository's current commit, which
+ * @discussion Returns the ATProtoCID of the repository's current commit, which
  * references the MST root. Used for sync and verification.
  * @param did Decentralized identifier of repository owner.
  * @param error Error pointer for retrieval failures.
@@ -242,15 +242,15 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 /**
  * @abstract Returns CAR data containing the requested blocks.
  * @param did Repository DID.
- * @param cids Array of CID strings to fetch.
+ * @param cids Array of ATProtoCID strings to fetch.
  * @param error Error pointer.
  * @return CAR data with requested blocks.
  */
 - (nullable NSData *)getBlocksForDid:(NSString *)did cids:(NSArray<NSString *> *)cids error:(NSError **)error;
 
 /**
- * @abstract Gets the latest commit CID and revision from stored head commit metadata.
- * @discussion Lightweight lookup: reads the stored signed head commit CID and rev
+ * @abstract Gets the latest commit ATProtoCID and revision from stored head commit metadata.
+ * @discussion Lightweight lookup: reads the stored signed head commit ATProtoCID and rev
  * from the repo_root table without loading all records, rebuilding the MST, or
  * signing a new commit. Returns nil when no signed head commit exists, which is
  * distinct from getLatestCommitForDid's self-healing fallback.
@@ -264,7 +264,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 - (nullable NSDictionary *)headInfoForDid:(NSString *)did error:(NSError **)error;
 
 /**
- * @abstract Returns the latest commit CID and revision for a DID.
+ * @abstract Returns the latest commit ATProtoCID and revision for a DID.
  * @param did Repository DID.
  * @param error Error pointer.
  * @return Dictionary with @"cid" (string) and @"rev" (string).

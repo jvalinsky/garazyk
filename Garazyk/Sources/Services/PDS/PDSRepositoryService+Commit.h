@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PDSRepositoryService (Commit)
 
 /**
- * @abstract Returns the stored block data addressed by the repository root CID.
+ * @abstract Returns the stored block data addressed by the repository root ATProtoCID.
  * @param did The actor DID whose root block is requested.
  * @param error Receives actor-store, repository-metadata, or block-lookup failures.
  * @return The root block bytes, or nil when the actor, root metadata, or referenced block is absent.
@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable NSDictionary *)headInfoForDid:(NSString *)did error:(NSError **)error;
 /**
- * @abstract Returns the current signed commit CID and repository revision.
+ * @abstract Returns the current signed commit ATProtoCID and repository revision.
  * @discussion Uses persisted signed-head metadata when it matches the repository. Otherwise it
  * rebuilds export state and may materialize missing record blocks, backfill record revisions, and
  * create and persist a signed head commit. Those repair writes are committed transactionally per

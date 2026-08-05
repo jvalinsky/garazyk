@@ -34,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! The DID this operation belongs to. */
 @property (nonatomic, copy) NSString *did;
 
-/*! CID of the previous operation (nil for genesis operation). */
+/*! ATProtoCID of the previous operation (nil for genesis operation). */
 @property (nonatomic, copy, nullable) NSString *prev;
 
 /*! Base64-encoded signature of the operation hash. */
@@ -43,7 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! The operation payload containing rotation keys, services, etc. */
 @property (nonatomic, copy) NSDictionary *data;
 
-/*! Content Identifier (CID) for this operation. */
+/*! Content Identifier (ATProtoCID) for this operation. */
 @property (nonatomic, copy, nullable) NSString *cid;
 
 /*! Timestamp when this operation was created. */
@@ -101,11 +101,11 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method calculateCIDForOperation:error:
 
- @abstract Calculates the CID for an operation dictionary.
+ @abstract Calculates the ATProtoCID for an operation dictionary.
 
- @param operation The operation dictionary to calculate CID for.
+ @param operation The operation dictionary to calculate ATProtoCID for.
  @param error On failure, set to an error describing the failure.
- @return The CID string, or nil on failure.
+ @return The ATProtoCID string, or nil on failure.
  */
 + (nullable NSString *)calculateCIDForOperation:(NSDictionary *)operation error:(NSError **)error;
 

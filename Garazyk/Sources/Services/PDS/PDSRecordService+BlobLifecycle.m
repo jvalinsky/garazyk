@@ -53,7 +53,7 @@
         return NO;
     }
     for (NSString *cidString in referenceCIDs) {
-        CID *cid = [CID cidFromString:cidString];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
         if (!cid) continue;
         NSData *cidBytes = cid.bytes;
         sqlite3_bind_text(insertReference, 1, recordURI.UTF8String, -1, SQLITE_TRANSIENT);

@@ -11,10 +11,10 @@
 
 - (void)testMSTWithUTF8Keys {
     MST *tree = [[MST alloc] init];
-    // Use real-looking CID digest (32 bytes for SHA-256)
+    // Use real-looking ATProtoCID digest (32 bytes for SHA-256)
     uint8_t digest[32] = {0};
     digest[0] = 1; digest[1] = 2; digest[2] = 3;
-    CID *cid = [CID cidWithDigest:[NSData dataWithBytes:digest length:32] codec:0x71];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:[NSData dataWithBytes:digest length:32] codec:0x71];
     
     // Non-ASCII keys (emojis and multi-byte chars)
     // "🔥" is 4 bytes in UTF-8

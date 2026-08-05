@@ -68,9 +68,9 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @property (nonatomic, copy) NSString *did;
 @property (nonatomic, assign) NSInteger version;
-@property (nonatomic, strong, nullable) CID *data;
+@property (nonatomic, strong, nullable) ATProtoCID *data;
 @property (nonatomic, copy) NSString *rev;
-@property (nonatomic, strong, nullable) CID *prev;
+@property (nonatomic, strong, nullable) ATProtoCID *prev;
 @property (nonatomic, copy, nullable) NSData *sig;
 
 /**
@@ -78,9 +78,9 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  */
 + (instancetype)commitWithDid:(NSString *)did
                       version:(NSInteger)version
-                        data:(nullable CID *)data
+                        data:(nullable ATProtoCID *)data
                          rev:(NSString *)rev
-                        prev:(nullable CID *)prev
+                        prev:(nullable ATProtoCID *)prev
                          sig:(nullable NSData *)sig;
 
 /**
@@ -97,7 +97,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
  @abstract A single entry in a STAR MST node (wire format).
 
- @discussion In the STAR wire format, layer-0 entries may omit `v` (record CID)
+ @discussion In the STAR wire format, layer-0 entries may omit `v` (record ATProtoCID)
  when the record is included in the archive. The `V` flag indicates that the
  record follows in the stream. Similarly, `T` indicates that the subtree
  follows in the archive.
@@ -109,9 +109,9 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  */
 @property (nonatomic, assign) NSUInteger prefixLen;
 @property (nonatomic, copy) NSData *keySuffix;
-@property (nonatomic, strong, nullable) CID *value;
+@property (nonatomic, strong, nullable) ATProtoCID *value;
 @property (nonatomic, assign) BOOL valueArchived;
-@property (nonatomic, strong, nullable) CID *tree;
+@property (nonatomic, strong, nullable) ATProtoCID *tree;
 @property (nonatomic, assign) BOOL treeArchived;
 
 /**
@@ -119,9 +119,9 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  */
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                          keySuffix:(NSData *)keySuffix
-                             value:(nullable CID *)value
+                             value:(nullable ATProtoCID *)value
                       valueArchived:(BOOL)valueArchived
-                              tree:(nullable CID *)tree
+                              tree:(nullable ATProtoCID *)tree
                        treeArchived:(BOOL)treeArchived;
 
 @end
@@ -134,7 +134,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  @abstract A MST node in STAR wire format.
 
  @discussion STAR MST nodes differ from repo-spec MST nodes:
- - `l` is the left pointer CID (optional)
+ - `l` is the left pointer ATProtoCID (optional)
  - `L` is a bool flag indicating the left subtree is in the archive
  - `e` is the array of entries (STARMstEntry)
  - Layer-0 entries may omit `v` when records are included
@@ -144,14 +144,14 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 /**
  * @abstract Exposes the left value.
  */
-@property (nonatomic, strong, nullable) CID *left;
+@property (nonatomic, strong, nullable) ATProtoCID *left;
 @property (nonatomic, assign) BOOL leftArchived;
 @property (nonatomic, copy) NSArray<STARMstEntry *> *entries;
 
 /**
  * @abstract Performs the nodeWithLeft operation.
  */
-+ (instancetype)nodeWithLeft:(nullable CID *)left
++ (instancetype)nodeWithLeft:(nullable ATProtoCID *)left
                 leftArchived:(BOOL)leftArchived
                     entries:(NSArray<STARMstEntry *> *)entries;
 
@@ -211,12 +211,12 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  @abstract Walk the MST depth-first and serialize as STAR-L0.
 
  @param mst The MST to serialize.
- @param blockProvider Block that returns record data for a given CID.
+ @param blockProvider Block that returns record data for a given ATProtoCID.
  @param error Error pointer for serialization failures.
  @return YES on success, NO on failure.
  */
 - (BOOL)writeFromMST:(MST *)mst
-       blockProvider:(nullable NSData * _Nullable (^)(CID *cid))blockProvider
+       blockProvider:(nullable NSData * _Nullable (^)(ATProtoCID *cid))blockProvider
                error:(NSError **)error;
 
 /*!
@@ -278,12 +278,12 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  @abstract Walk the MST and serialize as STAR-lite (flat key-record).
 
  @param mst The MST to serialize.
- @param blockProvider Block that returns record data for a given CID.
+ @param blockProvider Block that returns record data for a given ATProtoCID.
  @param error Error pointer for serialization failures.
  @return YES on success, NO on failure.
  */
 - (BOOL)writeFromMST:(MST *)mst
-       blockProvider:(nullable NSData * _Nullable (^)(CID *cid))blockProvider
+       blockProvider:(nullable NSData * _Nullable (^)(ATProtoCID *cid))blockProvider
                error:(NSError **)error;
 
 /*!
@@ -338,7 +338,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 /**
  * @abstract Exposes the root cid value.
  */
-@property (nonatomic, strong, readonly, nullable) CID *rootCID;
+@property (nonatomic, strong, readonly, nullable) ATProtoCID *rootCID;
 @property (nonatomic, copy, readonly) NSArray<CARBlock *> *blocks;
 @property (nonatomic, assign, readonly) STARVariant variant;
 @property (nonatomic, strong, readonly, nullable) STARCommit *commit;
@@ -355,12 +355,12 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 /*!
  @method blockWithCID:
 
- @abstract Retrieves a block by its CID.
+ @abstract Retrieves a block by its ATProtoCID.
 
- @param cid The CID to look up.
- @return The block with the given CID, or nil if not found.
+ @param cid The ATProtoCID to look up.
+ @return The block with the given ATProtoCID, or nil if not found.
  */
-- (nullable CARBlock *)blockWithCID:(CID *)cid;
+- (nullable CARBlock *)blockWithCID:(ATProtoCID *)cid;
 
 @end
 
@@ -372,7 +372,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  @abstract Conversion from STAR to CAR format.
 
  @discussion Provides verifying STAR-to-CAR conversion. The reader
- validates every MST node CID against the commit's data CID chain,
+ validates every MST node ATProtoCID against the commit's data ATProtoCID chain,
  rehydrates layer-0 record links, and strips wire-format flags. CAR-to-STAR
  conversion is not supported; use the live-MST writer (STARL0Writer)
  for export.
@@ -385,14 +385,14 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  @abstract Convert STAR data (L0 or lite) to CAR format.
 
  @discussion STAR-to-CAR conversion is verifying: the reader validates
- every MST node CID against the commit's data CID chain, rehydrates
+ every MST node ATProtoCID against the commit's data ATProtoCID chain, rehydrates
  layer-0 record links, and strips wire-format flags before
  re-serializing to repo-spec form. Sig-less STAR archives are rejected
  because they cannot produce a compliant CAR.
 
  @param starData STAR-encoded archive data.
  @param error Error pointer for conversion failures.
- @return CAR-encoded data with the commit CID as root, or nil on failure.
+ @return CAR-encoded data with the commit ATProtoCID as root, or nil on failure.
  */
 + (nullable NSData *)carDataFromSTARData:(NSData *)starData error:(NSError **)error;
 

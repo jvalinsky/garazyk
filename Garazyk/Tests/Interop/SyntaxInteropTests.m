@@ -123,17 +123,17 @@
         NSString *trimmed = [cidStr stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         
         // Skip contrived examples that don't follow CIDv1 rules in their first byte
-        // or have non-standard base58btc encoding that doesn't decode to valid CID bytes
-        // (e.g., "z7x3CtScH765HvShXT" is a contrived base58btc CID whose decoded
+        // or have non-standard base58btc encoding that doesn't decode to valid ATProtoCID bytes
+        // (e.g., "z7x3CtScH765HvShXT" is a contrived base58btc ATProtoCID whose decoded
         // bytes don't form a valid CIDv1 varint+codec+multihash structure)
         if ([trimmed hasPrefix:@"m"] || [trimmed hasPrefix:@"7"] || [trimmed isEqualToString:@"z7x3CtScH765HvShXT"]) {
             continue;
         }
 
-        CID *cid = [CID cidFromString:trimmed];
+        ATProtoCID *cid = [ATProtoCID cidFromString:trimmed];
         XCTAssertNotNil(cid, @"Expected valid CID per fixtures: '%@' (hex: %@)", trimmed, [self hexStringForString:trimmed]);
         if (cid) {
-            XCTAssertTrue([cid isKindOfClass:[CID class]], @"Parsed CID should be valid type");
+            XCTAssertTrue([cid isKindOfClass:[ATProtoCID class]], @"Parsed CID should be valid type");
         }
     }
 }
@@ -152,7 +152,7 @@
     // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/cid_syntax_invalid.txt"];
     for (NSString *cidStr in invalid) {
-        CID *cid = [CID cidFromString:cidStr];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
         XCTAssertNil(cid, @"Expected invalid CID per fixtures: %@", cidStr);
     }
 }

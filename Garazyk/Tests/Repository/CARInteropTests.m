@@ -46,7 +46,7 @@ static NSData *HexToNSData(NSString *hex) {
 
 - (void)testCARv1FormatUnderstanding {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
-    CID *cid = [CID cidFromString:cidStr];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
     XCTAssertNotNil(cid, @"CID should be created from string");
     
     NSData *cidBytes = [cid bytes];
@@ -79,7 +79,7 @@ static NSData *HexToNSData(NSString *hex) {
 
 - (void)testCARv1HeaderParsing {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
-    CID *cid = [CID cidFromString:cidStr];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
     XCTAssertNotNil(cid, @"CID should be created from string");
     
     NSMutableData *carData = [NSMutableData data];
@@ -102,14 +102,14 @@ static NSData *HexToNSData(NSString *hex) {
 
 - (void)testCARv1RoundTrip {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
-    CID *rootCID = [CID cidFromString:cidStr];
+    ATProtoCID *rootCID = [ATProtoCID cidFromString:cidStr];
     XCTAssertNotNil(rootCID, @"Root CID should be created");
 
     NSMutableData *block1Data = [NSMutableData dataWithBytes:"block1" length:6];
-    CID *block1CID = [CID cidWithDigest:[CID sha256Digest:block1Data] codec:0x71];
+    ATProtoCID *block1CID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block1Data] codec:0x71];
     CARBlock *block1 = [CARBlock blockWithCID:block1CID data:block1Data];
 
-    // Debug: print block CID bytes
+    // Debug: print block ATProtoCID bytes
     NSData *blockCIDBytes = [block1CID bytes];
     NSMutableString *cidHex = [NSMutableString string];
     for (NSUInteger i = 0; i < blockCIDBytes.length; i++) {
@@ -152,11 +152,11 @@ static NSData *HexToNSData(NSString *hex) {
 
 - (void)testCARv1WriterSerialization {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
-    CID *rootCID = [CID cidFromString:cidStr];
+    ATProtoCID *rootCID = [ATProtoCID cidFromString:cidStr];
     CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
 
     NSData *blockData = [@"hello world" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *blockCID = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
+    ATProtoCID *blockCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:blockData] codec:0x71];
     CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
     [writer addBlock:block];
 
@@ -174,14 +174,14 @@ static NSData *HexToNSData(NSString *hex) {
 
 - (void)testCARv1BlockLookup {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
-    CID *rootCID = [CID cidFromString:cidStr];
+    ATProtoCID *rootCID = [ATProtoCID cidFromString:cidStr];
 
     NSMutableData *block1Data = [NSMutableData dataWithBytes:"block1" length:6];
-    CID *block1CID = [CID cidWithDigest:[CID sha256Digest:block1Data] codec:0x71];
+    ATProtoCID *block1CID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block1Data] codec:0x71];
     CARBlock *block1 = [CARBlock blockWithCID:block1CID data:block1Data];
 
     NSMutableData *block2Data = [NSMutableData dataWithBytes:"block2" length:6];
-    CID *block2CID = [CID cidWithDigest:[CID sha256Digest:block2Data] codec:0x71];
+    ATProtoCID *block2CID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block2Data] codec:0x71];
     CARBlock *block2 = [CARBlock blockWithCID:block2CID data:block2Data];
 
     CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
@@ -205,14 +205,14 @@ static NSData *HexToNSData(NSString *hex) {
     XCTAssertNotNil(foundBlock2, @"Should be able to lookup block by CID");
     XCTAssertEqualObjects(foundBlock2.data, block2Data, @"Found block data should match");
 
-    CID *nonexistentCID = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *nonexistentCID = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     CARBlock *notFound = [reader blockWithCID:nonexistentCID];
     XCTAssertNil(notFound, @"Should not find nonexistent CID");
 }
 
 - (void)testCARReaderRejectsMalformedCIDInBlock {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
-    CID *rootCID = [CID cidFromString:cidStr];
+    ATProtoCID *rootCID = [ATProtoCID cidFromString:cidStr];
     XCTAssertNotNil(rootCID);
 
     NSError *headerError = nil;
@@ -221,7 +221,7 @@ static NSData *HexToNSData(NSString *hex) {
     XCTAssertNil(headerError);
 
     NSMutableData *carData = [NSMutableData dataWithData:header];
-    // Block entry: length varint = 1, payload = {0x81} (truncated CID varint).
+    // Block entry: length varint = 1, payload = {0x81} (truncated ATProtoCID varint).
     uint8_t malformedEntry[] = {0x01, 0x81};
     [carData appendBytes:malformedEntry length:sizeof(malformedEntry)];
 
@@ -233,10 +233,10 @@ static NSData *HexToNSData(NSString *hex) {
 
 - (void)testCARv1BlockCIDConsistency {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
-    CID *rootCID = [CID cidFromString:cidStr];
+    ATProtoCID *rootCID = [ATProtoCID cidFromString:cidStr];
 
     NSData *blockData = [@"test block data for CID consistency" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *expectedBlockCID = [CID cidWithDigest:[CID sha256Digest:blockData] codec:0x71];
+    ATProtoCID *expectedBlockCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:blockData] codec:0x71];
     CARBlock *block = [CARBlock blockWithCID:expectedBlockCID data:blockData];
 
     CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
@@ -260,8 +260,8 @@ static NSData *HexToNSData(NSString *hex) {
 
     NSData *value1 = [@"record-1" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *value2 = [@"record-2" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid1 = [CID cidWithDigest:[CID sha256Digest:value1] codec:0x71];
-    CID *cid2 = [CID cidWithDigest:[CID sha256Digest:value2] codec:0x71];
+    ATProtoCID *cid1 = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:value1] codec:0x71];
+    ATProtoCID *cid2 = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:value2] codec:0x71];
     XCTAssertNotNil(cid1);
     XCTAssertNotNil(cid2);
 
@@ -270,7 +270,7 @@ static NSData *HexToNSData(NSString *hex) {
 
     NSMutableDictionary<NSString *, NSData *> *enumeratedBlocks = [NSMutableDictionary dictionary];
     NSError *enumerationError = nil;
-    BOOL enumerated = [mst enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+    BOOL enumerated = [mst enumerateNodeCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         (void)error;
         NSString *cidString = cid.stringValue ?: @"";
         if (cidString.length == 0) {

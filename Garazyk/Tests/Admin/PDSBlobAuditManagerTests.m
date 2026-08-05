@@ -194,7 +194,7 @@
     [self createServiceAccountWithDid:did handle:@"service.example.com"];
 
     __autoreleasing NSError *uploadError = nil;
-    CID *cid = [self.blobStorage uploadBlob:[@"hello" dataUsingEncoding:NSUTF8StringEncoding]
+    ATProtoCID *cid = [self.blobStorage uploadBlob:[@"hello" dataUsingEncoding:NSUTF8StringEncoding]
                                    mimeType:@"text/plain"
                                         did:did
                                       error:&uploadError];
@@ -219,8 +219,8 @@
     NSString *did = @"did:plc:refabc234567abcdefghijkl";
     [self createServiceAccountWithDid:did handle:@"references.example.com"];
 
-    CID *referencedCID = [CID sha256:[@"referenced" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *unreferencedCID = [CID sha256:[@"unreferenced" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *referencedCID = [ATProtoCID sha256:[@"referenced" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *unreferencedCID = [ATProtoCID sha256:[@"unreferenced" dataUsingEncoding:NSUTF8StringEncoding]];
 
     __autoreleasing NSError *txError = nil;
     [self.userDatabasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
@@ -263,7 +263,7 @@
         record.did = did;
         record.collection = @"app.bsky.feed.post";
         record.rkey = @"ref";
-        record.cid = [CID sha256:recordData].stringValue;
+        record.cid = [ATProtoCID sha256:recordData].stringValue;
         record.value = [[NSString alloc] initWithData:recordData encoding:NSUTF8StringEncoding];
         record.createdAt = [NSDate date];
         XCTAssertTrue([transactor putRecord:record forDid:did error:innerError]);
@@ -293,11 +293,11 @@
     [self createServiceAccountWithDid:did handle:@"temporary.example.com"];
 
     NSError *error = nil;
-    CID *expiredCID = [self.blobStorage uploadBlob:[@"expired" dataUsingEncoding:NSUTF8StringEncoding]
+    ATProtoCID *expiredCID = [self.blobStorage uploadBlob:[@"expired" dataUsingEncoding:NSUTF8StringEncoding]
                                            mimeType:@"text/plain"
                                                 did:did
                                               error:&error];
-    CID *recentCID = [self.blobStorage uploadBlob:[@"recent" dataUsingEncoding:NSUTF8StringEncoding]
+    ATProtoCID *recentCID = [self.blobStorage uploadBlob:[@"recent" dataUsingEncoding:NSUTF8StringEncoding]
                                           mimeType:@"text/plain"
                                                did:did
                                              error:&error];

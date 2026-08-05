@@ -28,9 +28,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method getBlobWithCid:error:
 
- @abstract Retrieves blob metadata by CID.
+ @abstract Retrieves blob metadata by ATProtoCID.
 
- @param cid The CID of the blob.
+ @param cid The ATProtoCID of the blob.
  @param error On return, contains an error if the operation failed.
  @return The blob object, or nil if not found.
  */
@@ -74,9 +74,9 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Deletes a blob owned by the given DID.
 
  @discussion Scoped by (cid, did) so one account cannot delete another
- account's row for a shared content-addressed CID (§5.1).
+ account's row for a shared content-addressed ATProtoCID (§5.1).
 
- @param cid The CID of the blob to delete.
+ @param cid The ATProtoCID of the blob to delete.
  @param did The DID that must own the blob row.
  @param error On return, contains an error if the operation failed.
  @return YES if the blob was deleted successfully, NO otherwise.

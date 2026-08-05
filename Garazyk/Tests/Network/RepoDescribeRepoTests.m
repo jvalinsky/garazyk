@@ -47,8 +47,8 @@
       body[@"didDoc"],
       @"DID document should be present or at least an empty dictionary");
 
-  // In our refactored PDSController, we added nil guards for CID.stringValue.
-  // If it was working correctly, 'root' should be present and be a valid CID
+  // In our refactored PDSController, we added nil guards for ATProtoCID.stringValue.
+  // If it was working correctly, 'root' should be present and be a valid ATProtoCID
   // string.
   XCTAssertNotNil(body[@"handleIsCorrect"],
                   @"handleIsCorrect should be present");
