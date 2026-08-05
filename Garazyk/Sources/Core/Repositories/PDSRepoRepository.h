@@ -21,7 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Creates a new repository record. */
 - (BOOL)createRepo:(PDSDatabaseRepo *)repo error:(NSError **)error;
 
-/*! Updates a repository's root CID. */
+/*! Updates a repository's root ATProtoCID. */
 - (BOOL)updateRepoRoot:(NSString *)ownerDid rootCid:(NSData *)rootCid error:(NSError **)error;
 
 /*! Retrieves repository metadata by owner DID. */

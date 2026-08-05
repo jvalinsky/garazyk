@@ -6,7 +6,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class CID;
+@class ATProtoCID;
 
 /**
  * @abstract Error domain for video transcoding operations.

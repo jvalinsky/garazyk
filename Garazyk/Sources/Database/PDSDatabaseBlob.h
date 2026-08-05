@@ -29,7 +29,7 @@ extern NSString * const PDSDatabaseBlobStateReferenced;
  */
 @interface PDSDatabaseBlob : NSObject <PDSDatabaseModel>
 
-/** The CID of the blob. */
+/** The ATProtoCID of the blob. */
 @property (nonatomic, copy) NSData *cid;
 
 /** The DID of the account that uploaded this blob. */

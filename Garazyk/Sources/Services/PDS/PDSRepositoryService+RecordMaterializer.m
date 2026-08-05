@@ -67,7 +67,7 @@
     // 1. Try to fetch from ipld_blocks first (canonical store)
     PDSActorStore *store = [self.databasePool storeForDid:record.did error:nil];
     if (store) {
-        CID *cid = [CID cidFromString:record.cid];
+        ATProtoCID *cid = [ATProtoCID cidFromString:record.cid];
         if (cid) {
             NSData *blockData = [store getBlockForCID:cid.bytes forDid:record.did error:nil];
             if (blockData.length > 0) {
@@ -98,12 +98,12 @@
         return nil;
     }
 
-    CID *expectedCID = [CID cidFromString:record.cid];
+    ATProtoCID *expectedCID = [ATProtoCID cidFromString:record.cid];
     if (!expectedCID) {
         return nil;
     }
 
-    CID *actualCID = [CID cidWithDigest:[CID sha256Digest:cborData] codec:0x71];
+    ATProtoCID *actualCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:cborData] codec:0x71];
     if (!actualCID || ![actualCID isEqualToCID:expectedCID]) {
         return nil;
     }
@@ -111,9 +111,9 @@
     return cborData;
 }
 
-#pragma mark - CID Link Value
+#pragma mark - ATProtoCID Link Value
 
-- (ATProtoCBORValue *)cidLinkValueForCID:(CID *)cid {
+- (ATProtoCBORValue *)cidLinkValueForCID:(ATProtoCID *)cid {
     NSMutableData *cidBytes = [NSMutableData dataWithCapacity:1 + cid.bytes.length];
     uint8_t marker = 0x00;
     [cidBytes appendBytes:&marker length:1];

@@ -10,7 +10,7 @@
  profile ATProto calls DAG-CBOR:
  - Canonical map key ordering (by encoded key bytes, length-first)
  - String-only map keys, no duplicates
- - CID-link encoding (CBOR tag 42 with 0x00 marker byte); all other tags rejected
+ - ATProtoCID-link encoding (CBOR tag 42 with 0x00 marker byte); all other tags rejected
  - JSON $link/$bytes wrapper conversion
  - Minimal-length integer/length encodings only; no indefinite lengths
  - `true`, `false` and `null` are the only simple values; `undefined` is rejected
@@ -22,7 +22,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class CID;
+@class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -105,7 +105,7 @@ typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
  This class handles:
  - Encoding Foundation objects to DAG-CBOR bytes
  - Decoding DAG-CBOR bytes to Foundation objects
- - CID-link encoding/decoding (tag 42)
+ - ATProtoCID-link encoding/decoding (tag 42)
  - JSON wrapper conversion ($link, $bytes)
  - Canonical map ordering
  */
@@ -117,7 +117,7 @@ typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
 /**
  Encode a Foundation object to canonical DAG-CBOR bytes.
  
- @param object A Foundation object (NSDictionary, NSArray, NSString, NSNumber, NSData, NSNull, or CID)
+ @param object A Foundation object (NSDictionary, NSArray, NSString, NSNumber, NSData, NSNull, or ATProtoCID)
  @param error Error pointer (optional)
  @return DAG-CBOR encoded bytes, or nil on error
  
@@ -128,9 +128,9 @@ typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
  - NSNumber (integer/boolean only) → CBOR integer/boolean
  - NSData → CBOR byte string
  - NSNull → CBOR null
- - CID → CBOR tag 42 (CID-link)
+ - ATProtoCID → CBOR tag 42 (ATProtoCID-link)
  
- Dictionaries with `$link` keys are automatically converted to CID-links.
+ Dictionaries with `$link` keys are automatically converted to ATProtoCID-links.
  Dictionaries with `$bytes` keys are converted to byte strings.
  
  Floats are rejected with ATProtoDagCBORErrorCodeFloatsNotAllowed.
@@ -147,7 +147,7 @@ typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
  @param error Error pointer (optional)
  @return Decoded Foundation object, or nil on error
  
- @discussion CID-links (tag 42) are decoded as CID objects.
+ @discussion ATProtoCID-links (tag 42) are decoded as ATProtoCID objects.
  */
 + (nullable id)decodeData:(NSData *)data error:(NSError **)error;
 
@@ -168,9 +168,9 @@ typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
  
  @param data DAG-CBOR encoded bytes
  @param error Error pointer (optional)
- @return JSON-compatible object with CID-links as $link wrappers, or nil on error
+ @return JSON-compatible object with ATProtoCID-links as $link wrappers, or nil on error
  
- @discussion CID-links are decoded as `{"$link": "bafy..."}` dictionaries.
+ @discussion ATProtoCID-links are decoded as `{"$link": "bafy..."}` dictionaries.
  Byte strings are decoded as `{"$bytes": "base64..."}` dictionaries where needed.
  */
 + (nullable id)decodeDataAsJSON:(NSData *)data error:(NSError **)error;

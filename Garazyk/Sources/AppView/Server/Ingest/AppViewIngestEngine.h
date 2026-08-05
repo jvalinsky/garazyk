@@ -107,7 +107,7 @@ didReceiveAccountEvent:(AppViewIngestEvent *)event;
 /*! Commit revision string (nil for non-commit events). */
 @property (nonatomic, copy, nullable) NSString *rev;
 
-/*! Commit CID string (nil for non-commit events). */
+/*! Commit ATProtoCID string (nil for non-commit events). */
 @property (nonatomic, copy, nullable) NSString *cid;
 
 /*! Event type string: "#commit", "#identity", "#account", "#info". */

@@ -127,7 +127,7 @@ NSString * const ATProtoMediaWorkerErrorDomain = @"com.atproto.mediacore.worker"
                 return;
             }
 
-            CID *cid = [CID cidFromString:blobCid];
+            ATProtoCID *cid = [ATProtoCID cidFromString:blobCid];
             if (!cid) {
                 [self failJob:jobId error:[NSError errorWithDomain:ATProtoMediaWorkerErrorDomain
                                                               code:ATProtoMediaWorkerErrorProcessingFailed

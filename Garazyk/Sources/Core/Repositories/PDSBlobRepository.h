@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Saves blob metadata. */
 - (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error;
 
-/*! Retrieves blob data by its identifier (CID). */
+/*! Retrieves blob data by its identifier (ATProtoCID). */
 - (nullable NSData *)blobForId:(NSString *)blobId error:(NSError **)error;
 
 /*! Deletes a blob by its identifier. */
@@ -26,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Checks if a blob exists. */
 - (BOOL)hasBlob:(NSString *)blobId error:(NSError **)error;
 
-/*! Gets blob metadata by CID and DID. */
+/*! Gets blob metadata by ATProtoCID and DID. */
 - (nullable PDSDatabaseBlob *)blobWithCid:(NSData *)cid did:(NSString *)did error:(NSError **)error;
 
 /*! Lists blobs for a DID. */

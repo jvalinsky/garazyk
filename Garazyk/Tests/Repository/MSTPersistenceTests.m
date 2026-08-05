@@ -54,7 +54,7 @@
     return nil;
 }
 
-- (nullable CID *)cidFromTaggedValue:(ATProtoCBORValue *)value {
+- (nullable ATProtoCID *)cidFromTaggedValue:(ATProtoCBORValue *)value {
     if (!value || value.type != CBORTypeTag || !value.tagValue || value.tagValue.type != CBORTypeByteString) {
         return nil;
     }
@@ -65,10 +65,10 @@
     }
 
     NSData *cidBytes = [bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)];
-    return [CID cidFromBytes:cidBytes];
+    return [ATProtoCID cidFromBytes:cidBytes];
 }
 
-- (CID *)mstRootCIDForReader:(CARReader *)reader {
+- (ATProtoCID *)mstRootCIDForReader:(CARReader *)reader {
     CARBlock *rootBlock = [reader blockWithCID:reader.rootCID];
     if (!rootBlock) {
         return reader.rootCID;
@@ -90,9 +90,9 @@
         return reader.rootCID;
     }
 
-    CID *dataCID = nil;
+    ATProtoCID *dataCID = nil;
     if (dataValue.type == CBORTypeTextString) {
-        dataCID = [CID cidFromString:dataValue.textString];
+        dataCID = [ATProtoCID cidFromString:dataValue.textString];
     } else if (dataValue.type == CBORTypeTag) {
         dataCID = [self cidFromTaggedValue:dataValue];
     }
@@ -137,13 +137,13 @@
     ];
     for (NSUInteger i = 0; i < tidRkeys.count; i++) {
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", tidRkeys[i]];
-        CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
+        ATProtoCID *cid = [ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
         [seedTree put:key valueCID:cid];
     }
 
     NSData *carData = [seedTree exportCAR];
     XCTAssertNotNil(carData, "CAR export must succeed");
-    CID *rootCID = seedTree.rootCID;
+    ATProtoCID *rootCID = seedTree.rootCID;
     XCTAssertNotNil(rootCID, "Root CID must be available");
 
     NSError *carError = nil;
@@ -198,7 +198,7 @@
     XCTAssertNotNil(reader.rootCID, @"Fixture CAR should contain root CID");
     XCTAssertGreaterThan(reader.blocks.count, 0, @"Fixture CAR should have blocks");
 
-    CID *mstRootCID = [self mstRootCIDForReader:reader];
+    ATProtoCID *mstRootCID = [self mstRootCIDForReader:reader];
     XCTAssertNotNil(mstRootCID, @"Fixture CAR should resolve MST root CID");
 
     PDSDatabaseRepo *repo = [[PDSDatabaseRepo alloc] init];

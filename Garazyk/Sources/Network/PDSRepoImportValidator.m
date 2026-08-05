@@ -20,7 +20,7 @@ static const NSUInteger kPDSImportRepoMaxMSTNodes = 100000;
 static const NSUInteger kPDSImportRepoMaxRecords = 100000;
 static const NSUInteger kPDSImportRepoMaxMSTDepth = 512;
 
-static CID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
+static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
     if (!value) {
         return nil;
     }
@@ -41,7 +41,7 @@ static CID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
     }
 
     NSData *cidBytes = [bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)];
-    return [CID cidFromBytes:cidBytes];
+    return [ATProtoCID cidFromBytes:cidBytes];
 }
 
 static NSData *publicKeyFromDIDKeyString(NSString *didKey) {
@@ -52,7 +52,7 @@ static NSData *publicKeyFromDIDKeyString(NSString *didKey) {
     if (![multibase hasPrefix:@"z"]) {
         return nil;
     }
-    NSData *decoded = [CID base58btcDecode:[multibase substringFromIndex:1]];
+    NSData *decoded = [ATProtoCID base58btcDecode:[multibase substringFromIndex:1]];
     if (decoded.length != 35) {
         return nil;
     }
@@ -120,7 +120,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(ATProtoDIDDocument *document) {
     return NO;
 }
 
-+ (nullable NSArray<PDSDatabaseRecord *> *)extractRecordsFromMSTRoot:(CID *)rootCID
++ (nullable NSArray<PDSDatabaseRecord *> *)extractRecordsFromMSTRoot:(ATProtoCID *)rootCID
                                                                  did:(NSString *)did
                                                               reader:(CARReader *)reader
                                                                  rev:(NSString *)rev
@@ -142,7 +142,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(ATProtoDIDDocument *document) {
         NSDictionary *frame = stack.lastObject;
         [stack removeLastObject];
 
-        CID *nodeCID = frame[@"cid"];
+        ATProtoCID *nodeCID = frame[@"cid"];
         NSString *prevKey = frame[@"prevKey"] ?: @"";
         NSUInteger depth = [frame[@"depth"] unsignedIntegerValue];
         if (depth > kPDSImportRepoMaxMSTDepth) {
@@ -177,7 +177,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(ATProtoDIDDocument *document) {
 
         NSMutableArray<NSDictionary *> *childFrames = [NSMutableArray array];
         ATProtoCBORValue *leftTag = nodeValue.map[[ATProtoCBORValue textString:@"l"]];
-        CID *leftCID = cidFromTaggedCBORValue(leftTag);
+        ATProtoCID *leftCID = cidFromTaggedCBORValue(leftTag);
         if (leftCID) {
             [childFrames addObject:@{@"cid": leftCID, @"prevKey": prevKey, @"depth": @(depth + 1)}];
         }
@@ -197,7 +197,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(ATProtoDIDDocument *document) {
             NSString *suffix = [[NSString alloc] initWithData:suffixData encoding:NSUTF8StringEncoding] ?: @"";
             NSString *fullKey = [prefix stringByAppendingString:suffix];
 
-            CID *valueCID = cidFromTaggedCBORValue(entryMap.map[[ATProtoCBORValue textString:@"v"]]);
+            ATProtoCID *valueCID = cidFromTaggedCBORValue(entryMap.map[[ATProtoCBORValue textString:@"v"]]);
             if (valueCID) {
                 CARBlock *valueBlock = [reader blockWithCID:valueCID];
                 if (!valueBlock) {
@@ -236,7 +236,7 @@ static NSData *atprotoSigningKeyFromDIDDocument(ATProtoDIDDocument *document) {
                 }
             }
 
-            CID *treeCID = cidFromTaggedCBORValue(entryMap.map[[ATProtoCBORValue textString:@"t"]]);
+            ATProtoCID *treeCID = cidFromTaggedCBORValue(entryMap.map[[ATProtoCBORValue textString:@"t"]]);
             if (treeCID) {
                 [childFrames addObject:@{@"cid": treeCID, @"prevKey": fullKey, @"depth": @(depth + 1)}];
             }
@@ -268,14 +268,14 @@ static NSData *atprotoSigningKeyFromDIDDocument(ATProtoDIDDocument *document) {
         return nil;
     }
 
-    CID *computedCommitCID = [commit computeCID];
+    ATProtoCID *computedCommitCID = [commit computeCID];
     if (!computedCommitCID || ![computedCommitCID isEqualToCID:reader.rootCID]) {
         if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Commit CID does not match CAR root");
         return nil;
     }
 
     for (CARBlock *block in reader.blocks) {
-        CID *computed = [CID cidWithDigest:[CID sha256Digest:block.data] codec:block.cid.codec];
+        ATProtoCID *computed = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block.data] codec:block.cid.codec];
         if (!computed || ![computed isEqualToCID:block.cid]) {
             if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"CAR block CID does not match block data");
             return nil;

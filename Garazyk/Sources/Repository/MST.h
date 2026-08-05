@@ -14,7 +14,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class CID;
+@class ATProtoCID;
 @class MSTNode;
 @class MSTEntry;
 @class MSTNodeEntry;
@@ -54,21 +54,21 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 @property(nonatomic, copy) NSString *key;
 /** @abstract The type of the operation. */
 @property(nonatomic, assign) MSTDiffOperationType type;
-/** @abstract The CID before the change. */
-@property(nonatomic, strong, nullable) CID *previousCID;
-/** @abstract The CID after the change. */
-@property(nonatomic, strong, nullable) CID *currentCID;
+/** @abstract The ATProtoCID before the change. */
+@property(nonatomic, strong, nullable) ATProtoCID *previousCID;
+/** @abstract The ATProtoCID after the change. */
+@property(nonatomic, strong, nullable) ATProtoCID *currentCID;
 
 /** @abstract Creates an add operation. */
 + (instancetype)addOperationWithKey:(NSString *)key
-                         currentCID:(CID *)currentCID;
+                         currentCID:(ATProtoCID *)currentCID;
 /** @abstract Creates an update operation. */
 + (instancetype)updateOperationWithKey:(NSString *)key
-                           previousCID:(CID *)previousCID
-                            currentCID:(CID *)currentCID;
+                           previousCID:(ATProtoCID *)previousCID
+                            currentCID:(ATProtoCID *)currentCID;
 /** @abstract Creates a delete operation. */
 + (instancetype)deleteOperationWithKey:(NSString *)key
-                           previousCID:(CID *)previousCID;
+                           previousCID:(ATProtoCID *)previousCID;
 
 @end
 
@@ -79,20 +79,20 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 
 /** @abstract The key of the entry. */
 @property(nonatomic, copy, readonly) NSString *key;
-/** @abstract The CID of the value. */
-@property(nonatomic, strong, readonly) CID *valueCID;
+/** @abstract The ATProtoCID of the value. */
+@property(nonatomic, strong, readonly) ATProtoCID *valueCID;
 /** @abstract Optional sub-key for nested entries. */
 @property(nonatomic, copy, readonly, nullable) NSString *subKey;
 
 /** @abstract Creates an entry. */
-+ (instancetype)entryWithKey:(NSString *)key valueCID:(CID *)valueCID;
++ (instancetype)entryWithKey:(NSString *)key valueCID:(ATProtoCID *)valueCID;
 /** @abstract Creates an entry with a sub-key. */
 + (instancetype)entryWithKey:(NSString *)key
-                    valueCID:(CID *)valueCID
+                    valueCID:(ATProtoCID *)valueCID
                       subKey:(nullable NSString *)subKey;
 /** @abstract Initializes an entry. */
 - (instancetype)initWithKey:(NSString *)key
-                   valueCID:(CID *)valueCID
+                   valueCID:(ATProtoCID *)valueCID
                      subKey:(nullable NSString *)subKey;
 
 /** @abstract Serialized key bytes. */
@@ -113,10 +113,10 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 @property(nonatomic, assign) NSUInteger prefixLen;
 /** @abstract The key suffix. */
 @property(nonatomic, copy) NSData *keySuffix;
-/** @abstract The CID value. */
-@property(nonatomic, strong) CID *value;
-/** @abstract Optional CID of the subtree. */
-@property(nonatomic, strong, nullable) CID *tree;
+/** @abstract The ATProtoCID value. */
+@property(nonatomic, strong) ATProtoCID *value;
+/** @abstract Optional ATProtoCID of the subtree. */
+@property(nonatomic, strong, nullable) ATProtoCID *tree;
 
 /** @abstract The full key reconstructed from prefix length and suffix. */
 @property(nonatomic, copy, readonly) NSString *fullKey;
@@ -124,8 +124,8 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 /** @abstract Creates a node entry. */
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                          keySuffix:(NSData *)keySuffix
-                             value:(CID *)value
-                              tree:(nullable CID *)tree;
+                             value:(ATProtoCID *)value
+                              tree:(nullable ATProtoCID *)tree;
 
 /** @abstract Serializes the node entry. */
 - (NSData *)serialize;
@@ -133,7 +133,7 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 @end
 
 /** @abstract Block provider type for resolving CIDs. */
-typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
+typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
 
 /**
  * @abstract A node in the Merkle Search Tree.
@@ -142,34 +142,34 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
 
 /** @abstract The node type (leaf or internal). */
 @property(nonatomic, assign, readonly) MSTNodeKind kind;
-/** @abstract The node hash CID. */
-@property(nonatomic, strong, readonly, nullable) CID *nodeHash;
+/** @abstract The node hash ATProtoCID. */
+@property(nonatomic, strong, readonly, nullable) ATProtoCID *nodeHash;
 /** @abstract Entries contained in this node. */
 @property(nonatomic, copy, readonly) NSArray<MSTNodeEntry *> *entries;
-/** @abstract CID of the left subtree. */
-@property(nonatomic, strong, readonly, nullable) CID *left;
+/** @abstract ATProtoCID of the left subtree. */
+@property(nonatomic, strong, readonly, nullable) ATProtoCID *left;
 
 /** @abstract Creates a leaf node. */
 + (instancetype)leafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries;
 /** @abstract Creates an internal (non-leaf) node. */
 + (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries
-                                  left:(nullable CID *)left;
+                                  left:(nullable ATProtoCID *)left;
 
 /** @abstract Initializes a node. */
 - (instancetype)initWithKind:(MSTNodeKind)kind
                      entries:(NSArray<MSTNodeEntry *> *)entries
-                        left:(nullable CID *)left;
+                        left:(nullable ATProtoCID *)left;
 
 /** @abstract Serializes the node data. */
 - (NSData *)serialize;
 /** @abstract Serializes the node to CBOR, using a cache for CIDs. */
-- (NSData *)serializeToCBOR:(NSMapTable<MSTNode *, CID *> *)cache;
-/** @abstract Computes the CID of the node. */
-- (CID *)getCID:(NSMapTable<MSTNode *, CID *> *)cache;
+- (NSData *)serializeToCBOR:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
+/** @abstract Computes the ATProtoCID of the node. */
+- (ATProtoCID *)getCID:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
 /** @abstract Computes the hash of the node. */
 - (NSData *)computeHash;
 /** @abstract Sets the node hash. */
-- (void)setNodeHash:(CID *)hash;
+- (void)setNodeHash:(ATProtoCID *)hash;
 /** @abstract Retrieves all entries in the tree rooted at this node. */
 - (NSArray<MSTEntry *> *)fullEntries;
 
@@ -202,25 +202,25 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
 
 /** @abstract The root node of the tree. */
 @property(strong, readonly, nullable) MSTNode *root;
-/** @abstract The CID of the root node. */
-@property(nonatomic, strong, readonly, nullable) CID *rootCID;
+/** @abstract The ATProtoCID of the root node. */
+@property(nonatomic, strong, readonly, nullable) ATProtoCID *rootCID;
 /** @abstract Hash of an empty tree. */
 @property(nonatomic, copy, readonly) NSData *emptyTreeHash;
 
-/** @abstract Initializes an MST with a root CID. */
-- (instancetype)initWithRootCID:(nullable CID *)rootCID;
+/** @abstract Initializes an MST with a root ATProtoCID. */
+- (instancetype)initWithRootCID:(nullable ATProtoCID *)rootCID;
 /** @abstract Initializes an MST with a root node. */
 - (instancetype)initWithRootNode:(nullable MSTNode *)rootNode;
 
-/** @abstract Gets a value CID for a given key. */
-- (nullable CID *)get:(NSString *)key;
-/** @abstract Gets a value CID for a given key and sub-key. */
-- (nullable CID *)get:(NSString *)key subKey:(nullable NSString *)subKey;
+/** @abstract Gets a value ATProtoCID for a given key. */
+- (nullable ATProtoCID *)get:(NSString *)key;
+/** @abstract Gets a value ATProtoCID for a given key and sub-key. */
+- (nullable ATProtoCID *)get:(NSString *)key subKey:(nullable NSString *)subKey;
 /** @abstract Puts a key-value entry into the tree. */
-- (void)put:(NSString *)key valueCID:(CID *)valueCID;
+- (void)put:(NSString *)key valueCID:(ATProtoCID *)valueCID;
 /** @abstract Puts a key-value entry with a sub-key into the tree. */
 - (void)put:(NSString *)key
-    valueCID:(CID *)valueCID
+    valueCID:(ATProtoCID *)valueCID
       subKey:(nullable NSString *)subKey;
 /** @abstract Deletes an entry for a key. */
 - (void)delete:(NSString *)key;
@@ -241,7 +241,7 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
 /**
  * @abstract Deserializes an MST from CBOR, recursively resolving child subtrees via a block provider.
  * @param data The root node's CBOR data.
- * @param blockProvider A block that resolves a CID to its CBOR data, or nil for lazy resolution.
+ * @param blockProvider A block that resolves a ATProtoCID to its CBOR data, or nil for lazy resolution.
  * @return A fully reconstructed MST, or nil if deserialization fails.
  */
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data
@@ -300,7 +300,7 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
 /**
  * @abstract Enumerates all node blocks in CAR-ready form.
  */
-- (BOOL)enumerateNodeCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data,
+- (BOOL)enumerateNodeCARBlocksUsingBlock:(BOOL (^)(ATProtoCID *cid, NSData *data,
                                                    NSError **error))block
                                    error:(NSError **)error;
 
@@ -338,7 +338,7 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
  * interleaved record blocks under each entry.
  *
  * @param block           Called once per emitted block, in spec order.
- * @param recordProvider  Optional. Resolves a record CID to its data;
+ * @param recordProvider  Optional. Resolves a record ATProtoCID to its data;
  *                        required for records to be interleaved. When
  *                        nil, only MST node blocks are emitted.
  * @param error           Out-parameter for error reporting.
@@ -361,18 +361,18 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
  *   existing production BFS paths — this method consumes the flag
  *   but does not affect enumerateNodeCARBlocksUsingBlock:error:.
  *
- *   Records whose CID is unknown to `recordProvider` (provider returns
+ *   Records whose ATProtoCID is unknown to `recordProvider` (provider returns
  *   nil data) are silently skipped so a partially-populated record
  *   store never aborts the walk. The dedup set tracks both node and
  *   record CIDs; under a deterministic record provider, identical
  *   record blocks shared across entries are emitted at most once. A
  *   non-deterministic provider that returns nil then non-nil for the
- *   same CID will re-query it on the second encounter, because the
+ *   same ATProtoCID will re-query it on the second encounter, because the
  *   dedup set is only updated after a successful emission.
  *
  * @return YES if all blocks were emitted; NO on failure (see `error`).
  */
-- (BOOL)enumerateStreamableCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data,
+- (BOOL)enumerateStreamableCARBlocksUsingBlock:(BOOL (^)(ATProtoCID *cid, NSData *data,
                                                         NSError **error))block
                                 recordProvider:(nullable MSTBlockProvider)recordProvider
                                          error:(NSError **)error;

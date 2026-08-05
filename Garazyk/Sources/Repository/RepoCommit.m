@@ -15,9 +15,9 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 @implementation RepoCommit
 
 + (instancetype)createCommitWithDid:(NSString *)did
-                               data:(nullable CID *)dataCID
+                               data:(nullable ATProtoCID *)dataCID
                                 rev:(nullable NSString *)rev
-                              prev:(nullable CID *)prevCID {
+                              prev:(nullable ATProtoCID *)prevCID {
     RepoCommit *commit = [[self alloc] init];
     commit.did = did;
     commit.version = 3;
@@ -66,13 +66,13 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 
 - (nullable NSData *)computeHash {
     NSData *serialized = [self serialize];
-    return [CID rawSha256:serialized];
+    return [ATProtoCID rawSha256:serialized];
 }
 
-- (CID *)computeCID {
+- (ATProtoCID *)computeCID {
     NSData *serialized = [self serializeSigned];
-    NSData *hash = [CID rawSha256:serialized];
-    CID *cid = [CID cidWithDigest:hash codec:0x71];
+    NSData *hash = [ATProtoCID rawSha256:serialized];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:hash codec:0x71];
     return cid;
 }
 
@@ -82,7 +82,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     }
 
     NSData *signedData = [self serializeSigned];
-    CID *commitCID = [self computeCID];
+    ATProtoCID *commitCID = [self computeCID];
     
     CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
     [writer addBlock:[CARBlock blockWithCID:commitCID data:signedData]];
@@ -148,7 +148,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         return nil;
     }
 
-    // Find the commit block (the root CID)
+    // Find the commit block (the root ATProtoCID)
     CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
     if (!commitBlock) {
         if (error) {
@@ -207,12 +207,12 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         return nil;
     }
 
-    // data (optional) - CID-link
+    // data (optional) - ATProtoCID-link
     id dataValue = commitMap[@"data"];
-    if ([dataValue isKindOfClass:[CID class]]) {
-        commit.dataCID = (CID *)dataValue;
+    if ([dataValue isKindOfClass:[ATProtoCID class]]) {
+        commit.dataCID = (ATProtoCID *)dataValue;
     } else if ([dataValue isKindOfClass:[NSString class]]) {
-        commit.dataCID = [CID cidFromString:(NSString *)dataValue];
+        commit.dataCID = [ATProtoCID cidFromString:(NSString *)dataValue];
     }
 
     // rev (required)
@@ -226,12 +226,12 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     }
     commit.rev = commitMap[@"rev"];
 
-    // prev (optional) - CID-link
+    // prev (optional) - ATProtoCID-link
     id prevValue = commitMap[@"prev"];
-    if ([prevValue isKindOfClass:[CID class]]) {
-        commit.prevCID = (CID *)prevValue;
+    if ([prevValue isKindOfClass:[ATProtoCID class]]) {
+        commit.prevCID = (ATProtoCID *)prevValue;
     } else if ([prevValue isKindOfClass:[NSString class]]) {
-        commit.prevCID = [CID cidFromString:(NSString *)prevValue];
+        commit.prevCID = [ATProtoCID cidFromString:(NSString *)prevValue];
     }
 
     // sig (required for valid repo commits)
@@ -269,9 +269,9 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     if (self) {
         self.did = [coder decodeObjectOfClass:[NSString class] forKey:@"did"];
         self.version = [coder decodeIntegerForKey:@"version"];
-        self.dataCID = [coder decodeObjectOfClass:[CID class] forKey:@"dataCID"];
+        self.dataCID = [coder decodeObjectOfClass:[ATProtoCID class] forKey:@"dataCID"];
         self.rev = [coder decodeObjectOfClass:[NSString class] forKey:@"rev"];
-        self.prevCID = [coder decodeObjectOfClass:[CID class] forKey:@"prevCID"];
+        self.prevCID = [coder decodeObjectOfClass:[ATProtoCID class] forKey:@"prevCID"];
         self.signature = [coder decodeObjectOfClass:[NSData class] forKey:@"signature"];
     }
     return self;

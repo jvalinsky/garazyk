@@ -8,7 +8,7 @@
 @implementation MSTDecoderTests
 
 - (ATProtoCBORValue *)validCIDTag {
-    CID *cid = [CID sha256:[@"mst-decoder-test" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"mst-decoder-test" dataUsingEncoding:NSUTF8StringEncoding]];
     NSMutableData *bytes = [NSMutableData dataWithBytes:"\x00" length:1];
     [bytes appendData:cid.bytes];
     return [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:bytes]];

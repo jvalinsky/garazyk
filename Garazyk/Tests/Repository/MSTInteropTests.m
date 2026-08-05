@@ -42,7 +42,7 @@
     // XCTAssertEqual(actual, expected);
     fprintf(stderr, "testInteropKnownMaps started\n");
     NSString *cid1str = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
-    CID *cid1 = [CID cidFromString:cid1str];
+    ATProtoCID *cid1 = [ATProtoCID cidFromString:cid1str];
     fprintf(stderr, "cid1 created\n");
     
     // Empty map
@@ -77,7 +77,7 @@
 - (void)testInteropEdgeCasesTrimTopMatchesExpectedRootCid {
     // XCTAssertEqual(actual, expected);
     NSString *cid1str = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
-    CID *cid1 = [CID cidFromString:cid1str];
+    ATProtoCID *cid1 = [ATProtoCID cidFromString:cid1str];
     
     NSString *l1root = @"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4";
     NSString *l0root = @"bafyreie4kjuxbwkhzg2i5dljaswcroeih4dgiqq6pazcmunwt2byd725vi";
@@ -99,7 +99,7 @@
 - (void)testInteropEdgeCasesInsertion {
     // XCTAssertEqual(actual, expected);
     NSString *cid1str = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
-    CID *cid1 = [CID cidFromString:cid1str];
+    ATProtoCID *cid1 = [ATProtoCID cidFromString:cid1str];
     
     NSString *l1root = @"bafyreiettyludka6fpgp33stwxfuwhkzlur6chs4d2v4nkmq2j3ogpdjem";
     NSString *l2root = @"bafyreid2x5eqs4w4qxvc5jiwda4cien3gw2q6cshofxwnvv7iucrmfohpm";
@@ -129,7 +129,7 @@
 - (void)testInteropEdgeCasesHigher {
     // XCTAssertEqual(actual, expected);
     NSString *cid1str = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
-    CID *cid1 = [CID cidFromString:cid1str];
+    ATProtoCID *cid1 = [ATProtoCID cidFromString:cid1str];
     
     NSString *l0root = @"bafyreidfcktqnfmykz2ps3dbul35pepleq7kvv526g47xahuz3rqtptmky";
     NSString *l2root = @"bafyreiavxaxdz7o7rbvr3zg2liox2yww46t7g6hkehx4i4h3lwudly7dhy";
@@ -177,8 +177,8 @@
 
 - (void)testPutAndGet {
     MST *mst = [[MST alloc] init];
-    CID *cid1 = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
-    CID *cid2 = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    ATProtoCID *cid1 = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *cid2 = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
     [mst put:@"com.example.record/1" valueCID:cid1];
     [mst put:@"com.example.record/2" valueCID:cid2];
@@ -190,7 +190,7 @@
 
 - (void)testDeletion {
     MST *mst = [[MST alloc] init];
-    CID *cid1 = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *cid1 = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
     [mst put:@"com.example.record/1" valueCID:cid1];
     XCTAssertEqualObjects([mst get:@"com.example.record/1"], cid1);
@@ -202,7 +202,7 @@
 
 - (void)testListing {
     MST *mst = [[MST alloc] init];
-    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
     // Insert out of order
     [mst put:@"b" valueCID:cid];
@@ -218,7 +218,7 @@
 
 - (void)testCARGenerationReturnsData {
     MST *mst = [[MST alloc] init];
-    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     [mst put:@"test" valueCID:cid];
     
     NSData *carData = [mst exportCAR];
@@ -228,8 +228,8 @@
 }
 
 - (void)testDiffFrom {
-    CID *cid1 = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
-    CID *cid2 = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    ATProtoCID *cid1 = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *cid2 = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
     // Create old tree with 2 records
     MST *oldTree = [[MST alloc] init];
@@ -268,7 +268,7 @@
 }
 
 - (void)testDiffFromEmptyTree {
-    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
     MST *newTree = [[MST alloc] init];
     [newTree put:@"key1" valueCID:cid];
@@ -282,7 +282,7 @@
 }
 
 - (void)testGetProofNodesForKey {
-    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
     MST *mst = [[MST alloc] init];
     [mst put:@"a" valueCID:cid];
@@ -299,7 +299,7 @@
 }
 
 - (void)testGetProofNodesForMissingKey {
-    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
     MST *mst = [[MST alloc] init];
     [mst put:@"a" valueCID:cid];
@@ -309,7 +309,7 @@
 }
 
 - (void)testFullEntriesReturnsEntries {
-    CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
     MST *mst = [[MST alloc] init];
     [mst put:@"a" valueCID:cid];

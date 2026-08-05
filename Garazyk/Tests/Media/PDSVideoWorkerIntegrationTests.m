@@ -67,7 +67,7 @@
     XCTAssertNotNil(videoData);
 
     // Store the video blob
-    CID *inputCid = [CID sha256:videoData];
+    ATProtoCID *inputCid = [ATProtoCID sha256:videoData];
     NSError *error = nil;
     BOOL stored = [self.blobProvider storeBlobData:videoData forCID:inputCid error:&error];
     XCTAssertTrue(stored);

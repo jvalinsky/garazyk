@@ -38,11 +38,11 @@
 
     for (NSString *pattern in patterns) {
         MST *tree = [[MST alloc] init];
-        NSMutableDictionary<NSString *, CID *> *expected = [NSMutableDictionary dictionary];
+        NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
 
         for (int i = 0; i < count; i++) {
             NSString *key = [NSString stringWithFormat:pattern, i];
-            CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
+            ATProtoCID *cid = [ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
             [tree put:key valueCID:cid];
             expected[key] = cid;
         }
@@ -51,7 +51,7 @@
             @"Pattern '%@' should have all %d entries after insertion", pattern, count);
 
         for (NSString *key in expected) {
-            CID *found = [tree get:key];
+            ATProtoCID *found = [tree get:key];
             XCTAssertEqualObjects(found.stringValue, expected[key].stringValue,
                 @"Pattern '%@': key %@ not found or value mismatch", pattern, key);
         }
@@ -67,7 +67,7 @@
             @"Pattern '%@': should have %d entries after deleting half", pattern, count / 2);
 
         for (NSString *key in expected) {
-            CID *found = [tree get:key];
+            ATProtoCID *found = [tree get:key];
             XCTAssertEqualObjects(found.stringValue, expected[key].stringValue,
                 @"Pattern '%@': remaining key %@ mismatch after deletion", pattern, key);
         }
@@ -80,7 +80,7 @@
 
 - (void)testLargeScaleRebalancing {
     MST *tree = [[MST alloc] init];
-    NSMutableDictionary<NSString *, CID *> *expectedEntries = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, ATProtoCID *> *expectedEntries = [NSMutableDictionary dictionary];
     
     // Insert 1000 keys with pseudo-random TIDs
     int count = 1000;
@@ -88,7 +88,7 @@
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
-        CID *valueCID = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
+        ATProtoCID *valueCID = [ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
         
         [tree put:key valueCID:valueCID];
         expectedEntries[key] = valueCID;
@@ -98,7 +98,7 @@
     
     // Verify all entries are present and correct
     for (NSString *key in expectedEntries) {
-        CID *foundCID = [tree get:key];
+        ATProtoCID *foundCID = [tree get:key];
         if (![foundCID.stringValue isEqualToString:expectedEntries[key].stringValue]) {
              GZ_LOG_ERROR(@"[MST TEST] Verification failure for key %@: expected %@, found %@", key, expectedEntries[key].stringValue, foundCID.stringValue);
         }
@@ -120,7 +120,7 @@
     
     // Verify remaining entries
     for (NSString *key in expectedEntries) {
-        CID *foundCID = [tree get:key];
+        ATProtoCID *foundCID = [tree get:key];
         XCTAssertEqualObjects(foundCID.stringValue, expectedEntries[key].stringValue);
     }
     
@@ -134,7 +134,7 @@
 
 - (void)testSmallScaleInsertDeleteRoundtrip {
     MST *tree = [[MST alloc] init];
-    NSMutableDictionary<NSString *, CID *> *expected = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
     int count = 20;
 
     // Insert 20 keys with random TIDs
@@ -142,7 +142,7 @@
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
-        CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
+        ATProtoCID *cid = [ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
         [tree put:key valueCID:cid];
         expected[key] = cid;
     }
@@ -150,7 +150,7 @@
     // Verify all entries present
     XCTAssertEqual((NSUInteger)count, tree.allEntries.count);
     for (NSString *key in expected) {
-        CID *found = [tree get:key];
+        ATProtoCID *found = [tree get:key];
         XCTAssertEqualObjects(found.stringValue, expected[key].stringValue);
     }
 
@@ -164,7 +164,7 @@
     // Verify remaining count
     XCTAssertEqual((NSUInteger)(count / 2), tree.allEntries.count);
     for (NSString *key in expected) {
-        CID *found = [tree get:key];
+        ATProtoCID *found = [tree get:key];
         XCTAssertEqualObjects(found.stringValue, expected[key].stringValue);
     }
 
@@ -178,14 +178,14 @@
 
 - (void)testSerializeDeserializeRoundtrip {
     MST *tree = [[MST alloc] init];
-    NSMutableDictionary<NSString *, CID *> *expected = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
     int count = 20;
 
     // Use random ATProtoTID keys (will produce multi-node MST at various depths)
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
-        CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
+        ATProtoCID *cid = [ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
         [tree put:key valueCID:cid];
         expected[key] = cid;
     }
@@ -194,9 +194,9 @@
     NSData *cbor = [tree serializeToCBOR];
     XCTAssertNotNil(cbor);
 
-    // Build a node map (CID → CBOR) from the original tree for the block provider
+    // Build a node map (ATProtoCID → CBOR) from the original tree for the block provider
     NSMutableDictionary<NSString *, NSData *> *nodeMap = [NSMutableDictionary dictionary];
-    [tree enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+    [tree enumerateNodeCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         nodeMap[cid.stringValue] = data;
         return YES;
     } error:nil];
@@ -204,7 +204,7 @@
         @"Tree should have %d entries before roundtrip", count);
 
     // Deserialize with block provider to reconstruct child subtrees
-    MSTBlockProvider provider = ^NSData *(CID *cid) {
+    MSTBlockProvider provider = ^NSData *(ATProtoCID *cid) {
         return nodeMap[cid.stringValue];
     };
     MST *restored = [MST deserializeFromCBOR:cbor blockProvider:provider];
@@ -213,7 +213,7 @@
     // Verify all entries survive roundtrip
     XCTAssertEqual((NSUInteger)count, restored.allEntries.count);
     for (NSString *key in expected) {
-        CID *found = [restored get:key];
+        ATProtoCID *found = [restored get:key];
         XCTAssertEqualObjects(found.stringValue, expected[key].stringValue,
             @"Roundtrip: Key %@ not found or value mismatch", key);
     }
@@ -228,7 +228,7 @@
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
-        CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
+        ATProtoCID *cid = [ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
         [tree put:key valueCID:cid];
     }
 
@@ -247,18 +247,18 @@
     NSMutableArray<NSString *> *keys = [NSMutableArray array];
     for (NSUInteger index = 0; index < 1000; index++) {
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/lazy-%04lu", (unsigned long)index];
-        [tree put:key valueCID:[CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]]];
+        [tree put:key valueCID:[ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]]];
         [keys addObject:key];
     }
 
     NSMutableDictionary<NSString *, NSData *> *nodeDataByCID = [NSMutableDictionary dictionary];
-    XCTAssertTrue([tree enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+    XCTAssertTrue([tree enumerateNodeCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         nodeDataByCID[cid.stringValue] = data;
         return YES;
     } error:nil]);
     MST *lazyTree = [MST deserializeFromCBOR:[tree serializeToCBOR] blockProvider:nil];
     XCTAssertNotNil(lazyTree);
-    MSTBlockProvider provider = ^NSData * _Nullable(CID *cid) {
+    MSTBlockProvider provider = ^NSData * _Nullable(ATProtoCID *cid) {
         return nodeDataByCID[cid.stringValue];
     };
     for (NSString *key in keys) {
@@ -275,12 +275,12 @@
     for (NSUInteger index = 0; index < recordCount; index++) {
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/profile-%05lu",
                          (unsigned long)index];
-        [tree put:key valueCID:[CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]]];
+        [tree put:key valueCID:[ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]]];
         [keys addObject:key];
     }
 
     NSMutableDictionary<NSString *, NSData *> *nodeDataByCID = [NSMutableDictionary dictionary];
-    XCTAssertTrue([tree enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+    XCTAssertTrue([tree enumerateNodeCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         nodeDataByCID[cid.stringValue] = data;
         return YES;
     } error:nil]);
@@ -291,7 +291,7 @@
     XCTAssertNotNil(rootData);
 
     __block NSUInteger lazyFetches = 0;
-    MSTBlockProvider lazyProvider = ^NSData * _Nullable(CID *cid) {
+    MSTBlockProvider lazyProvider = ^NSData * _Nullable(ATProtoCID *cid) {
         lazyFetches++;
         return nodeDataByCID[cid.stringValue];
     };
@@ -321,7 +321,7 @@
     XCTAssertLessThanOrEqual(lazyCache.count, 256UL);
 
     __block NSUInteger eagerFetches = 0;
-    MSTBlockProvider eagerProvider = ^NSData * _Nullable(CID *cid) {
+    MSTBlockProvider eagerProvider = ^NSData * _Nullable(ATProtoCID *cid) {
         eagerFetches++;
         return nodeDataByCID[cid.stringValue];
     };
@@ -355,13 +355,13 @@
 }
 
 - (void)testDeserializeWithMissingCIDInBlockProvider {
-    // Verify graceful handling when block provider returns nil for a CID
+    // Verify graceful handling when block provider returns nil for a ATProtoCID
     MST *tree = [[MST alloc] init];
     int count = 10;
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
-        CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
+        ATProtoCID *cid = [ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
         [tree put:key valueCID:cid];
     }
 
@@ -369,7 +369,7 @@
     XCTAssertNotNil(cbor);
 
     // Provide a block provider that returns nil for all CIDs (missing data)
-    MSTBlockProvider missingProvider = ^NSData *(CID *cid) {
+    MSTBlockProvider missingProvider = ^NSData *(ATProtoCID *cid) {
         return nil;
     };
     MST *restored = [MST deserializeFromCBOR:cbor blockProvider:missingProvider];
@@ -395,7 +395,7 @@
     XCTAssertEqual(restored.allEntries.count, 0);
 
     // Deserialize with block provider
-    MSTBlockProvider provider = ^NSData *(CID *cid) { return nil; };
+    MSTBlockProvider provider = ^NSData *(ATProtoCID *cid) { return nil; };
     MST *restored2 = [MST deserializeFromCBOR:cbor blockProvider:provider];
     XCTAssertNil(restored2);
     XCTAssertEqual(restored2.allEntries.count, 0);
@@ -406,7 +406,7 @@
 - (void)testDeserializeSingleNodeTree {
     // Single-node tree (all keys at depth 0) — no child subtree CIDs to resolve
     MST *tree = [[MST alloc] init];
-    NSMutableDictionary<NSString *, CID *> *expected = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
     int count = 10;
     int added = 0;
     int maxAttempts = 500;
@@ -416,7 +416,7 @@
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
         if ([MST keyDepth:key] == 0) {
-            CID *cid = [CID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
+            ATProtoCID *cid = [ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
             [tree put:key valueCID:cid];
             expected[key] = cid;
             added++;
@@ -432,7 +432,7 @@
     XCTAssertNotNil(restored);
     XCTAssertEqual((NSUInteger)count, restored.allEntries.count);
     for (NSString *key in expected) {
-        CID *found = [restored get:key];
+        ATProtoCID *found = [restored get:key];
         XCTAssertEqualObjects(found.stringValue, expected[key].stringValue);
     }
 
@@ -456,7 +456,7 @@
     for (NSString *pattern in patterns) {
         @autoreleasepool {
             MST *tree = [[MST alloc] init];
-            NSMutableDictionary<NSString *, CID *> *expected = [NSMutableDictionary dictionary];
+            NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
 
             GZ_LOG_INFO(@"[MST FUZZ] Pattern '%@': inserting %d keys...", pattern, count);
 
@@ -469,11 +469,11 @@
                 } else {
                     key = [NSString stringWithFormat:pattern, i];
                 }
-                // Use a randomized CID rather than SHA-256 of the key
+                // Use a randomized ATProtoCID rather than SHA-256 of the key
                 uint8_t randomBytes[32];
                 arc4random_buf(randomBytes, 32);
                 NSData *randomData = [NSData dataWithBytes:randomBytes length:32];
-                CID *cid = [CID cidWithDigest:randomData codec:0x71];
+                ATProtoCID *cid = [ATProtoCID cidWithDigest:randomData codec:0x71];
                 [tree put:key valueCID:cid];
                 expected[key] = cid;
             }
@@ -487,7 +487,7 @@
             for (NSUInteger j = 0; j < MIN(200, allKeys.count); j++) {
                 NSUInteger idx = arc4random_uniform((uint32_t)allKeys.count);
                 NSString *rkey = allKeys[idx];
-                CID *found = [tree get:rkey];
+                ATProtoCID *found = [tree get:rkey];
                 XCTAssertEqualObjects(found.stringValue, expected[rkey].stringValue,
                     @"Fuzz pattern '%@': random key %@ mismatch", pattern, rkey);
             }
@@ -505,7 +505,7 @@
 
             // Verify remaining entries
             for (NSString *key in expected) {
-                CID *found = [tree get:key];
+                ATProtoCID *found = [tree get:key];
                 XCTAssertEqualObjects(found.stringValue, expected[key].stringValue,
                     @"Fuzz pattern '%@': remaining key %@ mismatch", pattern, key);
             }

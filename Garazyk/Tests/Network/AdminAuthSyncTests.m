@@ -42,7 +42,7 @@
   return revValue.textString;
 }
 
-- (nullable CID *)commitDataCIDFromCARData:(NSData *)carData {
+- (nullable ATProtoCID *)commitDataCIDFromCARData:(NSData *)carData {
   NSError *carError = nil;
   CARReader *reader = [CARReader readFromData:carData error:&carError];
   XCTAssertNil(carError);
@@ -81,7 +81,7 @@
 
   NSData *rawCID =
       [tagBytes subdataWithRange:NSMakeRange(1, tagBytes.length - 1)];
-  return [CID cidFromBytes:rawCID];
+  return [ATProtoCID cidFromBytes:rawCID];
 }
 
 - (BOOL)carData:(NSData *)carData
@@ -446,7 +446,7 @@
   XCTAssertNotNil(reader);
   XCTAssertGreaterThan(reader.blocks.count, 0U);
 
-  CID *dataCID = [self commitDataCIDFromCARData:deltaResponse.body];
+  ATProtoCID *dataCID = [self commitDataCIDFromCARData:deltaResponse.body];
   XCTAssertNotNil(dataCID);
   XCTAssertNotNil([reader blockWithCID:dataCID]);
 

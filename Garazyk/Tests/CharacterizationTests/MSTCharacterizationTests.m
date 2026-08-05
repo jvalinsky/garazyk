@@ -29,7 +29,7 @@
 
 - (void)testCharacterization_initWithRootCIDMatchesEmptyTreeHash {
     /* Target Method:
-     - (instancetype)initWithRootCID:(nullable CID *)rootCID;
+     - (instancetype)initWithRootCID:(nullable ATProtoCID *)rootCID;
     */
     
     MST *tree = [[MST alloc] initWithRootCID:nil];
@@ -52,37 +52,37 @@
 
 - (void)testCharacterization_getMatchesValueCID {
     /* Target Method:
-     - (nullable CID *)get:(NSString *)key;
+     - (nullable ATProtoCID *)get:(NSString *)key;
     */
     
-    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"key" valueCID:cid];
 
-    CID *result = [self.subject get:@"key"];
+    ATProtoCID *result = [self.subject get:@"key"];
     XCTAssertNotNil(result);
     XCTAssertEqualObjects(result.stringValue, cid.stringValue);
 }
 
 - (void)testCharacterization_get_2MatchesValueCID {
     /* Target Method:
-     - (nullable CID *)get:(NSString *)key subKey:(nullable NSString *)subKey;
+     - (nullable ATProtoCID *)get:(NSString *)key subKey:(nullable NSString *)subKey;
     */
     
-    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"app.bsky.feed.post" valueCID:cid subKey:@"rkey1"];
 
     XCTAssertNil([self.subject get:@"app.bsky.feed.post"]);
-    CID *result = [self.subject get:@"app.bsky.feed.post" subKey:@"rkey1"];
+    ATProtoCID *result = [self.subject get:@"app.bsky.feed.post" subKey:@"rkey1"];
     XCTAssertNotNil(result);
     XCTAssertEqualObjects(result.stringValue, cid.stringValue);
 }
 
 - (void)testCharacterization_putMatchesValueCID {
     /* Target Method:
-     - (void)put:(NSString *)key valueCID:(CID *)valueCID;
+     - (void)put:(NSString *)key valueCID:(ATProtoCID *)valueCID;
     */
     
-    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"key" valueCID:cid];
     XCTAssertNotNil([self.subject get:@"key"]);
     XCTAssertEqualObjects([self.subject get:@"key"].stringValue, cid.stringValue);
@@ -90,10 +90,10 @@
 
 - (void)testCharacterization_put_2MatchesValueCID {
     /* Target Method:
-     - (void)put:(NSString *)key valueCID:(CID *)valueCID subKey:(nullable NSString *)subKey;
+     - (void)put:(NSString *)key valueCID:(ATProtoCID *)valueCID subKey:(nullable NSString *)subKey;
     */
 
-    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"app.bsky.feed.post" valueCID:cid subKey:@"rkey1"];
 
     XCTAssertNotNil([self.subject get:@"app.bsky.feed.post" subKey:@"rkey1"]);
@@ -105,7 +105,7 @@
      - (void)delete:(NSString *)key;
     */
     
-    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"key" valueCID:cid];
     XCTAssertNotNil([self.subject get:@"key"]);
 
@@ -118,7 +118,7 @@
      - (void)delete:(NSString *)key subKey:(nullable NSString *)subKey;
     */
 
-    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"app.bsky.feed.post" valueCID:cid subKey:@"rkey1"];
     XCTAssertNotNil([self.subject get:@"app.bsky.feed.post" subKey:@"rkey1"]);
 
@@ -131,8 +131,8 @@
      - (NSArray<MSTEntry *> *)allEntries;
     */
     
-    [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
-    [self.subject put:@"b" valueCID:[CID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"a" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"b" valueCID:[ATProtoCID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
 
     NSArray<MSTEntry *> *entries = [self.subject allEntries];
     XCTAssertEqual(entries.count, 2);
@@ -146,9 +146,9 @@
      - (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
     */
     
-    [self.subject put:@"app.bsky.feed.post/1" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
-    [self.subject put:@"app.bsky.feed.post/2" valueCID:[CID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
-    [self.subject put:@"app.bsky.actor.profile/self" valueCID:[CID sha256:[@"3" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"app.bsky.feed.post/1" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"app.bsky.feed.post/2" valueCID:[ATProtoCID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"app.bsky.actor.profile/self" valueCID:[ATProtoCID sha256:[@"3" dataUsingEncoding:NSUTF8StringEncoding]]];
 
     NSArray<MSTEntry *> *feedEntries = [self.subject entriesWithPrefix:@"app.bsky.feed."];
     XCTAssertEqual(feedEntries.count, 2);
@@ -159,8 +159,8 @@
      - (NSData *)exportCAR;
     */
 
-    [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
-    [self.subject put:@"b" valueCID:[CID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"a" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"b" valueCID:[ATProtoCID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
 
     NSData *carData = [self.subject exportCAR];
     XCTAssertNotNil(carData);
@@ -172,7 +172,7 @@
      - (NSData *)serializeToCBOR;
     */
     
-    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"key" valueCID:cid];
 
     NSData *cbor = [self.subject serializeToCBOR];
@@ -185,7 +185,7 @@
      + (nullable instancetype)deserializeFromCBOR:(NSData *)data;
     */
     
-    CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"key" valueCID:cid];
 
     NSData *cbor = [self.subject serializeToCBOR];
@@ -200,12 +200,12 @@
     */
     
     MST *oldTree = [[MST alloc] init];
-    CID *oldCID = [CID sha256:[@"old" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *oldCID = [ATProtoCID sha256:[@"old" dataUsingEncoding:NSUTF8StringEncoding]];
     [oldTree put:@"k1" valueCID:oldCID];
 
-    CID *newCID = [CID sha256:[@"new" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *newCID = [ATProtoCID sha256:[@"new" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"k1" valueCID:newCID];
-    [self.subject put:@"k2" valueCID:[CID sha256:[@"add" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"k2" valueCID:[ATProtoCID sha256:[@"add" dataUsingEncoding:NSUTF8StringEncoding]]];
 
     NSArray<MSTDiffOperation *> *ops = [self.subject diffFrom:oldTree];
     XCTAssertEqual(ops.count, 2);
@@ -253,7 +253,7 @@
      - (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key;
     */
     
-    [self.subject put:@"proofKey" valueCID:[CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"proofKey" valueCID:[ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]]];
     NSArray<MSTNode *> *nodes = [self.subject getProofNodesForKey:@"proofKey"];
     XCTAssertNotNil(nodes);
     XCTAssertGreaterThan(nodes.count, 0U);
@@ -264,7 +264,7 @@
      - (nullable NSData *)serializeNode:(MSTNode *)node;
     */
 
-    [self.subject put:@"proofKey" valueCID:[CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"proofKey" valueCID:[ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]]];
     NSArray<MSTNode *> *nodes = [self.subject getProofNodesForKey:@"proofKey"];
     XCTAssertNotNil(nodes);
     XCTAssertGreaterThan(nodes.count, 0U);
@@ -279,7 +279,7 @@
      - (nullable NSDictionary *)toJSON;
     */
 
-    [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"a" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
     NSDictionary *json = [self.subject toJSON];
     XCTAssertNotNil(json);
     XCTAssertTrue([json isKindOfClass:[NSDictionary class]]);
@@ -292,7 +292,7 @@
      - (NSDictionary *)getStatistics;
     */
 
-    [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"a" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
     NSDictionary *stats = [self.subject getStatistics];
     XCTAssertNotNil(stats);
     XCTAssertTrue([stats isKindOfClass:[NSDictionary class]]);
@@ -305,7 +305,7 @@
      - (nullable NSString *)toDOT;
     */
 
-    [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
+    [self.subject put:@"a" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
     NSString *dot = [self.subject toDOT];
     XCTAssertNotNil(dot);
     XCTAssertTrue([dot hasPrefix:@"digraph MST"]);

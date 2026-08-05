@@ -95,7 +95,7 @@ typedef NS_ENUM(NSInteger, PDSDatabasePoolError) {
 /*! Gets a repo by DID. */
 - (nullable PDSDatabaseRepo *)getRepo:(NSString *)did error:(NSError **)error;
 
-/*! Gets a repo root CID by DID. */
+/*! Gets a repo root ATProtoCID by DID. */
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error;
 
 /*! Gets a record by URI for a DID. */

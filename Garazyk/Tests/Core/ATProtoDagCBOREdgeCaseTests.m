@@ -61,7 +61,7 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
     // A2 = map of 2 entries, then key "a" (61 61), value 1 (01), then key "a"
     // again (61 61), value 2 (02). Pre-fix the NSDictionary last-write-wins
     // silently kept only the second entry; DAG-CBOR rejects duplicate keys so
-    // a CID uniquely identifies one logical map.
+    // a ATProtoCID uniquely identifies one logical map.
     const uint8_t attack[] = {0xA2, 0x61, 0x61, 0x01, 0x61, 0x61, 0x02};
     [self assertDecodeFailsForBytes:attack length:sizeof(attack)];
 }
@@ -130,7 +130,7 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
     // {0: 1} — DAG-CBOR requires text-string map keys; Phase 1 (docs/adr/0032)
     // closed this as a content-addressing bug: it used to decode successfully
     // and re-encode without the ability to round-trip a non-string key at all,
-    // which is exactly the kind of asymmetry that breaks CID stability.
+    // which is exactly the kind of asymmetry that breaks ATProtoCID stability.
     const uint8_t integerKey[] = {0xA1, 0x00, 0x01};  // {0: 1}
     NSError *error = nil;
     id decoded = [ATProtoDagCBOR decodeData:ATProtoDataWithBytes(integerKey, sizeof(integerKey))
@@ -288,7 +288,7 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
 
 - (void)testRoundTripIdentity {
     NSError *error = nil;
-    CID *cid = [CID cidWithDigest:[CID sha256Digest:[@"data" dataUsingEncoding:NSUTF8StringEncoding]] codec:0x71];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:[@"data" dataUsingEncoding:NSUTF8StringEncoding]] codec:0x71];
     NSDictionary *original = @{
         @"a": @[@YES, [NSNull null], @123],
         @"b": @{

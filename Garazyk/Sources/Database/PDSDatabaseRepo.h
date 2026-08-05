@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Represents a repository in the database.
  * 
  * @discussion A repository contains a user's collection of records and blocks.
- * Each repository is identified by its owner's DID and has a current root CID
+ * Each repository is identified by its owner's DID and has a current root ATProtoCID
  * representing the state of the Merkle Search Tree.
  * 
  * @see PDSDatabase (Repos)
@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** The DID of the repository owner. */
 @property (nonatomic, copy) NSString *ownerDid;
 
-/** The current root CID of the repository's Merkle Search Tree. */
+/** The current root ATProtoCID of the repository's Merkle Search Tree. */
 @property (nonatomic, copy) NSData *rootCid;
 
 /** Optional serialized collection index data. */

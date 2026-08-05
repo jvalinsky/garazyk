@@ -28,7 +28,7 @@
     return self;
 }
 
-- (nullable NSData *)dataForCID:(CID *)cid maxAccountsToScan:(NSUInteger)maxAccountsToScan {
+- (nullable NSData *)dataForCID:(ATProtoCID *)cid maxAccountsToScan:(NSUInteger)maxAccountsToScan {
     if (!cid) {
         return nil;
     }

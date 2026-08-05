@@ -40,11 +40,11 @@
     [super tearDown];
 }
 
-#pragma mark - CID Tests
+#pragma mark - ATProtoCID Tests
 
 - (void)testCIDCreation {
-    NSData *digest = [CID sha256Digest:[@"hello world" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID cidWithDigest:digest codec:0x71];
+    NSData *digest = [ATProtoCID sha256Digest:[@"hello world" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:digest codec:0x71];
 
     XCTAssertNotNil(cid);
     XCTAssertEqual(cid.version, 1);
@@ -53,8 +53,8 @@
 }
 
 - (void)testCIDStringValue {
-    NSData *digest = [CID sha256Digest:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID cidWithDigest:digest codec:0x71];
+    NSData *digest = [ATProtoCID sha256Digest:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:digest codec:0x71];
     NSString *stringValue = [cid stringValue];
 
     XCTAssertNotNil(stringValue);
@@ -62,17 +62,17 @@
 }
 
 - (void)testCIDEquality {
-    NSData *digest = [CID sha256Digest:[@"same data" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid1 = [CID cidWithDigest:digest codec:0x71];
-    CID *cid2 = [CID cidWithDigest:digest codec:0x71];
+    NSData *digest = [ATProtoCID sha256Digest:[@"same data" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid1 = [ATProtoCID cidWithDigest:digest codec:0x71];
+    ATProtoCID *cid2 = [ATProtoCID cidWithDigest:digest codec:0x71];
 
     XCTAssertEqualObjects(cid1, cid2);
     XCTAssertTrue([cid1 isEqualToCID:cid2]);
 }
 
 - (void)testCIDBytesReturnsNonEmptyData {
-    NSData *digest = [CID sha256Digest:[@"bytes test" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID cidWithDigest:digest codec:0x71];
+    NSData *digest = [ATProtoCID sha256Digest:[@"bytes test" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:digest codec:0x71];
     NSData *bytes = [cid bytes];
 
     XCTAssertNotNil(bytes);
@@ -81,7 +81,7 @@
 
 - (void)testCIDSHA256 {
     NSData *data = [@"sha256 test" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID sha256:data];
+    ATProtoCID *cid = [ATProtoCID sha256:data];
 
     XCTAssertNotNil(cid);
     XCTAssertEqual(cid.codec, 0x55);
@@ -92,7 +92,7 @@
     for (int i = 0; i < 300; i++) {
         [longString appendString:@"a"];
     }
-    XCTAssertNil([CID cidFromString:longString], @"Should reject CID string > 256 chars");
+    XCTAssertNil([ATProtoCID cidFromString:longString], @"Should reject CID string > 256 chars");
 }
 
 - (void)testCIDFromBytesMaxLength {
@@ -105,17 +105,17 @@
         uint8_t byte = 0x12;
         [longData appendBytes:&byte length:1];
     }
-    XCTAssertNil([CID cidFromBytes:longData], @"Should reject CID bytes > 256");
+    XCTAssertNil([ATProtoCID cidFromBytes:longData], @"Should reject CID bytes > 256");
 }
 
 - (void)testCIDFromEmptyString {
-    XCTAssertNil([CID cidFromString:@""]);
-    XCTAssertNil([CID cidFromString:nil]);
+    XCTAssertNil([ATProtoCID cidFromString:@""]);
+    XCTAssertNil([ATProtoCID cidFromString:nil]);
 }
 
 - (void)testCIDFromBufferReportsConsumedLength {
-    NSData *digest = [CID sha256Digest:[@"buffer-consume" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *original = [CID cidWithDigest:digest codec:0x71];
+    NSData *digest = [ATProtoCID sha256Digest:[@"buffer-consume" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *original = [ATProtoCID cidWithDigest:digest codec:0x71];
     NSData *cidBytes = original.bytes;
 
     NSMutableData *withTrailer = [NSMutableData dataWithData:cidBytes];
@@ -123,7 +123,7 @@
     [withTrailer appendBytes:trailer length:sizeof(trailer)];
 
     NSUInteger consumed = 0;
-    CID *parsed = [CID cidFromBuffer:withTrailer.bytes length:withTrailer.length consumed:&consumed];
+    ATProtoCID *parsed = [ATProtoCID cidFromBuffer:withTrailer.bytes length:withTrailer.length consumed:&consumed];
 
     XCTAssertNotNil(parsed);
     XCTAssertEqual(consumed, cidBytes.length);
@@ -138,7 +138,7 @@
     [buffer appendBytes:junk length:sizeof(junk)];
 
     NSUInteger consumed = 0;
-    CID *parsed = [CID cidFromBuffer:buffer.bytes length:buffer.length consumed:&consumed];
+    ATProtoCID *parsed = [ATProtoCID cidFromBuffer:buffer.bytes length:buffer.length consumed:&consumed];
 
     XCTAssertNotNil(parsed);
     XCTAssertEqual(consumed, (NSUInteger)34);
@@ -148,7 +148,7 @@
 - (void)testCIDFromBufferRejectsTruncatedVarint {
     uint8_t truncated[] = {0x81}; // continuation bit set, no next byte
     NSUInteger consumed = 999;
-    CID *parsed = [CID cidFromBuffer:truncated length:sizeof(truncated) consumed:&consumed];
+    ATProtoCID *parsed = [ATProtoCID cidFromBuffer:truncated length:sizeof(truncated) consumed:&consumed];
     XCTAssertNil(parsed);
 }
 
@@ -156,17 +156,17 @@
     // version=1, codec=0x71 (dag-cbor), mh_code=0x12, mh_len = 0xFFFFFFFF (varint)
     uint8_t hostile[] = {0x01, 0x71, 0x12, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F};
     NSUInteger consumed = 999;
-    CID *parsed = [CID cidFromBuffer:hostile length:sizeof(hostile) consumed:&consumed];
+    ATProtoCID *parsed = [ATProtoCID cidFromBuffer:hostile length:sizeof(hostile) consumed:&consumed];
     XCTAssertNil(parsed);
 }
 
 - (void)testCIDFromBufferAcceptsArbitraryCodec {
-    NSData *digest = [CID sha256Digest:[@"raw-codec" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *rawCID = [CID cidWithDigest:digest codec:0x55]; // raw
+    NSData *digest = [ATProtoCID sha256Digest:[@"raw-codec" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *rawCID = [ATProtoCID cidWithDigest:digest codec:0x55]; // raw
     NSData *cidBytes = rawCID.bytes;
 
     NSUInteger consumed = 0;
-    CID *parsed = [CID cidFromBuffer:cidBytes.bytes length:cidBytes.length consumed:&consumed];
+    ATProtoCID *parsed = [ATProtoCID cidFromBuffer:cidBytes.bytes length:cidBytes.length consumed:&consumed];
 
     XCTAssertNotNil(parsed);
     XCTAssertEqual(consumed, cidBytes.length);
@@ -175,18 +175,18 @@
 }
 
 - (void)testCIDFromEmptyBytes {
-    XCTAssertNil([CID cidFromBytes:[NSData data]]);
-    XCTAssertNil([CID cidFromBytes:nil]);
+    XCTAssertNil([ATProtoCID cidFromBytes:[NSData data]]);
+    XCTAssertNil([ATProtoCID cidFromBytes:nil]);
 }
 
 - (void)testCIDValidLength {
-    NSData *digest = [CID sha256Digest:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID cidWithDigest:digest codec:0x71];
+    NSData *digest = [ATProtoCID sha256Digest:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:digest codec:0x71];
     NSString *stringValue = cid.stringValue;
     
     XCTAssertLessThanOrEqual(stringValue.length, 256, @"Valid CID should be <= 256 chars");
     
-    CID *parsed = [CID cidFromString:stringValue];
+    ATProtoCID *parsed = [ATProtoCID cidFromString:stringValue];
     XCTAssertNotNil(parsed, @"Should parse valid CID string");
     XCTAssertEqualObjects(parsed.stringValue, stringValue);
 }
@@ -300,8 +300,8 @@
 - (void)testMSTBasicOperationsGetEqualsObject {
     MST *mst = [[MST alloc] init];
 
-    CID *cid1 = [CID sha256:[@"value1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid2 = [CID sha256:[@"value2" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid1 = [ATProtoCID sha256:[@"value1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid2 = [ATProtoCID sha256:[@"value2" dataUsingEncoding:NSUTF8StringEncoding]];
 
     [mst put:@"key1" valueCID:cid1];
     [mst put:@"key2" valueCID:cid2 subKey:@"sub1"];
@@ -312,7 +312,7 @@
 
 - (void)testMSTDelete {
     MST *mst = [[MST alloc] init];
-    CID *cid = [CID sha256:[@"delete test" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"delete test" dataUsingEncoding:NSUTF8StringEncoding]];
 
     [mst put:@"deleteMe" valueCID:cid];
     XCTAssertNotNil([mst get:@"deleteMe"]);
@@ -325,7 +325,7 @@
     MST *mst = [[MST alloc] init];
 
     for (int i = 0; i < 10; i++) {
-        CID *cid = [CID sha256:[[NSString stringWithFormat:@"entry%d", i] dataUsingEncoding:NSUTF8StringEncoding]];
+        ATProtoCID *cid = [ATProtoCID sha256:[[NSString stringWithFormat:@"entry%d", i] dataUsingEncoding:NSUTF8StringEncoding]];
         [mst put:[NSString stringWithFormat:@"key%d", i] valueCID:cid];
     }
 
@@ -336,9 +336,9 @@
 - (void)testEntriesWithPrefixReturnsExpectedCount {
     MST *mst = [[MST alloc] init];
 
-    CID *cid1 = [CID sha256:[@"app.bsky.feed.post1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid2 = [CID sha256:[@"app.bsky.feed.post2" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid3 = [CID sha256:[@"app.bsky.actor.profile" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid1 = [ATProtoCID sha256:[@"app.bsky.feed.post1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid2 = [ATProtoCID sha256:[@"app.bsky.feed.post2" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid3 = [ATProtoCID sha256:[@"app.bsky.actor.profile" dataUsingEncoding:NSUTF8StringEncoding]];
 
     [mst put:@"app.bsky.feed.post1" valueCID:cid1];
     [mst put:@"app.bsky.feed.post2" valueCID:cid2];
@@ -350,7 +350,7 @@
 
 - (void)testMSTCBORSerialization {
     MST *mst = [[MST alloc] init];
-    CID *cid = [CID sha256:[@"cbor test" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID sha256:[@"cbor test" dataUsingEncoding:NSUTF8StringEncoding]];
     [mst put:@"testKey" valueCID:cid];
 
     NSData *cborData = [mst serializeToCBOR];

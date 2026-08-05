@@ -15,7 +15,7 @@
     [self updateProgress:0.0 status:@"Starting CID verification scan..."];
 
     NSError *error = nil;
-    NSArray<CID *> *allCIDs = [self.blobStorage.provider listAllCIDsWithError:&error];
+    NSArray<ATProtoCID *> *allCIDs = [self.blobStorage.provider listAllCIDsWithError:&error];
     if (!allCIDs) {
         GZ_LOG_ERROR(@"CIDVerify: Failed to list CIDs from provider: %@", error);
         [self updateProgress:1.0 status:@"Failed to list CIDs"];
@@ -28,7 +28,7 @@
     for (NSUInteger i = 0; i < totalCIDs; i++) {
         if (self.isCancelled) return;
 
-        CID *originalCID = allCIDs[i];
+        ATProtoCID *originalCID = allCIDs[i];
         [self updateProgress:(double)i / (double)totalCIDs
                       status:[NSString stringWithFormat:@"Verifying %lu/%lu: %@", (unsigned long)i+1, (unsigned long)totalCIDs, originalCID.stringValue]];
 
@@ -42,9 +42,9 @@
             continue;
         }
 
-        // Compute new CID from data
+        // Compute new ATProtoCID from data
         // For blobs, we assume raw codec (0x55) and sha256
-        CID *computedCID = [CID sha256:data];
+        ATProtoCID *computedCID = [ATProtoCID sha256:data];
         
         if (![computedCID isEqualToCID:originalCID]) {
             GZ_LOG_ERROR(@"CIDVerify: CID mismatch for %@ (computed %@)", originalCID.stringValue, computedCID.stringValue);

@@ -359,7 +359,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
     NSString *rootCid = [_repoStateManager rootCIDForRepo:didParam];
     RelayRepoStatus status = [_repoStateManager statusForRepo:didParam];
 
-    // If repo has no root CID and status is default, it's unknown
+    // If repo has no root ATProtoCID and status is default, it's unknown
     if (!rootCid && status == RelayRepoStatusActive)
     {
         // Check if we've ever seen this repo

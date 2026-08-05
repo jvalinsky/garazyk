@@ -25,12 +25,12 @@
 
 #pragma mark - Test data helpers
 
-- (CID *)testCIDForKey:(NSString *)key {
+- (ATProtoCID *)testCIDForKey:(NSString *)key {
     NSData *data = [key dataUsingEncoding:NSUTF8StringEncoding];
-    return [CID sha256:data];
+    return [ATProtoCID sha256:data];
 }
 
-- (NSData *)testRecordDataForCID:(CID *)cid {
+- (NSData *)testRecordDataForCID:(ATProtoCID *)cid {
     // Deterministic record data distinct from any MST-node CBOR.
     NSMutableData *out = [NSMutableData data];
     uint8_t marker = 0xA1;
@@ -120,10 +120,10 @@
     [MST setStreamableCARBlockOrderingEnabled:NO];
     NSError *err = nil;
     __block NSUInteger emitted = 0;
-    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **e) {
+    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **e) {
         emitted++;
         return YES;
-    } recordProvider:^NSData *(CID *cid) {
+    } recordProvider:^NSData *(ATProtoCID *cid) {
         return [self testRecordDataForCID:cid];
     } error:&err];
     XCTAssertFalse(ok, @"Pre-order walker must refuse when the flag is off");
@@ -189,7 +189,7 @@
     MST *tree = [[MST alloc] init];
     NSArray<NSString *> *preorder = [self capturePreorderStream:tree];
     NSArray<NSString *> *bfs = [self captureBFS:tree];
-    // An empty repo still has a singleton empty-MST node with a defined CID,
+    // An empty repo still has a singleton empty-MST node with a defined ATProtoCID,
     // and emitting that block is spec-correct: consumers need it together with
     // the commit block to verify the empty-repo state. Both walkers emit
     // exactly one block (the same empty-MST node) for an empty tree.
@@ -267,11 +267,11 @@
 - (NSArray<NSString *> *)capturePreorderStream:(MST *)tree {
     __block NSMutableArray<NSString *> *order = [NSMutableArray array];
     NSError *err = nil;
-    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         (void)error;
         [order addObject:cid.stringValue];
         return YES;
-    } recordProvider:^NSData *(CID *cid) {
+    } recordProvider:^NSData *(ATProtoCID *cid) {
         return [self testRecordDataForCID:cid];
     } error:&err];
     XCTAssertTrue(ok, @"Pre-order walk must succeed when flag is enabled: %@", err);
@@ -281,7 +281,7 @@
 - (NSArray<NSString *> *)capturePreorderMSTOnly:(MST *)tree {
     __block NSMutableArray<NSString *> *order = [NSMutableArray array];
     NSError *err = nil;
-    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         (void)error;
         [order addObject:cid.stringValue];
         return YES;
@@ -293,7 +293,7 @@
 - (NSArray<NSString *> *)captureBFS:(MST *)tree {
     __block NSMutableArray<NSString *> *order = [NSMutableArray array];
     NSError *err = nil;
-    BOOL ok = [tree enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+    BOOL ok = [tree enumerateNodeCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         (void)error;
         [order addObject:cid.stringValue];
         return YES;
@@ -304,7 +304,7 @@
 
 - (NSSet<NSString *> *)mstNodeCIDSetForTree:(MST *)tree {
     NSMutableSet<NSString *> *set = [NSMutableSet set];
-    [tree enumerateNodeCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **error) {
+    [tree enumerateNodeCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         (void)error;
         [set addObject:cid.stringValue];
         return YES;

@@ -6,7 +6,7 @@
 # the class is prefixed or this file is edited in the same commit that
 # introduces it, so review sees the regression.
 #
-# Starting inventory: 229 unprefixed classes out of 515 total.
+# Starting inventory: 228 unprefixed classes out of 515 total.
 AVFoundationTranscoder
 ActorService
 AdminMiddleware
@@ -24,7 +24,6 @@ BufferedEvent
 CARBlock
 CARReader
 CARWriter
-CID
 ChatAuthManager
 ChatConfiguration
 ChatModerationService

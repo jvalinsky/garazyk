@@ -172,7 +172,7 @@
         NSDictionary *record = @{};
         if (subjectURI && subjectCID) {
             // Try to load the record from the blocks table
-            CID *cid = [CID cidFromString:subjectCID];
+            ATProtoCID *cid = [ATProtoCID cidFromString:subjectCID];
             if (cid && authorDID.length > 0) {
                 PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:authorDID error:nil];
                 if (block && block.blockData) {

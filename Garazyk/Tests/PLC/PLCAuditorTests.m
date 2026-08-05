@@ -312,7 +312,7 @@
 }
 
 - (void)testVerifyChainRejectsUnsignedTombstoneAtEnd {
-    // Regression test: a chain that is otherwise valid (correct prev-CID
+    // Regression test: a chain that is otherwise valid (correct prev-ATProtoCID
     // linkage) but whose terminal tombstone is not actually signed by an
     // authorized rotation key must be rejected. Before this fix,
     // +verifyChain:did:error: returned YES for a trailing tombstone as
@@ -345,7 +345,7 @@
         @"prev": prevCid
     };
     // Signed by an unrelated key, not one of op1's rotationKeys — the prev
-    // CID still links correctly, so only a real signature check catches this.
+    // ATProtoCID still links correctly, so only a real signature check catches this.
     NSData *tombstoneHash = [self.auditor hashForOperationData:tombstoneData];
     NSData *forgedSig = [attackerKeyPair signHash:tombstoneHash error:nil];
 
@@ -467,7 +467,7 @@
     uint8_t codec[] = {0x80, 0x24};
     NSMutableData *prefixed = [NSMutableData dataWithBytes:codec length:2];
     [prefixed appendData:compressedPub];
-    NSString *didKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:prefixed]];
+    NSString *didKey = [NSString stringWithFormat:@"did:key:z%@", [ATProtoCID base58btcEncode:prefixed]];
     
     // 4. Create Operation
     NSDictionary *opData = @{
@@ -559,7 +559,7 @@
     uint8_t codec[] = {0x80, 0x24};
     NSMutableData *prefixed = [NSMutableData dataWithBytes:codec length:2];
     [prefixed appendData:compressedPub];
-    NSString *didKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:prefixed]];
+    NSString *didKey = [NSString stringWithFormat:@"did:key:z%@", [ATProtoCID base58btcEncode:prefixed]];
 
     NSDictionary *opData = @{
         @"type": @"plc_operation",

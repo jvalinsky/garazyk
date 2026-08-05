@@ -211,7 +211,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
   if (![ops isKindOfClass:[NSArray class]]) return nil;
 
   /* listRepoOps already applies the `since` revision cursor. Its `prev`
-   * field is the prior record CID (not a repository revision), so comparing
+   * field is the prior record ATProtoCID (not a repository revision), so comparing
    * it to localRev would falsely turn every update into a recovery gap. */
   BOOL gapDetected = ops.count == 0;
   if (gapDetected) {
@@ -489,7 +489,7 @@ static const NSTimeInterval PDSSpaceReconcilerMinimumInterval = 60.0;
   NSString *key = document ? [ATProtoDIDDocumentFields strictAtprotoSigningKeyMultibaseFromDocument:document] : nil;
   if ([key hasPrefix:@"did:key:"]) key = [key substringFromIndex:8];
   if (![key hasPrefix:@"z"]) return nil;
-  NSData *decoded = [CID base58btcDecode:[key substringFromIndex:1]];
+  NSData *decoded = [ATProtoCID base58btcDecode:[key substringFromIndex:1]];
   if (decoded.length != 35) return nil;
   const uint8_t *bytes = decoded.bytes;
   if (bytes[0] != 0xe7 || bytes[1] != 0x01) return nil;

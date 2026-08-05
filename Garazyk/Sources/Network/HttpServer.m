@@ -94,6 +94,7 @@
 
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_semaphore_t concurrencySemaphore;
+@property(nonatomic, readwrite) NSUInteger maxConcurrentRequests;
 @property(nonatomic, strong) WebSocketUpgradeHandler *webSocketUpgradeHandler;
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, WebSocketRequestHandler> *webSocketHandlers;
@@ -126,7 +127,7 @@ static const NSUInteger kHttpMaxBodyBytes = 50 * 1024 * 1024;
 static const NSUInteger kHttpOutputQueueHighWaterMark =
     10 * 1024 * 1024; // 10MB
 static const NSTimeInterval kHttpHeaderTimeout = 5.0;
-static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
+const NSUInteger kHttpServerDefaultMaxConcurrentRequests = 64;
 static const NSUInteger kHttpFileSendChunkSize = 64 * 1024;
 static const NSUInteger kHttpGeneratedChunkSendSize = 64 * 1024;
 static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
@@ -170,22 +171,58 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   return [[self alloc] initWithHost:host port:port];
 }
 
-/*!
- @method initWithPort:
++ (instancetype)serverWithHost:(NSString *_Nullable)host
+                          port:(NSUInteger)port
+         maxConcurrentRequests:(NSUInteger)maxConcurrentRequests {
+  return [[self alloc] initWithHost:host
+                               port:port
+              maxConcurrentRequests:maxConcurrentRequests];
+}
 
- @abstract Initializes an HTTP server on the specified port.
+/*!
+ @method initWithHost:port:
+
+ @abstract Initializes an HTTP server with the default concurrency limit.
 
  @discussion The server is configured but not started. Call startWithError:
  to begin listening for connections.
 
+ @param host The local host/interface to bind to, or nil for all interfaces.
  @param port The port number to listen on.
  @return An initialized server instance.
  */
 - (instancetype)initWithHost:(NSString *_Nullable)host port:(NSUInteger)port {
+  return [self initWithHost:host
+                       port:port
+      maxConcurrentRequests:kHttpServerDefaultMaxConcurrentRequests];
+}
+
+/*!
+ @method initWithHost:port:maxConcurrentRequests:
+
+ @abstract Designated initializer; configures the server's concurrency limit.
+
+ @discussion The limit sizes this instance's concurrency semaphore, which is
+ per-instance rather than shared. Handlers run on the global concurrent queue
+ and a blocking handler holds a global worker for its whole duration, so a
+ server whose handlers block must be limited well below the default when
+ another server in the same process is responsible for answering them.
+
+ @param host The local host/interface to bind to, or nil for all interfaces.
+ @param port The port number to listen on.
+ @param maxConcurrentRequests Concurrency limit; 0 selects the default.
+ @return An initialized server instance.
+ */
+- (instancetype)initWithHost:(NSString *_Nullable)host
+                        port:(NSUInteger)port
+       maxConcurrentRequests:(NSUInteger)maxConcurrentRequests {
   self = [super init];
   if (self) {
     _host = [host copy];
     _port = port;
+    _maxConcurrentRequests = maxConcurrentRequests > 0
+                                 ? maxConcurrentRequests
+                                 : kHttpServerDefaultMaxConcurrentRequests;
     _serverQueue = dispatch_queue_create("com.atproto.pds.httpserver",
                                          DISPATCH_QUEUE_SERIAL);
     _routeTries = [NSMutableDictionary dictionary];
@@ -195,7 +232,8 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
         "com.atproto.pds.httpserver.connections", DISPATCH_QUEUE_SERIAL);
     _readySemaphore = dispatch_semaphore_create(0);
     _stopSemaphore = dispatch_semaphore_create(0);
-    _concurrencySemaphore = dispatch_semaphore_create(kMaxConcurrentRequests);
+    _concurrencySemaphore =
+        dispatch_semaphore_create((long)_maxConcurrentRequests);
     _taskGroup = dispatch_group_create();
     _connectionStates = [NSMapTable strongToStrongObjectsMapTable];
     _webSocketUpgradeHandler = [[WebSocketUpgradeHandler alloc] init];

@@ -509,7 +509,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
             return YES;
         }
 
-        // Update rotation keys and prev CID for next iteration
+        // Update rotation keys and prev ATProtoCID for next iteration
         normalized = [self normalizedDataForOperation:op error:&localError];
         if (!normalized) {
             if (error) *error = localError;

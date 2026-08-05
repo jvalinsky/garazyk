@@ -17,7 +17,7 @@
 @property (nonatomic, strong) NSDictionary *resultsToReturn;
 @end
 
-/*! Valid CID string used in tests (bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu) */
+/*! Valid ATProtoCID string used in tests (bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu) */
 static NSString *const kTestProcessedCID = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
 static NSString *const kTestThumbnailCID = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
 
@@ -82,28 +82,28 @@ static NSString *const kTestThumbnailCID = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2c
 
 @implementation MediaCoreMockBlobProvider
 
-- (BOOL)storeBlobData:(NSData *)data forCID:(CID *)cid error:(NSError **)error {
+- (BOOL)storeBlobData:(NSData *)data forCID:(ATProtoCID *)cid error:(NSError **)error {
     return YES;
 }
 
-- (nullable NSData *)retrieveBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSData *)retrieveBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     return [@"test media data" dataUsingEncoding:NSUTF8StringEncoding];
 }
 
-- (nullable NSInputStream *)retrieveBlobStreamForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSInputStream *)retrieveBlobStreamForCID:(ATProtoCID *)cid error:(NSError **)error {
     NSData *dummyData = [@"test media data" dataUsingEncoding:NSUTF8StringEncoding];
     return [NSInputStream inputStreamWithData:dummyData];
 }
 
-- (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (BOOL)deleteBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     return YES;
 }
 
-- (BOOL)hasBlobDataForCID:(CID *)cid {
+- (BOOL)hasBlobDataForCID:(ATProtoCID *)cid {
     return YES;
 }
 
-- (nullable NSURL *)blobFileURLForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSURL *)blobFileURLForCID:(ATProtoCID *)cid error:(NSError **)error {
     return nil; // Force stream-based path
 }
 

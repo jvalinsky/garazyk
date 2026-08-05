@@ -59,7 +59,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
   // route through the strict [ATProtoDagCBOR decodeDataAsJSON:] path --
   // the same dispatch as the direct-from-DagCBOR identity at
   // AppViewBackfillWorker.m:422. CTAP2 / generic-CBOR callers (lexicon
-  // schemas and similar non-CID'd payloads) stay on the legacy
+  // schemas and similar non-ATProtoCID'd payloads) stay on the legacy
   // [ATProtoCBORDecoder decode:] path.
   if (self.isContentAddressed) {
     return [ATProtoDagCBOR decodeDataAsJSON:data error:error];
@@ -85,13 +85,13 @@ static NSData *CBORBase64URLDecode(NSString *string) {
   if ([obj isKindOfClass:[NSDictionary class]]) {
     NSDictionary *json = (NSDictionary *)obj;
 
-    // ATProto lex-to-IPLD: convert {"$link": "bafyrei..."} to CBOR Tag 42 (CID)
+    // ATProto lex-to-IPLD: convert {"$link": "bafyrei..."} to CBOR Tag 42 (ATProtoCID)
     if (json.count == 1 && [json[@"$link"] isKindOfClass:[NSString class]]) {
       NSString *cidStr = json[@"$link"];
-      CID *cid = [CID cidFromString:cidStr];
+      ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
       if (cid) {
         NSData *cidBytes = [cid bytes];
-        // DAG-CBOR Tag 42 requires 0x00 identity multibase prefix before CID
+        // DAG-CBOR Tag 42 requires 0x00 identity multibase prefix before ATProtoCID
         // bytes
         NSMutableData *tagPayload =
             [NSMutableData dataWithCapacity:1 + cidBytes.length];
@@ -221,7 +221,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
     return dict;
   }
   case CBORTypeTag: {
-    // ATProto IPLD-to-lex: convert CBOR Tag 42 (CID) to {"$link": "bafyrei..."}
+    // ATProto IPLD-to-lex: convert CBOR Tag 42 (ATProtoCID) to {"$link": "bafyrei..."}
     if (cbor.tag.unsignedIntegerValue == 42 &&
         cbor.tagValue.type == CBORTypeByteString) {
       NSData *tagPayload = cbor.tagValue.byteString;
@@ -231,7 +231,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
         if (payloadBytes[0] == 0x00) {
           NSData *cidBytes = [tagPayload
               subdataWithRange:NSMakeRange(1, tagPayload.length - 1)];
-          CID *cid = [CID cidFromBytes:cidBytes];
+          ATProtoCID *cid = [ATProtoCID cidFromBytes:cidBytes];
           if (cid) {
             return @{@"$link" : [cid stringValue]};
           }

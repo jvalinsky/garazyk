@@ -34,7 +34,7 @@
     NSString *embedType = embedRecord[@"$type"];
     if (![embedType isEqualToString:@"app.bsky.embed.video"]) return nil;
 
-    // Extract the video blob CID from the embed record
+    // Extract the video blob ATProtoCID from the embed record
     NSDictionary *video = embedRecord[@"video"];
     if (!video) return nil;
 
@@ -55,7 +55,7 @@
     NSMutableDictionary *view = [NSMutableDictionary dictionary];
     view[@"$type"] = @"app.bsky.embed.video#view";
 
-    // Add the CID reference
+    // Add the ATProtoCID reference
     view[@"cid"] = cid;
 
     // Add playlist URL

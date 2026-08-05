@@ -12,9 +12,9 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion §S19 lifts §3.4 from ADR-recorded to implemented: per-instance
  routing flag `_isContentAddressed` directs content-addressed callers
  (repository records, MST/CAR blocks, profile records, sync ops, anything
- with a CID) through `[ATProtoDagCBOR decodeData:]` / `[ATProtoDagCBOR
+ with a ATProtoCID) through `[ATProtoDagCBOR decodeData:]` / `[ATProtoDagCBOR
  decodeDataAsJSON:]`, while CTAP2/generic-CBOR callers (lexicon schemas and
- similar non-CID'd payloads) keep the plain `[ATProtoCBORDecoder decode:]` /
+ similar non-ATProtoCID'd payloads) keep the plain `[ATProtoCBORDecoder decode:]` /
  `[ATProtoCBOREncoder encode:]` path.
 
  The flag is part of the immutable state set at construction and has no
@@ -36,7 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
  instance.
 
  @param contentAddressed Pass YES for repository records, MST/CAR blocks,
- profile records, sync ops, and any data that has a CID or is hashed for
+ profile records, sync ops, and any data that has a ATProtoCID or is hashed for
  content addressing. Pass NO for lexicon schemas and other payloads that
  don't participate in content addressing.
  */

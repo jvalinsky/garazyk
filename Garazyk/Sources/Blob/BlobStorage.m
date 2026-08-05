@@ -63,7 +63,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
 
 #pragma mark - Blob Operations
 
-- (nullable CID *)uploadBlob:(NSData *)data
+- (nullable ATProtoCID *)uploadBlob:(NSData *)data
                     mimeType:(NSString *)mimeType
                          did:(NSString *)did
                        error:(NSError **)error {
@@ -73,8 +73,8 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
         return nil;
     }
 
-    // Compute CID for the blob data
-    CID *cid = [self computeCIDForData:data];
+    // Compute ATProtoCID for the blob data
+    ATProtoCID *cid = [self computeCIDForData:data];
     if (!cid) {
         if (error) {
             *error = [NSError errorWithDomain:BlobStorageErrorDomain
@@ -175,7 +175,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     return cid;
 }
 
-- (nullable NSData *)getBlobWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error {
+- (nullable NSData *)getBlobWithCID:(ATProtoCID *)cid did:(nullable NSString *)did error:(NSError **)error {
     if (did.length == 0) {
         if (error) *error = [NSError errorWithDomain:BlobStorageErrorDomain
                                                  code:BlobStorageErrorBlobNotFound
@@ -216,8 +216,8 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
         return nil;
     }
 
-    // Verify CID matches
-    CID *computedCID = [self computeCIDForData:data];
+    // Verify ATProtoCID matches
+    ATProtoCID *computedCID = [self computeCIDForData:data];
     if (!computedCID || ![computedCID isEqualToCID:cid]) {
         if (error) {
             *error = [NSError errorWithDomain:BlobStorageErrorDomain
@@ -230,7 +230,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     return data;
 }
 
-- (nullable NSString *)blobFilePathWithCID:(CID *)cid did:(nullable NSString *)did error:(NSError **)error {
+- (nullable NSString *)blobFilePathWithCID:(ATProtoCID *)cid did:(nullable NSString *)did error:(NSError **)error {
     if (did.length == 0) {
         if (error) *error = [NSError errorWithDomain:BlobStorageErrorDomain
                                                  code:BlobStorageErrorBlobNotFound
@@ -292,7 +292,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     return [blobs filteredArrayUsingPredicate:referenced];
 }
 
-- (BOOL)deleteBlobWithCID:(CID *)cid did:(NSString *)did error:(NSError **)error {
+- (BOOL)deleteBlobWithCID:(ATProtoCID *)cid did:(NSString *)did error:(NSError **)error {
     __block BOOL success = NO;
     __block NSError *dbError = nil;
     
@@ -322,7 +322,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
 - (nullable PDSDatabaseBlob *)getBlobMetadataWithCID:(NSString *)cidString did:(nullable NSString *)did error:(NSError **)error {
     if (!did) return nil;
     
-    CID *cid = [CID cidFromString:cidString];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
     if (!cid) return nil;
     
     PDSActorStore *store = [_databasePool storeForDid:did error:error];
@@ -388,9 +388,9 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     return YES;
 }
 
-#pragma mark - CID Computation
+#pragma mark - ATProtoCID Computation
 
-- (CID *)computeCIDForData:(NSData *)data {
+- (ATProtoCID *)computeCIDForData:(NSData *)data {
     // Create multihash: <algorithm><length><digest>
     // Algorithm 0x12 = sha2-256
     // Length is always 32 for sha256
@@ -404,7 +404,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
     CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
     [multihash appendBytes:digest length:CC_SHA256_DIGEST_LENGTH];
 
-    return [CID cidWithMultihash:multihash codec:kRawCodec];
+    return [ATProtoCID cidWithMultihash:multihash codec:kRawCodec];
 }
 
 #pragma mark - Helpers

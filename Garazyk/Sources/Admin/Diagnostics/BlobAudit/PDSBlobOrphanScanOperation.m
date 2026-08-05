@@ -20,7 +20,7 @@
     [self updateProgress:0.0 status:@"Starting orphan scan..."];
 
     NSError *error = nil;
-    NSArray<CID *> *allCIDs = [self.blobStorage.provider listAllCIDsWithError:&error];
+    NSArray<ATProtoCID *> *allCIDs = [self.blobStorage.provider listAllCIDsWithError:&error];
     if (!allCIDs) {
         GZ_LOG_ERROR(@"OrphanScan: Failed to list CIDs from provider: %@", error);
         [self updateProgress:1.0 status:@"Failed to list CIDs"];
@@ -28,7 +28,7 @@
     }
 
     NSMutableSet<NSString *> *orphanCIDs = [NSMutableSet setWithCapacity:allCIDs.count];
-    for (CID *cid in allCIDs) {
+    for (ATProtoCID *cid in allCIDs) {
         [orphanCIDs addObject:cid.stringValue];
     }
 

@@ -13,6 +13,8 @@
             @"(?i)(cookie\\s*[:=]\\s*)[^\\n\\r]+",
             @"(?i)(set-cookie\\s*[:=]\\s*)[^\\n\\r]+",
         @"(?i)(ui_admin_token=)[^;\\s]+",
+        // Per-service admin UI cookies (gz_admin_<service>_token / _nonce).
+        @"(?i)(gz_admin_[a-z0-9_]+_(?:token|nonce)=)[^;\\s]+",
         @"(?i)(access_token|refresh_token|client_secret|client_assertion|code|password|session(?:_id)?|private_key|token|master_secret|s3_secret_access_key|captcha_secret_key|secret)\\s*=\\s*[^&\\s,;\\]\\)]+",
         @"(?i)(\\\"(?:access_token|refresh_token|client_secret|client_assertion|code|password|session(?:_id)?|private_key|token|master_secret|s3_secret_access_key|captcha_secret_key|secret)\\\"\\s*:\\s*\\\")[^\\\"]+",
         @"(?i)((?:access_token|refresh_token|client_secret|client_assertion|code|password|session(?:_id)?|private_key|token|master_secret|s3_secret_access_key|captcha_secret_key|secret)\\s*[:=]\\s*)[^\\s,;\\]\\)]+"

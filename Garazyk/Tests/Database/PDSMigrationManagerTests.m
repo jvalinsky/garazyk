@@ -476,13 +476,13 @@ static NSString *PDSMigrationTestHexLiteral(NSData *data) {
     PDSMigrationTestExecute(db, "CREATE TABLE records (uri TEXT PRIMARY KEY, did TEXT NOT NULL, value BLOB)");
 
     NSString *did = @"did:plc:alice";
-    CID *commitCID = [CID sha256:[@"initial-commit-block" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *commitCID = [ATProtoCID sha256:[@"initial-commit-block" dataUsingEncoding:NSUTF8StringEncoding]];
     PDSMigrationTestExecute(db, [NSString stringWithFormat:
         @"INSERT INTO ipld_blocks (cid, block, size, rev) VALUES (%@, X'01', 1, 'rev1')",
         PDSMigrationTestHexLiteral(commitCID.bytes)].UTF8String);
 
-    CID *referencedBlobCID = [CID sha256:[@"referenced-blob-bytes" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *temporaryBlobCID = [CID sha256:[@"temporary-blob-bytes" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *referencedBlobCID = [ATProtoCID sha256:[@"referenced-blob-bytes" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *temporaryBlobCID = [ATProtoCID sha256:[@"temporary-blob-bytes" dataUsingEncoding:NSUTF8StringEncoding]];
     PDSMigrationTestExecute(db, [NSString stringWithFormat:
         @"INSERT INTO blobs (cid, did, mimeType, size, created_at) VALUES (%@, '%@', 'image/png', 100, '2026-01-01T00:00:00Z')",
         PDSMigrationTestHexLiteral(referencedBlobCID.bytes), did].UTF8String);

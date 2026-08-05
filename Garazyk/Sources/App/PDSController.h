@@ -193,7 +193,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Repository Operations
 
-/*! Gets the root CID of a repository. */
+/*! Gets the root ATProtoCID of a repository. */
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error;
 
 /*! Gets repository contents, optionally since a specific commit. */
@@ -240,7 +240,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Blob Operations
 
-/*! Gets a blob by CID. */
+/*! Gets a blob by ATProtoCID. */
 - (nullable NSData *)getBlob:(NSData *)cid
                       forDid:(NSString *)did
                        error:(NSError **)error;

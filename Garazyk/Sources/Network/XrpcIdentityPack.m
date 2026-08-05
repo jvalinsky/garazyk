@@ -501,7 +501,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
             return;
         }
 
-        NSData *hash = [CID rawSha256:cborData];
+        NSData *hash = [ATProtoCID rawSha256:cborData];
         NSError *signError = nil;
         NSData *sig = nil;
         
@@ -723,7 +723,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
         ATProtoDIDDocument *refreshedDocument = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did forceRefresh:YES error:&refreshError];
         if (!refreshedDocument) {
             // Submission has already succeeded.  Do not return a retryable status here:
-            // repeating the operation would use a stale `prev` CID.  A later resolver
+            // repeating the operation would use a stale `prev` ATProtoCID.  A later resolver
             // request will retry the cache refresh.
             GZ_LOG_WARN(@"PLC operation for DID %@ was accepted but the local DID cache refresh is pending", did);
         }

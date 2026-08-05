@@ -88,27 +88,27 @@
 + (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
                                         store:(PDSActorStore *)store
                                         error:(NSError **)error {
-    // 1. Read the current repo root CID
+    // 1. Read the current repo root ATProtoCID
     NSData *rootCIDBytes = [store getRepoRootForDid:did error:nil];
     if (!rootCIDBytes) {
         GZ_LOG_INFO(@"MSTCacheManager: no repo root for %@, falling back to full rebuild", did);
         return nil;
     }
 
-    CID *rootCID = [CID cidFromBytes:rootCIDBytes];
+    ATProtoCID *rootCID = [ATProtoCID cidFromBytes:rootCIDBytes];
     if (!rootCID) {
         GZ_LOG_ERROR(@"MSTCacheManager: invalid root CID bytes for %@", did);
         return nil;
     }
 
-    // 2. Read the commit block to get the data CID (MST root)
+    // 2. Read the commit block to get the data ATProtoCID (MST root)
     NSData *commitBlockData = [store getBlockForCID:rootCID.bytes forDid:did error:nil];
     if (!commitBlockData) {
         GZ_LOG_INFO(@"MSTCacheManager: no commit block for %@, falling back", did);
         return nil;
     }
 
-    // 3. Parse the commit to extract the data CID
+    // 3. Parse the commit to extract the data ATProtoCID
     ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlockData];
     if (!commitValue || commitValue.type != CBORTypeMap) {
         GZ_LOG_ERROR(@"MSTCacheManager: commit block is not a CBOR map for %@", did);
@@ -121,15 +121,15 @@
         return nil;
     }
 
-    // The data field is a CID link: tag(42) wrapping a byte string with CID bytes
+    // The data field is a ATProtoCID link: tag(42) wrapping a byte string with ATProtoCID bytes
     NSData *dataCIDBytes = dataTag.tagValue.byteString;
     if (!dataCIDBytes || dataCIDBytes.length <= 1) {
         GZ_LOG_ERROR(@"MSTCacheManager: data CID bytes too short for %@", did);
         return nil;
     }
 
-    // Skip the multibase prefix byte (0x00) to get raw CID bytes
-    CID *dataCID = [CID cidFromBytes:[dataCIDBytes subdataWithRange:NSMakeRange(1, dataCIDBytes.length - 1)]];
+    // Skip the multibase prefix byte (0x00) to get raw ATProtoCID bytes
+    ATProtoCID *dataCID = [ATProtoCID cidFromBytes:[dataCIDBytes subdataWithRange:NSMakeRange(1, dataCIDBytes.length - 1)]];
     if (!dataCID) {
         GZ_LOG_ERROR(@"MSTCacheManager: failed to parse data CID for %@", did);
         return nil;

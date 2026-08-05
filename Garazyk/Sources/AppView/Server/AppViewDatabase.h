@@ -318,7 +318,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
  @param seq          Global relay sequence number.
  @param did          Repo DID (may be nil for non-commit events).
  @param rev          Commit revision (may be nil for identity/account events).
- @param cid          Commit CID (may be nil for non-commit events).
+ @param cid          Commit ATProtoCID (may be nil for non-commit events).
  @param rawEnvelope  Raw CBOR envelope bytes.
  */
 - (BOOL)logEvent:(int64_t)seq

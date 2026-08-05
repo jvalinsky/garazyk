@@ -20,18 +20,18 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
 @end
 
 @interface MSTNodeEntry (MSTPersistenceAccess)
-- (instancetype)initWithKey:(NSString *)key value:(CID *)value tree:(nullable MSTNode *)tree;
+- (instancetype)initWithKey:(NSString *)key value:(ATProtoCID *)value tree:(nullable MSTNode *)tree;
 @end
 
 @interface MSTPersistence ()
-- (nullable MSTNode *)loadNodeWithCID:(CID *)cid
+- (nullable MSTNode *)loadNodeWithCID:(ATProtoCID *)cid
                                repoDid:(NSString *)repoDid
                              database:(PDSDatabase *)database
                             nodeCache:(NSMutableDictionary<NSString *, MSTNode *> *)nodeCache
                            levelCache:(NSMutableDictionary<NSString *, NSNumber *> *)levelCache
                        computedLevel:(uint32_t *)computedLevel
                                  error:(NSError **)error;
-- (nullable CID *)cidFromTaggedValue:(ATProtoCBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error;
+- (nullable ATProtoCID *)cidFromTaggedValue:(ATProtoCBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error;
 @end
 
 @implementation MSTPersistence
@@ -72,7 +72,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         return [[MST alloc] init];
     }
 
-    CID *rootCID = [CID cidFromBytes:repoInfo.rootCid];
+    ATProtoCID *rootCID = [ATProtoCID cidFromBytes:repoInfo.rootCid];
     if (!rootCID) {
         if (error) {
             *error = [NSError errorWithDomain:MSTPersistenceErrorDomain
@@ -122,7 +122,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     return [db updateRepoRoot:did rootCid:rootData error:error];
 }
 
-- (BOOL)saveMSTNode:(MSTNode *)node withCID:(CID *)cid forDid:(NSString *)did error:(NSError **)error {
+- (BOOL)saveMSTNode:(MSTNode *)node withCID:(ATProtoCID *)cid forDid:(NSString *)did error:(NSError **)error {
     if (!node || !cid) {
         if (error) {
             *error = [NSError errorWithDomain:MSTPersistenceErrorDomain
@@ -157,7 +157,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     return [db saveBlock:block error:error];
 }
 
-- (nullable MSTNode *)loadMSTNodeWithCID:(CID *)cid forDid:(NSString *)did error:(NSError **)error {
+- (nullable MSTNode *)loadMSTNodeWithCID:(ATProtoCID *)cid forDid:(NSString *)did error:(NSError **)error {
     if (!cid) {
         if (error) {
             *error = [NSError errorWithDomain:MSTPersistenceErrorDomain
@@ -194,7 +194,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
 
 #pragma mark - Helpers
 
-- (nullable CID *)cidFromTaggedValue:(ATProtoCBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error {
+- (nullable ATProtoCID *)cidFromTaggedValue:(ATProtoCBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error {
     if (!value) {
         if (allowNil) return nil;
         if (error) {
@@ -231,7 +231,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     }
 
     NSData *cidBytes = [bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)];
-    CID *cid = [CID cidFromBytes:cidBytes];
+    ATProtoCID *cid = [ATProtoCID cidFromBytes:cidBytes];
     if (!cid && !allowNil && error) {
         *error = [NSError errorWithDomain:MSTPersistenceErrorDomain
                                      code:MSTPersistenceErrorCodeInvalidCID
@@ -240,7 +240,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     return cid;
 }
 
-- (nullable MSTNode *)loadNodeWithCID:(CID *)cid
+- (nullable MSTNode *)loadNodeWithCID:(ATProtoCID *)cid
                                repoDid:(NSString *)repoDid
                              database:(PDSDatabase *)database
                             nodeCache:(NSMutableDictionary<NSString *, MSTNode *> *)nodeCache
@@ -299,11 +299,11 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         prevKey = fullKey;
 
         ATProtoCBORValue *valueTag = entryMap.map[[ATProtoCBORValue textString:@"v"]];
-        CID *valueCID = [self cidFromTaggedValue:valueTag allowNil:NO error:error];
+        ATProtoCID *valueCID = [self cidFromTaggedValue:valueTag allowNil:NO error:error];
         if (!valueCID) return nil;
 
         ATProtoCBORValue *treeTag = entryMap.map[[ATProtoCBORValue textString:@"t"]];
-        CID *treeCID = [self cidFromTaggedValue:treeTag allowNil:YES error:error];
+        ATProtoCID *treeCID = [self cidFromTaggedValue:treeTag allowNil:YES error:error];
         MSTNode *treeNode = nil;
         uint32_t treeLevel = 0;
         if (treeCID) {
@@ -323,7 +323,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     }
 
     ATProtoCBORValue *leftTag = nodeValue.map[[ATProtoCBORValue textString:@"l"]];
-    CID *leftCID = [self cidFromTaggedValue:leftTag allowNil:YES error:error];
+    ATProtoCID *leftCID = [self cidFromTaggedValue:leftTag allowNil:YES error:error];
     MSTNode *leftNode = nil;
     uint32_t leftLevel = 0;
     if (leftCID) {

@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Lists blobs for a nonempty DID, forwarding optional limit and cursor values. */
 - (NSDictionary *)fetchBlobsForDID:(NSString *)did limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 
-/** @abstract Requests the blob response for nonempty DID and CID values. */
+/** @abstract Requests the blob response for nonempty DID and ATProtoCID values. */
 - (NSDictionary *)fetchBlobForDID:(NSString *)did cid:(NSString *)cid;
 
 @end

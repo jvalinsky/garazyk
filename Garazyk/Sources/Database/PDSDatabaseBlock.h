@@ -11,13 +11,13 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Represents a content block stored in the database.
  * 
  * @discussion Blocks are content-addressed data units stored in CAR format.
- * Each block is identified by its CID and belongs to a specific repository.
+ * Each block is identified by its ATProtoCID and belongs to a specific repository.
  * 
  * @see PDSDatabase (Blocks)
  */
 @interface PDSDatabaseBlock : NSObject <PDSDatabaseModel>
 
-/** The CID of this block. */
+/** The ATProtoCID of this block. */
 @property (nonatomic, copy) NSData *cid;
 
 /** The DID of the repository that owns this block. */

@@ -26,18 +26,18 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Returns the canonical DAG-CBOR block for a persisted record.
  * @discussion The actor store's IPLD block is preferred. If it is absent, the method encodes the
- * record's JSON value and returns it only when its computed CID matches record.cid. The fallback
+ * record's JSON value and returns it only when its computed ATProtoCID matches record.cid. The fallback
  * does not write the reconstructed block.
- * @param record The persisted record whose CID and value identify the block.
+ * @param record The persisted record whose ATProtoCID and value identify the block.
  * @return Block bytes, or nil when no canonical block is available or fallback validation fails.
  */
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record;
 /**
- * @abstract Encodes a CID as a DAG-CBOR link value.
- * @param cid The CID to encode.
- * @return A CBOR tag 42 value containing the CID link representation.
+ * @abstract Encodes a ATProtoCID as a DAG-CBOR link value.
+ * @param cid The ATProtoCID to encode.
+ * @return A CBOR tag 42 value containing the ATProtoCID link representation.
  */
-- (ATProtoCBORValue *)cidLinkValueForCID:(CID *)cid;
+- (ATProtoCBORValue *)cidLinkValueForCID:(ATProtoCID *)cid;
 
 @end
 

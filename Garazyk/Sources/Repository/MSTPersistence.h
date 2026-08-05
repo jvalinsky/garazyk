@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class MST;
 @class MSTNode;
-@class CID;
+@class ATProtoCID;
 @class PDSDatabase;
 
 /*!
@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion Handles storage and retrieval of MST structures and nodes.
  MSTs are stored per-DID in actor databases. Nodes are content-addressed
- by CID for deduplication and efficient sync.
+ by ATProtoCID for deduplication and efficient sync.
  */
 @interface MSTPersistence : NSObject
 
@@ -41,11 +41,11 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Load complete MST structure for DID. */
 - (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error;
 
-/*! Save individual MST node with CID. */
-- (BOOL)saveMSTNode:(MSTNode *)node withCID:(CID *)cid forDid:(NSString *)did error:(NSError **)error;
+/*! Save individual MST node with ATProtoCID. */
+- (BOOL)saveMSTNode:(MSTNode *)node withCID:(ATProtoCID *)cid forDid:(NSString *)did error:(NSError **)error;
 
-/*! Load individual MST node by CID. */
-- (nullable MSTNode *)loadMSTNodeWithCID:(CID *)cid forDid:(NSString *)did error:(NSError **)error;
+/*! Load individual MST node by ATProtoCID. */
+- (nullable MSTNode *)loadMSTNodeWithCID:(ATProtoCID *)cid forDid:(NSString *)did error:(NSError **)error;
 
 /*! Delete all MST data for DID. */
 - (BOOL)deleteMSTForDid:(NSString *)did error:(NSError **)error;

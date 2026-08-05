@@ -73,7 +73,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
     NSString *repoDID = GZFeedStringValue(did);
     if (cidString.length == 0 || repoDID.length == 0) return nil;
 
-    CID *cid = [CID cidFromString:cidString];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
     if (!cid) return nil;
 
     NSData *blockData = nil;
@@ -99,11 +99,11 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
 }
 
 // Batches the same lookup -getRecordBodyFromCID:did:error: performs, keyed by
-// CID string. blocks.cid is the table's sole unique key on every backend this
+// ATProtoCID string. blocks.cid is the table's sole unique key on every backend this
 // service runs against, and -getRecordBodyFromCID:did:error: already falls
 // through to an unscoped-by-repo lookup on a repo_did miss — so, exactly as
-// in the per-row method, the returned content depends only on the CID, not
-// which did asked for it. That lets every call site below batch by CID alone
+// in the per-row method, the returned content depends only on the ATProtoCID, not
+// which did asked for it. That lets every call site below batch by ATProtoCID alone
 // regardless of whether its rows share one did or span many.
 - (NSDictionary<NSString *, NSDictionary *> *)getRecordBodiesForCIDStrings:(NSArray<NSString *> *)cidStrings
                                                                        error:(NSError **)error {
@@ -114,7 +114,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
     for (NSString *cidStr in cidStrings) {
         NSString *cidString = GZFeedStringValue(cidStr);
         if (cidString.length == 0) continue;
-        CID *cid = [CID cidFromString:cidString];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
         NSData *bytes = cid.bytes;
         if (!bytes || cidStringByBytes[bytes]) continue;
         cidStringByBytes[bytes] = cidString;
@@ -1018,7 +1018,7 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
 - (BOOL)indexGenerator:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error {
     NSString *displayName = record[@"displayName"];
     NSString *description = record[@"description"];
-    NSString *avatar = record[@"avatar"]; // CID
+    NSString *avatar = record[@"avatar"]; // ATProtoCID
     
     NSString *sql = @"INSERT OR REPLACE INTO bsky_feed_generators (uri, did, display_name, description, avatar_blob_cid, created_at) VALUES (?, ?, ?, ?, ?, ?)";
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
