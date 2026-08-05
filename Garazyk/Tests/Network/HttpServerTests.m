@@ -61,6 +61,8 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
 @interface HttpServer (Testing)
 - (void)sendResponse:(HttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection;
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+- (void)dispatchRequest:(HttpRequest *)request
+           onConnection:(id<ATProtoNetworkConnection>)connection;
 @end
 
 @interface PDSFakeConnection : NSObject <ATProtoNetworkConnection>
@@ -425,6 +427,110 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     XCTAssertEqualObjects([response headerForKey:@"Content-Range"], @"bytes 700-999/1000");
 
     [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
+}
+
+#pragma mark - Concurrency limit
+
+- (void)testDefaultConcurrencyLimitIsApplied {
+    HttpServer *server = [HttpServer serverWithPort:0];
+    XCTAssertEqual(server.maxConcurrentRequests,
+                   kHttpServerDefaultMaxConcurrentRequests);
+}
+
+- (void)testExplicitConcurrencyLimitIsApplied {
+    HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1"
+                                               port:0
+                              maxConcurrentRequests:8];
+    XCTAssertEqual(server.maxConcurrentRequests, (NSUInteger)8);
+}
+
+- (void)testZeroConcurrencyLimitSelectsDefault {
+    HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1"
+                                               port:0
+                              maxConcurrentRequests:0];
+    XCTAssertEqual(server.maxConcurrentRequests,
+                   kHttpServerDefaultMaxConcurrentRequests);
+}
+
+/*!
+ @abstract Verify that the server never runs more handlers at once than its limit.
+
+ @discussion An embedded admin UI blocks its handler while calling its own service over
+ loopback, so the limit is what stops two listeners in one process from together
+ demanding more global-queue workers than the pool provides. The handler here blocks
+ until the test releases it, mimicking that blocking call.
+ */
+- (void)testConcurrencyLimitCapsSimultaneousHandlers {
+    const NSUInteger limit = 4;
+    const NSUInteger requestCount = 12;
+
+    HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1"
+                                               port:0
+                              maxConcurrentRequests:limit];
+
+    dispatch_semaphore_t release = dispatch_semaphore_create(0);
+    dispatch_queue_t counterQueue =
+        dispatch_queue_create("test.concurrency.counter", DISPATCH_QUEUE_SERIAL);
+    __block NSUInteger active = 0;
+    __block NSUInteger peak = 0;
+    XCTestExpectation *finished = [self expectationWithDescription:@"handlers finished"];
+    finished.expectedFulfillmentCount = requestCount;
+
+    [server addRoute:@"GET" path:@"/blocking" handler:^(HttpRequest *req, HttpResponse *res) {
+        dispatch_sync(counterQueue, ^{
+            active++;
+            if (active > peak) {
+                peak = active;
+            }
+        });
+        // Hold the worker, as a blocking loopback call would.
+        dispatch_semaphore_wait(release, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+        dispatch_sync(counterQueue, ^{
+            active--;
+        });
+        res.statusCode = 200;
+        [finished fulfill];
+    }];
+
+    // The dispatch path holds the connection weakly, so keep them alive here.
+    NSMutableArray<PDSFakeConnection *> *connections =
+        [NSMutableArray arrayWithCapacity:requestCount];
+    for (NSUInteger i = 0; i < requestCount; i++) {
+        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                      methodString:@"GET"
+                                                              path:@"/blocking"
+                                                       queryString:nil
+                                                       queryParams:nil
+                                                           version:@"HTTP/1.1"
+                                                           headers:@{}
+                                                              body:nil
+                                                     remoteAddress:@"127.0.0.1"];
+        PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
+        [connections addObject:connection];
+        [server dispatchRequest:request onConnection:connection];
+    }
+
+    // Let the admitted batch pile up before releasing, so peak reflects the cap.
+    [NSThread sleepForTimeInterval:0.25];
+    __block NSUInteger observedPeak = 0;
+    dispatch_sync(counterQueue, ^{
+        observedPeak = peak;
+    });
+    // Exactly the limit: fewer would mean the requests never actually overlapped
+    // and the assertion below would prove nothing about the cap.
+    XCTAssertEqual(observedPeak, limit,
+                   @"expected the limit to bind with %lu requests queued against it",
+                   (unsigned long)requestCount);
+
+    for (NSUInteger i = 0; i < requestCount; i++) {
+        dispatch_semaphore_signal(release);
+    }
+    [self waitForExpectations:@[finished] timeout:15.0];
+
+    dispatch_sync(counterQueue, ^{
+        observedPeak = peak;
+    });
+    XCTAssertLessThanOrEqual(observedPeak, limit);
 }
 
 @end
