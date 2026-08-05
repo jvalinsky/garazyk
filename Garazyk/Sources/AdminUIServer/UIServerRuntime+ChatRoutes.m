@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUIChatPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIBackendClient.h"
 #import "Network/HttpRequest.h"
@@ -20,7 +21,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchChatConvosWithLimit:25 cursor:cursor];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderChatConvosPartial:result]];
+        [response setBodyString:[GZAdminUIChatPack renderChatConvosPartial:result]];
     }];
 
     // Chat: Get messages for conversation
@@ -31,7 +32,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchChatMessagesForConvoID:convoID limit:50 cursor:cursor];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderChatMessagesPartial:result]];
+        [response setBodyString:[GZAdminUIChatPack renderChatMessagesPartial:result]];
     }];
 
     // Chat: Lock conversation
