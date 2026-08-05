@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file Http1PipelinePolicy.m
+ @file ATProtoHttp1PipelinePolicy.m
 
  @abstract Implements HTTP/1.x pipelining policy evaluation for connection safety.
 
@@ -10,7 +10,7 @@
 
 #import "Network/Http1PipelinePolicy.h"
 
-@implementation Http1PipelinePolicy
+@implementation ATProtoHttp1PipelinePolicy
 
 - (instancetype)init {
     self = [super init];

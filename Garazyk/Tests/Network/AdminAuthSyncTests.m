@@ -165,7 +165,7 @@
   XCTAssertTrue(STARDetectFormatFromData(response.body));
 
   NSError *parseError = nil;
-  STARReader *reader = [STARReader readFromData:response.body error:&parseError];
+  ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:response.body error:&parseError];
   XCTAssertNil(parseError);
   XCTAssertNotNil(reader);
   XCTAssertEqual(reader.variant, STARVariantL0);

@@ -12,13 +12,13 @@
 #pragma mark - Basic Functionality
 
 - (void)testInitWithNilMST {
-    MSTAtomicReference *ref = [[MSTAtomicReference alloc] initWithMST:nil];
+    ATProtoMSTAtomicReference *ref = [[ATProtoMSTAtomicReference alloc] initWithMST:nil];
     XCTAssertNil([ref currentSnapshot], @"nil init should yield nil snapshot");
 }
 
 - (void)testInitWithMST {
     MST *mst = [[MST alloc] init];
-    MSTAtomicReference *ref = [[MSTAtomicReference alloc] initWithMST:mst];
+    ATProtoMSTAtomicReference *ref = [[ATProtoMSTAtomicReference alloc] initWithMST:mst];
     MST *snapshot = [ref currentSnapshot];
     XCTAssertNotNil(snapshot, @"snapshot should not be nil after init with MST");
     XCTAssertEqual(snapshot, mst, @"snapshot should be the same object passed to init");
@@ -27,7 +27,7 @@
 - (void)testSwapMST {
     MST *mst1 = [[MST alloc] init];
     MST *mst2 = [[MST alloc] init];
-    MSTAtomicReference *ref = [[MSTAtomicReference alloc] initWithMST:mst1];
+    ATProtoMSTAtomicReference *ref = [[ATProtoMSTAtomicReference alloc] initWithMST:mst1];
 
     XCTAssertEqual([ref currentSnapshot], mst1, @"initial snapshot should be mst1");
 
@@ -37,7 +37,7 @@
 
 - (void)testSwapMSTWithNil {
     MST *mst = [[MST alloc] init];
-    MSTAtomicReference *ref = [[MSTAtomicReference alloc] initWithMST:mst];
+    ATProtoMSTAtomicReference *ref = [[ATProtoMSTAtomicReference alloc] initWithMST:mst];
 
     [ref clear];
     XCTAssertNil([ref currentSnapshot], @"after clear, snapshot should be nil");
@@ -45,7 +45,7 @@
 
 - (void)testClear {
     MST *mst = [[MST alloc] init];
-    MSTAtomicReference *ref = [[MSTAtomicReference alloc] initWithMST:mst];
+    ATProtoMSTAtomicReference *ref = [[ATProtoMSTAtomicReference alloc] initWithMST:mst];
 
     XCTAssertNotNil([ref currentSnapshot], @"before clear, snapshot should not be nil");
 
@@ -54,7 +54,7 @@
 }
 
 - (void)testClearWhenAlreadyNil {
-    MSTAtomicReference *ref = [[MSTAtomicReference alloc] initWithMST:nil];
+    ATProtoMSTAtomicReference *ref = [[ATProtoMSTAtomicReference alloc] initWithMST:nil];
     [ref clear];  // Should not crash
     XCTAssertNil([ref currentSnapshot], @"clear on nil ref should still be nil");
 }
@@ -62,7 +62,7 @@
 #pragma mark - Concurrent Read/Write Stress Test
 
 - (void)testConcurrentReadWriteStress {
-    MSTAtomicReference *ref = [[MSTAtomicReference alloc] initWithMST:nil];
+    ATProtoMSTAtomicReference *ref = [[ATProtoMSTAtomicReference alloc] initWithMST:nil];
 
     // Create a set of MST objects to swap in
     NSMutableArray<MST *> *msts = [NSMutableArray arrayWithCapacity:10];
@@ -133,7 +133,7 @@
 #pragma mark - Concurrent Swap Test
 
 - (void)testConcurrentSwapNoLostMST {
-    MSTAtomicReference *ref = [[MSTAtomicReference alloc] initWithMST:nil];
+    ATProtoMSTAtomicReference *ref = [[ATProtoMSTAtomicReference alloc] initWithMST:nil];
 
     // Create distinct MST objects with identifiable rootCIDs
     NSMutableArray<MST *> *msts = [NSMutableArray arrayWithCapacity:20];
@@ -190,7 +190,7 @@
 - (void)testDeallocWithPendingReads {
     for (NSUInteger i = 0; i < 1000; i++) {
         @autoreleasepool {
-            MSTAtomicReference *ref = [[MSTAtomicReference alloc] initWithMST:[[MST alloc] init]];
+            ATProtoMSTAtomicReference *ref = [[ATProtoMSTAtomicReference alloc] initWithMST:[[MST alloc] init]];
             MST *snapshot = [ref currentSnapshot];
             XCTAssertNotNil(snapshot);
             // ref is released here — should not crash

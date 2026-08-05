@@ -742,7 +742,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         NSError *carErr = nil;
         if (STARDetectFormatFromData(event.blocks)) {
             // STAR format — convert to CAR for downstream processing
-            NSData *carData = [STARConverter carDataFromSTARData:event.blocks error:&carErr];
+            NSData *carData = [ATProtoSTARConverter carDataFromSTARData:event.blocks error:&carErr];
             if (carData) {
                 reader = [CARReader readFromData:carData error:&carErr];
             }

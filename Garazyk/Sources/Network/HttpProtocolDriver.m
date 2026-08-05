@@ -61,7 +61,7 @@
 }
 
 - (nullable NSError *)currentParseError {
-    Http1ParserError *parserError = [self.session currentParseError];
+    ATProtoHttp1ParserError *parserError = [self.session currentParseError];
     if (!parserError) return nil;
 
     return [NSError errorWithDomain:@"HttpProtocol"

@@ -5,14 +5,14 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class HttpStreamingBody
+ @class ATProtoHttpStreamingBody
 
  @abstract Handles HTTP request body streaming, either buffering in memory or writing to a file.
 
  @discussion For small bodies (under threshold), data is buffered in memory for fast access.
  For large bodies, data is streamed directly to a temporary file to avoid memory pressure.
  */
-@interface HttpStreamingBody : NSObject
+@interface ATProtoHttpStreamingBody : NSObject
 
 /*!
  @property data

@@ -41,8 +41,8 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
 /**
  * @abstract Exposes the parser value.
  */
-@property(nonatomic, readonly) Http1Parser *parser;
-@property(nonatomic, readonly) Http1PipelinePolicy *pipelinePolicy;
+@property(nonatomic, readonly) ATProtoHttp1Parser *parser;
+@property(nonatomic, readonly) ATProtoHttp1PipelinePolicy *pipelinePolicy;
 @property(nonatomic, assign) BOOL upgradedToWebSocket;
 
 /**
@@ -71,7 +71,7 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
  * @method currentParseError
  * @abstract Returns the most recent parser error, if any.
  */
-- (nullable Http1ParserError *)currentParseError;
+- (nullable ATProtoHttp1ParserError *)currentParseError;
 
 /**
  * @method setRemoteAddressIfNeeded:

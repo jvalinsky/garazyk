@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpStreamingBody.m
+ @file ATProtoHttpStreamingBody.m
 
  @abstract Implements streaming HTTP body support for incremental request payload processing.
 
@@ -19,7 +19,7 @@ typedef NS_ENUM(NSInteger, HttpStreamingBodyState) {
     HttpStreamingBodyStateError
 };
 
-@interface HttpStreamingBody ()
+@interface ATProtoHttpStreamingBody ()
 
 @property (nonatomic, assign) NSUInteger memoryThreshold;
 @property (nonatomic, assign) HttpStreamingBodyState state;
@@ -32,7 +32,7 @@ typedef NS_ENUM(NSInteger, HttpStreamingBodyState) {
 
 @end
 
-@implementation HttpStreamingBody
+@implementation ATProtoHttpStreamingBody
 
 - (instancetype)init {
     return [self initWithMemoryThreshold:kDefaultMemoryThreshold];

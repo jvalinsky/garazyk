@@ -209,7 +209,7 @@
     [mst put:@"a" valueCID:cid];
     [mst put:@"c" valueCID:cid];
     
-    NSArray<MSTEntry *> *entries = [mst allEntries];
+    NSArray<ATProtoMSTEntry *> *entries = [mst allEntries];
     XCTAssertEqual(entries.count, 3);
     XCTAssertEqualObjects(entries[0].key, @"a");
     XCTAssertEqualObjects(entries[1].key, @"b");
@@ -244,23 +244,23 @@
     [newTree put:@"com.example/key1" valueCID:cid2]; // Update
     [newTree put:@"com.example/key3" valueCID:cid1]; // Add
     
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
     XCTAssertEqual(diff.count, 3, "Should have 3 operations: add, update, delete");
     
     // Operations are sorted by key
-    MSTDiffOperation *op1 = diff[0];
+    ATProtoMSTDiffOperation *op1 = diff[0];
     XCTAssertEqualObjects(op1.key, @"com.example/key1");
     XCTAssertEqual(op1.type, MSTDiffOperationTypeUpdate);
     XCTAssertEqualObjects(op1.previousCID.stringValue, cid1.stringValue);
     XCTAssertEqualObjects(op1.currentCID.stringValue, cid2.stringValue);
     
-    MSTDiffOperation *op2 = diff[1];
+    ATProtoMSTDiffOperation *op2 = diff[1];
     XCTAssertEqualObjects(op2.key, @"com.example/key2");
     XCTAssertEqual(op2.type, MSTDiffOperationTypeDelete);
     XCTAssertEqualObjects(op2.previousCID.stringValue, cid1.stringValue);
     XCTAssertNil(op2.currentCID);
     
-    MSTDiffOperation *op3 = diff[2];
+    ATProtoMSTDiffOperation *op3 = diff[2];
     XCTAssertEqualObjects(op3.key, @"com.example/key3");
     XCTAssertEqual(op3.type, MSTDiffOperationTypeAdd);
     XCTAssertNil(op3.previousCID);
@@ -275,7 +275,7 @@
     [newTree put:@"key2" valueCID:cid];
     
     // Diff from nil (empty) tree - all should be additions
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:nil];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:nil];
     XCTAssertEqual(diff.count, 2);
     XCTAssertEqual(diff[0].type, MSTDiffOperationTypeAdd);
     XCTAssertEqual(diff[1].type, MSTDiffOperationTypeAdd);
@@ -321,7 +321,7 @@
     
     // Test fullEntries on root node
     MSTNode *root = proofNodes[0];
-    NSArray<MSTEntry *> *entries = [root fullEntries];
+    NSArray<ATProtoMSTEntry *> *entries = [root fullEntries];
     XCTAssertGreaterThan(entries.count, 0, "Root should have entries");
 }
 

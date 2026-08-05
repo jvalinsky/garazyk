@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpRequestDispatcher.h
+ @file ATProtoHttpRequestDispatcher.h
 
  @abstract Defines request-dispatch contracts that bind parsed HTTP requests to route handlers.
 
@@ -21,7 +21,7 @@ typedef HttpServerRequestHandler _Nullable (^HttpRouteLookupHandler)(
     NSString *method,
     NSDictionary<NSString *, NSString *> *_Nullable *_Nullable parameters);
 
-@interface HttpRequestDispatcher : NSObject
+@interface ATProtoHttpRequestDispatcher : NSObject
 
 /**
  * @abstract Exposes the request handler value.

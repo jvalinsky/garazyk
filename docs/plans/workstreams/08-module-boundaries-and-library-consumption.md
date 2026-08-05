@@ -1,10 +1,10 @@
 ---
 title: Module Boundaries and Library Consumption
 status: active
-last_verified: 2026-08-04
+last_verified: 2026-08-05
 ---
 
-## Verified status (2026-08-04)
+## Verified status (2026-08-05)
 
 The earlier execution summary and the proposed Option A plan overstated the
 workstream's completion, and M4 subsequently closed for real: a current run
@@ -34,8 +34,14 @@ conversion) remains open. M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
 and **batch 2 is complete in full** (all ~25 classes
 renamed) — namespace baseline ratcheted
-283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228. Batches 3-6
-remain open. M6 has not started.
+283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228.
+**Batch 3a (2026-08-05) is complete**: 32 small/medium Storage MST/STAR helpers
+and Transport HTTP/SSRF/WebSocket-upgrade classes renamed (`ATProto` prefix);
+namespace baseline ratcheted 228 → 196. Remaining batch-3 work covers larger
+Storage (`MST`, `MSTNode`, `CAR*`, `RepoCommit`) and Transport (`HttpServer`,
+`HttpProtocol*`, `HttpResponseSender`, `SSRFValidator`) classes, plus Core-owned
+HTTP message types still unprefixed from M3 (`HttpRequest`/`HttpResponse`/…).
+Batches 4-6 remain open. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -1645,6 +1651,42 @@ module boundary checks clean; `deno task check`/`lint` clean; full
 Core-primitive and crypto/security-helper classes are `ATProto`/`PDS`/
 `GZ`-prefixed. Batches 3-6 (Storage/Transport, PLC/Sync/Services/MediaCore,
 XRPC/VideoService, Runtime) remain open for future sessions.
+
+**Batch 3a (2026-08-05): Storage MST/STAR helpers + Transport small HTTP
+classes.** First Storage/Transport slice, scoped to classes with manageable
+consumer counts (and deliberately excluding `MST`/`HttpServer`/`HttpRequest`/
+`HttpResponse` blast radii). Applied every batch-2 lesson up front: `*.m`/`*.h`
+only, `Tests/fixtures/` excluded, `#import` paths left untouched, file names
+unchanged, string-literal-aware substitution (preserves NSError domains such as
+`@"HttpConnectionIOCoordinator"` / `@"HttpStreamingBody"` / `@"HttpChunkedBodyParser"`
+and keeps matching tests green without domain migration), longest-name-first
+ordering so `MSTWalkerStatus`/`Http1ParserError` rename before their shorter
+prefixes.
+
+Storage (15): `MSTWalkerStatus`, `MSTAtomicReference`, `MSTCacheManager`,
+`MSTDiffOperation`, `MSTPersistence`, `MSTNodeEntry`, `MSTWalker`, `MSTEntry`,
+`STARLiteWriter`, `STARL0Writer`, `STARConverter`, `STARMstEntry`,
+`STARMstNode`, `STARCommit`, `STARReader` → `ATProto*` forms.
+
+Transport (17): `HttpConnectionIOCoordinator`, `HttpChunkedBodyParser`,
+`HttpRequestDispatcher`, `WebSocketUpgradeHandler`, `Http1PipelinePolicy`,
+`HttpConnectionDriver`, `HttpConnectionState`, `SSRFResolutionResult`,
+`HttpQueuedResponse`, `HttpStreamingBody`, `SSLPinningManager`,
+`HttpBufferPool`, `HttpRouteNode`, `HttpRouteTrie`, `Http1ParserError`,
+`Http1Parser`, `HttpRetryResult` → `ATProto*` forms.
+
+Confirmed via grep before renaming that none is referenced via
+`NSClassFromString`/`NSStringFromClass` as a hard-coded old class name.
+Namespace baseline ratchets 228 → 196. Local GNUstep/Docker AllTests could not
+be run in this environment (containerd overlayfs mount rejected); verification
+is the shrink-only baseline edit, zero stray symbol refs outside `#import`
+paths/string literals, and CI `AllTests` / `check_namespace.sh` on the PR.
+
+Remaining batch-3 classes (not in this slice): `MST`, `MSTNode`, `CARBlock`,
+`CARReader`, `CARWriter`, `RepoCommit`, `HttpServer`, `HttpProtocolDriver`,
+`HttpProtocolSession`, `HttpResponseSender`, `SSRFValidator`, plus the
+Core-owned M3 message types still unprefixed (`HttpParsing`, `HttpRequest`,
+`HttpResponse`, `HttpRetryPolicy`, `HttpRoute`). Batches 4-6 remain open.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are

@@ -19,9 +19,9 @@ typedef NS_ENUM(NSInteger, HttpRetryDecision) {
 };
 
 /**
- * @abstract Declares the HttpRetryResult public API.
+ * @abstract Declares the ATProtoHttpRetryResult public API.
  */
-@interface HttpRetryResult : NSObject
+@interface ATProtoHttpRetryResult : NSObject
 /**
  * @abstract Exposes the decision value.
  */
@@ -50,7 +50,7 @@ typedef NS_ENUM(NSInteger, HttpRetryDecision) {
 /**
  * @abstract Performs the evaluateStatusCode operation.
  */
-- (HttpRetryResult *)evaluateStatusCode:(NSInteger)statusCode
+- (ATProtoHttpRetryResult *)evaluateStatusCode:(NSInteger)statusCode
                            networkError:(nullable NSError *)error
                           attemptNumber:(NSInteger)attempt;
 

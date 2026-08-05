@@ -16,8 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class ATProtoCID;
 @class MSTNode;
-@class MSTEntry;
-@class MSTNodeEntry;
+@class ATProtoMSTEntry;
+@class ATProtoMSTNodeEntry;
 
 /**
  * @abstract Specifies the type of an MST node.
@@ -41,14 +41,14 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
     MSTDiffOperationTypeDelete
 };
 
-@class MSTDiffOperation;
+@class ATProtoMSTDiffOperation;
 
 /**
  * @abstract Represents a single change between two MST versions.
  * @discussion Used for sync operations to describe changes between commits.
  * For adds, previousCID is nil. For deletes, currentCID is nil. For updates, both are set.
  */
-@interface MSTDiffOperation : NSObject
+@interface ATProtoMSTDiffOperation : NSObject
 
 /** @abstract The key associated with the change. */
 @property(nonatomic, copy) NSString *key;
@@ -75,7 +75,7 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 /**
  * @abstract Represents a key-value entry in the MST.
  */
-@interface MSTEntry : NSObject <NSCopying>
+@interface ATProtoMSTEntry : NSObject <NSCopying>
 
 /** @abstract The key of the entry. */
 @property(nonatomic, copy, readonly) NSString *key;
@@ -107,7 +107,7 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 /**
  * @abstract An entry within an MST node.
  */
-@interface MSTNodeEntry : NSObject
+@interface ATProtoMSTNodeEntry : NSObject
 
 /** @abstract Length of the key prefix. */
 @property(nonatomic, assign) NSUInteger prefixLen;
@@ -145,19 +145,19 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
 /** @abstract The node hash ATProtoCID. */
 @property(nonatomic, strong, readonly, nullable) ATProtoCID *nodeHash;
 /** @abstract Entries contained in this node. */
-@property(nonatomic, copy, readonly) NSArray<MSTNodeEntry *> *entries;
+@property(nonatomic, copy, readonly) NSArray<ATProtoMSTNodeEntry *> *entries;
 /** @abstract ATProtoCID of the left subtree. */
 @property(nonatomic, strong, readonly, nullable) ATProtoCID *left;
 
 /** @abstract Creates a leaf node. */
-+ (instancetype)leafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries;
++ (instancetype)leafNodeWithEntries:(NSArray<ATProtoMSTNodeEntry *> *)entries;
 /** @abstract Creates an internal (non-leaf) node. */
-+ (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries
++ (instancetype)nonLeafNodeWithEntries:(NSArray<ATProtoMSTNodeEntry *> *)entries
                                   left:(nullable ATProtoCID *)left;
 
 /** @abstract Initializes a node. */
 - (instancetype)initWithKind:(MSTNodeKind)kind
-                     entries:(NSArray<MSTNodeEntry *> *)entries
+                     entries:(NSArray<ATProtoMSTNodeEntry *> *)entries
                         left:(nullable ATProtoCID *)left;
 
 /** @abstract Serializes the node data. */
@@ -171,7 +171,7 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
 /** @abstract Sets the node hash. */
 - (void)setNodeHash:(ATProtoCID *)hash;
 /** @abstract Retrieves all entries in the tree rooted at this node. */
-- (NSArray<MSTEntry *> *)fullEntries;
+- (NSArray<ATProtoMSTEntry *> *)fullEntries;
 
 @end
 
@@ -227,9 +227,9 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
 /** @abstract Deletes an entry for a key and sub-key. */
 - (void)delete:(NSString *)key subKey:(nullable NSString *)subKey;
 /** @abstract Retrieves all entries in the tree. */
-- (NSArray<MSTEntry *> *)allEntries;
+- (NSArray<ATProtoMSTEntry *> *)allEntries;
 /** @abstract Retrieves entries matching the prefix. */
-- (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
+- (NSArray<ATProtoMSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
 
 /** @abstract Exports the tree as a CAR file. */
 - (NSData *)exportCAR;
@@ -250,9 +250,9 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
 /**
  * @abstract Computes differences between this tree and an older version.
  * @param oldTree The older MST to compare against.
- * @return Array of MSTDiffOperation objects.
+ * @return Array of ATProtoMSTDiffOperation objects.
  */
-- (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree;
+- (NSArray<ATProtoMSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree;
 
 /**
  * @abstract Computes the depth of a key based on its hash.

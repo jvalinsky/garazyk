@@ -65,7 +65,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
                                                    options:safeOptions
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         NSInteger statusCode = response ? response.statusCode : 0;
-        HttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
+        ATProtoHttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
                                                                 networkError:error
                                                                attemptNumber:attempt];
 

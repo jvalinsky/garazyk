@@ -48,7 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                                since:(nullable NSString *)sinceRev
                                                                error:(NSError **)error;
 /** @abstract Decodes the repository head commit into the STAR archive representation. */
-- (STARCommit *)starCommitFromExport:(NSString *)did
+- (ATProtoSTARCommit *)starCommitFromExport:(NSString *)did
                            commitCID:(ATProtoCID *)commitCID
                          commitBlock:(NSData *)commitBlock;
 /**

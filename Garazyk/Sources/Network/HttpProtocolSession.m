@@ -12,8 +12,8 @@
 #import "Debug/GZLogger.h"
 
 @interface HttpProtocolSession ()
-@property(nonatomic, strong, readwrite) Http1Parser *parser;
-@property(nonatomic, strong, readwrite) Http1PipelinePolicy *pipelinePolicy;
+@property(nonatomic, strong, readwrite) ATProtoHttp1Parser *parser;
+@property(nonatomic, strong, readwrite) ATProtoHttp1PipelinePolicy *pipelinePolicy;
 @property(nonatomic, strong) NSMutableArray<HttpRequest *> *pendingRequests;
 @property(nonatomic, strong, nullable) HttpRequest *upgradeRequest;
 @end
@@ -23,8 +23,8 @@
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _parser = [[Http1Parser alloc] init];
-    _pipelinePolicy = [[Http1PipelinePolicy alloc] init];
+    _parser = [[ATProtoHttp1Parser alloc] init];
+    _pipelinePolicy = [[ATProtoHttp1PipelinePolicy alloc] init];
     _pendingRequests = [NSMutableArray array];
     _upgradedToWebSocket = NO;
   }
@@ -44,7 +44,7 @@
     return events;
   }
 
-  Http1ParserError *parseError = [self.parser parseError];
+  ATProtoHttp1ParserError *parseError = [self.parser parseError];
   if (parseError) {
     [events addObject:@(HttpSessionEventError)];
     return events;
@@ -108,7 +108,7 @@
   return self.upgradeRequest;
 }
 
-- (nullable Http1ParserError *)currentParseError {
+- (nullable ATProtoHttp1ParserError *)currentParseError {
   return self.parser.parseError;
 }
 

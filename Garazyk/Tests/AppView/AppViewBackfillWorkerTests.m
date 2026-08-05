@@ -157,15 +157,15 @@
     MST *mst = [[MST alloc] init];
     [mst put:@"app.bsky.feed.post/3jzf7star" valueCID:recordCID];
 
-    STARCommit *commit =
-        [STARCommit commitWithDid:@"did:plc:test"
+    ATProtoSTARCommit *commit =
+        [ATProtoSTARCommit commitWithDid:@"did:plc:test"
                           version:3
                              data:mst.rootCID
                               rev:@"3jzf7starrev"
                              prev:nil
                               sig:[@"test-signature"
                                   dataUsingEncoding:NSUTF8StringEncoding]];
-    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
     NSError *writeError = nil;
     BOOL wrote = [writer writeFromMST:mst
                         blockProvider:^NSData * _Nullable(ATProtoCID *cid) {

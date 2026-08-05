@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file Http1PipelinePolicy.h
+ @file ATProtoHttp1PipelinePolicy.h
 
  @abstract Defines policy decisions for HTTP/1.x request pipelining behavior.
 
@@ -29,7 +29,7 @@ typedef NS_ENUM(NSInteger, Http1PipelineAction) {
 /**
  * @abstract Tracks HTTP/1.x pipelining capacity for one connection.
  */
-@interface Http1PipelinePolicy : NSObject
+@interface ATProtoHttp1PipelinePolicy : NSObject
 
 /** Maximum number of pipelined requests allowed before queueing. */
 @property (nonatomic, assign) NSUInteger maxPipelinedRequests; // default 4

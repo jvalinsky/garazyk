@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file MSTAtomicReference.h
+ @file ATProtoMSTAtomicReference.h
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class MST;
 
 /*!
- @class MSTAtomicReference
+ @class ATProtoMSTAtomicReference
 
  @brief Thread-safe wrapper for MST objects using pthread_mutex.
 
@@ -30,9 +30,9 @@ NS_ASSUME_NONNULL_BEGIN
  per-DID serialization.
  */
 /**
- * @abstract Declares the MSTAtomicReference public API.
+ * @abstract Declares the ATProtoMSTAtomicReference public API.
  */
-@interface MSTAtomicReference : NSObject {
+@interface ATProtoMSTAtomicReference : NSObject {
 @public
     pthread_mutex_t _mutex;
 }
@@ -41,7 +41,7 @@ NS_ASSUME_NONNULL_BEGIN
  @brief Initialize with an MST object.
 
  @param mst The initial MST (may be nil).
- @return A new MSTAtomicReference.
+ @return A new ATProtoMSTAtomicReference.
  */
 - (instancetype)initWithMST:(nullable MST *)mst;
 

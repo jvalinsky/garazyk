@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpChunkedBodyParser.m
+ @file ATProtoHttpChunkedBodyParser.m
 
  @abstract Implements parser logic for HTTP chunked transfer-encoded request bodies.
 
@@ -20,7 +20,7 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
     HttpChunkedParserStateError
 };
 
-@interface HttpChunkedBodyParser ()
+@interface ATProtoHttpChunkedBodyParser ()
 
 @property (nonatomic, assign) NSUInteger maxSize;
 @property (nonatomic, assign) HttpChunkedParserState state;
@@ -33,7 +33,7 @@ typedef NS_ENUM(NSInteger, HttpChunkedParserState) {
 
 @end
 
-@implementation HttpChunkedBodyParser
+@implementation ATProtoHttpChunkedBodyParser
 
 - (instancetype)init {
     return [self initWithMaxSize:kDefaultMaxBodySize];

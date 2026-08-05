@@ -13,9 +13,9 @@
 @class ATProtoCID;
 @class CARWriter;
 @class CARBlock;
-@class STARCommit;
-@class STARL0Writer;
-@class STARLiteWriter;
+@class ATProtoSTARCommit;
+@class ATProtoSTARL0Writer;
+@class ATProtoSTARLiteWriter;
 @class ATProtoCBORValue;
 @class PDSBlockRepository;
 @class PDSRepoRepository;

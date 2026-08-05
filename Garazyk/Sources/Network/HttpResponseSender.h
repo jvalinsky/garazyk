@@ -21,8 +21,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-// Forward declare HttpQueuedResponse; full definition is in HttpServer.h
-@class HttpQueuedResponse;
+// Forward declare ATProtoHttpQueuedResponse; full definition is in HttpServer.h
+@class ATProtoHttpQueuedResponse;
 
 /*!
  @class HttpResponseSender

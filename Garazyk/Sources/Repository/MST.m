@@ -47,7 +47,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 
 #pragma mark - Internal Classes
 
-@interface MSTNodeEntry ()
+@interface ATProtoMSTNodeEntry ()
 @property (nonatomic, strong, readwrite, nullable) MSTNode *internalTree;
 @property (nonatomic, strong, readwrite, nullable) ATProtoCID *treeCID;
 @property (nonatomic, copy, readwrite) NSString *fullKey;
@@ -59,7 +59,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 @property (nonatomic, strong, readwrite, nullable) ATProtoCID *leftCID;
 @property (nonatomic, strong, readwrite, nullable) ATProtoCID *originalCID;
 @property (nonatomic, strong, readwrite, nullable) NSData *originalCBOR;
-@property (nonatomic, strong, readwrite) NSMutableArray<MSTNodeEntry *> *internalEntries;
+@property (nonatomic, strong, readwrite) NSMutableArray<ATProtoMSTNodeEntry *> *internalEntries;
 - (instancetype)initWithLevel:(uint32_t)level;
 - (ATProtoCID *)getCID:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
 - (void)split:(NSString *)key left:(MSTNode **)leftOut right:(MSTNode **)rightOut;
@@ -68,7 +68,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 - (MSTNode *)subtreeAtIndex:(NSInteger)idx;
 @end
 
-@implementation MSTEntry
+@implementation ATProtoMSTEntry
 
 + (instancetype)entryWithKey:(NSString *)key valueCID:(ATProtoCID *)valueCID {
     return [self entryWithKey:key valueCID:valueCID subKey:nil];
@@ -114,17 +114,17 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 }
 
 - (id)copyWithZone:(NSZone *)zone {
-    return [[MSTEntry allocWithZone:zone] initWithKey:self.key valueCID:self.valueCID subKey:self.subKey];
+    return [[ATProtoMSTEntry allocWithZone:zone] initWithKey:self.key valueCID:self.valueCID subKey:self.subKey];
 }
 
 @end
 
-#pragma mark - MSTDiffOperation
+#pragma mark - ATProtoMSTDiffOperation
 
-@implementation MSTDiffOperation
+@implementation ATProtoMSTDiffOperation
 
 + (instancetype)addOperationWithKey:(NSString *)key currentCID:(ATProtoCID *)currentCID {
-    MSTDiffOperation *op = [[MSTDiffOperation alloc] init];
+    ATProtoMSTDiffOperation *op = [[ATProtoMSTDiffOperation alloc] init];
     op.key = key;
     op.type = MSTDiffOperationTypeAdd;
     op.previousCID = nil;
@@ -133,7 +133,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 }
 
 + (instancetype)updateOperationWithKey:(NSString *)key previousCID:(ATProtoCID *)previousCID currentCID:(ATProtoCID *)currentCID {
-    MSTDiffOperation *op = [[MSTDiffOperation alloc] init];
+    ATProtoMSTDiffOperation *op = [[ATProtoMSTDiffOperation alloc] init];
     op.key = key;
     op.type = MSTDiffOperationTypeUpdate;
     op.previousCID = previousCID;
@@ -142,7 +142,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 }
 
 + (instancetype)deleteOperationWithKey:(NSString *)key previousCID:(ATProtoCID *)previousCID {
-    MSTDiffOperation *op = [[MSTDiffOperation alloc] init];
+    ATProtoMSTDiffOperation *op = [[ATProtoMSTDiffOperation alloc] init];
     op.key = key;
     op.type = MSTDiffOperationTypeDelete;
     op.previousCID = previousCID;
@@ -152,15 +152,15 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 
 @end
 
-#pragma mark - MSTNodeEntry
+#pragma mark - ATProtoMSTNodeEntry
 
-@implementation MSTNodeEntry
+@implementation ATProtoMSTNodeEntry
 
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                           keySuffix:(NSData *)keySuffix
                               value:(ATProtoCID *)value
                               tree:(ATProtoCID *)tree {
-    MSTNodeEntry *entry = [[MSTNodeEntry alloc] init];
+    ATProtoMSTNodeEntry *entry = [[ATProtoMSTNodeEntry alloc] init];
     entry.prefixLen = prefixLen;
     entry.keySuffix = keySuffix;
     entry.value = value;
@@ -218,7 +218,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     return self;
 }
 
-- (instancetype)initWithLevel:(uint32_t)level left:(MSTNode *)left entries:(NSArray<MSTNodeEntry *> *)entries {
+- (instancetype)initWithLevel:(uint32_t)level left:(MSTNode *)left entries:(NSArray<ATProtoMSTNodeEntry *> *)entries {
     self = [self initWithLevel:level];
     if (self) {
         _internalLeft = left;
@@ -227,7 +227,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     return self;
 }
 
-- (NSArray<MSTNodeEntry *> *)entries {
+- (NSArray<ATProtoMSTNodeEntry *> *)entries {
     return [self.internalEntries copy];
 }
 
@@ -283,7 +283,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     NSMutableArray<ATProtoCBORValue *> *entriesCBOR = [NSMutableArray array];
     NSData *prevKeyData = [NSData data];
     
-    for (MSTNodeEntry *entry in self.internalEntries) {
+    for (ATProtoMSTNodeEntry *entry in self.internalEntries) {
         NSData *fullKeyData = [entry.fullKey dataUsingEncoding:NSUTF8StringEncoding];
         NSUInteger p = 0;
         NSUInteger minLen = MIN(prevKeyData.length, fullKeyData.length);
@@ -364,7 +364,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
             rightNode.internalLeft = subR;
         }
     } else {
-        MSTNodeEntry *lastInLeft = leftData.lastObject;
+        ATProtoMSTNodeEntry *lastInLeft = leftData.lastObject;
         if (lastInLeft.internalTree) {
             NSMutableArray *nLeftEntries = [leftData mutableCopy];
             [nLeftEntries removeLastObject];
@@ -373,7 +373,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
             MSTNode *subR = nil;
             [lastInLeft.internalTree split:key left:&subL right:&subR];
             
-            MSTNodeEntry *newLast = [[MSTNodeEntry alloc] initWithKey:lastInLeft.fullKey value:lastInLeft.value tree:subL];
+            ATProtoMSTNodeEntry *newLast = [[ATProtoMSTNodeEntry alloc] initWithKey:lastInLeft.fullKey value:lastInLeft.value tree:subL];
             [nLeftEntries addObject:newLast];
             leftNode.internalEntries = nLeftEntries;
             rightNode.internalLeft = subR;
@@ -414,27 +414,27 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
     // Kept for API compatibility; current code paths do not persist nodeHash here.
 }
 
-- (NSArray<MSTEntry *> *)fullEntries {
-    // Return all key-value entries in this node as MSTEntry objects
-    NSMutableArray<MSTEntry *> *entries = [NSMutableArray array];
-    for (MSTNodeEntry *nodeEntry in self.internalEntries) {
-        MSTEntry *entry = [MSTEntry entryWithKey:nodeEntry.fullKey valueCID:nodeEntry.value];
+- (NSArray<ATProtoMSTEntry *> *)fullEntries {
+    // Return all key-value entries in this node as ATProtoMSTEntry objects
+    NSMutableArray<ATProtoMSTEntry *> *entries = [NSMutableArray array];
+    for (ATProtoMSTNodeEntry *nodeEntry in self.internalEntries) {
+        ATProtoMSTEntry *entry = [ATProtoMSTEntry entryWithKey:nodeEntry.fullKey valueCID:nodeEntry.value];
         [entries addObject:entry];
     }
     return [entries copy];
 }
 
-- (instancetype)initWithKind:(MSTNodeKind)kind entries:(NSArray<MSTNodeEntry *> *)entries left:(nullable ATProtoCID *)left {
+- (instancetype)initWithKind:(MSTNodeKind)kind entries:(NSArray<ATProtoMSTNodeEntry *> *)entries left:(nullable ATProtoCID *)left {
     // Legacy init - convert ATProtoCID left to node (not fully supported, use initWithLevel:left:entries: instead)
     uint32_t level = (kind == MSTNodeKindLeaf) ? 0 : 1;
     return [self initWithLevel:level left:nil entries:entries];
 }
 
-+ (instancetype)leafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries {
++ (instancetype)leafNodeWithEntries:(NSArray<ATProtoMSTNodeEntry *> *)entries {
     return [[self alloc] initWithLevel:0 left:nil entries:entries];
 }
 
-+ (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries left:(nullable ATProtoCID *)left {
++ (instancetype)nonLeafNodeWithEntries:(NSArray<ATProtoMSTNodeEntry *> *)entries left:(nullable ATProtoCID *)left {
     // Note: left is a ATProtoCID, but our internal representation uses MSTNode
     // This factory method creates a non-leaf without resolving the ATProtoCID
     return [[self alloc] initWithLevel:1 left:nil entries:entries];
@@ -463,7 +463,7 @@ static NSComparisonResult MSTCompareData(NSData *left, NSData *right) {
 ///
 /// This side-table completes the atomic-publish copy-on-write invariant:
 /// lazy resolution no longer writes back into the published
-/// MSTNode._internalLeft / MSTNodeEntry.internalTree ivars. Read and
+/// MSTNode._internalLeft / ATProtoMSTNodeEntry.internalTree ivars. Read and
 /// written under @synchronized(self) for thread-safe publish-during-proof.
 @property (nonatomic, strong, nullable)
     NSMutableDictionary<ATProtoCID *, MSTNode *> *lazySubtreeCache;
@@ -703,15 +703,15 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
             if (right) right = [[MSTNode alloc] initWithLevel:i left:right entries:@[]];
         }
         
-        MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] initWithKey:key value:value tree:right];
+        ATProtoMSTNodeEntry *newEntry = [[ATProtoMSTNodeEntry alloc] initWithKey:key value:value tree:right];
         return [[MSTNode alloc] initWithLevel:depth left:left entries:@[newEntry]];
     }
     
     NSInteger idx = [node binarySearchIndexForKey:key];
     
     if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
-        MSTNodeEntry *oldEntry = node.internalEntries[idx];
-        MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] initWithKey:key value:value tree:oldEntry.internalTree];
+        ATProtoMSTNodeEntry *oldEntry = node.internalEntries[idx];
+        ATProtoMSTNodeEntry *newEntry = [[ATProtoMSTNodeEntry alloc] initWithKey:key value:value tree:oldEntry.internalTree];
         NSMutableArray *newEntries = [node.internalEntries mutableCopy];
         newEntries[idx] = newEntry;
         return [[MSTNode alloc] initWithLevel:node.level left:node.internalLeft entries:newEntries];
@@ -725,7 +725,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
             [subtree split:key left:&splitLeft right:&splitRight];
         }
         
-        MSTNodeEntry *newEntry = [[MSTNodeEntry alloc] initWithKey:key value:value tree:splitRight];
+        ATProtoMSTNodeEntry *newEntry = [[ATProtoMSTNodeEntry alloc] initWithKey:key value:value tree:splitRight];
         NSMutableArray *newEntries = [node.internalEntries mutableCopy];
         [newEntries insertObject:newEntry atIndex:idx];
         
@@ -733,8 +733,8 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         if (idx == 0) {
             leftToUse = splitLeft;
         } else {
-            MSTNodeEntry *prevEntry = newEntries[idx-1];
-            MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] initWithKey:prevEntry.fullKey value:prevEntry.value tree:splitLeft];
+            ATProtoMSTNodeEntry *prevEntry = newEntries[idx-1];
+            ATProtoMSTNodeEntry *updatedPrev = [[ATProtoMSTNodeEntry alloc] initWithKey:prevEntry.fullKey value:prevEntry.value tree:splitLeft];
             newEntries[idx-1] = updatedPrev;
         }
         return [[MSTNode alloc] initWithLevel:node.level left:leftToUse entries:newEntries];
@@ -749,8 +749,8 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     if (idx == 0) {
         leftToUse = newSubtree;
     } else {
-        MSTNodeEntry *prevEntry = newEntries[idx-1];
-        MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] initWithKey:prevEntry.fullKey value:prevEntry.value tree:newSubtree];
+        ATProtoMSTNodeEntry *prevEntry = newEntries[idx-1];
+        ATProtoMSTNodeEntry *updatedPrev = [[ATProtoMSTNodeEntry alloc] initWithKey:prevEntry.fullKey value:prevEntry.value tree:newSubtree];
         newEntries[idx-1] = updatedPrev;
     }
     return [[MSTNode alloc] initWithLevel:node.level left:leftToUse entries:newEntries];
@@ -778,7 +778,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     NSInteger idx = [node binarySearchIndexForKey:key];
     
     if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
-        MSTNodeEntry *entryToDelete = node.internalEntries[idx];
+        ATProtoMSTNodeEntry *entryToDelete = node.internalEntries[idx];
         MSTNode *leftSubtree = [node subtreeAtIndex:idx];
         MSTNode *rightSubtree = entryToDelete.internalTree;
         
@@ -791,8 +791,8 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         if (idx == 0) {
             leftToUse = merged;
         } else {
-            MSTNodeEntry *prevEntry = newEntries[idx-1];
-            MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] initWithKey:prevEntry.fullKey value:prevEntry.value tree:merged];
+            ATProtoMSTNodeEntry *prevEntry = newEntries[idx-1];
+            ATProtoMSTNodeEntry *updatedPrev = [[ATProtoMSTNodeEntry alloc] initWithKey:prevEntry.fullKey value:prevEntry.value tree:merged];
             newEntries[idx-1] = updatedPrev;
         }
         MSTNode *newNode = [[MSTNode alloc] initWithLevel:node.level left:leftToUse entries:newEntries];
@@ -808,8 +808,8 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         if (idx == 0) {
             leftToUse = newSubtree;
         } else {
-            MSTNodeEntry *prevEntry = newEntries[idx-1];
-            MSTNodeEntry *updatedPrev = [[MSTNodeEntry alloc] initWithKey:prevEntry.fullKey value:prevEntry.value tree:newSubtree];
+            ATProtoMSTNodeEntry *prevEntry = newEntries[idx-1];
+            ATProtoMSTNodeEntry *updatedPrev = [[ATProtoMSTNodeEntry alloc] initWithKey:prevEntry.fullKey value:prevEntry.value tree:newSubtree];
             newEntries[idx-1] = updatedPrev;
         }
         MSTNode *newNode = [[MSTNode alloc] initWithLevel:node.level left:leftToUse entries:newEntries];
@@ -835,14 +835,14 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         }
     }
     
-    MSTNodeEntry *lastInLeft = left.internalEntries.lastObject;
+    ATProtoMSTNodeEntry *lastInLeft = left.internalEntries.lastObject;
     if (lastInLeft.internalTree && right.internalLeft) {
         MSTNode *mergedSubtree = [self merge:lastInLeft.internalTree and:right.internalLeft];
         NSMutableArray *newEntries = [NSMutableArray array];
         for (NSUInteger i = 0; i < left.internalEntries.count - 1; i++) {
             [newEntries addObject:left.internalEntries[i]];
         }
-        MSTNodeEntry *updatedLast = [[MSTNodeEntry alloc] initWithKey:lastInLeft.fullKey value:lastInLeft.value tree:mergedSubtree];
+        ATProtoMSTNodeEntry *updatedLast = [[ATProtoMSTNodeEntry alloc] initWithKey:lastInLeft.fullKey value:lastInLeft.value tree:mergedSubtree];
         [newEntries addObject:updatedLast];
         [newEntries addObjectsFromArray:right.internalEntries];
         return [[MSTNode alloc] initWithLevel:left.level left:left.internalLeft entries:newEntries];
@@ -851,7 +851,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
         MSTNode *newLeftChild = nil;
         if (right.internalLeft) {
             if (lastInLeft) {
-                MSTNodeEntry *updatedLast = [[MSTNodeEntry alloc] initWithKey:lastInLeft.fullKey value:lastInLeft.value tree:right.internalLeft];
+                ATProtoMSTNodeEntry *updatedLast = [[ATProtoMSTNodeEntry alloc] initWithKey:lastInLeft.fullKey value:lastInLeft.value tree:right.internalLeft];
                 newEntries[newEntries.count-1] = updatedLast;
             } else {
                 // Empty-entries edge case: capture the recursive merge result
@@ -874,28 +874,28 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     }
 }
 
-- (NSArray<MSTEntry *> *)allEntries {
-    NSMutableArray<MSTEntry *> *result = [NSMutableArray array];
-    [self walk:self.root callback:^(MSTNodeEntry *entry) {
-        [result addObject:[MSTEntry entryWithKey:entry.fullKey valueCID:entry.value]];
+- (NSArray<ATProtoMSTEntry *> *)allEntries {
+    NSMutableArray<ATProtoMSTEntry *> *result = [NSMutableArray array];
+    [self walk:self.root callback:^(ATProtoMSTNodeEntry *entry) {
+        [result addObject:[ATProtoMSTEntry entryWithKey:entry.fullKey valueCID:entry.value]];
     }];
     return result;
 }
 
-- (void)walk:(MSTNode *)node callback:(void(^)(MSTNodeEntry *))callback {
+- (void)walk:(MSTNode *)node callback:(void(^)(ATProtoMSTNodeEntry *))callback {
     if (!node) return;
     if (node.internalLeft) [self walk:node.internalLeft callback:callback];
-    for (MSTNodeEntry *entry in node.internalEntries) {
+    for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
         callback(entry);
         if (entry.internalTree) [self walk:entry.internalTree callback:callback];
     }
 }
 
-- (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix {
-    NSMutableArray<MSTEntry *> *result = [NSMutableArray array];
-    [self walk:self.root callback:^(MSTNodeEntry *entry) {
+- (NSArray<ATProtoMSTEntry *> *)entriesWithPrefix:(NSString *)prefix {
+    NSMutableArray<ATProtoMSTEntry *> *result = [NSMutableArray array];
+    [self walk:self.root callback:^(ATProtoMSTNodeEntry *entry) {
         if ([entry.fullKey hasPrefix:prefix]) {
-            [result addObject:[MSTEntry entryWithKey:entry.fullKey valueCID:entry.value]];
+            [result addObject:[ATProtoMSTEntry entryWithKey:entry.fullKey valueCID:entry.value]];
         }
     }];
     return result;
@@ -976,7 +976,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
             [queue addObject:node.internalLeft];
         }
 
-        for (MSTNodeEntry *entry in node.internalEntries) {
+        for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
             if (entry.internalTree) {
                 [queue addObject:entry.internalTree];
             }
@@ -1022,7 +1022,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     
     // Recursively resolve each entry's subtree ATProtoCID
     for (NSUInteger i = 0; i < node.internalEntries.count; i++) {
-        MSTNodeEntry *entry = node.internalEntries[i];
+        ATProtoMSTNodeEntry *entry = node.internalEntries[i];
         if (entry.treeCID && blockProvider) {
             NSData *childData = blockProvider(entry.treeCID);
             if (childData) {
@@ -1046,7 +1046,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     ATProtoCBORValue *leftValue = rootValue.map[[ATProtoCBORValue textString:@"l"]];
     if (!leftValue) return nil;
 
-    NSMutableArray<MSTNodeEntry *> *entries = [NSMutableArray array];
+    NSMutableArray<ATProtoMSTNodeEntry *> *entries = [NSMutableArray array];
     NSData *prevKeyData = [NSData data];
 
     for (ATProtoCBORValue *entryMap in entriesValue.array) {
@@ -1082,7 +1082,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
             if (!treeCID) return nil;
         }
 
-        MSTNodeEntry *entry = [[MSTNodeEntry alloc] initWithKey:fullKey value:valueCID tree:nil];
+        ATProtoMSTNodeEntry *entry = [[ATProtoMSTNodeEntry alloc] initWithKey:fullKey value:valueCID tree:nil];
         entry.treeCID = treeCID;
         [entries addObject:entry];
     }
@@ -1151,7 +1151,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 
         // Build entries array
         NSMutableArray *entriesArray = [NSMutableArray array];
-        for (MSTNodeEntry *entry in node.internalEntries) {
+        for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
             entryCount++;
             NSMutableDictionary *entryDict = [NSMutableDictionary dictionary];
             entryDict[@"fullKey"] = entry.fullKey ?: @"";
@@ -1180,7 +1180,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
             [queue addObject:node.internalLeft];
         }
 
-        for (MSTNodeEntry *entry in node.internalEntries) {
+        for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
             if (entry.internalTree) {
                 [queue addObject:entry.internalTree];
             }
@@ -1256,7 +1256,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
             [queue addObject:node.internalLeft];
         }
 
-        for (MSTNodeEntry *entry in node.internalEntries) {
+        for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
             if (entry.internalTree) {
                 [queue addObject:entry.internalTree];
             }
@@ -1334,7 +1334,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 
         // Add entry tree edges
         for (NSUInteger i = 0; i < node.internalEntries.count; i++) {
-            MSTNodeEntry *entry = node.internalEntries[i];
+            ATProtoMSTNodeEntry *entry = node.internalEntries[i];
             if (entry.internalTree) {
                 ATProtoCID *treeCID = [entry.internalTree getCID:cache];
                 if (treeCID) {
@@ -1393,7 +1393,7 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     }
 
     // Visit each entry's subtree in key order
-    for (MSTNodeEntry *entry in node.internalEntries) {
+    for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
         if (entry.internalTree) {
             [self enumerateNodesDepthFirst:entry.internalTree
                                      depth:depth + 1
@@ -1406,16 +1406,16 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 
 #pragma mark - Diff Operations
 
-- (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree {
+- (NSArray<ATProtoMSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree {
     NSMutableDictionary<NSString *, ATProtoCID *> *oldEntriesByKey = [NSMutableDictionary dictionary];
-    for (MSTEntry *entry in [oldTree allEntries]) {
+    for (ATProtoMSTEntry *entry in [oldTree allEntries]) {
         if (entry.key.length > 0 && entry.valueCID) {
             oldEntriesByKey[entry.key] = entry.valueCID;
         }
     }
 
     NSMutableDictionary<NSString *, ATProtoCID *> *newEntriesByKey = [NSMutableDictionary dictionary];
-    for (MSTEntry *entry in [self allEntries]) {
+    for (ATProtoMSTEntry *entry in [self allEntries]) {
         if (entry.key.length > 0 && entry.valueCID) {
             newEntriesByKey[entry.key] = entry.valueCID;
         }
@@ -1425,17 +1425,17 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
     [keys addObjectsFromArray:newEntriesByKey.allKeys];
     NSArray<NSString *> *sortedKeys = [[keys allObjects] sortedArrayUsingSelector:@selector(compare:)];
 
-    NSMutableArray<MSTDiffOperation *> *operations = [NSMutableArray array];
+    NSMutableArray<ATProtoMSTDiffOperation *> *operations = [NSMutableArray array];
     for (NSString *key in sortedKeys) {
         ATProtoCID *oldCID = oldEntriesByKey[key];
         ATProtoCID *newCID = newEntriesByKey[key];
 
         if (!oldCID && newCID) {
-            [operations addObject:[MSTDiffOperation addOperationWithKey:key currentCID:newCID]];
+            [operations addObject:[ATProtoMSTDiffOperation addOperationWithKey:key currentCID:newCID]];
         } else if (oldCID && !newCID) {
-            [operations addObject:[MSTDiffOperation deleteOperationWithKey:key previousCID:oldCID]];
+            [operations addObject:[ATProtoMSTDiffOperation deleteOperationWithKey:key previousCID:oldCID]];
         } else if (oldCID && newCID && ![oldCID isEqualToCID:newCID]) {
-            [operations addObject:[MSTDiffOperation updateOperationWithKey:key
+            [operations addObject:[ATProtoMSTDiffOperation updateOperationWithKey:key
                                                                previousCID:oldCID
                                                                 currentCID:newCID]];
         }
@@ -1445,12 +1445,12 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 }
 
 /// Consume all remaining entries from walker as additions
-- (void)consumeWalker:(MSTWalker *)walker
-   asAddIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
+- (void)consumeWalker:(ATProtoMSTWalker *)walker
+   asAddIntoOperations:(NSMutableArray<ATProtoMSTDiffOperation *> *)operations {
     while (!walker.status.isDone) {
-        MSTNodeEntry *entry = walker.status.currentEntry;
+        ATProtoMSTNodeEntry *entry = walker.status.currentEntry;
         if (entry != nil && !walker.status.isTreeNode) {
-            [operations addObject:[MSTDiffOperation addOperationWithKey:entry.fullKey
+            [operations addObject:[ATProtoMSTDiffOperation addOperationWithKey:entry.fullKey
                                                              currentCID:entry.value]];
         }
         [walker advance];
@@ -1458,12 +1458,12 @@ static const NSUInteger kMSTLazySubtreeCacheCapacity = 256;
 }
 
 /// Consume all remaining entries from walker as deletions
-- (void)consumeWalker:(MSTWalker *)walker
-asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
+- (void)consumeWalker:(ATProtoMSTWalker *)walker
+asDeleteIntoOperations:(NSMutableArray<ATProtoMSTDiffOperation *> *)operations {
     while (!walker.status.isDone) {
-        MSTNodeEntry *entry = walker.status.currentEntry;
+        ATProtoMSTNodeEntry *entry = walker.status.currentEntry;
         if (entry != nil && !walker.status.isTreeNode) {
-            [operations addObject:[MSTDiffOperation deleteOperationWithKey:entry.fullKey
+            [operations addObject:[ATProtoMSTDiffOperation deleteOperationWithKey:entry.fullKey
                                                                previousCID:entry.value]];
         }
         [walker advance];
@@ -1472,7 +1472,7 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
 
 /// Collect all entries from node as additions (used when old tree is nil)
 - (void)collectAllEntriesFromNode:(MSTNode *)node
-               asAddIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
+               asAddIntoOperations:(NSMutableArray<ATProtoMSTDiffOperation *> *)operations {
     if (!node) return;
     
     if (node.internalLeft) {
@@ -1480,9 +1480,9 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
                      asAddIntoOperations:operations];
     }
     
-    for (MSTNodeEntry *entry in node.internalEntries) {
+    for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
         if (entry.fullKey.length > 0 && entry.value) {
-            [operations addObject:[MSTDiffOperation addOperationWithKey:entry.fullKey
+            [operations addObject:[ATProtoMSTDiffOperation addOperationWithKey:entry.fullKey
                                                              currentCID:entry.value]];
         }
         if (entry.internalTree) {
@@ -1494,7 +1494,7 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
 
 /// Collect all entries from node as deletions (used when new tree is nil)
 - (void)collectAllEntriesFromNode:(MSTNode *)node
-            asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
+            asDeleteIntoOperations:(NSMutableArray<ATProtoMSTDiffOperation *> *)operations {
     if (!node) return;
     
     if (node.internalLeft) {
@@ -1502,9 +1502,9 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
                   asDeleteIntoOperations:operations];
     }
     
-    for (MSTNodeEntry *entry in node.internalEntries) {
+    for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
         if (entry.fullKey.length > 0 && entry.value) {
-            [operations addObject:[MSTDiffOperation deleteOperationWithKey:entry.fullKey
+            [operations addObject:[ATProtoMSTDiffOperation deleteOperationWithKey:entry.fullKey
                                                                previousCID:entry.value]];
         }
         if (entry.internalTree) {
@@ -1557,14 +1557,14 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
         subtree = node.internalLeft;
         subtreeCID = node.leftCID;
     } else {
-        MSTNodeEntry *entry = node.internalEntries[idx - 1];
+        ATProtoMSTNodeEntry *entry = node.internalEntries[idx - 1];
         subtree = entry.internalTree;
         subtreeCID = entry.treeCID;
     }
     
     // Lazy-load subtree if needed. Read through the per-instance
     // lazySubtreeCache side-table (thread-safe under @synchronized(self)).
-    // The published node's _internalLeft / MSTNodeEntry.internalTree ivars
+    // The published node's _internalLeft / ATProtoMSTNodeEntry.internalTree ivars
     // MUST NOT be written back here: doing so mutates a published subtree
     // and races the atomic-publish copy-on-write invariant. The side-table
     // cache is invalidated by -put:/-delete: so it stays consistent with
@@ -1753,7 +1753,7 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
     // only when one exists. This matches the draft spec's "ordered by node
     // entries[]" rule and is by design — never coerce this into mutually
     // exclusive "leaf vs subtree" branches.
-    for (MSTNodeEntry *entry in node.internalEntries) {
+    for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
         if (entry.value) {
             NSString *recordCIDString = entry.value.stringValue ?: @"";
             if (recordCIDString.length > 0 && ![addedCIDs containsObject:recordCIDString]) {

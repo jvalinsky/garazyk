@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Internal accessors for MSTNode.
- * @discussion Used by MSTWalker for efficient tree traversal.
+ * @discussion Used by ATProtoMSTWalker for efficient tree traversal.
  */
 @interface MSTNode (Internal)
 
@@ -21,7 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly, nullable) MSTNode *internalLeft;
 
 /** @abstract Mutable array of entries at this node. */
-@property (nonatomic, strong, readonly) NSMutableArray<MSTNodeEntry *> *internalEntries;
+@property (nonatomic, strong, readonly) NSMutableArray<ATProtoMSTNodeEntry *> *internalEntries;
 
 /** @abstract Level of this node in the MST. */
 @property (nonatomic, assign, readonly) uint32_t level;
@@ -36,9 +36,9 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /**
- * @abstract Internal accessors for MSTNodeEntry.
+ * @abstract Internal accessors for ATProtoMSTNodeEntry.
  */
-@interface MSTNodeEntry (Internal)
+@interface ATProtoMSTNodeEntry (Internal)
 
 /** @abstract Subtree pointer (may be nil for leaf entries). */
 @property (nonatomic, strong, readonly, nullable) MSTNode *internalTree;

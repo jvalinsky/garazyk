@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file MSTPersistence.h
+ @file ATProtoMSTPersistence.h
 
  @abstract Persistence layer for Merkle Search Tree storage.
 
@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabase;
 
 /*!
- @class MSTPersistence
+ @class ATProtoMSTPersistence
 
  @abstract Persistence manager for Merkle Search Trees.
 
@@ -30,7 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
  MSTs are stored per-DID in actor databases. Nodes are content-addressed
  by ATProtoCID for deduplication and efficient sync.
  */
-@interface MSTPersistence : NSObject
+@interface ATProtoMSTPersistence : NSObject
 
 /*! Get singleton persistence instance. */
 + (instancetype)shared;

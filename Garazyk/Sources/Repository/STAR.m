@@ -9,10 +9,10 @@
 #import <CommonCrypto/CommonDigest.h>
 
 // ---------------------------------------------------------------------------
-// Private MSTNode/MSTNodeEntry access for STAR serialization
+// Private MSTNode/ATProtoMSTNodeEntry access for STAR serialization
 // ---------------------------------------------------------------------------
 
-@interface MSTNodeEntry ()
+@interface ATProtoMSTNodeEntry ()
 @property (nonatomic, strong, readwrite, nullable) MSTNode *internalTree;
 @property (nonatomic, strong, readwrite, nullable) ATProtoCID *treeCID;
 @end
@@ -21,7 +21,7 @@
 @property (nonatomic, assign, readwrite) uint32_t level;
 @property (nonatomic, strong, readwrite, nullable) MSTNode *internalLeft;
 @property (nonatomic, strong, readwrite, nullable) ATProtoCID *leftCID;
-@property (nonatomic, strong, readwrite) NSMutableArray<MSTNodeEntry *> *internalEntries;
+@property (nonatomic, strong, readwrite) NSMutableArray<ATProtoMSTNodeEntry *> *internalEntries;
 - (ATProtoCID *)getCID:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
 @end
 
@@ -94,10 +94,10 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 }
 
 // ---------------------------------------------------------------------------
-// STARCommit
+// ATProtoSTARCommit
 // ---------------------------------------------------------------------------
 
-@implementation STARCommit
+@implementation ATProtoSTARCommit
 
 + (instancetype)commitWithDid:(NSString *)did
                       version:(NSInteger)version
@@ -105,7 +105,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
                          rev:(NSString *)rev
                         prev:(nullable ATProtoCID *)prev
                          sig:(nullable NSData *)sig {
-    STARCommit *c = [[self alloc] init];
+    ATProtoSTARCommit *c = [[self alloc] init];
     c.did = [did copy];
     c.version = version;
     c.data = data;
@@ -142,10 +142,10 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @end
 
 // ---------------------------------------------------------------------------
-// STARMstEntry
+// ATProtoSTARMstEntry
 // ---------------------------------------------------------------------------
 
-@implementation STARMstEntry
+@implementation ATProtoSTARMstEntry
 
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                          keySuffix:(NSData *)keySuffix
@@ -153,7 +153,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
                       valueArchived:(BOOL)valueArchived
                               tree:(nullable ATProtoCID *)tree
                        treeArchived:(BOOL)treeArchived {
-    STARMstEntry *e = [[self alloc] init];
+    ATProtoSTARMstEntry *e = [[self alloc] init];
     e.prefixLen = prefixLen;
     e.keySuffix = [keySuffix copy];
     e.value = value;
@@ -166,15 +166,15 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @end
 
 // ---------------------------------------------------------------------------
-// STARMstNode
+// ATProtoSTARMstNode
 // ---------------------------------------------------------------------------
 
-@implementation STARMstNode
+@implementation ATProtoSTARMstNode
 
 + (instancetype)nodeWithLeft:(nullable ATProtoCID *)left
                 leftArchived:(BOOL)leftArchived
-                    entries:(NSArray<STARMstEntry *> *)entries {
-    STARMstNode *n = [[self alloc] init];
+                    entries:(NSArray<ATProtoSTARMstEntry *> *)entries {
+    ATProtoSTARMstNode *n = [[self alloc] init];
     n.left = left;
     n.leftArchived = leftArchived;
     n.entries = [entries copy];
@@ -184,7 +184,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 - (nullable NSData *)serializeToDagCBOR:(NSError **)error {
     NSMutableArray<ATProtoCBORValue *> *entriesCBOR = [NSMutableArray array];
 
-    for (STARMstEntry *entry in self.entries) {
+    for (ATProtoSTARMstEntry *entry in self.entries) {
         NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *entryDict = [NSMutableDictionary dictionary];
 
         // Spec order: k, p, v, V, t, T
@@ -240,24 +240,24 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @property (nonatomic, strong, readonly, nullable) ATProtoCID *leftCID;
 @end
 
-@interface MSTNodeEntry (STARInternal)
+@interface ATProtoMSTNodeEntry (STARInternal)
 @property (nonatomic, strong, readonly, nullable) MSTNode *internalTree;
 @property (nonatomic, strong, readonly, nullable) ATProtoCID *treeCID;
 @end
 
 // ---------------------------------------------------------------------------
-// STARL0Writer
+// ATProtoSTARL0Writer
 // ---------------------------------------------------------------------------
 
-@interface STARL0Writer ()
+@interface ATProtoSTARL0Writer ()
 @property (nonatomic, strong) NSMutableData *outputData;
-@property (nonatomic, strong, readwrite) STARCommit *commit;
+@property (nonatomic, strong, readwrite) ATProtoSTARCommit *commit;
 @property (nonatomic, copy, nullable) void (^outputBlock)(NSData *chunk);
 @end
 
-@implementation STARL0Writer
+@implementation ATProtoSTARL0Writer
 
-- (instancetype)initWithCommit:(STARCommit *)commit {
+- (instancetype)initWithCommit:(ATProtoSTARCommit *)commit {
     self = [super init];
     if (self) {
         _commit = commit;
@@ -266,7 +266,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     return self;
 }
 
-- (instancetype)initWithCommit:(STARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock {
+- (instancetype)initWithCommit:(ATProtoSTARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock {
     self = [self initWithCommit:commit];
     if (self) {
         _outputBlock = [outputBlock copy];
@@ -359,13 +359,13 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     if (!node) return YES;
 
     // Build STAR MST node
-    NSMutableArray<STARMstEntry *> *starEntries = [NSMutableArray array];
+    NSMutableArray<ATProtoSTARMstEntry *> *starEntries = [NSMutableArray array];
     NSData *prevKeyData = [NSData data];
     
     // Cache for record data to avoid redundant blockProvider calls
     NSMutableDictionary<NSString *, NSData *> *recordDataCache = [NSMutableDictionary dictionary];
 
-    for (MSTNodeEntry *entry in node.internalEntries) {
+    for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
         NSData *fullKeyData = [entry.fullKey dataUsingEncoding:NSUTF8StringEncoding];
         NSUInteger prefixLen = 0;
         NSUInteger minLen = MIN(prevKeyData.length, fullKeyData.length);
@@ -405,7 +405,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
             treeArchived = NO;
         }
 
-        STARMstEntry *starEntry = [STARMstEntry entryWithPrefixLen:prefixLen
+        ATProtoSTARMstEntry *starEntry = [ATProtoSTARMstEntry entryWithPrefixLen:prefixLen
                                                          keySuffix:keySuffix
                                                              value:valueCID
                                                       valueArchived:valueArchived
@@ -424,7 +424,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
         leftArchived = NO;
     }
 
-    STARMstNode *starNode = [STARMstNode nodeWithLeft:leftCID
+    ATProtoSTARMstNode *starNode = [ATProtoSTARMstNode nodeWithLeft:leftCID
                                           leftArchived:leftArchived
                                               entries:starEntries];
 
@@ -449,7 +449,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     }
 
     // Emit entries: record, then subtree
-    for (MSTNodeEntry *entry in node.internalEntries) {
+    for (ATProtoMSTNodeEntry *entry in node.internalEntries) {
         NSData *recordData = recordDataCache[entry.value.stringValue];
         if (recordData) {
             [self writeRecord:recordData];
@@ -481,18 +481,18 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @end
 
 // ---------------------------------------------------------------------------
-// STARLiteWriter
+// ATProtoSTARLiteWriter
 // ---------------------------------------------------------------------------
 
-@interface STARLiteWriter ()
+@interface ATProtoSTARLiteWriter ()
 @property (nonatomic, strong) NSMutableData *outputData;
-@property (nonatomic, strong, readwrite) STARCommit *commit;
+@property (nonatomic, strong, readwrite) ATProtoSTARCommit *commit;
 @property (nonatomic, assign) BOOL headerWritten;
 @end
 
-@implementation STARLiteWriter
+@implementation ATProtoSTARLiteWriter
 
-- (instancetype)initWithCommit:(STARCommit *)commit {
+- (instancetype)initWithCommit:(ATProtoSTARCommit *)commit {
     self = [super init];
     if (self) {
         _commit = commit;
@@ -513,8 +513,8 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     if (![self writeHeaderWithError:error]) return NO;
 
     // Walk all entries in key order and emit key-record pairs
-    NSArray<MSTEntry *> *entries = [mst allEntries];
-    for (MSTEntry *entry in entries) {
+    NSArray<ATProtoMSTEntry *> *entries = [mst allEntries];
+    for (ATProtoMSTEntry *entry in entries) {
         if (!blockProvider) continue;
         NSData *recordData = blockProvider(entry.valueCID);
         if (!recordData) {
@@ -587,14 +587,14 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @end
 
 // ---------------------------------------------------------------------------
-// STARReader
+// ATProtoSTARReader
 // ---------------------------------------------------------------------------
 
-@interface STARReader ()
+@interface ATProtoSTARReader ()
 @property (nonatomic, strong, readwrite, nullable) ATProtoCID *rootCID;
 @property (nonatomic, strong, readwrite) NSArray<CARBlock *> *blocks;
 @property (nonatomic, assign, readwrite) STARVariant variant;
-@property (nonatomic, strong, readwrite, nullable) STARCommit *commit;
+@property (nonatomic, strong, readwrite, nullable) ATProtoSTARCommit *commit;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, CARBlock *> *blockIndex;
 - (BOOL)parseL0Node:(ATProtoCID *)expectedCID
               bytes:(const uint8_t *)bytes
@@ -604,10 +604,10 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
               error:(NSError **)error;
 @end
 
-@implementation STARReader
+@implementation ATProtoSTARReader
 
 + (nullable instancetype)readFromData:(NSData *)data error:(NSError **)error {
-    STARReader *reader = [[self alloc] init];
+    ATProtoSTARReader *reader = [[self alloc] init];
     if (![reader parseData:data error:error]) {
         return nil;
     }
@@ -687,7 +687,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
     // Parse commit
     NSData *commitData = [data subdataWithRange:NSMakeRange(offset, (NSUInteger)commitLen)];
-    STARCommit *commit = [self parseCommit:commitData error:error];
+    ATProtoSTARCommit *commit = [self parseCommit:commitData error:error];
     if (!commit) return NO;
     self.commit = commit;
     self.rootCID = commit.data;
@@ -701,14 +701,14 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     }
 }
 
-- (nullable STARCommit *)parseCommit:(NSData *)data error:(NSError **)error {
+- (nullable ATProtoSTARCommit *)parseCommit:(NSData *)data error:(NSError **)error {
     ATProtoCBORValue *root = [ATProtoCBORValue decode:data];
     if (!root || root.type != CBORTypeMap) {
         if (error) *error = STARError(7, @"Commit is not a CBOR map");
         return nil;
     }
 
-    STARCommit *commit = [[STARCommit alloc] init];
+    ATProtoSTARCommit *commit = [[ATProtoSTARCommit alloc] init];
 
     // did
     ATProtoCBORValue *did = root.map[[ATProtoCBORValue textString:@"did"]];
@@ -1041,16 +1041,16 @@ static void EntryMapSetCID(NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORVa
 @end
 
 // ---------------------------------------------------------------------------
-// STARConverter
+// ATProtoSTARConverter
 // ---------------------------------------------------------------------------
 
-@implementation STARConverter
+@implementation ATProtoSTARConverter
 
 + (nullable NSData *)carDataFromSTARData:(NSData *)starData error:(NSError **)error {
-    STARReader *reader = [STARReader readFromData:starData error:error];
+    ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:starData error:error];
     if (!reader) return nil;
 
-    STARCommit *commit = reader.commit;
+    ATProtoSTARCommit *commit = reader.commit;
     if (!commit) {
         if (error) *error = STARError(20, @"STAR archive has no commit");
         return nil;

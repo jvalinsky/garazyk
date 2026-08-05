@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-08-04
+last_verified: 2026-08-05
 ---
 
 # Garazyk Mega Plan
@@ -451,7 +451,7 @@ remaining program does not depend on items 1-2.
    Round-trip, empty-tree, malformed-input, and STAR→CAR conversion tests
    added (6 new test methods). All 20 STARPreorderTests pass.
 
-10. **Open (re-verified 2026-08-04):** make the ten `ATProto*` static-library
+10. **Open (re-verified 2026-08-05):** make the ten `ATProto*` static-library
     boundaries real and publish them as a bounded, experimental CMake config
     package. Complete
     [workstream 08](workstreams/08-module-boundaries-and-library-consumption.md).
@@ -465,10 +465,13 @@ remaining program does not depend on items 1-2.
     is complete in full (all ~25 classes renamed, including `CID` at 265
     consumers, the largest single rename in the workstream),
     ratcheting the namespace baseline
-    283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228. Batches 3-6
-    (Storage/Transport, PLC/Sync/Services/MediaCore,
-    XRPC/VideoService,
-    Runtime) remain open.
+    283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228.
+    **Batch 3a (2026-08-05)** renamed 32 small/medium Storage MST/STAR helpers
+    and Transport HTTP/SSRF/upgrade classes (`ATProto` prefix), ratcheting
+    228 → 196; remaining batch-3 work is the larger Storage (`MST`, `CAR*`,
+    `RepoCommit`) and Transport (`HttpServer`, `HttpProtocol*`, …) classes
+    plus Core-owned HTTP message types still unprefixed from M3. Batches 4-6
+    (PLC/Sync/Services/MediaCore, XRPC/VideoService, Runtime) remain open.
     **M7 is now
     complete (2026-08-04):** the remaining host-process `exit()`/`abort()`
     calls in `PDSApplication.m`/`PDSCLIServeCommand.m`/

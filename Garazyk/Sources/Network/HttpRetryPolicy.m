@@ -11,7 +11,7 @@
 #import "Network/HttpRetryPolicy.h"
 #import <math.h>
 
-@implementation HttpRetryResult
+@implementation ATProtoHttpRetryResult
 
 - (instancetype)initWithDecision:(HttpRetryDecision)decision delay:(NSTimeInterval)delay {
     self = [super init];
@@ -36,7 +36,7 @@
     return self;
 }
 
-- (HttpRetryResult *)evaluateStatusCode:(NSInteger)statusCode
+- (ATProtoHttpRetryResult *)evaluateStatusCode:(NSInteger)statusCode
                            networkError:(nullable NSError *)error
                           attemptNumber:(NSInteger)attempt {
     // Determine if it's a transient failure
@@ -45,18 +45,18 @@
     if (isTransientFailure) {
         if (attempt < self.maxRetries) {
             NSTimeInterval delay = self.initialDelay * pow(self.backoffMultiplier, attempt);
-            return [[HttpRetryResult alloc] initWithDecision:HttpRetryDecisionRetryAfter delay:delay];
+            return [[ATProtoHttpRetryResult alloc] initWithDecision:HttpRetryDecisionRetryAfter delay:delay];
         } else {
-            return [[HttpRetryResult alloc] initWithDecision:HttpRetryDecisionFail delay:0.0];
+            return [[ATProtoHttpRetryResult alloc] initWithDecision:HttpRetryDecisionFail delay:0.0];
         }
     }
 
     if (statusCode >= 200 && statusCode < 300) {
-        return [[HttpRetryResult alloc] initWithDecision:HttpRetryDecisionSucceed delay:0.0];
+        return [[ATProtoHttpRetryResult alloc] initWithDecision:HttpRetryDecisionSucceed delay:0.0];
     }
 
     // Any other status code (like 4xx or 3xx) fails immediately (not retryable)
-    return [[HttpRetryResult alloc] initWithDecision:HttpRetryDecisionFail delay:0.0];
+    return [[ATProtoHttpRetryResult alloc] initWithDecision:HttpRetryDecisionFail delay:0.0];
 }
 
 @end

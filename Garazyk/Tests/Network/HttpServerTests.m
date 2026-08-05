@@ -230,7 +230,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     XCTAssertEqualObjects(connection.sentData[2], [@"3\r\ndef\r\n" dataUsingEncoding:NSUTF8StringEncoding]);
     XCTAssertEqualObjects(connection.sentData[3], [@"0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]);
     // Note: After Phase C refactoring, read scheduling is handled by
-    // HttpConnectionIOCoordinator. Since this test bypasses the full
+    // ATProtoHttpConnectionIOCoordinator. Since this test bypasses the full
     // connection lifecycle (no coordinator), receiveCallCount/cancelCalled
     // are no longer triggered by sendResponse alone.
 }
@@ -322,7 +322,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     XCTAssertTrue(chunkFrameCount >= 3, @"Large payload should be split into multiple wire chunks");
     XCTAssertEqual(totalChunkPayloadBytes, largePayload.length);
     // Note: After Phase C refactoring, read scheduling is handled by
-    // HttpConnectionIOCoordinator. Since this test bypasses the full
+    // ATProtoHttpConnectionIOCoordinator. Since this test bypasses the full
     // connection lifecycle (no coordinator), receiveCallCount/cancelCalled
     // are no longer triggered by sendResponse alone.
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file MSTWalker.h
+ * @file ATProtoMSTWalker.h
  * @abstract Traverses an MST in key order.
  * @discussion Implements a depth-first traversal of the MST that walks entries
  * in lexicographic key order. Used by the diff algorithm to compare two trees in
@@ -12,7 +12,7 @@
 #import <Foundation/Foundation.h>
 
 @class MSTNode;
-@class MSTNodeEntry;
+@class ATProtoMSTNodeEntry;
 @class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -36,7 +36,7 @@ typedef struct MSTWalkerStatusDone {
  */
 typedef struct MSTWalkerStatusProgress {
     BOOL done;
-    __unsafe_unretained MSTNodeEntry * _Nullable curr;
+    __unsafe_unretained ATProtoMSTNodeEntry * _Nullable curr;
     __unsafe_unretained MSTNode * _Nullable walking;
     NSUInteger index;
     BOOL isTreeNode;
@@ -56,7 +56,7 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
  * (at a specific node/entry in the tree). This mirrors the reference implementation's 
  * WalkerStatus union type.
  */
-@interface MSTWalkerStatus : NSObject
+@interface ATProtoMSTWalkerStatus : NSObject
 
 /** @abstract Current status tag. */
 @property (nonatomic, assign, readonly) MSTWalkerStatusTag tag;
@@ -68,7 +68,7 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
 /** @abstract Creates a done status instance. */
 + (instancetype)doneStatus;
 /** @abstract Creates a progress status instance. */
-+ (instancetype)progressWithEntry:(nullable MSTNodeEntry *)entry
++ (instancetype)progressWithEntry:(nullable ATProtoMSTNodeEntry *)entry
                           walking:(nullable MSTNode *)walking
                             index:(NSUInteger)index
                        isTreeNode:(BOOL)isTreeNode;
@@ -76,7 +76,7 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
 /** @abstract Whether the traversal is complete. */
 - (BOOL)isDone;
 /** @abstract Current entry, or nil if none. */
-- (nullable MSTNodeEntry *)currentEntry;
+- (nullable ATProtoMSTNodeEntry *)currentEntry;
 /** @abstract Current node, or nil if at root. */
 - (nullable MSTNode *)walkingNode;
 /** @abstract Current index. */
@@ -86,7 +86,7 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
 
 @end
 
-#pragma mark - MSTWalker
+#pragma mark - ATProtoMSTWalker
 
 /**
  * @abstract Traverses an MST in key order.
@@ -96,23 +96,23 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
  *
  * Usage:
  * @code
- * MSTWalker *walker = [[MSTWalker alloc] initWithRootNode:root];
+ * ATProtoMSTWalker *walker = [[ATProtoMSTWalker alloc] initWithRootNode:root];
  * while (!walker.status.isDone) {
- *     MSTNodeEntry *entry = walker.status.currentEntry;
+ *     ATProtoMSTNodeEntry *entry = walker.status.currentEntry;
  *     // process entry...
  *     [walker advance];
  * }
  * @endcode
  */
 /**
- * @abstract Declares the MSTWalker public API.
+ * @abstract Declares the ATProtoMSTWalker public API.
  */
-@interface MSTWalker : NSObject
+@interface ATProtoMSTWalker : NSObject
 
 /** @abstract The tree root node. */
 @property (nonatomic, strong, readonly) MSTNode *root;
 /** @abstract Current status. */
-@property (nonatomic, strong) MSTWalkerStatus *status;
+@property (nonatomic, strong) ATProtoMSTWalkerStatus *status;
 
 /**
  * @abstract Initializes a walker starting at the given MST root node.

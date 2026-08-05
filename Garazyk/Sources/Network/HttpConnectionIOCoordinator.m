@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpConnectionIOCoordinator.m
+ @file ATProtoHttpConnectionIOCoordinator.m
 
  @abstract Coordinates low-level HTTP connection I/O sequencing and buffer handoff.
 
@@ -15,7 +15,7 @@
 #import "Network/ATProtoNetworkTransport.h"
 #import "Compat/PDSTypes.h"
 
-@interface HttpConnectionIOCoordinator ()
+@interface ATProtoHttpConnectionIOCoordinator ()
 @property (nonatomic, strong) id<ATProtoNetworkConnection> connection;
 @property (nonatomic, strong) HttpProtocolDriver *driver;
 @property (nonatomic, strong) HttpResponseSender *sender;
@@ -38,7 +38,7 @@ static const NSTimeInterval kDefaultHttpHeaderAggregateTimeout = 30.0;
 static NSString * const kHttpConnectionIOCoordinatorErrorDomain = @"HttpConnectionIOCoordinator";
 static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
 
-@implementation HttpConnectionIOCoordinator
+@implementation ATProtoHttpConnectionIOCoordinator
 
 - (instancetype)init {
     [self doesNotRecognizeSelector:_cmd];
@@ -212,7 +212,7 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)),
                    self.coordinationQueue, ^{
-        HttpConnectionIOCoordinator *strongSelf = weakSelf;
+        ATProtoHttpConnectionIOCoordinator *strongSelf = weakSelf;
         if (!strongSelf || strongSelf.isClosed || !strongSelf.readScheduled ||
             strongSelf.idleDeadlineGeneration != generation) {
             return;
@@ -234,7 +234,7 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)),
                    self.coordinationQueue, ^{
-        HttpConnectionIOCoordinator *strongSelf = weakSelf;
+        ATProtoHttpConnectionIOCoordinator *strongSelf = weakSelf;
         if (!strongSelf || strongSelf.isClosed || strongSelf.headerStartTime <= 0 ||
             strongSelf.aggregateDeadlineGeneration != generation) {
             return;

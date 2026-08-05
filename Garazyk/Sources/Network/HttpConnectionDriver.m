@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpConnectionDriver.m
+ @file ATProtoHttpConnectionDriver.m
 
  @abstract Implements connection-level orchestration for HTTP request processing.
 
@@ -12,7 +12,7 @@
 
 #import "Network/HttpProtocolSession.h"
 
-@implementation HttpConnectionDriver
+@implementation ATProtoHttpConnectionDriver
 
 - (BOOL)shouldBeginReadForSession:(HttpProtocolSession *)session
                   outputQueueSize:(NSUInteger)outputQueueSize

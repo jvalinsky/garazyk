@@ -21,13 +21,13 @@
 NSErrorDomain const SSRFValidatorErrorDomain = @"com.atproto.pds.ssrfvalidator";
 NSTimeInterval const SSRFValidatorDefaultResolutionTimeout = 5.0;
 
-@interface SSRFResolutionResult : NSObject
+@interface ATProtoSSRFResolutionResult : NSObject
 @property (nonatomic, assign) BOOL succeeded;
 @property (nonatomic, strong, nullable) NSArray<NSString *> *addresses;
 @property (nonatomic, strong, nullable) NSError *error;
 @end
 
-@implementation SSRFResolutionResult
+@implementation ATProtoSSRFResolutionResult
 @end
 
 @implementation SSRFValidator
@@ -135,7 +135,7 @@ NSTimeInterval const SSRFValidatorDefaultResolutionTimeout = 5.0;
 
     SSRFResolver effectiveResolver = resolver ?: [self platformResolver];
 
-    SSRFResolutionResult *resolution = [[SSRFResolutionResult alloc] init];
+    ATProtoSSRFResolutionResult *resolution = [[ATProtoSSRFResolutionResult alloc] init];
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSArray<NSString *> *resolvedAddresses = nil;
