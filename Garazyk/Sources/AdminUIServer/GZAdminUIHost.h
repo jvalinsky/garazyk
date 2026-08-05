@@ -11,13 +11,22 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Runs the Admin UI HTTP service lifecycle.
+ * @discussion Holds no compile-time knowledge of any service. Route registration is supplied
+ * entirely by the @c packs the caller composes it with; see @c GZAdminUIPack.
  */
-@interface UIServerRuntime : NSObject <GZServiceRuntimeProtocol>
+@interface GZAdminUIHost : NSObject <GZServiceRuntimeProtocol>
 
 @property(nonatomic, strong, readonly) UIServiceConfig *configuration;
+@property(nonatomic, copy, readonly) NSArray<Class> *packs;
 @property(nonatomic, assign, readonly, getter=isRunning) BOOL running;
 
-- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration;
+/**
+ * @abstract Composes a host from configuration and the packs it should serve.
+ * @param packs Classes conforming to @c GZAdminUIPack, registered in the order given.
+ */
+- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration
+                                 packs:(NSArray<Class> *)packs NS_DESIGNATED_INITIALIZER;
+- (instancetype)init NS_UNAVAILABLE;
 - (BOOL)startWithError:(NSError **)error;
 - (void)stop;
 /**
