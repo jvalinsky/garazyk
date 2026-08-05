@@ -311,4 +311,112 @@
     XCTAssertNil(extracted);
 }
 
+#pragma mark - Service-scoped cookie names
+
+/*! Builds a GET request carrying the supplied Cookie header. */
+- (HttpRequest *)requestWithCookieHeader:(NSString *)cookieHeader {
+    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                  methodString:@"GET"
+                                          path:@"/admin"
+                                   queryString:nil
+                                   queryParams:nil
+                                       version:@"HTTP/1.1"
+                                       headers:@{@"Cookie": cookieHeader}
+                                          body:nil
+                                 remoteAddress:@"127.0.0.1"];
+}
+
+/*!
+ @test testUnscopedManagerKeepsLegacyCookieNames
+
+ @abstract Verify that a manager built without an identifier keeps the pre-existing names,
+ so garazyk-ui and its clients are unaffected.
+ */
+- (void)testUnscopedManagerKeepsLegacyCookieNames {
+    XCTAssertNil(self.authManager.serviceIdentifier);
+    XCTAssertEqualObjects(self.authManager.sessionCookieName, @"ui_admin_token");
+    XCTAssertEqualObjects(self.authManager.csrfCookieName, @"ui_admin_nonce");
+}
+
+/*!
+ @test testServiceScopedManagerDerivesCookieNames
+
+ @abstract Verify that an identifier produces distinct session and CSRF cookie names.
+ */
+- (void)testServiceScopedManagerDerivesCookieNames {
+    UIAuthManager *plc = [[UIAuthManager alloc] initWithPassword:@"pw"
+                                              serviceIdentifier:@"plc"];
+    XCTAssertEqualObjects(plc.sessionCookieName, @"gz_admin_plc_token");
+    XCTAssertEqualObjects(plc.csrfCookieName, @"gz_admin_plc_nonce");
+
+    NSString *cookie = [plc cookieHeaderValueForToken:@"abc" secure:NO];
+    XCTAssertTrue([cookie hasPrefix:@"gz_admin_plc_token=abc;"]);
+}
+
+/*!
+ @test testScopedManagerIgnoresSiblingServiceCookie
+
+ @abstract Verify that a UI does not read a sibling UI's session cookie.
+
+ @discussion Cookies are not port-scoped, so two admin UIs on the same host receive each
+ other's cookies in the same header. Each must read only its own name.
+ */
+- (void)testScopedManagerIgnoresSiblingServiceCookie {
+    UIAuthManager *plc = [[UIAuthManager alloc] initWithPassword:@"pw"
+                                              serviceIdentifier:@"plc"];
+    UIAuthManager *relay = [[UIAuthManager alloc] initWithPassword:@"pw"
+                                                serviceIdentifier:@"relay"];
+
+    NSString *plcToken = [plc createSessionToken];
+    NSString *relayToken = [relay createSessionToken];
+
+    // The browser sends both cookies to whichever UI is being addressed.
+    NSString *bothCookies = [NSString stringWithFormat:
+        @"gz_admin_plc_token=%@; gz_admin_relay_token=%@", plcToken, relayToken];
+
+    XCTAssertEqualObjects([plc extractTokenFromRequest:[self requestWithCookieHeader:bothCookies]],
+                          plcToken);
+    XCTAssertEqualObjects([relay extractTokenFromRequest:[self requestWithCookieHeader:bothCookies]],
+                          relayToken);
+}
+
+/*!
+ @test testSiblingSessionsRemainIndependent
+
+ @abstract Verify that both UIs stay authorized when both cookies are present.
+
+ @discussion This is the defect the scoping fixes: with one shared cookie name the second
+ sign-in evicts the first UI's session in the browser.
+ */
+- (void)testSiblingSessionsRemainIndependent {
+    UIAuthManager *plc = [[UIAuthManager alloc] initWithPassword:@"pw"
+                                              serviceIdentifier:@"plc"];
+    UIAuthManager *relay = [[UIAuthManager alloc] initWithPassword:@"pw"
+                                                serviceIdentifier:@"relay"];
+
+    NSString *bothCookies = [NSString stringWithFormat:
+        @"gz_admin_plc_token=%@; gz_admin_relay_token=%@",
+        [plc createSessionToken], [relay createSessionToken]];
+    HttpRequest *request = [self requestWithCookieHeader:bothCookies];
+
+    XCTAssertTrue([plc isAuthorizedRequest:request]);
+    XCTAssertTrue([relay isAuthorizedRequest:request]);
+}
+
+/*!
+ @test testScopedManagerRejectsUnscopedCookie
+
+ @abstract Verify that a scoped UI ignores a legacy unscoped session cookie.
+ */
+- (void)testScopedManagerRejectsUnscopedCookie {
+    UIAuthManager *plc = [[UIAuthManager alloc] initWithPassword:@"pw"
+                                              serviceIdentifier:@"plc"];
+    NSString *legacy = [NSString stringWithFormat:@"ui_admin_token=%@",
+                        [self.authManager createSessionToken]];
+    HttpRequest *request = [self requestWithCookieHeader:legacy];
+
+    XCTAssertNil([plc extractTokenFromRequest:request]);
+    XCTAssertFalse([plc isAuthorizedRequest:request]);
+}
+
 @end
