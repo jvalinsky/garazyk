@@ -118,15 +118,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)labShellHTML:(NSString *)nonce;
 /** @abstract Serializes safe client metadata for the lab shell. */
 - (NSString *)labClientMetadataJSON;
-/** @abstract Renders video-service health. */
-- (NSString *)renderVideoHealthPartial:(NSDictionary *)result;
-/** @abstract Renders video-job results. */
-- (NSString *)renderVideoJobsPartial:(NSDictionary *)result;
-/** @abstract Renders a video-job detail result. */
-- (NSString *)renderVideoJobDetailPartial:(NSDictionary *)result;
-/** @abstract Renders video quota information. */
-- (NSString *)renderVideoQuotasPartial:(NSDictionary *)result;
-
 @end
 
 /** @abstract Registers authenticated route groups on the runtime HTTP server. */
