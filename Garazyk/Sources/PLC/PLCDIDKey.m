@@ -83,7 +83,7 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
     }
 
     NSString *base58Payload = [multibase substringFromIndex:1];
-    NSData *decoded = [CID base58btcDecode:base58Payload];
+    NSData *decoded = [ATProtoCID base58btcDecode:base58Payload];
     if (!decoded || decoded.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PLCDIDKeyErrorDomain

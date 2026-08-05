@@ -69,7 +69,7 @@
 
 - (void)testCIDValidation {
     // Valid cases
-    // Use a valid base32 CID (generated from "test data")
+    // Use a valid base32 ATProtoCID (generated from "test data")
     XCTAssertTrue([ATProtoValidator validateCID:@"bafyreiern4acpjlva5gookrtc534gr4nmuj7pbvfsg6yslnbuv336izv7e" error:nil]);
 
     // Invalid cases

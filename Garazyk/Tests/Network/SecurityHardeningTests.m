@@ -678,7 +678,7 @@
 - (void)testBlobHeaderMIME {
     // Store a real blob, fetch it via sync.getBlob, and verify the response carries the stored
     // MIME type and the anti-sniffing X-Content-Type-Options: nosniff header. The previous
-    // version only asserted that a made-up CID did not return 200, which never exercised the
+    // version only asserted that a made-up ATProtoCID did not return 200, which never exercised the
     // serving path.
     NSData *blobData = [@"hardening-blob-header-probe" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *uploadError = nil;

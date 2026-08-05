@@ -14,7 +14,7 @@
 #import "Core/CID+DASL.h"
 
 @interface ATProtoRASLURLTests : XCTestCase
-@property (nonatomic, strong) CID *sampleCID;
+@property (nonatomic, strong) ATProtoCID *sampleCID;
 @property (nonatomic, copy) NSString *sampleCIDString;
 @end
 
@@ -22,8 +22,8 @@
 
 - (void)setUp {
     [super setUp];
-    NSData *digest = [CID sha256Digest:[@"rasl-url-tests" dataUsingEncoding:NSUTF8StringEncoding]];
-    self.sampleCID = [CID daslCIDFromBytes:[self bytesForDigest:digest codec:0x55]
+    NSData *digest = [ATProtoCID sha256Digest:[@"rasl-url-tests" dataUsingEncoding:NSUTF8StringEncoding]];
+    self.sampleCID = [ATProtoCID daslCIDFromBytes:[self bytesForDigest:digest codec:0x55]
                                     profile:ATProtoDASLCIDProfileBase];
     XCTAssertNotNil(self.sampleCID, @"test fixture setup must itself produce a conformant CID");
     self.sampleCIDString = self.sampleCID.stringValue;
@@ -147,7 +147,7 @@
 }
 
 - (void)testDagPBCIDRejected {
-    // Valid ATProto wire-syntax CID, but not DASL-conformant (dag-pb codec) —
+    // Valid ATProto wire-syntax ATProtoCID, but not DASL-conformant (dag-pb codec) —
     // rasl:// authorities must be strict DASL CIDs.
     NSError *error = nil;
     ATProtoRASLURL *url =
@@ -163,15 +163,15 @@
 }
 
 - (void)testBigDASLBlake3CIDParsesForClientSideRejection {
-    // The URL model preserves a syntactically valid Big DASL CID so the
+    // The URL model preserves a syntactically valid Big DASL ATProtoCID so the
     // transport client can report its unsupported hash algorithm explicitly.
     // The server route uses the base profile separately and rejects it before
     // resolution; neither path serves BLAKE3 bytes before Phase 6.
-    NSData *digest = [CID sha256Digest:[@"blake3-placeholder" dataUsingEncoding:NSUTF8StringEncoding]];
+    NSData *digest = [ATProtoCID sha256Digest:[@"blake3-placeholder" dataUsingEncoding:NSUTF8StringEncoding]];
     NSMutableData *blake3Bytes = [[self bytesForDigest:digest codec:ATProtoDASLCodecRaw] mutableCopy];
     uint8_t blake3Code = ATProtoDASLMultihashBLAKE3;
     [blake3Bytes replaceBytesInRange:NSMakeRange(2, 1) withBytes:&blake3Code];
-    CID *blake3CID = [CID daslCIDFromBytes:blake3Bytes profile:ATProtoDASLCIDProfileBig];
+    ATProtoCID *blake3CID = [ATProtoCID daslCIDFromBytes:blake3Bytes profile:ATProtoDASLCIDProfileBig];
     XCTAssertNotNil(blake3CID, @"test fixture setup must produce a conformant Big DASL CID");
 
     NSString *urlString = [NSString stringWithFormat:@"rasl://%@/", blake3CID.stringValue];

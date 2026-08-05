@@ -83,7 +83,7 @@
 
 - (NSData *)testRecordDataForKey:(NSString *)key {
     // Deterministic per-record data: valid canonical DAG-CBOR map.
-    // CID is SHA-256 of this data — cryptographically consistent round-trip.
+    // ATProtoCID is SHA-256 of this data — cryptographically consistent round-trip.
     NSError *error = nil;
     NSData *cbor = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES]
         encodeDataWithJSONObject:@{@"v": key} error:&error];
@@ -92,9 +92,9 @@
 }
 
 - (MSTBlockProvider)recordProviderForTree:(MST *)tree {
-    // CID→recordData mapping was precomputed in buildSmallDeterministicFixture.
+    // ATProtoCID→recordData mapping was precomputed in buildSmallDeterministicFixture.
     NSDictionary<NSString *, NSData *> *cache = [_cidToRecordData copy];
-    return ^NSData *(CID *cid) {
+    return ^NSData *(ATProtoCID *cid) {
         return cache[cid.stringValue];
     };
 }
@@ -105,7 +105,7 @@
     // cross-checked against the MST pre-order walker for these exact keys.
     //
     // Record data is computed first, then CIDs are derived from SHA-256(data),
-    // so CID(record) == entry.value — the invariant required for verifying
+    // so ATProtoCID(record) == entry.value — the invariant required for verifying
     // round-trip through the STAR reader.
     NSArray<NSString *> *keys = @[
         @"app.bsky.feed.post/3jzfcijpj2z2a",
@@ -121,14 +121,14 @@
     MST *tree = [[MST alloc] init];
     for (NSString *key in keys) {
         NSData *recordData = [self testRecordDataForKey:key];
-        CID *cid = [CID cidWithDigest:[CID sha256Digest:recordData] codec:0x71];
+        ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:recordData] codec:0x71];
         _cidToRecordData[cid.stringValue] = recordData;
         [tree put:key valueCID:cid];
     }
     return tree;
 }
 
-- (STARCommit *)buildCommitForRoot:(CID *)rootCID {
+- (STARCommit *)buildCommitForRoot:(ATProtoCID *)rootCID {
     return [STARCommit commitWithDid:@"did:plc:starfixture"
                               version:3
                                 data:rootCID
@@ -210,7 +210,7 @@
     NSMutableArray<NSString *> *expectedOrder = [NSMutableArray array];
     NSError *e1 = nil;
     BOOL ok1 = [tree
-        enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data,
+        enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data,
                                                     NSError **e) {
             [expectedOrder addObject:[self classifyChunk:data]];
             return YES;
@@ -268,7 +268,7 @@
     // Count emitted blocks via MST pre-order walker.
     NSError *err = nil;
     __block NSUInteger blockCount = 0;
-    [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data,
+    [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data,
                                                         NSError **e) {
         blockCount++;
         return YES;
@@ -467,7 +467,7 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     XCTAssertEqual(reader.variant, STARVariantL0);
     XCTAssertNotNil(reader.commit);
 
-    // Root CID must match commit.data (the MST root)
+    // Root ATProtoCID must match commit.data (the MST root)
     XCTAssertNotNil(reader.rootCID);
     XCTAssertEqualObjects(reader.rootCID, tree.rootCID,
         @"Reader rootCID must match the MST root CID");
@@ -590,7 +590,7 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     XCTAssertNotNil(carReader, @"CAR parse failed: %@", err);
     XCTAssertNil(err);
 
-    // CAR root must be the commit CID, not the MST root
+    // CAR root must be the commit ATProtoCID, not the MST root
     XCTAssertNotNil(carReader.rootCID);
     XCTAssertNotEqualObjects(carReader.rootCID, tree.rootCID,
         @"CAR root must be commit CID, not MST root CID");

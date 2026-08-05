@@ -191,17 +191,17 @@
   // sets neither cookies nor Vary, and always answers application/octet-stream
   // regardless of any stored content type, per spec.
   //
-  // CID -> bytes resolution is a bounded scan across locally known accounts'
+  // ATProtoCID -> bytes resolution is a bounded scan across locally known accounts'
   // block and blob stores (see PDSRASLResolver) — Garazyk has no host-wide
-  // CID index today. See workstream 10 Phase 5 for the design tradeoff.
+  // ATProtoCID index today. See workstream 10 Phase 5 for the design tradeoff.
   void (^handleWellKnownRasl)(HttpRequest *request, HttpResponse *response, BOOL includeBody) =
       ^(HttpRequest *request, HttpResponse *response, BOOL includeBody) {
         NSString *cidParam = [request.pathParameters[@"cid"] stringByRemovingPercentEncoding];
         // Phase 5 only verifies SHA-256 CIDs. Big DASL/BLAKE3 retrieval is
         // deliberately rejected until Phase 6 supplies the streaming verifier;
-        // accepting it here would serve bytes without checking their CID.
-        CID *cid = cidParam.length > 0
-            ? [CID daslCIDFromString:cidParam profile:ATProtoDASLCIDProfileBase]
+        // accepting it here would serve bytes without checking their ATProtoCID.
+        ATProtoCID *cid = cidParam.length > 0
+            ? [ATProtoCID daslCIDFromString:cidParam profile:ATProtoDASLCIDProfileBase]
             : nil;
         if (!cid) {
           response.statusCode = HttpStatusBadRequest;
@@ -228,7 +228,7 @@
           return;
         }
 
-        // Defense in depth: re-verify against the CID's own digest before
+        // Defense in depth: re-verify against the ATProtoCID's own digest before
         // serving, rather than trusting that whatever the resolver found was
         // stored correctly. Non-SHA-256 CIDs cannot reach this point because
         // the base DASL parser above rejects them.
@@ -239,7 +239,7 @@
           return;
         }
         NSData *expectedDigest = [multihash subdataWithRange:NSMakeRange(2, multihash.length - 2)];
-        NSData *actualDigest = [CID sha256Digest:data];
+        NSData *actualDigest = [ATProtoCID sha256Digest:data];
         if (![actualDigest isEqualToData:expectedDigest]) {
           response.statusCode = HttpStatusInternalServerError;
           response.contentType = @"application/octet-stream";

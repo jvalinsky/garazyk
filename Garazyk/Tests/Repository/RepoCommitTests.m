@@ -16,7 +16,7 @@
 
 - (void)testCommitCreation {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
@@ -32,9 +32,9 @@
 
 - (void)testCommitCreationWithPrev {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
-    CID *prevCID = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    ATProtoCID *prevCID = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     
@@ -44,7 +44,7 @@
 
 - (void)testCommitSerialization {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
@@ -78,9 +78,9 @@
 
 - (void)testCommitSerializationWithPrevContainsCIDTag {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
-    CID *prevCID = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    ATProtoCID *prevCID = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     NSData *serialized = [commit serialize];
@@ -95,7 +95,7 @@
 
 - (void)testCommitSigning {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
@@ -117,7 +117,7 @@
 
 - (void)testCommitSignatureVerification {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
@@ -137,7 +137,7 @@
 
 - (void)testCommitSignatureVerificationFailsWithWrongKey {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
@@ -155,7 +155,7 @@
 
 - (void)testCommitSignatureVerificationFailsOnTamperedData {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
@@ -174,7 +174,7 @@
 
 - (void)testCommitVerificationFailsWithoutSignature {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
@@ -191,7 +191,7 @@
 
 - (void)testCommitCID {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
@@ -202,7 +202,7 @@
     
     [commit signWithPrivateKey:keyPair.privateKey error:&error];
     
-    CID *commitCID = [commit computeCID];
+    ATProtoCID *commitCID = [commit computeCID];
     XCTAssertNotNil(commitCID, @"Commit CID should be computed");
     XCTAssertNotNil(commitCID.stringValue, @"Commit CID string should be generated");
     XCTAssertTrue([commitCID.stringValue hasPrefix:@"bafyre"], @"Commit CID should be base32 encoded");
@@ -210,7 +210,7 @@
 
 - (void)testCommitHashIsDeterministic {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit1 = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
@@ -224,8 +224,8 @@
 
 - (void)testCommitHashChangesWithData {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID1 = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
-    CID *dataCID2 = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    ATProtoCID *dataCID1 = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID2 = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     NSString *rev = @"3l66k7pp33p";
     
     RepoCommit *commit1 = [RepoCommit createCommitWithDid:did data:dataCID1 rev:rev prev:nil];
@@ -239,9 +239,9 @@
 
 - (void)testCommitParsingFromCAR {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
-    CID *prevCID = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    ATProtoCID *prevCID = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
     RepoCommit *originalCommit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     
@@ -276,8 +276,8 @@
 
 - (void)testCommitParsingFromSignedBlock {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
-    CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
-    CID *prevCID = [CID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *prevCID = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     RepoCommit *original = [RepoCommit createCommitWithDid:did
                                                      data:dataCID
                                                       rev:@"3l66k7pp33p"

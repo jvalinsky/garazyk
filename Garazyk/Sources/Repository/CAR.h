@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract A single block in a CAR archive.
  
  @discussion CARBlock represents a content-addressable block with its
- CID and data. Blocks are the fundamental units of storage in CAR format.
+ ATProtoCID and data. Blocks are the fundamental units of storage in CAR format.
  
  @code
  CARBlock *block = [CARBlock blockWithCID:cid data:blockData];
@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface CARBlock : NSObject
 
 /*! The content identifier for this block. */
-@property (nonatomic, strong, readonly) CID *cid;
+@property (nonatomic, strong, readonly) ATProtoCID *cid;
 
 /*! The block data content. */
 @property (nonatomic, copy, readonly) NSData *data;
@@ -41,24 +41,24 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method blockWithCID:data:
  
- @abstract Creates a CAR block with CID and data.
+ @abstract Creates a CAR block with ATProtoCID and data.
  
- @param cid The CID identifying this block.
+ @param cid The ATProtoCID identifying this block.
  @param data The block content data.
  @return A new CARBlock instance.
  */
-+ (instancetype)blockWithCID:(CID *)cid data:(NSData *)data;
++ (instancetype)blockWithCID:(ATProtoCID *)cid data:(NSData *)data;
 
 /*!
  @method initWithCID:data:
  
  @abstract Initializes a CAR block.
  
- @param cid The CID identifying this block.
+ @param cid The ATProtoCID identifying this block.
  @param data The block content data.
  @return An initialized CARBlock instance.
  */
-- (instancetype)initWithCID:(CID *)cid data:(NSData *)data;
+- (instancetype)initWithCID:(ATProtoCID *)cid data:(NSData *)data;
 
 @end
 
@@ -69,7 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @discussion CARReader provides functionality for reading existing CAR
  archives, either from in-memory data or from a file path. It supports
- looking up blocks by CID.
+ looking up blocks by ATProtoCID.
  
  @code
  // Read CAR from file
@@ -90,11 +90,11 @@ NS_ASSUME_NONNULL_BEGIN
 /*! All root CIDs declared in the CAR header. For a standard single-root CAR
  *  this array contains exactly one element; for a space CAR it contains two
  *  (signed commit + DRISL index). */
-@property (nonatomic, copy, readonly, nullable) NSArray<CID *> *roots;
+@property (nonatomic, copy, readonly, nullable) NSArray<ATProtoCID *> *roots;
 
-/*! The first root CID, equivalent to @c roots.firstObject.  Preserved for
+/*! The first root ATProtoCID, equivalent to @c roots.firstObject.  Preserved for
  *  backward compatibility with callers that expect a single root. */
-@property (nonatomic, strong, readonly, nullable) CID *rootCID;
+@property (nonatomic, strong, readonly, nullable) ATProtoCID *rootCID;
 
 /*! All blocks contained in the archive. */
 @property (nonatomic, copy, readonly) NSArray<CARBlock *> *blocks;
@@ -129,7 +129,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param data The CAR-encoded data.
  @param strict When YES, apply the rules from https://dasl.ing/car.html: the
- header must be canonical DRISL; every block CID must be a conformant DASL CID
+ header must be canonical DRISL; every block ATProtoCID must be a conformant DASL ATProtoCID
  whose digest matches SHA-256 of the block payload; every declared root must
  be present in the body; and the non-standard legacy fallback layout is not
  attempted.
@@ -137,9 +137,9 @@ NS_ASSUME_NONNULL_BEGIN
  @return A new CARReader instance, or nil on failure.
 
  @discussion Non-strict reading, which is what @c readFromData:error: does,
- trusts the CID stated for each block. That is fine for archives this process
+ trusts the ATProtoCID stated for each block. That is fine for archives this process
  produced, and wrong for archives that arrived over the network: nothing
- otherwise stops a peer claiming any CID for any bytes.
+ otherwise stops a peer claiming any ATProtoCID for any bytes.
  */
 + (nullable instancetype)readFromData:(NSData *)data
                                strict:(BOOL)strict
@@ -163,12 +163,12 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method blockWithCID:
  
- @abstract Retrieves a block by its CID.
+ @abstract Retrieves a block by its ATProtoCID.
  
- @param cid The CID to look up.
- @return The block with the given CID, or nil if not found.
+ @param cid The ATProtoCID to look up.
+ @return The block with the given ATProtoCID, or nil if not found.
  */
-- (nullable CARBlock *)blockWithCID:(CID *)cid;
+- (nullable CARBlock *)blockWithCID:(ATProtoCID *)cid;
 
 @end
 
@@ -178,7 +178,7 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Creates and writes CAR archives.
  
  @discussion CARWriter provides functionality for building CAR archives
- by adding blocks. The writer maintains a root CID and collection of
+ by adding blocks. The writer maintains a root ATProtoCID and collection of
  blocks, supporting serialization to data or file output.
  
  @code
@@ -201,8 +201,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface CARWriter : NSObject
 
-/*! The root CID of this CAR archive. */
-@property (nonatomic, strong, readonly) CID *rootCID;
+/*! The root ATProtoCID of this CAR archive. */
+@property (nonatomic, strong, readonly) ATProtoCID *rootCID;
 
 /*! The collection of blocks that have been added. */
 @property (nonatomic, strong, readonly) NSMutableArray<CARBlock *> *blocks;
@@ -210,12 +210,12 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method writerWithRootCID:
  
- @abstract Creates a new CAR writer with a root CID.
+ @abstract Creates a new CAR writer with a root ATProtoCID.
  
- @param rootCID The CID that will serve as the archive root.
+ @param rootCID The ATProtoCID that will serve as the archive root.
  @return A new CARWriter instance.
  */
-+ (instancetype)writerWithRootCID:(CID *)rootCID;
++ (instancetype)writerWithRootCID:(ATProtoCID *)rootCID;
 
 /*!
  @method addBlock:
@@ -249,18 +249,18 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method encodedHeaderWithRootCID:error:
 
- @abstract Encodes a CAR v1 header for the given root CID.
+ @abstract Encodes a CAR v1 header for the given root ATProtoCID.
 
- @param rootCID The CAR root CID.
+ @param rootCID The CAR root ATProtoCID.
  @param error On return, contains an error if encoding failed.
  @return Encoded header bytes or nil on failure.
  */
-+ (nullable NSData *)encodedHeaderWithRootCID:(CID *)rootCID error:(NSError **)error;
++ (nullable NSData *)encodedHeaderWithRootCID:(ATProtoCID *)rootCID error:(NSError **)error;
 
 /*!
  @method encodedBlock:error:
 
- @abstract Encodes one CAR block entry (length varint + CID + block data).
+ @abstract Encodes one CAR block entry (length varint + ATProtoCID + block data).
 
  @param block The block to encode.
  @param error On return, contains an error if encoding failed.
@@ -273,12 +273,12 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Writes a CAR v1 header directly to an open file handle.
 
- @param rootCID The CAR root CID.
+ @param rootCID The CAR root ATProtoCID.
  @param fileHandle Destination file handle.
  @param error On return, contains an error if writing failed.
  @return YES on success, NO on failure.
  */
-+ (BOOL)writeHeaderWithRootCID:(CID *)rootCID
++ (BOOL)writeHeaderWithRootCID:(ATProtoCID *)rootCID
                  toFileHandle:(NSFileHandle *)fileHandle
                         error:(NSError **)error;
 

@@ -353,8 +353,8 @@
                            keyPair:(ATProtoSecp256k1KeyPair *)keyPair
                    rotationKeyPair:(ATProtoSecp256k1KeyPair *)rotationKeyPair
                              error:(NSError **)error {
-    NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:keyPair.compressedPublicKey]]];
-    NSString *rotationKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [CID base58btcEncode:[self addMulticodecPrefix:rotationKeyPair.compressedPublicKey]]];
+    NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [ATProtoCID base58btcEncode:[self addMulticodecPrefix:keyPair.compressedPublicKey]]];
+    NSString *rotationKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [ATProtoCID base58btcEncode:[self addMulticodecPrefix:rotationKeyPair.compressedPublicKey]]];
 
     PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
     [keyManager loadOrGenerateKeyWithError:nil];

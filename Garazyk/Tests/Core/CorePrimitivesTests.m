@@ -11,18 +11,18 @@
 #import "Core/CBOR.h"
 #import <Security/Security.h> // provides OSSwapBigToHostInt{32,64} on Linux via the PlatformShims CFByteOrder shim
 
-#pragma mark - CID Tests
+#pragma mark - ATProtoCID Tests
 
 @interface CIDTests : XCTestCase
 @end
 
 @implementation CIDTests
 
-#pragma mark - CID Creation
+#pragma mark - ATProtoCID Creation
 
 - (void)testCidWithDigestCodec {
     NSData *digest = [NSData dataWithBytes:"0123456789abcdef0123456789abcdef" length:16];
-    CID *cid = [CID cidWithDigest:digest codec:0x55];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:digest codec:0x55];
     XCTAssertNotNil(cid);
     XCTAssertEqual(cid.version, 1);
     XCTAssertEqual(cid.codec, 0x55);
@@ -30,13 +30,13 @@
 }
 
 - (void)testCidWithDigestNilDigest {
-    CID *cid = [CID cidWithDigest:nil codec:0x55];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:nil codec:0x55];
     XCTAssertNil(cid);
 }
 
 - (void)testCidWithDigestEmptyDigest {
     NSData *empty = [NSData data];
-    CID *cid = [CID cidWithDigest:empty codec:0x55];
+    ATProtoCID *cid = [ATProtoCID cidWithDigest:empty codec:0x55];
     XCTAssertNil(cid);
 }
 
@@ -46,22 +46,22 @@
     uint8_t *bytes = (uint8_t *)mh.mutableBytes;
     bytes[0] = 0x12; // sha2-256
     bytes[1] = 0x20; // 32 bytes
-    CID *cid = [CID cidWithMultihash:mh codec:0x71];
+    ATProtoCID *cid = [ATProtoCID cidWithMultihash:mh codec:0x71];
     XCTAssertNotNil(cid);
     XCTAssertEqual(cid.codec, 0x71);
 }
 
 - (void)testCidWithMultihashNil {
-    CID *cid = [CID cidWithMultihash:nil codec:0x55];
+    ATProtoCID *cid = [ATProtoCID cidWithMultihash:nil codec:0x55];
     XCTAssertNil(cid);
 }
 
-#pragma mark - CID SHA-256
+#pragma mark - ATProtoCID SHA-256
 
 - (void)testSha256ProducesConsistentHash {
     NSData *input = [@"hello world" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid1 = [CID sha256:input];
-    CID *cid2 = [CID sha256:input];
+    ATProtoCID *cid1 = [ATProtoCID sha256:input];
+    ATProtoCID *cid2 = [ATProtoCID sha256:input];
     XCTAssertNotNil(cid1);
     XCTAssertNotNil(cid2);
     XCTAssertEqualObjects(cid1.stringValue, cid2.stringValue);
@@ -70,130 +70,130 @@
 - (void)testSha256DifferentInputs {
     NSData *input1 = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *input2 = [@"world" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid1 = [CID sha256:input1];
-    CID *cid2 = [CID sha256:input2];
+    ATProtoCID *cid1 = [ATProtoCID sha256:input1];
+    ATProtoCID *cid2 = [ATProtoCID sha256:input2];
     XCTAssertNotEqualObjects(cid1.stringValue, cid2.stringValue);
 }
 
 - (void)testSha256DigestLength {
     NSData *input = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *digest = [CID sha256Digest:input];
+    NSData *digest = [ATProtoCID sha256Digest:input];
     XCTAssertNotNil(digest);
     XCTAssertEqual(digest.length, 32); // SHA-256 produces 32 bytes
 }
 
 - (void)testRawSha256SameAsSha256Digest {
     NSData *input = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *digest1 = [CID sha256Digest:input];
-    NSData *digest2 = [CID rawSha256:input];
+    NSData *digest1 = [ATProtoCID sha256Digest:input];
+    NSData *digest2 = [ATProtoCID rawSha256:input];
     XCTAssertEqualObjects(digest1, digest2);
 }
 
-#pragma mark - CID String Round-Trip
+#pragma mark - ATProtoCID String Round-Trip
 
 - (void)testCidFromStringBase32 {
-    // Create a CID and verify round-trip through base32 string
+    // Create a ATProtoCID and verify round-trip through base32 string
     NSData *input = [@"test data" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *original = [CID sha256:input];
+    ATProtoCID *original = [ATProtoCID sha256:input];
     NSString *str = original.stringValue;
     XCTAssertNotNil(str);
     XCTAssertTrue(str.length > 0);
 
-    CID *parsed = [CID cidFromString:str];
+    ATProtoCID *parsed = [ATProtoCID cidFromString:str];
     XCTAssertNotNil(parsed);
     XCTAssertEqualObjects(parsed.stringValue, str);
 }
 
 - (void)testCidFromStringNil {
-    CID *cid = [CID cidFromString:nil];
+    ATProtoCID *cid = [ATProtoCID cidFromString:nil];
     XCTAssertNil(cid);
 }
 
 - (void)testCidFromStringEmpty {
-    CID *cid = [CID cidFromString:@""];
+    ATProtoCID *cid = [ATProtoCID cidFromString:@""];
     XCTAssertNil(cid);
 }
 
-#pragma mark - CID Equality
+#pragma mark - ATProtoCID Equality
 
 - (void)testCidEquality {
     NSData *input = [@"same data" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid1 = [CID sha256:input];
-    CID *cid2 = [CID sha256:input];
+    ATProtoCID *cid1 = [ATProtoCID sha256:input];
+    ATProtoCID *cid2 = [ATProtoCID sha256:input];
     XCTAssertTrue([cid1 isEqualToCID:cid2]);
     XCTAssertEqualObjects(cid1, cid2);
 }
 
 - (void)testCidInequality {
-    CID *cid1 = [CID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid2 = [CID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid1 = [ATProtoCID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid2 = [ATProtoCID sha256:[@"data2" dataUsingEncoding:NSUTF8StringEncoding]];
     XCTAssertFalse([cid1 isEqualToCID:cid2]);
 }
 
-#pragma mark - CID Bytes
+#pragma mark - ATProtoCID Bytes
 
 - (void)testCidBytesNotNil {
     NSData *input = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID sha256:input];
+    ATProtoCID *cid = [ATProtoCID sha256:input];
     NSData *bytes = cid.bytes;
     XCTAssertNotNil(bytes);
     XCTAssertTrue(bytes.length > 0);
 }
 
-#pragma mark - CID Copy
+#pragma mark - ATProtoCID Copy
 
 - (void)testCidCopy {
     NSData *input = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *original = [CID sha256:input];
-    CID *copy = [original copy];
+    ATProtoCID *original = [ATProtoCID sha256:input];
+    ATProtoCID *copy = [original copy];
     XCTAssertNotNil(copy);
     XCTAssertTrue([original isEqualToCID:copy]);
     // Copy may return same object for immutable classes — just verify equality
 }
 
-#pragma mark - CID Base32
+#pragma mark - ATProtoCID Base32
 
 - (void)testBase32EncodeDecode {
     NSData *data = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
-    NSString *encoded = [CID base32Encode:data];
+    NSString *encoded = [ATProtoCID base32Encode:data];
     XCTAssertNotNil(encoded);
     XCTAssertTrue(encoded.length > 0);
 
-    NSData *decoded = [CID base32Decode:encoded];
+    NSData *decoded = [ATProtoCID base32Decode:encoded];
     XCTAssertNotNil(decoded);
     XCTAssertEqualObjects(decoded, data);
 }
 
 - (void)testBase32EmptyData {
     NSData *data = [NSData data];
-    NSString *encoded = [CID base32Encode:data];
+    NSString *encoded = [ATProtoCID base32Encode:data];
     XCTAssertNotNil(encoded);
 }
 
-#pragma mark - CID ATProtoBase58
+#pragma mark - ATProtoCID ATProtoBase58
 
 - (void)testBase58EncodeDecode {
     NSData *data = [@"hello world" dataUsingEncoding:NSUTF8StringEncoding];
-    NSString *encoded = [CID base58btcEncode:data];
+    NSString *encoded = [ATProtoCID base58btcEncode:data];
     XCTAssertNotNil(encoded);
     XCTAssertTrue(encoded.length > 0);
 
-    NSData *decoded = [CID base58btcDecode:encoded];
+    NSData *decoded = [ATProtoCID base58btcDecode:encoded];
     XCTAssertNotNil(decoded);
     XCTAssertEqualObjects(decoded, data);
 }
 
 - (void)testBase58DecodeInvalid {
-    NSData *decoded = [CID base58btcDecode:@"0OIl"]; // Invalid base58 chars
+    NSData *decoded = [ATProtoCID base58btcDecode:@"0OIl"]; // Invalid base58 chars
     // Should return nil or empty — implementation-dependent
     // ATProtoBase58 alphabet excludes 0, O, I, l
 }
 
-#pragma mark - CID cidFromBuffer
+#pragma mark - ATProtoCID cidFromBuffer
 
 - (void)testCidFromBufferWithTrailingData {
     NSData *input = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *original = [CID sha256:input];
+    ATProtoCID *original = [ATProtoCID sha256:input];
     NSData *cidBytes = original.bytes;
 
     // Append trailing data
@@ -201,7 +201,7 @@
     [buffer appendData:[@"trailing" dataUsingEncoding:NSUTF8StringEncoding]];
 
     NSUInteger consumed = 0;
-    CID *parsed = [CID cidFromBuffer:buffer.bytes length:buffer.length consumed:&consumed];
+    ATProtoCID *parsed = [ATProtoCID cidFromBuffer:buffer.bytes length:buffer.length consumed:&consumed];
     XCTAssertNotNil(parsed);
     XCTAssertEqual(consumed, cidBytes.length);
     XCTAssertTrue([parsed isEqualToCID:original]);
@@ -209,11 +209,11 @@
 
 - (void)testCidFromBufferNilConsumed {
     NSData *input = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *original = [CID sha256:input];
+    ATProtoCID *original = [ATProtoCID sha256:input];
     NSData *cidBytes = original.bytes;
 
     // Should work with consumed=NULL
-    CID *parsed = [CID cidFromBuffer:cidBytes.bytes length:cidBytes.length consumed:NULL];
+    ATProtoCID *parsed = [ATProtoCID cidFromBuffer:cidBytes.bytes length:cidBytes.length consumed:NULL];
     XCTAssertNotNil(parsed);
 }
 
@@ -589,9 +589,9 @@
 
 - (void)testValidCid {
     NSError *error = nil;
-    // Create a CID and validate its string form
+    // Create a ATProtoCID and validate its string form
     NSData *input = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID sha256:input];
+    ATProtoCID *cid = [ATProtoCID sha256:input];
     BOOL valid = [ATProtoValidator validateCID:cid.stringValue error:&error];
     XCTAssertTrue(valid);
 }

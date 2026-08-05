@@ -197,7 +197,7 @@ NSString * const ATProtoVideoThumbnailErrorDomain = @"com.atproto.video.thumbnai
 }
 #endif
 
-- (nullable CID *)storeThumbnailData:(NSData *)thumbnailData
+- (nullable ATProtoCID *)storeThumbnailData:(NSData *)thumbnailData
                              forJob:(NSString *)jobId
                              error:(NSError **)error {
     if (!self.blobProvider) {
@@ -209,7 +209,7 @@ NSString * const ATProtoVideoThumbnailErrorDomain = @"com.atproto.video.thumbnai
         return nil;
     }
 
-    CID *cid = [CID sha256:thumbnailData];
+    ATProtoCID *cid = [ATProtoCID sha256:thumbnailData];
     BOOL stored = [self.blobProvider storeBlobData:thumbnailData forCID:cid error:error];
     return stored ? cid : nil;
 }

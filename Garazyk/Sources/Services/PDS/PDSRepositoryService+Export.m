@@ -33,7 +33,7 @@
 - (BOOL)writeRepoContents:(NSString *)did since:(nullable NSString *)sinceRev toPath:(NSString *)path error:(NSError **)error {
     PDSActorStore *store = nil;
     MST *mst = nil;
-    CID *commitCID = nil;
+    ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
     BOOL includeFullMST = YES;
@@ -125,7 +125,7 @@
                 continue;
             }
 
-            CID *cid = [CID cidFromString:cidString];
+            ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
             if (!cid) {
                 continue;
             }
@@ -190,7 +190,7 @@
     }
 
     MST *mst = [self mstFromRecords:allRecords ?: @[]];
-    CID *mstRootCID = mst.rootCID;
+    ATProtoCID *mstRootCID = mst.rootCID;
     if (!mstRootCID) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.repo"
@@ -200,9 +200,9 @@
         return nil;
     }
 
-    CID *storedCommitCID = nil;
+    ATProtoCID *storedCommitCID = nil;
     NSData *storedCommitBlock = nil;
-    CID *storedDataCID = nil;
+    ATProtoCID *storedDataCID = nil;
     NSString *storedCommitRev = nil;
     BOOL storedCommitIsSigned = NO;
     [self loadStoredHeadCommitForDid:did
@@ -243,7 +243,7 @@
         }
         [seenRecordCIDs addObject:record.cid];
 
-        CID *recordCID = [CID cidFromString:record.cid];
+        ATProtoCID *recordCID = [ATProtoCID cidFromString:record.cid];
         if (!recordCID) {
             continue;
         }
@@ -357,7 +357,7 @@
                 NSString *cidString = capturedRecordCIDs[recordIndex];
                 recordIndex++;
 
-                CID *cid = [CID cidFromString:cidString];
+                ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
                 if (!cid) {
                     continue;
                 }
@@ -389,7 +389,7 @@
                                                     error:(NSError **)error {
     PDSActorStore *store = nil;
     MST *mst = nil;
-    CID *commitCID = nil;
+    ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
     BOOL includeFullMST = YES;
@@ -470,7 +470,7 @@
     // Defensive against walker provider-missed records: under Sync 1.1 the
     // pre-order walker (gated by streamableCARBlockOrderingEnabled) emits
     // every record interleaved with its MST node in the MST phase; here we
-    // only retain records the walker dropped (i.e. records whose CID the
+    // only retain records the walker dropped (i.e. records whose ATProtoCID the
     // recordProvider could not resolve). In full-export mode this list is
     // typically empty; under proof-only / delta sync it carries the changes.
     NSMutableArray<NSString *> *remainingRecordCIDs = [NSMutableArray array];
@@ -530,7 +530,7 @@
                 NSString *cidString = capturedRecordCIDs[recordIndex];
                 recordIndex++;
 
-                CID *cid = [CID cidFromString:cidString];
+                ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
                 if (!cid) {
                     continue;
                 }
@@ -573,7 +573,7 @@
                                      error:(NSError **)error {
     PDSActorStore *store = nil;
     MST *mst = nil;
-    CID *commitCID = nil;
+    ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
     BOOL includeFullMST = YES;
@@ -616,7 +616,7 @@
     __block NSDictionary<NSString *, NSData *> *capturedMaterializedBlocks = [materializedBlocks copy];
 
     BOOL success = [writer writeFromMST:mst
-                         blockProvider:^NSData * _Nullable(CID *cid) {
+                         blockProvider:^NSData * _Nullable(ATProtoCID *cid) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return nil;
 
@@ -653,7 +653,7 @@
                                        error:(NSError **)error {
     PDSActorStore *store = nil;
     MST *mst = nil;
-    CID *commitCID = nil;
+    ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
     BOOL includeFullMST = YES;
@@ -691,7 +691,7 @@
     __block NSDictionary<NSString *, NSData *> *capturedMaterializedBlocks = [materializedBlocks copy];
 
     BOOL success = [writer writeFromMST:mst
-                         blockProvider:^NSData * _Nullable(CID *cid) {
+                         blockProvider:^NSData * _Nullable(ATProtoCID *cid) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return nil;
 
@@ -727,7 +727,7 @@
                                                              error:(NSError **)error {
     PDSActorStore *store = nil;
     MST *mst = nil;
-    CID *commitCID = nil;
+    ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
     BOOL includeFullMST = YES;
@@ -776,7 +776,7 @@
     __block NSDictionary<NSString *, NSData *> *capturedMaterializedBlocks = [materializedBlocks copy];
 
     BOOL success = [writer writeFromMST:mst
-                         blockProvider:^NSData * _Nullable(CID *cid) {
+                         blockProvider:^NSData * _Nullable(ATProtoCID *cid) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return nil;
         NSString *cidString = cid.stringValue;
@@ -832,13 +832,13 @@
 }
 
 - (STARCommit *)starCommitFromExport:(NSString *)did
-                           commitCID:(CID *)commitCID
+                           commitCID:(ATProtoCID *)commitCID
                          commitBlock:(NSData *)commitBlock {
     // Parse the commit block to extract rev, prev, sig, data
     ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlock];
     NSString *rev = @"";
-    CID *dataCID = nil;
-    CID *prevCID = nil;
+    ATProtoCID *dataCID = nil;
+    ATProtoCID *prevCID = nil;
     NSData *sig = nil;
 
     if (commitValue && commitValue.type == CBORTypeMap) {
@@ -851,7 +851,7 @@
         if (dataVal && dataVal.type == CBORTypeTag) {
             NSData *cidBytes = dataVal.tagValue.byteString;
             if (cidBytes.length > 1) {
-                dataCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+                dataCID = [ATProtoCID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
             }
         }
 
@@ -859,7 +859,7 @@
         if (prevVal && prevVal.type == CBORTypeTag) {
             NSData *cidBytes = prevVal.tagValue.byteString;
             if (cidBytes.length > 1) {
-                prevCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+                prevCID = [ATProtoCID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
             }
         }
 
@@ -883,7 +883,7 @@
                           since:(nullable NSString *)sinceRev
                           store:(PDSActorStore * _Nullable * _Nonnull)storeOut
                             mst:(MST * _Nullable * _Nonnull)mstOut
-                      commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
+                      commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCIDOut
                     commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
                  noChangesSince:(BOOL *)noChangesSinceOut
                  includeFullMST:(BOOL *)includeFullMSTOut
@@ -907,7 +907,7 @@
         }
         mst = [self mstFromRecords:records ?: @[]];
     }
-    CID *mstRootCID = mst.rootCID;
+    ATProtoCID *mstRootCID = mst.rootCID;
     if (!mstRootCID) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.repo"
@@ -919,9 +919,9 @@
 
     NSString *storedRev = [store getRepoRevisionForDid:did error:nil];
     NSString *latestMutationRev = [store latestMutationRevisionWithError:nil];
-    CID *storedCommitCID = nil;
+    ATProtoCID *storedCommitCID = nil;
     NSData *storedCommitBlock = nil;
-    CID *storedDataCID = nil;
+    ATProtoCID *storedDataCID = nil;
     NSString *storedCommitRev = nil;
     BOOL storedCommitIsSigned = NO;
     [self loadStoredHeadCommitForDid:did
@@ -976,7 +976,7 @@
             return NO;
         }
         for (NSData *cidBytes in changedBlockCIDs) {
-            CID *cid = [CID cidFromBytes:cidBytes];
+            ATProtoCID *cid = [ATProtoCID cidFromBytes:cidBytes];
             if (cid.stringValue.length > 0) {
                 [changedBlockCIDSet addObject:cid.stringValue];
             }
@@ -1013,7 +1013,7 @@
             }
             [seenRecordCIDs addObject:record.cid];
 
-            CID *recordCID = [CID cidFromString:record.cid];
+            ATProtoCID *recordCID = [ATProtoCID cidFromString:record.cid];
             if (!recordCID) {
                 continue;
             }
@@ -1076,7 +1076,7 @@
             }
             [seenRecordCIDs addObject:record.cid];
 
-            CID *recordCID = [CID cidFromString:record.cid];
+            ATProtoCID *recordCID = [ATProtoCID cidFromString:record.cid];
             if (!recordCID) {
                 continue;
             }
@@ -1156,7 +1156,7 @@
     }
 
     // Persist any newly materialized record blocks and rev backfills.
-    // NOTE: We do *not* update repo_root here. The repo root must point at a signed Commit CID.
+    // NOTE: We do *not* update repo_root here. The repo root must point at a signed Commit ATProtoCID.
     if (newRecordBlocks.count > 0 || recordsNeedingRevBackfill.count > 0) {
         __block BOOL persisted = NO;
         [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
@@ -1180,10 +1180,10 @@
     }
 
     // Try to load existing commit from repo_root
-    // We expect repo_root to be the head Commit CID.
+    // We expect repo_root to be the head Commit ATProtoCID.
     RepoCommit *commit = nil;
     NSData *commitBlock = nil;
-    CID *commitCID = nil;
+    ATProtoCID *commitCID = nil;
 
     // If we have a signed stored commit and it matches the computed MST root, reuse it.
     if (storedCommitCID && storedCommitBlock.length > 0 && storedCommitIsSigned && storedDataCID && [storedDataCID isEqual:mstRootCID]) {
@@ -1192,7 +1192,7 @@
     } else {
         // Create and persist a signed commit that points at the computed MST root.
         // If the stored root was a valid signed commit, use it as "prev"; otherwise, start a new chain.
-        CID *prevCommitCID = (storedCommitCID && storedCommitBlock.length > 0 && storedCommitIsSigned) ? storedCommitCID : nil;
+        ATProtoCID *prevCommitCID = (storedCommitCID && storedCommitBlock.length > 0 && storedCommitIsSigned) ? storedCommitCID : nil;
 
         // Choose a revision that does not go backwards.
         NSString *revCandidate = currentRev;
@@ -1278,11 +1278,11 @@
     if (recordCIDStringsOut) *recordCIDStringsOut = [recordCIDStrings copy];
     if (recordByCIDOut) *recordByCIDOut = [recordByCID copy];
     
-    // Build dictionary of materialized blocks (CID string -> block data)
+    // Build dictionary of materialized blocks (ATProtoCID string -> block data)
     if (materializedBlocksOut) {
         NSMutableDictionary<NSString *, NSData *> *materializedBlocks = [NSMutableDictionary dictionary];
         for (PDSDatabaseBlock *block in newRecordBlocks) {
-            CID *cid = [CID cidFromBytes:block.cid];
+            ATProtoCID *cid = [ATProtoCID cidFromBytes:block.cid];
             if (cid && block.blockData) {
                 materializedBlocks[cid.stringValue] = block.blockData;
             }
@@ -1297,9 +1297,9 @@
 
 - (BOOL)loadStoredHeadCommitForDid:(NSString *)did
                               store:(PDSActorStore *)store
-                          commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
+                          commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCIDOut
                         commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
-                            dataCID:(CID * _Nullable * _Nonnull)dataCIDOut
+                            dataCID:(ATProtoCID * _Nullable * _Nonnull)dataCIDOut
                                 rev:(NSString * _Nullable * _Nonnull)revOut
                            isSigned:(BOOL *)isSignedOut {
     if (commitCIDOut) {
@@ -1319,7 +1319,7 @@
     }
 
     NSData *storedRootBytes = [store getRepoRootForDid:did error:nil];
-    CID *storedCommitCID = storedRootBytes ? [CID cidFromBytes:storedRootBytes] : nil;
+    ATProtoCID *storedCommitCID = storedRootBytes ? [ATProtoCID cidFromBytes:storedRootBytes] : nil;
     if (!storedCommitCID) {
         return NO;
     }
@@ -1346,12 +1346,12 @@
         return NO;
     }
 
-    CID *commitDataCID = nil;
+    ATProtoCID *commitDataCID = nil;
     id dataVal = map[@"data"];
-    if ([dataVal isKindOfClass:[CID class]]) {
-        commitDataCID = (CID *)dataVal;
+    if ([dataVal isKindOfClass:[ATProtoCID class]]) {
+        commitDataCID = (ATProtoCID *)dataVal;
     } else if ([dataVal isKindOfClass:[NSString class]]) {
-        commitDataCID = [CID cidFromString:(NSString *)dataVal];
+        commitDataCID = [ATProtoCID cidFromString:(NSString *)dataVal];
     }
 
     BOOL isSigned = NO;
@@ -1386,7 +1386,7 @@
                                          error:(NSError **)error {
     PDSActorStore *store = nil;
     MST *mst = nil;
-    CID *commitCID = nil;
+    ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
     BOOL includeFullMST = YES;
@@ -1443,7 +1443,7 @@
             continue;
         }
 
-        CID *cid = [CID cidFromString:cidString];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
         if (!cid) {
             continue;
         }
@@ -1486,7 +1486,7 @@
     NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
     NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
 
-    BOOL (^appendNode)(CID *, NSData *) = ^BOOL(CID *cid, NSData *data) {
+    BOOL (^appendNode)(ATProtoCID *, NSData *) = ^BOOL(ATProtoCID *cid, NSData *data) {
         NSString *cidString = cid.stringValue ?: @"";
         if (cidString.length == 0 || [addedCIDs containsObject:cidString] || data.length == 0) {
             return YES;
@@ -1501,11 +1501,11 @@
         // interleaved at each entry. The BFS + post-MST-record-layout emit is
         // deliberately replaced here so consumers receive the spec-required
         // stream layout. The downstream recordCIDStrings loop remains as a
-        // defensive fallback: any CID the walker silently skipped (record
+        // defensive fallback: any ATProtoCID the walker silently skipped (record
         // provider returned nil) gets one more retry with the same 3-tier
         // chain before dedup drops it.
         NSError *mstError = nil;
-        BOOL enumerated = [mst enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **blockError) {
+        BOOL enumerated = [mst enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **blockError) {
             (void)blockError;
             return appendNode(cid, data);
         } recordProvider:recordProvider error:&mstError];
@@ -1520,7 +1520,7 @@
         return [blocks copy];
     }
 
-    CID *rootCID = mst.rootCID;
+    ATProtoCID *rootCID = mst.rootCID;
     NSData *rootData = [mst serializeToCBOR];
     if (!rootCID || !rootData) {
         if (error) {
@@ -1545,7 +1545,7 @@
             if (!nodeData) {
                 continue;
             }
-            CID *nodeCID = [CID cidWithDigest:[CID sha256Digest:nodeData] codec:0x71];
+            ATProtoCID *nodeCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:nodeData] codec:0x71];
             if (!nodeCID) {
                 continue;
             }
@@ -1567,7 +1567,7 @@
     NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecByCID = recordByCID ? [recordByCID copy] : @{};
     NSString *capturedDid = [did copy];
     __weak typeof(self) weakSelf = self;
-    return ^NSData * _Nullable(CID *cid) {
+    return ^NSData * _Nullable(ATProtoCID *cid) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return nil;
         NSString *cidString = cid.stringValue;

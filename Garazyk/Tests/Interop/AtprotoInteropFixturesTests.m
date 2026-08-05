@@ -231,7 +231,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
 
         XCTAssertEqualObjects(actualCBOR, expectedCBOR, @"CBOR bytes mismatch for data-model fixture");
 
-        CID *cid = [CID cidWithDigest:[CID sha256Digest:actualCBOR] codec:0x71];
+        ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:actualCBOR] codec:0x71];
         XCTAssertNotNil(cid);
         XCTAssertEqualObjects(cid.stringValue, expectedCID);
     }
@@ -339,7 +339,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
         
         // Check if CBOR bytes match
         if (![actualCBOR isEqualToData:expectedCBOR]) {
-            CID *actualCID = [CID cidWithDigest:[CID sha256Digest:actualCBOR] codec:0x71];
+            ATProtoCID *actualCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:actualCBOR] codec:0x71];
             [failedFixtures addObject:@{
                 @"expectedCID": expectedCID,
                 @"actualCID": actualCID.stringValue ?: @"<nil>",
@@ -348,8 +348,8 @@ static NSData *InteropBase64URLDecode(NSString *string) {
             }];
             failureCount++;
         } else {
-            // Even if CBOR matches, verify CID
-            CID *actualCID = [CID cidWithDigest:[CID sha256Digest:actualCBOR] codec:0x71];
+            // Even if CBOR matches, verify ATProtoCID
+            ATProtoCID *actualCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:actualCBOR] codec:0x71];
             if (![actualCID.stringValue isEqualToString:expectedCID]) {
                 [failedFixtures addObject:@{
                     @"expectedCID": expectedCID,

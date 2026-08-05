@@ -74,10 +74,10 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
     return [payload dataUsingEncoding:NSUTF8StringEncoding];
 }
 
-- (CID *)fixtureValueCIDForKey:(NSString *)key {
-    // Self-consistent: each record's CID is the SHA-256 of its own bytes,
+- (ATProtoCID *)fixtureValueCIDForKey:(NSString *)key {
+    // Self-consistent: each record's ATProtoCID is the SHA-256 of its own bytes,
     // so the MST's valueCID matches what the recordProvider returns.
-    return [CID sha256:[self fixtureRecordBytesForKey:key]];
+    return [ATProtoCID sha256:[self fixtureRecordBytesForKey:key]];
 }
 
 - (MST *)buildFixtureMST {
@@ -91,23 +91,23 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 - (MSTBlockProvider)recordProviderForFixture {
     NSMutableDictionary<NSString *, NSData *> *cache = [NSMutableDictionary dictionary];
     for (NSString *key in FixtureKeys()) {
-        CID *cid = [self fixtureValueCIDForKey:key];
+        ATProtoCID *cid = [self fixtureValueCIDForKey:key];
         cache[cid.stringValue] = [self fixtureRecordBytesForKey:key];
     }
-    return ^NSData *(CID *cid) {
+    return ^NSData *(ATProtoCID *cid) {
         return cache[cid.stringValue];
     };
 }
 
 - (NSData *)buildFixtureCAR {
     MST *tree = [self buildFixtureMST];
-    CID *rootCID = tree.rootCID;
+    ATProtoCID *rootCID = tree.rootCID;
     XCTAssertNotNil(rootCID, @"MST root CID must be deterministic");
     CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
     MSTBlockProvider provider = [self recordProviderForFixture];
 
     NSError *err = nil;
-    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **e) {
+    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **e) {
         (void)e;
         [writer addBlock:[CARBlock blockWithCID:cid data:data]];
         return YES;
@@ -331,7 +331,7 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
     MSTBlockProvider provider = [self recordProviderForFixture];
     NSMutableArray<NSString *> *labels = [NSMutableArray array];
     NSError *err = nil;
-    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(CID *cid, NSData *data, NSError **e) {
+    BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **e) {
         (void)e;
         NSString *kind = [self classifyBlock:data];
         [labels addObject:[NSString stringWithFormat:@"%@(%@)", kind, cid.stringValue ?: @""]];

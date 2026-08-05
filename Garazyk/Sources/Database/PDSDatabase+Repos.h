@@ -28,20 +28,20 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method updateRepoRoot:rootCid:error:
 
- @abstract Updates the root CID of a repository.
+ @abstract Updates the root ATProtoCID of a repository.
 
  @discussion This method updates the repository's Merkle Search Tree root
  after a commit operation.
 
  @param ownerDid The DID of the repository owner.
- @param rootCid The new root CID.
+ @param rootCid The new root ATProtoCID.
  @param error On return, contains an error if the operation failed.
  @return YES if the root was updated successfully, NO otherwise.
  */
 /**
  * @abstract Update repo root.
  * @param ownerDid Actor DID for the request.
- * @param rootCid Repository root CID.
+ * @param rootCid Repository root ATProtoCID.
  * @param error Receives details when the operation fails.
  * @return YES when the operation succeeds; otherwise NO.
  */

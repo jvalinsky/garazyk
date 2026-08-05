@@ -138,7 +138,7 @@
 
     if (success) {
         [context printInfo:[NSString stringWithFormat:@"Record created/updated successfully: at://%@/%@/%@", did, collection, rkey]];
-        // Fetch the record back to show its CID
+        // Fetch the record back to show its ATProtoCID
         NSDictionary *newRecord = [recordService getRecord:[NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey] forDid:did error:nil];
         if (newRecord[@"cid"]) {
             printf("CID: %s\n", [newRecord[@"cid"] UTF8String]);
@@ -293,7 +293,7 @@
         return;
     }
 
-    CID *cid = [CID cidFromBytes:rootCidData];
+    ATProtoCID *cid = [ATProtoCID cidFromBytes:rootCidData];
     NSString *cidString = cid ? [cid stringValue] : [rootCidData base64EncodedStringWithOptions:0];
 
     if (context.jsonOutput) {
@@ -335,7 +335,7 @@
     
     // Create empty MST and commit
     MST *mst = [[MST alloc] init];
-    CID *dataCID = mst.rootCID;
+    ATProtoCID *dataCID = mst.rootCID;
     if (!dataCID) {
         [context printError:@"Failed to compute empty MST root"];
         return;
@@ -354,7 +354,7 @@
     }
     commit.signature = signature;
     
-    CID *commitCID = [commit computeCID];
+    ATProtoCID *commitCID = [commit computeCID];
     NSData *commitData = [commit serializeSigned];
     if (!commitData) {
         [context printError:@"Failed to serialize commit"];

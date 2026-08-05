@@ -162,9 +162,9 @@ static NSUInteger PFPExpectedLength(ATProtoPFPAlgorithm algorithm) {
         return nil;
     }
 
-    CID *dataCID = nil;
+    ATProtoCID *dataCID = nil;
     if (algorithm == ATProtoPFPAlgorithmTMKPDQF) {
-        dataCID = [CID daslCIDFromBytes:payload profile:ATProtoDASLCIDProfileBase];
+        dataCID = [ATProtoCID daslCIDFromBytes:payload profile:ATProtoDASLCIDProfileBase];
         if (!dataCID) {
             PFPSetError(error, ATProtoPFPErrorInvalidCID,
                         @"TMK+PDQF PFP data must be a strict base DASL CID");

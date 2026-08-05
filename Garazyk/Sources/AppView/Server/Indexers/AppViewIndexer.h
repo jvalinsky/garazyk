@@ -49,7 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param did         DID of the repo the record belongs to.
  @param collection  NSID of the record's collection.
  @param rkey        The record key.
- @param cid         CID of the record.
+ @param cid         ATProtoCID of the record.
  @param error       On validation failure, describes the problem.
  @return YES if indexed successfully, NO on validation or storage failure.
  */

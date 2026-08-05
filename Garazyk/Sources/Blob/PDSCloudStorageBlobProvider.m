@@ -48,7 +48,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 
 #pragma mark - PDSBlobProvider Protocol
 
-- (BOOL)storeBlobData:(NSData *)data forCID:(CID *)cid error:(NSError **)error {
+- (BOOL)storeBlobData:(NSData *)data forCID:(ATProtoCID *)cid error:(NSError **)error {
     if (!data || data.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSCloudStorageBlobProviderErrorDomain
@@ -116,7 +116,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     return success;
 }
 
-- (nullable NSData *)retrieveBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSData *)retrieveBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     if (!cid || ![cid stringValue]) {
         if (error) {
             *error = [NSError errorWithDomain:PDSCloudStorageBlobProviderErrorDomain
@@ -173,7 +173,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     return responseData;
 }
 
-- (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (BOOL)deleteBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     if (!cid || ![cid stringValue]) {
         if (error) {
             *error = [NSError errorWithDomain:PDSCloudStorageBlobProviderErrorDomain
@@ -226,7 +226,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     return success;
 }
 
-- (BOOL)hasBlobDataForCID:(CID *)cid {
+- (BOOL)hasBlobDataForCID:(ATProtoCID *)cid {
     if (!cid || ![cid stringValue]) {
         return NO;
     }
@@ -261,7 +261,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 
 #pragma mark - Private Helpers
 
-- (NSString *)objectKeyForCID:(CID *)cid {
+- (NSString *)objectKeyForCID:(ATProtoCID *)cid {
     NSString *cidString = [cid stringValue];
     NSString *key = cidString;
 
@@ -467,7 +467,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     return url.host ?: @"";
 }
 
-- (nullable NSArray<CID *> *)listAllCIDsWithError:(NSError **)error {
+- (nullable NSArray<ATProtoCID *> *)listAllCIDsWithError:(NSError **)error {
     if (error) {
         *error = [NSError errorWithDomain:PDSCloudStorageBlobProviderErrorDomain
                                      code:501 // Not Implemented
@@ -476,7 +476,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     return nil;
 }
 
-- (nullable NSInputStream *)retrieveBlobStreamForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSInputStream *)retrieveBlobStreamForCID:(ATProtoCID *)cid error:(NSError **)error {
     // Cloud storage does not support streaming retrieval; use retrieveBlobForCID:error: instead.
     if (error) {
         *error = [NSError errorWithDomain:PDSCloudStorageBlobProviderErrorDomain

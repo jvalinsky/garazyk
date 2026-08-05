@@ -84,15 +84,15 @@
         @"text": @"Hello tests"
     };
     NSData *recordData = [ATProtoDagCBOR encodeObject:record error:nil];
-    NSData *recordDigest = [CID sha256Digest:recordData];
-    CID *recordCID = [CID cidWithDigest:recordDigest codec:0x71];
+    NSData *recordDigest = [ATProtoCID sha256Digest:recordData];
+    ATProtoCID *recordCID = [ATProtoCID cidWithDigest:recordDigest codec:0x71];
 
     // 2. Create an MST with one entry pointing to the record
     MST *mst = [[MST alloc] init];
     [mst put:@"app.bsky.feed.post/3jzf7test" valueCID:recordCID];
     NSData *mstData = [mst serializeToCBOR];
-    NSData *mstDigest = [CID sha256Digest:mstData];
-    CID *mstCID = [CID cidWithDigest:mstDigest codec:0x71];
+    NSData *mstDigest = [ATProtoCID sha256Digest:mstData];
+    ATProtoCID *mstCID = [ATProtoCID cidWithDigest:mstDigest codec:0x71];
 
     // 3. Create the commit block pointing to the MST
     NSDictionary *commit = @{
@@ -103,8 +103,8 @@
         @"sig": [NSData dataWithBytes:"sig" length:3]
     };
     NSData *commitData = [ATProtoDagCBOR encodeObject:commit error:nil];
-    NSData *commitDigest = [CID sha256Digest:commitData];
-    CID *commitCID = [CID cidWithDigest:commitDigest codec:0x71];
+    NSData *commitDigest = [ATProtoCID sha256Digest:commitData];
+    ATProtoCID *commitCID = [ATProtoCID cidWithDigest:commitDigest codec:0x71];
 
     // 4. Build the CAR with all three blocks
     CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
@@ -151,8 +151,8 @@
         @"text": @"Hello STAR"
     };
     NSData *recordData = [ATProtoDagCBOR encodeObject:record error:nil];
-    CID *recordCID =
-        [CID cidWithDigest:[CID sha256Digest:recordData] codec:0x71];
+    ATProtoCID *recordCID =
+        [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:recordData] codec:0x71];
 
     MST *mst = [[MST alloc] init];
     [mst put:@"app.bsky.feed.post/3jzf7star" valueCID:recordCID];
@@ -168,7 +168,7 @@
     STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
     NSError *writeError = nil;
     BOOL wrote = [writer writeFromMST:mst
-                        blockProvider:^NSData * _Nullable(CID *cid) {
+                        blockProvider:^NSData * _Nullable(ATProtoCID *cid) {
         return [cid.stringValue isEqualToString:recordCID.stringValue]
             ? recordData
             : nil;

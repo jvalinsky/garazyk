@@ -180,7 +180,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
             }
 
             NSError *blobError = nil;
-            CID *cid = [CID cidFromString:blobCid];
+            ATProtoCID *cid = [ATProtoCID cidFromString:blobCid];
             if (!cid) {
                 [self failJob:jobId error:blobError ?: [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
                                                                            code:ATProtoVideoWorkerErrorProcessingFailed
@@ -358,7 +358,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                                                         maxHeight:360
                                                                       completion:^(NSData *thumbnailData, NSError *thumbError) {
 
-                    CID *thumbnailCid = nil;
+                    ATProtoCID *thumbnailCid = nil;
                     if (thumbnailData) {
                         thumbnailCid = [[ATProtoVideoThumbnailGenerator sharedGenerator] storeThumbnailData:thumbnailData
                                                                                                 forJob:jobId
@@ -392,7 +392,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                     [self updateJobProgress:jobId progress:80 message:@"Storing original video on PDS"];
 
                     NSError *storeError = nil;
-                    CID *originalCid = nil;
+                    ATProtoCID *originalCid = nil;
 
                     // Upload the ORIGINAL video to the PDS (matching Bluesky reference architecture).
                     // The PDS stores the original as the source of truth; the transcoded version
@@ -425,12 +425,12 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                     cidString = uploadResult[@"cid"];
                                 }
                                 if (cidString) {
-                                    originalCid = [CID cidFromString:cidString];
+                                    originalCid = [ATProtoCID cidFromString:cidString];
                                 }
                             }
                         } else if (self.blobProvider) {
                             // Direct blob store (legacy in-process mode)
-                            originalCid = [CID sha256:originalVideoData];
+                            originalCid = [ATProtoCID sha256:originalVideoData];
                             [self.blobProvider storeBlobData:originalVideoData forCID:originalCid error:&storeError];
                         }
                     }

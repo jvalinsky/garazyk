@@ -182,7 +182,7 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
                 }
                 return nil;
             }
-            CID *cid = [CID cidFromString:cidString];
+            ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
             if (!cid) {
                 if (error) {
                     *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
@@ -246,8 +246,8 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
 }
 
 + (id)_convertCBORToJSON:(id)cbor {
-    if ([cbor isKindOfClass:[CID class]]) {
-        CID *cid = (CID *)cbor;
+    if ([cbor isKindOfClass:[ATProtoCID class]]) {
+        ATProtoCID *cid = (ATProtoCID *)cbor;
         return @{@"$link": cid.stringValue};
     } else if ([cbor isKindOfClass:[ATProtoDRISLFloat class]]) {
         // JSON has no way to preserve the float/integer distinction, so this
@@ -302,8 +302,8 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     } else if ([value isKindOfClass:[NSDictionary class]]) {
         return [self _encodeMap:(NSDictionary *)value profile:profile toData:data error:error];
 
-    } else if ([value isKindOfClass:[CID class]]) {
-        return [self _encodeCIDLink:(CID *)value toData:data error:error];
+    } else if ([value isKindOfClass:[ATProtoCID class]]) {
+        return [self _encodeCIDLink:(ATProtoCID *)value toData:data error:error];
 
     } else if ([value isKindOfClass:[ATProtoDRISLFloat class]]) {
         return [self _encodeDRISLFloat:(ATProtoDRISLFloat *)value profile:profile toData:data error:error];
@@ -619,8 +619,8 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     return sorted;
 }
 
-+ (BOOL)_encodeCIDLink:(CID *)cid toData:(NSMutableData *)data error:(NSError **)error {
-    // CID-link: tag 42 with byte string containing 0x00 || CID bytes
++ (BOOL)_encodeCIDLink:(ATProtoCID *)cid toData:(NSMutableData *)data error:(NSError **)error {
+    // ATProtoCID-link: tag 42 with byte string containing 0x00 || ATProtoCID bytes
     NSMutableData *cidBytes = [NSMutableData dataWithCapacity:1 + cid.bytes.length];
     uint8_t marker = 0x00;
     [cidBytes appendBytes:&marker length:1];
@@ -961,7 +961,7 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     // DRISL permits tag 42 and nothing else. Reject before decoding the
     // content: an unknown tag used to be unwrapped and its payload returned,
     // which meant a tagged document decoded and re-encoded to *different*
-    // bytes — a different CID for the same input. Bignums (tags 2 and 3),
+    // bytes — a different ATProtoCID for the same input. Bignums (tags 2 and 3),
     // datetimes (tag 0) and self-describing CBOR (tag 55799) all land here.
     if (tag != 42) {
         if (error) {
@@ -976,7 +976,7 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
     id taggedValue = [self _decodeFromBytes:bytes length:length index:index depth:depth + 1 profile:profile error:error];
     if (!taggedValue) return nil;
 
-    // Handle CID-link (tag 42)
+    // Handle ATProtoCID-link (tag 42)
     {
         if (![taggedValue isKindOfClass:[NSData class]]) {
             if (error) {
@@ -1011,13 +1011,13 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
 
         // The ATProto profile keeps the permissive parser on purpose. Links
         // inside records include blob references, and blobs uploaded before
-        // the CID rules settled carry dag-pb and other non-DASL CIDs; those
+        // the ATProtoCID rules settled carry dag-pb and other non-DASL CIDs; those
         // records are already signed and must stay readable. The DRISL
         // profile, which no repository data goes through, holds links to the
         // strict spec.
-        CID *cid = (profile == ATProtoDRISLProfileDRISL)
-            ? [CID daslCIDFromBytes:pureCIDBytes profile:ATProtoDASLCIDProfileBig]
-            : [CID cidFromBytes:pureCIDBytes];
+        ATProtoCID *cid = (profile == ATProtoDRISLProfileDRISL)
+            ? [ATProtoCID daslCIDFromBytes:pureCIDBytes profile:ATProtoDASLCIDProfileBig]
+            : [ATProtoCID cidFromBytes:pureCIDBytes];
         if (!cid && error) {
             *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
                                          code:ATProtoDagCBORErrorCodeInvalidCIDLink
@@ -1039,7 +1039,7 @@ static NSInteger _dagCBORCompareEncodedKeys(const uint8_t *a, NSUInteger aLen,
         case 23:
             // `undefined`. DRISL allows true, false and null only. Decoding it
             // to NSNull used to make 0xF7 re-encode as 0xF6 — a silent change
-            // of bytes, and so of CID, for any document containing it.
+            // of bytes, and so of ATProtoCID, for any document containing it.
             [self _setDecodingError:error message:@"DRISL forbids the `undefined` simple value"];
             return nil;
 

@@ -336,7 +336,7 @@
 
 - (void)testRecordBlobReferencesTrackAllCurrentRecordsBeforeReclaimingMetadata {
     NSData *blobData = [@"record blob reference" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *blobCID = [CID sha256:blobData];
+    ATProtoCID *blobCID = [ATProtoCID sha256:blobData];
     PDSActorStore *store = [self.pool storeForDid:self.testDID error:nil];
     PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
     blob.cid = blobCID.bytes;
@@ -371,7 +371,7 @@
 
 - (void)testApplyWritesTracksBlobReferencesInTheRecordTransaction {
     NSData *blobData = [@"batch blob reference" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *blobCID = [CID sha256:blobData];
+    ATProtoCID *blobCID = [ATProtoCID sha256:blobData];
     PDSActorStore *store = [self.pool storeForDid:self.testDID error:nil];
     PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
     blob.cid = blobCID.bytes;
@@ -1219,7 +1219,7 @@
                                 error:nil];
     XCTAssertTrue(ok);
 
-    // Apply writes with a wrong swapCommit CID
+    // Apply writes with a wrong swapCommit ATProtoCID
     NSDictionary *write = @{
         @"action": @"update",
         @"collection": @"app.bsky.feed.post",
@@ -1252,7 +1252,7 @@
                                 error:nil];
     XCTAssertTrue(ok);
 
-    // Get the current commit CID
+    // Get the current commit ATProtoCID
     NSDictionary *commitResult = [self.service applyWrites:@[]
                                                   forDid:self.testDID
                                           validationMode:PDSValidationModeOff

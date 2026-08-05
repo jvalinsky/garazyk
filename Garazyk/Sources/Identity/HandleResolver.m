@@ -630,7 +630,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
     if (!did || did.length == 0) return NO;
     // Bound length: DID responses and DNS TXT concatenations must not be
     // unbounded (security-review §6.5). ATProto DIDs are short in practice;
-    // 256 matches CID.stringValue's length cap used elsewhere.
+    // 256 matches ATProtoCID.stringValue's length cap used elsewhere.
     if (did.length > 256) return NO;
     if (![did hasPrefix:@"did:"]) return NO;
     if ([did hasPrefix:@"did:plc:"]) return YES;

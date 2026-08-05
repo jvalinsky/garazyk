@@ -123,8 +123,8 @@
 }
 
 - (FirehoseCommitEvent *)relayTestCommitEventWithRepo:(NSString *)repo {
-    CID *commitCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
-    CID *recordCID = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
+    ATProtoCID *commitCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    ATProtoCID *recordCID = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
 
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.seq = 42;
@@ -162,7 +162,7 @@
 
 - (void)testBroadcastCommitWithOpsValidatesMaxSeqIsGreater {
     RepoCommit *commit = [RepoCommit createCommitWithDid:@"did:plc:test" 
-                                                   data:[CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] 
+                                                   data:[ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] 
                                                     rev:@"3l66k7pp33p" 
                                                    prev:nil];
     
@@ -175,7 +175,7 @@
     ];
     
     NSArray *blobs = @[
-        [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] ?: [[CID alloc] init]
+        [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] ?: [[ATProtoCID alloc] init]
     ];
     
     // This is a minimal test to ensure we can pass ops and blobs
@@ -196,7 +196,7 @@
     NSString *did = @"did:plc:ar7c4by46qjdydhdevvrndac";
     RepoCommit *previous =
         [RepoCommit createCommitWithDid:did
-                                   data:[CID sha256:[@"previous-data"
+                                   data:[ATProtoCID sha256:[@"previous-data"
                                        dataUsingEncoding:NSUTF8StringEncoding]]
                                     rev:@"3mrogbz3mwr2t"
                                    prev:nil];
@@ -221,7 +221,7 @@
 
     RepoCommit *current =
         [RepoCommit createCommitWithDid:did
-                                   data:[CID sha256:[@"current-data"
+                                   data:[ATProtoCID sha256:[@"current-data"
                                        dataUsingEncoding:NSUTF8StringEncoding]]
                                     rev:@"3mrogbz3mwr2u"
                                    prev:previous.computeCID];
@@ -261,12 +261,12 @@
 
 - (void)testBroadcastCommitFallsBackToSyncWhenPreviousCommitIsUnavailable {
     NSString *did = @"did:plc:ar7c4by46qjdydhdevvrndac";
-    CID *missingPrevious =
-        [CID sha256:[@"missing-previous"
+    ATProtoCID *missingPrevious =
+        [ATProtoCID sha256:[@"missing-previous"
             dataUsingEncoding:NSUTF8StringEncoding]];
     RepoCommit *current =
         [RepoCommit createCommitWithDid:did
-                                   data:[CID sha256:[@"current-data"
+                                   data:[ATProtoCID sha256:[@"current-data"
                                        dataUsingEncoding:NSUTF8StringEncoding]]
                                     rev:@"3mrogbz3mwr2v"
                                    prev:missingPrevious];
@@ -304,7 +304,7 @@
 #ifndef GNUSTEP
 - (void)testBackpressureEnforcement {
     RepoCommit *commit = [RepoCommit createCommitWithDid:@"did:plc:test" 
-                                                   data:[CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] 
+                                                   data:[ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] 
                                                     rev:@"3l66k7pp33p" 
                                                    prev:nil];
     
@@ -590,7 +590,7 @@
     XCTAssertEqual(firstOps.count, 1U);
     NSDictionary *firstRepoOp = firstOps.firstObject;
     XCTAssertEqualObjects(firstRepoOp[@"action"], @"create");
-    CID *firstCID = [firstRepoOp[@"cid"] isKindOfClass:[CID class]] ? firstRepoOp[@"cid"] : nil;
+    ATProtoCID *firstCID = [firstRepoOp[@"cid"] isKindOfClass:[ATProtoCID class]] ? firstRepoOp[@"cid"] : nil;
     XCTAssertNotNil(firstCID);
 
     NSDictionary *recordV2 = @{
@@ -634,7 +634,7 @@
     NSDictionary *latestRepoOp = latestOps.firstObject;
     XCTAssertEqualObjects(latestRepoOp[@"action"], @"update");
 
-    CID *prevCID = [latestRepoOp[@"prev"] isKindOfClass:[CID class]] ? latestRepoOp[@"prev"] : nil;
+    ATProtoCID *prevCID = [latestRepoOp[@"prev"] isKindOfClass:[ATProtoCID class]] ? latestRepoOp[@"prev"] : nil;
     XCTAssertNotNil(prevCID);
     XCTAssertEqualObjects(prevCID.stringValue, firstCID.stringValue);
 }

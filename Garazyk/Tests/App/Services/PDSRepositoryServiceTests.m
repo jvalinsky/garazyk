@@ -86,7 +86,7 @@
     return revValue.textString;
 }
 
-- (nullable CID *)commitDataCIDFromCARData:(NSData *)carData {
+- (nullable ATProtoCID *)commitDataCIDFromCARData:(NSData *)carData {
     NSError *carError = nil;
     CARReader *reader = [CARReader readFromData:carData error:&carError];
     XCTAssertNil(carError);
@@ -124,7 +124,7 @@
     }
 
     NSData *rawCID = [tagBytes subdataWithRange:NSMakeRange(1, tagBytes.length - 1)];
-    return [CID cidFromBytes:rawCID];
+    return [ATProtoCID cidFromBytes:rawCID];
 }
 
 - (NSDictionary *)postRecordWithText:(NSString *)text {
@@ -342,7 +342,7 @@
     NSData *deltaCAR = [self.repositoryService getRepoContents:self.testDID since:firstRev error:nil];
     XCTAssertNotNil(deltaCAR);
 
-    CID *dataCID = [self commitDataCIDFromCARData:deltaCAR];
+    ATProtoCID *dataCID = [self commitDataCIDFromCARData:deltaCAR];
     XCTAssertNotNil(dataCID);
 
     NSError *parseError = nil;
@@ -429,7 +429,7 @@
     XCTAssertNotNil(deltaReader);
     XCTAssertGreaterThan(deltaReader.blocks.count, 0U);
 
-    CID *dataCID = [self commitDataCIDFromCARData:deltaCAR];
+    ATProtoCID *dataCID = [self commitDataCIDFromCARData:deltaCAR];
     XCTAssertNotNil(dataCID);
     XCTAssertNotNil([deltaReader blockWithCID:dataCID]);
 }
@@ -615,7 +615,7 @@
                                            error:nil];
     XCTAssertTrue(writeOK);
 
-    // Get the record's CID to request as a block
+    // Get the record's ATProtoCID to request as a block
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", self.testDID, @"app.bsky.feed.post", @"blocks-test"];
     NSDictionary *record = [self.recordService getRecord:uri forDid:self.testDID error:nil];
     NSString *cidString = record[@"cid"];
@@ -642,7 +642,7 @@
     NSData *carData = [self.repositoryService getBlocksForDid:self.testDID
                                                         cids:@[]
                                                         error:&blocksError];
-    // Empty CID list may return nil or a valid empty CAR — either is acceptable
+    // Empty ATProtoCID list may return nil or a valid empty CAR — either is acceptable
     if (carData) {
         XCTAssertTrue(carData.length > 0);
     }
@@ -936,7 +936,7 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
     return key;
 }
 
-/// Helper: create a post record with a fixed ISO timestamp for deterministic CID generation.
+/// Helper: create a post record with a fixed ISO timestamp for deterministic ATProtoCID generation.
 - (NSDictionary *)goldenPostRecordWithText:(NSString *)text {
     return @{
         @"$type": @"app.bsky.feed.post",
@@ -997,7 +997,7 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
     CARReader *reader = [self parseCARData:carData label:@"Golden CAR"];
     if (!reader) return;
 
-    // Root CID must be set
+    // Root ATProtoCID must be set
     XCTAssertNotNil(reader.rootCID, @"Golden CAR must have a root CID");
     XCTAssertTrue(reader.rootCID.stringValue.length > 0, @"Root CID must be non-empty");
 
@@ -1038,16 +1038,16 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
     XCTAssertEqual(sigVal.type, CBORTypeByteString, @"Commit sig must be bytes");
     XCTAssertTrue(sigVal.byteString.length > 0, @"Commit sig must be non-empty");
 
-    // CID determinism: with a fixed signing key and fixed record timestamps,
-    // the commit data CID (MST root) and record CIDs are deterministic.
+    // ATProtoCID determinism: with a fixed signing key and fixed record timestamps,
+    // the commit data ATProtoCID (MST root) and record CIDs are deterministic.
     // Two exports of the same repo must produce identical CIDs.
-    CID *commitDataCID = [self commitDataCIDFromCARData:carData];
+    ATProtoCID *commitDataCID = [self commitDataCIDFromCARData:carData];
     XCTAssertNotNil(commitDataCID, @"Commit must have a data CID");
     XCTAssertTrue(commitDataCID.stringValue.length > 0, @"MST root CID must be non-empty");
 
-    // Every block must have a valid CID matching its data
+    // Every block must have a valid ATProtoCID matching its data
     for (CARBlock *block in reader.blocks) {
-        CID *expectedCID = [CID cidWithDigest:[CID sha256Digest:block.data] codec:0x71]; // dag-cbor codec
+        ATProtoCID *expectedCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block.data] codec:0x71]; // dag-cbor codec
         XCTAssertTrue([block.cid isEqual:expectedCID] ||
                       [block.cid.stringValue isEqualToString:expectedCID.stringValue],
                       @"Block CID mismatch: %@ != %@", block.cid.stringValue, expectedCID.stringValue);

@@ -17,7 +17,7 @@
                              mimeType:(NSString *)mimeType
                           serviceAuth:(nullable NSString *)token
                                 error:(NSError **)error {
-    CID *cid = [CID sha256:blobData];
+    ATProtoCID *cid = [ATProtoCID sha256:blobData];
     BOOL stored = [self.blobProvider storeBlobData:blobData forCID:cid error:error];
     if (!stored) {
         return nil;

@@ -48,7 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Blob Operations
 
 /**
- * @abstract Gets blob data by CID.
+ * @abstract Gets blob data by ATProtoCID.
  * @param cid The content identifier data.
  * @param did The decentralized identifier of the repository owner.
  * @param error Error pointer for retrieval failures.
@@ -57,12 +57,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSData *)getBlob:(NSData *)cid forDid:(NSString *)did error:(NSError **)error;
 
 /**
- * @abstract Uploads a blob and returns its CID.
+ * @abstract Uploads a blob and returns its ATProtoCID.
  * @param blobData The raw blob data.
  * @param did The decentralized identifier of the repository owner.
  * @param mimeType The MIME type of the blob.
  * @param error Error pointer for upload failures.
- * @return Dictionary containing CID and size, or nil on failure.
+ * @return Dictionary containing ATProtoCID and size, or nil on failure.
  */
 - (nullable NSDictionary *)uploadBlob:(NSData *)blobData
                               forDid:(NSString *)did
@@ -70,7 +70,7 @@ NS_ASSUME_NONNULL_BEGIN
                                error:(NSError **)error;
 
 /**
- * @abstract Gets blob metadata by CID string.
+ * @abstract Gets blob metadata by ATProtoCID string.
  * @param cid The content identifier string.
  * @param did The decentralized identifier of the repository owner.
  * @param error Error pointer for retrieval failures.
@@ -108,7 +108,7 @@ NS_ASSUME_NONNULL_BEGIN
                                 error:(NSError **)error;
 
 /**
- * @abstract Deletes a blob by CID.
+ * @abstract Deletes a blob by ATProtoCID.
  * @param cid The content identifier string.
  * @param did The decentralized identifier of the repository owner.
  * @param error Error pointer for deletion failures.

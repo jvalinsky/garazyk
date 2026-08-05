@@ -18,7 +18,7 @@
 
 #pragma mark - Commit Plumbing (MST & Signed Commits)
 
-- (nullable CID *)computeRepoRootCIDForDid:(NSString *)did
+- (nullable ATProtoCID *)computeRepoRootCIDForDid:(NSString *)did
                                       store:(PDSActorStore *)store
                                       error:(NSError **)error {
     MST *mst = [self loadRepoMSTForDid:did store:store error:error];
@@ -26,7 +26,7 @@
         return nil;
     }
 
-    CID *rootCID = mst.rootCID;
+    ATProtoCID *rootCID = mst.rootCID;
     if (!rootCID && error && !*error) {
         *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
                                      code:9
@@ -69,7 +69,7 @@
             if (record.collection.length == 0 || record.rkey.length == 0 || record.cid.length == 0) {
                 continue;
             }
-            CID *recordCID = [CID cidFromString:record.cid];
+            ATProtoCID *recordCID = [ATProtoCID cidFromString:record.cid];
             if (!recordCID) {
                 continue;
             }
@@ -96,7 +96,7 @@
 
     NSMutableDictionary<NSString *, PDSDatabaseBlock *> *blocksByCID = [NSMutableDictionary dictionary];
 
-    BOOL (^appendBlock)(CID *, NSData *) = ^BOOL(CID *cid, NSData *data) {
+    BOOL (^appendBlock)(ATProtoCID *, NSData *) = ^BOOL(ATProtoCID *cid, NSData *data) {
         NSString *cidString = cid.stringValue ?: @"";
         if (cidString.length == 0 || data.length == 0) {
             return YES;
@@ -114,7 +114,7 @@
         return YES;
     };
 
-    CID *rootCID = mst.rootCID;
+    ATProtoCID *rootCID = mst.rootCID;
     NSData *rootData = [mst serializeToCBOR];
     if (!rootCID || rootData.length == 0) {
         if (error) {
@@ -136,7 +136,7 @@
             if (nodeData.length == 0) {
                 continue;
             }
-            CID *nodeCID = [CID cidWithDigest:[CID sha256Digest:nodeData] codec:0x71];
+            ATProtoCID *nodeCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:nodeData] codec:0x71];
             if (!nodeCID) {
                 continue;
             }
@@ -190,14 +190,14 @@
         }
 
         NSString *cidString = [obj isKindOfClass:[NSString class]] ? (NSString *)obj : nil;
-        CID *recordCID = (cidString.length > 0) ? [CID cidFromString:cidString] : nil;
+        ATProtoCID *recordCID = (cidString.length > 0) ? [ATProtoCID cidFromString:cidString] : nil;
         if (!recordCID) {
             return;
         }
         [mst put:key valueCID:recordCID subKey:nil];
     }];
 
-    CID *dataCID = mst.rootCID;
+    ATProtoCID *dataCID = mst.rootCID;
     if (!dataCID) {
         if (error) {
             *error = [NSError errorWithDomain:@"PDSRecordService"
@@ -225,7 +225,7 @@
     }
 
     NSData *prevCommitBytes = [store getRepoRootForDid:did error:nil];
-    CID *prevCommitCID = prevCommitBytes ? [CID cidFromBytes:prevCommitBytes] : nil;
+    ATProtoCID *prevCommitCID = prevCommitBytes ? [ATProtoCID cidFromBytes:prevCommitBytes] : nil;
 
     RepoCommit *commit = [RepoCommit createCommitWithDid:did
                                                     data:dataCID
@@ -241,7 +241,7 @@
     }
     commit.signature = signature;
 
-    CID *commitCID = [commit computeCID];
+    ATProtoCID *commitCID = [commit computeCID];
     NSData *commitData = [commit serializeSigned];
     if (!commitCID || commitData.length == 0) {
         if (error) {
@@ -276,7 +276,7 @@
 
     // Add mutation blocks (the actual records)
     [mutationBlocksByCID enumerateKeysAndObjectsUsingBlock:^(NSString *cidStr, NSData *data, BOOL *stop) {
-        CID *cid = [CID cidFromString:cidStr];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
         if (cid && data.length > 0) {
             PDSDatabaseBlock *recordBlock = [[PDSDatabaseBlock alloc] init];
             recordBlock.cid = [cid bytes];

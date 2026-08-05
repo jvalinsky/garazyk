@@ -248,7 +248,7 @@
 
         for (NSDictionary *row in rows) {
             NSString *cidStr = row[@"cid"];
-            CID *cid = [CID cidFromString:cidStr];
+            ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
             if (!cid) continue;
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:actor error:nil];
             if (!block || !block.blockData) continue;
@@ -310,7 +310,7 @@
         }
 
         NSString *cidStr = rows[0][@"cid"];
-        CID *cid = [CID cidFromString:cidStr];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
         NSDictionary *record = nil;
         if (cid) {
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];
@@ -357,7 +357,7 @@
 
             NSString *postDID = row[@"did"];
             NSString *cidStr = row[@"cid"];
-            CID *cid = [CID cidFromString:cidStr];
+            ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
             if (!cid) continue;
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
             if (!block || !block.blockData) continue;
@@ -414,7 +414,7 @@
 
             NSString *postDID = row[@"did"];
             NSString *cidStr = row[@"cid"];
-            CID *cid = [CID cidFromString:cidStr];
+            ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
             if (!cid) continue;
             PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
             if (!block || !block.blockData) continue;

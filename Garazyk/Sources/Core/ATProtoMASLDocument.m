@@ -15,8 +15,8 @@ static NSError *MASLError(ATProtoMASLErrorCode code, NSString *message) {
 }
 
 static BOOL MASLIsCID(id value) {
-    return [value isKindOfClass:[CID class]] &&
-           [(CID *)value isDASLConformantForProfile:ATProtoDASLCIDProfileBig];
+    return [value isKindOfClass:[ATProtoCID class]] &&
+           [(ATProtoCID *)value isDASLConformantForProfile:ATProtoDASLCIDProfileBig];
 }
 
 static BOOL MASLIsStringMap(id value) {

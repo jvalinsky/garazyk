@@ -104,7 +104,7 @@
     NSData *rootBytes1 = [store getRepoRootForDid:self.did error:&error];
     XCTAssertNotNil(rootBytes1, @"Repo root missing");
     
-    CID *commit1CID = [CID cidFromBytes:rootBytes1];
+    ATProtoCID *commit1CID = [ATProtoCID cidFromBytes:rootBytes1];
     XCTAssertNotNil(commit1CID);
     
     // 3. Verify Commit 1 validity
@@ -128,7 +128,7 @@
     
     // 5. Fetch Repo Root (Head 2)
     NSData *rootBytes2 = [store getRepoRootForDid:self.did error:&error];
-    CID *commit2CID = [CID cidFromBytes:rootBytes2];
+    ATProtoCID *commit2CID = [ATProtoCID cidFromBytes:rootBytes2];
     XCTAssertNotNil(commit2CID);
     XCTAssertFalse([commit2CID isEqualToCID:commit1CID], @"Head should advance");
     
@@ -140,11 +140,11 @@
     XCTAssertNotNil(map2);
     
     id prevObj = map2[@"prev"];
-    CID *prevCID = nil;
-    if ([prevObj isKindOfClass:[CID class]]) {
-        prevCID = (CID *)prevObj;
+    ATProtoCID *prevCID = nil;
+    if ([prevObj isKindOfClass:[ATProtoCID class]]) {
+        prevCID = (ATProtoCID *)prevObj;
     } else if ([prevObj isKindOfClass:[NSString class]]) {
-        prevCID = [CID cidFromString:(NSString *)prevObj];
+        prevCID = [ATProtoCID cidFromString:(NSString *)prevObj];
     }
     
     XCTAssertNotNil(prevCID, @"Commit 2 should have prev");

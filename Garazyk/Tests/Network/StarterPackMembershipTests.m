@@ -11,11 +11,11 @@
 
 @implementation StarterPackMembershipTests
 
-static CID *makeTestCID(NSUInteger idx) {
+static ATProtoCID *makeTestCID(NSUInteger idx) {
     uint8_t mh[34];
     mh[0] = 0x12; mh[1] = 0x20;
     for (int i = 0; i < 32; i++) mh[2 + i] = (uint8_t)(idx ^ i ^ 0xAB);
-    return [CID cidWithMultihash:[NSData dataWithBytes:mh length:34] codec:0x71];
+    return [ATProtoCID cidWithMultihash:[NSData dataWithBytes:mh length:34] codec:0x71];
 }
 
 - (void)insertStarterpackRecord:(NSString *)creatorDid
@@ -30,7 +30,7 @@ static CID *makeTestCID(NSUInteger idx) {
     NSString *listRkeyStr = listRkey ?: @"thelist";
     NSString *listURIForInsert = listURI ?: [NSString stringWithFormat:@"at://%@/app.bsky.graph.list/%@", creatorDid, listRkeyStr];
 
-    CID *packCID = makeTestCID(1);
+    ATProtoCID *packCID = makeTestCID(1);
     NSString *packCIDStr = packCID.stringValue;
 
     NSString *insertRecord = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, indexed_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))";
@@ -53,7 +53,7 @@ static CID *makeTestCID(NSUInteger idx) {
                                   error:&dbError];
     XCTAssertTrue(ok, @"Insert pack block failed: %@", dbError);
 
-    CID *listCID = makeTestCID(2);
+    ATProtoCID *listCID = makeTestCID(2);
     NSString *listCIDStr = listCID.stringValue;
     NSString *listURIForRec = listURI ?: [NSString stringWithFormat:@"at://%@/app.bsky.graph.list/%@", creatorDid, listRkeyStr];
     NSString *listValueJSON = @"{\"$type\":\"app.bsky.graph.defs#curatedList\",\"name\":\"Test List\",\"purpose\":\"app.bsky.graph.defs#curatedList\"}";
@@ -86,7 +86,7 @@ static CID *makeTestCID(NSUInteger idx) {
     XCTAssertNotNil(db);
 
     NSString *itemURI = [NSString stringWithFormat:@"at://%@/app.bsky.graph.listitem/%@", creatorDid, rkey];
-    CID *itemCID = makeTestCID(3);
+    ATProtoCID *itemCID = makeTestCID(3);
     NSString *itemCIDStr = itemCID.stringValue;
 
     NSString *insertRecord = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, indexed_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))";

@@ -6,7 +6,7 @@
  @abstract Validated MASL metadata documents.
 
  @discussion MASL (https://dasl.ing/masl.html) places a DRISL object between
- a content CID and its resource. This model validates the structural fields
+ a content ATProtoCID and its resource. This model validates the structural fields
  that have defined meaning while retaining arbitrary application metadata in
  the original object. It deliberately does not make HTTP-header projection
  implicit: callers must request the filtered, path-aware allow-list view.
@@ -14,7 +14,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class CID;
+@class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -42,10 +42,10 @@ typedef NS_ENUM(NSInteger, ATProtoMASLErrorCode) {
 @property (nonatomic, copy, readonly) NSDictionary *object;
 /** YES when the document has a `resources` map. */
 @property (nonatomic, assign, readonly, getter=isBundle) BOOL bundle;
-/** The root `src` CID, when present. In bundle mode MASL processing ignores it. */
-@property (nonatomic, strong, readonly, nullable) CID *src;
-/** The root `prev` CID, when present. */
-@property (nonatomic, strong, readonly, nullable) CID *prev;
+/** The root `src` ATProtoCID, when present. In bundle mode MASL processing ignores it. */
+@property (nonatomic, strong, readonly, nullable) ATProtoCID *src;
+/** The root `prev` ATProtoCID, when present. */
+@property (nonatomic, strong, readonly, nullable) ATProtoCID *prev;
 /** The original bundle resource metadata, or nil in single mode. */
 @property (nonatomic, copy, readonly, nullable) NSDictionary<NSString *, NSDictionary *> *resources;
 
@@ -62,7 +62,7 @@ typedef NS_ENUM(NSInteger, ATProtoMASLErrorCode) {
  Validates the optional CAR compatibility fields.
 
  A MASL document used as CAR header metadata must contain `version` equal to
- integer 1 and `roots` as an array containing only CID links. Generic MASL
+ integer 1 and `roots` as an array containing only ATProtoCID links. Generic MASL
  documents may omit both fields.
  */
 - (BOOL)validateForCARWithError:(NSError **)error;

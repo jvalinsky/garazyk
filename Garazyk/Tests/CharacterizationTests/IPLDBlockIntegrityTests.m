@@ -79,8 +79,8 @@
     
     BOOL found = NO;
     for (PDSDatabaseBlock *block in blocks) {
-        // block.cid is NSData* - it should be the raw CID bytes
-        CID *blockCID = [CID cidFromBytes:block.cid];
+        // block.cid is NSData* - it should be the raw ATProtoCID bytes
+        ATProtoCID *blockCID = [ATProtoCID cidFromBytes:block.cid];
         if ([blockCID.stringValue isEqualToString:cidString]) {
             found = YES;
             break;

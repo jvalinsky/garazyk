@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file NSDictionary+CID.m
+ @file NSDictionary+ATProtoCID.m
 
- @abstract NSDictionary category for extracting CID string values from CBOR-decoded dictionaries.
+ @abstract NSDictionary category for extracting ATProtoCID string values from CBOR-decoded dictionaries.
 
  @copyright Copyright (c) 2026 Jack Valinsky
  */
@@ -16,8 +16,8 @@
 - (nullable NSString *)cidStringForKey:(NSString *)key {
     id value = self[key];
 
-    if ([value isKindOfClass:[CID class]]) {
-        return [(CID *)value stringValue];
+    if ([value isKindOfClass:[ATProtoCID class]]) {
+        return [(ATProtoCID *)value stringValue];
     } else if ([value isKindOfClass:[NSString class]]) {
         return (NSString *)value;
     }
@@ -26,13 +26,13 @@
     return nil;
 }
 
-- (nullable CID *)cidObjectForKey:(NSString *)key {
+- (nullable ATProtoCID *)cidObjectForKey:(NSString *)key {
     id value = self[key];
 
-    if ([value isKindOfClass:[CID class]]) {
-        return (CID *)value;
+    if ([value isKindOfClass:[ATProtoCID class]]) {
+        return (ATProtoCID *)value;
     } else if ([value isKindOfClass:[NSString class]]) {
-        return [CID cidFromString:(NSString *)value];
+        return [ATProtoCID cidFromString:(NSString *)value];
     }
 
     // NSNull, nil, or other types → nil

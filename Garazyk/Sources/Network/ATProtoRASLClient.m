@@ -147,7 +147,7 @@ static const uint8_t kATProtoRASLMultihashSHA256 = 0x12;
                 return;
             }
 
-            NSData *actualDigest = [CID sha256Digest:data];
+            NSData *actualDigest = [ATProtoCID sha256Digest:data];
             if (![actualDigest isEqualToData:expectedDigest]) {
                 recordFailure([NSError errorWithDomain:ATProtoRASLClientErrorDomain
                                                    code:ATProtoRASLClientErrorHintFailed

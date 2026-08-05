@@ -355,7 +355,7 @@
          NSData *publicKey = controller.jwtMinter.publicKey;
          if (publicKey.length > 0) {
            publicKeyMultibase =
-               [NSString stringWithFormat:@"b%@", [CID base32Encode:publicKey]];
+               [NSString stringWithFormat:@"b%@", [ATProtoCID base32Encode:publicKey]];
          }
 
           NSMutableDictionary *doc = [NSMutableDictionary dictionary];

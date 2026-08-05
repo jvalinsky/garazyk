@@ -216,7 +216,7 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSLog(@"  Record updated successfully");
     
-    // Step 4: Verify CID changes on update
+    // Step 4: Verify ATProtoCID changes on update
     NSDictionary *updatedFetched = [self.controller getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/integration-test-post", did]
                                                      forDid:did
                                                        error:nil];
@@ -245,7 +245,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSLog(@"=== TEST PASSED: Record CRUD with Value Retrieval ===\n");
 }
 
-#pragma mark - Test 3: CID Format Compliance
+#pragma mark - Test 3: ATProtoCID Format Compliance
 
 - (void)testCIDFormatCompliance {
     // XCTAssertEqual(actual, expected);
@@ -272,7 +272,7 @@ NS_ASSUME_NONNULL_BEGIN
                                      error:&createError];
     XCTAssertTrue(result, @"Create record should succeed");
     
-    // Get the record to retrieve CID
+    // Get the record to retrieve ATProtoCID
     NSDictionary *fetched = [self.controller getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/cid-test-post", did]
                                               forDid:did
                                                 error:nil];
@@ -280,14 +280,14 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *cid = fetched[@"cid"];
     NSLog(@"  Generated CID: %@", cid);
     
-    // PREDICTED: CID format is non-standard
+    // PREDICTED: ATProtoCID format is non-standard
     // Expected: IPLD CIDv1 format like bafyreig...
     // Actual: Uses bafyrei prefix with base64url-encoded SHA-256
     
     BOOL startsWithBafyre = [cid hasPrefix:@"bafyre"] || [cid hasPrefix:@"bafyrei"];
     NSLog(@"  CID starts with 'bafyre/bafyrei': %@", startsWithBafyre ? @"YES" : @"NO");
     
-    // Check if it looks like a valid CID (alphanumeric, reasonable length)
+    // Check if it looks like a valid ATProtoCID (alphanumeric, reasonable length)
     NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyz0123456789"];
     NSString *cidWithoutPrefix = [cid stringByReplacingOccurrencesOfString:@"bafyrei" withString:@""];
     BOOL allValidChars = [[cidWithoutPrefix stringByTrimmingCharactersInSet:validChars] isEqualToString:@""];
@@ -295,7 +295,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSLog(@"  CID contains only valid characters: %@", allValidChars ? @"YES" : @"NO");
     NSLog(@"  CID length: %lu", (unsigned long)cid.length);
     
-    // CID should be deterministic for same content
+    // ATProtoCID should be deterministic for same content
     BOOL createAgain = [self.controller putRecord:@"app.bsky.feed.post"
                                            rkey:@"cid-test-post-2"
                                           value:recordValue
@@ -314,7 +314,7 @@ NS_ASSUME_NONNULL_BEGIN
     BOOL sameContentSameCID = [cid isEqualToString:cid2];
     NSLog(@"  Same content produces same CID: %@", sameContentSameCID ? @"YES" : @"NO (PREDICTED ISSUE)");
     
-    // The CID format is non-standard IPLD but deterministic
+    // The ATProtoCID format is non-standard IPLD but deterministic
     XCTAssertTrue(sameContentSameCID, @"Same content should produce same CID");
     
     NSLog(@"=== TEST PASSED: CID Format Compliance ===\n");

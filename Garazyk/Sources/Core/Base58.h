@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @class ATProtoBase58
 
- @abstract Provides Base58BTC conversions used by DID/CID parsing code.
+ @abstract Provides Base58BTC conversions used by DID/ATProtoCID parsing code.
  */
 @interface ATProtoBase58 : NSObject
 

@@ -29,10 +29,10 @@
     switch (prefix) {
         case 'z':
         case 'Z':
-            data = [CID base58btcDecode:payload];
+            data = [ATProtoCID base58btcDecode:payload];
             break;
         case 'b':
-            data = [CID base32Decode:payload];
+            data = [ATProtoCID base32Decode:payload];
             break;
         case 'u':
             data = [ATProtoJWT base64URLDecode:payload error:error];

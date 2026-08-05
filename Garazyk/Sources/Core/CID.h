@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file CID.h
+ @file ATProtoCID.h
 
- @abstract Content Identifier (CID) implementation for ATProto repositories.
+ @abstract Content Identifier (ATProtoCID) implementation for ATProto repositories.
 
  @discussion Implements CIDv1 content-addressed identifiers using multibase,
  multicodec, and multihash. CIDs provide cryptographic verification of data
@@ -18,7 +18,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class CID
+ @class ATProtoCID
 
  @abstract Content Identifier with cryptographic hash verification.
 
@@ -28,9 +28,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @see https://github.com/multiformats/cid
  */
-@interface CID : NSObject <NSCopying, NSSecureCoding>
+@interface ATProtoCID : NSObject <NSCopying, NSSecureCoding>
 
-/*! Version of the CID (currently 1). */
+/*! Version of the ATProtoCID (currently 1). */
 @property (readonly, nonatomic) NSUInteger version;
 
 /*! Codec identifier (e.g., 0x55 for raw, 0x71 for dag-cbor). */
@@ -41,49 +41,49 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @method cidWithDigest:codec:
- @abstract Create CID from raw digest data.
+ @abstract Create ATProtoCID from raw digest data.
  @param digest The raw digest bytes (e.g., 32 bytes for SHA-256).
  @param codec The codec identifier.
- @return A new CID instance.
+ @return A new ATProtoCID instance.
  */
 + (nullable instancetype)cidWithDigest:(NSData *)digest codec:(NSUInteger)codec;
 
 /*!
  @method cidWithMultihash:codec:
- @abstract Create CID from multihash data.
+ @abstract Create ATProtoCID from multihash data.
  @param multihash The multihash bytes (algorithm + digest).
  @param codec The codec identifier.
- @return A new CID instance.
+ @return A new ATProtoCID instance.
  */
 + (nullable instancetype)cidWithMultihash:(NSData *)multihash codec:(NSUInteger)codec;
 
 /*!
  @method cidFromString:
- @abstract Create CID from base-encoded string.
- @param string Base-encoded CID string.
- @return A new CID instance.
+ @abstract Create ATProtoCID from base-encoded string.
+ @param string Base-encoded ATProtoCID string.
+ @return A new ATProtoCID instance.
  */
 + (nullable instancetype)cidFromString:(NSString *)string;
 
 /*!
  @method cidFromBytes:
- @abstract Create CID from binary data.
- @param data Binary CID data (version + codec + multihash).
- @return A new CID instance.
+ @abstract Create ATProtoCID from binary data.
+ @param data Binary ATProtoCID data (version + codec + multihash).
+ @return A new ATProtoCID instance.
  */
 + (nullable instancetype)cidFromBytes:(NSData *)data;
 
 /*!
  @method cidFromBuffer:length:consumed:
- @abstract Parse a CID from the start of a buffer, reporting how many
+ @abstract Parse a ATProtoCID from the start of a buffer, reporting how many
  bytes were consumed. Unlike cidFromBytes:, this accepts trailing data
- after the CID (as occurs inside a CAR block entry where the CID is
+ after the ATProtoCID (as occurs inside a CAR block entry where the ATProtoCID is
  immediately followed by the block payload).
  @param bytes Pointer to the buffer.
  @param length Maximum number of bytes the parser may read.
- @param consumed On success, set to the number of bytes the CID occupied.
+ @param consumed On success, set to the number of bytes the ATProtoCID occupied.
  May be NULL if the caller does not care.
- @return A parsed CID, or nil if the buffer is malformed, truncated, or
+ @return A parsed ATProtoCID, or nil if the buffer is malformed, truncated, or
  exceeds bounds.
  */
 /**
@@ -128,33 +128,33 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @method stringValue
- @abstract Convert CID to base-encoded string.
- @return The CID string representation.
+ @abstract Convert ATProtoCID to base-encoded string.
+ @return The ATProtoCID string representation.
  */
 - (NSString *)stringValue;
 
 /*!
  @method isEqualToCID:
  @abstract Compare two CIDs for equality.
- @param other The other CID to compare.
+ @param other The other ATProtoCID to compare.
  @return YES if CIDs are equal, NO otherwise.
  */
-- (BOOL)isEqualToCID:(CID *)other;
+- (BOOL)isEqualToCID:(ATProtoCID *)other;
 
 /*!
  @method bytes
  @abstract Get the raw bytes representation.
- @return The raw CID bytes.
+ @return The raw ATProtoCID bytes.
  */
 - (NSData *)bytes;
 
 /*!
  @method sha256:
- @abstract Compute SHA-256 hash and return as CID with raw codec.
+ @abstract Compute SHA-256 hash and return as ATProtoCID with raw codec.
  @param data The data to hash.
- @return A new CID instance.
+ @return A new ATProtoCID instance.
  */
-+ (CID *)sha256:(NSData *)data;
++ (ATProtoCID *)sha256:(NSData *)data;
 
 /*!
   @method sha256Digest:

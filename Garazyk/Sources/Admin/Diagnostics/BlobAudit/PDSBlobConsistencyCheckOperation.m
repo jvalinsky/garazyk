@@ -59,7 +59,7 @@
                         if (json) {
                             NSSet<NSString *> *referencedCIDs = PDSBlobAuditBlobReferenceCIDsFromJSONObject(json);
                             for (NSString *cidStr in referencedCIDs) {
-                                CID *cid = [CID cidFromString:cidStr];
+                                ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
                                 if (!cid) continue;
 
                                 PDSDatabaseBlob *blob = [reader getBlobForCID:[cid bytes] error:nil];

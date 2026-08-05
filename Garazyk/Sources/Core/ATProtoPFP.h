@@ -8,12 +8,12 @@
  @discussion Implements the identifier grammar from https://dasl.ing/pfp.html.
  This is identifier parsing and comparison only; no perceptual hash producer is
  included. PDQ carries a 32-byte inline hash. TMK+PDQF carries a 36-byte strict
- DASL CID that addresses the potentially large fingerprint data.
+ DASL ATProtoCID that addresses the potentially large fingerprint data.
  */
 
 #import <Foundation/Foundation.h>
 
-@class CID;
+@class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -35,7 +35,7 @@ typedef NS_ENUM(NSInteger, ATProtoPFPErrorCode) {
 typedef NS_ENUM(NSUInteger, ATProtoPFPAlgorithm) {
     /** PDQ image perceptual hash, inline 32-byte output. */
     ATProtoPFPAlgorithmPDQ = 0x01,
-    /** TMK+PDQF video fingerprint, addressed by a 36-byte CID. */
+    /** TMK+PDQF video fingerprint, addressed by a 36-byte ATProtoCID. */
     ATProtoPFPAlgorithmTMKPDQF = 0x02,
 };
 
@@ -46,10 +46,10 @@ typedef NS_ENUM(NSUInteger, ATProtoPFPAlgorithm) {
 
 /** Registered algorithm identifier. */
 @property (nonatomic, assign, readonly) ATProtoPFPAlgorithm algorithm;
-/** Raw algorithm data: the PDQ hash or the CID bytes for TMK+PDQF. */
+/** Raw algorithm data: the PDQ hash or the ATProtoCID bytes for TMK+PDQF. */
 @property (nonatomic, copy, readonly) NSData *data;
-/** Parsed CID for TMK+PDQF; nil for inline PDQ data. */
-@property (nonatomic, strong, readonly, nullable) CID *dataCID;
+/** Parsed ATProtoCID for TMK+PDQF; nil for inline PDQ data. */
+@property (nonatomic, strong, readonly, nullable) ATProtoCID *dataCID;
 
 /** Parses PFP bytes containing varint algorithm, varint length, and data. */
 + (nullable instancetype)pfpFromBytes:(NSData *)data error:(NSError **)error;

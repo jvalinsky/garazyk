@@ -24,7 +24,7 @@
 @property (nonatomic, strong) NSURL *testDBURL;
 @property (nonatomic, strong) NSURL *testStorageURL;
 @property (nonatomic, strong) NSData *testData;
-@property (nonatomic, strong) CID *uploadedCID;
+@property (nonatomic, strong) ATProtoCID *uploadedCID;
 @property (nonatomic, copy) NSString *testDID;
 
 @end
@@ -117,7 +117,7 @@
     self.uploadedCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
     XCTAssertNotNil(self.uploadedCID, @"Upload should succeed first");
 
-    CID *duplicateCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
+    ATProtoCID *duplicateCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
 
     XCTAssertNotNil(duplicateCID, @"Duplicate CID should not be nil");
     XCTAssertEqualObjects(duplicateCID.stringValue, self.uploadedCID.stringValue, @"Duplicate should return same CID");
@@ -138,7 +138,7 @@
 }
 
 - (void)testBlobRetrievalNotFound {
-    CID *wrongCID = [CID cidWithMultihash:[NSData dataWithBytes:(uint8_t[]){0x12, 0x20, 0x00, 0x01, 0x02} length:5] codec:0x70];
+    ATProtoCID *wrongCID = [ATProtoCID cidWithMultihash:[NSData dataWithBytes:(uint8_t[]){0x12, 0x20, 0x00, 0x01, 0x02} length:5] codec:0x70];
     XCTAssertNotNil(wrongCID, @"CID creation should succeed");
 
     NSError *error = nil;
@@ -236,10 +236,10 @@
 - (void)testBlobUploadDifferentDID {
     NSError *error = nil;
     NSString *otherDID = @"did:web:other.example.com";
-    CID *otherCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:otherDID error:&error];
+    ATProtoCID *otherCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:otherDID error:&error];
 
     XCTAssertNotNil(otherCID, @"Upload with different DID should succeed");
-    XCTAssertTrue([otherCID isKindOfClass:[CID class]], @"Should return valid CID");
+    XCTAssertTrue([otherCID isKindOfClass:[ATProtoCID class]], @"Should return valid CID");
 }
 
 - (void)testBlobDIDIsolation {
@@ -297,10 +297,10 @@
     NSString *did2 = @"did:web:user2";
     
     // Upload same data for both DIDs
-    CID *cid1 = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:did1 error:&error];
+    ATProtoCID *cid1 = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:did1 error:&error];
     XCTAssertNotNil(cid1);
     
-    CID *cid2 = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:did2 error:&error];
+    ATProtoCID *cid2 = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:did2 error:&error];
     XCTAssertNotNil(cid2);
     
     XCTAssertEqualObjects(cid1.stringValue, cid2.stringValue, @"CIDs should match for same data");
@@ -315,7 +315,7 @@
     NSData *data1 = [self.blobStorage getBlobWithCID:cid1 did:did1 error:&error];
     XCTAssertNil(data1, @"DID1 should not be able to retrieve blob after deleting it");
     // Wait, getBlobWithCID:error: in BlobStorage.h doesn't take DID?
-    // - (nullable NSData *)getBlobWithCID:(CID *)cid error:(NSError **)error;
+    // - (nullable NSData *)getBlobWithCID:(ATProtoCID *)cid error:(NSError **)error;
     // If it retrieves from global storage, it might still return data if DID2 has it?
     // Implementation likely checks if file exists.
     // If BlobStorage is just a wrapper around file system, getBlobWithCID checks if file exists.
@@ -325,7 +325,7 @@
     // So:
     // 1. If global storage, data should still exist.
     // 2. If we want to test that DID1 *lost access* conceptually, we'd need a method like `getBlobWithCID:did:`.
-    // The current BlobStorage API `getBlobWithCID:error:` implies global access if you know the CID.
+    // The current BlobStorage API `getBlobWithCID:error:` implies global access if you know the ATProtoCID.
     // So the test should verify the DATA is still there (because DID2 has it).
     
     NSData *remainingData = [self.blobStorage getBlobWithCID:cid1 did:did2 error:&error];
@@ -371,12 +371,12 @@
         XCTAssertNil(error, @"Quota test usage seed should succeed");
 
         error = nil;
-        CID *rejectedCID = [self.blobStorage uploadBlob:rejectedData mimeType:@"text/plain" did:quotaDID error:&error];
+        ATProtoCID *rejectedCID = [self.blobStorage uploadBlob:rejectedData mimeType:@"text/plain" did:quotaDID error:&error];
         XCTAssertNil(rejectedCID, @"Upload exceeding the account quota must be rejected");
         XCTAssertEqual(error.code, BlobStorageErrorQuotaExceeded);
 
         NSError *providerError = nil;
-        NSArray<CID *> *providerCIDs = [self.blobProvider listAllCIDsWithError:&providerError];
+        NSArray<ATProtoCID *> *providerCIDs = [self.blobProvider listAllCIDsWithError:&providerError];
         XCTAssertNil(providerError);
         XCTAssertEqual(providerCIDs.count, 0, @"A rejected upload must not leave provider bytes");
     } @finally {

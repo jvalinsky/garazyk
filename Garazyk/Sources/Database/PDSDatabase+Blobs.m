@@ -19,7 +19,7 @@
 
 - (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error {
     // §5.1: ON CONFLICT must NOT overwrite did — blobs are content-addressed
-    // (CID = hash of content), so the same CID always represents the same bytes.
+    // (ATProtoCID = hash of content), so the same ATProtoCID always represents the same bytes.
     // Overwriting did would transfer quota ownership to whoever re-uploaded the
     // same blob. Preserve the original owner; only update the mutable metadata
     // (mimeType, size, created_at).

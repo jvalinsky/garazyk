@@ -36,6 +36,11 @@ typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
 typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *response, id<ATProtoNetworkConnection> connection);
 
 /*!
+ @abstract Default concurrency limit applied when a server is created without an explicit one.
+ */
+extern const NSUInteger kHttpServerDefaultMaxConcurrentRequests;
+
+/*!
  @class HttpServer
  
  @abstract HTTP server for handling PDS requests.
@@ -72,11 +77,14 @@ typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *resp
 /*! Optional callback invoked for every request received. */
 @property (nonatomic, copy, nullable) void (^didReceiveRequest)(HttpRequest *request, HttpResponse *response);
 
+/*! Maximum number of requests this server dispatches concurrently. */
+@property (nonatomic, readonly) NSUInteger maxConcurrentRequests;
+
 /*!
  @method serverWithPort:
- 
+
  @abstract Creates a server instance for the specified port.
- 
+
  @param port The port to listen on.
  @return A new HttpServer instance.
  */
@@ -91,6 +99,26 @@ typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *resp
  @param port The port to listen on (0 for ephemeral port assignment).
  */
 + (instancetype)serverWithHost:(NSString *)host port:(NSUInteger)port;
+
+/*!
+ @method serverWithHost:port:maxConcurrentRequests:
+
+ @abstract Creates a server with an explicit concurrency limit.
+
+ @discussion Request handling is dispatched to the global concurrent queue, and a
+ handler that blocks — waiting on an outbound HTTP call, for example — holds a
+ global worker for its whole duration. A server whose handlers may block while
+ another server in the same process must answer them needs a limit well below the
+ default, or the two can together demand more workers than the pool provides.
+ Admin UI listeners embedded alongside a service listener are exactly that case.
+
+ @param host The local host/interface to bind to (e.g. 127.0.0.1).
+ @param port The port to listen on (0 for ephemeral port assignment).
+ @param maxConcurrentRequests Concurrency limit; 0 selects the default.
+ */
++ (instancetype)serverWithHost:(nullable NSString *)host
+                          port:(NSUInteger)port
+         maxConcurrentRequests:(NSUInteger)maxConcurrentRequests;
 
 /*!
  @method startWithError:

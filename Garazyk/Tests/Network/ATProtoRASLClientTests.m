@@ -11,7 +11,7 @@
  local HTTPS test server — `ATProtoRASLClient` deliberately builds only
  `https://` request URLs, and this codebase has no local TLS test fixture
  today. What is covered here: both checks the client performs entirely
- before any network call — no hints, and a CID hash algorithm the client
+ before any network call — no hints, and a ATProtoCID hash algorithm the client
  cannot verify yet (BLAKE3 / Big DASL). The actual fetch, redirect, and SSRF
  behavior is `ATProtoSafeHTTPClient`'s own contract and is covered by its
  existing test suite; this client only composes it.
@@ -43,8 +43,8 @@
 }
 
 - (void)testNoHintsFailsImmediatelyWithoutNetwork {
-    NSData *digest = [CID sha256Digest:[@"no-hints" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID daslCIDFromBytes:[self bytesForDigest:digest hashCode:0x12 codec:0x55]
+    NSData *digest = [ATProtoCID sha256Digest:[@"no-hints" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID daslCIDFromBytes:[self bytesForDigest:digest hashCode:0x12 codec:0x55]
                               profile:ATProtoDASLCIDProfileBase];
     XCTAssertNotNil(cid);
     NSString *urlString = [NSString stringWithFormat:@"rasl://%@/", cid.stringValue];
@@ -66,8 +66,8 @@
 }
 
 - (void)testBlake3CIDFailsClosedWithoutNetwork {
-    NSData *digest = [CID sha256Digest:[@"blake3" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID daslCIDFromBytes:[self bytesForDigest:digest hashCode:ATProtoDASLMultihashBLAKE3 codec:0x55]
+    NSData *digest = [ATProtoCID sha256Digest:[@"blake3" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *cid = [ATProtoCID daslCIDFromBytes:[self bytesForDigest:digest hashCode:ATProtoDASLMultihashBLAKE3 codec:0x55]
                               profile:ATProtoDASLCIDProfileBig];
     XCTAssertNotNil(cid, @"test fixture setup must itself produce a conformant Big DASL CID");
     NSString *urlString = [NSString stringWithFormat:@"rasl://%@/?hint=example.com", cid.stringValue];

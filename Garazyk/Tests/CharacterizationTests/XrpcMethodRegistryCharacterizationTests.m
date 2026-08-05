@@ -118,7 +118,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
     NSMutableData *multicodec = [NSMutableData dataWithBytes:prefixBytes length:sizeof(prefixBytes)];
     [multicodec appendData:keyPair.compressedPublicKey];
 
-    NSString *multibase = [NSString stringWithFormat:@"z%@", [CID base58btcEncode:multicodec]];
+    NSString *multibase = [NSString stringWithFormat:@"z%@", [ATProtoCID base58btcEncode:multicodec]];
 
     NSError *decodeError = nil;
     NSData *decoded = [XrpcIdentityHelper publicKeyBytesFromMultibase:multibase error:&decodeError];

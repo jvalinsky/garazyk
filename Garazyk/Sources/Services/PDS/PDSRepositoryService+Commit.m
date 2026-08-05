@@ -42,12 +42,12 @@
         return nil;
     }
 
-    // Read the stored signed head commit CID and rev from repo_root.
+    // Read the stored signed head commit ATProtoCID and rev from repo_root.
     // This is the fast path from getLatestCommitForDid, without the
     // self-healing fallback that loads all records and rebuilds the MST.
-    CID *storedCommitCID = nil;
+    ATProtoCID *storedCommitCID = nil;
     NSData *unusedCommitBlock = nil;
-    CID *unusedDataCID = nil;
+    ATProtoCID *unusedDataCID = nil;
     NSString *storedCommitRev = nil;
     BOOL storedCommitIsSigned = NO;
     BOOL hasStoredHead = [self loadStoredHeadCommitForDid:did
@@ -83,9 +83,9 @@
     }
 
     // Fast path: use already-persisted signed head commit metadata.
-    CID *storedCommitCID = nil;
+    ATProtoCID *storedCommitCID = nil;
     NSData *unusedCommitBlock = nil;
-    CID *unusedDataCID = nil;
+    ATProtoCID *unusedDataCID = nil;
     NSString *storedCommitRev = nil;
     BOOL storedCommitIsSigned = NO;
     BOOL hasStoredHead = [self loadStoredHeadCommitForDid:did
@@ -105,7 +105,7 @@
 
     // Slow path: rebuild export state, self-heal head commit if needed.
     MST *mst = nil;
-    CID *commitCID = nil;
+    ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
     BOOL includeFullMST = YES;

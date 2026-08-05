@@ -224,9 +224,9 @@ NS_ASSUME_NONNULL_BEGIN
     [self waitForExpectations:@[delegate.connectExpectation] timeout:1.0];
     XCTAssertTrue(client.isConnected);
 
-    // Create CID for commit field
+    // Create ATProtoCID for commit field
     NSData *digest = [@"cursor2" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *commitCID = [CID cidWithDigest:digest codec:0x71];
+    ATProtoCID *commitCID = [ATProtoCID cidWithDigest:digest codec:0x71];
     
     FirehoseCommitEvent *event = [FirehoseCommitEvent eventWithRepo:@"did:plc:alice"
                                                               commit:commitCID
@@ -236,7 +236,7 @@ NS_ASSUME_NONNULL_BEGIN
     // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.commitExpectation] timeout:1.0];
-    // Note: currentCursor might be based on event.rev or seq, not commit CID
+    // Note: currentCursor might be based on event.rev or seq, not commit ATProtoCID
     // Just verify we got the event
     XCTAssertNotNil(delegate.commitEvent.commit);
 }
@@ -244,7 +244,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testOutOfOrderCommitDoesNotRegressReconnectCursor {
     RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
-    CID *commitCID = [CID cidWithDigest:[@"monotonic" dataUsingEncoding:NSUTF8StringEncoding]
+    ATProtoCID *commitCID = [ATProtoCID cidWithDigest:[@"monotonic" dataUsingEncoding:NSUTF8StringEncoding]
                                   codec:0x71];
 
     FirehoseCommitEvent *newer = [FirehoseCommitEvent eventWithRepo:@"did:plc:alice"

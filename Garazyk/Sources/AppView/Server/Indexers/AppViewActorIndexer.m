@@ -70,15 +70,15 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
         NSError *cborError = nil;
         NSData *cborData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:profileRecord error:&cborError];
         if (cborData) {
-            CID *computedCID = [CID cidWithDigest:[CID sha256Digest:cborData] codec:0x71];
+            ATProtoCID *computedCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:cborData] codec:0x71];
             recordCID = computedCID.stringValue;
         } else if (jsonData) {
-            recordCID = [CID sha256:jsonData].stringValue;
+            recordCID = [ATProtoCID sha256:jsonData].stringValue;
         }
     }
 
     if (recordCID) {
-        CID *rcid = [CID cidFromString:recordCID];
+        ATProtoCID *rcid = [ATProtoCID cidFromString:recordCID];
         if (rcid) {
             NSData *blockData = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] encodeDataWithJSONObject:profileRecord error:nil] ?: jsonData;
             [_avdb saveBlockWithCid:rcid.bytes
