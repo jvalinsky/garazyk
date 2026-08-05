@@ -142,10 +142,10 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @end
 
 // ---------------------------------------------------------------------------
-// STARMstEntry
+// ATProtoSTARMstEntry
 // ---------------------------------------------------------------------------
 
-@implementation STARMstEntry
+@implementation ATProtoSTARMstEntry
 
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                          keySuffix:(NSData *)keySuffix
@@ -153,7 +153,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
                       valueArchived:(BOOL)valueArchived
                               tree:(nullable ATProtoCID *)tree
                        treeArchived:(BOOL)treeArchived {
-    STARMstEntry *e = [[self alloc] init];
+    ATProtoSTARMstEntry *e = [[self alloc] init];
     e.prefixLen = prefixLen;
     e.keySuffix = [keySuffix copy];
     e.value = value;
@@ -166,15 +166,15 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @end
 
 // ---------------------------------------------------------------------------
-// STARMstNode
+// ATProtoSTARMstNode
 // ---------------------------------------------------------------------------
 
-@implementation STARMstNode
+@implementation ATProtoSTARMstNode
 
 + (instancetype)nodeWithLeft:(nullable ATProtoCID *)left
                 leftArchived:(BOOL)leftArchived
-                    entries:(NSArray<STARMstEntry *> *)entries {
-    STARMstNode *n = [[self alloc] init];
+                    entries:(NSArray<ATProtoSTARMstEntry *> *)entries {
+    ATProtoSTARMstNode *n = [[self alloc] init];
     n.left = left;
     n.leftArchived = leftArchived;
     n.entries = [entries copy];
@@ -184,7 +184,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 - (nullable NSData *)serializeToDagCBOR:(NSError **)error {
     NSMutableArray<ATProtoCBORValue *> *entriesCBOR = [NSMutableArray array];
 
-    for (STARMstEntry *entry in self.entries) {
+    for (ATProtoSTARMstEntry *entry in self.entries) {
         NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *entryDict = [NSMutableDictionary dictionary];
 
         // Spec order: k, p, v, V, t, T
@@ -359,7 +359,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     if (!node) return YES;
 
     // Build STAR MST node
-    NSMutableArray<STARMstEntry *> *starEntries = [NSMutableArray array];
+    NSMutableArray<ATProtoSTARMstEntry *> *starEntries = [NSMutableArray array];
     NSData *prevKeyData = [NSData data];
     
     // Cache for record data to avoid redundant blockProvider calls
@@ -405,7 +405,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
             treeArchived = NO;
         }
 
-        STARMstEntry *starEntry = [STARMstEntry entryWithPrefixLen:prefixLen
+        ATProtoSTARMstEntry *starEntry = [ATProtoSTARMstEntry entryWithPrefixLen:prefixLen
                                                          keySuffix:keySuffix
                                                              value:valueCID
                                                       valueArchived:valueArchived
@@ -424,7 +424,7 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
         leftArchived = NO;
     }
 
-    STARMstNode *starNode = [STARMstNode nodeWithLeft:leftCID
+    ATProtoSTARMstNode *starNode = [ATProtoSTARMstNode nodeWithLeft:leftCID
                                           leftArchived:leftArchived
                                               entries:starEntries];
 

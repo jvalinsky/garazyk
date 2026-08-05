@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file SSLPinningManager.m
+ @file ATProtoSSLPinningManager.m
 
  @abstract Implements TLS certificate/public-key pinning checks for outbound trust decisions.
 
@@ -17,22 +17,22 @@
 
 NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
 
-@interface SSLPinningManager ()
+@interface ATProtoSSLPinningManager ()
 
 @property (nonatomic, assign) BOOL pinningEnabled;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<NSData *> *> *pinnedKeys;
 
 @end
 
-@implementation SSLPinningManager
+@implementation ATProtoSSLPinningManager
 
 + (instancetype)sharedManager {
-    static SSLPinningManager *shared = nil;
+    static ATProtoSSLPinningManager *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         // Use configuration to determine if pinning is enabled
         ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-        shared = [[SSLPinningManager alloc] initWithPinningEnabled:config.sslPinningEnabled];
+        shared = [[ATProtoSSLPinningManager alloc] initWithPinningEnabled:config.sslPinningEnabled];
     });
     return shared;
 }

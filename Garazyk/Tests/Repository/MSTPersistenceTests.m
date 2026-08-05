@@ -12,7 +12,7 @@
 @interface MSTPersistenceTests : XCTestCase
 
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) MSTPersistence *persistence;
+@property (nonatomic, strong) ATProtoMSTPersistence *persistence;
 
 @end
 
@@ -109,7 +109,7 @@
     XCTAssertTrue(self.database.isOpen, "Database should be open");
 
     // Use a fresh instance, NOT the singleton, to avoid state pollution between tests
-    self.persistence = [[MSTPersistence alloc] init];
+    self.persistence = [[ATProtoMSTPersistence alloc] init];
     self.persistence.database = self.database;
 }
 

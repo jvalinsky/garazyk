@@ -16,17 +16,17 @@ typedef NS_ENUM(NSInteger, SSLPinningError) {
 };
 
 /*!
- @class SSLPinningManager
+ @class ATProtoSSLPinningManager
 
  @abstract Manages SSL certificate pinning for HTTPS connections.
 
- @discussion SSLPinningManager validates server certificates against pre-configured
+ @discussion ATProtoSSLPinningManager validates server certificates against pre-configured
  public keys for specific domains. This prevents man-in-the-middle attacks by ensuring
  connections use expected certificates.
 
  Certificate pinning can be bypassed in development environments.
  */
-@interface SSLPinningManager : NSObject <NSURLSessionDelegate>
+@interface ATProtoSSLPinningManager : NSObject <NSURLSessionDelegate>
 
 /*!
  @property pinningEnabled
@@ -43,7 +43,7 @@ typedef NS_ENUM(NSInteger, SSLPinningError) {
 
  @abstract Returns the shared SSL pinning manager instance.
 
- @return The singleton SSLPinningManager.
+ @return The singleton ATProtoSSLPinningManager.
  */
 + (instancetype)sharedManager;
 
@@ -54,7 +54,7 @@ typedef NS_ENUM(NSInteger, SSLPinningError) {
 
  @param pinningEnabled Whether pinning should be enabled.
 
- @return An initialized SSLPinningManager.
+ @return An initialized ATProtoSSLPinningManager.
  */
 - (instancetype)initWithPinningEnabled:(BOOL)pinningEnabled;
 

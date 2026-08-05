@@ -20,7 +20,7 @@
     };
     NSData *data = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
     
-    XRPCError *error = [XRPCError errorWithData:data statusCode:400];
+    ATProtoXRPCError *error = [ATProtoXRPCError errorWithData:data statusCode:400];
     
     XCTAssertNotNil(error);
     XCTAssertEqualObjects(error.error, @"InvalidRequest");
@@ -32,7 +32,7 @@
     NSDictionary *dict = @{@"error": @"AuthRequired"};
     NSData *data = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
     
-    XRPCError *error = [XRPCError errorWithData:data statusCode:401];
+    ATProtoXRPCError *error = [ATProtoXRPCError errorWithData:data statusCode:401];
     
     XCTAssertNotNil(error);
     XCTAssertEqualObjects(error.error, @"AuthRequired");
@@ -44,7 +44,7 @@
     NSDictionary *dict = @{@"message": @"Something went wrong"};
     NSData *data = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
     
-    XRPCError *error = [XRPCError errorWithData:data statusCode:500];
+    ATProtoXRPCError *error = [ATProtoXRPCError errorWithData:data statusCode:500];
     
     XCTAssertNotNil(error);
     XCTAssertEqualObjects(error.error, @"UnknownError");
@@ -55,7 +55,7 @@
 - (void)testErrorWithInvalidData {
     NSData *invalidData = [NSData dataWithBytes:"invalid json" length:12];
     
-    XRPCError *error = [XRPCError errorWithData:invalidData statusCode:500];
+    ATProtoXRPCError *error = [ATProtoXRPCError errorWithData:invalidData statusCode:500];
     
     XCTAssertNil(error);
 }
@@ -64,13 +64,13 @@
     NSArray *array = @[@"error", @"message"];
     NSData *data = [NSJSONSerialization dataWithJSONObject:array options:0 error:nil];
     
-    XRPCError *error = [XRPCError errorWithData:data statusCode:500];
+    ATProtoXRPCError *error = [ATProtoXRPCError errorWithData:data statusCode:500];
     
     XCTAssertNil(error);
 }
 
 - (void)testErrorWithEmptyData {
-    XRPCError *error = [XRPCError errorWithData:[NSData data] statusCode:500];
+    ATProtoXRPCError *error = [ATProtoXRPCError errorWithData:[NSData data] statusCode:500];
     
     XCTAssertNil(error);
 }
@@ -81,7 +81,7 @@
         @"message": @"Too many requests"
     };
     
-    XRPCError *error = [XRPCError errorWithDictionary:dict statusCode:429];
+    ATProtoXRPCError *error = [ATProtoXRPCError errorWithDictionary:dict statusCode:429];
     
     XCTAssertNotNil(error);
     XCTAssertEqualObjects(error.error, @"RateLimited");
@@ -90,7 +90,7 @@
 }
 
 - (void)testInitWithValues {
-    XRPCError *error = [[XRPCError alloc] initWithError:@"TestError"
+    ATProtoXRPCError *error = [[ATProtoXRPCError alloc] initWithError:@"TestError"
                                                  message:@"Test message"
                                               statusCode:418];
     
@@ -101,7 +101,7 @@
 }
 
 - (void)testDescription {
-    XRPCError *error = [[XRPCError alloc] initWithError:@"BadRequest"
+    ATProtoXRPCError *error = [[ATProtoXRPCError alloc] initWithError:@"BadRequest"
                                                  message:@"Invalid parameters"
                                               statusCode:400];
     
@@ -113,7 +113,7 @@
 }
 
 - (void)testToNSError {
-    XRPCError *error = [[XRPCError alloc] initWithError:@"NotFound"
+    ATProtoXRPCError *error = [[ATProtoXRPCError alloc] initWithError:@"NotFound"
                                                  message:@"Resource not found"
                                               statusCode:404];
     

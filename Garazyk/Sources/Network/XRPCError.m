@@ -4,13 +4,13 @@
 
 NSString * const XRPCErrorDomain = @"com.atproto.xrpc.error";
 
-@interface XRPCError ()
+@interface ATProtoXRPCError ()
 @property (nonatomic, copy, readwrite) NSString *error;
 @property (nonatomic, copy, readwrite) NSString *message;
 @property (nonatomic, assign, readwrite) NSInteger statusCode;
 @end
 
-@implementation XRPCError
+@implementation ATProtoXRPCError
 
 + (nullable instancetype)errorWithData:(NSData *)data statusCode:(NSInteger)statusCode {
     NSError *parseError = nil;
@@ -31,7 +31,7 @@ NSString * const XRPCErrorDomain = @"com.atproto.xrpc.error";
         return nil;
     }
     
-    return [[XRPCError alloc] initWithError:error ?: @"UnknownError"
+    return [[ATProtoXRPCError alloc] initWithError:error ?: @"UnknownError"
                                      message:message ?: @"An unknown error occurred"
                                   statusCode:statusCode];
 }

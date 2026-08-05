@@ -56,7 +56,7 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
  * (at a specific node/entry in the tree). This mirrors the reference implementation's 
  * WalkerStatus union type.
  */
-@interface MSTWalkerStatus : NSObject
+@interface ATProtoMSTWalkerStatus : NSObject
 
 /** @abstract Current status tag. */
 @property (nonatomic, assign, readonly) MSTWalkerStatusTag tag;
@@ -112,7 +112,7 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
 /** @abstract The tree root node. */
 @property (nonatomic, strong, readonly) MSTNode *root;
 /** @abstract Current status. */
-@property (nonatomic, strong) MSTWalkerStatus *status;
+@property (nonatomic, strong) ATProtoMSTWalkerStatus *status;
 
 /**
  * @abstract Initializes a walker starting at the given MST root node.
