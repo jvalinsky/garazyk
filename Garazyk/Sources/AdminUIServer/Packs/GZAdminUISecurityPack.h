@@ -7,6 +7,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /** @abstract Admin UI pack for the Security surface. */
 @interface GZAdminUISecurityPack : NSObject <GZAdminUIPack>
+
+/** @abstract Renders session-management results. */
++ (NSString *)renderSessionsPartial:(NSDictionary *)result;
+/** @abstract Renders app-password results. */
++ (NSString *)renderAppPasswordsPartial:(NSDictionary *)result;
+
 @end
 
 NS_ASSUME_NONNULL_END
