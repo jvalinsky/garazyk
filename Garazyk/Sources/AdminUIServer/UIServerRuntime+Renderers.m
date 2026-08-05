@@ -175,36 +175,6 @@
 
 #pragma mark - Phase 2 Render Methods
 
-- (NSString *)renderPLCHealthPartial:(NSDictionary *)result {
-    NSMutableDictionary *ctx = [result mutableCopy];
-    if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    NSString *status = result[@"status"] ?: @"unknown";
-    ctx[@"status"] = status;
-    ctx[@"statusBadge"] = [status isEqualToString:@"ok"] ? @"badge badge-success" : @"badge badge-destructive";
-    return [UITemplateEngine renderTemplate:@"plc-health" context:ctx];
-}
-
-- (NSString *)renderPLCMetricsPartial:(NSDictionary *)result {
-    NSMutableDictionary *ctx = [result mutableCopy];
-    if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    if (!ctx[@"text"]) ctx[@"text"] = @"";
-    return [UITemplateEngine renderTemplate:@"plc-metrics" context:ctx];
-}
-
-- (NSString *)renderPLCListPartial:(NSDictionary *)result cursor:(nullable NSString *)cursor {
-    NSMutableDictionary *ctx = [result mutableCopy];
-    if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    if (cursor) ctx[@"cursor"] = cursor;
-    if (result[@"dids"]) {
-        NSMutableArray *mapped = [NSMutableArray array];
-        for (NSString *did in result[@"dids"]) {
-            [mapped addObject:@{@"did": did}];
-        }
-        ctx[@"mappedDids"] = mapped;
-    }
-    return [UITemplateEngine renderTemplate:@"plc-list" context:ctx];
-}
-
 #pragma mark - Phase 3 Render Methods
 
 - (NSString *)renderOzoneScheduledPartial:(NSDictionary *)result {
