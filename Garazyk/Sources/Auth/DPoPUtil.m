@@ -156,7 +156,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         token.ath = [ATProtoAuthCryptoBase64URL encode:tokenHash];
     }
 
-    // Build JWT
+    // Build ATProtoJWT
     NSDictionary *header = @{
         @"typ": @"dpop+jwt",
         @"alg": @"ES256",

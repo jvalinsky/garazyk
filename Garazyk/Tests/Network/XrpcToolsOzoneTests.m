@@ -41,7 +41,7 @@
 }
 
 - (void)testEmitModerationEventRejectsStaleAdminToken {
-    // Cross a second boundary so the JWT iat is strictly before
+    // Cross a second boundary so the ATProtoJWT iat is strictly before
     // the new minimumTokenIssuedAt floor, then call logout which
     // sets minimumTokenIssuedAt = now (PDSAdminAuth.m:560).
     [NSThread sleepForTimeInterval:1.5];
@@ -61,7 +61,7 @@
 }
 
 - (void)testEmitModerationEventRejectsNonAdminJwt {
-    // A valid user JWT (not in admin_dids.json) must be rejected.
+    // A valid user ATProtoJWT (not in admin_dids.json) must be rejected.
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     NSDictionary *event = @{
         @"type": @"takedown",

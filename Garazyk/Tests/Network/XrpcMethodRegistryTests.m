@@ -133,7 +133,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertTrue(thumbprint.length > 0);
 
         error = nil;
-        JWT *accessToken = [controller.jwtMinter mintAccessTokenForDID:did
+        ATProtoJWT *accessToken = [controller.jwtMinter mintAccessTokenForDID:did
                                                                  handle:handle
                                                                  scopes:@[@"com.atproto.access"]
                                                        dpopKeyThumbprint:thumbprint

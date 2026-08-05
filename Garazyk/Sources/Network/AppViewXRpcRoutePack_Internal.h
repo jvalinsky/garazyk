@@ -51,7 +51,7 @@
 @property (nonatomic, strong, readonly) AppViewWriteProxy *writeProxy;
 /** @abstract Optional PDS query database used by selected routes. */
 @property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;
-/** @abstract Optional JWT issuer used by authenticated AppView extensions. */
+/** @abstract Optional ATProtoJWT issuer used by authenticated AppView extensions. */
 @property (nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 
 /** @abstract Authenticates the request and returns its actor DID, or writes an auth error and returns nil. */

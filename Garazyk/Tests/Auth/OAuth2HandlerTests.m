@@ -1015,7 +1015,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     ATProtoJWTHeader *jwtHeader = [ATProtoJWTHeader headerFromDictionary:header error:&error];
     ATProtoJWTPayload *jwtPayload = [ATProtoJWTPayload payloadFromDictionary:payload error:&error];
 
-    JWT *jwt = [JWT jwtWithHeader:jwtHeader payload:jwtPayload signature:@"" error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithHeader:jwtHeader payload:jwtPayload signature:@"" error:&error];
     NSString *signingInput = jwt.signingInput;
 
     NSData *signingInputData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
@@ -1034,7 +1034,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         return nil;
     }
 
-    NSString *encodedSignature = [JWT base64URLEncodeData:signatureData error:&error];
+    NSString *encodedSignature = [ATProtoJWT base64URLEncodeData:signatureData error:&error];
     if (!encodedSignature) {
         return nil;
     }

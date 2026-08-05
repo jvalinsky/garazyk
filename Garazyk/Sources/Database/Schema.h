@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
  - invite_codes: Invitation codes
  - passkeys: WebAuthn credentials
  - oauth_clients: OAuth client registrations
- - jwt_signing_keys: JWT signing keys
+ - jwt_signing_keys: ATProtoJWT signing keys
 
  @see PDSDatabase
  @copyright Copyright (c) 2025-2026 Jack Valinsky

@@ -7,7 +7,7 @@
  *
  * @discussion Provides high-level account operations including creation,
  * authentication, token refresh, and deletion. Coordinates between
- * database pool and JWT minting.
+ * database pool and ATProtoJWT minting.
  *
  * @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -155,7 +155,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) id<PDSSessionRepository> sessionRepository;
 
 /**
- * @abstract JWT minter for token generation.
+ * @abstract ATProtoJWT minter for token generation.
  */
 @property (nonatomic, strong, nullable) ATProtoJWTMinter *minter;
 
@@ -173,7 +173,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Initializes the service with dependencies.
  * @param accountRepository Repository for account operations.
  * @param sessionRepository Repository for session operations.
- * @param minter JWT minter for tokens.
+ * @param minter ATProtoJWT minter for tokens.
  * @param emailProvider Email provider for alerts and verification.
  * @return An initialized instance.
  */

@@ -64,7 +64,7 @@
 
 - (nullable NSString *)authenticateRequest:(HttpRequest *)request
                                   response:(HttpResponse *)response {
-    // Reuse ChatAuthManager for JWT verification — Germ mailbox
+    // Reuse ChatAuthManager for ATProtoJWT verification — Germ mailbox
     // uses the same auth infrastructure as chat.bsky.*
     NSString *did = [self.authManager authenticateRequest:request response:response];
     if (!did) {

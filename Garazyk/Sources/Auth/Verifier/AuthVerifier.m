@@ -287,7 +287,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
         }
     }
 
-    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
     if (!jwt) {
         if (error) {
             *error = [NSError errorWithDomain:AuthVerifierErrorDomain
@@ -408,7 +408,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
         }
 
         NSData *signingInput = [jwt.signingInput dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *signature = [JWT base64URLDecode:jwt.encodedSignature error:nil];
+        NSData *signature = [ATProtoJWT base64URLDecode:jwt.encodedSignature error:nil];
         if (![pubKey verifySignature:signature forData:signingInput error:&verifyError]) {
             if (error) {
                 *error = [NSError errorWithDomain:AuthVerifierErrorDomain
@@ -431,7 +431,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
             return nil;
         }
 
-        // §4.4: Enforce allowedAlgorithms against the JWT's alg claim on the
+        // §4.4: Enforce allowedAlgorithms against the ATProtoJWT's alg claim on the
         // remote-issuer path. validateClaims: does not check alg — it only
         // validates exp, nbf, iss, aud, token_use, and typ. The local-issuer
         // path enforces alg in ATProtoJWTVerifier.verifyJWT: via its own method, but

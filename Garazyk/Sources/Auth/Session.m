@@ -148,7 +148,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     if (self.minter) {
         NSError *error = nil;
         NSArray<NSString *> *scopes = [self.scope componentsSeparatedByString:@" "];
-        JWT *jwt = [self.minter mintAccessTokenForDID:self.did
+        ATProtoJWT *jwt = [self.minter mintAccessTokenForDID:self.did
                                                handle:self.handle
                                                scopes:scopes
                                             sessionID:self.sessionID
@@ -177,7 +177,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     if (self.minter) {
         NSError *error = nil;
         NSArray<NSString *> *scopes = [self.scope componentsSeparatedByString:@" "];
-        JWT *jwt = [self.minter mintRefreshTokenForDID:self.did
+        ATProtoJWT *jwt = [self.minter mintRefreshTokenForDID:self.did
                                                  handle:self.handle
                                                  scopes:scopes
                                                   error:&error];

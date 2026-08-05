@@ -860,7 +860,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
 
-        // Admin fallback: if no valid JWT, check admin secret from config
+        // Admin fallback: if no valid ATProtoJWT, check admin secret from config
         if (!actorDID) {
             NSString *adminSecret = services.adminSecret;
             NSString *token = authHeader;

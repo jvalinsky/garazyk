@@ -125,7 +125,7 @@
     XCTAssertTrue([PDSAdminAuth sharedAuth].adminToken.length > 0);
 
     NSError *jwtError = nil;
-    JWT *jwt = [JWT jwtWithToken:[PDSAdminAuth sharedAuth].adminToken error:&jwtError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:[PDSAdminAuth sharedAuth].adminToken error:&jwtError];
     XCTAssertNotNil(jwt);
     XCTAssertNil(jwtError);
     XCTAssertNotNil(jwt.payload.iss, @"Should have an issuer");
@@ -147,7 +147,7 @@
     XCTAssertTrue([PDSAdminAuth sharedAuth].adminToken.length > 0);
 
     NSError *jwtError = nil;
-    JWT *jwt = [JWT jwtWithToken:[PDSAdminAuth sharedAuth].adminToken error:&jwtError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:[PDSAdminAuth sharedAuth].adminToken error:&jwtError];
     XCTAssertNotNil(jwt);
     XCTAssertNil(jwtError);
     XCTAssertEqualObjects(jwt.payload.iss, @"https://pds.local:8443");
@@ -178,7 +178,7 @@
     XCTAssertNil(error);
 
     NSError *jwtError = nil;
-    JWT *jwt = [JWT jwtWithToken:[PDSAdminAuth sharedAuth].adminToken error:&jwtError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:[PDSAdminAuth sharedAuth].adminToken error:&jwtError];
     XCTAssertNotNil(jwt);
     XCTAssertNil(jwtError);
 
@@ -291,7 +291,7 @@
 }
 
 - (void)testAdminTokenCookieNoLongerAccepted {
-    // Set up admin password and mint a valid JWT
+    // Set up admin password and mint a valid ATProtoJWT
     [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
     [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
 
@@ -321,7 +321,7 @@
     unsetenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER");
 
     @try {
-        // Set up admin password and mint a valid JWT
+        // Set up admin password and mint a valid ATProtoJWT
         [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
         [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
 
@@ -359,7 +359,7 @@
     setenv("PDS_DISABLE_X_ADMIN_TOKEN_HEADER", "0", 1);
 
     @try {
-        // Set up admin password and mint a valid JWT
+        // Set up admin password and mint a valid ATProtoJWT
         [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
         [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
 

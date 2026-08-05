@@ -76,8 +76,8 @@ static NSString * const kTestJWKD = @"GE8ea5wxqv-uyg35MjN4QwaINAa6wl4uSXJtZbDzNg
 
   NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
   NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-  NSString *encodedHeader = [JWT base64URLEncodeData:headerData error:nil];
-  NSString *encodedPayload = [JWT base64URLEncodeData:payloadData error:nil];
+  NSString *encodedHeader = [ATProtoJWT base64URLEncodeData:headerData error:nil];
+  NSString *encodedPayload = [ATProtoJWT base64URLEncodeData:payloadData error:nil];
   NSString *signingInput = [NSString stringWithFormat:@"%@.%@", encodedHeader, encodedPayload];
 
   NSDictionary *privateJWK = @{ @"kty" : @"EC", @"crv" : @"P-256", @"x" : kTestJWKX, @"y" : kTestJWKY, @"d" : kTestJWKD };
@@ -85,7 +85,7 @@ static NSString * const kTestJWKD = @"GE8ea5wxqv-uyg35MjN4QwaINAa6wl4uSXJtZbDzNg
   XCTAssertNotNil(privateKey);
   NSData *signature = [privateKey signData:[signingInput dataUsingEncoding:NSUTF8StringEncoding] error:nil];
   XCTAssertEqual(signature.length, (NSUInteger)64);
-  NSString *encodedSignature = [JWT base64URLEncodeData:signature error:nil];
+  NSString *encodedSignature = [ATProtoJWT base64URLEncodeData:signature error:nil];
   return [NSString stringWithFormat:@"%@.%@", signingInput, encodedSignature];
 }
 

@@ -328,7 +328,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     }
 
     NSError *parseError = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&parseError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
         GZ_LOG_AUTH_WARN(@"PDSAdminAuth: Failed to parse JWT token");
         if (error) {

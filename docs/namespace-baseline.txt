@@ -6,7 +6,7 @@
 # the class is prefixed or this file is edited in the same commit that
 # introduces it, so review sees the regression.
 #
-# Starting inventory: 230 unprefixed classes out of 515 total.
+# Starting inventory: 229 unprefixed classes out of 515 total.
 AVFoundationTranscoder
 ActorService
 AdminMiddleware
@@ -82,7 +82,6 @@ HttpRouteNode
 HttpRouteTrie
 HttpServer
 HttpStreamingBody
-JWT
 JelczConfiguration
 JelczDatabase
 MST

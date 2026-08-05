@@ -257,7 +257,7 @@
   }];
 }
 
-#pragma mark - Client Metadata & JWT Validation
+#pragma mark - Client Metadata & ATProtoJWT Validation
 - (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata
                                    error:(NSError **)error {
   if (!metadata || ![metadata isKindOfClass:[NSDictionary class]]) {
@@ -890,7 +890,7 @@
   }
 
   NSError *parseError = nil;
-  JWT *jwt = [JWT jwtWithToken:assertion error:&parseError];
+  ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:assertion error:&parseError];
   if (!jwt) {
     if (error) {
       *error = [NSError errorWithDomain:@"OAuth2"
@@ -1112,8 +1112,8 @@
     return NO;
   }
 
-  NSData *xData = [JWT base64URLDecode:xB64 error:&parseError];
-  NSData *yData = [JWT base64URLDecode:yB64 error:&parseError];
+  NSData *xData = [ATProtoJWT base64URLDecode:xB64 error:&parseError];
+  NSData *yData = [ATProtoJWT base64URLDecode:yB64 error:&parseError];
   if (!xData || !yData) {
     if (error) {
       *error = [NSError errorWithDomain:@"OAuth2"
@@ -1142,7 +1142,7 @@
   NSString *signingInput = [NSString stringWithFormat:@"%@.%@", parts[0],
                                                      parts[1]];
   NSData *signingInputData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
-  NSData *signatureData = [JWT base64URLDecode:parts[2] error:&parseError];
+  NSData *signatureData = [ATProtoJWT base64URLDecode:parts[2] error:&parseError];
 
   if (!signatureData) {
     CFRelease(publicKey);

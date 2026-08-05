@@ -133,7 +133,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     NSString *authHeader = [request headerForKey:@"Authorization"];
 
     if (self.requireAdmin) {
-        // Admin auth: validate JWT + check admin privileges
+        // Admin auth: validate ATProtoJWT + check admin privileges
         BOOL authorized = [XrpcAuthHelper authorizeAdminRequest:request
                                                        response:response
                                                serviceDatabases:self.serviceDatabases
@@ -161,7 +161,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
         return YES;
     } else {
-        // User auth: validate JWT, extract DID
+        // User auth: validate ATProtoJWT, extract DID
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                        jwtMinter:jwtMinter
                                                  adminController:adminController

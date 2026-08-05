@@ -16,7 +16,7 @@
 }
 
 - (void)testAlgNoneRejection {
-    // Create a JWT header with alg: none
+    // Create a ATProtoJWT header with alg: none
     NSString *header = @"{\"alg\":\"none\",\"typ\":\"JWT\"}";
     NSString *payload = @"{\"sub\":\"1234567890\",\"name\":\"John Doe\",\"iat\":1516239022}";
     
@@ -27,7 +27,7 @@
     NSString *token = [NSString stringWithFormat:@"%@.%@.", headerBase64, payloadBase64];
     
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     
     // It might parse successfully (depending on implementation), but verification MUST fail
     BOOL verified = [self.verifier verifyJWT:jwt error:&error];
@@ -45,7 +45,7 @@
     NSString *payload = @"{\"sub\":\"123\",\"iat\":100}";
     NSString *token = [NSString stringWithFormat:@"%@.%@.invalidsig", [self base64UrlEncode:header], [self base64UrlEncode:payload]];
 
-    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
 
     XCTAssertFalse([verifierWithKey verifyJWT:jwt error:nil], @"Invalid signature should be rejected");
 }
@@ -58,7 +58,7 @@
     NSString *payload = @"{\"sub\":\"123\",\"iat\":1516239022}";
     NSString *token = [NSString stringWithFormat:@"%@.%@.anysignature", [self base64UrlEncode:header], [self base64UrlEncode:payload]];
 
-    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
     NSError *error = nil;
     BOOL verified = [verifierWithoutKey verifyJWT:jwt error:&error];
 
@@ -76,7 +76,7 @@
     NSString *payload = @"{\"sub\":\"123\",\"iat\":100}";
     NSString *token = [NSString stringWithFormat:@"%@.%@.invalidsig", [self base64UrlEncode:header], [self base64UrlEncode:payload]];
     
-    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
     BOOL verified = [self.verifier verifyJWT:jwt error:nil];
     
     XCTAssertFalse(verified, @"Should reject invalid signature");

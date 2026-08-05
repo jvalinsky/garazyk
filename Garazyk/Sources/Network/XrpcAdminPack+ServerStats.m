@@ -141,7 +141,7 @@
                                subjectId:did
                                  details:@{@"action": @"force_reinitialize"}
                                ipAddress:nil
-                                adminDid:@"" // Extract from JWT if needed
+                                adminDid:@"" // Extract from ATProtoJWT if needed
                                    error:nil];
 
         response.statusCode = HttpStatusOK;

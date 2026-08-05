@@ -5,12 +5,12 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @header JWT.h
+ @header ATProtoJWT.h
  
- @abstract JWT (JSON Web Token) handling for ATProto authentication.
+ @abstract ATProtoJWT (JSON Web Token) handling for ATProto authentication.
  
  @discussion This header defines classes for creating, parsing, signing,
- and verifying JWT tokens. It includes ATProtoJWTHeader, ATProtoJWTPayload, JWT,
+ and verifying ATProtoJWT tokens. It includes ATProtoJWTHeader, ATProtoJWTPayload, ATProtoJWT,
  ATProtoJWTVerifier, and ATProtoJWTMinter classes.
  
  @copyright Copyright (c) 2025-2026 Jack Valinsky
@@ -27,11 +27,11 @@ extern NSString * const JWTErrorDomain;
 
 /*!
  
- @abstract Error codes for JWT operations.
+ @abstract Error codes for ATProtoJWT operations.
  
  @constant JWTErrorInvalidFormat The token format is invalid.
- @constant JWTErrorInvalidHeader The JWT header is malformed.
- @constant JWTErrorInvalidPayload The JWT payload is malformed.
+ @constant JWTErrorInvalidHeader The ATProtoJWT header is malformed.
+ @constant JWTErrorInvalidPayload The ATProtoJWT payload is malformed.
  @constant JWTErrorInvalidSignature The signature is invalid.
  @constant JWTErrorTokenExpired The token has expired.
  @constant JWTErrorTokenNotYetValid The token is not yet valid.
@@ -50,13 +50,13 @@ extern NSString * const JWTErrorDomain;
  * @abstract Defines JWTError values exposed by this API.
  */
 typedef NS_ENUM(NSInteger, JWTError) {
-    /** The token does not contain the expected compact JWT parts. */
+    /** The token does not contain the expected compact ATProtoJWT parts. */
     JWTErrorInvalidFormat = 1000,
-    /** The JWT header is malformed. */
+    /** The ATProtoJWT header is malformed. */
     JWTErrorInvalidHeader,
-    /** The JWT payload is malformed. */
+    /** The ATProtoJWT payload is malformed. */
     JWTErrorInvalidPayload,
-    /** The JWT signature is invalid. */
+    /** The ATProtoJWT signature is invalid. */
     JWTErrorInvalidSignature,
     /** The token has expired. */
     JWTErrorTokenExpired,
@@ -87,9 +87,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*!
  @class ATProtoJWTHeader
  
- @abstract Represents the header portion of a JWT.
+ @abstract Represents the header portion of a ATProtoJWT.
  
- @discussion The JWT header contains metadata about the token including
+ @discussion The ATProtoJWT header contains metadata about the token including
  the algorithm used for signing and the key identifier.
  */
 @interface ATProtoJWTHeader : NSObject
@@ -131,9 +131,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*!
  @class ATProtoJWTPayload
  
- @abstract Represents the claims portion of a JWT.
+ @abstract Represents the claims portion of a ATProtoJWT.
  
- @discussion The JWT payload contains the claims about the token subject,
+ @discussion The ATProtoJWT payload contains the claims about the token subject,
  including standard claims (iss, sub, aud, exp, iat, nbf) and ATProto-specific
  claims (did, handle, scope).
  */
@@ -214,16 +214,16 @@ typedef NS_ENUM(NSInteger, JWTError) {
 @end
 
 /*!
- @class JWT
+ @class ATProtoJWT
  
- @abstract Represents a complete JWT token.
+ @abstract Represents a complete ATProtoJWT token.
  
- @discussion JWT provides methods for parsing, encoding, and accessing
- JWT tokens. It combines header, payload, and signature components.
+ @discussion ATProtoJWT provides methods for parsing, encoding, and accessing
+ ATProtoJWT tokens. It combines header, payload, and signature components.
  
  @code
- // Parse a JWT token
- JWT *jwt = [JWT jwtWithToken:tokenString error:nil];
+ // Parse a ATProtoJWT token
+ ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:tokenString error:nil];
  
  // Access claims
  NSString *issuer = jwt.payload.iss;
@@ -234,9 +234,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @endcode
  */
 /**
- * @abstract Declares the JWT public API.
+ * @abstract Declares the ATProtoJWT public API.
  */
-@interface JWT : NSObject
+@interface ATProtoJWT : NSObject
 
 /*! The decoded header. */
 @property (nonatomic, strong, readonly) ATProtoJWTHeader *header;
@@ -259,24 +259,24 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*!
  @method jwtWithToken:error:
  
- @abstract Parses a JWT token string.
+ @abstract Parses a ATProtoJWT token string.
  
- @param token The JWT token string (three base64URL parts separated by dots).
+ @param token The ATProtoJWT token string (three base64URL parts separated by dots).
  @param error On return, contains an error if parsing failed.
- @return A new JWT instance, or nil on failure.
+ @return A new ATProtoJWT instance, or nil on failure.
  */
 + (nullable instancetype)jwtWithToken:(NSString *)token error:(NSError **)error;
 
 /*!
  @method jwtWithHeader:payload:signature:error:
  
- @abstract Creates a JWT from components.
+ @abstract Creates a ATProtoJWT from components.
  
- @param header The JWT header.
- @param payload The JWT payload.
+ @param header The ATProtoJWT header.
+ @param payload The ATProtoJWT payload.
  @param signature The signature (base64URL encoded).
  @param error On return, contains an error if creation failed.
- @return A new JWT instance.
+ @return A new ATProtoJWT instance.
  */
 /**
  * @abstract Performs the jwtWithHeader operation.
@@ -313,7 +313,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
  
  @abstract Returns the complete encoded token.
  
- @return The JWT token string (header.payload.signature).
+ @return The ATProtoJWT token string (header.payload.signature).
  */
 - (NSString *)encodedToken;
 
@@ -331,9 +331,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*!
  @class ATProtoJWTVerifier
  
- @abstract Verifies JWT tokens.
+ @abstract Verifies ATProtoJWT tokens.
  
- @discussion ATProtoJWTVerifier validates JWT signatures and claims including
+ @discussion ATProtoJWTVerifier validates ATProtoJWT signatures and claims including
  issuer, audience, and expiration.
  */
 @interface ATProtoJWTVerifier : NSObject
@@ -373,32 +373,32 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*!
  @method verifyJWT:error:
  
- @abstract Verifies a JWT's signature and claims.
+ @abstract Verifies a ATProtoJWT's signature and claims.
  
- @param jwt The JWT to verify.
+ @param jwt The ATProtoJWT to verify.
  @param error On return, contains an error if verification failed.
  @return YES if the token is valid, NO otherwise.
  */
-- (BOOL)verifyJWT:(JWT *)jwt error:(NSError **)error;
+- (BOOL)verifyJWT:(ATProtoJWT *)jwt error:(NSError **)error;
 
 /*!
  @method validateClaims:ofJWT:error:
  
- @abstract Validates specific claims of a JWT.
+ @abstract Validates specific claims of a ATProtoJWT.
  
  @param payload The payload to validate.
- @param jwt The JWT containing the payload.
+ @param jwt The ATProtoJWT containing the payload.
  @param error On return, contains an error if validation failed.
  @return YES if claims are valid, NO otherwise.
  */
-- (BOOL)validateClaims:(ATProtoJWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error;
+- (BOOL)validateClaims:(ATProtoJWTPayload *)payload ofJWT:(ATProtoJWT *)jwt error:(NSError **)error;
 
 @end
 
 /*!
  @class ATProtoJWTMinter
  
- @abstract Creates and signs JWT tokens.
+ @abstract Creates and signs ATProtoJWT tokens.
  
  @discussion ATProtoJWTMinter handles minting access tokens and refresh tokens
  with proper claims and signatures.
@@ -436,7 +436,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param payload The payload dictionary to sign.
  @param keyManager The key manager to use for signing.
  @param error On return, contains an error if signing failed.
- @return The signed JWT string.
+ @return The signed ATProtoJWT string.
  */
 - (NSString *)signPayload:(NSDictionary *)payload keyManager:(id<PDSKeyManager>)keyManager error:(NSError **)error;
 
@@ -448,7 +448,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param payload The payload dictionary to sign.
  @param keyManager The actor key manager to use for signing.
  @param error On return, contains an error if signing failed.
- @return The signed JWT string.
+ @return The signed ATProtoJWT string.
  */
 - (NSString *)signPayload:(NSDictionary *)payload actorKeyManager:(id<PDSActorKeyManager>)keyManager error:(NSError **)error;
 
@@ -456,11 +456,11 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*!
  @method signPayload:error:
  
- @abstract Signs a payload and returns a JWT string.
+ @abstract Signs a payload and returns a ATProtoJWT string.
  
  @param payload The payload dictionary to sign.
  @param error On return, contains an error if signing failed.
- @return The signed JWT string.
+ @return The signed ATProtoJWT string.
  */
 - (NSString *)signPayload:(NSDictionary *)payload error:(NSError **)error;
 
@@ -473,12 +473,12 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param handle The user's handle.
  @param scopes The granted scopes.
  @param error On return, contains an error if minting failed.
- @return A new access token JWT.
+ @return A new access token ATProtoJWT.
  */
 /**
  * @abstract Performs the mintAccessTokenForDID operation.
  */
-- (JWT *)mintAccessTokenForDID:(NSString *)did
+- (ATProtoJWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
                      sessionID:(nullable NSString *)sid
@@ -490,7 +490,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 
  @abstract Mints an access token with a DPoP key thumbprint but without a session ID.
  */
-- (JWT *)mintAccessTokenForDID:(NSString *)did
+- (ATProtoJWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
              dpopKeyThumbprint:(nullable NSString *)jkt
@@ -501,7 +501,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 
  @abstract Mints an access token without a DPoP key thumbprint.
  */
-- (JWT *)mintAccessTokenForDID:(NSString *)did
+- (ATProtoJWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
                            error:(NSError **)error;
@@ -515,12 +515,12 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param handle The user's handle.
  @param scopes The granted scopes.
  @param error On return, contains an error if minting failed.
- @return A new refresh token JWT.
+ @return A new refresh token ATProtoJWT.
  */
 /**
  * @abstract Performs the mintRefreshTokenForDID operation.
  */
-- (JWT *)mintRefreshTokenForDID:(NSString *)did
+- (ATProtoJWT *)mintRefreshTokenForDID:(NSString *)did
                          handle:(NSString *)handle
                          scopes:(NSArray<NSString *> *)scopes
                            error:(NSError **)error;
@@ -528,9 +528,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*!
  @method mintServiceAuthJWTForDID:aud:lxm:actorKeyManager:error:
  
- @abstract Mints a service-to-service auth JWT per AT Protocol spec.
+ @abstract Mints a service-to-service auth ATProtoJWT per AT Protocol spec.
  
- @discussion Creates a short-lived JWT signed with the user's repo signing
+ @discussion Creates a short-lived ATProtoJWT signed with the user's repo signing
  key. Per the AT Protocol XRPC spec, service auth JWTs must have:
  - iss: user's DID (the requesting account)
  - aud: target service DID (optionally with service fragment)
@@ -545,7 +545,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param methodNSID The lexicon method NSID (becomes lxm claim).
  @param actorKeyManager The user's signing key manager for ES256K signing.
  @param error On return, contains an error if minting failed.
- @return The signed JWT string, or nil on failure.
+ @return The signed ATProtoJWT string, or nil on failure.
  */
 /**
  * @abstract Performs the mintServiceAuthJWTForDID operation.

@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Represents a PDS account record in the database.
  * 
  * @discussion This class models account data stored in the database, including
- * identity information (DID, handle, email), credentials (password hash, JWT tokens),
+ * identity information (DID, handle, email), credentials (password hash, ATProtoJWT tokens),
  * and metadata (creation time, invite status).
  * 
  * @see PDSDatabase (Accounts)
@@ -36,10 +36,10 @@ NS_ASSUME_NONNULL_BEGIN
 /** Salt used for password hashing. */
 @property (nonatomic, copy, nullable) NSData *passwordSalt;
 
-/** JWT access token for API authentication. */
+/** ATProtoJWT access token for API authentication. */
 @property (nonatomic, copy, nullable) NSData *accessJwt;
 
-/** JWT refresh token for obtaining new access tokens. */
+/** ATProtoJWT refresh token for obtaining new access tokens. */
 @property (nonatomic, copy, nullable) NSData *refreshJwt;
 
 /** Account status (e.g., "active", "deactivated"). */

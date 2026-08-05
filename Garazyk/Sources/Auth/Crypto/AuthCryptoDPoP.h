@@ -83,8 +83,8 @@ extern NSString * const AuthCryptoDPoPErrorDomain;
 /*! Parses a URL string and returns its canonical HTU form. */
 + (nullable NSString *)canonicalHTUFromString:(NSString *)urlString;
 
-/*! Verifies a DPoP proof JWT against request parameters.
-    @param dpopJwt The DPoP proof JWT string.
+/*! Verifies a DPoP proof ATProtoJWT against request parameters.
+    @param dpopJwt The DPoP proof ATProtoJWT string.
     @param method HTTP method (GET, POST, etc.).
     @param url Request URL to verify against.
     @param nonce Expected nonce value (may be nil if not required).
@@ -108,12 +108,12 @@ extern NSString * const AuthCryptoDPoPErrorDomain;
   expectedAccessToken:(nullable NSString *)expectedAccessToken
                error:(NSError **)error;
 
-/*! Creates a signed DPoP proof JWT.
+/*! Creates a signed DPoP proof ATProtoJWT.
     @param url Target URL for the proof.
     @param method HTTP method.
     @param jwk EC P-256 JWK with private key material.
     @param error Set on failure.
-    @return Signed DPoP JWT string, or nil on error. */
+    @return Signed DPoP ATProtoJWT string, or nil on error. */
 + (nullable NSString *)createProofForURL:(NSURL *)url
                                   method:(NSString *)method
                                      key:(NSDictionary *)jwk

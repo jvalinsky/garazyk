@@ -133,8 +133,8 @@ static const NSTimeInterval PDSSpaceClockSkew = 30.0;
   NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
   NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:error];
   if (!headerData || !payloadData) return nil;
-  NSString *encodedHeader = [JWT base64URLEncodeData:headerData error:error];
-  NSString *encodedPayload = [JWT base64URLEncodeData:payloadData error:error];
+  NSString *encodedHeader = [ATProtoJWT base64URLEncodeData:headerData error:error];
+  NSString *encodedPayload = [ATProtoJWT base64URLEncodeData:payloadData error:error];
   if (!encodedHeader || !encodedPayload) return nil;
   NSString *input = [NSString stringWithFormat:@"%@.%@", encodedHeader, encodedPayload];
   NSData *signature = [actorKeyManager signData:[input dataUsingEncoding:NSUTF8StringEncoding] error:error];
@@ -142,7 +142,7 @@ static const NSTimeInterval PDSSpaceClockSkew = 30.0;
     if (signature && error) *error = [self error:PDSSpaceJWTErrorSignature message:@"Actor key returned an invalid ES256K signature"];
     return nil;
   }
-  NSString *encodedSignature = [JWT base64URLEncodeData:signature error:error];
+  NSString *encodedSignature = [ATProtoJWT base64URLEncodeData:signature error:error];
   return encodedSignature ? [NSString stringWithFormat:@"%@.%@", input, encodedSignature] : nil;
 }
 
@@ -159,9 +159,9 @@ static const NSTimeInterval PDSSpaceClockSkew = 30.0;
     if (error) *error = [self error:PDSSpaceJWTErrorMalformed message:@"Malformed compact JWT"];
     return nil;
   }
-  NSData *headerData = [JWT base64URLDecode:parts[0] error:nil];
-  NSData *payloadData = [JWT base64URLDecode:parts[1] error:nil];
-  NSData *signature = [JWT base64URLDecode:parts[2] error:nil];
+  NSData *headerData = [ATProtoJWT base64URLDecode:parts[0] error:nil];
+  NSData *payloadData = [ATProtoJWT base64URLDecode:parts[1] error:nil];
+  NSData *signature = [ATProtoJWT base64URLDecode:parts[2] error:nil];
   NSDictionary *header = headerData ? [NSJSONSerialization JSONObjectWithData:headerData options:0 error:nil] : nil;
   NSDictionary *payload = payloadData ? [NSJSONSerialization JSONObjectWithData:payloadData options:0 error:nil] : nil;
   if (![header isKindOfClass:[NSDictionary class]] || ![payload isKindOfClass:[NSDictionary class]] ||

@@ -107,12 +107,12 @@
   // OAuth Token Introspection (RFC 7662)
   // The token parameter is already validated above
 
-  // Try to parse as JWT access token first
+  // Try to parse as ATProtoJWT access token first
   NSError *jwtError = nil;
-  JWT *jwt = [JWT jwtWithToken:token error:&jwtError];
+  ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&jwtError];
 
   if (jwt) {
-    // Verify JWT signature
+    // Verify ATProtoJWT signature
     ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init];
     if ([verifier verifyJWT:jwt error:&jwtError]) {
       ATProtoJWTPayload *payload = jwt.payload;
@@ -167,7 +167,7 @@
     }
   }
 
-  // Not a valid JWT - check if it's a refresh token in active sessions
+  // Not a valid ATProtoJWT - check if it's a refresh token in active sessions
   for (NSString *sessionId in self.oauthServer.activeSessions) {
     Session *session = self.oauthServer.activeSessions[sessionId];
     if ([ATProtoCryptoUtils constantTimeCompare:session.refreshToken to:token]) {
@@ -190,7 +190,7 @@
     }
   }
 
-  // Also check for access token match in sessions (non-JWT tokens)
+  // Also check for access token match in sessions (non-ATProtoJWT tokens)
   for (NSString *sessionId in self.oauthServer.activeSessions) {
     Session *session = self.oauthServer.activeSessions[sessionId];
     if ([ATProtoCryptoUtils constantTimeCompare:session.accessToken to:token]) {

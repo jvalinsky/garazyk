@@ -283,7 +283,7 @@ NSString * const OpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslsession
 - (nullable NSDictionary *)signPayload:(NSDictionary *)payload
                               withKeyID:(NSString *)keyID
                                   error:(NSError **)error {
-    // Basic JWT construction
+    // Basic ATProtoJWT construction
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:error];
     if (!payloadData) return nil;
     
