@@ -462,11 +462,10 @@ remaining program does not depend on items 1-2.
     milestone — first step is the shrink-only namespace gate over the ~283
     unprefixed classes; M5.3's first rename batch (internal migration
     classes, the low-risk pilot) is complete and batch 2 (Core primitives)
-    is done except `CID` (24 of ~25 classes renamed),
+    is complete in full (all ~25 classes renamed, including `CID` at 265
+    consumers, the largest single rename in the workstream),
     ratcheting the namespace baseline
-    283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 — `CID` (265
-    consumers, needing its own reviewed session given its scale) and
-    batches 3-6
+    283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228. Batches 3-6
     (Storage/Transport, PLC/Sync/Services/MediaCore,
     XRPC/VideoService,
     Runtime) remain open.
