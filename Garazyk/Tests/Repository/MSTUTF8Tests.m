@@ -37,7 +37,7 @@
     XCTAssertEqualObjects([roundTrip get:key1], cid, @"Round-tripped tree should retrieve key1 correctly");
     XCTAssertEqualObjects([roundTrip get:key2], cid, @"Round-tripped tree should retrieve key2 correctly");
     
-    NSArray<MSTEntry *> *all = [roundTrip allEntries];
+    NSArray<ATProtoMSTEntry *> *all = [roundTrip allEntries];
     XCTAssertEqual(all.count, 2, @"Should have exactly 2 entries");
     
     // MST entries are sorted by key bytes

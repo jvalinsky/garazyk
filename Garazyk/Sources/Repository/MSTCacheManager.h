@@ -15,9 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
  * the process restarts.
  */
 /**
- * @abstract Declares the MSTCacheManager public API.
+ * @abstract Declares the ATProtoMSTCacheManager public API.
  */
-@interface MSTCacheManager : NSObject
+@interface ATProtoMSTCacheManager : NSObject
 
 + (instancetype)sharedManager;
 

@@ -16,14 +16,14 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
 };
 
 @interface MSTNode (MSTPersistenceAccess)
-- (instancetype)initWithLevel:(uint32_t)level left:(nullable MSTNode *)left entries:(NSArray<MSTNodeEntry *> *)entries;
+- (instancetype)initWithLevel:(uint32_t)level left:(nullable MSTNode *)left entries:(NSArray<ATProtoMSTNodeEntry *> *)entries;
 @end
 
-@interface MSTNodeEntry (MSTPersistenceAccess)
+@interface ATProtoMSTNodeEntry (MSTPersistenceAccess)
 - (instancetype)initWithKey:(NSString *)key value:(ATProtoCID *)value tree:(nullable MSTNode *)tree;
 @end
 
-@interface MSTPersistence ()
+@interface ATProtoMSTPersistence ()
 - (nullable MSTNode *)loadNodeWithCID:(ATProtoCID *)cid
                                repoDid:(NSString *)repoDid
                              database:(PDSDatabase *)database
@@ -34,10 +34,10 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
 - (nullable ATProtoCID *)cidFromTaggedValue:(ATProtoCBORValue *)value allowNil:(BOOL)allowNil error:(NSError **)error;
 @end
 
-@implementation MSTPersistence
+@implementation ATProtoMSTPersistence
 
 + (instancetype)shared {
-    static MSTPersistence *sharedInstance = nil;
+    static ATProtoMSTPersistence *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[self alloc] init];
@@ -282,7 +282,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         ? entriesValue.array
         : @[];
 
-    NSMutableArray<MSTNodeEntry *> *entries = [NSMutableArray array];
+    NSMutableArray<ATProtoMSTNodeEntry *> *entries = [NSMutableArray array];
     NSString *prevKey = @"";
     uint32_t nodeLevel = 0;
 
@@ -318,7 +318,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
             nodeLevel = MAX(nodeLevel, treeLevel + 1);
         }
 
-        MSTNodeEntry *entry = [[MSTNodeEntry alloc] initWithKey:fullKey value:valueCID tree:treeNode];
+        ATProtoMSTNodeEntry *entry = [[ATProtoMSTNodeEntry alloc] initWithKey:fullKey value:valueCID tree:treeNode];
         [entries addObject:entry];
     }
 

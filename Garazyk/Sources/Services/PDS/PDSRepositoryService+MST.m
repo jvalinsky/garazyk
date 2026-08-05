@@ -14,7 +14,7 @@
 #pragma mark - MST Loading
 
 - (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error {
-    MST *cached = [[MSTCacheManager sharedManager] mstForDid:did];
+    MST *cached = [[ATProtoMSTCacheManager sharedManager] mstForDid:did];
     if (cached) return cached;
 
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
@@ -25,13 +25,13 @@
 
 - (nullable MST *)loadMSTForDid:(NSString *)did store:(PDSActorStore *)store error:(NSError **)error {
     // Check shared cache first
-    MST *cached = [[MSTCacheManager sharedManager] mstForDid:did];
+    MST *cached = [[ATProtoMSTCacheManager sharedManager] mstForDid:did];
     if (cached) return cached;
 
     // Try incremental loading from repo blocks
     MST *mst = [self loadMSTFromRepoBlocksForDid:did store:store error:nil];
     if (mst) {
-        [[MSTCacheManager sharedManager] setMST:mst forDid:did];
+        [[ATProtoMSTCacheManager sharedManager] setMST:mst forDid:did];
         return mst;
     }
 
@@ -42,7 +42,7 @@
     }
     mst = [self mstFromRecords:records ?: @[]];
     if (mst) {
-        [[MSTCacheManager sharedManager] setMST:mst forDid:did];
+        [[ATProtoMSTCacheManager sharedManager] setMST:mst forDid:did];
     }
     return mst;
 }
@@ -50,7 +50,7 @@
 - (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
                                         store:(PDSActorStore *)store
                                         error:(NSError **)error {
-    return [MSTCacheManager loadMSTFromRepoBlocksForDid:did store:store error:error];
+    return [ATProtoMSTCacheManager loadMSTFromRepoBlocksForDid:did store:store error:error];
 }
 
 #pragma mark - MST Update

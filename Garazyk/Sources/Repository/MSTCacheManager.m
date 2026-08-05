@@ -9,18 +9,18 @@
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
-@interface MSTCacheManager ()
-@property (nonatomic, strong) NSMutableDictionary<NSString *, MSTAtomicReference *> *cache;
+@interface ATProtoMSTCacheManager ()
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoMSTAtomicReference *> *cache;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @end
 
-@implementation MSTCacheManager
+@implementation ATProtoMSTCacheManager
 
 + (instancetype)sharedManager {
-    static MSTCacheManager *shared = nil;
+    static ATProtoMSTCacheManager *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[MSTCacheManager alloc] init];
+        shared = [[ATProtoMSTCacheManager alloc] init];
     });
     return shared;
 }
@@ -38,7 +38,7 @@
 
 - (nullable MST *)mstForDid:(NSString *)did {
     // Fast path: concurrent read from dictionary, then atomic snapshot read
-    __block MSTAtomicReference *ref = nil;
+    __block ATProtoMSTAtomicReference *ref = nil;
     dispatch_sync(self.queue, ^{
         ref = self.cache[did];
     });
@@ -50,13 +50,13 @@
 - (void)setMST:(MST *)mst forDid:(NSString *)did {
     // Barrier write: exclusive access while updating the cache dictionary
     dispatch_barrier_sync(self.queue, ^{
-        MSTAtomicReference *ref = self.cache[did];
+        ATProtoMSTAtomicReference *ref = self.cache[did];
         if (ref) {
             // Atomic swap — readers always see a consistent snapshot
             [ref swapMST:mst];
         } else {
             // Create new reference and store
-            ref = [[MSTAtomicReference alloc] initWithMST:mst];
+            ref = [[ATProtoMSTAtomicReference alloc] initWithMST:mst];
             self.cache[did] = ref;
         }
     });
@@ -65,7 +65,7 @@
 - (void)removeMSTForDid:(NSString *)did {
     // Barrier write: exclusive access while removing from cache
     dispatch_barrier_sync(self.queue, ^{
-        MSTAtomicReference *ref = self.cache[did];
+        ATProtoMSTAtomicReference *ref = self.cache[did];
         if (ref) {
             [ref clear];  // Release the MST
             [self.cache removeObjectForKey:did];
@@ -76,7 +76,7 @@
 - (void)removeAllMSTs {
     // Barrier write: exclusive access while clearing cache
     dispatch_barrier_sync(self.queue, ^{
-        for (MSTAtomicReference *ref in self.cache.allValues) {
+        for (ATProtoMSTAtomicReference *ref in self.cache.allValues) {
             [ref clear];
         }
         [self.cache removeAllObjects];

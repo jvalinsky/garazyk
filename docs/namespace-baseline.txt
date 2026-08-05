@@ -6,7 +6,7 @@
 # the class is prefixed or this file is edited in the same commit that
 # introduces it, so review sees the regression.
 #
-# Starting inventory: 228 unprefixed classes out of 515 total.
+# Starting inventory: 196 unprefixed classes out of 515 total.
 AVFoundationTranscoder
 ActorService
 AdminMiddleware
@@ -58,42 +58,20 @@ GraphService
 GroupService
 HandleResolutionFailure
 HandleResolver
-Http1Parser
-Http1ParserError
-Http1PipelinePolicy
-HttpBufferPool
-HttpChunkedBodyParser
-HttpConnectionDriver
-HttpConnectionIOCoordinator
-HttpConnectionState
 HttpParsing
 HttpProtocolDriver
 HttpProtocolSession
-HttpQueuedResponse
 HttpRequest
-HttpRequestDispatcher
 HttpResponse
 HttpResponseSender
 HttpRetryPolicy
-HttpRetryResult
 HttpRoute
-HttpRouteNode
-HttpRouteTrie
 HttpServer
-HttpStreamingBody
 JelczConfiguration
 JelczDatabase
 MST
-MSTAtomicReference
-MSTCacheManager
-MSTDiffOperation
-MSTEntry
 MSTNode
-MSTNodeEntry
-MSTPersistence
 MSTViewerHandler
-MSTWalker
-MSTWalkerStatus
 MimeTypeValidator
 ModerationService
 NodeInfoHandler
@@ -151,16 +129,7 @@ RelayValidationOutcome
 RelayXrpcRoutePack
 RepoCommit
 ResourceOwnershipMiddleware
-SSLPinningManager
-SSRFResolutionResult
 SSRFValidator
-STARCommit
-STARConverter
-STARL0Writer
-STARLiteWriter
-STARMstEntry
-STARMstNode
-STARReader
 SearchIndexService
 SecItemLinuxStore
 SecKeyWrapper
@@ -191,7 +160,6 @@ WebSocketConnection
 WebSocketHeartbeatPolicy
 WebSocketProtocolSession
 WebSocketServer
-WebSocketUpgradeHandler
 XRPCError
 XrpcAdminPack
 XrpcAppBskyActorPack

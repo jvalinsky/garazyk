@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpBufferPool.m
+ @file ATProtoHttpBufferPool.m
 
  @abstract Implements reusable buffer pooling for HTTP I/O efficiency and allocation control.
 
@@ -16,7 +16,7 @@
 static const NSUInteger kDefaultMaxPoolSize = 64;
 static const NSUInteger kDefaultBufferSize = 4096;
 
-@interface HttpBufferPool ()
+@interface ATProtoHttpBufferPool ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<NSMutableData *> *> *bufferPools;
 @property (nonatomic, strong) NSMutableArray<HttpRequest *> *requestPool;
@@ -26,13 +26,13 @@ static const NSUInteger kDefaultBufferSize = 4096;
 
 @end
 
-@implementation HttpBufferPool
+@implementation ATProtoHttpBufferPool
 
 + (instancetype)sharedPool {
-    static HttpBufferPool *shared = nil;
+    static ATProtoHttpBufferPool *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[HttpBufferPool alloc] init];
+        shared = [[ATProtoHttpBufferPool alloc] init];
     });
     return shared;
 }
@@ -64,7 +64,7 @@ static const NSUInteger kDefaultBufferSize = 4096;
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(300 * NSEC_PER_SEC)), 
                    dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
-        HttpBufferPool *strongSelf = weakSelf;
+        ATProtoHttpBufferPool *strongSelf = weakSelf;
         if (strongSelf) {
             [strongSelf autoPrune];
             [strongSelf setupAutoPrune];

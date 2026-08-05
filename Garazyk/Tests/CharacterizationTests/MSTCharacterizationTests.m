@@ -128,13 +128,13 @@
 
 - (void)testCharacterization_allEntries {
     /* Target Method:
-     - (NSArray<MSTEntry *> *)allEntries;
+     - (NSArray<ATProtoMSTEntry *> *)allEntries;
     */
     
     [self.subject put:@"a" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
     [self.subject put:@"b" valueCID:[ATProtoCID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
 
-    NSArray<MSTEntry *> *entries = [self.subject allEntries];
+    NSArray<ATProtoMSTEntry *> *entries = [self.subject allEntries];
     XCTAssertEqual(entries.count, 2);
     NSSet<NSString *> *keys = [NSSet setWithArray:[entries valueForKey:@"key"]];
     XCTAssertTrue([keys containsObject:@"a"]);
@@ -143,14 +143,14 @@
 
 - (void)testCharacterization_entriesWithPrefixMatchesEntries {
     /* Target Method:
-     - (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
+     - (NSArray<ATProtoMSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
     */
     
     [self.subject put:@"app.bsky.feed.post/1" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
     [self.subject put:@"app.bsky.feed.post/2" valueCID:[ATProtoCID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
     [self.subject put:@"app.bsky.actor.profile/self" valueCID:[ATProtoCID sha256:[@"3" dataUsingEncoding:NSUTF8StringEncoding]]];
 
-    NSArray<MSTEntry *> *feedEntries = [self.subject entriesWithPrefix:@"app.bsky.feed."];
+    NSArray<ATProtoMSTEntry *> *feedEntries = [self.subject entriesWithPrefix:@"app.bsky.feed."];
     XCTAssertEqual(feedEntries.count, 2);
 }
 
@@ -196,7 +196,7 @@
 
 - (void)testCharacterization_diffFrom {
     /* Target Method:
-     - (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree;
+     - (NSArray<ATProtoMSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree;
     */
     
     MST *oldTree = [[MST alloc] init];
@@ -207,7 +207,7 @@
     [self.subject put:@"k1" valueCID:newCID];
     [self.subject put:@"k2" valueCID:[ATProtoCID sha256:[@"add" dataUsingEncoding:NSUTF8StringEncoding]]];
 
-    NSArray<MSTDiffOperation *> *ops = [self.subject diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *ops = [self.subject diffFrom:oldTree];
     XCTAssertEqual(ops.count, 2);
     XCTAssertEqualObjects(ops[0].key, @"k1");
     XCTAssertEqual(ops[0].type, MSTDiffOperationTypeUpdate);

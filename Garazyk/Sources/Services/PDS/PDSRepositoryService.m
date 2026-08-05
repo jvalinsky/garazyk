@@ -62,7 +62,7 @@
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error {
     if (STARDetectFormatFromData(commitData)) {
         NSError *starErr = nil;
-        NSData *carData = [STARConverter carDataFromSTARData:commitData error:&starErr];
+        NSData *carData = [ATProtoSTARConverter carDataFromSTARData:commitData error:&starErr];
         if (!carData) {
             if (error) *error = starErr ?: [NSError errorWithDomain:@"com.atproto.repo"
                                                                code:7

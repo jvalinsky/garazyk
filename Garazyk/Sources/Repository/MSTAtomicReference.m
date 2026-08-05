@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file MSTAtomicReference.m
+ @file ATProtoMSTAtomicReference.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -10,7 +10,7 @@
 #import "Repository/MST.h"
 #include <pthread.h>
 
-@implementation MSTAtomicReference {
+@implementation ATProtoMSTAtomicReference {
     MST *_mst;
 }
 

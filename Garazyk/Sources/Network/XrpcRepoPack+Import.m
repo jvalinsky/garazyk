@@ -83,7 +83,7 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
         NSData *carData = repoData;
         if (isSTAR || STARDetectFormatFromData(repoData)) {
             NSError *starErr = nil;
-            carData = [STARConverter carDataFromSTARData:repoData error:&starErr];
+            carData = [ATProtoSTARConverter carDataFromSTARData:repoData error:&starErr];
             if (!carData) {
                 response.statusCode = HttpStatusBadRequest;
                 [response setJsonBody:@{

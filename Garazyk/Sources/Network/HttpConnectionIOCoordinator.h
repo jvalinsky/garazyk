@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpConnectionIOCoordinator.h
+ @file ATProtoHttpConnectionIOCoordinator.h
 
  @abstract Coordinates I/O and protocol driving for HTTP connections.
 
@@ -49,7 +49,7 @@ typedef void (^HttpIOUpgradeHandler)(HttpRequest *request);
 typedef void (^HttpIOErrorHandler)(NSError *error);
 
 /*!
- @class HttpConnectionIOCoordinator
+ @class ATProtoHttpConnectionIOCoordinator
 
  @abstract Coordinates HTTP request/response I/O and protocol driving.
 
@@ -57,7 +57,7 @@ typedef void (^HttpIOErrorHandler)(NSError *error);
  protocol driver, routes events to handlers, and enforces backpressure.
  Uses a serial dispatch queue for thread-safe state management.
  */
-@interface HttpConnectionIOCoordinator : NSObject
+@interface ATProtoHttpConnectionIOCoordinator : NSObject
 
 /*!
  @property requestReadyHandler

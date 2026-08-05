@@ -11,7 +11,7 @@
 @implementation HttpRouteTrieTests
 
 - (void)testBasicInsertionAndRetrievalReturnsValidHandler {
-    HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
+    ATProtoHttpRouteTrie *trie = [[ATProtoHttpRouteTrie alloc] init];
     
     [trie insertRoute:@"GET" pattern:@"/api/v1/status" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
     
@@ -23,7 +23,7 @@
 }
 
 - (void)testParameterExtractionMatchesParamsId {
-    HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
+    ATProtoHttpRouteTrie *trie = [[ATProtoHttpRouteTrie alloc] init];
     
     [trie insertRoute:@"GET" pattern:@"/users/:id" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
     
@@ -35,7 +35,7 @@
 }
 
 - (void)testWildcardMatchingReturnsValidHandler {
-    HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
+    ATProtoHttpRouteTrie *trie = [[ATProtoHttpRouteTrie alloc] init];
     
     [trie insertRoute:@"GET" pattern:@"/files/*" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
     
@@ -49,7 +49,7 @@
 #ifndef GNUSTEP
 - (void)testConcurrentAccess {
     // This test attempts to reproduce the segfault logic by stressing the trie
-    HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
+    ATProtoHttpRouteTrie *trie = [[ATProtoHttpRouteTrie alloc] init];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"Concurrent routes"];
     expectation.expectedFulfillmentCount = 100;

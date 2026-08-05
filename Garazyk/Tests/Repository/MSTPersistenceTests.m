@@ -12,7 +12,7 @@
 @interface MSTPersistenceTests : XCTestCase
 
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) MSTPersistence *persistence;
+@property (nonatomic, strong) ATProtoMSTPersistence *persistence;
 
 @end
 
@@ -109,7 +109,7 @@
     XCTAssertTrue(self.database.isOpen, "Database should be open");
 
     // Use a fresh instance, NOT the singleton, to avoid state pollution between tests
-    self.persistence = [[MSTPersistence alloc] init];
+    self.persistence = [[ATProtoMSTPersistence alloc] init];
     self.persistence.database = self.database;
 }
 
@@ -176,13 +176,13 @@
     XCTAssertNotNil(loaded, "Loader should return MST: %@", loadError);
     XCTAssertEqualObjects(loaded.rootCID.stringValue, rootCID.stringValue);
 
-    NSArray<MSTEntry *> *seedEntries = [seedTree allEntries];
-    NSArray<MSTEntry *> *loadedEntries = [loaded allEntries];
+    NSArray<ATProtoMSTEntry *> *seedEntries = [seedTree allEntries];
+    NSArray<ATProtoMSTEntry *> *loadedEntries = [loaded allEntries];
     XCTAssertEqual(seedEntries.count, loadedEntries.count);
 
     for (NSUInteger idx = 0; idx < seedEntries.count; idx++) {
-        MSTEntry *seedEntry = seedEntries[idx];
-        MSTEntry *persistedEntry = loadedEntries[idx];
+        ATProtoMSTEntry *seedEntry = seedEntries[idx];
+        ATProtoMSTEntry *persistedEntry = loadedEntries[idx];
         XCTAssertEqualObjects(seedEntry.key, persistedEntry.key);
         XCTAssertEqualObjects(seedEntry.valueCID.stringValue, persistedEntry.valueCID.stringValue);
     }
@@ -225,10 +225,10 @@
     XCTAssertNotNil(loaded, @"Loader should return MST for fixture CAR: %@", loadError);
     XCTAssertEqualObjects(loaded.rootCID.stringValue, mstRootCID.stringValue);
 
-    NSArray<MSTEntry *> *entries = [loaded allEntries];
+    NSArray<ATProtoMSTEntry *> *entries = [loaded allEntries];
     XCTAssertGreaterThan(entries.count, 0, @"Fixture CAR should yield MST entries");
 
-    for (MSTEntry *entry in entries) {
+    for (ATProtoMSTEntry *entry in entries) {
         XCTAssertGreaterThan(entry.key.length, 0, @"Fixture entries must have keys");
         XCTAssertNotNil(entry.valueCID, @"Fixture entries must have value CIDs");
     }

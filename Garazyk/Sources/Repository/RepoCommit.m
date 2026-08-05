@@ -139,7 +139,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     // Detect format: STAR (0x2A magic) vs CAR
     NSData *carData = data;
     if (STARDetectFormatFromData(data)) {
-        carData = [STARConverter carDataFromSTARData:data error:error];
+        carData = [ATProtoSTARConverter carDataFromSTARData:data error:error];
         if (!carData) return nil;
     }
 

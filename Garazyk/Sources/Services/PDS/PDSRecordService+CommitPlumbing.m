@@ -38,7 +38,7 @@
 - (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
                                          store:(PDSActorStore *)store
                                          error:(NSError **)error {
-    return [MSTCacheManager loadMSTFromRepoBlocksForDid:did store:store error:error];
+    return [ATProtoMSTCacheManager loadMSTFromRepoBlocksForDid:did store:store error:error];
 }
 
 - (nullable MST *)loadRepoMSTForDid:(NSString *)did
@@ -161,8 +161,8 @@
 
     // Load or retrieve MST — no serial queue needed
     // Per-DID serialization is guaranteed by GZPerDidWriteDispatcher
-    // MSTCacheManager uses MSTAtomicReference for thread-safe access
-    MST *mst = [[MSTCacheManager sharedManager] mstForDid:did];
+    // ATProtoMSTCacheManager uses ATProtoMSTAtomicReference for thread-safe access
+    MST *mst = [[ATProtoMSTCacheManager sharedManager] mstForDid:did];
     if (!mst) {
         // Try incremental loading from stored repo blocks first
         NSError *loadError = nil;
@@ -204,7 +204,7 @@
                                          code:-3
                                      userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute updated MST root"}];
         }
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         dispatch_sync(self.statsCacheQueue, ^{
             [self.statsCacheByDid removeObjectForKey:did];
         });
@@ -235,7 +235,7 @@
     NSError *signError = nil;
     NSData *signature = [store signData:[commit serialize] error:&signError];
     if (!signature) {
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         if (error && signError) *error = signError;
         return nil;
     }
@@ -249,7 +249,7 @@
                                          code:-1
                                      userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize signed commit"}];
         }
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         return nil;
     }
 
@@ -266,7 +266,7 @@
                                                                        rev:rev
                                                                      error:&mstBlocksError];
     if (!mstBlocks) {
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         if (error && mstBlocksError) *error = mstBlocksError;
         return nil;
     }
@@ -298,7 +298,7 @@
     } error:&txError];
 
     if (!updated) {
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         if (error) {
             if (txError) *error = txError;
             else *error = [NSError errorWithDomain:@"PDSRecordService"
@@ -308,7 +308,7 @@
         return nil;
     }
 
-    [[MSTCacheManager sharedManager] setMST:mst forDid:did];
+    [[ATProtoMSTCacheManager sharedManager] setMST:mst forDid:did];
     return @{
         @"cid": commitCID.stringValue ?: @"",
         @"rev": rev ?: @""

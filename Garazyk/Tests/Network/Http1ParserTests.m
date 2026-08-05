@@ -4,14 +4,14 @@
 #import "Network/Http1Parser.h"
 
 @interface Http1ParserTests : XCTestCase
-@property (nonatomic, strong) Http1Parser *parser;
+@property (nonatomic, strong) ATProtoHttp1Parser *parser;
 @end
 
 @implementation Http1ParserTests
 
 - (void)setUp {
     [super setUp];
-    self.parser = [[Http1Parser alloc] init];
+    self.parser = [[ATProtoHttp1Parser alloc] init];
     self.parser.remoteAddress = @"127.0.0.1";
 }
 
@@ -98,7 +98,7 @@
     XCTAssertTrue(complete);
     XCTAssertEqual(self.parser.state, Http1ParserStateError);
     
-    Http1ParserError *err = [self.parser parseError];
+    ATProtoHttp1ParserError *err = [self.parser parseError];
     XCTAssertNotNil(err);
     XCTAssertEqual(err.statusCode, 413);
     XCTAssertEqualObjects(err.errorCode, @"RequestTooLarge");
@@ -113,7 +113,7 @@
     XCTAssertTrue(complete);
     XCTAssertEqual(self.parser.state, Http1ParserStateError);
     
-    Http1ParserError *err = [self.parser parseError];
+    ATProtoHttp1ParserError *err = [self.parser parseError];
     XCTAssertNotNil(err);
     XCTAssertEqual(err.statusCode, 411);
     XCTAssertEqualObjects(err.errorCode, @"LengthRequired");
@@ -129,7 +129,7 @@
     XCTAssertTrue(complete);
     XCTAssertEqual(self.parser.state, Http1ParserStateError);
 
-    Http1ParserError *err = [self.parser parseError];
+    ATProtoHttp1ParserError *err = [self.parser parseError];
     XCTAssertNotNil(err);
     XCTAssertEqual(err.statusCode, 400);
 }
@@ -145,7 +145,7 @@
     XCTAssertTrue(complete);
     XCTAssertEqual(self.parser.state, Http1ParserStateError);
 
-    Http1ParserError *err = [self.parser parseError];
+    ATProtoHttp1ParserError *err = [self.parser parseError];
     XCTAssertNotNil(err);
     XCTAssertEqual(err.statusCode, 400);
 }
@@ -158,7 +158,7 @@
     XCTAssertTrue(complete);
     XCTAssertEqual(self.parser.state, Http1ParserStateError);
 
-    Http1ParserError *err = [self.parser parseError];
+    ATProtoHttp1ParserError *err = [self.parser parseError];
     XCTAssertNotNil(err);
     XCTAssertEqual(err.statusCode, 400);
 }
@@ -171,7 +171,7 @@
     XCTAssertTrue(complete);
     XCTAssertEqual(self.parser.state, Http1ParserStateError);
 
-    Http1ParserError *err = [self.parser parseError];
+    ATProtoHttp1ParserError *err = [self.parser parseError];
     XCTAssertNotNil(err);
     XCTAssertEqual(err.statusCode, 400);
 }

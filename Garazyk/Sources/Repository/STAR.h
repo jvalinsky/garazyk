@@ -9,7 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class CARBlock;
 @class MST;
 @class MSTNode;
-@class MSTNodeEntry;
+@class ATProtoMSTNodeEntry;
 
 /*!
  @header STAR.h
@@ -60,11 +60,11 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 #pragma mark - STAR Commit
 
 /*!
- @class STARCommit
+ @class ATProtoSTARCommit
 
  @abstract Represents a STAR commit object (the archive header).
  */
-@interface STARCommit : NSObject
+@interface ATProtoSTARCommit : NSObject
 
 @property (nonatomic, copy) NSString *did;
 @property (nonatomic, assign) NSInteger version;
@@ -93,7 +93,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 #pragma mark - STAR MST Entry (wire format)
 
 /*!
- @class STARMstEntry
+ @class ATProtoSTARMstEntry
 
  @abstract A single entry in a STAR MST node (wire format).
 
@@ -102,7 +102,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  record follows in the stream. Similarly, `T` indicates that the subtree
  follows in the archive.
  */
-@interface STARMstEntry : NSObject
+@interface ATProtoSTARMstEntry : NSObject
 
 /**
  * @abstract Exposes the prefix len value.
@@ -129,31 +129,31 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 #pragma mark - STAR MST Node (wire format)
 
 /*!
- @class STARMstNode
+ @class ATProtoSTARMstNode
 
  @abstract A MST node in STAR wire format.
 
  @discussion STAR MST nodes differ from repo-spec MST nodes:
  - `l` is the left pointer ATProtoCID (optional)
  - `L` is a bool flag indicating the left subtree is in the archive
- - `e` is the array of entries (STARMstEntry)
+ - `e` is the array of entries (ATProtoSTARMstEntry)
  - Layer-0 entries may omit `v` when records are included
  */
-@interface STARMstNode : NSObject
+@interface ATProtoSTARMstNode : NSObject
 
 /**
  * @abstract Exposes the left value.
  */
 @property (nonatomic, strong, nullable) ATProtoCID *left;
 @property (nonatomic, assign) BOOL leftArchived;
-@property (nonatomic, copy) NSArray<STARMstEntry *> *entries;
+@property (nonatomic, copy) NSArray<ATProtoSTARMstEntry *> *entries;
 
 /**
  * @abstract Performs the nodeWithLeft operation.
  */
 + (instancetype)nodeWithLeft:(nullable ATProtoCID *)left
                 leftArchived:(BOOL)leftArchived
-                    entries:(NSArray<STARMstEntry *> *)entries;
+                    entries:(NSArray<ATProtoSTARMstEntry *> *)entries;
 
 /**
  * @abstract Performs the serializeToDagCBOR operation.
@@ -162,10 +162,10 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @end
 
-#pragma mark - STARL0Writer
+#pragma mark - ATProtoSTARL0Writer
 
 /*!
- @class STARL0Writer
+ @class ATProtoSTARL0Writer
 
  @abstract Writes STAR-L0 format archives.
 
@@ -175,24 +175,24 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  the records follow in the archive.
 
  Usage:
-     STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+     ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
      [writer writeFromMST:mst blockProvider:provider error:&err];
      NSData *starData = [writer serialize];
  */
 /**
- * @abstract Declares the STARL0Writer public API.
+ * @abstract Declares the ATProtoSTARL0Writer public API.
  */
-@interface STARL0Writer : NSObject
+@interface ATProtoSTARL0Writer : NSObject
 
 /**
  * @abstract Exposes the commit value.
  */
-@property (nonatomic, strong, readonly) STARCommit *commit;
+@property (nonatomic, strong, readonly) ATProtoSTARCommit *commit;
 
 /**
  * @abstract Performs the initWithCommit operation.
  */
-- (instancetype)initWithCommit:(STARCommit *)commit;
+- (instancetype)initWithCommit:(ATProtoSTARCommit *)commit;
 
 /*!
  @method initWithCommit:outputBlock:
@@ -201,9 +201,9 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
  @param commit The commit header.
  @param outputBlock Block called whenever a new chunk of data is ready.
- @return A new STARL0Writer instance.
+ @return A new ATProtoSTARL0Writer instance.
  */
-- (instancetype)initWithCommit:(STARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock;
+- (instancetype)initWithCommit:(ATProtoSTARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock;
 
 /*!
  @method writeFromMST:blockProvider:error:
@@ -241,10 +241,10 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @end
 
-#pragma mark - STARLiteWriter
+#pragma mark - ATProtoSTARLiteWriter
 
 /*!
- @class STARLiteWriter
+ @class ATProtoSTARLiteWriter
 
  @abstract Writes STAR-lite format archives.
 
@@ -253,24 +253,24 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  passes for MST recovery. Records are emitted in sorted key order.
 
  Usage:
-     STARLiteWriter *writer = [[STARLiteWriter alloc] initWithCommit:commit];
+     ATProtoSTARLiteWriter *writer = [[ATProtoSTARLiteWriter alloc] initWithCommit:commit];
      [writer writeFromMST:mst blockProvider:provider error:&err];
      NSData *starData = [writer serialize];
  */
 /**
- * @abstract Declares the STARLiteWriter public API.
+ * @abstract Declares the ATProtoSTARLiteWriter public API.
  */
-@interface STARLiteWriter : NSObject
+@interface ATProtoSTARLiteWriter : NSObject
 
 /**
  * @abstract Exposes the commit value.
  */
-@property (nonatomic, strong, readonly) STARCommit *commit;
+@property (nonatomic, strong, readonly) ATProtoSTARCommit *commit;
 
 /**
  * @abstract Performs the initWithCommit operation.
  */
-- (instancetype)initWithCommit:(STARCommit *)commit;
+- (instancetype)initWithCommit:(ATProtoSTARCommit *)commit;
 
 /*!
  @method writeFromMST:blockProvider:error:
@@ -318,10 +318,10 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @end
 
-#pragma mark - STARReader
+#pragma mark - ATProtoSTARReader
 
 /*!
- @class STARReader
+ @class ATProtoSTARReader
 
  @abstract Reads and parses STAR archives (both L0 and lite).
 
@@ -330,10 +330,10 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  code that expects CAR-format blocks.
 
  Usage:
-     STARReader *reader = [STARReader readFromData:data error:&err];
+     ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:data error:&err];
      for (CARBlock *block in reader.blocks) { ... }
  */
-@interface STARReader : NSObject
+@interface ATProtoSTARReader : NSObject
 
 /**
  * @abstract Exposes the root cid value.
@@ -341,7 +341,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 @property (nonatomic, strong, readonly, nullable) ATProtoCID *rootCID;
 @property (nonatomic, copy, readonly) NSArray<CARBlock *> *blocks;
 @property (nonatomic, assign, readonly) STARVariant variant;
-@property (nonatomic, strong, readonly, nullable) STARCommit *commit;
+@property (nonatomic, strong, readonly, nullable) ATProtoSTARCommit *commit;
 
 /**
  * @abstract Performs the readFromData operation.
@@ -367,17 +367,17 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 #pragma mark - STAR Converter
 
 /*!
- @class STARConverter
+ @class ATProtoSTARConverter
 
  @abstract Conversion from STAR to CAR format.
 
  @discussion Provides verifying STAR-to-CAR conversion. The reader
  validates every MST node ATProtoCID against the commit's data ATProtoCID chain,
  rehydrates layer-0 record links, and strips wire-format flags. CAR-to-STAR
- conversion is not supported; use the live-MST writer (STARL0Writer)
+ conversion is not supported; use the live-MST writer (ATProtoSTARL0Writer)
  for export.
  */
-@interface STARConverter : NSObject
+@interface ATProtoSTARConverter : NSObject
 
 /*!
  @method carDataFromSTARData:error:

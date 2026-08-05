@@ -294,7 +294,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
         // STAR format detected — convert to CAR for downstream processing
         GZ_LOG_DEBUG(@"[AppView BackfillWorker] Detected STAR format, converting to CAR");
         NSData *carBytes =
-            [STARConverter carDataFromSTARData:archiveData error:error];
+            [ATProtoSTARConverter carDataFromSTARData:archiveData error:error];
         if (carBytes) {
             reader = [CARReader readFromData:carBytes strict:YES error:error];
         }
@@ -327,7 +327,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
     }
 
     // Find and parse the data MST from commit object
-    NSArray<MSTEntry *> *entries = nil;
+    NSArray<ATProtoMSTEntry *> *entries = nil;
     ATProtoCID *dataMSTCID = nil;
 
     if (reader.rootCID) {
@@ -377,7 +377,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
 
     // Index entries
     if (entries.count > 0) {
-        for (MSTEntry *entry in entries) {
+        for (ATProtoMSTEntry *entry in entries) {
             ATProtoCID *valueCID = entry.valueCID;
             if (!valueCID) continue;
 
@@ -504,8 +504,8 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
 // Fallback CBOR parsing for older CAR formats
 // ---------------------------------------------------------------------------
 
-- (NSArray<MSTEntry *> *)_parseCBOREntriesFromBlock:(NSData *)data {
-    NSMutableArray<MSTEntry *> *entries = [NSMutableArray array];
+- (NSArray<ATProtoMSTEntry *> *)_parseCBOREntriesFromBlock:(NSData *)data {
+    NSMutableArray<ATProtoMSTEntry *> *entries = [NSMutableArray array];
     NSError *error = nil;
     id cbor = [ATProtoDagCBOR decodeData:data error:&error];
     if (![cbor isKindOfClass:[NSDictionary class]]) return entries;
@@ -522,7 +522,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
                 NSData *valueData = (NSData *)value;
                 ATProtoCID *cid = [ATProtoCID cidFromBytes:valueData];
                 if (cid) {
-                    MSTEntry *entry = [MSTEntry entryWithKey:key valueCID:cid];
+                    ATProtoMSTEntry *entry = [ATProtoMSTEntry entryWithKey:key valueCID:cid];
                     [entries addObject:entry];
                 }
             }

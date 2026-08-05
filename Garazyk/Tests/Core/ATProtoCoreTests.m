@@ -329,7 +329,7 @@
         [mst put:[NSString stringWithFormat:@"key%d", i] valueCID:cid];
     }
 
-    NSArray<MSTEntry *> *entries = [mst allEntries];
+    NSArray<ATProtoMSTEntry *> *entries = [mst allEntries];
     XCTAssertEqual(entries.count, 10);
 }
 
@@ -344,7 +344,7 @@
     [mst put:@"app.bsky.feed.post2" valueCID:cid2];
     [mst put:@"app.bsky.actor.profile" valueCID:cid3];
 
-    NSArray<MSTEntry *> *feedEntries = [mst entriesWithPrefix:@"app.bsky.feed."];
+    NSArray<ATProtoMSTEntry *> *feedEntries = [mst entriesWithPrefix:@"app.bsky.feed."];
     XCTAssertEqual(feedEntries.count, 2);
 }
 

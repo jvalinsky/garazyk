@@ -599,17 +599,17 @@
 
     if (noChangesSince) {
         // Empty tree: just the header with data: null
-        STARCommit *commit = [self starCommitFromExport:did
+        ATProtoSTARCommit *commit = [self starCommitFromExport:did
                                              commitCID:commitCID
                                            commitBlock:commitBlock];
-        STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+        ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
         return [writer serialize];
     }
 
-    STARCommit *commit = [self starCommitFromExport:did
+    ATProtoSTARCommit *commit = [self starCommitFromExport:did
                                          commitCID:commitCID
                                        commitBlock:commitBlock];
-    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
 
     __weak typeof(self) weakSelf = self;
     __block NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
@@ -677,10 +677,10 @@
         return nil;
     }
 
-    STARCommit *commit = [self starCommitFromExport:did
+    ATProtoSTARCommit *commit = [self starCommitFromExport:did
                                          commitCID:commitCID
                                        commitBlock:commitBlock];
-    STARLiteWriter *writer = [[STARLiteWriter alloc] initWithCommit:commit];
+    ATProtoSTARLiteWriter *writer = [[ATProtoSTARLiteWriter alloc] initWithCommit:commit];
 
     if (noChangesSince) {
         return [writer serialize];
@@ -752,7 +752,7 @@
         return nil;
     }
 
-    STARCommit *commit = [self starCommitFromExport:did
+    ATProtoSTARCommit *commit = [self starCommitFromExport:did
                                          commitCID:commitCID
                                        commitBlock:commitBlock];
 
@@ -765,7 +765,7 @@
     // This is still better than one giant NSData because we've already split it.
     // In a future version, we'd use a thread-safe queue.
 
-    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit outputBlock:^(NSData *chunk) {
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit outputBlock:^(NSData *chunk) {
         if (chunk.length > 0) {
             [chunks addObject:chunk];
         }
@@ -831,7 +831,7 @@
     };
 }
 
-- (STARCommit *)starCommitFromExport:(NSString *)did
+- (ATProtoSTARCommit *)starCommitFromExport:(NSString *)did
                            commitCID:(ATProtoCID *)commitCID
                          commitBlock:(NSData *)commitBlock {
     // Parse the commit block to extract rev, prev, sig, data
@@ -869,7 +869,7 @@
         }
     }
 
-    return [STARCommit commitWithDid:did
+    return [ATProtoSTARCommit commitWithDid:did
                              version:3
                                data:dataCID
                                 rev:rev

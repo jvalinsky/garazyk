@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpResponse;
 
 /*!
- @class WebSocketUpgradeHandler
+ @class ATProtoWebSocketUpgradeHandler
 
  @abstract Handles WebSocket upgrade requests per RFC 6455.
 
@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
  and prepares the response for protocol switching. Used by XRPC subscription
  endpoints like com.atproto.sync.subscribeRepos.
  */
-@interface WebSocketUpgradeHandler : NSObject
+@interface ATProtoWebSocketUpgradeHandler : NSObject
 
 /*!
  @method handleUpgradeRequest:response:
