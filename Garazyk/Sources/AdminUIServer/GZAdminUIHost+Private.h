@@ -79,10 +79,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderAuditLogPartial:(NSDictionary *)result;
 /** @abstract Renders PDS moderation reports. */
 - (NSString *)renderPDSReportsPartial:(NSDictionary *)result;
-/** @abstract Renders a PLC DID lookup result. */
-- (NSString *)renderPLCDIDPartial:(NSDictionary *)result;
-/** @abstract Renders PLC operation-log entries. */
-- (NSString *)renderPLCLogPartial:(NSDictionary *)result;
 
 /** @abstract Renders Ozone subject-status results. */
 - (NSString *)renderOzoneStatusesPartial:(NSDictionary *)result;
@@ -104,12 +100,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 - (NSString *)renderOverviewPartial:(NSDictionary *)result;
 /** @abstract Renders Ozone moderation reports. */
 - (NSString *)renderOzoneModerationReportsPartial:(NSDictionary *)result;
-/** @abstract Renders PLC health. */
-- (NSString *)renderPLCHealthPartial:(NSDictionary *)result;
-/** @abstract Renders PLC metrics. */
-- (NSString *)renderPLCMetricsPartial:(NSDictionary *)result;
-/** @abstract Renders a paginated PLC listing using the supplied cursor. */
-- (NSString *)renderPLCListPartial:(NSDictionary *)result cursor:(nullable NSString *)cursor;
 /** @abstract Renders Ozone scheduled actions. */
 - (NSString *)renderOzoneScheduledPartial:(NSDictionary *)result;
 /** @abstract Renders Ozone verification results. */
