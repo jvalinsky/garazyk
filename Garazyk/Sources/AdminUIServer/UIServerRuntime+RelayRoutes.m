@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUIRelayPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIBackendClient.h"
 #import "Network/HttpRequest.h"
@@ -18,7 +19,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchRelayMetrics];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderRelayMetricsPartial:result]];
+        [response setBodyString:[GZAdminUIRelayPack renderRelayMetricsPartial:result]];
     }];
 
     // Relay: Upstreams
@@ -27,7 +28,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchRelayUpstreams];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderRelayUpstreamsPartial:result]];
+        [response setBodyString:[GZAdminUIRelayPack renderRelayUpstreamsPartial:result]];
     }];
 
     // Relay: Health check
@@ -36,7 +37,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchRelayHealth];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderRelayHealthPartial:result]];
+        [response setBodyString:[GZAdminUIRelayPack renderRelayHealthPartial:result]];
     }];
 
     // Relay: Request crawl action
