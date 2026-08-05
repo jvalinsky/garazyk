@@ -92,7 +92,7 @@ static BOOL authorizeSpaceBlobUpload(HttpRequest *request, HttpResponse *respons
     NSString *authorization = [request headerForKey:@"Authorization"];
     NSString *token = [authorization hasPrefix:@"Bearer "] ? [authorization substringFromIndex:7] :
                        [authorization hasPrefix:@"DPoP "] ? [authorization substringFromIndex:5] : nil;
-    JWT *jwt = [JWT jwtWithToken:token error:nil];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
     BOOL sawSpaceScope = NO;
     for (NSString *candidate in [jwt.payload.scope componentsSeparatedByCharactersInSet:
                                   [NSCharacterSet whitespaceAndNewlineCharacterSet]]) {

@@ -40,7 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
                                        actor:(NSString *)actorDID
                                        error:(NSError **)error;
 
-/*! Verify phone code, returns JWT token for contact import. */
+/*! Verify phone code, returns ATProtoJWT token for contact import. */
 - (nullable NSString *)verifyPhone:(NSString *)phoneNumber
                              code:(NSString *)code
                             actor:(NSString *)actorDID

@@ -7,7 +7,7 @@
 
  @discussion This file implements key pair generation, storage, and retrieval
  using the iOS/macOS Security framework. Keys are persisted to the database
- and used for JWT signing and DPoP proof generation.
+ and used for ATProtoJWT signing and DPoP proof generation.
 
  @copyright Copyright (c) 2024 Jack Valinsky
  */
@@ -549,13 +549,13 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
     if (!headerData) return nil;
 
-    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+    NSString *headerEncoded = [ATProtoJWT base64URLEncodeData:headerData error:error];
     if (!headerEncoded) return nil;
 
-    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+    NSString *payloadEncoded = [ATProtoJWT base64URLEncodeData:payloadData error:error];
     if (!payloadEncoded) return nil;
 
-    NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];
+    NSString *signatureEncoded = [ATProtoJWT base64URLEncodeData:signatureData error:error];
     if (!signatureEncoded) return nil;
 
     return @{

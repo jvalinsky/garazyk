@@ -15,7 +15,7 @@
 
 - (NSString *)scopedAccessTokenWithScopes:(NSArray<NSString *> *)scopes {
     NSError *error = nil;
-    JWT *token = [self.controller.jwtMinter mintAccessTokenForDID:self.did1
+    ATProtoJWT *token = [self.controller.jwtMinter mintAccessTokenForDID:self.did1
                                                            handle:@"repoauth1.test"
                                                           scopes:scopes
                                                dpopKeyThumbprint:nil

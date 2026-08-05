@@ -122,14 +122,14 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSLog(@"  Access token: %@", accessToken);
     
-    // Check if token has 3 parts (JWT format)
+    // Check if token has 3 parts (ATProtoJWT format)
     NSArray *parts = [accessToken componentsSeparatedByString:@"."];
     XCTAssertEqual(parts.count, 3, @"Access token should be a JWT with 3 parts");
     NSLog(@"  Token is JWT format: YES");
     
     // Verify it can be decoded
     NSError *jwtError = nil;
-    JWT *jwt = [JWT jwtWithToken:accessToken error:&jwtError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:accessToken error:&jwtError];
     XCTAssertNotNil(jwt, @"Should be able to parse JWT: %@", jwtError);
     XCTAssertEqualObjects(jwt.payload.sub, did, @"JWT subject should be the DID");
     XCTAssertEqualObjects(jwt.payload.iss, [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"] ?: @"https://pds.local:8443", @"Issuer should match");
@@ -351,7 +351,7 @@ NS_ASSUME_NONNULL_BEGIN
     
     // Test 2: Verify access token can be parsed
     NSError *jwtError = nil;
-    JWT *jwt = [JWT jwtWithToken:accessToken error:&jwtError];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:accessToken error:&jwtError];
     XCTAssertNotNil(jwt, @"Should be able to parse access JWT");
     XCTAssertNotNil(jwt.payload.did, @"JWT should contain DID");
     
@@ -518,12 +518,12 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(parts.count, 3, @"Access token should be JWT");
     NSLog(@"  Token is JWT format: YES");
     
-    // Session store maps JWT to session with DID
+    // Session store maps ATProtoJWT to session with DID
     // The DID is stored in the session and also encoded in the token
     XCTAssertEqualObjects(account[@"did"], did, @"Account DID should match");
     NSLog(@"  Account DID stored in session: %@", did);
     
-    // Authentication is based on JWT lookup and verification
+    // Authentication is based on ATProtoJWT lookup and verification
     NSLog(@"  Authentication: JWT-based session lookup");
     NSLog(@"  SUCCESS: Cryptographic binding between token and account");
     

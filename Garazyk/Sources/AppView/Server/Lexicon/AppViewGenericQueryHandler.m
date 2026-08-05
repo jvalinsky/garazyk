@@ -388,9 +388,9 @@ static NSInteger const kMaxLimit = 100;
         if ([token hasPrefix:prefix]) return token;
     }
 
-    // Attempt to parse as JWT and extract subject (DID)
+    // Attempt to parse as ATProtoJWT and extract subject (DID)
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     if (jwt && jwt.payload.sub) {
         return jwt.payload.sub;
     }

@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
  - Signed with user's repo signing key (secp256k1)
  
  Validation checks:
- 1. Parse JWT structure (3 parts, valid header/payload)
+ 1. Parse ATProtoJWT structure (3 parts, valid header/payload)
  2. Reject forbidden typ values (at+jwt, refresh+jwt, dpop+jwt)
  3. Validate exp (not expired)
  4. Validate aud (matches this service's DID)
@@ -53,7 +53,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)sharedManager;
 
 /**
- * Validates a service auth JWT in the Authorization header.
+ * Validates a service auth ATProtoJWT in the Authorization header.
  * Resolves the issuer DID and verifies the signature.
  *
  * @param request The HTTP request containing the Authorization header.
@@ -64,7 +64,7 @@ NS_ASSUME_NONNULL_BEGIN
                                   response:(nullable HttpResponse *)response;
 
 /**
- * Validates a service auth JWT with method binding.
+ * Validates a service auth ATProtoJWT with method binding.
  *
  * @param request The HTTP request containing the Authorization header.
  * @param response The HTTP response for setting error details.

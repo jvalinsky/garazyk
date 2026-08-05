@@ -40,7 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
  3. Installs proxy interceptor for request forwarding
  
  Domain modules use helper modules for shared functionality:
- - XrpcAuthHelper: JWT and DPoP authentication
+ - XrpcAuthHelper: ATProtoJWT and DPoP authentication
  - XrpcIdentityHelper: Handle and DID resolution
  - XrpcErrorHelper: Standardized error responses
  

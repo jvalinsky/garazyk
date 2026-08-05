@@ -28,8 +28,8 @@ BOOL updateAccountHandle(PDSServiceDatabases *serviceDatabases,
                                 NSString *handle,
                                 NSError **error);
 NSData *pbkdf2HashPassword(NSString *password, NSData *salt, NSError **error);
-NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error);
+NSDictionary *payloadDictionaryFromJWT(ATProtoJWT *jwt, NSError **error);
 
-@interface JWT (Base64URL)
+@interface ATProtoJWT (Base64URL)
 + (nullable NSData *)base64URLDecode:(NSString *)string error:(NSError * _Nullable * _Nullable)error;
 @end

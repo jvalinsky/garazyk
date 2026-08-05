@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface VideoPDSAuthProvider : NSObject <VideoAuthProvider>
 
 /**
- * @abstract The JWT minter instance for issuing tokens.
+ * @abstract The ATProtoJWT minter instance for issuing tokens.
  */
 @property (nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 

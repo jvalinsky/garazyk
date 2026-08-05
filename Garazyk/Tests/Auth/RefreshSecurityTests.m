@@ -35,7 +35,7 @@
     self.server = [[OAuth2Server alloc] initWithDatabase:self.database];
     self.server.issuer = @"https://pds.test";
     
-    // Configure minter for JWT generation
+    // Configure minter for ATProtoJWT generation
     self.server.jwtMinter.issuer = self.server.issuer;
     self.server.jwtMinter.audience = self.server.issuer;
     self.server.jwtMinter.signingAlgorithm = @"ES256K";
@@ -113,7 +113,7 @@
 
     // 1. Mint an access token but try to use it as a refresh token
     NSArray *scopes = @[@"atproto"];
-    JWT *accessToken = [self.server.jwtMinter mintAccessTokenForDID:@"did:plc:test" 
+    ATProtoJWT *accessToken = [self.server.jwtMinter mintAccessTokenForDID:@"did:plc:test" 
                                                      handle:@"test.user" 
                                                      scopes:scopes 
                                                       error:nil];

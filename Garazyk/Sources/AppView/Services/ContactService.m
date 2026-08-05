@@ -87,10 +87,10 @@
         return nil;
     }
 
-    // Mark as verified and generate JWT token
+    // Mark as verified and generate ATProtoJWT token
     NSString *verificationId = rows.firstObject[@"id"];
 
-    // Create a simple token (in production, use proper JWT)
+    // Create a simple token (in production, use proper ATProtoJWT)
     NSString *token = [NSString stringWithFormat:@"contact_%@_%@", verificationId, [[NSUUID UUID] UUIDString]];
 
     // Store the token

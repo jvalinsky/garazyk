@@ -100,7 +100,7 @@
 
     self.httpServer = [HttpServer serverWithHost:@"0.0.0.0" port:self.configuration.httpPort]; // Bind to all interfaces for Docker support
 
-    // Configure auth manager with PDS URL and service DID for JWT verification
+    // Configure auth manager with PDS URL and service DID for ATProtoJWT verification
     if (self.configuration.pdsUrl.length > 0) {
         [ChatAuthManager sharedManager].pdsUrl = self.configuration.pdsUrl;
     }

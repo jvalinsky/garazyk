@@ -152,7 +152,7 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
 }
 
 - (BOOL)isAuthorizedForAdminOperation:(NSString *)requestingDID error:(NSError **)error {
-    // Admin authorization is determined by JWT scope validation in the XRPC
+    // Admin authorization is determined by ATProtoJWT scope validation in the XRPC
     // handler layer (XrpcAuthHelper / XrpcMethodRegistry). This method exists
     // only for backward compatibility and always returns NO as a safe default.
     // The discarded getAccountByDid: query has been removed per workstream 01

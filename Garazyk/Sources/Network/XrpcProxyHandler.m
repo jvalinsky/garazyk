@@ -68,7 +68,7 @@
     if (methodNSID.length == 0 && [request.path hasPrefix:@"/xrpc/"]) {
         methodNSID = [request.path substringFromIndex:@"/xrpc/".length];
     }
-    JWT *accessToken = [JWT jwtWithToken:([authHeader hasPrefix:@"Bearer "] ? [authHeader substringFromIndex:7] :
+    ATProtoJWT *accessToken = [ATProtoJWT jwtWithToken:([authHeader hasPrefix:@"Bearer "] ? [authHeader substringFromIndex:7] :
                                            [authHeader hasPrefix:@"DPoP "] ? [authHeader substringFromIndex:5] : nil)
                                       error:nil];
     NSArray *permissionScopes = [ATProtoPermissionScopeEvaluator scopesFromJWT:accessToken];
@@ -83,7 +83,7 @@
         return;
     }
 
-    // 2. Mint Service-to-Service JWT per AT Protocol spec.
+    // 2. Mint Service-to-Service ATProtoJWT per AT Protocol spec.
     //    iss = user DID, aud = service DID (with fragment), lxm = method NSID,
     //    signed with user's repo signing key, exp = 60s, jti = random nonce.
     NSString *token = nil;

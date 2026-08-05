@@ -504,7 +504,7 @@ NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSIntege
     }
 
     NSError *error = nil;
-    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&error];
     if (jwt && jwt.payload.sub) {
         return jwt.payload.sub;
     }

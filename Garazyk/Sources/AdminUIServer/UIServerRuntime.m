@@ -93,7 +93,7 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigi
         _configuration = configuration;
         _authManager = [[UIAuthManager alloc] initWithPassword:configuration.adminPassword ?: @""];
         _backendClient = [[UIBackendClient alloc] initWithConfiguration:configuration];
-        // Auto-obtain PDS admin JWT if a password is configured but no token
+        // Auto-obtain PDS admin ATProtoJWT if a password is configured but no token
         if (configuration.pdsAdminPassword.length > 0 && configuration.pdsAdminToken.length == 0) {
             [_backendClient refreshPDSAdminToken];
         }

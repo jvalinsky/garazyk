@@ -8,7 +8,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Provides authentication using JWT (JSON Web Tokens) for video services.
+ * @abstract Provides authentication using ATProtoJWT (JSON Web Tokens) for video services.
  */
 @interface VideoJWTAuthProvider : NSObject <VideoAuthProvider>
 
@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Initializes with an expected audience and static JWK.
- * @param audience Expected JWT audience.
+ * @param audience Expected ATProtoJWT audience.
  * @param signingKeyJWK Optional signing key JWK for verification.
  */
 - (instancetype)initWithExpectedAudience:(NSString *)audience
@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Initializes with an expected audience and PDS endpoint for DID resolution.
- * @param audience Expected JWT audience.
+ * @param audience Expected ATProtoJWT audience.
  * @param pdsURL Base URL for PDS-based DID resolution.
  * @param plcURL Optional PLC directory URL.
  */
