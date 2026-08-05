@@ -16,7 +16,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class CID;
+@class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -37,12 +37,12 @@ typedef NS_ENUM(NSInteger, ATProtoBDASLVerifierErrorCode) {
 FOUNDATION_EXPORT const NSUInteger ATProtoBDASLChunkSize;
 
 /**
- Verifies a BLAKE3 CID using per-chunk digests supplied by a sidecar.
+ Verifies a BLAKE3 ATProtoCID using per-chunk digests supplied by a sidecar.
  */
 @interface ATProtoBDASLVerifier : NSObject
 
-/** The expected BLAKE3 CID. */
-@property (nonatomic, strong, readonly) CID *cid;
+/** The expected BLAKE3 ATProtoCID. */
+@property (nonatomic, strong, readonly) ATProtoCID *cid;
 /** Total payload length expected by the sidecar. */
 @property (nonatomic, assign, readonly) NSUInteger totalLength;
 /** Number of payload bytes accepted so far. */
@@ -55,13 +55,13 @@ FOUNDATION_EXPORT const NSUInteger ATProtoBDASLChunkSize;
 /**
  Initializes a verifier.
 
- @param cid A Big DASL CID with the BLAKE3 multihash (0x1e).
+ @param cid A Big DASL ATProtoCID with the BLAKE3 multihash (0x1e).
  @param chunkDigests An array of 32-byte BLAKE3 digests, one per 1 KiB
  chunk. The final digest covers the final short chunk when the payload length
  is not a multiple of 1 KiB; an empty payload has one empty chunk.
  @param totalLength The exact payload length described by the sidecar.
  */
-- (nullable instancetype)initWithCID:(CID *)cid
+- (nullable instancetype)initWithCID:(ATProtoCID *)cid
                         chunkDigests:(NSArray<NSData *> *)chunkDigests
                          totalLength:(NSUInteger)totalLength
                                error:(NSError **)error NS_DESIGNATED_INITIALIZER;
@@ -70,7 +70,7 @@ FOUNDATION_EXPORT const NSUInteger ATProtoBDASLChunkSize;
 /** Appends any-sized input; complete 1 KiB chunks are checked immediately. */
 - (BOOL)appendData:(NSData *)data error:(NSError **)error;
 
-/** Completes verification and checks the root BLAKE3 digest in the CID. */
+/** Completes verification and checks the root BLAKE3 digest in the ATProtoCID. */
 - (BOOL)finalizeWithError:(NSError **)error;
 
 /**

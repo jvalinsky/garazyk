@@ -229,7 +229,10 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigi
         AUTH_GUARD(weakSelf, request, response);
         NSString *token = [weakSelf.authManager extractTokenFromRequest:request];
         [weakSelf.authManager invalidateSessionToken:token];
-        [response setHeader:@"ui_admin_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict" forKey:@"Set-Cookie"];
+        [response setHeader:[NSString stringWithFormat:
+                                @"%@=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict",
+                                weakSelf.authManager.sessionCookieName]
+                     forKey:@"Set-Cookie"];
         response.statusCode = 200;
         [response setJsonBody:@{@"ok": @YES}];
     }];

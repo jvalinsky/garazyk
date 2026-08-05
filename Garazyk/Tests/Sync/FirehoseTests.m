@@ -66,7 +66,7 @@ NS_ASSUME_NONNULL_BEGIN
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.seq = 1;
     event.repo = @"did:plc:alice";
-    event.commit = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    event.commit = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     event.ops = @[@{@"action": @"create"}];
     event.blobs = @[];
     event.time = @"2024-01-01T00:00:00Z";

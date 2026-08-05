@@ -47,7 +47,7 @@ typedef NS_ENUM(NSInteger, AppViewRepoSyncStatus) {
 /*! Current sync status. */
 @property (nonatomic, assign) AppViewRepoSyncStatus status;
 
-/*! Last known revision (CID string). Nil if not yet synced. */
+/*! Last known revision (ATProtoCID string). Nil if not yet synced. */
 @property (nonatomic, copy, nullable) NSString *lastRev;
 
 /*! Wall-clock time of last successful backfill completion. */
@@ -108,7 +108,7 @@ typedef NS_ENUM(NSInteger, AppViewRepoSyncStatus) {
 /*! Global sequence number of the ingest event. */
 @property (nonatomic, assign) int64_t  seq;
 
-/*! CID of the commit (used for idempotency). */
+/*! ATProtoCID of the commit (used for idempotency). */
 @property (nonatomic, copy)   NSString *commitCID;
 
 /*! Revision string of the commit. */

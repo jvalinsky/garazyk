@@ -41,7 +41,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
 #pragma mark - Path Construction
 
 - (NSString *)hlsDirectoryForDID:(NSString *)did cid:(NSString *)cid {
-    // Sanitize DID and CID for use as directory names
+    // Sanitize DID and ATProtoCID for use as directory names
     NSString *safeDid = [did stringByReplacingOccurrencesOfString:@":" withString:@"_"];
     NSString *safeCid = [cid stringByReplacingOccurrencesOfString:@":" withString:@"_"];
     return [self.outputBaseDirectory stringByAppendingPathComponent:

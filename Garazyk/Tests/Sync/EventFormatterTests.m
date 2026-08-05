@@ -26,8 +26,8 @@
     NSError *error = nil;
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:abc123";
-    // Create a valid CID using SHA-256 (required for CBOR tag 42 round-trip)
-    event.commit = [CID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
+    // Create a valid ATProtoCID using SHA-256 (required for CBOR tag 42 round-trip)
+    event.commit = [ATProtoCID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
     event.ops = @[@{@"action": @"create", @"path": @"/app.bsky.feed.post/123"}];
     event.blobs = @[];  // Empty array for now
     
@@ -41,7 +41,7 @@
     NSError *error = nil;
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:abc123";
-    event.commit = [CID sha256:[@"test2" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.commit = [ATProtoCID sha256:[@"test2" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"3k3k3k3k3k3k3";
     event.time = @"2024-01-01T00:00:00Z";
     event.ops = @[];
@@ -118,7 +118,7 @@
     NSError *error = nil;
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:abc123";
-    event.commit = [CID sha256:[@"test3" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.commit = [ATProtoCID sha256:[@"test3" dataUsingEncoding:NSUTF8StringEncoding]];
     event.ops = @[@{@"action": @"create"}];
     event.blobs = @[];
 
@@ -135,8 +135,8 @@
     XCTAssertEqual(op, 1);
     XCTAssertEqualObjects(msgType, @"#commit");
     XCTAssertEqualObjects(decoded[@"repo"], @"did:plc:abc123");
-    CID *originalCID = event.commit;
-    CID *decodedCID = decoded[@"commit"];
+    ATProtoCID *originalCID = event.commit;
+    ATProtoCID *decodedCID = decoded[@"commit"];
     XCTAssertEqualObjects(decodedCID, originalCID, @"Decoded CID should match original CID");
 }
 
@@ -451,16 +451,16 @@
 }
 
 - (void)testOpsCIDRoundTrip {
-    // Verify that CID objects in ops survive encode→decode round-trip
+    // Verify that ATProtoCID objects in ops survive encode→decode round-trip
     NSError *error = nil;
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:roundtrip";
     event.rev = @"3kroundtrip";
     event.time = @"2024-01-01T00:00:00Z";
-    event.commit = [CID sha256:[@"roundtrip-test" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.commit = [ATProtoCID sha256:[@"roundtrip-test" dataUsingEncoding:NSUTF8StringEncoding]];
 
-    // Create a CID for the op's record
-    CID *recordCID = [CID sha256:[@"record-cid-test" dataUsingEncoding:NSUTF8StringEncoding]];
+    // Create a ATProtoCID for the op's record
+    ATProtoCID *recordCID = [ATProtoCID sha256:[@"record-cid-test" dataUsingEncoding:NSUTF8StringEncoding]];
     XCTAssertNotNil(recordCID, @"Precondition: record CID must be created");
 
     event.ops = @[@{
@@ -490,11 +490,11 @@
     XCTAssertEqualObjects(decodedOp[@"action"], @"create", @"Action should survive round-trip");
     XCTAssertEqualObjects(decodedOp[@"path"], @"app.bsky.feed.post/3kabc123", @"Path with rkey should survive round-trip");
 
-    // Verify CID survived round-trip
+    // Verify ATProtoCID survived round-trip
     id decodedCIDValue = decodedOp[@"cid"];
-    XCTAssertTrue([decodedCIDValue isKindOfClass:[CID class]], @"cid should be a CID object, got %@", NSStringFromClass([decodedCIDValue class]));
-    if ([decodedCIDValue isKindOfClass:[CID class]]) {
-        CID *decodedCID = (CID *)decodedCIDValue;
+    XCTAssertTrue([decodedCIDValue isKindOfClass:[ATProtoCID class]], @"cid should be a CID object, got %@", NSStringFromClass([decodedCIDValue class]));
+    if ([decodedCIDValue isKindOfClass:[ATProtoCID class]]) {
+        ATProtoCID *decodedCID = (ATProtoCID *)decodedCIDValue;
         XCTAssertEqualObjects(decodedCID.stringValue, recordCID.stringValue, @"CID string should match after round-trip");
     }
 }
@@ -506,7 +506,7 @@
     event.repo = @"did:plc:deletetest";
     event.rev = @"3kdeletetest";
     event.time = @"2024-01-01T00:00:00Z";
-    event.commit = [CID sha256:[@"delete-test" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.commit = [ATProtoCID sha256:[@"delete-test" dataUsingEncoding:NSUTF8StringEncoding]];
 
     event.ops = @[@{
         @"action": @"delete",

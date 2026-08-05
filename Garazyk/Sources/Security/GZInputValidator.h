@@ -72,7 +72,7 @@ typedef NS_ENUM(NSInteger, GZValidationError) {
 - (BOOL)isValidTID:(NSString *)tid;
 
 /**
- * @abstract Validates a CID string.
+ * @abstract Validates a ATProtoCID string.
  */
 - (BOOL)isValidCID:(NSString *)cid;
 

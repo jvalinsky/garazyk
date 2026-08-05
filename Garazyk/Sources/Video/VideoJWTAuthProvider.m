@@ -318,9 +318,9 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
                 NSString *payload = [signingKey substringFromIndex:1];
                 NSData *keyBytes = nil;
                 if (prefix == 'z') {
-                    keyBytes = [CID base58btcDecode:payload];
+                    keyBytes = [ATProtoCID base58btcDecode:payload];
                 } else if (prefix == 'b') {
-                    keyBytes = [CID base32Decode:payload];
+                    keyBytes = [ATProtoCID base32Decode:payload];
                 }
 
                 if (keyBytes.length > 2) {

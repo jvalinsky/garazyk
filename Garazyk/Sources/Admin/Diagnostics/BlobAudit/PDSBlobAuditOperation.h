@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @class PDSBlobAuditOperation
  * @brief Base class for blob audit operations.
  *
- * Subclasses implement specific audit types (orphan detection, CID verification, etc.)
+ * Subclasses implement specific audit types (orphan detection, ATProtoCID verification, etc.)
  * Operations are designed to run in NSOperationQueue with progress tracking and cancellation support.
  */
 @interface PDSBlobAuditOperation : NSOperation

@@ -10,7 +10,7 @@
 @class PDSDatabaseRecord;
 @class PDSDatabaseRepo;
 @class RepoCommit;
-@class CID;
+@class ATProtoCID;
 @class CARWriter;
 @class CARBlock;
 @class STARCommit;
@@ -37,18 +37,18 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
                                         store:(PDSActorStore *)store
                                         error:(NSError **)error;
-/** @abstract Builds an MST containing the supplied record collection/rkey-to-CID entries. */
+/** @abstract Builds an MST containing the supplied record collection/rkey-to-ATProtoCID entries. */
 - (MST *)mstFromRecords:(NSArray<PDSDatabaseRecord *> *)records;
 /** @abstract Returns serialized record block data when the record can be encoded for CAR export. */
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record;
-/** @abstract Wraps a CID as the DAG-CBOR link value used by repository commits. */
-- (ATProtoCBORValue *)cidLinkValueForCID:(CID *)cid;
+/** @abstract Wraps a ATProtoCID as the DAG-CBOR link value used by repository commits. */
+- (ATProtoCBORValue *)cidLinkValueForCID:(ATProtoCID *)cid;
 /** @abstract Loads the persisted head commit and its decoded metadata for the actor store. */
 - (BOOL)loadStoredHeadCommitForDid:(NSString *)did
                               store:(PDSActorStore *)store
-                          commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
+                          commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCIDOut
                         commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
-                            dataCID:(CID * _Nullable * _Nonnull)dataCIDOut
+                            dataCID:(ATProtoCID * _Nullable * _Nonnull)dataCIDOut
                                 rev:(NSString * _Nullable * _Nonnull)revOut
                            isSigned:(BOOL *)isSignedOut;
 /** @abstract Assembles a complete or incremental CAR writer rooted at did's head commit. */
@@ -64,7 +64,7 @@ NS_ASSUME_NONNULL_BEGIN
                           since:(nullable NSString *)sinceRev
                           store:(PDSActorStore * _Nullable * _Nonnull)storeOut
                             mst:(MST * _Nullable * _Nonnull)mstOut
-                      commitCID:(CID * _Nullable * _Nonnull)commitCIDOut
+                      commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCIDOut
                     commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
                  noChangesSince:(BOOL *)noChangesSinceOut
                  includeFullMST:(BOOL *)includeFullMSTOut

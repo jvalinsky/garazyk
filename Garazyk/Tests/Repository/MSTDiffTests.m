@@ -10,12 +10,12 @@
 
 @implementation MSTDiffTests
 
-- (CID *)testCID:(NSString *)suffix {
+- (ATProtoCID *)testCID:(NSString *)suffix {
     NSData *data = [[NSString stringWithFormat:@"mst-diff-test-%@", suffix ?: @""] dataUsingEncoding:NSUTF8StringEncoding];
-    return [CID sha256:data];
+    return [ATProtoCID sha256:data];
 }
 
-- (CID *)defaultTestCID {
+- (ATProtoCID *)defaultTestCID {
     return [self testCID:@""];
 }
 
@@ -24,7 +24,7 @@
 - (void)testDiffNilOldTree {
     // When old tree is nil, all entries should be adds
     MST *newTree = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid1 = [self defaultTestCID];
     
     [newTree put:@"com.example.record/aaa" valueCID:cid1];
     [newTree put:@"com.example.record/bbb" valueCID:cid1];
@@ -44,7 +44,7 @@
 - (void)testDiffNilNewTree {
     // When new tree is nil, all entries should be deletes
     MST *oldTree = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid1 = [self defaultTestCID];
     
     [oldTree put:@"com.example.record/aaa" valueCID:cid1];
     [oldTree put:@"com.example.record/bbb" valueCID:cid1];
@@ -66,7 +66,7 @@
     // Identical trees should have no diff
     MST *tree1 = [[MST alloc] init];
     MST *tree2 = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid1 = [self defaultTestCID];
     
     [tree1 put:@"com.example.record/aaa" valueCID:cid1];
     [tree1 put:@"com.example.record/bbb" valueCID:cid1];
@@ -82,8 +82,8 @@
     // Test adding entries
     MST *oldTree = [[MST alloc] init];
     MST *newTree = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
-    CID *cid2 = [self testCID:@"2"];
+    ATProtoCID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid2 = [self testCID:@"2"];
     
     [oldTree put:@"com.example.record/aaa" valueCID:cid1];
     
@@ -108,8 +108,8 @@
     // Test deleting entries
     MST *oldTree = [[MST alloc] init];
     MST *newTree = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
-    CID *cid2 = [self testCID:@"2"];
+    ATProtoCID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid2 = [self testCID:@"2"];
     
     [oldTree put:@"com.example.record/aaa" valueCID:cid1];
     [oldTree put:@"com.example.record/bbb" valueCID:cid2];
@@ -134,8 +134,8 @@
     // Test updating entries
     MST *oldTree = [[MST alloc] init];
     MST *newTree = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
-    CID *cid2 = [self testCID:@"2"];
+    ATProtoCID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid2 = [self testCID:@"2"];
     
     [oldTree put:@"com.example.record/aaa" valueCID:cid1];
     [oldTree put:@"com.example.record/bbb" valueCID:cid1];
@@ -158,9 +158,9 @@
     // Test mixed add/update/delete
     MST *oldTree = [[MST alloc] init];
     MST *newTree = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
-    CID *cid2 = [self testCID:@"2"];
-    CID *cid3 = [self testCID:@"3"];
+    ATProtoCID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid2 = [self testCID:@"2"];
+    ATProtoCID *cid3 = [self testCID:@"3"];
     
     // Old: aaa, bbb, ccc
     [oldTree put:@"com.example.record/aaa" valueCID:cid1];
@@ -204,7 +204,7 @@
 - (void)testWalkerSingleEntry {
     // Single entry tree
     MST *mst = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid1 = [self defaultTestCID];
     
     [mst put:@"com.example.record/aaa" valueCID:cid1];
     
@@ -226,7 +226,7 @@
 - (void)testWalkerMultipleEntries {
     // Multiple entry tree
     MST *mst = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid1 = [self defaultTestCID];
     
     [mst put:@"com.example.record/aaa" valueCID:cid1];
     [mst put:@"com.example.record/bbb" valueCID:cid1];
@@ -261,7 +261,7 @@
     // Verify diff returns operations in key order
     MST *oldTree = [[MST alloc] init];
     MST *newTree = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid1 = [self defaultTestCID];
     
     // Add entries in non-sorted order
     [newTree put:@"com.example.record/zzz" valueCID:cid1];
@@ -281,8 +281,8 @@
     // Test with larger tree to ensure no infinite loops
     MST *oldTree = [[MST alloc] init];
     MST *newTree = [[MST alloc] init];
-    CID *cid1 = [self defaultTestCID];
-    CID *cid2 = [self testCID:@"2"];
+    ATProtoCID *cid1 = [self defaultTestCID];
+    ATProtoCID *cid2 = [self testCID:@"2"];
     
     // Create 50 entries
     for (int i = 0; i < 50; i++) {
@@ -296,7 +296,7 @@
         [newTree put:key valueCID:cid1];
     }
     
-    // Updates (different CID)
+    // Updates (different ATProtoCID)
     for (int i = 0; i < 10; i++) {
         NSString *key = [NSString stringWithFormat:@"com.example.record/key%03d", i];
         [newTree put:key valueCID:cid2];

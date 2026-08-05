@@ -94,7 +94,7 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
             }
         }
 
-        // Caller-supplied archive: verify every block hashes to its stated CID
+        // Caller-supplied archive: verify every block hashes to its stated ATProtoCID
         // before any of it reaches the repository.
         NSError *carError = nil;
         CARReader *reader = [CARReader readFromData:carData strict:YES error:&carError];

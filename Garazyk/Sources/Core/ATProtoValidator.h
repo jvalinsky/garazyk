@@ -39,9 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method validateCID:error:
  
- @abstract Validates a CID string.
+ @abstract Validates a ATProtoCID string.
  
- @param cid The CID string to validate.
+ @param cid The ATProtoCID string to validate.
  @param error On return, contains an error if validation failed.
  @return YES if valid, NO otherwise.
  */

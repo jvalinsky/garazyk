@@ -12,7 +12,7 @@
                           ops:(NSArray<NSDictionary *> *)ops
                 blockProvider:(PDSBlockProvider)blockProvider
           revBlockListProvider:(nullable PDSRevisionBlockListProvider)revBlockListProvider {
-  CID *commitCID = commit.computeCID;
+  ATProtoCID *commitCID = commit.computeCID;
   if (!commitCID) {
     return [NSData data];
   }
@@ -35,10 +35,10 @@
     if (![recordCBOR isKindOfClass:[NSData class]] || recordCBOR.length == 0)
       continue;
 
-    CID *recordCID = [op cidObjectForKey:@"cid"];
+    ATProtoCID *recordCID = [op cidObjectForKey:@"cid"];
     if (!recordCID) {
-      NSData *digest = [CID rawSha256:recordCBOR];
-      recordCID = digest ? [CID cidWithDigest:digest codec:0x71] : nil;
+      NSData *digest = [ATProtoCID rawSha256:recordCBOR];
+      recordCID = digest ? [ATProtoCID cidWithDigest:digest codec:0x71] : nil;
     }
     
     if (recordCID && ![seenCIDs containsObject:recordCID.stringValue]) {
@@ -51,7 +51,7 @@
   if (commit.rev.length > 0 && revBlockListProvider) {
     NSArray<NSData *> *cids = revBlockListProvider(commit.rev);
     for (NSData *cidBytes in cids) {
-      CID *cid = [CID cidFromBytes:cidBytes];
+      ATProtoCID *cid = [ATProtoCID cidFromBytes:cidBytes];
       if (!cid || [seenCIDs containsObject:cid.stringValue]) continue;
       
       NSData *blockData = blockProvider(cidBytes);
@@ -72,7 +72,7 @@
   return [writer serialize];
 }
 
-+ (void)addMSTNodeBlocksForRootCID:(CID *)rootCID
++ (void)addMSTNodeBlocksForRootCID:(ATProtoCID *)rootCID
                     blockProvider:(PDSBlockProvider)blockProvider
                          toWriter:(CARWriter *)writer {
   NSMutableArray<NSData *> *queue = [NSMutableArray arrayWithObject:[rootCID bytes]];
@@ -82,7 +82,7 @@
     NSData *cidBytes = queue.firstObject;
     [queue removeObjectAtIndex:0];
 
-    CID *nodeCID = [CID cidFromBytes:cidBytes];
+    ATProtoCID *nodeCID = [ATProtoCID cidFromBytes:cidBytes];
     if (!nodeCID || [visited containsObject:nodeCID.stringValue]) continue;
     [visited addObject:nodeCID.stringValue];
 
@@ -99,7 +99,7 @@
       NSData *lBytes = leftTag.tagValue.byteString;
       if (lBytes.length > 1) {
         NSData *lCidBytes = [lBytes subdataWithRange:NSMakeRange(1, lBytes.length - 1)];
-        CID *leftCID = [CID cidFromBytes:lCidBytes];
+        ATProtoCID *leftCID = [ATProtoCID cidFromBytes:lCidBytes];
         if (leftCID && ![visited containsObject:leftCID.stringValue]) {
           [queue addObject:lCidBytes];
         }
@@ -115,7 +115,7 @@
           NSData *tBytes = treeTag.tagValue.byteString;
           if (tBytes.length > 1) {
             NSData *tCidBytes = [tBytes subdataWithRange:NSMakeRange(1, tBytes.length - 1)];
-            CID *treeCID = [CID cidFromBytes:tCidBytes];
+            ATProtoCID *treeCID = [ATProtoCID cidFromBytes:tCidBytes];
             if (treeCID && ![visited containsObject:treeCID.stringValue]) {
               [queue addObject:tCidBytes];
             }
@@ -127,7 +127,7 @@
 }
 
 + (NSData *)buildCARForSyncCommitOnly:(RepoCommit *)commit {
-  CID *commitCID = commit.computeCID;
+  ATProtoCID *commitCID = commit.computeCID;
   if (!commitCID) return [NSData data];
 
   CARWriter *writer = [CARWriter writerWithRootCID:commitCID];

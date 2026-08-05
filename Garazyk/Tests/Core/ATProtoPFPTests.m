@@ -16,7 +16,7 @@
 
 @implementation ATProtoPFPTests
 
-- (CID *)sampleCID {
+- (ATProtoCID *)sampleCID {
     NSData *bytes = [NSData dataWithBytes:(const uint8_t[]) {
         0x01, 0x55, 0x12, 0x20,
         0x58, 0x91, 0xb5, 0xb5, 0x22, 0xd5, 0xdf, 0x08,
@@ -24,7 +24,7 @@
         0x1b, 0xb4, 0xfc, 0x71, 0x63, 0xaf, 0x34, 0xd0,
         0x82, 0x86, 0xa2, 0xe8, 0x46, 0xf6, 0xbe, 0x03
     } length:36];
-    return [CID daslCIDFromBytes:bytes profile:ATProtoDASLCIDProfileBase];
+    return [ATProtoCID daslCIDFromBytes:bytes profile:ATProtoDASLCIDProfileBase];
 }
 
 - (NSData *)pdqBytes {
@@ -51,7 +51,7 @@
 }
 
 - (void)testTMKPDQFUsesStrictCIDData {
-    CID *cid = [self sampleCID];
+    ATProtoCID *cid = [self sampleCID];
     NSMutableData *bytes = [NSMutableData dataWithBytes:(const uint8_t[]) {0x02, 0x24} length:2];
     [bytes appendData:cid.bytes];
 

@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
  * 
  * @discussion Records are the fundamental data units in ATProto repositories.
  * Each record is identified by a URI (repo DID + collection + rkey) and has
- * an associated CID for content-addressable retrieval.
+ * an associated ATProtoCID for content-addressable retrieval.
  * 
  * @see PDSDatabase (Records)
  */
@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** The record key within the collection. */
 @property (nonatomic, copy) NSString *rkey;
 
-/** The CID of the record content. */
+/** The ATProtoCID of the record content. */
 @property (nonatomic, copy) NSString *cid;
 
 /** Date when the record was created. */

@@ -89,7 +89,7 @@
     NSString *jobId = [[NSUUID UUID] UUIDString];
     NSNumber *fileSize = @(request.body.length);
 
-    CID *cid = [CID sha256:request.body];
+    ATProtoCID *cid = [ATProtoCID sha256:request.body];
     NSString *blobCid = cid.stringValue;
 
     BOOL stored = [blobProvider storeBlobData:request.body forCID:cid error:&error];

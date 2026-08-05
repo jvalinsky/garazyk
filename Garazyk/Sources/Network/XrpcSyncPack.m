@@ -905,8 +905,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
-    // §6.1: parse CID before interpolating into Location (blocks open redirect / CRLF).
-    CID *parsedCID = [CID cidFromString:cid];
+    // §6.1: parse ATProtoCID before interpolating into Location (blocks open redirect / CRLF).
+    ATProtoCID *parsedCID = [ATProtoCID cidFromString:cid];
     if (!parsedCID) {
       response.statusCode = HttpStatusBadRequest;
       [response setJsonBody:@{
@@ -1040,7 +1040,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     // This matches the reference TS PDS behaviour where getRecord returns
     // a narrow slice of the repo containing only the requested record.
     //
-    // Open the actor store once and reuse it for the commit CID lookup,
+    // Open the actor store once and reuse it for the commit ATProtoCID lookup,
     // commit block fetch, record block fetch, and MST proof path — avoiding
     // redundant store opens that would each hit the pool lock and open the
     // SQLite database file again.
@@ -1054,7 +1054,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
-    // Read the commit CID from the stored repo root (lightweight: single
+    // Read the commit ATProtoCID from the stored repo root (lightweight: single
     // SQLite query on the already-open store) instead of calling
     // getLatestCommitForDid: which opens the store again.
     NSData *rootCIDData = [store getRepoRootForDid:did error:nil];
@@ -1066,7 +1066,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       }];
       return;
     }
-    CID *commitCID = [CID cidFromBytes:rootCIDData];
+    ATProtoCID *commitCID = [ATProtoCID cidFromBytes:rootCIDData];
     if (!commitCID) {
       response.statusCode = HttpStatusInternalServerError;
       [response setJsonBody:@{
@@ -1088,7 +1088,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     // Add the record block and MST proof path
     NSString *recordCIDStr = record[@"cid"];
     if (recordCIDStr) {
-      CID *recordCID = [CID cidFromString:recordCIDStr];
+      ATProtoCID *recordCID = [ATProtoCID cidFromString:recordCIDStr];
       if (recordCID && store) {
         NSData *blockData =
             [store getBlockForCID:[recordCID bytes] forDid:did error:nil];
@@ -1121,17 +1121,17 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
           NSString *mstKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
           
           // Provide block provider to load subtrees if needed
-          MSTBlockProvider blockProvider = ^NSData * _Nullable (CID *targetCid) {
+          MSTBlockProvider blockProvider = ^NSData * _Nullable (ATProtoCID *targetCid) {
               return [store getBlockForCID:targetCid.bytes forDid:did error:nil];
           };
           
           NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:mstKey blockProvider:blockProvider];
 
-          NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+          NSMapTable<MSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
           for (MSTNode *node in proofNodes) {
-            CID *nodeCID = [node getCID:cache];
+            ATProtoCID *nodeCID = [node getCID:cache];
             if (nodeCID) {
-              // Fetch original block from DB to ensure CID consistency
+              // Fetch original block from DB to ensure ATProtoCID consistency
               NSData *nodeData = [store getBlockForCID:nodeCID.bytes forDid:did error:nil];
               if (!nodeData) {
                   // Fallback to re-serialization if original not found

@@ -294,7 +294,7 @@
     XCTAssertNotNil(cborData, @"CBOR encode failed: %@", cborError);
 
     NSString *cidString = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
-    CID *testCid = [CID cidFromString:cidString];
+    ATProtoCID *testCid = [ATProtoCID cidFromString:cidString];
     XCTAssertNotNil(testCid, @"CID parse failed");
 
     // Insert block with object-valued subject
@@ -302,7 +302,7 @@
         @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, created_at) VALUES (?, ?, ?, ?)"
         params:@[testCid.bytes, @"did:plc:test-user", cborData, @"2026-01-01T00:00:00Z"] error:nil];
 
-    // Insert follow record pointing to that CID
+    // Insert follow record pointing to that ATProtoCID
     [self.database executeParameterizedUpdate:
         @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid) VALUES (?, ?, ?, ?, ?)"
         params:@[@"at://did:plc:test-user/app.bsky.graph.follow/abc",

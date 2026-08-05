@@ -9,7 +9,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class CID;
+@class ATProtoCID;
 
 /**
  * @abstract Internal accessors for MSTNode.
@@ -27,11 +27,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign, readonly) uint32_t level;
 
 /**
- * @abstract Retrieves the CID for this node, populating the cache.
+ * @abstract Retrieves the ATProtoCID for this node, populating the cache.
  * @param cache Map table for storing node CIDs.
- * @return The node's CID.
+ * @return The node's ATProtoCID.
  */
-- (CID *)getCID:(NSMapTable<MSTNode *, CID *> *)cache;
+- (ATProtoCID *)getCID:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
 
 @end
 

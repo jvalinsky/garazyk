@@ -254,7 +254,7 @@ static NSString * const kJetstreamKeyHandle = @"handle";
     commitEvent.time = event[kJetstreamKeyTimeUS] ? [NSString stringWithFormat:@"%@", event[kJetstreamKeyTimeUS]] : nil;
 
     if (cidStr && [cidStr isKindOfClass:[NSString class]]) {
-        CID *cid = [CID cidWithString:cidStr];
+        ATProtoCID *cid = [ATProtoCID cidWithString:cidStr];
         if (cid) commitEvent.commit = cid;
     }
 

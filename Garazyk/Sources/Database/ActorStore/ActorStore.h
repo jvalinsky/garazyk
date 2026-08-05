@@ -127,7 +127,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                            limit:(NSUInteger)limit
                                            error:(NSError **)error;
 /**
- * @abstract Retrieves a block by CID.
+ * @abstract Retrieves a block by ATProtoCID.
  * @param cid Content identifier for the blob or block.
  * @param did Actor DID for the request.
  * @param error Receives details when the operation fails.
@@ -170,7 +170,7 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                          cursor:(nullable NSString *)cursor
                                           error:(NSError **)error;
 /**
- * @abstract Deletes a blob by CID.
+ * @abstract Deletes a blob by ATProtoCID.
  * @param cid Content identifier for the blob or block.
  * @param did Actor DID for the request.
  * @param error Receives details when the operation fails.

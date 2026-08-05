@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Creates a new video processing job.
  * @param jobId The job identifier.
  * @param did The creator's DID.
- * @param blobCid The original video blob CID.
+ * @param blobCid The original video blob ATProtoCID.
  * @param mimeType The source video mime type.
  * @param fileSize The source file size in bytes.
  * @param token Optional auth token for service access.
@@ -58,8 +58,8 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Updates results for a completed video job.
  * @param jobId The job identifier.
- * @param processedBlobCid The final transcoded blob CID.
- * @param thumbnailBlobCid The generated thumbnail blob CID.
+ * @param processedBlobCid The final transcoded blob ATProtoCID.
+ * @param thumbnailBlobCid The generated thumbnail blob ATProtoCID.
  * @param error Receives failure details.
  * @return YES if updated successfully.
  */

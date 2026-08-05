@@ -39,8 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param outputDirectory Directory to which assets (transcoded files, playlists, thumbnails) are written.
  * @param progressBlock   Optional block invoked with progress updates (0.0 – 1.0).
  * @param completion      Completion block. The @c results dictionary may contain:
- *                        - @c @"processedCid" : NSString (CID of main output blob)
- *                        - @c @"thumbnailCid" : NSString? (CID of thumbnail blob)
+ *                        - @c @"processedCid" : NSString (ATProtoCID of main output blob)
+ *                        - @c @"thumbnailCid" : NSString? (ATProtoCID of thumbnail blob)
  *                        - @c @"metadata"     : NSDictionary? (arbitrary key-value metadata)
  */
 - (void)processMediaAtURL:(NSURL *)inputURL

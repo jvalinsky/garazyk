@@ -166,13 +166,13 @@
     XCTAssertEqual(bytes[index++], 0x01); // value 1
 }
 
-#pragma mark - CID-Link Encoding (Tag 42)
+#pragma mark - ATProtoCID-Link Encoding (Tag 42)
 
 - (void)testEncodeCIDLink {
     NSError *error = nil;
     
-    // Create a test CID using SHA-256 (required for CBOR tag 42 round-trip)
-    CID *cid = [CID sha256:[@"test digest here" dataUsingEncoding:NSUTF8StringEncoding]];
+    // Create a test ATProtoCID using SHA-256 (required for CBOR tag 42 round-trip)
+    ATProtoCID *cid = [ATProtoCID sha256:[@"test digest here" dataUsingEncoding:NSUTF8StringEncoding]];
     XCTAssertNotNil(cid);
     
     NSData *encoded = [ATProtoDagCBOR encodeObject:cid error:&error];
@@ -183,16 +183,16 @@
     const uint8_t *bytes = encoded.bytes;
     XCTAssertEqual(bytes[0], 0xD8); // Tag, additional info 24
     XCTAssertEqual(bytes[1], 42);   // Tag value 42
-    // Next should be byte string header followed by 0x00 and CID bytes
+    // Next should be byte string header followed by 0x00 and ATProtoCID bytes
     XCTAssertEqual(bytes[2] >> 5, 2); // Major type 2 (byte string)
     
     // Decode and verify round-trip
     id decoded = [ATProtoDagCBOR decodeData:encoded error:&error];
     XCTAssertNotNil(decoded);
     XCTAssertNil(error);
-    XCTAssertTrue([decoded isKindOfClass:[CID class]]);
+    XCTAssertTrue([decoded isKindOfClass:[ATProtoCID class]]);
     
-    CID *decodedCID = (CID *)decoded;
+    ATProtoCID *decodedCID = (ATProtoCID *)decoded;
     XCTAssertEqualObjects(decodedCID.stringValue, cid.stringValue);
 }
 
@@ -201,8 +201,8 @@
 - (void)testConvert$LinkToCID {
     NSError *error = nil;
     
-    // Create a test CID using SHA-256 (required for CBOR tag 42 round-trip)
-    CID *cid = [CID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
+    // Create a test ATProtoCID using SHA-256 (required for CBOR tag 42 round-trip)
+    ATProtoCID *cid = [ATProtoCID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
     NSString *cidString = cid.stringValue;
     
     // JSON object with $link wrapper
@@ -222,9 +222,9 @@
     
     NSDictionary *decodedDict = (NSDictionary *)decoded;
     XCTAssertEqualObjects(decodedDict[@"someField"], @"value");
-    XCTAssertTrue([decodedDict[@"linkField"] isKindOfClass:[CID class]]);
+    XCTAssertTrue([decodedDict[@"linkField"] isKindOfClass:[ATProtoCID class]]);
     
-    CID *decodedCID = decodedDict[@"linkField"];
+    ATProtoCID *decodedCID = decodedDict[@"linkField"];
     XCTAssertEqualObjects(decodedCID.stringValue, cidString);
 }
 
@@ -254,10 +254,10 @@
 - (void)testDecodeAsJSONConvertsLinksAndBytes {
     NSError *error = nil;
     
-    // Create a CID using SHA-256 (required for CBOR tag 42 round-trip)
-    CID *cid = [CID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
+    // Create a ATProtoCID using SHA-256 (required for CBOR tag 42 round-trip)
+    ATProtoCID *cid = [ATProtoCID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
     
-    // Create a dict with CID and byte data
+    // Create a dict with ATProtoCID and byte data
     NSDictionary *original = @{
         @"link": cid,
         @"bytes": [@"hello" dataUsingEncoding:NSUTF8StringEncoding],

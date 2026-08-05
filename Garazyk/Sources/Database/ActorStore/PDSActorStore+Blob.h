@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
  - Videos
  - Other binary content
 
- Blobs are content-addressed by CID and tracked separately from repository
+ Blobs are content-addressed by ATProtoCID and tracked separately from repository
  blocks. The blob table stores metadata while actual blob data may be stored
  on disk or in cloud storage.
 

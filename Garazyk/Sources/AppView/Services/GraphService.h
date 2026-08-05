@@ -150,7 +150,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param record The list record payload.
  * @param did The actor DID who owns the list.
  * @param uri The AT Protocol URI of the list.
- * @param cid The CID of the list record.
+ * @param cid The ATProtoCID of the list record.
  * @param error Receives details when indexing fails.
  * @return YES if indexing succeeds; otherwise NO.
  */
@@ -169,7 +169,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param record The list item record payload.
  * @param did The actor DID who added the item.
  * @param uri The AT Protocol URI of the list item record.
- * @param cid The CID of the list item record.
+ * @param cid The ATProtoCID of the list item record.
  * @param error Receives details when indexing fails.
  * @return YES if indexing succeeds; otherwise NO.
  */

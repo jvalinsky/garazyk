@@ -38,7 +38,7 @@
     }
 
     MST *mst = [[MST alloc] init];
-    CID *dataCID = mst.rootCID;
+    ATProtoCID *dataCID = mst.rootCID;
     if (!dataCID) {
         if (error) {
             *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
@@ -63,7 +63,7 @@
     }
     commit.signature = signature;
 
-    CID *commitCID = [commit computeCID];
+    ATProtoCID *commitCID = [commit computeCID];
     NSData *commitData = [commit serializeSigned];
     if (!commitData) {
         if (error) {

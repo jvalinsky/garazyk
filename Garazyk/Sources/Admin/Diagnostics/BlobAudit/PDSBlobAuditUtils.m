@@ -8,7 +8,7 @@ NSString *_Nullable PDSBlobAuditCIDStringFromRawBytes(NSData *_Nullable rawCID) 
         return nil;
     }
 
-    CID *cid = [CID cidFromBytes:rawCID];
+    ATProtoCID *cid = [ATProtoCID cidFromBytes:rawCID];
     return cid.stringValue;
 }
 
@@ -38,7 +38,7 @@ static void PDSBlobAuditCollectBlobReferenceCIDs(id json, NSMutableSet<NSString 
                 }
             }
 
-            CID *cid = candidate.length > 0 ? [CID cidFromString:candidate] : nil;
+            ATProtoCID *cid = candidate.length > 0 ? [ATProtoCID cidFromString:candidate] : nil;
             if (cid.stringValue.length > 0) {
                 [results addObject:cid.stringValue];
             }

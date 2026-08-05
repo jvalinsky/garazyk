@@ -1076,7 +1076,7 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
     if (error) *error = [self invalidWriteError:@"Blob data, MIME type, space, and author are required"];
     return nil;
   }
-  CID *cid = [CID cidWithDigest:[CID sha256Digest:data] codec:0x55];
+  ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:data] codec:0x55];
   if (!cid) {
     if (error) *error = [self invalidWriteError:@"Unable to derive a CID for the private blob"];
     return nil;
@@ -1496,7 +1496,7 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
                                           userInfo:@{NSLocalizedDescriptionKey: @"Invalid index path"}];
       return NO;
     }
-    CID *recordCID = [indexDict cidObjectForKey:path];
+    ATProtoCID *recordCID = [indexDict cidObjectForKey:path];
     if (!recordCID) {
       if (error) *error = [NSError errorWithDomain:PDSSpaceStoreErrorDomain
                                               code:PDSSpaceStoreErrorInvalidCAR

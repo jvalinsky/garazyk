@@ -85,9 +85,24 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
 @implementation UIAuthManager
 
 - (instancetype)initWithPassword:(NSString *)password {
+    return [self initWithPassword:password serviceIdentifier:nil];
+}
+
+- (instancetype)initWithPassword:(NSString *)password
+               serviceIdentifier:(NSString *)serviceIdentifier {
     self = [super init];
     if (self) {
         _sessionTTL = kUIAuthDefaultSessionTTL;
+        _serviceIdentifier = [serviceIdentifier copy];
+        if (serviceIdentifier.length > 0) {
+            _sessionCookieName =
+                [NSString stringWithFormat:@"gz_admin_%@_token", serviceIdentifier];
+            _csrfCookieName =
+                [NSString stringWithFormat:@"gz_admin_%@_nonce", serviceIdentifier];
+        } else {
+            _sessionCookieName = @"ui_admin_token";
+            _csrfCookieName = @"ui_admin_nonce";
+        }
 
         // Generate random salt for PBKDF2
         uint8_t saltBytes[16];
@@ -199,12 +214,13 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
         return nil;
     }
 
+    NSString *cookiePrefix = [self.sessionCookieName stringByAppendingString:@"="];
     for (NSString *cookie in [cookieHeader componentsSeparatedByString:@";"]) {
         NSString *trimmed = [cookie stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        if (![trimmed hasPrefix:@"ui_admin_token="]) {
+        if (![trimmed hasPrefix:cookiePrefix]) {
             continue;
         }
-        NSString *token = [trimmed substringFromIndex:@"ui_admin_token=".length];
+        NSString *token = [trimmed substringFromIndex:cookiePrefix.length];
         return token.length > 0 ? token : nil;
     }
     return nil;
@@ -212,7 +228,7 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
 
 - (NSString *)cookieHeaderValueForToken:(NSString *)token secure:(BOOL)secure {
     NSMutableString *cookie = [NSMutableString stringWithFormat:
-        @"ui_admin_token=%@; Path=/; HttpOnly; SameSite=Strict", token];
+        @"%@=%@; Path=/; HttpOnly; SameSite=Strict", self.sessionCookieName, token];
     if (secure) {
         [cookie appendString:@"; Secure"];
     }
@@ -236,10 +252,11 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
     if (![cookieHeader isKindOfClass:[NSString class]] || cookieHeader.length == 0) return NO;
 
     NSString *nonceCookie = nil;
+    NSString *noncePrefix = [self.csrfCookieName stringByAppendingString:@"="];
     for (NSString *cookie in [cookieHeader componentsSeparatedByString:@";"]) {
         NSString *trimmed = [cookie stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        if ([trimmed hasPrefix:@"ui_admin_nonce="]) {
-            nonceCookie = [trimmed substringFromIndex:@"ui_admin_nonce=".length];
+        if ([trimmed hasPrefix:noncePrefix]) {
+            nonceCookie = [trimmed substringFromIndex:noncePrefix.length];
             break;
         }
     }
@@ -285,7 +302,7 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
     });
 
     NSMutableString *cookie = [NSMutableString stringWithFormat:
-        @"ui_admin_nonce=%@; Path=/; HttpOnly; SameSite=Strict", nonce];
+        @"%@=%@; Path=/; HttpOnly; SameSite=Strict", self.csrfCookieName, nonce];
     if (secure) {
         [cookie appendString:@"; Secure"];
     }

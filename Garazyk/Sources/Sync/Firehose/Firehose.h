@@ -16,7 +16,7 @@
 
 @class Firehose;
 @class FirehoseSubscription;
-@class CID;
+@class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -75,8 +75,8 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*! The repo this event comes from (DID). */
 @property (nonatomic, copy) NSString *repo;
 
-/*! Repo commit object CID. */
-@property (nonatomic, strong) CID *commit;
+/*! Repo commit object ATProtoCID. */
+@property (nonatomic, strong) ATProtoCID *commit;
 
 /*! The rev of the emitted commit (ATProtoTID). */
 @property (nonatomic, copy) NSString *rev;
@@ -91,17 +91,17 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @property (nonatomic, strong) NSArray<NSDictionary *> *ops;
 
 /*! DEPRECATED -- will soon always be empty. List of new blobs. */
-@property (nonatomic, copy) NSArray<CID *> *blobs;
+@property (nonatomic, copy) NSArray<ATProtoCID *> *blobs;
 
 /*! Timestamp of when this message was originally broadcast (RFC-3339). */
 @property (nonatomic, copy) NSString *time;
 
 // Optional fields
 
-/*! The root CID of the MST tree for the previous commit. */
-@property (nonatomic, strong, nullable) CID *prevData;
+/*! The root ATProtoCID of the MST tree for the previous commit. */
+@property (nonatomic, strong, nullable) ATProtoCID *prevData;
 
-+ (instancetype)eventWithRepo:(NSString *)repo commit:(CID *)commit ops:(NSArray<NSDictionary *> *)ops;
++ (instancetype)eventWithRepo:(NSString *)repo commit:(ATProtoCID *)commit ops:(NSArray<NSDictionary *> *)ops;
 
 @end
 

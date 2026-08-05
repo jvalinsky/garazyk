@@ -185,7 +185,7 @@
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
 
     NSError *cidError;
-    // Use DAG-CBOR encoding for CID calculation to match spec
+    // Use DAG-CBOR encoding for ATProtoCID calculation to match spec
     NSData *cborData = [ATProtoDagCBOR encodeJSONObject:value error:&cidError];
     if (!cborData) {
         if (error) *error = cidError;
@@ -238,7 +238,7 @@
     __block BOOL success = NO;
     __block NSString *newRootCID = nil;
     __block NSString *newRev = nil;
-    __block CID *prevRoot = nil;
+    __block ATProtoCID *prevRoot = nil;
     __block NSError *writeError = nil;
     NSTimeInterval writeEnter = [NSDate timeIntervalSinceReferenceDate];
     [self _dispatchWriteForDid:did block:^{
@@ -266,7 +266,7 @@
             NSTimeInterval mstStart = [NSDate timeIntervalSinceReferenceDate];
             PDSActorStore *store = [self.databasePool storeForDid:did error:nil];
             NSData *prevRootData = [store getRepoRootForDid:did error:nil];
-            prevRoot = prevRootData ? [CID cidFromBytes:prevRootData] : nil;
+            prevRoot = prevRootData ? [ATProtoCID cidFromBytes:prevRootData] : nil;
 
             NSString *recordKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
             NSDictionary<NSString *, id> *mutationCIDsByKey = @{
@@ -373,7 +373,7 @@
     __block BOOL success = YES;
     __block NSString *newRootCID = nil;
     __block NSString *newRev = nil;
-    __block CID *prevRoot = nil;
+    __block ATProtoCID *prevRoot = nil;
     __block NSError *writeError = nil;
     NSTimeInterval writeEnter = [NSDate timeIntervalSinceReferenceDate];
     [self _dispatchWriteForDid:did block:^{
@@ -412,7 +412,7 @@
             NSTimeInterval mstStart = [NSDate timeIntervalSinceReferenceDate];
             PDSActorStore *store = [self.databasePool storeForDid:did error:nil];
             NSData *prevRootData = [store getRepoRootForDid:did error:nil];
-            prevRoot = prevRootData ? [CID cidFromBytes:prevRootData] : nil;
+            prevRoot = prevRootData ? [ATProtoCID cidFromBytes:prevRootData] : nil;
 
             NSString *recordKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
             NSDictionary<NSString *, id> *mutationCIDsByKey = @{

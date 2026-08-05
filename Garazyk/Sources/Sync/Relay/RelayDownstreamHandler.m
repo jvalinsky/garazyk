@@ -39,7 +39,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 - (nullable RepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
                                            error:(NSError **)error;
 - (nullable RepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
-                                           commitCID:(CID * _Nullable * _Nonnull)commitCID
+                                           commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCID
                                                error:(NSError **)error;
 - (void)recoverRepo:(NSString *)repoDID
        fromUpstream:(NSString *)upstreamURL
@@ -132,7 +132,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         else if ([event isKindOfClass:[FirehoseSyncEvent class]]) {
             FirehoseSyncEvent *syncEvent = (FirehoseSyncEvent *)event;
             NSError *syncError = nil;
-            CID *commitCID = nil;
+            ATProtoCID *commitCID = nil;
             RepoCommit *commit =
                 [self validatedCommitForSyncEvent:syncEvent
                                        commitCID:&commitCID
@@ -259,7 +259,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 #pragma mark - Chain Verification
 
 - (nullable RepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
-                                           commitCID:(CID * _Nullable * _Nonnull)commitCID
+                                           commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCID
                                                error:(NSError **)error {
     CARReader *reader = [CARReader readFromData:event.blocks error:error];
     if (!reader || !reader.rootCID) {
@@ -275,7 +275,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         }
         return nil;
     }
-    CID *computedCID = [CID cidWithDigest:[CID sha256Digest:commitBlock.data]
+    ATProtoCID *computedCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:commitBlock.data]
                                     codec:0x71];
     if (!computedCID || ![computedCID isEqual:reader.rootCID]) {
         if (error) {
@@ -343,7 +343,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         return nil;
     }
 
-    CID *computedCID = [CID cidWithDigest:[CID sha256Digest:commitBlock.data]
+    ATProtoCID *computedCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:commitBlock.data]
                                     codec:0x71];
     if (!computedCID || ![computedCID isEqual:event.commit]) {
         if (error) {
@@ -575,7 +575,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
             syncEvent.time =
                 [[[NSISO8601DateFormatter alloc] init] stringFromDate:[NSDate date]];
 
-            CID *commitCID = nil;
+            ATProtoCID *commitCID = nil;
             NSError *syncError = nil;
             RepoCommit *validated =
                 [strongSelf validatedCommitForSyncEvent:syncEvent

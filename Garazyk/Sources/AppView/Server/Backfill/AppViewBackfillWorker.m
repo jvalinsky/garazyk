@@ -29,11 +29,11 @@
 
 NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfill";
 
-static CID *AppViewBackfillCIDFromCBORValue(ATProtoCBORValue *value) {
+static ATProtoCID *AppViewBackfillCIDFromCBORValue(ATProtoCBORValue *value) {
     if (!value) return nil;
 
     if (value.type == CBORTypeTextString) {
-        return [CID cidFromString:value.textString];
+        return [ATProtoCID cidFromString:value.textString];
     }
 
     if (value.type != CBORTypeTag || !value.tagValue || value.tagValue.type != CBORTypeByteString) {
@@ -44,7 +44,7 @@ static CID *AppViewBackfillCIDFromCBORValue(ATProtoCBORValue *value) {
     if (!bytes || bytes.length <= 1) return nil;
 
     NSData *cidBytes = [bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)];
-    return [CID cidFromBytes:cidBytes];
+    return [ATProtoCID cidFromBytes:cidBytes];
 }
 
 static BOOL AppViewBackfillBlockLooksLikeMSTNode(NSData *data) {
@@ -56,7 +56,7 @@ static BOOL AppViewBackfillBlockLooksLikeMSTNode(NSData *data) {
     return (entries && entries.type == CBORTypeArray) || left != nil;
 }
 
-static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastRev) {
+static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastRev) {
     ATProtoCBORValue *decoded = [ATProtoCBORValue decode:data];
     if (!decoded || decoded.type != CBORTypeMap) return nil;
 
@@ -328,7 +328,7 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
 
     // Find and parse the data MST from commit object
     NSArray<MSTEntry *> *entries = nil;
-    CID *dataMSTCID = nil;
+    ATProtoCID *dataMSTCID = nil;
 
     if (reader.rootCID) {
         CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
@@ -350,12 +350,12 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
         }
     }
 
-    // Now load the data MST using its CID
+    // Now load the data MST using its ATProtoCID
     if (dataMSTCID) {
         CARBlock *dataMSTBlock = [reader blockWithCID:dataMSTCID];
         if (dataMSTBlock) {
             GZ_LOG_INFO(@"[AppView BackfillWorker] Trying to deserialize data MST...");
-            MSTBlockProvider provider = ^NSData *(CID *cid) {
+            MSTBlockProvider provider = ^NSData *(ATProtoCID *cid) {
                 CARBlock *block = [reader blockWithCID:cid];
                 return block.data;
             };
@@ -378,7 +378,7 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
     // Index entries
     if (entries.count > 0) {
         for (MSTEntry *entry in entries) {
-            CID *valueCID = entry.valueCID;
+            ATProtoCID *valueCID = entry.valueCID;
             if (!valueCID) continue;
 
             // Key format: "collection/!rkey" or "collection!rkey"
@@ -520,7 +520,7 @@ static CID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString **lastR
             id value = entriesDict[key];
             if ([value isKindOfClass:[NSData class]]) {
                 NSData *valueData = (NSData *)value;
-                CID *cid = [CID cidFromBytes:valueData];
+                ATProtoCID *cid = [ATProtoCID cidFromBytes:valueData];
                 if (cid) {
                     MSTEntry *entry = [MSTEntry entryWithKey:key valueCID:cid];
                     [entries addObject:entry];

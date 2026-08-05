@@ -21,8 +21,8 @@
     // Create a dummy commit event with recordCBOR in ops
     NSData *dummyRecordData = [@"{\"text\":\"hello\"}" dataUsingEncoding:NSUTF8StringEncoding];
     
-    // Valid CID using SHA-256 (required for CBOR tag 42 round-trip)
-    CID *dummyCID = [CID sha256:[@"dummy" dataUsingEncoding:NSUTF8StringEncoding]];
+    // Valid ATProtoCID using SHA-256 (required for CBOR tag 42 round-trip)
+    ATProtoCID *dummyCID = [ATProtoCID sha256:[@"dummy" dataUsingEncoding:NSUTF8StringEncoding]];
     
     NSDictionary *opWithCBOR = @{
         @"action": @"create",
@@ -78,7 +78,7 @@
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.seq = 124;
     event.repo = @"did:plc:test";
-    event.commit = [CID sha256:[@"size-test-cid" dataUsingEncoding:NSUTF8StringEncoding]];
+    event.commit = [ATProtoCID sha256:[@"size-test-cid" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"3k3k3k3k3k3k3";
     event.blocks = hugeData;
     event.ops = @[];

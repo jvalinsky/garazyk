@@ -732,7 +732,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
     return [self backfillBlobRefsAndStateInDatabase:db error:error];
 }
 
-// Scans every current record's JSON value for blob CID references, reusing
+// Scans every current record's JSON value for blob ATProtoCID references, reusing
 // the same extraction PDSBlobReferenceScanOperation already uses
 // (PDSBlobAuditBlobReferenceCIDsFromJSONObject), so a blob already
 // referenced by an existing record is marked 'referenced' at migration time
@@ -802,8 +802,8 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
         return NO;
     }
 
-    // Map raw blob.cid bytes -> CID string once, so record references
-    // (which are CID strings) can be matched back to a specific raw-byte key.
+    // Map raw blob.cid bytes -> ATProtoCID string once, so record references
+    // (which are ATProtoCID strings) can be matched back to a specific raw-byte key.
     NSMutableDictionary<NSString *, NSData *> *cidStringToRawBytes = [NSMutableDictionary dictionary];
     while (sqlite3_step(cidLookupStmt) == SQLITE_ROW) {
         const void *cidBytes = sqlite3_column_blob(cidLookupStmt, 0);
@@ -820,7 +820,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
         NSString *did = row[1];
         NSString *cidString = row[2];
         NSData *rawCID = cidStringToRawBytes[cidString];
-        if (!rawCID) continue; // referenced CID has no matching blob metadata row in this shard
+        if (!rawCID) continue; // referenced ATProtoCID has no matching blob metadata row in this shard
 
         sqlite3_bind_text(insertRefStmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_blob(insertRefStmt, 2, rawCID.bytes, (int)rawCID.length, SQLITE_TRANSIENT);
@@ -2013,7 +2013,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
         PDSDatabaseRepo *repo = [[PDSDatabaseRepo alloc] init];
         repo.ownerDid = did;
 
-        // Root CID
+        // Root ATProtoCID
         if (sqlite3_column_type(stmt, 1) == SQLITE_BLOB) {
             const void *cidBytes = sqlite3_column_blob(stmt, 1);
             int cidLen = sqlite3_column_bytes(stmt, 1);
@@ -2091,7 +2091,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
             record.rkey = [NSString stringWithUTF8String:rkeyStr];
         }
 
-        // CID (kept as string in PDSDatabaseRecord)
+        // ATProtoCID (kept as string in PDSDatabaseRecord)
         const char *cidStr = (const char *)sqlite3_column_text(stmt, 4);
         if (cidStr) {
             record.cid = [NSString stringWithUTF8String:cidStr];
@@ -2139,7 +2139,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
 
-        // CID (already BLOB in source, store as-is)
+        // ATProtoCID (already BLOB in source, store as-is)
         if (sqlite3_column_type(stmt, 0) == SQLITE_BLOB) {
             const void *cidBytes = sqlite3_column_blob(stmt, 0);
             int cidLen = sqlite3_column_bytes(stmt, 0);
@@ -2195,7 +2195,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 }
 
 - (NSData *)convertCIDStringToData:(NSString *)cidString {
-    // For now, treat the CID string as UTF8 bytes
+    // For now, treat the ATProtoCID string as UTF8 bytes
     // In a real implementation, this might decode base32/base58 CIDs
     return [cidString dataUsingEncoding:NSUTF8StringEncoding];
 }

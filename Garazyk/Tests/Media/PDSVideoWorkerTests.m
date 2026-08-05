@@ -30,12 +30,12 @@
     return self;
 }
 
-- (BOOL)storeBlobData:(NSData *)data forCID:(CID *)cid error:(NSError **)error {
+- (BOOL)storeBlobData:(NSData *)data forCID:(ATProtoCID *)cid error:(NSError **)error {
     self.blobs[cid.stringValue] = data;
     return YES;
 }
 
-- (nullable NSData *)retrieveBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (nullable NSData *)retrieveBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     NSData *data = self.blobs[cid.stringValue];
     if (!data && error) {
         *error = [NSError errorWithDomain:@"MockWorkerBlobProvider"
@@ -45,12 +45,12 @@
     return data;
 }
 
-- (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error {
+- (BOOL)deleteBlobDataForCID:(ATProtoCID *)cid error:(NSError **)error {
     [self.blobs removeObjectForKey:cid.stringValue];
     return YES;
 }
 
-- (BOOL)hasBlobDataForCID:(CID *)cid {
+- (BOOL)hasBlobDataForCID:(ATProtoCID *)cid {
     return self.blobs[cid.stringValue] != nil;
 }
 

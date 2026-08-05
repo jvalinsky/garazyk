@@ -56,7 +56,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 + (PDSDatabaseRepo *)createTestRepoWithOwnerDID:(NSString *)ownerDid {
     PDSDatabaseRepo *repo = [[PDSDatabaseRepo alloc] init];
     repo.ownerDid = ownerDid;
-    // Generate a realistic CID-like hash based on the owner DID
+    // Generate a realistic ATProtoCID-like hash based on the owner DID
     NSString *cidInput = [NSString stringWithFormat:@"root:%@", ownerDid];
     NSData *cidInputData = [cidInput dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t cidBytes[32];
@@ -73,7 +73,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
     record.did = did;
     record.collection = collection;
     record.rkey = rkey;
-    // Generate a realistic CID-like string based on the record data
+    // Generate a realistic ATProtoCID-like string based on the record data
     NSString *cidInput = [NSString stringWithFormat:@"record:%@:%@:%@", did, collection, rkey];
     NSData *cidInputData = [cidInput dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t cidBytes[32];
@@ -89,7 +89,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 
 + (PDSDatabaseBlock *)createTestBlockWithRepoDID:(NSString *)repoDid {
     PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
-    // Generate realistic CID based on repo DID and content
+    // Generate realistic ATProtoCID based on repo DID and content
     NSString *cidInput = [NSString stringWithFormat:@"block:%@:test block data", repoDid];
     NSData *cidInputData = [cidInput dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t cidBytes[32];
@@ -104,7 +104,7 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 
 + (PDSDatabaseBlob *)createTestBlobWithDID:(NSString *)did {
     PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
-    // Generate realistic CID based on DID and blob content
+    // Generate realistic ATProtoCID based on DID and blob content
     NSString *cidInput = [NSString stringWithFormat:@"blob:%@:application/octet-stream:1024", did];
     NSData *cidInputData = [cidInput dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t cidBytes[32];

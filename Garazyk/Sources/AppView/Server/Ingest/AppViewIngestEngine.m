@@ -33,12 +33,12 @@
 @end
 
 // ---------------------------------------------------------------------------
-// CID Link Resolution
+// ATProtoCID Link Resolution
 // ---------------------------------------------------------------------------
 
 /**
- Recursively resolve CID links in decoded IPLD objects.
- When DAG-CBOR decoding produces CID objects (from tag 42), they need to be
+ Recursively resolve ATProtoCID links in decoded IPLD objects.
+ When DAG-CBOR decoding produces ATProtoCID objects (from tag 42), they need to be
  resolved by looking up the referenced blocks in the CAR and decoding them.
  */
 static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *visitedCIDs, int depth) {
@@ -47,8 +47,8 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         return object;
     }
 
-    if ([object isKindOfClass:[CID class]]) {
-        CID *cid = (CID *)object;
+    if ([object isKindOfClass:[ATProtoCID class]]) {
+        ATProtoCID *cid = (ATProtoCID *)object;
         NSString *cidString = cid.stringValue;
 
         // Prevent cycles
@@ -773,10 +773,10 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         NSString *path = op[@"path"];
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@", did, path];
 
-        // cid may be a CID object (from CBOR tag 42 decode), NSString, or NSNull
+        // cid may be a ATProtoCID object (from CBOR tag 42 decode), NSString, or NSNull
         id rawCID = op[@"cid"];
         NSString *cidStr = [op cidStringForKey:@"cid"];
-        CID *opCID = [op cidObjectForKey:@"cid"];
+        ATProtoCID *opCID = [op cidObjectForKey:@"cid"];
         
         GZ_LOG_DEBUG(@"[AppView Ingest] op path=%@ cid_type=%@ cid_val=%@", path, NSStringFromClass([rawCID class]), rawCID);
 
@@ -788,7 +788,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             NSString *rkey = parts.count > 1 ? parts[1] : @"unknown";
             
             // Extract record data from CAR blocks
-            // Try by CID first, then fall back to path matching if CID is missing
+            // Try by ATProtoCID first, then fall back to path matching if ATProtoCID is missing
             NSDictionary *record = op[@"record"];
             if (!record && reader && opCID) {
                 CARBlock *block = [reader blockWithCID:opCID];
@@ -797,7 +797,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                     if (!decoded) {
                         decoded = [ATProtoDagCBOR decodeData:block.data error:nil];
                     }
-                    // Resolve any CID links in the decoded object
+                    // Resolve any ATProtoCID links in the decoded object
                     if (decoded) {
                         decoded = ResolveCIDLinksInObject(decoded, reader, [NSMutableSet set], 0);
                         if ([decoded isKindOfClass:[NSDictionary class]]) {
@@ -828,13 +828,13 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                               dictDecoded[@"subject"] || dictDecoded[@"created"];
 
                         if (hasRecordFields) {
-                            // Resolve any CID links in the record
+                            // Resolve any ATProtoCID links in the record
                             record = (NSDictionary *)ResolveCIDLinksInObject(dictDecoded, reader, [NSMutableSet set], 0);
                             enrichedOp[@"record"] = record;
                             GZ_LOG_DEBUG(@"[AppView Ingest] Found record in CAR block: keys=%@", record.allKeys);
 
                             if (!cidStr) {
-                                CID *computedCID = [CID cidWithDigest:[CID sha256Digest:block.data] codec:0x71];
+                                ATProtoCID *computedCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block.data] codec:0x71];
                                 if (computedCID) {
                                     enrichedOp[@"cid"] = computedCID.stringValue;
                                     cidStr = computedCID.stringValue;

@@ -170,12 +170,12 @@
     
     [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **err) {
         PDSDatabaseBlock *b1 = [[PDSDatabaseBlock alloc] init];
-        b1.cid = [CID cidFromString:cid1Str].bytes;
+        b1.cid = [ATProtoCID cidFromString:cid1Str].bytes;
         b1.blockData = data1;
         [transactor putBlock:b1 forDid:did error:nil];
         
         PDSDatabaseBlock *b2 = [[PDSDatabaseBlock alloc] init];
-        b2.cid = [CID cidFromString:cid2Str].bytes;
+        b2.cid = [ATProtoCID cidFromString:cid2Str].bytes;
         b2.blockData = data2;
         [transactor putBlock:b2 forDid:did error:nil];
     } error:nil];
@@ -244,7 +244,7 @@
             XCTAssertNotNil(json[@"cid"], @"Response should contain a CID");
             XCTAssertNotNil(json[@"rev"], @"Response should contain a revision");
             
-            // Verify CID format (should start with "bafy")
+            // Verify ATProtoCID format (should start with "bafy")
             NSString *cid = json[@"cid"];
             XCTAssertTrue([cid hasPrefix:@"bafy"], @"CID should be a valid CIDv1: %@", cid);
             XCTAssertGreaterThan(cid.length, 10, @"CID should be a reasonable length");

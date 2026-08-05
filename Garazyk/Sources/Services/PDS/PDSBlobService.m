@@ -33,7 +33,7 @@
 #pragma mark - Blob Operations
 
 - (nullable NSData *)getBlob:(NSData *)cidData forDid:(NSString *)did error:(NSError **)error {
-    CID *cid = [CID cidFromBytes:cidData];
+    ATProtoCID *cid = [ATProtoCID cidFromBytes:cidData];
     if (!cid) return nil;
     return [self.blobStorage getBlobWithCID:cid did:did error:error];
 }
@@ -43,7 +43,7 @@
                              mimeType:(NSString *)mimeType
                                error:(NSError **)error {
 
-    CID *cid = [self.blobStorage uploadBlob:blobData mimeType:mimeType did:did error:error];
+    ATProtoCID *cid = [self.blobStorage uploadBlob:blobData mimeType:mimeType did:did error:error];
     if (!cid) {
         return nil;
     }
@@ -71,7 +71,7 @@
                                        did:(NSString *)did
                                      error:(NSError **)error {
 
-    CID *cid = [CID cidFromString:cidString];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
     if (!cid) {
         if (error) *error = [NSError errorWithDomain:@"PDSController" code:1003
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID format"}];
@@ -95,7 +95,7 @@
 - (nullable NSDictionary *)getBlobStreamWithCID:(NSString *)cidString
                                             did:(NSString *)did
                                           error:(NSError **)error {
-    CID *cid = [CID cidFromString:cidString];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
     if (!cid) {
         if (error) {
             *error = [NSError errorWithDomain:@"PDSController"
@@ -156,7 +156,7 @@
     NSMutableArray<NSDictionary<NSString *, id> *> *result = [NSMutableArray array];
     for (PDSDatabaseBlob *blob in blobs) {
         
-        CID *cid = [CID cidFromBytes:blob.cid];
+        ATProtoCID *cid = [ATProtoCID cidFromBytes:blob.cid];
         NSString *cidStr = cid.stringValue;
         [result addObject:@{
             @"cid": cidStr ?: @"",
@@ -168,7 +168,7 @@
 }
 
 - (BOOL)deleteBlobWithCID:(NSString *)cidString did:(NSString *)did error:(NSError **)error {
-    CID *cid = [CID cidFromString:cidString];
+    ATProtoCID *cid = [ATProtoCID cidFromString:cidString];
     if (!cid) {
         if (error) *error = [NSError errorWithDomain:@"PDSController" code:1003
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid CID format"}];
@@ -190,7 +190,7 @@
     // Actually blobs are raw binary usually?
     // If it's a "blob" object in repo, it's a reference.
     // The blob ITSELF is stored.
-    // AtProto blobs are raw data. CID is typically raw (0x55) or just sha256?
+    // AtProto blobs are raw data. ATProtoCID is typically raw (0x55) or just sha256?
     // Spec says: "Blobs... are referenced by hash (CID)..."
     // "Blessed CID formats... for records... is CIDv1... dag-cbor"
     // But for BLOBS?
@@ -210,7 +210,7 @@
     // Let's stick to what was there implicitly or check spec?
     // Spec says "Large binary blobs... are not stored directly in repositories... referenced by hash".
     // If I upload an image, it is raw bytes.
-    // The CID should reflect that. `bafkrei...` is typical. `k` = `0x55` (raw) in base32? No.
+    // The ATProtoCID should reflect that. `bafkrei...` is typical. `k` = `0x55` (raw) in base32? No.
     // `raw` codec is 0x55.
     // `0x01` `0x55` `0x12` `0x20` ...
     // Let's use 0x55 for blobs.

@@ -55,7 +55,7 @@
 
 #pragma mark - MST Update
 
-- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable CID *)cid error:(NSError **)error {
+- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable ATProtoCID *)cid error:(NSError **)error {
     MST *mst = [self loadMSTForDid:did error:error];
     if (!mst) return NO;
     
@@ -65,7 +65,7 @@
         [mst delete:key];
     }
     
-    CID *repoRoot = mst.rootCID;
+    ATProtoCID *repoRoot = mst.rootCID;
     if (!repoRoot) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.repo"
@@ -95,7 +95,7 @@
             continue;
         }
 
-        CID *cid = [CID cidFromString:record.cid];
+        ATProtoCID *cid = [ATProtoCID cidFromString:record.cid];
         if (!cid) {
             continue;
         }

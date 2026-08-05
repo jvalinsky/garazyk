@@ -335,7 +335,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 @end
 
 @implementation FirehoseCommitEvent
-+ (instancetype)eventWithRepo:(NSString *)repo commit:(CID *)commit ops:(NSArray<NSDictionary *> *)ops {
++ (instancetype)eventWithRepo:(NSString *)repo commit:(ATProtoCID *)commit ops:(NSArray<NSDictionary *> *)ops {
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = repo;
     event.commit = commit;

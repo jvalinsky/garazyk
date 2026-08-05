@@ -7,7 +7,7 @@
 
  @discussion
     RelayRepoStateManager tracks:
-    - Current signed commit CID and MST data-root CID for each repo
+    - Current signed commit ATProtoCID and MST data-root ATProtoCID for each repo
     - Last sequence number for each repo
     - Repo status (active, desynchronized, etc.)
     
@@ -78,7 +78,7 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
 /**
  * @abstract Records the latest commit state for a repository.
  * @param repoDID The repository DID that emitted the commit.
- * @param rootCID The signed repository commit CID after the commit.
+ * @param rootCID The signed repository commit ATProtoCID after the commit.
  * @param rev The repository revision string after the commit.
  * @param seq The firehose sequence number for the commit event.
  */
@@ -90,8 +90,8 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
 /**
  * @abstract Records a structurally validated repository commit as the current baseline.
  * @param repoDID Repository DID.
- * @param commitCID Signed repository commit-object CID.
- * @param dataCID MST data-root CID from the signed commit object.
+ * @param commitCID Signed repository commit-object ATProtoCID.
+ * @param dataCID MST data-root ATProtoCID from the signed commit object.
  * @param rev Repository revision.
  * @param seq Upstream firehose sequence.
  */
@@ -105,7 +105,7 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
  * @abstract Atomically validates continuity and advances repository state.
  *
  * The next event's ``prevData`` is compared with the stored signed commit
- * object's ``data`` CID. It is never compared with the signed commit CID.
+ * object's ``data`` ATProtoCID. It is never compared with the signed commit ATProtoCID.
  */
 - (RelayRepoAdvanceResult)advanceRepo:(NSString *)repoDID
                                 since:(nullable NSString *)since
@@ -118,7 +118,7 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
 /**
  * @abstract Observes a commit head from ``com.atproto.sync.listRepos``.
  *
- * Inventory contains a commit CID and revision but no MST data root. Existing
+ * Inventory contains a commit ATProtoCID and revision but no MST data root. Existing
  * live state is not regressed by an older inventory response.
  */
 - (void)observeInventoryForRepo:(NSString *)repoDID
@@ -146,16 +146,16 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
 - (void)handleTombstoneForRepo:(NSString *)repoDID;
 
 /**
- * @abstract Returns the latest known signed commit CID for a repository.
+ * @abstract Returns the latest known signed commit ATProtoCID for a repository.
  * @param repoDID The repository DID to query.
- * @return The signed commit CID, or nil when the repository is unknown.
+ * @return The signed commit ATProtoCID, or nil when the repository is unknown.
  */
 - (nullable NSString *)rootCIDForRepo:(NSString *)repoDID;
 
-/** Returns the current signed repository commit-object CID. */
+/** Returns the current signed repository commit-object ATProtoCID. */
 - (nullable NSString *)commitCIDForRepo:(NSString *)repoDID;
 
-/** Returns the current MST data-root CID extracted from the signed commit. */
+/** Returns the current MST data-root ATProtoCID extracted from the signed commit. */
 - (nullable NSString *)dataCIDForRepo:(NSString *)repoDID;
 
 /**
@@ -190,12 +190,12 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
 - (NSUInteger)repoCount;
 
 /**
- * @abstract Compatibility alias for the current MST data-root CID.
+ * @abstract Compatibility alias for the current MST data-root ATProtoCID.
  *
  * This method's historical implementation conflated commit CIDs with MST data
  * roots. New code must use ``dataCIDForRepo:``.
  * @param repoDID The repository DID to query.
- * @return The current MST data-root CID, or nil when unknown.
+ * @return The current MST data-root ATProtoCID, or nil when unknown.
  */
 - (nullable NSString *)prevDataCIDForRepo:(NSString *)repoDID
     __attribute__((deprecated("Use dataCIDForRepo:; relay state stores the current signed commit data root")));

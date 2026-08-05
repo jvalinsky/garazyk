@@ -442,7 +442,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
 
   NSString *cidStr = info[@"cid"];
-  NSString *commitStr = info[@"commit"]; // This is the signed Commit CID
+  NSString *commitStr = info[@"commit"]; // This is the signed Commit ATProtoCID
   id recordCBORValue = info[@"recordCBOR"];
   NSData *recordCBOR =
       ([recordCBORValue isKindOfClass:[NSData class]]) ? recordCBORValue : nil;
@@ -455,11 +455,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
 
-    CID *opCID = (cidStr && ![cidStr isKindOfClass:[NSNull class]])
-                     ? [CID cidFromString:cidStr]
+    ATProtoCID *opCID = (cidStr && ![cidStr isKindOfClass:[NSNull class]])
+                     ? [ATProtoCID cidFromString:cidStr]
                      : nil;
-    CID *commitCID = (commitStr && ![commitStr isKindOfClass:[NSNull class]])
-                         ? [CID cidFromString:commitStr]
+    ATProtoCID *commitCID = (commitStr && ![commitStr isKindOfClass:[NSNull class]])
+                         ? [ATProtoCID cidFromString:commitStr]
                          : nil;
 
     NSString *path = [NSString stringWithFormat:@"%@/%@", collection, rkey];
@@ -471,7 +471,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (([normalizedAction isEqualToString:@"update"] ||
          [normalizedAction isEqualToString:@"delete"]) &&
         previousRecordCIDString.length > 0) {
-      CID *previousRecordCID = [CID cidFromString:previousRecordCIDString];
+      ATProtoCID *previousRecordCID = [ATProtoCID cidFromString:previousRecordCIDString];
       if (previousRecordCID) {
         op[@"prev"] = previousRecordCID;
       }
@@ -604,7 +604,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit
                            forRepo:(NSString *)repoDid
                                ops:(NSArray<NSDictionary *> *)ops
-                             blobs:(NSArray<CID *> *)blobs {
+                             blobs:(NSArray<ATProtoCID *> *)blobs {
   if (self.stopping) {
     return;
   }
@@ -666,7 +666,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                                return [[innerSelf.userDatabasePool storeForDid:repoDid error:nil] listBlockCIDsForRevision:rev limit:200000 error:nil];
                                       }];
     event.ops = ops;
-    event.blobs = blobs ?: @[]; // Already CID array
+    event.blobs = blobs ?: @[]; // Already ATProtoCID array
     event.time = [SubscribeReposHandler rfc3339Timestamp];
     event.prevData = previousCommit.dataCID;
 

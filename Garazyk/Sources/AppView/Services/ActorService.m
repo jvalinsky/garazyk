@@ -137,7 +137,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
             NSString *cid = row[@"cid"];
             if (did.length > 0 && cid.length > 0 && !profileCIDByDID[did]) {
                 profileCIDByDID[did] = cid;
-                CID *parsedCID = [CID cidFromString:cid];
+                ATProtoCID *parsedCID = [ATProtoCID cidFromString:cid];
                 if (parsedCID.bytes) [profileCIDs addObject:parsedCID.bytes];
             }
         }
@@ -173,7 +173,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
         NSString *handle = handles[did];
         if (handle.length > 0) profile[@"handle"] = handle;
         NSString *cid = profileCIDByDID[did];
-        CID *parsedCID = [CID cidFromString:cid];
+        ATProtoCID *parsedCID = [ATProtoCID cidFromString:cid];
         NSDictionary *record = parsedCID.bytes ? profileRecords[[NSString stringWithFormat:@"%@:%@", did, parsedCID.bytes]] : nil;
         for (NSString *field in @[@"displayName", @"description", @"avatar", @"banner"]) {
             if (record[field]) profile[field] = record[field];
@@ -416,7 +416,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
 
     if (rows && rows.count > 0) {
         NSString *cidStr = rows.firstObject[@"cid"];
-        CID *cid = [CID cidFromString:cidStr];
+        ATProtoCID *cid = [ATProtoCID cidFromString:cidStr];
         if (cid) {
             PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:did error:error];
             if (block && block.blockData) {

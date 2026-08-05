@@ -174,7 +174,7 @@
     XCTAssertEqualObjects(canonical, expected);
 }
 
-#pragma mark - CID-based Operations Tests
+#pragma mark - ATProtoCID-based Operations Tests
 
 - (void)testStoreBlobDataWithValidCID {
     PDSCloudStorageBlobProvider *provider = [[PDSCloudStorageBlobProvider alloc]
@@ -189,7 +189,7 @@
 
     // Test data
     NSData *testData = [@"test blob data" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *testCID = [CID sha256:testData];
+    ATProtoCID *testCID = [ATProtoCID sha256:testData];
     XCTAssertNotNil(testCID);
 
     // Note: Actual S3 upload would require network access and credentials
@@ -210,7 +210,7 @@
 
     XCTAssertNotNil(provider);
 
-    CID *testCID = [CID sha256:[@"test blob data" dataUsingEncoding:NSUTF8StringEncoding]];
+    ATProtoCID *testCID = [ATProtoCID sha256:[@"test blob data" dataUsingEncoding:NSUTF8StringEncoding]];
 
     NSError *error = nil;
     BOOL result = [provider storeBlobData:nil forCID:testCID error:&error];

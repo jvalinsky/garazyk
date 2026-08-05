@@ -177,7 +177,7 @@ static PDSSpaceWrite *SpaceWriteFromDictionary(NSDictionary *item, BOOL createDe
   }
   NSError *encodeError = nil;
   NSData *cbor = [ATProtoDagCBOR encodeJSONObject:value error:&encodeError];
-  CID *cid = [CID cidWithDigest:[CID sha256Digest:cbor] codec:0x71];
+  ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:cbor] codec:0x71];
   if (!cbor || !cid) {
     SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"Record cannot be encoded as DAG-CBOR");
     return nil;
@@ -206,7 +206,7 @@ static BOOL SpaceCanWrite(NSDictionary *auth, PDSSpaceURI *space, NSString *repo
 static NSData *SpacePublicKeyFromDIDKey(NSString *value) {
   NSString *multibase = [value hasPrefix:@"did:key:"] ? [value substringFromIndex:8] : value;
   if (![multibase hasPrefix:@"z"]) return nil;
-  NSData *decoded = [CID base58btcDecode:[multibase substringFromIndex:1]];
+  NSData *decoded = [ATProtoCID base58btcDecode:[multibase substringFromIndex:1]];
   if (decoded.length != 35) return nil;
   const uint8_t *bytes = decoded.bytes;
   if (bytes[0] != 0xe7 || bytes[1] != 0x01) return nil;
@@ -343,12 +343,12 @@ static NSData *SpaceRepoCAR(PDSSpaceStore *store, PDSDatabasePool *pool, PDSSpac
   NSDictionary *commitObject = @{ @"ver" : @(commit.version), @"hash" : commit.commitHash, @"mac" : commit.mac,
                                   @"ikm" : commit.ikm, @"sig" : commit.signature, @"rev" : commit.rev };
   NSData *commitData = [ATProtoDagCBOR encodeObject:commitObject error:error];
-  CID *commitCID = [CID cidWithDigest:[CID sha256Digest:commitData] codec:0x71]; if (!commitData || !commitCID) return nil;
+  ATProtoCID *commitCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:commitData] codec:0x71]; if (!commitData || !commitCID) return nil;
   NSMutableArray *records = [NSMutableArray array]; NSString *cursor = nil;
   while (YES) { NSArray *page = [store recordsForSpace:space.spaceURI author:repo collection:nil limit:100 cursor:cursor reverse:NO error:error]; if (!page) return nil; [records addObjectsFromArray:page]; if (page.count < 100) break; NSDictionary *last = page.lastObject; cursor = [NSString stringWithFormat:@"%@/%@", last[@"collection"], last[@"rkey"]]; }
   NSMutableDictionary *index = [NSMutableDictionary dictionary]; NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
-  for (NSDictionary *record in records) { CID *cid = [CID cidFromString:record[@"cid"]]; if (!cid) { if (error) *error = [NSError errorWithDomain:@"com.garazyk.space" code:1 userInfo:@{NSLocalizedDescriptionKey:@"Stored record CID is invalid"}]; return nil; } NSString *path = [NSString stringWithFormat:@"%@/%@", record[@"collection"], record[@"rkey"]]; index[path] = cid; [blocks addObject:[CARBlock blockWithCID:cid data:record[@"value"]]]; }
-  NSData *indexData = [ATProtoDagCBOR encodeObject:index error:error]; CID *indexCID = [CID cidWithDigest:[CID sha256Digest:indexData] codec:0x71]; if (!indexData || !indexCID) return nil;
+  for (NSDictionary *record in records) { ATProtoCID *cid = [ATProtoCID cidFromString:record[@"cid"]]; if (!cid) { if (error) *error = [NSError errorWithDomain:@"com.garazyk.space" code:1 userInfo:@{NSLocalizedDescriptionKey:@"Stored record CID is invalid"}]; return nil; } NSString *path = [NSString stringWithFormat:@"%@/%@", record[@"collection"], record[@"rkey"]]; index[path] = cid; [blocks addObject:[CARBlock blockWithCID:cid data:record[@"value"]]]; }
+  NSData *indexData = [ATProtoDagCBOR encodeObject:index error:error]; ATProtoCID *indexCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:indexData] codec:0x71]; if (!indexData || !indexCID) return nil;
   NSMutableData *output = [NSMutableData data]; NSData *header = [ATProtoDagCBOR encodeObject:@{ @"version" : @1, @"roots" : @[commitCID, indexCID] } error:error]; if (!header) return nil;
   SpaceAppendVarint(output, header.length); [output appendData:header];
   for (CARBlock *block in @[[CARBlock blockWithCID:commitCID data:commitData], [CARBlock blockWithCID:indexCID data:indexData]]) { NSData *encoded = [CARWriter encodedBlock:block error:error]; if (!encoded) return nil; [output appendData:encoded]; }
@@ -662,7 +662,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getBlob handler:^(HttpRequest *request, HttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
     NSString *repo = SpaceString([request queryParamForKey:@"repo"]), *cid = SpaceString([request queryParamForKey:@"cid"]);
-    if (![ATProtoValidator validateDID:repo error:nil] || ![CID cidFromString:cid]) {
+    if (![ATProtoValidator validateDID:repo error:nil] || ![ATProtoCID cidFromString:cid]) {
       SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo and cid are required"); return;
     }
     if (!SpaceReadAuthentication(request, response, resolvedServices, space, repo, nil)) return;
