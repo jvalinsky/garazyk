@@ -8,9 +8,8 @@ last_verified: 2026-08-08
 
 Exposed control surfaces, HTTP bounds, XRPC contracts, and federation tests.
 
-All twenty workstream items are closed. Their full detail — evidence, slices,
-decisions, gates, and rollback notes — moved to
-[the completed-items archive](../../archive/planning/workstream-01-completed-items.md)
+The completed items' full detail — evidence, slices, decisions, gates, and
+rollback notes — moved to [the completed-items archive](../../archive/planning/workstream-01-completed-items.md)
 on 2026-08-05, unchanged. **Only the S5 residual watch item remains open.**
 
 ## Status summary
@@ -22,7 +21,7 @@ on 2026-08-05, unchanged. **Only the S5 residual watch item remains open.**
 | S3 | Truthful XRPC coverage | Complete, report-only (2026-07-17) |
 | S4 | Absolute HTTP deadlines | Complete (2026-07-26) |
 | S5 | Functional federation and lifecycle checks | Complete (2026-07-24); **one watch item open**, below |
-| S6 | Published-spec conformance matrix | Complete, report-only; G3 closed (2026-08-08) |
+| S6 | Published-spec conformance matrix | Complete, report-only; G3 and G5 closed (2026-08-08) |
 | S7 | STAR conformance and verifying import | Complete (2026-07-23), ADR 0009 |
 | S8 | Untyped JSON at auth trust boundaries | Complete (2026-07-27), 7 slices, 3 ADRs |
 | S9 | Blob lifecycle and storage-pool correctness | Complete (2026-07-27), phases 15–16 |
@@ -98,6 +97,79 @@ Primary sources:
 - [OAuth profile](https://atproto.com/specs/oauth)
 - [Permissions](https://atproto.com/specs/permissions)
 - [did:plc v0.3](https://web.plc.directory/spec/v0.1/did-plc)
+
+## Complete: S6 gap G5 — Relay repository-commit signature integrity
+
+**Source evidence (rechecked 2026-08-08).** The untrusted
+`FirehoseCommitEvent` enters
+`Garazyk/Sources/Sync/Relay/RelayEventValidator.m:validateCommitEvent:`. Before
+this slice, the method checked only `repo` and `commit`, resolved the DID
+document, and decoded the advertised signing key, but returned a valid outcome
+without decoding the signed repository-commit block or calling
+`RepoCommit verifySignatureWithPublicKey:error:`. A forged signed-commit block
+can therefore retain a matching advertised CID while its signature is invalid.
+`PDSRepoImportValidator validateCommitSignature:…` is the existing comparison
+path, but it privately accepts both published DID layouts:
+`verificationMethods.atproto` as `did:key:` and the `verificationMethod`
+`#atproto` `publicKeyMultibase` entry. The relay must support those forms, not
+assume all DID document keys can be interpreted ad hoc.
+
+**Owner and boundary.** Workstream 01 S6 owns the security/protocol outcome.
+Implementation is confined to the `ATProtoSync` relay ingress boundary, its
+shared protocol-key extraction primitive, and `zuk` composition, which already
+owns `DIDPLCResolver` for Relay XRPC. `RepoCommit` remains the sole
+repository-signature verifier. Do not make `ATProtoSync` depend on the
+PDS/Network importer or duplicate DID-key parsing.
+
+**Delivery and gate.** Add focused valid, tampered, wrong-key, and unresolved-
+key commit-event tests, plus lenient/log-only/strict forwarding assertions.
+The shared path must decode the signed commit addressed by the event CID,
+require its `did` to equal `event.repo`, resolve an accepted `#atproto` key
+form, and return `RelayValidationResultInvalidSignature` for every key,
+decode, or verification failure. `zuk` must create one `DIDPLCResolver`, pass
+it to `RelayEventValidator` created with the parsed validation mode, and install
+that validator on `RelayDownstreamHandler`; a narrow Zuk source/composition
+assertion guards the wiring. Every `InvalidSignature` outcome must increment
+the signature-failure metric through one factory helper. Only secp256k1
+repository keys are implemented; an unsupported P-256 key must fail as an
+unsupported key, not be passed to the secp256k1 verifier. Run the focused
+native suite, module-boundary and applicable source-security gates; run the
+full native gate only when disk headroom permits it.
+
+**Implementation and evidence (2026-08-08).** `RelayEventValidator` now
+parses the CAR block addressed by the advertised commit CID, recomputes that
+CID, decodes `RepoCommit`, binds its `did` to `event.repo`, and verifies the
+signature. `ATProtoDIDDocumentFields` now owns the strict `#atproto`
+secp256k1 key primitive, including both legacy `did:key:` and modern
+`publicKeyMultibase` layouts; `PDSRepoImportValidator` was moved onto that same
+primitive. P-256 repository keys are rejected as unsupported; no P-256
+verification path is claimed. `zuk` now constructs one `DIDPLCResolver`,
+creates `RelayEventValidator` with the parsed mode (log-only by default),
+assigns the resolver, installs it on `RelayDownstreamHandler`, and reuses the
+resolver for Relay XRPC. `invalidSignatureOutcome:` is the sole
+`InvalidSignature` factory and increments `recordSignatureValidationFailure`
+before returning the outcome. `RelayEventValidatorTests` adds legacy/modern
+valid cases plus matching-CID tampering, wrong-key, unresolved-key, P-256
+rejection with metric assertion, and all three forwarding-mode cases;
+`ZukCommandTests` adds a narrow source composition assertion.
+
+Passed: `deno task check && deno task lint && deno task test` (1,264 passed,
+0 failed, 1 ignored); `scripts/dev/check_module_boundaries.sh .`;
+recursive-setter; no-host-process-exit; NSID generation; skill-index;
+NSID-registration-literal; source-only XRPC coverage; repository-doc
+validation; and `git diff --check`. After integration on `main`, focused native
+suites passed: `RelayEventValidatorTests` 15/15, `ZukCommandTests` 5/5,
+`RepoAuthRepoTests` 25/25, `ATProtoDIDDocumentFieldsTests` 5/5, and
+`ATProtoMultibaseTests` 2/2. The full gated native suite was not run with only
+13 GB free.
+
+**Availability policy and rollback.** Outcomes are truthful in every mode:
+`strict` drops an invalid commit, while `lenient` and `log-only` continue to
+forward it and preserve their existing metrics/log behavior. Rollback is a
+single revert of the relay call site and shared extractor; it restores the
+previous availability-first forwarding policy but knowingly reopens forged-
+commit acceptance. Do not revive the superseded relay continuity graph as a
+backlog; this lane is represented only here and in the current graph action.
 
 ## Cross-workstream note
 

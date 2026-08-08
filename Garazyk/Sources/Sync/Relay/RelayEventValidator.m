@@ -3,10 +3,11 @@
 #import "Sync/Relay/RelayEventValidator.h"
 #import "Sync/Relay/RelayMetrics.h"
 #import "Sync/Firehose/Firehose.h"
-#import "Core/CID.h"
-#import "Auth/Crypto/Secp256k1.h"
-#import "Core/ATProtoMultibase.h"
 #import "Core/ATProtoDIDDocumentFields.h"
+#import "Core/CID.h"
+#import "Core/DID.h"
+#import "Repository/CAR.h"
+#import "Repository/RepoCommit.h"
 #import "Debug/GZLogger.h"
 
 @implementation RelayValidationOutcome
@@ -28,6 +29,14 @@
     RelayValidationOutcome *outcome = [[RelayValidationOutcome alloc] init];
     outcome.result = RelayValidationResultError;
     outcome.errorMessage = error;
+    return outcome;
+}
+
++ (instancetype)invalidSignatureOutcome:(NSString *)reason {
+    [[RelayMetrics sharedMetrics] recordSignatureValidationFailure];
+    RelayValidationOutcome *outcome = [[RelayValidationOutcome alloc] init];
+    outcome.result = RelayValidationResultInvalidSignature;
+    outcome.errorMessage = reason;
     return outcome;
 }
 
@@ -79,34 +88,59 @@
         return [RelayValidationOutcome invalidOutcome:@"commit event has no commit CID"];
     }
 
-    if (self.plcResolver) {
-        NSError *resolveError = nil;
-        NSDictionary *didDoc = [self.plcResolver resolveDID:commitEvent.repo error:&resolveError];
-
-        if (didDoc) {
-            NSString *signingKeyMultibase = [ATProtoDIDDocumentFields atprotoSigningKeyMultibaseFromDocument:didDoc];
-            if (signingKeyMultibase) {
-                NSError *decodeError = nil;
-                NSData *publicKeyBytes = [ATProtoMultibase publicKeyBytesFromMultibase:signingKeyMultibase
-                                                                                   error:&decodeError];
-                if (publicKeyBytes) {
-                    GZ_LOG_SYNC_INFO(@"Signature precheck: resolved signing key for %@ (%lu bytes)",
-                                     commitEvent.repo, (unsigned long)publicKeyBytes.length);
-                } else {
-                    GZ_LOG_SYNC_WARN(@"Signature precheck: failed to decode signing key for %@: %@",
-                                     commitEvent.repo, decodeError.localizedDescription ?: @"unknown");
-                }
-            } else {
-                GZ_LOG_SYNC_WARN(@"Signature precheck: no atproto signing key in DID doc for %@", commitEvent.repo);
-            }
-        } else {
-            GZ_LOG_SYNC_WARN(@"Signature precheck: DID resolution failed for %@: %@",
-                             commitEvent.repo, resolveError.localizedDescription ?: @"unknown");
-        }
+    if (!self.plcResolver) {
+        return [RelayValidationOutcome invalidSignatureOutcome:@"repository signing-key resolver is unavailable"];
     }
 
-    [[RelayMetrics sharedMetrics] recordMSTValidationSuccess];
+    NSError *resolveError = nil;
+    NSDictionary *didJSON = [self.plcResolver resolveDID:commitEvent.repo error:&resolveError];
+    if (!didJSON) {
+        GZ_LOG_SYNC_WARN(@"Relay commit signature validation: DID resolution failed for %@: %@",
+                         commitEvent.repo, resolveError.localizedDescription ?: @"unknown");
+        return [RelayValidationOutcome invalidSignatureOutcome:@"repository DID could not be resolved"];
+    }
 
+    NSError *documentError = nil;
+    ATProtoDIDDocument *document = [ATProtoDIDDocument documentWithJSON:didJSON error:&documentError];
+    if (!document || ![document.id isEqualToString:commitEvent.repo]) {
+        return [RelayValidationOutcome invalidSignatureOutcome:@"resolved DID document does not match the repository"];
+    }
+
+    NSError *keyError = nil;
+    NSData *publicKey = [ATProtoDIDDocumentFields strictAtprotoSigningKeyBytesFromDocument:document
+                                                                                       error:&keyError];
+    if (!publicKey) {
+        GZ_LOG_SYNC_WARN(@"Relay commit signature validation: no usable signing key for %@: %@",
+                         commitEvent.repo, keyError.localizedDescription ?: @"unknown");
+        return [RelayValidationOutcome invalidSignatureOutcome:@"repository DID has no usable secp256k1 signing key"];
+    }
+
+    NSError *carError = nil;
+    CARReader *reader = [CARReader readFromData:commitEvent.blocks error:&carError];
+    CARBlock *commitBlock = [reader blockWithCID:commitEvent.commit];
+    ATProtoCID *computedCID = commitBlock
+        ? [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:commitBlock.data] codec:commitEvent.commit.codec]
+        : nil;
+    if (!reader || !commitBlock || ![computedCID isEqualToCID:commitEvent.commit]) {
+        GZ_LOG_SYNC_WARN(@"Relay commit signature validation: missing or invalid commit block for %@: %@",
+                         commitEvent.repo, carError.localizedDescription ?: @"unknown");
+        return [RelayValidationOutcome invalidSignatureOutcome:@"commit block is missing or does not match its advertised CID"];
+    }
+
+    NSError *commitError = nil;
+    RepoCommit *commit = [RepoCommit fromSignedBlockData:commitBlock.data error:&commitError];
+    if (!commit || ![commit.did isEqualToString:commitEvent.repo]) {
+        return [RelayValidationOutcome invalidSignatureOutcome:@"signed commit does not match the repository"];
+    }
+
+    NSError *signatureError = nil;
+    if (![commit verifySignatureWithPublicKey:publicKey error:&signatureError]) {
+        GZ_LOG_SYNC_WARN(@"Relay commit signature validation: signature verification failed for %@: %@",
+                         commitEvent.repo, signatureError.localizedDescription ?: @"unknown");
+        return [RelayValidationOutcome invalidSignatureOutcome:@"commit signature does not verify against the repository DID key"];
+    }
+
+    [[RelayMetrics sharedMetrics] recordSignatureValidationSuccess];
     return [RelayValidationOutcome validOutcome];
 }
 

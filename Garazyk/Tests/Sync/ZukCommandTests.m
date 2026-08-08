@@ -212,4 +212,21 @@ static NSString *ZukStringFromFileDescriptor(int descriptor) {
     XCTAssertTrue([result.standardError containsString:@"Error: Unknown command: unknown-cmd\n\n"]);
 }
 
+- (void)testServeCompositionInstallsParsedModeSignatureValidator {
+    NSString *syncTestsDirectory = [@__FILE__ stringByDeletingLastPathComponent];
+    NSString *testsDirectory = [syncTestsDirectory stringByDeletingLastPathComponent];
+    NSString *garazykDirectory = [testsDirectory stringByDeletingLastPathComponent];
+    NSString *sourcePath = [[garazykDirectory stringByAppendingPathComponent:@"Binaries/zuk"]
+        stringByAppendingPathComponent:@"main.m"];
+    NSString *source = [NSString stringWithContentsOfFile:sourcePath encoding:NSUTF8StringEncoding error:nil];
+    XCTAssertNotNil(source, @"Expected Zuk composition source at %@", sourcePath);
+    if (!source) return;
+
+    XCTAssertTrue([source containsString:@"RelayValidationMode validationMode = RelayValidationModeLogOnly;"]);
+    XCTAssertTrue([source containsString:@"[[RelayEventValidator alloc]"]);
+    XCTAssertTrue([source containsString:@"initWithValidationMode:validationMode"]);
+    XCTAssertTrue([source containsString:@"eventValidator.plcResolver = plcResolver;"]);
+    XCTAssertTrue([source containsString:@"downstreamHandler.eventValidator = eventValidator;"]);
+}
+
 @end

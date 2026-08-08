@@ -22,6 +22,14 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable NSString *)strictAtprotoSigningKeyMultibaseFromDocument:(ATProtoDIDDocument *)document;
 
 /**
+ * Returns the compressed secp256k1 repository-signing key published at
+ * `#atproto`. Supports the legacy `did:key:` and modern
+ * `publicKeyMultibase` DID-document layouts.
+ */
++ (nullable NSData *)strictAtprotoSigningKeyBytesFromDocument:(ATProtoDIDDocument *)document
+                                                         error:(NSError **)error;
+
+/**
  * Selects the proposal-0016 authority key with an exact fragment match.
  * `#atproto_space` is preferred; only the documented `#atproto` fallback is
  * used when no dedicated key is published.
