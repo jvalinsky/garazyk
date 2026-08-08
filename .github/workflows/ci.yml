@@ -41,6 +41,9 @@ jobs:
       - name: Check NSID Constants Drift
         run: deno run -A scripts/generate_nsid_constants.ts --check
 
+      - name: Check Skill Index Drift
+        run: deno run -A scripts/dev/generate_skill_index.ts --check
+
   macos-build-and-test:
     name: macOS Build & Test
     runs-on: macos-14
