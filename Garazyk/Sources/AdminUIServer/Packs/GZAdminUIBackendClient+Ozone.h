@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
  * failures are represented by dictionaries containing `error` and `message`. Mutation methods
  * have no compensating transaction or rollback.
  */
-@interface UIBackendClient (Ozone)
+@interface GZAdminUIBackendClient (Ozone)
 
 /**
  * @abstract Lists moderation subject statuses using the optional cursor and requested page size.

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Bearer token. It returns the upstream JSON on a 2xx response, or a dictionary containing an
  * `error` and `message` key; callers render those dictionaries rather than handling NSError.
  */
-@interface UIBackendClient (AppView)
+@interface GZAdminUIBackendClient (AppView)
 
 /** @abstract Retrieves aggregate AppView metrics without changing server state. */
 - (NSDictionary *)fetchAppViewMetrics;

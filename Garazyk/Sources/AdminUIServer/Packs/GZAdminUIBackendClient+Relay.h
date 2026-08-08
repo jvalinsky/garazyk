@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * containing `error` and `message` after a non-2xx response. They block for request completion;
  * crawl requests enqueue relay work and therefore change service state.
  */
-@interface UIBackendClient (Relay)
+@interface GZAdminUIBackendClient (Relay)
 
 /**
  * @abstract Retrieves relay metrics without changing relay state.

@@ -1,11 +1,26 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIBackendClient+PDS.h"
-#import "AdminUIServer/UIBackendClient_Internal.h"
+#import "AdminUIServer/Packs/GZAdminUIBackendClient+PDS.h"
+#import "AdminUIServer/GZAdminUIBackendClient_Internal.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@implementation UIBackendClient (PDS)
+@interface GZAdminUIBackendClient (PDS_Private)
+- (NSArray<NSDictionary *> *)serviceProbeSpecifications;
+@end
+
+@implementation GZAdminUIBackendClient (PDS)
+
+- (NSArray<NSDictionary *> *)serviceProbeSpecifications {
+    return @[
+        @{@"name": @"pds", @"baseURL": self.configuration.pdsBaseURL ?: [NSNull null], @"xrpcPath": @"/xrpc/com.atproto.server.describeServer", @"token": self.configuration.pdsAdminToken ?: [NSNull null]},
+        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.plcAdminToken ?: [NSNull null]},
+        @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL ?: [NSNull null], @"xrpcPath": @"/api/relay/health", @"token": self.configuration.relayAdminToken ?: [NSNull null]},
+        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL ?: [NSNull null], @"xrpcPath": @"/admin/ingest/health", @"token": self.configuration.appViewAdminToken ?: [NSNull null]},
+        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.chatAdminToken ?: [NSNull null]},
+        @{@"name": @"video", @"baseURL": self.configuration.videoBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.videoAdminToken ?: [NSNull null]}
+    ];
+}
 
 - (BOOL)refreshPDSAdminToken {
     NSString *password = self.configuration.pdsAdminPassword;
