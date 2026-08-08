@@ -14,15 +14,22 @@
  * with current goal/decision/outcome state.
  */
 
-import { join } from "@std/path";
+import { basename, join } from "@std/path";
 import { parseArgs } from "@std/cli/parse-args";
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
-const MEMORY_DIR = Deno.env.get("MEMORY_DIR") ??
-  `${Deno.env.get("HOME")}/.letta/agents/current/memory`;
+const MEMORY_DIR = (() => {
+  const memoryDir = Deno.env.get("MEMORY_DIR");
+  if (!memoryDir) {
+    throw new Error(
+      "MEMORY_DIR must name the project-scoped Letta memory root; refusing to use an implicit agent memory directory.",
+    );
+  }
+  return memoryDir;
+})();
 
 const DECIDUOUS = "deciduous";
 
@@ -38,8 +45,11 @@ async function deciduous(...args: string[]): Promise<string> {
   const { code, stdout, stderr } = await cmd.output();
   const out = new TextDecoder().decode(stdout).trim();
   const err = new TextDecoder().decode(stderr).trim();
-  if (code !== 0 && !err.includes("No nodes found")) {
-    console.warn(`deciduous ${args.join(" ")}: ${err}`);
+  if (code !== 0) {
+    if (err.includes("No nodes found")) return "";
+    throw new Error(
+      `deciduous ${args.join(" ")} failed with exit ${code}: ${err || out}`,
+    );
   }
   return out;
 }
@@ -66,17 +76,14 @@ interface DeciduousGraph {
 
 async function getGraph(): Promise<DeciduousGraph> {
   // Try JSON output first (newer deciduous versions)
-  let raw = "";
-  try {
-    raw = await deciduous("graph");
-  } catch {
-    // ignore
-  }
+  const raw = await deciduous("graph");
   if (raw) {
     try {
       return JSON.parse(raw) as DeciduousGraph;
-    } catch {
-      // not JSON, fall through
+    } catch (error) {
+      throw new Error(
+        `deciduous graph returned malformed JSON: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -151,6 +158,27 @@ async function updateStatus(id: number, status: string): Promise<void> {
   graphCache = null; // Invalidate cache after mutation
 }
 
+interface DeciduousDocument {
+  original_filename: string;
+  detached_at: string | null;
+}
+
+async function hasAttachedDocument(nodeId: number, path: string): Promise<boolean> {
+  const output = await deciduous("doc", "list", String(nodeId), "--json");
+  let documents: DeciduousDocument[];
+  try {
+    documents = JSON.parse(output) as DeciduousDocument[];
+  } catch (error) {
+    throw new Error(
+      `deciduous doc list ${nodeId} returned invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  const filename = basename(path);
+  return documents.some((document) =>
+    document.original_filename === filename && document.detached_at === null
+  );
+}
+
 async function ensureTheme(): Promise<void> {
   const themes = await deciduous("themes", "list");
   if (!themes.includes(SYNC_THEME)) {
@@ -166,8 +194,9 @@ function readMemoryFile(relPath: string): string {
   const absPath = join(MEMORY_DIR, relPath);
   try {
     return Deno.readTextFileSync(absPath);
-  } catch {
-    return "";
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return "";
+    throw error;
   }
 }
 
@@ -344,7 +373,7 @@ function extractFromReferenceDoc(path: string, md: string): ExtractedKnowledge {
 // ---------------------------------------------------------------------------
 
 async function push(dryRun = false): Promise<void> {
-  await ensureTheme();
+  if (!dryRun) await ensureTheme();
   console.log("=== Push: Letta memory → deciduous ===\n");
 
   // 1. Extract from preferences
@@ -489,12 +518,10 @@ async function push(dryRun = false): Promise<void> {
       for (const node of graph.nodes) {
         if (node.title.toLowerCase().includes(topic.split("/").pop()!.toLowerCase()) ||
             (node.description && node.description.toLowerCase().includes(topic.split("/").pop()!.toLowerCase()))) {
-          try {
-            const absPath = join(MEMORY_DIR, ref.path);
+          const absPath = join(MEMORY_DIR, ref.path);
+          if (!await hasAttachedDocument(node.id, absPath)) {
             await deciduous("doc", "attach", String(node.id), absPath, "-d", ref.description);
             console.log(`  📎 Attached ${ref.path} to node [${node.id}]`);
-          } catch {
-            // attachment may already exist
           }
         }
       }
@@ -646,8 +673,6 @@ async function pull(dryRun = false): Promise<void> {
       }
 
       if (newInsights.length > 0) {
-        // Append after the last existing insight
-        const lastInsightLine = existing.lastIndexOf("\n", existing.lastIndexOf("**", existing.length - 1));
         const insertPoint = existing.trimEnd();
         const updated = insertPoint + "\n" + newInsights.join("\n") + "\n";
         writeMemoryFile(competencePath, updated);
@@ -753,8 +778,9 @@ function findReferenceFiles(): string[] {
           walk(join(dir, entry.name), `${prefix}${entry.name}/`);
         }
       }
-    } catch {
-      // directory may not exist
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) return;
+      throw error;
     }
   }
   walk(refDir, "reference/");
@@ -779,11 +805,6 @@ async function getCachedGraph(): Promise<DeciduousGraph> {
     graphCache = await getGraph();
   }
   return graphCache;
-}
-
-async function findNodeByTitleCachedCached(title: string): Promise<DeciduousNode | undefined> {
-  const graph = await getCachedGraph();
-  return graph.nodes.find((n) => n.title === title);
 }
 
 // ---------------------------------------------------------------------------
