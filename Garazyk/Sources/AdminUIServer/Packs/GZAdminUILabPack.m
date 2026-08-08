@@ -16,7 +16,7 @@
 }
 
 + (NSArray<NSDictionary<NSString *, id> *> *)sidebarSections {
-    // Populated when the shell is made composable (WS11 M2 slice 4).
+    // The Lab owns its dedicated OAuth shell and does not contribute a shared-shell panel.
     return @[];
 }
 

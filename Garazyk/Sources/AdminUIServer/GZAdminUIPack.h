@@ -29,9 +29,11 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSString *)displayName;
 
 /*!
- @abstract Sidebar sections this pack contributes to the shell.
- @discussion Populated when the shell is made composable (WS11 M2 slice 4); packs register
- routes correctly before that milestone lands, so an empty array is a valid interim value.
+ @abstract Ordered shell sections this pack contributes.
+ @discussion Each dictionary has a @c tabIdentifier identifying an existing @c tab-<identifier>
+ panel and a human-readable @c displayName. The metadata is presentation-only: it must not
+ contain URLs, credentials, health state, or HTML. An empty array is valid for packs that do not
+ participate in the shared shell.
  */
 + (NSArray<NSDictionary<NSString *, id> *> *)sidebarSections;
 

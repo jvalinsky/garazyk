@@ -17,8 +17,11 @@
 }
 
 + (NSArray<NSDictionary<NSString *, id> *> *)sidebarSections {
-    // Populated when the shell is made composable (WS11 M2 slice 4).
-    return @[];
+    return @[
+        @{@"tabIdentifier": @"overview", @"displayName": @"Overview"},
+        @{@"tabIdentifier": @"connections", @"displayName": @"Connections"},
+        @{@"tabIdentifier": @"pds", @"displayName": @"PDS"},
+    ];
 }
 
 + (void)registerRoutesWithHost:(GZAdminUIHost *)host {

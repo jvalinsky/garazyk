@@ -14,6 +14,8 @@
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/GZAdminUIDefaultPacks.h"
 #import "AdminUIServer/Packs/GZAdminUIChatPack.h"
+#import "AdminUIServer/Packs/GZAdminUIRelayPack.h"
+#import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -564,6 +566,111 @@
     XCTAssertEqual(adminResponse.statusCode, 200);
     XCTAssertTrue([adminResponse.bodyString containsString:@"data-tab=\"chat\""]);
     XCTAssertTrue([adminResponse.bodyString containsString:@"Chat"]);
+}
+
+- (void)testAdminShellComposesDefaultTabsFromPackMetadata {
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *request = [self createRequestWithMethod:@"GET"
+                                                    path:@"/admin"
+                                             sessionToken:token
+                                                jsonBody:nil];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    NSArray<NSDictionary<NSString *, NSString *> *> *expectedTabs = @[
+        @{@"identifier": @"overview", @"displayName": @"Overview"},
+        @{@"identifier": @"connections", @"displayName": @"Connections"},
+        @{@"identifier": @"pds", @"displayName": @"PDS"},
+        @{@"identifier": @"appview", @"displayName": @"AppView"},
+        @{@"identifier": @"relay", @"displayName": @"Relay"},
+        @{@"identifier": @"plc", @"displayName": @"PLC"},
+        @{@"identifier": @"explorer", @"displayName": @"Data Explorer"},
+        @{@"identifier": @"ozone", @"displayName": @"Ozone"},
+        @{@"identifier": @"security", @"displayName": @"Security"},
+        @{@"identifier": @"mst", @"displayName": @"MST"},
+        @{@"identifier": @"chat", @"displayName": @"Chat"},
+        @{@"identifier": @"video", @"displayName": @"Video"},
+    ];
+
+    XCTAssertEqual(response.statusCode, 200);
+    NSUInteger previousLocation = 0;
+    for (NSUInteger index = 0; index < expectedTabs.count; index++) {
+        NSDictionary<NSString *, NSString *> *tab = expectedTabs[index];
+        NSString *identifier = tab[@"identifier"];
+        NSString *button = [NSString stringWithFormat:@"id=\"tabbtn-%@\"", identifier];
+        NSRange buttonRange = [response.bodyString rangeOfString:button
+                                                           options:0
+                                                             range:NSMakeRange(previousLocation, response.bodyString.length - previousLocation)];
+        XCTAssertNotEqual(buttonRange.location, NSNotFound, @"%@ should be a rendered tab", identifier);
+        if (buttonRange.location == NSNotFound) {
+            return;
+        }
+        NSString *dataTab = [NSString stringWithFormat:@"data-tab=\"%@\"", identifier];
+        NSString *ariaControls = [NSString stringWithFormat:@"aria-controls=\"tab-%@\"", identifier];
+        NSString *ariaLabelledBy = [NSString stringWithFormat:@"aria-labelledby=\"tabbtn-%@\"", identifier];
+        XCTAssertTrue([response.bodyString containsString:dataTab]);
+        XCTAssertTrue([response.bodyString containsString:ariaControls]);
+        XCTAssertTrue([response.bodyString containsString:ariaLabelledBy]);
+        XCTAssertTrue([response.bodyString containsString:tab[@"displayName"]]);
+        previousLocation = buttonRange.location + buttonRange.length;
+    }
+    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-overview\" aria-controls=\"tab-overview\" aria-selected=\"true\" tabindex=\"0\""]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-connections\" aria-controls=\"tab-connections\" aria-selected=\"false\" tabindex=\"-1\""]);
+    XCTAssertFalse([response.bodyString containsString:@"tabbtn-lab"]);
+}
+
+- (void)testSingleSurfaceShellUsesSidebarAndHasNoConfiguredPeers {
+    GZAdminUIHost *relayHost = [[GZAdminUIHost alloc] initWithConfiguration:self.config
+                                                                       packs:@[GZAdminUIRelayPack.class]];
+    NSString *token = [relayHost.authManager createSessionToken];
+    HttpRequest *request = [self createRequestWithMethod:@"GET"
+                                                    path:@"/admin"
+                                             sessionToken:token
+                                                jsonBody:nil];
+    HttpResponse *response = [relayHost dispatchRequestForTesting:request];
+    NSRange peerSectionStart = [response.bodyString rangeOfString:@"<section class=\"admin-peer-switcher\""];
+
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.bodyString containsString:@"<h1 class=\"admin-header-title\">Relay</h1>"]);
+    XCTAssertFalse([response.bodyString containsString:@"<nav class=\"service-segments\""]);
+    XCTAssertTrue([response.bodyString containsString:@"<aside class=\"admin-sidebar\""]);
+    XCTAssertTrue([response.bodyString containsString:@"class=\"admin-sidebar-tab ui-tab active\""]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-relay\" aria-controls=\"tab-relay\" aria-selected=\"true\" tabindex=\"0\""]);
+    NSRange relayPanelStart = [response.bodyString rangeOfString:@"<div id=\"tab-relay\""];
+    NSRange overviewPanelStart = [response.bodyString rangeOfString:@"<div id=\"tab-overview\""];
+    XCTAssertNotEqual(relayPanelStart.location, NSNotFound);
+    XCTAssertNotEqual(overviewPanelStart.location, NSNotFound);
+    if (relayPanelStart.location == NSNotFound || overviewPanelStart.location == NSNotFound) {
+        return;
+    }
+    NSRange relayPanelEnd = [response.bodyString rangeOfString:@">"
+                                                     options:0
+                                                       range:NSMakeRange(relayPanelStart.location, response.bodyString.length - relayPanelStart.location)];
+    NSRange overviewPanelEnd = [response.bodyString rangeOfString:@">"
+                                                        options:0
+                                                          range:NSMakeRange(overviewPanelStart.location, response.bodyString.length - overviewPanelStart.location)];
+    XCTAssertNotEqual(relayPanelEnd.location, NSNotFound);
+    XCTAssertNotEqual(overviewPanelEnd.location, NSNotFound);
+    if (relayPanelEnd.location == NSNotFound || overviewPanelEnd.location == NSNotFound) {
+        return;
+    }
+    NSString *relayPanel = [response.bodyString substringWithRange:NSMakeRange(relayPanelStart.location, NSMaxRange(relayPanelEnd) - relayPanelStart.location)];
+    NSString *overviewPanel = [response.bodyString substringWithRange:NSMakeRange(overviewPanelStart.location, NSMaxRange(overviewPanelEnd) - overviewPanelStart.location)];
+    XCTAssertFalse([relayPanel containsString:@"hidden"]);
+    XCTAssertTrue([overviewPanel containsString:@"hidden"]);
+    XCTAssertNotEqual(peerSectionStart.location, NSNotFound);
+    if (peerSectionStart.location == NSNotFound) {
+        return;
+    }
+    NSRange peerSectionEnd = [response.bodyString rangeOfString:@"</section>"
+                                                         options:0
+                                                           range:NSMakeRange(peerSectionStart.location, response.bodyString.length - peerSectionStart.location)];
+    XCTAssertNotEqual(peerSectionEnd.location, NSNotFound);
+    if (peerSectionEnd.location == NSNotFound) {
+        return;
+    }
+    NSString *peerSection = [response.bodyString substringWithRange:NSMakeRange(peerSectionStart.location, NSMaxRange(peerSectionEnd) - peerSectionStart.location)];
+    XCTAssertTrue([peerSection containsString:@"No peer UIs configured."]);
+    XCTAssertFalse([peerSection containsString:@"href="]);
+    XCTAssertFalse([peerSection containsString:@"hx-"]);
 }
 
 - (void)testDeleteAccountRoute {

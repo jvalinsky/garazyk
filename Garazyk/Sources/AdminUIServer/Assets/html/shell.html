@@ -11,21 +11,14 @@
 <body>
     <div class="admin-shell">
         <header class="admin-header">
-            <h1 class="admin-header-title">Garazyk UI Service</h1>
+            <h1 class="admin-header-title">{{shellTitle}}</h1>
+            {{^isSingleSurface}}
             <nav class="service-segments" id="nav-tabs" role="tablist" aria-label="Service sections">
-                <button class="service-segment active" data-tab="overview" data-ui-action="switch-tab" role="tab" id="tabbtn-overview" aria-controls="tab-overview" aria-selected="true" tabindex="0">Overview</button>
-                <button class="service-segment" data-tab="connections" data-ui-action="switch-tab" role="tab" id="tabbtn-connections" aria-controls="tab-connections" aria-selected="false" tabindex="-1">Connections</button>
-                <button class="service-segment" data-tab="pds" data-ui-action="switch-tab" role="tab" id="tabbtn-pds" aria-controls="tab-pds" aria-selected="false" tabindex="-1">PDS</button>
-                <button class="service-segment" data-tab="appview" data-ui-action="switch-tab" role="tab" id="tabbtn-appview" aria-controls="tab-appview" aria-selected="false" tabindex="-1">AppView</button>
-                <button class="service-segment" data-tab="relay" data-ui-action="switch-tab" role="tab" id="tabbtn-relay" aria-controls="tab-relay" aria-selected="false" tabindex="-1">Relay</button>
-                <button class="service-segment" data-tab="plc" data-ui-action="switch-tab" role="tab" id="tabbtn-plc" aria-controls="tab-plc" aria-selected="false" tabindex="-1">PLC</button>
-                <button class="service-segment" data-tab="explorer" data-ui-action="switch-tab" role="tab" id="tabbtn-explorer" aria-controls="tab-explorer" aria-selected="false" tabindex="-1">Explorer</button>
-                <button class="service-segment" data-tab="ozone" data-ui-action="switch-tab" role="tab" id="tabbtn-ozone" aria-controls="tab-ozone" aria-selected="false" tabindex="-1">Ozone</button>
-                <button class="service-segment" data-tab="security" data-ui-action="switch-tab" role="tab" id="tabbtn-security" aria-controls="tab-security" aria-selected="false" tabindex="-1">Security</button>
-                <button class="service-segment" data-tab="mst" data-ui-action="switch-tab" role="tab" id="tabbtn-mst" aria-controls="tab-mst" aria-selected="false" tabindex="-1">MST</button>
-                <button class="service-segment" data-tab="chat" data-ui-action="switch-tab" role="tab" id="tabbtn-chat" aria-controls="tab-chat" aria-selected="false" tabindex="-1">Chat</button>
-                <button class="service-segment" data-tab="video" data-ui-action="switch-tab" role="tab" id="tabbtn-video" aria-controls="tab-video" aria-selected="false" tabindex="-1">Video</button>
+                {{#tabs}}
+                <button class="service-segment ui-tab{{activeClass}}" data-tab="{{tabIdentifier}}" data-ui-action="switch-tab" role="tab" id="tabbtn-{{tabIdentifier}}" aria-controls="tab-{{tabIdentifier}}" aria-selected="{{ariaSelected}}" tabindex="{{tabIndex}}">{{displayName}}</button>
+                {{/tabs}}
             </nav>
+            {{/isSingleSurface}}
             <div class="admin-header-right">
                 <form method="post" action="/admin/logout" data-ui-form="logout">
                     <button type="submit" class="btn btn-secondary btn-sm">Logout</button>
@@ -33,9 +26,28 @@
             </div>
         </header>
 
-        <main class="admin-content">
+        <div class="admin-shell-layout">
+            {{#isSingleSurface}}
+            <aside class="admin-sidebar" aria-label="{{shellTitle}} navigation">
+                <nav class="admin-sidebar-tabs" id="nav-tabs" role="tablist" aria-label="{{shellTitle}} sections">
+                    {{#tabs}}
+                    <button class="admin-sidebar-tab ui-tab{{activeClass}}" data-tab="{{tabIdentifier}}" data-ui-action="switch-tab" role="tab" id="tabbtn-{{tabIdentifier}}" aria-controls="tab-{{tabIdentifier}}" aria-selected="{{ariaSelected}}" tabindex="{{tabIndex}}">{{displayName}}</button>
+                    {{/tabs}}
+                </nav>
+                <section class="admin-peer-switcher" aria-labelledby="peer-switcher-title">
+                    <h2 id="peer-switcher-title" class="admin-peer-switcher-title">Peer UIs</h2>
+                    {{#peerLinks}}
+                    <a class="admin-peer-link" href="{{url}}">{{displayName}}</a>
+                    {{/peerLinks}}
+                    {{^peerLinks}}
+                    <p class="text-secondary text-sm">No peer UIs configured.</p>
+                    {{/peerLinks}}
+                </section>
+            </aside>
+            {{/isSingleSurface}}
+            <main class="admin-content">
             <!-- Overview tab -->
-            <div id="tab-overview" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-overview" tabindex="0">
+            <div id="tab-overview" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-overview" tabindex="0" {{^activeOverview}}hidden{{/activeOverview}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Service Status</h2>
                     <div id="overview" hx-get="/admin/partials/overview" hx-trigger="load, every 20s"></div>
@@ -43,7 +55,7 @@
             </div>
 
             <!-- Connections tab -->
-            <div id="tab-connections" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-connections" tabindex="0" hidden>
+            <div id="tab-connections" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-connections" tabindex="0" {{^activeConnections}}hidden{{/activeConnections}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Service Connections</h2>
                     <p class="text-secondary text-sm mb-lg">Configure URLs and admin tokens for each AT Protocol service. Changes apply immediately but are not persisted across restarts.</p>
@@ -52,7 +64,7 @@
             </div>
 
             <!-- PDS tab -->
-            <div id="tab-pds" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-pds" tabindex="0" hidden>
+            <div id="tab-pds" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-pds" tabindex="0" {{^activePDS}}hidden{{/activePDS}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Accounts</h2>
                     <div class="search-row">
@@ -91,7 +103,7 @@
             </div>
 
             <!-- AppView tab -->
-            <div id="tab-appview" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-appview" tabindex="0" hidden>
+            <div id="tab-appview" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-appview" tabindex="0" {{^activeAppView}}hidden{{/activeAppView}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">AppView Metrics</h2>
                     <div id="appview-metrics" hx-get="/admin/partials/appview-metrics" hx-trigger="load, every 10s"></div>
@@ -103,7 +115,7 @@
             </div>
 
             <!-- Relay tab -->
-            <div id="tab-relay" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-relay" tabindex="0" hidden>
+            <div id="tab-relay" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-relay" tabindex="0" {{^activeRelay}}hidden{{/activeRelay}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Relay Metrics</h2>
                     <div id="relay-metrics" hx-get="/admin/partials/relay-metrics" hx-trigger="load, every 10s"></div>
@@ -111,7 +123,7 @@
             </div>
 
             <!-- PLC tab -->
-            <div id="tab-plc" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-plc" tabindex="0" hidden>
+            <div id="tab-plc" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-plc" tabindex="0" {{^activePLC}}hidden{{/activePLC}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">PLC Metrics</h2>
                     <div id="plc-metrics" hx-get="/admin/partials/plc-metrics" hx-trigger="load, every 30s"></div>
@@ -129,7 +141,7 @@
             </div>
 
             <!-- Explorer tab -->
-            <div id="tab-explorer" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-explorer" tabindex="0" hidden>
+            <div id="tab-explorer" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-explorer" tabindex="0" {{^activeExplorer}}hidden{{/activeExplorer}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Data Explorer</h2>
                     <p class="text-secondary text-sm mb-lg">Query records and repo structures across services.</p>
@@ -145,7 +157,7 @@
             </div>
 
             <!-- Ozone tab -->
-            <div id="tab-ozone" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-ozone" tabindex="0" hidden>
+            <div id="tab-ozone" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-ozone" tabindex="0" {{^activeOzone}}hidden{{/activeOzone}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Ozone Moderation Reports</h2>
                     <div class="search-row">
@@ -175,7 +187,7 @@
             </div>
 
             <!-- Security tab -->
-            <div id="tab-security" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-security" tabindex="0" hidden>
+            <div id="tab-security" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-security" tabindex="0" {{^activeSecurity}}hidden{{/activeSecurity}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Security Dashboard</h2>
                     <p class="text-secondary text-sm mb-lg">Monitor auth events and active sessions.</p>
@@ -184,7 +196,7 @@
             </div>
 
             <!-- MST tab -->
-            <div id="tab-mst" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-mst" tabindex="0" hidden>
+            <div id="tab-mst" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-mst" tabindex="0" {{^activeMST}}hidden{{/activeMST}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">MST Operations</h2>
                     <p class="text-secondary text-sm mb-lg">Analyze Merkle Search Trees.</p>
@@ -207,7 +219,7 @@
             </div>
 
             <!-- Chat tab -->
-            <div id="tab-chat" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-chat" tabindex="0" hidden>
+            <div id="tab-chat" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-chat" tabindex="0" {{^activeChat}}hidden{{/activeChat}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Chat Metrics</h2>
                     <div id="chat-metrics" hx-get="/admin/partials/chat-metrics" hx-trigger="load, every 15s"></div>
@@ -215,7 +227,7 @@
             </div>
 
             <!-- Video tab -->
-            <div id="tab-video" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-video" tabindex="0" hidden>
+            <div id="tab-video" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-video" tabindex="0" {{^activeVideo}}hidden{{/activeVideo}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Video Metrics</h2>
                     <div id="video-metrics" hx-get="/admin/partials/video-metrics" hx-trigger="load, every 15s"></div>
@@ -225,7 +237,8 @@
                     <div id="video-jobs" hx-get="/admin/partials/video-jobs" hx-trigger="load, every 5s"></div>
                 </section>
             </div>
-        </main>
+            </main>
+        </div>
     </div>
     
     <script type="module" src="/js/admin-ui.js"></script>
