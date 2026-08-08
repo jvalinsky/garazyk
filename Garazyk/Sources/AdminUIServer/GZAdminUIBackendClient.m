@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIBackendClient.h"
-#import "AdminUIServer/UIBackendClient_Internal.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient_Internal.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Debug/GZLogger.h"
 #import "Network/ATProtoSafeHTTPClient.h"
@@ -25,7 +25,7 @@ static NSString *UIBackendSafeBearerHeader(NSString *token) {
     return [NSString stringWithFormat:@"Bearer %@", token];
 }
 
-@implementation UIBackendClient
+@implementation GZAdminUIBackendClient
 
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
     return [self initWithConfiguration:configuration httpClient:nil];
@@ -42,17 +42,6 @@ static NSString *UIBackendSafeBearerHeader(NSString *token) {
 }
 
 #pragma mark - Private Helper Methods
-
-- (NSArray<NSDictionary *> *)serviceProbeSpecifications {
-    return @[
-        @{@"name": @"pds", @"baseURL": self.configuration.pdsBaseURL ?: [NSNull null], @"xrpcPath": @"/xrpc/com.atproto.server.describeServer", @"token": self.configuration.pdsAdminToken ?: [NSNull null]},
-        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.plcAdminToken ?: [NSNull null]},
-        @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL ?: [NSNull null], @"xrpcPath": @"/api/relay/health", @"token": self.configuration.relayAdminToken ?: [NSNull null]},
-        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL ?: [NSNull null], @"xrpcPath": @"/admin/ingest/health", @"token": self.configuration.appViewAdminToken ?: [NSNull null]},
-        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.chatAdminToken ?: [NSNull null]},
-        @{@"name": @"video", @"baseURL": self.configuration.videoBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.videoAdminToken ?: [NSNull null]}
-    ];
-}
 
 - (NSString *)pathWithSegments:(NSArray<NSString *> *)segments {
     NSMutableArray<NSString *> *escaped = [NSMutableArray arrayWithCapacity:segments.count];

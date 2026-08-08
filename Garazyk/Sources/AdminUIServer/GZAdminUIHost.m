@@ -4,7 +4,7 @@
 
 #import "AdminUIServer/GZAdminUIPack.h"
 #import "AdminUIServer/UIAuthManager.h"
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -95,7 +95,7 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigi
         _configuration = configuration;
         _packs = [packs copy];
         _authManager = [[UIAuthManager alloc] initWithPassword:configuration.adminPassword ?: @""];
-        _backendClient = [[UIBackendClient alloc] initWithConfiguration:configuration];
+        _backendClient = [[GZAdminUIBackendClient alloc] initWithConfiguration:configuration];
         // Auto-obtain PDS admin ATProtoJWT if a password is configured but no token
         if (configuration.pdsAdminPassword.length > 0 && configuration.pdsAdminToken.length == 0) {
             [_backendClient refreshPDSAdminToken];

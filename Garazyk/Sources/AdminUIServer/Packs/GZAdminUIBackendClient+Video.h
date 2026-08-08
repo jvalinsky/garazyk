@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * use the configured video admin token. Methods block for their HTTP request and return upstream
  * JSON or a dictionary containing `error` and `message`; no NSError is exposed to callers.
  */
-@interface UIBackendClient (Video)
+@interface GZAdminUIBackendClient (Video)
 
 /**
  * @abstract Lists video jobs using optional state, page size, and cursor filters.

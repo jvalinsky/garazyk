@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIBackendClient+Chat.h"
-#import "AdminUIServer/UIBackendClient_Internal.h"
+#import "AdminUIServer/Packs/GZAdminUIBackendClient+Chat.h"
+#import "AdminUIServer/GZAdminUIBackendClient_Internal.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@implementation UIBackendClient (Chat)
+@implementation GZAdminUIBackendClient (Chat)
 
 - (NSDictionary *)fetchChatConvosWithLimit:(NSUInteger)limit cursor:(NSString *)cursor {
     NSMutableDictionary *params = [NSMutableDictionary dictionary];

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * identifiers return `invalid_params`; other upstream failures return `error` and `message`
  * dictionaries. Revocation and password changes are immediately stateful and have no rollback.
  */
-@interface UIBackendClient (Security)
+@interface GZAdminUIBackendClient (Security)
 
 /** @abstract Lists active sessions for a nonempty actor DID. */
 - (NSDictionary *)fetchActiveSessionsForDID:(NSString *)did;

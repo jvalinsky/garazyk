@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIBackendClient+Ozone.h"
-#import "AdminUIServer/UIBackendClient_Internal.h"
+#import "AdminUIServer/Packs/GZAdminUIBackendClient+Ozone.h"
+#import "AdminUIServer/GZAdminUIBackendClient_Internal.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@implementation UIBackendClient (Ozone)
+@implementation GZAdminUIBackendClient (Ozone)
 
 - (NSDictionary *)fetchOzoneStatusesWithCursor:(NSString *)cursor limit:(NSUInteger)limit {
     NSMutableDictionary *params = [NSMutableDictionary dictionary];

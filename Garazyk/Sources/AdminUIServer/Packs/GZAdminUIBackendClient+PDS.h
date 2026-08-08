@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,9 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * upstream responses into response dictionaries with `error` and `message` fields. The PDS
  * transport may refresh its token once after a 401. Methods are synchronous and can block.
  */
-@interface UIBackendClient (PDS)
-
-
+@interface GZAdminUIBackendClient (PDS)
 
 /** @abstract Refreshes the configured PDS admin token with the configured admin password. */
 - (BOOL)refreshPDSAdminToken;

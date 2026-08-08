@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * return upstream JSON on success, or a dictionary with `error` and `message` on validation or
  * upstream failure. List calls forward cursors; a zero limit is normalized by the implementation.
  */
-@interface UIBackendClient (DataExplorer)
+@interface GZAdminUIBackendClient (DataExplorer)
 
 /** @abstract Retrieves repository metadata for a nonempty DID. */
 - (NSDictionary *)describeRepo:(NSString *)did;

@@ -5,7 +5,7 @@
 #import "Network/HttpServer.h"
 
 @class UIAuthManager;
-@class UIBackendClient;
+@class GZAdminUIBackendClient;
 @class XrpcDispatcher;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -44,7 +44,7 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 /** @abstract Session and credential authority used by `ensureAuthorized:response:`. */
 @property(nonatomic, strong) UIAuthManager *authManager;
 /** @abstract Synchronous proxy for configured PDS, AppView, and Ozone operations. */
-@property(nonatomic, strong) UIBackendClient *backendClient;
+@property(nonatomic, strong) GZAdminUIBackendClient *backendClient;
 /** @abstract Dispatcher for XRPC requests exposed by the local server. */
 @property(nonatomic, strong) XrpcDispatcher *xrpcDispatcher;
 /** @abstract Indicates whether the runtime has started serving requests. */
