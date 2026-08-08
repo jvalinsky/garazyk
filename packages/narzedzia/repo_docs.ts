@@ -316,7 +316,8 @@ export function inferCanonicalTarget(
     return "docs/01-getting-started/architecture-overview.md";
   }
   if (path.startsWith("docs/guides/")) return "docs/index.md";
-  if (path.startsWith("docs/plans/") || path.startsWith("docs/plan/")) {
+  if (path.startsWith("docs/plans/")) return "docs/plans/README.md";
+  if (path.startsWith("docs/plan/")) {
     return "docs/archive/planning/README.md";
   }
   if (path.startsWith("docs/scratchpad/")) {
