@@ -1178,7 +1178,7 @@ int main(int argc, char *argv[]) {
       @"XrpcIntegrationTests",
       @"XrpcToolsOzoneTests",
       @"UIAuthManagerTests",
-      @"UIBackendClientTests",
+      @"GZAdminUIBackendClientTests",
       @"UIServerRuntimeTests",
       @"UITileExecutionPolicyTests",
       @"GarazykUICommandTests",
