@@ -59,7 +59,17 @@
     }];
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteAccount handler:^(HttpRequest *request, HttpResponse *response) {
-        NSDictionary *body = request.jsonBody;
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *authenticatedDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        if (!authenticatedDid) {
+            if (response.statusCode == HttpStatusOK) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            }
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
         BOOL typeMismatch = NO;
         NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
         NSString *did = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
@@ -68,71 +78,61 @@
             [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
-
-        if (!did || !password) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did or password"}];
+        if (did.length == 0 || password.length == 0 || token.length == 0) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"did, password, and token are required"];
+            return;
+        }
+        if (![ATProtoValidator validateDID:did error:nil]) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Invalid did"];
+            return;
+        }
+        if (![authenticatedDid isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Authenticated account does not match did"}];
             return;
         }
 
-        // If a confirmation token is present, validate it before deleting.
-        if (token.length > 0) {
-            PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:nil];
-            if (!db) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
-                return;
-            }
+        PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:nil];
+        if (!db) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
+            return;
+        }
 
+        // The conditional update validates the token's account, expiry, and
+        // unused state while claiming it, so a concurrent replay cannot pass.
+        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+        NSInteger claimedRows = 0;
+        BOOL claimed = [db executeParameterizedUpdate:
+            @"UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND did = ? AND used_at IS NULL AND expires_at >= ?"
+                                               params:@[@((long long)now), token, did, @((long long)now)]
+                                          changedRows:&claimedRows
+                                                error:nil];
+        if (!claimed) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
+            return;
+        }
+        if (claimedRows == 0) {
             NSError *lookupError = nil;
             NSArray<NSDictionary *> *tokenRows = [db executeParameterizedQuery:
-                @"SELECT did, expires_at, used_at FROM password_reset_tokens WHERE token = ?"
-                                                                        params:@[token]
+                @"SELECT expires_at, used_at FROM password_reset_tokens WHERE token = ? AND did = ?"
+                                                                        params:@[token, did]
                                                                          error:&lookupError];
             if (lookupError) {
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
                 return;
             }
-
             NSDictionary *tokenRow = tokenRows.firstObject;
-            NSString *tokenDid = tokenRow[@"did"];
-            NSTimeInterval expiresAt = [tokenRow[@"expires_at"] doubleValue];
-            BOOL alreadyUsed = (tokenRow[@"used_at"] != nil);
-
-            if (!tokenDid || alreadyUsed) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid confirmation token"}];
-                return;
-            }
-            if ([[NSDate date] timeIntervalSince1970] > expiresAt) {
+            if (tokenRow && tokenRow[@"used_at"] == nil && [tokenRow[@"expires_at"] doubleValue] < now) {
                 response.statusCode = HttpStatusBadRequest;
                 [response setJsonBody:@{@"error": @"ExpiredToken", @"message": @"Confirmation token has expired"}];
                 return;
             }
-            if (![tokenDid isEqualToString:did]) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Token does not match account"}];
-                return;
-            }
-
-            // Atomically claim the token.
-            NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-            NSInteger claimedRows = 0;
-            if (![db executeParameterizedUpdate:
-                    @"UPDATE password_reset_tokens SET used_at = ? WHERE token = ? AND used_at IS NULL"
-                                         params:@[@((long long)now), token]
-                                    changedRows:&claimedRows
-                                          error:nil]) {
-                response.statusCode = HttpStatusInternalServerError;
-                [response setJsonBody:@{@"error": @"AccountDeletionFailed", @"message": @"Service unavailable"}];
-                return;
-            }
-            if (claimedRows == 0) {
-                response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid confirmation token"}];
-                return;
-            }
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid confirmation token"}];
+            return;
         }
 
         NSError *error = nil;
@@ -147,7 +147,7 @@
         [serviceDatabases logHostingEvent:did type:@"account_deleted" details:@{} createdBy:did error:nil];
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
+        [response setJsonBody:@{}];
     }];
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_checkAccountStatus handler:^(HttpRequest *request, HttpResponse *response) {
@@ -198,7 +198,7 @@
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
+        [response setJsonBody:@{}];
 
         // Notify firehose of account activation (#account event)
         [[NSNotificationCenter defaultCenter]
@@ -217,16 +217,23 @@
             return;
         }
 
-        NSDictionary *body = request.jsonBody;
+        NSDictionary *body = request.jsonBody ?: @{};
         BOOL typeMismatch = NO;
-        NSString *reason = AuthTypedValue(body, @"reason", [NSString class], &typeMismatch);
+        NSString *deleteAfter = AuthTypedValue(body, @"deleteAfter", [NSString class], &typeMismatch);
         if (typeMismatch) {
             [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
+        if (deleteAfter && ![ATProtoValidator validateDatetime:deleteAfter error:nil]) {
+            [XrpcErrorHelper setInvalidRequestError:response message:@"Invalid deleteAfter datetime"];
+            return;
+        }
 
+        // deleteAfter is a recommendation only. The current admin-service
+        // boundary has no retention-deadline storage contract, so it is
+        // validated here and intentionally not persisted or mapped to reason.
         NSError *error = nil;
-        BOOL success = [adminController deactivateAccount:did reason:reason ?: @"User deactivation" error:&error];
+        BOOL success = [adminController deactivateAccount:did reason:@"User deactivation" error:&error];
 
         if (!success) {
             response.statusCode = 400;
@@ -235,7 +242,7 @@
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
+        [response setJsonBody:@{}];
 
         // Notify firehose of account deactivation (#account event)
         [[NSNotificationCenter defaultCenter]

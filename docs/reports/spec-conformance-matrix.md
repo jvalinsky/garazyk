@@ -1,7 +1,7 @@
 ---
 title: Published-Spec Conformance Matrix
 status: report-only
-last_verified: 2026-07-23
+last_verified: 2026-08-08
 commit: de67b72a
 ---
 
@@ -28,7 +28,7 @@ A red row is a lead, not a release blocker, until triaged into a workstream.
 | 1 | [Data Model](https://atproto.com/specs/data-model) | Supported | `ATProtoDagCBOR.h/.m`, `ATProtoCBORSerialization.h/.m`, `CBOR.h/.m` (DAG-CBOR canonical encoding, DRISL type mappings, `$type`/`$bytes`/`$link`), `CID.h/.m`, `NSDictionary+CID.h/.m` (CID v1 SHA-256) | `CBORSecurityTests.m`, `CARInteropTests.m`; scenario 28 (repo format benchmarks) | 01 (S3) |
 | 2 | [Lexicon](https://atproto.com/specs/lexicon) | Supported | `ATProtoLexiconRegistry.h/.m`, `ATProtoLexiconSchema.h/.m`, `ATProtoLexiconValidator.h/.m`, `ATProtoLexiconConstraints.h/.m`, `ATProtoLexiconDef.h/.m`, `ATProtoLexiconError.h/.m`, `XrpcLexiconResolver.h/.m`; lexicon JSON under `Garazyk/Resources/lexicons/` | `XrpcInputValidationTests.m`, `XrpcHandlerTests.m`; XRPC coverage report (213/213 in-scope, 100%); CI gate `--fail-on-duplicates --fail-on-missing` | 01 (S2, S3) |
 | 3 | [Cryptography](https://atproto.com/specs/cryptography) | Supported | `AuthCryptoECDSA.h/.m` (p256/k256 ECDSA), `AuthCryptoJWK.h/.m` (multikey/did:key), `AuthCryptoBase64URL.h/.m`, `JWT.h/.m` (ES256/ES256K), `CryptoUtils.h/.m`, `DPoPUtil.h/.m` | `CryptoTests.m`, `JWTTests.m`, `JWTSecurityTests.m`, `AuthCryptoTests.m`, `KeyManagerSecurityTests.m` | 01 |
-| 4 | [Accounts](https://atproto.com/specs/account) | Supported | `PDSAccountService.h/.m`, `PDSAccountEvents.h/.m`, `PDSAccountRepository.h`, `PDSDatabase+Accounts.h/.m`, `PDSActorStore+Account.h/.m`; hosting status, activation, deactivation, takedown, downstream `#account` event propagation (takedown/reinstate → firehose → RelayClient/RelayUpstreamManager forwarding → AppViewIngestEngine persistence), gap-free cursor resume | `PDSAccountServiceTests.m`; scenarios 01 (account lifecycle), 12 (account migration), 96 (cursor resume), 97 (downstream account-status propagation); S5 lifecycle propagation complete | 01 (S5) |
+| 4 | [Accounts](https://atproto.com/specs/account) | Supported | `PDSAccountService.h/.m`, `PDSAccountEvents.h/.m`, `PDSAccountRepository.h`, `PDSDatabase+Accounts.h/.m`, `PDSActorStore+Account.h/.m`; `activateAccount`/`deactivateAccount` empty procedure responses, lexicon `deleteAfter` validation (recommendation deliberately not persisted: no admin-service retention-deadline storage contract), authenticated email-only deletion requests, and authenticated token/password deletion | `PDSAccountServiceTests.m`, `AccountLifecycleXrpcTests.m`, `RepoAuthServerTests.m`; scenarios 01 (account lifecycle), 12 (account migration), 96 (cursor resume), 97 (downstream account-status propagation) | 01 (S5) |
 | 5 | [Repository](https://atproto.com/specs/repository) | Supported | `MSTAtomicReference.h/.m`, `MSTCacheManager.h/.m`, `MSTViewerHandler.h/.m`; commit signing, MST tree, CAR import/export via `FirehoseCARBuilder.h/.m`; repo write/delete/apply operations | `MSTDiffTests.m`, `MSTInteropTests.m`, `MSTPersistenceTests.m`, `MSTRebalancingTests.m`, `MSTUTF8Tests.m`, `RepoCommitTests.m`, `CARInteropTests.m`; scenario 28 | 01 |
 | 6 | [Blobs](https://atproto.com/specs/blob) | Supported | `BlobStorage.h`, `PDSBlobRepository.h`, `PDSBlobAuditManager.h/.m`, `PDSBlobCIDVerificationOperation.h/.m`, `PDSBlobConsistencyCheckOperation.h/.m`, `PDSBlobOrphanScanOperation.h/.m`, `PDSBlobReferenceScanOperation.h/.m`; upload-before-reference, GC, CID verification | `PDSBlobServiceTests.m`, `PDSBlobAuditManagerTests.m`; scenario 07 (blobs/uploads) | 01 |
 | 7 | [Labels](https://atproto.com/specs/label) | Partial | `XrpcLabelPack.h/.m` (671 lines: `subscribeLabels`, `queryLabels` endpoints); label header parsing (`atproto-accept-labelers`, `atproto-content-labelers`); no self-signing `#atproto_label` key generation found | scenario 45 (labeler subscription), scenario 85 (labeling endpoints); no unit test for label signature verification | 01 (S3) |
@@ -36,7 +36,7 @@ A red row is a lead, not a release blocker, until triaged into a workstream.
 | 9 | [OAuth](https://atproto.com/specs/oauth) | Supported | `OAuth2.h/.m`, `OAuth2Handler.h/.m`, `OAuthProvider.h/.m`, `OAuthSession.h/.m`, `OAuthClientAuthPolicy.h/.m`, `OAuthServerMetadata.h/.m`, `PKCEUtil.h/.m`, `DPoPUtil.h/.m`, `AuthCryptoDPoP.h/.m`, `AppViewOAuth2Middleware.h/.m`; PAR, PKCE, DPoP, server metadata, introspection, client registration | `OAuth2Tests.m`, `OAuth2HandlerTests.m`, `OAuthDPoPTests.m`, `OAuthConformanceTests.m`, `OAuthIntegrationTests.m`, `OAuthMetadataComplianceTests.m`, `OAuth2IntrospectionTests.m`, `OAuth2OPTIONSHandlerTests.m`, `OAuth2PreservationTests.m`, `OAuth2ATProtoClientTests.m`, `OAuth2ClientMetadataValidationTests.m`; scenarios 08, 11, 13 | 01 |
 | 10 | [Permissions](https://atproto.com/specs/permission) | Partial | `PDSSpaceScope.h/.m` (space: scope parsing for permissioned spaces); transitional scopes present; fail-closed `space:` scope parser; **no granular `repo:`/`rpc:`/`blob:`/`account:`/`include:` scope evaluation found** (full gap assessment at `docs/reports/permissions-spec-gap-assessment.md`) | `PDSSpaceURIAndScopeTests.m`; no test for granular resource-type scope evaluation | 01 (S6 known gap G1) |
 | 11 | [Event Stream](https://atproto.com/specs/event-stream) | Supported | `Firehose.h/.m`, `FirehoseProtocolSession.h/.m`, `SubscribeReposHandler.h/.m`, `FirehoseCARBuilder.h/.m`; `#commit`, `#identity`, `#account`, `#handle` events; WebSocket framing, sequence numbers, cursors | `FirehoseTests.m`, `FirehoseConformanceTests.m`, `FirehoseProtocolSessionTests.m`, `SubscribeReposHandlerTests.m`, `EventFormatterTests.m`; scenario 09 (firehose streaming), 25 (firehose fanout scale) | 01 (S5) |
-| 12 | [Sync](https://atproto.com/specs/sync) | Partial | `XrpcSyncPack.h/.m` (getRepo, getRecord, listRepos, subscribeRepos, getBlocks, getLatestCommit, listReposByCollection); `PLCSyncClient.h/.m`, `PLCSyncEngine.h/.m`; relay infrastructure (`RelayAPIHandler`, `RelayClient`, `RelayUpstreamManager`, `RelayEventBuffer`); **export block ordering and collection-based repo subsets not yet spec-final upstream** | `RelayAPIHandlerTests.m`, `RelayClientTests.m`, `RelayIntegrationTests.m`, `RelayUpstreamManagerTests.m`, `RelayEventBufferTests.m`, `RelayEventFilterTests.m`, `RelayEventValidatorTests.m`, `RelayRepoStateManagerTests.m`, `RelayDownstreamHandlerTests.m`; scenario 05 (federation) | 02 (A6) |
+| 12 | [Sync](https://atproto.com/specs/sync) | Partial | `XrpcSyncPack.h/.m` (getRepo, getRecord, listRepos, subscribeRepos, getBlocks, getLatestCommit, listReposByCollection); `PLCSyncClient.h/.m`, `PLCSyncEngine.h/.m`; relay infrastructure (`RelayAPIHandler`, `RelayClient`, `RelayUpstreamManager`, `RelayEventBuffer`); **export block ordering and collection-based repo subsets not yet spec-final upstream; Relay `com.atproto.sync.getRepoStatus` status semantics remain open as G3** | `RelayAPIHandlerTests.m`, `RelayClientTests.m`, `RelayIntegrationTests.m`, `RelayUpstreamManagerTests.m`, `RelayEventBufferTests.m`, `RelayEventFilterTests.m`, `RelayEventValidatorTests.m`, `RelayRepoStateManagerTests.m`, `RelayDownstreamHandlerTests.m`; scenario 05 (federation) | 02 (A6); 01 (S6 G3) |
 | 13 | [DID](https://atproto.com/specs/did) | Supported | `DID.h/.m` (did:plc, did:web resolution), `DIDPLCResolver.h/.m`, `ATProtoDIDDocumentFields.h/.m`; DID document parsing, verification key extraction | `DIDPLCResolverTests.m`; scenario 05 (federation), 91 (server/repo identity) | 01 |
 | 14 | [Handle](https://atproto.com/specs/handle) | Supported | `ATProtoHandleValidator.h/.m` (DNS hostname subset validation), `HandleResolver.h/.m` (DNS TXT, HTTPS well-known); bidirectional DID-handle verification | `HandleResolverSecurityTests.m`; scenario 05 (federation) | 01 |
 | 15 | [NSID](https://atproto.com/specs/nsid) | Supported | `ATProtoValidator.h/.m` (NSID parsing/validation); NSID constants used throughout XRPC packs and lexicon registry; no dedicated NSID module file | NSID validation exercised via `XrpcInputValidationTests.m`, lexicon registry tests; XRPC coverage CI gate | 01 |
@@ -77,15 +77,16 @@ upstream spec text finalizes). Collection subsets are served via Garazyk's
 **Status:** Closed pending upstream spec publication. Owned by workstream 02
 (A6); revisit when upstream publishes version-numbered Sync text.
 
-### G3: Account management surfaces
+### G3: Relay `getRepoStatus` status semantics
 
-**Spec:** [Accounts](https://atproto.com/specs/account)
+**Spec:** [Synchronization](https://atproto.com/specs/sync)
 
-The account-lifecycle checks in S5 cover propagation semantics.
-Deactivation/deletion/export UX-level endpoints should be confirmed against
-the accounts spec in the same pass.
+The PDS account-lifecycle handler slice was completed on 2026-08-08 and is
+recorded as Supported in the Accounts row. G3 remains open for Relay
+`com.atproto.sync.getRepoStatus` status semantics; that separate Relay lane
+was deliberately not changed here.
 
-**Owning workstream:** 01 (S5).
+**Owning workstreams:** 01 (S6 G3), 02 (A6).
 
 ### G4: Labels — self-signing key
 
