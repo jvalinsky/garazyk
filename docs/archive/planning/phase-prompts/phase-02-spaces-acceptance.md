@@ -121,7 +121,7 @@ enforced low-S on P-256/JOSE signatures, and `AuthCryptoECDSA` used the P-256
 field prime `p` where it needed the group order `n`, so ~50% of DPoP proofs
 (any with high-S) were rejected non-deterministically. Full diagnosis (the
 repro-driven, S-value-correlation method) and the fix are in
-[ADR 0007](../../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md).
+[ADR 0007](../../../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md).
 
 - Fix: `AuthCryptoJWK` verifies P-256 signatures as presented (no low-S gate);
   `AuthCryptoECDSA` constants corrected to order `n`; characterization test
@@ -135,7 +135,7 @@ repro-driven, S-value-correlation method) and the fix are in
 **Scenario 93 now passes 19/19** on the three-PDS binary topology. Two
 product fixes were required, each its own slice:
 
-1. DPoP P-256 low-S verification — [ADR 0007](../../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md)
+1. DPoP P-256 low-S verification — [ADR 0007](../../../adr/0007-p256-ecdsa-verification-must-not-enforce-low-s.md)
    (unblocked the OAuth PAR step).
 2. **notifyWrite service-auth 401.** Once OAuth passed, the "Authority learns
    the remote writer" step failed: PDS A sent `notifyWrite` to the authority's

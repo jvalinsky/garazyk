@@ -158,7 +158,7 @@ All three items landed and passed the global gates (`deno task check/lint/test`,
    the first failing gate, with the same change applied to the
    `remoteAddress:`-aware entry point.
 
-Recorded as [ADR 0030](../../adr/0030-registration-gate-composite-uses-and-semantics.md).
+Recorded as [ADR 0030](../../../adr/0030-registration-gate-composite-uses-and-semantics.md).
 
 **Process note:** while this phase was in progress, a second Claude Code
 session was concurrently running phase-24 (Ozone S14 slices 6-7) in the same
