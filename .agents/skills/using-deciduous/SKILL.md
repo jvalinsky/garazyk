@@ -7,6 +7,14 @@ description: Use when tracking development goals, decisions, actions, outcomes, 
 
 Use this skill to track goals, decisions, and outcomes in the `deciduous` graph.
 
+## Shared-graph safety
+
+Orient with `deciduous pulse` and `deciduous show` before writing. For a
+read-only review, do not create or update nodes. Before any mutation, confirm
+the work is governed by this repository's `docs/plans/`, capture the verbatim
+user request, and ensure no other session is reconciling the same graph nodes.
+Never use graph status alone as the repository backlog.
+
 ## Core Commands
 
 | Action | Command |
