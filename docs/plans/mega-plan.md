@@ -202,9 +202,11 @@ documentation, TUI, package, and refactor plans.
   `generate_xrpc_next_steps.cjs` fixed.
 - Workstream 03 (repository boundaries) remains blocked on maintainer decision
   to lift the indefinite JSR publication deferral (reaffirmed explicitly
-  2026-08-08). R1 (synchronize forward) is not blocked; R2-R4 are blocked on
-  publication. No agent may publish until a future maintainer message grants
-  explicit permission.
+  2026-08-08). R1 source synchronization completed; one no-setup runtime
+  compatibility check remains blocked by absent local services/binaries and
+  9.5 GB disk headroom, not by publication. R2-R4 are blocked on publication.
+  No agent may publish until a future maintainer message grants explicit
+  permission.
 
 ## Priority model
 
