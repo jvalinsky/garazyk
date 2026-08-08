@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIBackendClient+Relay.h"
-#import "AdminUIServer/UIBackendClient_Internal.h"
+#import "AdminUIServer/Packs/GZAdminUIBackendClient+Relay.h"
+#import "AdminUIServer/GZAdminUIBackendClient_Internal.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@implementation UIBackendClient (Relay)
+@implementation GZAdminUIBackendClient (Relay)
 
 - (NSDictionary *)fetchRelayMetrics {
     NSURL *url = [self URLByAppendingPath:@"/api/relay/metrics" queryItems:nil baseURL:self.configuration.relayBaseURL];

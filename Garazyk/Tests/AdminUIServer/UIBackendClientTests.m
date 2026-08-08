@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file UIBackendClientTests.m
+ @file GZAdminUIBackendClientTests.m
 
- @abstract Unit tests for UIBackendClient.
+ @abstract Unit tests for GZAdminUIBackendClient.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <XCTest/XCTest.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@interface UIBackendClient (UIBackendClientTests)
+@interface GZAdminUIBackendClient (GZAdminUIBackendClientTests)
 - (NSDictionary *)performJSONRequestWithURL:(NSURL *)url
                                      method:(NSString *)method
                                        body:(nullable NSDictionary *)body
@@ -29,12 +29,12 @@
                             error:(NSError **)error;
 @end
 
-@interface UIBackendClientStub : UIBackendClient
+@interface GZAdminUIBackendClientStub : GZAdminUIBackendClient
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *capturedRequests;
 @property(nonatomic, strong) NSDictionary *nextJSONResponse;
 @end
 
-@implementation UIBackendClientStub
+@implementation GZAdminUIBackendClientStub
 
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
     self = [super initWithConfiguration:configuration];
@@ -106,13 +106,13 @@
 }
 @end
 
-@interface UIBackendClientTests : XCTestCase
-@property (nonatomic, strong) UIBackendClient *client;
+@interface GZAdminUIBackendClientTests : XCTestCase
+@property (nonatomic, strong) GZAdminUIBackendClient *client;
 @property (nonatomic, strong) MockSafeHTTPClient *mockHTTP;
 @property (nonatomic, strong) UIServiceConfig *config;
 @end
 
-@implementation UIBackendClientTests
+@implementation GZAdminUIBackendClientTests
 
 - (void)setUp {
     [super setUp];
@@ -133,7 +133,7 @@
     self.config.chatAdminToken = @"admin-token-chat";
 
     self.mockHTTP = [[MockSafeHTTPClient alloc] init];
-    self.client = [[UIBackendClient alloc] initWithConfiguration:self.config httpClient:self.mockHTTP];
+    self.client = [[GZAdminUIBackendClient alloc] initWithConfiguration:self.config httpClient:self.mockHTTP];
 }
 
 - (void)tearDown {
@@ -147,7 +147,7 @@
 /*!
  @test testClientInitialization
 
- @abstract Verify that UIBackendClient initializes with configuration.
+ @abstract Verify that GZAdminUIBackendClient initializes with configuration.
  */
 - (void)testClientInitialization {
     XCTAssertNotNil(self.client);
@@ -604,19 +604,19 @@
 
 #pragma mark - Exact Request Wiring Tests
 
-- (UIBackendClientStub *)stubClient {
+- (GZAdminUIBackendClientStub *)stubClient {
     self.config.pdsBaseURL = [NSURL URLWithString:@"http://localhost:3001/"];
-    return [[UIBackendClientStub alloc] initWithConfiguration:self.config];
+    return [[GZAdminUIBackendClientStub alloc] initWithConfiguration:self.config];
 }
 
-- (NSDictionary *)lastCapturedRequestFromStub:(UIBackendClientStub *)stub {
+- (NSDictionary *)lastCapturedRequestFromStub:(GZAdminUIBackendClientStub *)stub {
     NSDictionary *request = stub.capturedRequests.lastObject;
     XCTAssertNotNil(request);
     return request ?: @{};
 }
 
 - (void)testSecuritySessionsUsePrivatePDSAdminRouteWithHashedSessionIDBody {
-    UIBackendClientStub *stub = [self stubClient];
+    GZAdminUIBackendClientStub *stub = [self stubClient];
 
     [stub fetchActiveSessionsForDID:@"did:plc:alice"];
     NSDictionary *fetchRequest = [self lastCapturedRequestFromStub:stub];
@@ -632,7 +632,7 @@
 }
 
 - (void)testSecurityAppPasswordsUsePrivatePDSAdminRoutes {
-    UIBackendClientStub *stub = [self stubClient];
+    GZAdminUIBackendClientStub *stub = [self stubClient];
 
     [stub fetchAppPasswordsForDID:@"did:plc:alice"];
     NSDictionary *listRequest = [self lastCapturedRequestFromStub:stub];
@@ -654,7 +654,7 @@
 }
 
 - (void)testChatLockUsesLockConvoEndpointOnChatService {
-    UIBackendClientStub *stub = [self stubClient];
+    GZAdminUIBackendClientStub *stub = [self stubClient];
 
     [stub lockChatConvo:@"convo-123"];
     NSDictionary *request = [self lastCapturedRequestFromStub:stub];
@@ -665,7 +665,7 @@
 }
 
 - (void)testOzoneReportsCallReportEventEndpointNotStatuses {
-    UIBackendClientStub *stub = [self stubClient];
+    GZAdminUIBackendClientStub *stub = [self stubClient];
     stub.nextJSONResponse = @{@"events": @[@{@"subject": @"did:plc:alice", @"reportType": @"spam", @"createdBy": @"did:plc:reporter"}]};
 
     NSDictionary *result = [stub fetchModerationReportsWithCursor:@"cursor-a" limit:50];
@@ -677,7 +677,7 @@
 }
 
 - (void)testOzoneSettingsUseGetQueryParams {
-    UIBackendClientStub *stub = [self stubClient];
+    GZAdminUIBackendClientStub *stub = [self stubClient];
 
     [stub listOzoneSettings];
     NSDictionary *request = [self lastCapturedRequestFromStub:stub];
@@ -687,7 +687,7 @@
 }
 
 - (void)testPLCListUnwrapsItemsResponseIntoDIDs {
-    UIBackendClientStub *stub = [self stubClient];
+    GZAdminUIBackendClientStub *stub = [self stubClient];
     stub.nextJSONResponse = @{@"items": @[@"did:plc:one", @"did:plc:two"]};
 
     NSDictionary *result = [stub fetchPLCList];
@@ -698,7 +698,7 @@
 }
 
 - (void)testServiceConnectionProbeUsesServiceSpecificHealthEndpoint {
-    UIBackendClientStub *stub = [self stubClient];
+    GZAdminUIBackendClientStub *stub = [self stubClient];
 
     [stub testConnectionForService:@"relay"];
     NSDictionary *relayRequest = [self lastCapturedRequestFromStub:stub];

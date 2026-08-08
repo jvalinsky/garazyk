@@ -4,7 +4,7 @@
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/Packs/GZAdminUIVideoPack.h"
 #import "AdminUIServer/UIAuthManager.h"
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"

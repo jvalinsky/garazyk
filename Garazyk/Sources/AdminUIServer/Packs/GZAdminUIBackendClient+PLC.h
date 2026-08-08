@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * It returns a normalized response dictionary or an `error`/`message` dictionary on invalid input
  * or non-2xx upstream failure. Text endpoints place decoded UTF-8 in the `text` field.
  */
-@interface UIBackendClient (PLC)
+@interface GZAdminUIBackendClient (PLC)
 
 /** @abstract Resolves a nonempty DID through the PLC directory. */
 - (NSDictionary *)lookupDID:(NSString *)did;

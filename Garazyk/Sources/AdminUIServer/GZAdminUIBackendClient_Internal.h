@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "Debug/GZLogger.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
  * timeout and must not be called from a queue required to deliver that completion. Returned
  * dictionaries encode transport and upstream failures with an `error` key rather than raising.
  */
-@interface UIBackendClient ()
+@interface GZAdminUIBackendClient ()
 
 /** @abstract Current endpoint and credential configuration used by this client. */
 @property(nonatomic, strong) UIServiceConfig *configuration;
@@ -34,8 +34,6 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Sends a bodyless request and returns its response bytes. */
 - (NSData *)performStringRequestWithURL:(NSURL *)url method:(NSString *)method bearerToken:(nullable NSString *)token statusCode:(nullable NSInteger *)statusCode error:(NSError **)error;
 
-/** @abstract Returns the configured services and health-probe metadata used by the overview. */
-- (NSArray<NSDictionary *> *)serviceProbeSpecifications;
 /** @abstract Percent-encodes untrusted path segments before constructing a relative path. */
 - (NSString *)pathWithSegments:(NSArray<NSString *> *)segments;
 /** @abstract Probes one configured service and returns its latency, status, and error summary. */
