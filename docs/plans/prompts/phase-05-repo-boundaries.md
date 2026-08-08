@@ -4,7 +4,7 @@ title: Repository boundary completion
 status: blocked
 agent: worker
 depends_on: []
-last_updated: 2026-07-26
+last_updated: 2026-08-08
 ---
 
 ## Progress
@@ -23,17 +23,17 @@ repository-root-relative `packages/hamownia/cli.ts` path. The later ATProto
 packages also still rely on the workspace import map instead of self-contained
 published dependencies; those are follow-up work after the first TUI release.
 
-2026-07-18 operator decision (reaffirmed 2026-07-26): defer the
+2026-07-18 operator decision (reaffirmed explicitly 2026-08-08): defer the
 `@garazyk/tui` publication indefinitely. Do not request or use JSR publisher
-access, and do not run a publish command, unless the maintainer explicitly
-reopens this phase. R1 (synchronize forward) is not blocked and can proceed
-independently.
+access, and do not run a publish command, unless the maintainer gives explicit
+permission in a future message and reopens this phase. R1 (synchronize forward)
+is not blocked and can proceed independently.
 
 ## Blocked on
 
-An explicit maintainer decision to lift the indefinite publication deferral and
-reopen Phase 5. Until then, do not request or use JSR publisher access and do
-not publish `@garazyk/tui` or any later `@garazyk` package.
+An explicit future maintainer message lifting the indefinite publication
+deferral and reopening Phase 5. Until then, do not request or use JSR publisher
+access and do not publish `@garazyk/tui` or any later `@garazyk` package.
 
 ## Deferred publication record
 

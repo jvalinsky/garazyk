@@ -1,7 +1,7 @@
 ---
 title: Repository Boundaries
 status: active
-last_verified: 2026-07-27
+last_verified: 2026-08-08
 ---
 
 # Repository Boundaries
@@ -46,8 +46,9 @@ form the dependency boundary.
   `jvalinsky/garazyk-atproto-testing`. The local branches track `origin/main`.
   `@garazyk/tui@0.1.0` is the first verified release candidate, but its JSR
   publication is **indefinitely deferred by maintainer decision** (2026-07-18,
-  reaffirmed 2026-07-26). Do not request or use publisher access, or publish
-  this or any later package, until the maintainer explicitly reopens Phase 5.
+  reaffirmed explicitly on 2026-08-08). Do not request or use publisher access,
+  or publish this or any later package, until the maintainer gives explicit
+  permission in a future message and reopens Phase 5.
   This deferral blocks R2 (publication boundaries), R3 (wrapper removal), and
   R4 (deletion branch regeneration). R1 (synchronize forward) is not blocked
   and can proceed when capacity allows.
