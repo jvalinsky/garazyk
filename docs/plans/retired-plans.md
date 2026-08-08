@@ -29,6 +29,7 @@ own active work and where unresolved acceptance criteria moved.
 | `star-conformance-plan.md`                                                            | All three slices landed (2026-07-23). Mega-plan Phase 4 item 9 records completion. Archived to `docs/archive/planning/` 2026-07-25. |
 | `phase-10-product-surface-decision-brief.md`                                         | Operator approved all dispositions; mega-plan Phase 5 item 2 records completion. Archived to `docs/archive/planning/` 2026-07-25. |
 | `linux_shim_refactor.md` + `docs/audits/linux_shim_research_*.md`                     | All four defects fixed in `2341b084`. Archived to `docs/archive/planning/` 2026-07-25. |
+| Workstream 01 items S1–S20 (closed detail)                                            | Nineteen of twenty items closed; their evidence, slices, decisions, gates, and rollback notes moved verbatim to [`docs/archive/planning/workstream-01-completed-items.md`](../archive/planning/workstream-01-completed-items.md) 2026-08-05, cutting the active workstream 3042 → 99 lines. Open scope (an S5 crash watch item and S6 gap G3) stayed in the workstream. S6 was not archived because G3 is still open. |
 
 ## Preserved noncanonical records
 

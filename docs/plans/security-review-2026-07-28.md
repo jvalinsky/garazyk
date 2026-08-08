@@ -1,10 +1,22 @@
 ---
 title: Security Review Remediation — 2026-07-28
-status: proposed
-last_verified: 2026-07-29
+status: superseded
+last_verified: 2026-08-05
 ---
 
 # Security Review Remediation — 2026-07-28
+
+> **Superseded (2026-08-05). This document is evidence, not backlog.** Its
+> findings were folded into workstream 01 as S18, S19, and S20 and are all
+> complete; the workstream is authoritative wherever the two disagree, per
+> `docs/plans/README.md`.
+>
+> In particular, **the "P3 — §2.1 part 2 sweep is ~7% done" and
+> "§2.1 part 2 (typed accessors) — NOT DONE" statements below are stale.**
+> That sweep was completed on 2026-07-29 as workstream 01 S20 sub-task B
+> (`f3aa3fb1`, `4fc2f097`), covering all ~35 originally scoped XRPC route
+> packs. Do not re-open it from this document. Closed detail now lives in
+> [the workstream 01 archive](../archive/planning/workstream-01-completed-items.md).
 
 ## Objective
 
@@ -53,7 +65,8 @@ targeted `AllTests --gated=run`.
   flow to JWT refresh tokens (option (b) from revision 2's decision point; no
   live prod, so no migration path needed) and replaced the family/tombstone
   reuse-detection with the reference AT Protocol PDS's grace-period design
-  (see `bab8bbf2`'s message and the phase-29 file's Progress section for the
+  (see `bab8bbf2`'s message and the Progress section of
+  [the archived phase-29 prompt](../archive/planning/phase-prompts/phase-29-refresh-flow-and-parser-test-debt.md) for the
   full trace — the actual bugs were narrower than this revision's diagnosis:
   `verifyRefreshToken:` was never in the session-flow path at all, and the
   two real defects were in §4.3's family/tombstone mechanism itself).

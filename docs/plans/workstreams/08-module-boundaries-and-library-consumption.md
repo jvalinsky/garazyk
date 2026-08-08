@@ -1,7 +1,7 @@
 ---
 title: Module Boundaries and Library Consumption
 status: active
-last_verified: 2026-08-04
+last_verified: 2026-08-05
 ---
 
 ## Verified status (2026-08-04)
@@ -31,11 +31,12 @@ installer's `/var/db/kaszlak` fallback are fixed; see "M7 residual cleanup
 complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
 a configure-time disjoint-source assertion); item 2 (glob-to-manifest
 conversion) remains open. M5 has started: the namespace gate landed, and
-**M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**
-and **batch 2 is complete in full** (all ~25 classes
-renamed) — namespace baseline ratcheted
-283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228. Batches 3-6
-remain open. M6 has not started.
+**M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**,
+**batch 2 is complete in full** (all ~25 classes renamed), and **batch 3a (the
+low-consumer half of Storage/Transport, 14 classes) is complete** — namespace
+baseline ratcheted
+283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228 → 214. Batch 3b and
+batches 4-6 remain open. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -1643,8 +1644,28 @@ module boundary checks clean; `deno task check`/`lint` clean; full
 
 **M5.3 batch 2 is now complete in full**: all ~25 originally-scoped
 Core-primitive and crypto/security-helper classes are `ATProto`/`PDS`/
-`GZ`-prefixed. Batches 3-6 (Storage/Transport, PLC/Sync/Services/MediaCore,
-XRPC/VideoService, Runtime) remain open for future sessions.
+`GZ`-prefixed.
+
+**Batch 3a complete (2026-08-05, `92395144`): the low-consumer half of
+Storage/Transport.** The 14 unprefixed `ATProtoStorage`/`ATProtoTransport`
+classes with 1-3 consuming files each, renamed to their `ATProto*` form
+(`HttpConnectionState`, `HttpRouteNode`, `SSRFResolutionResult`,
+`HttpConnectionDriver`, `HttpQueuedResponse`, `MSTWalkerStatus`,
+`STARMstEntry`, `STARMstNode`, `HttpStreamingBody`, `MSTPersistence`,
+`RateLimiterStorageHandle`, `SSLPinningManager`, `XRPCError`) except
+`BlobsMimeTypeRename` → `PDSBlobsMimeTypeRename`, which follows batch 1's
+migration-class convention. File names and import paths are unchanged — the
+namespace gate measures exported symbols via `nm`, not file names — and
+string-literal content (`NSError` domains, description formats) was left
+untouched.
+
+Namespace baseline ratchets 228 → 214. Verified: 15 touched suites pass;
+source and link-time module-boundary checks and the recursive-setter check
+pass; full `AllTests --gated=run`: 4,975 tests, 0 failures, 583s.
+
+**Batch 3b (the remaining higher-consumer Storage/Transport classes) and
+batches 4-6** (PLC/Sync/Services/MediaCore, XRPC/VideoService, Runtime)
+remain open for future sessions.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are

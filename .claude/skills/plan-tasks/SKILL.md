@@ -53,6 +53,15 @@ If `docs/plans/prompts/` doesn't exist (the repo's own rules call for
 deleting completed task plans and retiring prompts once a phase closes),
 just skip step 4 and work from the mega plan and workstreams alone.
 
+**Do not read `docs/archive/planning/`.** Closed detail is moved there on
+purpose — workstream 01's nineteen closed items and the 23 completed phase
+prompts live in that directory as of 2026-08-05. It is evidence for someone
+reconstructing history, never backlog, and reading it costs thousands of
+tokens while producing zero table rows. An active file that points into the
+archive has already summarized what you need; trust the summary. If an
+archived item genuinely looks unfinished, that is a defect in the active
+file's summary — say so in the impact column rather than mining the archive.
+
 ## What counts as "remaining"
 
 A task belongs in the table if any of these are true:
