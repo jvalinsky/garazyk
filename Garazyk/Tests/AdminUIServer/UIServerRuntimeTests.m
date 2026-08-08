@@ -3,22 +3,24 @@
 /*!
  @file UIServerRuntimeTests.m
 
- @abstract Unit tests for UIServerRuntime.
+ @abstract Unit tests for GZAdminUIHost.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <XCTest/XCTest.h>
-#import "AdminUIServer/UIBackendClient.h"
-#import "AdminUIServer/UIServerRuntime.h"
-#import "AdminUIServer/UIServerRuntime+Private.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZAdminUIDefaultPacks.h"
+#import "AdminUIServer/Packs/GZAdminUIChatPack.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "AdminUIServer/UITileDataProtocol.h"
 
-@interface UIServerRuntimeBackendStub : UIBackendClient
+@interface UIServerRuntimeBackendStub : GZAdminUIBackendClient
 @property(nonatomic, strong) NSMutableArray<NSString *> *calls;
 @property(nonatomic, copy) NSString *lastDID;
 @property(nonatomic, copy) NSString *lastConvoID;
@@ -97,7 +99,7 @@
 
 @interface UIServerRuntimeTests : XCTestCase
 @property (nonatomic, strong) UIServiceConfig *config;
-@property (nonatomic, strong) UIServerRuntime *runtime;
+@property (nonatomic, strong) GZAdminUIHost *runtime;
 @end
 
 @implementation UIServerRuntimeTests
@@ -120,7 +122,8 @@
     self.config.appViewAdminToken = @"admin-token";
     self.config.chatAdminToken = @"admin-token";
 
-    self.runtime = [[UIServerRuntime alloc] initWithConfiguration:self.config];
+    self.runtime = [[GZAdminUIHost alloc] initWithConfiguration:self.config
+                                                            packs:GZAdminUIDefaultPacks()];
 }
 
 - (void)tearDown {
@@ -294,7 +297,7 @@
 /*!
  @test testRuntimeInitialization
 
- @abstract Verify that UIServerRuntime initializes with the provided configuration.
+ @abstract Verify that GZAdminUIHost initializes with the provided configuration.
  */
 - (void)testRuntimeInitialization {
     XCTAssertNotNil(self.runtime);
@@ -783,7 +786,7 @@
             @{@"text": payload, @"sender": @"did:plc:alice", @"createdAt": @"2026-04-28T00:00:00Z"}
         ]
     };
-    NSString *html = [self.runtime renderChatMessagesPartial:result];
+    NSString *html = [GZAdminUIChatPack renderChatMessagesPartial:result];
 
     XCTAssertFalse([html containsString:payload], @"Raw script tag must not appear unescaped in rendered output");
     XCTAssertTrue([html containsString:@"&lt;script&gt;alert(1)&lt;/script&gt;"], @"Message text must be HTML-escaped");
@@ -796,7 +799,7 @@
             @{@"id": @"convo-1", @"lastMessage": @{@"text": payload}}
         ]
     };
-    NSString *html = [self.runtime renderChatConvosPartial:result];
+    NSString *html = [GZAdminUIChatPack renderChatConvosPartial:result];
 
     XCTAssertFalse([html containsString:payload], @"Raw img/onerror payload must not appear unescaped in rendered output");
     XCTAssertTrue([html containsString:@"&lt;img src=x onerror=alert(1)&gt;"], @"Last-message text must be HTML-escaped");
