@@ -1,7 +1,7 @@
 ---
 title: Per-Service Admin UIs
 status: active
-last_verified: 2026-08-04
+last_verified: 2026-08-08
 ---
 
 ## Target
@@ -15,7 +15,7 @@ compile-time knowledge of any service, and is reached through a
 The decision and its constraints are recorded in
 [ADR 0033](../../adr/0033-per-service-embedded-admin-uis.md).
 
-## Current evidence (2026-08-04)
+## Current evidence (2026-08-08)
 
 **The code is already cut along service seams.** Ten
 `UIBackendClient+<Service>` categories, eleven
@@ -170,6 +170,13 @@ Transport primitives (`performJSONRequestWithURL:â€¦`, `performRequestWithURL:â€
 library's `GZAdminUIBackendClient`. The ten `+<Service>` categories become
 pack-owned clients. `serviceProbeSpecifications` is Overview-only and is
 deleted in M5, not carried into the library.
+
+### M2 status (2026-08-08)
+
+- **M2.1 complete:** `GZAdminUIPack`, `GZAdminUIHost`, and the eleven stateless pack adapters landed in `f8a29293`; the host registers only the caller-supplied pack array and `GZAdminUIDefaultPacks()` remains the sole full-surface composition point.
+- **M2.2 complete:** all eleven renderer groups moved from the shared private header into their matching `GZAdminUI<Pack>` implementations, one service per commit (`661d8396` through `f32cc9b5`).
+- **M2.3 complete and validated:** `UIBackendClient` became `GZAdminUIBackendClient`, and its ten service categories moved to `AdminUIServer/Packs/` in `b3bc45e6`. `garazyk-ui` and `AllTests` build; registration audit, `GZAdminUIBackendClientTests` (52), `UIServerRuntimeTests` (26), UI design-system, source/link module-boundary, namespace, and recursive-setter gates pass. After integration with current `main`, internal-strict repo-doc validation also passes.
+- **Remaining:** M2.4 shell composition, M2.5 asset-pipeline split, and M2.6 `ATProtoAdminUI` library/gate registration.
 
 ### M2.4. Make the shell composable
 

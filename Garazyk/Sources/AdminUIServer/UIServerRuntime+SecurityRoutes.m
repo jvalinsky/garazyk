@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIServerRuntime.h"
-#import "AdminUIServer/UIServerRuntime+Private.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUISecurityPack.h"
 #import "AdminUIServer/UIAuthManager.h"
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@implementation UIServerRuntime (SecurityRoutes)
+@implementation GZAdminUIHost (SecurityRoutes)
 
 - (void)registerSecurityRoutes {
     __weak typeof(self) weakSelf = self;
@@ -19,7 +20,7 @@
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchActiveSessionsForDID:did];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderSessionsPartial:result]];
+        [response setBodyString:[GZAdminUISecurityPack renderSessionsPartial:result]];
     }];
 
     // Security: App passwords
@@ -28,7 +29,7 @@
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchAppPasswordsForDID:did];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderAppPasswordsPartial:result]];
+        [response setBodyString:[GZAdminUISecurityPack renderAppPasswordsPartial:result]];
     }];
 
     // Security: Revoke session

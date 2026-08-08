@@ -1207,20 +1207,20 @@ add_executable(garazyk-ui
   Garazyk/Binaries/garazyk-ui/main.m
   Garazyk/Sources/AdminUIServer/UIServiceConfig.m
   Garazyk/Sources/AdminUIServer/UIAuthManager.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+AppView.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+Chat.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+DataExplorer.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+MST.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+Ozone.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+PDS.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+PLC.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+Relay.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+Security.m
-  Garazyk/Sources/AdminUIServer/UIBackendClient+Video.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime.m
+  Garazyk/Sources/AdminUIServer/GZAdminUIBackendClient.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+AppView.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Chat.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+DataExplorer.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+MST.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Ozone.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+PDS.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+PLC.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Relay.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Security.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Video.m
+  Garazyk/Sources/AdminUIServer/GZAdminUIHost.m
+  Garazyk/Sources/AdminUIServer/GZAdminUIDefaultPacks.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+AppViewRoutes.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+ChatRoutes.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+DataExplorerRoutes.m
@@ -1232,6 +1232,17 @@ add_executable(garazyk-ui
   Garazyk/Sources/AdminUIServer/UIServerRuntime+RelayRoutes.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+SecurityRoutes.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+VideoRoutes.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIPDSPack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIAppViewPack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIRelayPack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIPLCPack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIDataExplorerPack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUILabPack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIOzonePack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUISecurityPack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIChatPack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIVideoPack.m
+  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIMSTPack.m
   Garazyk/Sources/AdminUIServer/UITemplateEngine.m
   Garazyk/Sources/AdminUIServer/UITileDataProtocol.m
   Garazyk/Sources/AdminUIServer/UITileExecutionPolicy.m
@@ -1802,20 +1813,20 @@ if(BUILD_TESTS)
   list(APPEND TEST_OBJC_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServiceConfig.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIAuthManager.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+AppView.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Chat.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+DataExplorer.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+MST.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Ozone.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+PDS.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+PLC.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Relay.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Security.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient+Video.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/GZAdminUIBackendClient.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+AppView.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Chat.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+DataExplorer.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+MST.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Ozone.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+PDS.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+PLC.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Relay.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Security.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Video.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/GZAdminUIHost.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/GZAdminUIDefaultPacks.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+AppViewRoutes.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+ChatRoutes.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+DataExplorerRoutes.m"
@@ -1827,6 +1838,17 @@ if(BUILD_TESTS)
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+RelayRoutes.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+SecurityRoutes.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+VideoRoutes.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIPDSPack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIAppViewPack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIRelayPack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIPLCPack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIDataExplorerPack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUILabPack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIOzonePack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUISecurityPack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIChatPack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIVideoPack.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIMSTPack.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UITemplateEngine.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UITileDataProtocol.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UITileExecutionPolicy.m"

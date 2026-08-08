@@ -1,7 +1,7 @@
 ---
 phase: 30
 title: Extract ATProtoAdminUI and invert route registration (WS11 M2)
-status: pending
+status: in-progress
 agent: worker
 depends_on: []
 ---
@@ -213,10 +213,9 @@ files.
 7. No file under `Garazyk/Sources/` outside a pack names a service-specific UI
    symbol.
 
-Note that `deno run -A scripts/docs/repo_docs.ts validate --internal-strict`
-and `scripts/docs/doc-coverage.ts` currently fail for an unrelated reason —
-`scripts/docs/deno.json` is not a member of the root workspace. If that is
-still true when you run, report it rather than treating it as your breakage.
+`deno run -A scripts/docs/repo_docs.ts validate --internal-strict` passes on
+current `main` after `scripts/docs/deno.json` was added to the root workspace;
+keep that gate green.
 
 ## Out of scope
 
@@ -227,6 +226,80 @@ still true when you run, report it rather than treating it as your breakage.
   That is M3.
 - Changing what any admin route does. This phase relocates code and inverts
   registration; behavior changes belong to their own slices.
+
+## Progress
+
+### 2026-08-05 — Setup and slice 1 complete
+
+- Ran in its own worktree (`.claude/worktrees/phase-30-admin-ui-library-extraction`,
+  branch `worktree-phase-30-admin-ui-library-extraction`), per the Rules. A
+  parallel session was independently running the same phase in a sibling
+  worktree (`phase-30-admin-ui-extraction`); confirmed with the user this is
+  the same person in another window, not a collision to resolve.
+- **Pre-existing, out-of-scope build break found and fixed first
+  (commit `4b67065b`).** Local `main` (`92c21704`) did not compile on a true
+  clean checkout: `Garazyk/Sources/App/PDSApplication.m` imports and
+  instantiates `PDSPLCAccountOperationProvider` as a concrete class, but the
+  tracked tree only had `Core/PDSPLCAccountOperationProvider.h` (the protocol
+  introduced by `30139b0a`) — no concrete implementation was tracked in git.
+  Root cause: an unanchored `plc/` `.gitignore` rule (meant for a root-level
+  runtime database directory) matched `Garazyk/Sources/PLC/` case-insensitively
+  on APFS, silently blackholing the concrete provider's `.h`/`.m` files, which
+  existed correctly on disk in the primary working directory but were never
+  tracked. Anchored the pattern to `/plc/` (matching the existing `/service/`
+  entry) and tracked the two files as-is — no redesign needed, the
+  implementation was already correct. This was invisible locally only because
+  a stale on-disk copy masked it, and `92c21704` hadn't reached
+  `origin`/CI yet to catch it there.
+- **Full-suite baseline could not be established.** Three clean-build
+  `./build/tests/AllTests --gated=run` attempts (one disk-exhausted, one with
+  8.4GB free, one with a `--timeout 60` per-test cap) all died at ~14–15.5k
+  lines of output in the same CLI-dispatcher test area
+  (`PDSCLIDispatcherTests`/`PDSCLIOAuthCommandTests`), consuming 5–6GB of test
+  scratch space each attempt regardless of starting disk headroom. This
+  matches the "run attempted on 2026-08-04 was stopped before it reported"
+  precedent this same Rules section already documents — a pre-existing,
+  out-of-scope environmental limitation, not something introduced by this
+  phase (all three attempts used the pristine gitignore-fix-only binary,
+  before any slice-1 code existed). Cleaned ~8GB of orphaned per-test scratch
+  directories from `TMPDIR` twice along the way (only entries confirmed older
+  than a live process or explicitly approved by the user; left system/other-tool
+  temp files alone). **Per-slice regression verification instead runs the
+  eight acceptance-gate-named suites directly via `--filter <ClassName>
+  --gated=run`**, which is fast, reliable under this environment's disk
+  constraints, and directly measures the gate that matters.
+- **Slice 1 done and verified.** `GZAdminUIPack` protocol added
+  (`GZAdminUIPack.h`); `UIServerRuntime` renamed to `GZAdminUIHost`
+  (`GZAdminUIHost.{h,m}`, `GZAdminUIHost+Private.h`, `git mv`'d); the
+  hardcoded `registerPDSRoutes … registerMSTRoutes` sequence in
+  `-registerRoutes` replaced with `for (Class packClass in self.packs)
+  [packClass registerRoutesWithHost:self]`. Eleven thin pack classes added
+  under `Packs/` (`GZAdminUIPDSPack` … `GZAdminUIMSTPack`), each a stateless
+  class-side adapter delegating to the existing `registerXRoutes` instance
+  method on the host — the real per-service code stays where it is until
+  slices 2–3 move it into these same pack files. `GZAdminUIDefaultPacks()`
+  (`GZAdminUIDefaultPacks.{h,m}`) is the one file allowed to name every
+  service, used by `garazyk-ui`'s `main.m` and the three tests that construct
+  a full-surface host (`UIServerRuntimeTests`, `UILabAuthTests`,
+  `UILabIntegrationTests`); `GZAdminUIHost` itself holds no compile-time
+  knowledge of any service. `CMakeLists.txt` updated in both the
+  `garazyk-ui` executable's source list and `AllTests`' explicit admin-UI
+  source list (not glob-covered).
+  - Both `AllTests` and `garazyk-ui` build cleanly (only the pre-existing,
+    expected `-Wincomplete-implementation` warnings noted in Slice 2's
+    section — unrelated to this slice, unchanged by it).
+  - All eight acceptance-gate suites pass with counts matching the recorded
+    baseline exactly: `UIServerRuntimeTests` 26, `UIAuthManagerTests` 21,
+    `UILabIntegrationTests` 16, `UILabAuthTests` 21, `UIBackendClientTests`
+    52, `GarazykUICommandTests` 7, `UITileExecutionPolicyTests` 5,
+    `Phase2SecurityIntegrationTests` 36 — 0 failures across all eight.
+- **Slice 2 done (2026-08-08).** The eleven service renderer groups were moved one at a time into their corresponding `GZAdminUI<Pack>` implementations and committed independently, from Security (`661d8396`) through Ozone (`f32cc9b5`). `status` remains `in-progress` while slices 3–6 remain.
+
+### 2026-08-08 — Slice 3 backend-client rename and pack relocation
+
+- Renamed `UIBackendClient` and its internal header to `GZAdminUIBackendClient`; moved all ten service category pairs under `AdminUIServer/Packs/` and updated their category declarations, consumers, CMake source lists, test stubs, and registered test class. The PDS category retains `serviceProbeSpecifications`, which is required by the existing Overview surface and is not a shared transport primitive.
+- Classified the seven untracked files inherited with this slice as migration scratch only: `rename_backend_clients.sh` performed the `git mv` loop; `move_probe.py` and `tmp_pds_inject.m` were incomplete relocation experiments; `GZAdminUIBackendClient+PDS_header.m`, `tmp_probe.m`, `tmp_probeurl.m`, and `tmp_spec.m` were extracted source fragments. None is a production source or test and none is included in CMake.
+- Validation (2026-08-08): with Homebrew OpenSSL 3.6.3 restored, `cmake -S . -B build` and `cmake --build build --target garazyk-ui AllTests --parallel 4` passed. The registration audit passed. `GZAdminUIBackendClientTests` passed (52 tests, 0 failures) and `UIServerRuntimeTests` passed (26 tests, 0 failures), both with `--gated=run`. `git diff --check`, `scripts/test/check_ui_design_system.sh`, `scripts/dev/check_module_boundaries.sh .`, `scripts/check_module_boundaries.sh build` (0 current leaks, 0 baselined), `scripts/check_namespace.sh build` (214 baselined), and `scripts/check-recursive-setters.sh` passed. After integration with current `main`, `deno run -A scripts/docs/repo_docs.ts validate --internal-strict` passed. Browser smoke was not run for this backend-only slice. M2.1–M2.3 are complete; M2.4–M2.6 remain.
 
 ## On completion
 

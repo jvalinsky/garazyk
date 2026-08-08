@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIServerRuntime.h"
-#import "AdminUIServer/UIServerRuntime+Private.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUIAppViewPack.h"
 #import "AdminUIServer/UIAuthManager.h"
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@implementation UIServerRuntime (AppViewRoutes)
+@implementation GZAdminUIHost (AppViewRoutes)
 
 - (void)registerAppViewRoutes {
     __weak typeof(self) weakSelf = self;
@@ -18,7 +19,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchAppViewMetrics];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderAppViewMetricsPartial:result]];
+        [response setBodyString:[GZAdminUIAppViewPack renderAppViewMetricsPartial:result]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/appview-ingest" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -26,7 +27,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchIngestHealth];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderIngestHealthPartial:result]];
+        [response setBodyString:[GZAdminUIAppViewPack renderIngestHealthPartial:result]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/appview-queue" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -36,7 +37,7 @@
         NSDictionary *result = [weakSelf.backendClient fetchBackfillQueueWithStatus:status limit:25 cursor:cursor];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderBackfillQueuePartial:result]];
+        [response setBodyString:[GZAdminUIAppViewPack renderBackfillQueuePartial:result]];
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-retry-repo" handler:^(HttpRequest *request, HttpResponse *response) {

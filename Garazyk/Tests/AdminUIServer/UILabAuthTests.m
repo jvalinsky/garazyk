@@ -9,7 +9,9 @@
  */
 
 #import <XCTest/XCTest.h>
-#import "AdminUIServer/UIServerRuntime.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/GZAdminUIDefaultPacks.h"
+#import "AdminUIServer/Packs/GZAdminUILabPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
@@ -19,7 +21,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 
 @interface UILabAuthTests : XCTestCase
 @property(nonatomic, strong) UIServiceConfig *config;
-@property(nonatomic, strong) UIServerRuntime *runtime;
+@property(nonatomic, strong) GZAdminUIHost *runtime;
 @property(nonatomic, strong) UIAuthManager *authManager;
 @end
 
@@ -43,7 +45,8 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
     self.config.appViewAdminToken = @"admin-token";
     self.config.chatAdminToken = @"admin-token";
 
-    self.runtime = [[UIServerRuntime alloc] initWithConfiguration:self.config];
+    self.runtime = [[GZAdminUIHost alloc] initWithConfiguration:self.config
+                                                            packs:GZAdminUIDefaultPacks()];
     self.authManager = [[UIAuthManager alloc] initWithPassword:@"test-admin-password"];
 }
 
@@ -95,26 +98,6 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 
     BOOL result = NO;
     [invocation getReturnValue:&result];
-    return result;
-}
-
-- (nullable NSString *)invokeRuntimeStringSelector:(SEL)selector {
-    NSMethodSignature *sig = [self.runtime methodSignatureForSelector:selector];
-    if (!sig) {
-        XCTFail(@"Runtime does not respond to %@", NSStringFromSelector(selector));
-        return nil;
-    }
-    NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
-    [inv setTarget:self.runtime];
-    [inv setSelector:selector];
-    // Pass nil for any argument beyond self and _cmd (e.g. the nonce in labShellHTML:)
-    if (sig.numberOfArguments > 2) {
-        NSString *nilArg = nil;
-        [inv setArgument:&nilArg atIndex:2];
-    }
-    [inv invoke];
-    __unsafe_unretained NSString *result = nil;
-    [inv getReturnValue:&result];
     return result;
 }
 
@@ -235,7 +218,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that lab client metadata serializes to valid JSON with the expected OAuth fields.
  */
 - (void)testLabClientMetadataJSONStructure {
-    NSString *metadataJSON = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labClientMetadataJSON")];
+    NSString *metadataJSON = [GZAdminUILabPack labClientMetadataJSONWithConfiguration:self.config];
     XCTAssertNotNil(metadataJSON);
     if (!metadataJSON) {
         return;
@@ -273,7 +256,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the client metadata declares DPoP-bound access tokens.
  */
 - (void)testLabClientMetadataDPoPBound {
-    NSString *metadataJSON = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labClientMetadataJSON")];
+    NSString *metadataJSON = [GZAdminUILabPack labClientMetadataJSONWithConfiguration:self.config];
     if (!metadataJSON) {
         return;
     }
@@ -291,7 +274,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the client metadata includes the Lab callback redirect URI.
  */
 - (void)testLabClientMetadataRedirectUris {
-    NSString *metadataJSON = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labClientMetadataJSON")];
+    NSString *metadataJSON = [GZAdminUILabPack labClientMetadataJSONWithConfiguration:self.config];
     if (!metadataJSON) {
         return;
     }
@@ -312,7 +295,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the client metadata uses token_endpoint_auth_method=none.
  */
 - (void)testLabClientMetadataTokenEndpointAuthNone {
-    NSString *metadataJSON = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labClientMetadataJSON")];
+    NSString *metadataJSON = [GZAdminUILabPack labClientMetadataJSONWithConfiguration:self.config];
     if (!metadataJSON) {
         return;
     }
@@ -330,7 +313,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the client metadata declares a web application type.
  */
 - (void)testLabClientMetadataApplicationType {
-    NSString *metadataJSON = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labClientMetadataJSON")];
+    NSString *metadataJSON = [GZAdminUILabPack labClientMetadataJSONWithConfiguration:self.config];
     if (!metadataJSON) {
         return;
     }
@@ -348,7 +331,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the client metadata scope includes atproto.
  */
 - (void)testLabClientMetadataScope {
-    NSString *metadataJSON = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labClientMetadataJSON")];
+    NSString *metadataJSON = [GZAdminUILabPack labClientMetadataJSONWithConfiguration:self.config];
     if (!metadataJSON) {
         return;
     }
@@ -368,7 +351,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML renders the login section.
  */
 - (void)testLabShellHTMLContainsLoginSection {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
+    NSString *html = [GZAdminUILabPack labShellHTMLWithNonce:nil configuration:self.config];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -382,7 +365,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML renders the account section.
  */
 - (void)testLabShellHTMLContainsAccountSection {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
+    NSString *html = [GZAdminUILabPack labShellHTMLWithNonce:nil configuration:self.config];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -396,7 +379,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML includes the embedded LAB_CONFIG object.
  */
 - (void)testLabShellHTMLContainsLabConfig {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
+    NSString *html = [GZAdminUILabPack labShellHTMLWithNonce:nil configuration:self.config];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -413,7 +396,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML references the Lab JavaScript bundle.
  */
 - (void)testLabShellHTMLReferencesLabJS {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
+    NSString *html = [GZAdminUILabPack labShellHTMLWithNonce:nil configuration:self.config];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -427,7 +410,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML includes the handle input field.
  */
 - (void)testLabShellHTMLContainsHandleInput {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
+    NSString *html = [GZAdminUILabPack labShellHTMLWithNonce:nil configuration:self.config];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -441,7 +424,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML includes the OAuth sign-out control.
  */
 - (void)testLabShellHTMLContainsSignOutButton {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
+    NSString *html = [GZAdminUILabPack labShellHTMLWithNonce:nil configuration:self.config];
     XCTAssertNotNil(html);
     if (!html) {
         return;

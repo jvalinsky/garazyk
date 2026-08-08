@@ -3,7 +3,8 @@
 #import <Foundation/Foundation.h>
 
 #import "AdminUIServer/UIServiceConfig.h"
-#import "AdminUIServer/UIServerRuntime.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/GZAdminUIDefaultPacks.h"
 #import "CLI/GZCommandLineOptions.h"
 #import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Debug/GZLogger.h"
@@ -142,7 +143,8 @@ int main(int argc, const char *argv[]) {
             config.port = portOverride;
         }
 
-        UIServerRuntime *runtime = [[UIServerRuntime alloc] initWithConfiguration:config];
+        GZAdminUIHost *runtime = [[GZAdminUIHost alloc] initWithConfiguration:config
+                                                                          packs:GZAdminUIDefaultPacks()];
         return [GZServiceLifecycle runServiceWithRuntime:runtime
                                               serviceName:@"UI service"
                                                   onStart:^{
