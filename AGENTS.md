@@ -18,7 +18,7 @@ covers the *process* around that work and does not repeat it.
 | `.agents/skills/` | 62 domain skills, indexed in [`.agents/skills/INDEX.md`](.agents/skills/INDEX.md) |
 | `.agents/agents/` | Subagent role manifests for Claude Code and opencode |
 | `.codex/agents/` | The same roles as Codex `*.toml` definitions |
-| `.claude/skills/` | Claude-specific skills (`plan-tasks`); `.claude/worktrees/` holds local worktrees |
+| `.claude/skills/` | Claude-specific compatibility skills; `.claude/worktrees/` holds local worktrees |
 | `scripts/` | Human- and agent-invoked runners, generators, and CI gates |
 | deciduous graph | Decision and outcome history. Not a backlog — `docs/plans/` owns that |
 
@@ -46,9 +46,9 @@ and cost a session's work.
    input under a `## Blocked on` heading — rather than sitting "partial"
    indefinitely.
 
-To see what is left, invoke the `plan-tasks` skill. It re-reads the plan files
-fresh every time; do not answer "what's next" from memory or from an earlier
-table in the same conversation.
+To see what is left, invoke the client-neutral `plan-tasks` skill. It re-reads
+the plan files fresh every time; do not answer "what's next" from memory or
+from an earlier table in the same conversation.
 
 ### Phase loop
 
@@ -88,6 +88,15 @@ Repository-specific gates (also enforced in CI):
 deno run -A scripts/generate_nsid_constants.ts --check
 deno run -A scripts/dev/generate_skill_index.ts --check
 deno run --allow-read packages/narzedzia/nsid_registration_literal_check.ts .
+deno run -A scripts/dev/check_codex_agent_roles.ts
+```
+
+Documentation metadata is generated. In a fresh worktree, synchronize before
+validating it:
+
+```bash
+deno run -A scripts/docs/repo_docs.ts sync
+deno run -A scripts/docs/repo_docs.ts validate --internal-strict --orphans
 ```
 
 ## Subagent delegation
