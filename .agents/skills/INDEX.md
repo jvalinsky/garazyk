@@ -6,7 +6,7 @@ title: Project Skill Index
 
 # Project Skill Index
 
-62 skills live in `.agents/skills/`. Load one with the client's
+63 skills live in `.agents/skills/`. Load one with the client's
 skill tool when a task matches its description; each `SKILL.md` holds the full
 text. Regenerate this file with:
 
@@ -125,3 +125,9 @@ deno run -A scripts/dev/generate_skill_index.ts
 | Skill | Use for |
 | --- | --- |
 | `impeccable` | Use when the user wants to design, redesign, shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize, extract, or otherw… |
+
+## Other
+
+| Skill | Use for |
+| --- | --- |
+| `plan-tasks` | Read Garazyk's current plans fresh and summarize remaining governed work. |

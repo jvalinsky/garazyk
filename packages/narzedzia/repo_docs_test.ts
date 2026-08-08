@@ -198,12 +198,15 @@ Deno.test("inferCanonicalTarget: examples target tutorials", () => {
   );
 });
 
-Deno.test("inferCanonicalTarget: plan/archive/scratchpad target planning archive", () => {
-  const expected = "docs/archive/planning/README.md";
+Deno.test("inferCanonicalTarget: active plans target their planning index", () => {
   assertEquals(
     inferCanonicalTarget("docs/plans/roadmap.md", "archive"),
-    expected,
+    "docs/plans/README.md",
   );
+});
+
+Deno.test("inferCanonicalTarget: retired plan/scratchpad paths target planning archive", () => {
+  const expected = "docs/archive/planning/README.md";
   assertEquals(
     inferCanonicalTarget("docs/plan/draft.md", "archive"),
     expected,
