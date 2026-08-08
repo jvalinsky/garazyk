@@ -16,8 +16,7 @@
 }
 
 + (NSArray<NSDictionary<NSString *, id> *> *)sidebarSections {
-    // Populated when the shell is made composable (WS11 M2 slice 4).
-    return @[];
+    return @[@{@"tabIdentifier": @"mst", @"displayName": @"MST"}];
 }
 
 + (void)registerRoutesWithHost:(GZAdminUIHost *)host {

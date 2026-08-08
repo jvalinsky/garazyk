@@ -59,7 +59,7 @@ function switchTab(name, options = {}) {
   document.querySelectorAll('.tab-pane').forEach((pane) => {
     pane.hidden = pane.id !== `tab-${name}`;
   });
-  document.querySelectorAll('.service-segment').forEach((segment) => {
+  document.querySelectorAll('.ui-tab').forEach((segment) => {
     const selected = segment.dataset.tab === name;
     segment.classList.toggle('active', selected);
     segment.setAttribute('aria-selected', String(selected));
@@ -74,8 +74,8 @@ function switchTab(name, options = {}) {
 
 // Arrow-key navigation between tabs, per the WAI-ARIA APG tabs pattern.
 document.getElementById('nav-tabs')?.addEventListener('keydown', (event) => {
-  const tabs = Array.from(document.querySelectorAll('.service-segment'));
-  const currentIndex = tabs.indexOf(event.target.closest('.service-segment'));
+  const tabs = Array.from(document.querySelectorAll('.ui-tab'));
+  const currentIndex = tabs.indexOf(event.target.closest('.ui-tab'));
   if (currentIndex === -1) return;
 
   let nextIndex = null;
