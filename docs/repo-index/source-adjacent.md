@@ -5,7 +5,7 @@ title: Source Adjacent
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **28**
+Total documents in this view: **29**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -36,4 +36,5 @@ Total documents in this view: **28**
 | [Garazyk/Sources/Database/ARCHITECTURE.md](../../Garazyk/Sources/Database/ARCHITECTURE.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Sources/Database/README.md](../../Garazyk/Sources/Database/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Tests/fixtures/atproto-interop-tests/README.md](../../Garazyk/Tests/fixtures/atproto-interop-tests/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Tests/fixtures/dasl-testing/README.md](../../Garazyk/Tests/fixtures/dasl-testing/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Tests/plc_e2e/README.md](../../Garazyk/Tests/plc_e2e/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |

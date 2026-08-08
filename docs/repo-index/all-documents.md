@@ -5,11 +5,12 @@ title: All Documents
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **239**
+Total documents in this view: **252**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
 | [AGENTS.md](../../AGENTS.md) | `entrypoint` | [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md) | `docs` | `active` |
+| [CLAUDE.md](../../CLAUDE.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [DESIGN.md](../../DESIGN.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `canonical` | [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md) | `docs` | `active` |
 | [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `canonical` | [docs/01-getting-started/setup.md](../01-getting-started/setup.md) | `docs` | `active` |
@@ -57,6 +58,9 @@ Total documents in this view: **239**
 | [docs/adr/0028-updateSet-membership-is-atomic.md](../adr/0028-updateSet-membership-is-atomic.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0029-cancelScheduledAction-logs-audit-trail.md](../adr/0029-cancelScheduledAction-logs-audit-trail.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0030-registration-gate-composite-uses-and-semantics.md](../adr/0030-registration-gate-composite-uses-and-semantics.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0031-module-boundary-link-time-gate.md](../adr/0031-module-boundary-link-time-gate.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0032-dasl-conformance-profiles.md](../adr/0032-dasl-conformance-profiles.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0033-per-service-embedded-admin-uis.md](../adr/0033-per-service-embedded-admin-uis.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
@@ -70,8 +74,33 @@ Total documents in this view: **239**
 | [docs/archive/planning/linux_shim_research_keychain.md](../archive/planning/linux_shim_research_keychain.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/planning/linux_shim_research_signal_safety.md](../archive/planning/linux_shim_research_signal_safety.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/planning/phase-10-product-surface-decision-brief.md](../archive/planning/phase-10-product-surface-decision-brief.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-01-browser-baseline.md](../archive/planning/phase-prompts/phase-01-browser-baseline.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-02-spaces-acceptance.md](../archive/planning/phase-prompts/phase-02-spaces-acceptance.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-03-xrpc-truth-and-spec-matrix.md](../archive/planning/phase-prompts/phase-03-xrpc-truth-and-spec-matrix.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-04-federation-lifecycle.md](../archive/planning/phase-prompts/phase-04-federation-lifecycle.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-06-nsid-and-cli-adoption.md](../archive/planning/phase-prompts/phase-06-nsid-and-cli-adoption.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-07-relay-and-sync.md](../archive/planning/phase-prompts/phase-07-relay-and-sync.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-08-admin-ui.md](../archive/planning/phase-prompts/phase-08-admin-ui.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-09-spaces-hardening.md](../archive/planning/phase-prompts/phase-09-spaces-hardening.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-10-deferred-products.md](../archive/planning/phase-prompts/phase-10-deferred-products.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-11-storage-and-mst-optimization.md](../archive/planning/phase-prompts/phase-11-storage-and-mst-optimization.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-12-godfile-decomposition.md](../archive/planning/phase-prompts/phase-12-godfile-decomposition.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-13-auth-json-typing.md](../archive/planning/phase-prompts/phase-13-auth-json-typing.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-14-wire-auth-cluster.md](../archive/planning/phase-prompts/phase-14-wire-auth-cluster.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-15-blob-lifecycle.md](../archive/planning/phase-prompts/phase-15-blob-lifecycle.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-16-storage-pool-and-decoder.md](../archive/planning/phase-prompts/phase-16-storage-pool-and-decoder.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-17-websocket-and-http-framing.md](../archive/planning/phase-prompts/phase-17-websocket-and-http-framing.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-18-egress-pinning.md](../archive/planning/phase-prompts/phase-18-egress-pinning.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-19-core-decoder-bounds.md](../archive/planning/phase-prompts/phase-19-core-decoder-bounds.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-20-secret-store-and-cli.md](../archive/planning/phase-prompts/phase-20-secret-store-and-cli.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-21-appview-hydration.md](../archive/planning/phase-prompts/phase-21-appview-hydration.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-22-mst-viewer-and-dead-cookie.md](../archive/planning/phase-prompts/phase-22-mst-viewer-and-dead-cookie.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-25-registration-gate-composition.md](../archive/planning/phase-prompts/phase-25-registration-gate-composition.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/phase-29-refresh-flow-and-parser-test-debt.md](../archive/planning/phase-prompts/phase-29-refresh-flow-and-parser-test-debt.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/phase-prompts/README.md](../archive/planning/phase-prompts/README.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/planning/README.md](../archive/planning/README.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/planning/star-conformance-plan.md](../archive/planning/star-conformance-plan.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/scratchpads/scratchpads/code-review-research/CHECKLISTS.md](../archive/scratchpads/scratchpads/code-review-research/CHECKLISTS.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/scratchpads/scratchpads/code-review-research/gruszka-findings.md](../archive/scratchpads/scratchpads/code-review-research/gruszka-findings.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/scratchpads/scratchpads/code-review-research/gruszka-research.md](../archive/scratchpads/scratchpads/code-review-research/gruszka-research.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
@@ -130,36 +159,13 @@ Total documents in this view: **239**
 | [docs/permissioned-spaces-compatibility.md](../permissioned-spaces-compatibility.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/permissioned-spaces-key-rotation.md](../permissioned-spaces-key-rotation.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/plans/mega-plan.md](../plans/mega-plan.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-01-browser-baseline.md](../plans/prompts/phase-01-browser-baseline.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-02-spaces-acceptance.md](../plans/prompts/phase-02-spaces-acceptance.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-03-xrpc-truth-and-spec-matrix.md](../plans/prompts/phase-03-xrpc-truth-and-spec-matrix.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-04-federation-lifecycle.md](../plans/prompts/phase-04-federation-lifecycle.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/phase-05-repo-boundaries.md](../plans/prompts/phase-05-repo-boundaries.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-06-nsid-and-cli-adoption.md](../plans/prompts/phase-06-nsid-and-cli-adoption.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-07-relay-and-sync.md](../plans/prompts/phase-07-relay-and-sync.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-08-admin-ui.md](../plans/prompts/phase-08-admin-ui.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-09-spaces-hardening.md](../plans/prompts/phase-09-spaces-hardening.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-10-deferred-products.md](../plans/prompts/phase-10-deferred-products.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-11-storage-and-mst-optimization.md](../plans/prompts/phase-11-storage-and-mst-optimization.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-12-godfile-decomposition.md](../plans/prompts/phase-12-godfile-decomposition.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-13-auth-json-typing.md](../plans/prompts/phase-13-auth-json-typing.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-14-wire-auth-cluster.md](../plans/prompts/phase-14-wire-auth-cluster.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-15-blob-lifecycle.md](../plans/prompts/phase-15-blob-lifecycle.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-16-storage-pool-and-decoder.md](../plans/prompts/phase-16-storage-pool-and-decoder.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-17-websocket-and-http-framing.md](../plans/prompts/phase-17-websocket-and-http-framing.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-18-egress-pinning.md](../plans/prompts/phase-18-egress-pinning.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-19-core-decoder-bounds.md](../plans/prompts/phase-19-core-decoder-bounds.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-20-secret-store-and-cli.md](../plans/prompts/phase-20-secret-store-and-cli.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-21-appview-hydration.md](../plans/prompts/phase-21-appview-hydration.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-22-mst-viewer-and-dead-cookie.md](../plans/prompts/phase-22-mst-viewer-and-dead-cookie.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-25-registration-gate-composition.md](../plans/prompts/phase-25-registration-gate-composition.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-26-admin-adminui-trust-boundary.md](../plans/prompts/phase-26-admin-adminui-trust-boundary.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-27-chat-trust-boundary.md](../plans/prompts/phase-27-chat-trust-boundary.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-28-admin-trust-boundary.md](../plans/prompts/phase-28-admin-trust-boundary.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/README.md](../plans/prompts/README.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/README.md](../plans/README.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/retired-plans.md](../plans/retired-plans.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/security-review-2026-07-28.md](../plans/security-review-2026-07-28.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/test-suite-speedups-2026-07-30.md](../plans/test-suite-speedups-2026-07-30.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/00-baseline-and-governance.md](../plans/workstreams/00-baseline-and-governance.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/02-core-architecture-and-reliability.md](../plans/workstreams/02-core-architecture-and-reliability.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
@@ -168,6 +174,10 @@ Total documents in this view: **239**
 | [docs/plans/workstreams/05-embedded-runtime-and-deferred-products.md](../plans/workstreams/05-embedded-runtime-and-deferred-products.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/06-permissioned-spaces.md](../plans/workstreams/06-permissioned-spaces.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/07-storage-and-mst-optimization.md](../plans/workstreams/07-storage-and-mst-optimization.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/08-module-boundaries-and-library-consumption.md](../plans/workstreams/08-module-boundaries-and-library-consumption.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/09-test-suite-speedups.md](../plans/workstreams/09-test-suite-speedups.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
 | [docs/plc-legacy-create-operation.md](../plc-legacy-create-operation.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/all-documents.md](all-documents.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/backlinks.md](backlinks.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
@@ -183,6 +193,8 @@ Total documents in this view: **239**
 | [docs/reports/2026-07-17-optimization-research.md](../reports/2026-07-17-optimization-research.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/spec-conformance-matrix.md](../reports/spec-conformance-matrix.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/standard-site-appview-kickstart.md](../standard-site-appview-kickstart.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/standard-site-appview.md](../standard-site-appview.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/agent-protocol.md](../tui/agent-protocol.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/architecture.md](../tui/architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/tui/components.md](../tui/components.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
@@ -221,6 +233,7 @@ Total documents in this view: **239**
 | [Garazyk/Sources/Database/ARCHITECTURE.md](../../Garazyk/Sources/Database/ARCHITECTURE.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Sources/Database/README.md](../../Garazyk/Sources/Database/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Tests/fixtures/atproto-interop-tests/README.md](../../Garazyk/Tests/fixtures/atproto-interop-tests/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
+| [Garazyk/Tests/fixtures/dasl-testing/README.md](../../Garazyk/Tests/fixtures/dasl-testing/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [Garazyk/Tests/plc_e2e/README.md](../../Garazyk/Tests/plc_e2e/README.md) | `internal-reference` | [docs/11-reference/source-adjacent-documentation.md](../11-reference/source-adjacent-documentation.md) | `core` | `reference` |
 | [PRODUCT.md](../../PRODUCT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [README.md](../../README.md) | `entrypoint` | [docs/index.md](../index.md) | `docs` | `active` |
