@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIBackendClient+Video.h"
-#import "AdminUIServer/UIBackendClient_Internal.h"
+#import "AdminUIServer/Packs/GZAdminUIBackendClient+Video.h"
+#import "AdminUIServer/GZAdminUIBackendClient_Internal.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@implementation UIBackendClient (Video)
+@implementation GZAdminUIBackendClient (Video)
 
 - (NSDictionary *)fetchVideoJobsWithState:(NSString *)state limit:(NSUInteger)limit cursor:(nullable NSString *)cursor {
     NSMutableDictionary *queryItems = [NSMutableDictionary dictionary];

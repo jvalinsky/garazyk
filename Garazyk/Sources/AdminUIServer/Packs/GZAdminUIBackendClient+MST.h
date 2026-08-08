@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * dictionaries with `error` and `message`. Tree and statistics requests require a nonempty DID;
  * export returns nil for validation or non-2xx transport failure.
  */
-@interface UIBackendClient (MST)
+@interface GZAdminUIBackendClient (MST)
 
 /** @abstract Lists accounts with available Merkle-search-tree data. */
 - (NSDictionary *)fetchMSTAccounts;

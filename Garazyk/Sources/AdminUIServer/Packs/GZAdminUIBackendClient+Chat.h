@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * responses are returned as JSON; invalid input and non-2xx responses return an `error` and
  * usually a `message`. Locking a conversation permanently changes its moderation state.
  */
-@interface UIBackendClient (Chat)
+@interface GZAdminUIBackendClient (Chat)
 
 /**
  * @abstract Lists chat conversations, forwarding an optional cursor and normalizing zero limit to 25.

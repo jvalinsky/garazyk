@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIBackendClient+Security.h"
-#import "AdminUIServer/UIBackendClient_Internal.h"
+#import "AdminUIServer/Packs/GZAdminUIBackendClient+Security.h"
+#import "AdminUIServer/GZAdminUIBackendClient_Internal.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@implementation UIBackendClient (Security)
+@implementation GZAdminUIBackendClient (Security)
 
 - (NSDictionary *)fetchActiveSessionsForDID:(NSString *)did {
     if (did.length == 0) {

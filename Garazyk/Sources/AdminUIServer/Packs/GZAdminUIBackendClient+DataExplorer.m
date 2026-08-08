@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIBackendClient+DataExplorer.h"
-#import "AdminUIServer/UIBackendClient_Internal.h"
+#import "AdminUIServer/Packs/GZAdminUIBackendClient+DataExplorer.h"
+#import "AdminUIServer/GZAdminUIBackendClient_Internal.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@implementation UIBackendClient (DataExplorer)
+@implementation GZAdminUIBackendClient (DataExplorer)
 
 - (NSDictionary *)describeRepo:(NSString *)did {
     if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};

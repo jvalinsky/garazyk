@@ -9,7 +9,7 @@
  */
 
 #import <XCTest/XCTest.h>
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/GZAdminUIDefaultPacks.h"
@@ -20,7 +20,7 @@
 #import "Network/HttpServer.h"
 #import "AdminUIServer/UITileDataProtocol.h"
 
-@interface UIServerRuntimeBackendStub : UIBackendClient
+@interface UIServerRuntimeBackendStub : GZAdminUIBackendClient
 @property(nonatomic, strong) NSMutableArray<NSString *> *calls;
 @property(nonatomic, copy) NSString *lastDID;
 @property(nonatomic, copy) NSString *lastConvoID;

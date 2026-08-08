@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIBackendClient+AppView.h"
-#import "AdminUIServer/UIBackendClient_Internal.h"
+#import "AdminUIServer/Packs/GZAdminUIBackendClient+AppView.h"
+#import "AdminUIServer/GZAdminUIBackendClient_Internal.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@implementation UIBackendClient (AppView)
+@implementation GZAdminUIBackendClient (AppView)
 
 - (NSDictionary *)fetchAppViewMetrics {
     NSURL *url = [self URLByAppendingPath:@"/admin/appview/metrics/stats" queryItems:nil baseURL:self.configuration.appViewBaseURL];
