@@ -8,10 +8,10 @@ last_verified: 2026-08-08
 
 Exposed control surfaces, HTTP bounds, XRPC contracts, and federation tests.
 
-Nineteen of this workstream's twenty items are closed. Their full detail —
-evidence, slices, decisions, gates, and rollback notes — moved to
+All twenty workstream items are closed. Their full detail — evidence, slices,
+decisions, gates, and rollback notes — moved to
 [the completed-items archive](../../archive/planning/workstream-01-completed-items.md)
-on 2026-08-05, unchanged. **Open scope is below; everything else is history.**
+on 2026-08-05, unchanged. **Only the S5 residual watch item remains open.**
 
 ## Status summary
 
@@ -22,7 +22,7 @@ on 2026-08-05, unchanged. **Open scope is below; everything else is history.**
 | S3 | Truthful XRPC coverage | Complete, report-only (2026-07-17) |
 | S4 | Absolute HTTP deadlines | Complete (2026-07-26) |
 | S5 | Functional federation and lifecycle checks | Complete (2026-07-24); **one watch item open**, below |
-| S6 | Published-spec conformance matrix | Complete, report-only; **gap G3 open**, below |
+| S6 | Published-spec conformance matrix | Complete, report-only; G3 closed (2026-08-08) |
 | S7 | STAR conformance and verifying import | Complete (2026-07-23), ADR 0009 |
 | S8 | Untyped JSON at auth trust boundaries | Complete (2026-07-27), 7 slices, 3 ADRs |
 | S9 | Blob lifecycle and storage-pool correctness | Complete (2026-07-27), phases 15–16 |
@@ -66,28 +66,24 @@ closed mechanisms before assuming disk pressure. Related context:
 [Garazyk disk pressure](../../../CLAUDE.md) notes that full `--gated=run` runs
 fail with `SQLITE_FULL` near disk capacity.
 
-## Open: S6 gap G3 — Relay `getRepoStatus` status semantics
+## Complete: S6 gap G3 — Relay `getRepoStatus` status semantics
 
-The rest of S6 is complete and report-only; the matrix lives at
-`docs/reports/spec-conformance-matrix.md` (commit `de67b72a`, 2026-07-17): 21
-rows, 16 supported, 4 partial, 0 gap. Gaps G1, G2, and G4 are closed (see the
-archive). G3 remains:
+The checked-in `com.atproto.sync.getRepoStatus` lexicon permits `status` to be
+absent for an inactive repository and does not list Relay's private
+`in-progress` state. `RelayXrpcRoutePack` now reports that state as
+`active: false` without a `status`; it continues to map desynchronized,
+throttled, and tombstoned states to the checked-in known values
+`desynchronized`, `throttled`, and `deleted`. Active repositories include a
+`rev` when known.
 
-- **G3: Relay `com.atproto.sync.getRepoStatus` status semantics.** The bounded
-  PDS lifecycle-handler contract slice was rechecked on 2026-08-08 and the
-  Accounts conformance row is now Supported: `activateAccount` and
-  `deactivateAccount` return empty procedure responses; `deactivateAccount`
-  validates the optional lexicon `deleteAfter` datetime but does not persist it
-  because the existing admin-service boundary has no retention-deadline storage
-  contract; `requestAccountDelete` only initiates the authenticated email flow;
-  and `deleteAccount` requires matching user auth, non-empty typed lexicon
-  fields, and an atomically claimed deletion token. Focused XCTest coverage was
-  added in `AccountLifecycleXrpcTests` and `RepoAuthServerTests`; source/static
-  gates and the 1,264-test Deno suite passed on 2026-08-08. After integration on
-  `main`, `AccountLifecycleXrpcTests` passed 8/8, `RepoAuthServerTests` passed
-  35/35, and `XRPCAddRouteCrashSafetyTests` passed 1/1. **G3 remains open:** the
-  separate Relay status contract is intentionally not changed by this PDS-only
-  slice.
+`RelayXrpcRoutePackTests` covers the exact response shape for every Relay
+status, unknown repositories (inactive/desynchronized), and active `rev`
+output.
+Source/static evidence passed on 2026-08-08: `deno task check && deno task lint
+&& deno task test` (1,264 passed), module-boundary, recursive-setter,
+no-host-process-exit, generated-NSID, skill-index, NSID-registration-literal,
+and source-only XRPC coverage gates. After integration, the native
+`RelayXrpcRoutePackTests` suite passed 18/18.
 
 Report-only: a red row is a lead, not a release blocker, until triaged into a
 workstream. Rollback is documentation-only until a gap lane starts; each gap

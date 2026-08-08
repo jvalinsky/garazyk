@@ -36,7 +36,7 @@ A red row is a lead, not a release blocker, until triaged into a workstream.
 | 9 | [OAuth](https://atproto.com/specs/oauth) | Supported | `OAuth2.h/.m`, `OAuth2Handler.h/.m`, `OAuthProvider.h/.m`, `OAuthSession.h/.m`, `OAuthClientAuthPolicy.h/.m`, `OAuthServerMetadata.h/.m`, `PKCEUtil.h/.m`, `DPoPUtil.h/.m`, `AuthCryptoDPoP.h/.m`, `AppViewOAuth2Middleware.h/.m`; PAR, PKCE, DPoP, server metadata, introspection, client registration | `OAuth2Tests.m`, `OAuth2HandlerTests.m`, `OAuthDPoPTests.m`, `OAuthConformanceTests.m`, `OAuthIntegrationTests.m`, `OAuthMetadataComplianceTests.m`, `OAuth2IntrospectionTests.m`, `OAuth2OPTIONSHandlerTests.m`, `OAuth2PreservationTests.m`, `OAuth2ATProtoClientTests.m`, `OAuth2ClientMetadataValidationTests.m`; scenarios 08, 11, 13 | 01 |
 | 10 | [Permissions](https://atproto.com/specs/permission) | Partial | `PDSSpaceScope.h/.m` (space: scope parsing for permissioned spaces); transitional scopes present; fail-closed `space:` scope parser; **no granular `repo:`/`rpc:`/`blob:`/`account:`/`include:` scope evaluation found** (full gap assessment at `docs/reports/permissions-spec-gap-assessment.md`) | `PDSSpaceURIAndScopeTests.m`; no test for granular resource-type scope evaluation | 01 (S6 known gap G1) |
 | 11 | [Event Stream](https://atproto.com/specs/event-stream) | Supported | `Firehose.h/.m`, `FirehoseProtocolSession.h/.m`, `SubscribeReposHandler.h/.m`, `FirehoseCARBuilder.h/.m`; `#commit`, `#identity`, `#account`, `#handle` events; WebSocket framing, sequence numbers, cursors | `FirehoseTests.m`, `FirehoseConformanceTests.m`, `FirehoseProtocolSessionTests.m`, `SubscribeReposHandlerTests.m`, `EventFormatterTests.m`; scenario 09 (firehose streaming), 25 (firehose fanout scale) | 01 (S5) |
-| 12 | [Sync](https://atproto.com/specs/sync) | Partial | `XrpcSyncPack.h/.m` (getRepo, getRecord, listRepos, subscribeRepos, getBlocks, getLatestCommit, listReposByCollection); `PLCSyncClient.h/.m`, `PLCSyncEngine.h/.m`; relay infrastructure (`RelayAPIHandler`, `RelayClient`, `RelayUpstreamManager`, `RelayEventBuffer`); **export block ordering and collection-based repo subsets not yet spec-final upstream; Relay `com.atproto.sync.getRepoStatus` status semantics remain open as G3** | `RelayAPIHandlerTests.m`, `RelayClientTests.m`, `RelayIntegrationTests.m`, `RelayUpstreamManagerTests.m`, `RelayEventBufferTests.m`, `RelayEventFilterTests.m`, `RelayEventValidatorTests.m`, `RelayRepoStateManagerTests.m`, `RelayDownstreamHandlerTests.m`; scenario 05 (federation) | 02 (A6); 01 (S6 G3) |
+| 12 | [Sync](https://atproto.com/specs/sync) | Partial | `XrpcSyncPack.h/.m` (getRepo, getRecord, listRepos, subscribeRepos, getBlocks, getLatestCommit, listReposByCollection); `PLCSyncClient.h/.m`, `PLCSyncEngine.h/.m`; relay infrastructure (`RelayAPIHandler`, `RelayClient`, `RelayUpstreamManager`, `RelayEventBuffer`, `RelayXrpcRoutePack`); `getRepoStatus` maps every Relay state to the checked-in lexicon shape, omitting the private in-progress reason | `RelayXrpcRoutePackTests.m` (all Relay states, unknown repository, active `rev`); `RelayAPIHandlerTests.m`, `RelayClientTests.m`, `RelayIntegrationTests.m`, `RelayUpstreamManagerTests.m`, `RelayEventBufferTests.m`, `RelayEventFilterTests.m`, `RelayEventValidatorTests.m`, `RelayRepoStateManagerTests.m`, `RelayDownstreamHandlerTests.m`; scenario 05 (federation) | 02 (A6); 01 (S6 G3 closed) |
 | 13 | [DID](https://atproto.com/specs/did) | Supported | `DID.h/.m` (did:plc, did:web resolution), `DIDPLCResolver.h/.m`, `ATProtoDIDDocumentFields.h/.m`; DID document parsing, verification key extraction | `DIDPLCResolverTests.m`; scenario 05 (federation), 91 (server/repo identity) | 01 |
 | 14 | [Handle](https://atproto.com/specs/handle) | Supported | `ATProtoHandleValidator.h/.m` (DNS hostname subset validation), `HandleResolver.h/.m` (DNS TXT, HTTPS well-known); bidirectional DID-handle verification | `HandleResolverSecurityTests.m`; scenario 05 (federation) | 01 |
 | 15 | [NSID](https://atproto.com/specs/nsid) | Supported | `ATProtoValidator.h/.m` (NSID parsing/validation); NSID constants used throughout XRPC packs and lexicon registry; no dedicated NSID module file | NSID validation exercised via `XrpcInputValidationTests.m`, lexicon registry tests; XRPC coverage CI gate | 01 |
@@ -77,16 +77,18 @@ upstream spec text finalizes). Collection subsets are served via Garazyk's
 **Status:** Closed pending upstream spec publication. Owned by workstream 02
 (A6); revisit when upstream publishes version-numbered Sync text.
 
-### G3: Relay `getRepoStatus` status semantics
+### G3: Relay `getRepoStatus` status semantics — closed (2026-08-08)
 
 **Spec:** [Synchronization](https://atproto.com/specs/sync)
 
-The PDS account-lifecycle handler slice was completed on 2026-08-08 and is
-recorded as Supported in the Accounts row. G3 remains open for Relay
-`com.atproto.sync.getRepoStatus` status semantics; that separate Relay lane
-was deliberately not changed here.
+`RelayXrpcRoutePack` no longer emits private `in-progress`. It returns
+`active: false` without `status` while recovery is in progress, as the checked-in
+lexicon permits. The remaining Relay states serialize only lexicon known values:
+`desynchronized`, `throttled`, and `deleted`; active repositories include a
+known `rev`. `RelayXrpcRoutePackTests` covers all of these response shapes plus
+the established inactive/desynchronized response for an unknown repository.
 
-**Owning workstreams:** 01 (S6 G3), 02 (A6).
+**Owning workstreams:** 01 (S6 G3 closed), 02 (A6).
 
 ### G4: Labels — self-signing key
 
