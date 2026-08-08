@@ -7,6 +7,7 @@
 #import "Core/CBOR.h"
 #import "Repository/RepoCommit.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/ATProtoDIDDocumentFields.h"
 #import "Core/DID.h"
 #import "Core/CID.h"
 #import "Database/PDSDatabase.h"
@@ -44,54 +45,13 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
     return [ATProtoCID cidFromBytes:cidBytes];
 }
 
-static NSData *publicKeyFromDIDKeyString(NSString *didKey) {
-    NSString *multibase = didKey;
-    if ([didKey hasPrefix:@"did:key:"]) {
-        multibase = [didKey substringFromIndex:8];
-    }
-    if (![multibase hasPrefix:@"z"]) {
-        return nil;
-    }
-    NSData *decoded = [ATProtoCID base58btcDecode:[multibase substringFromIndex:1]];
-    if (decoded.length != 35) {
-        return nil;
-    }
-    const uint8_t *bytes = decoded.bytes;
-    if (bytes[0] != 0xe7 || bytes[1] != 0x01) {
-        return nil;
-    }
-    return [decoded subdataWithRange:NSMakeRange(2, 33)];
-}
-
-static NSData *atprotoSigningKeyFromDIDDocument(ATProtoDIDDocument *document) {
-    NSDictionary *json = document.jsonDictionary;
-    id verificationMethods = json[@"verificationMethods"];
-    if ([verificationMethods isKindOfClass:[NSDictionary class]]) {
-        NSData *key = publicKeyFromDIDKeyString(((NSDictionary *)verificationMethods)[@"atproto"]);
-        if (key) return key;
-    }
-
-    id verificationMethod = json[@"verificationMethod"];
-    if ([verificationMethod isKindOfClass:[NSArray class]]) {
-        for (id entry in (NSArray *)verificationMethod) {
-            if (![entry isKindOfClass:[NSDictionary class]]) continue;
-            NSDictionary *method = (NSDictionary *)entry;
-            NSString *methodID = [method[@"id"] isKindOfClass:[NSString class]] ? method[@"id"] : @"";
-            if (![methodID hasSuffix:@"#atproto"]) continue;
-            NSData *key = publicKeyFromDIDKeyString(method[@"publicKeyMultibase"]);
-            if (key) return key;
-        }
-    }
-    return nil;
-}
-
 @implementation PDSRepoImportValidator
 
 + (BOOL)validateCommitSignature:(RepoCommit *)commit did:(NSString *)did databasePool:(PDSDatabasePool *)databasePool allowLocalKeyFallback:(BOOL)allowLocalKeyFallback error:(NSError **)error {
     NSError *resolveError = nil;
     ATProtoDIDDocument *document = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:&resolveError];
     NSMutableArray<NSData *> *candidateKeys = [NSMutableArray array];
-    NSData *didDocKey = atprotoSigningKeyFromDIDDocument(document);
+    NSData *didDocKey = [ATProtoDIDDocumentFields strictAtprotoSigningKeyBytesFromDocument:document error:nil];
     if (didDocKey) {
         [candidateKeys addObject:didDocKey];
     }

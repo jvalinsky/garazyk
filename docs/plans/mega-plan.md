@@ -161,6 +161,31 @@ documentation, TUI, package, and refactor plans.
   (e.g., `IN (%@)`, `isEqualToString:`, and unbalanced locks) were false positives.
   The codebase's SQL bindings, string comparisons, and backpressure mechanisms
   are already hardened.
+- **Complete (2026-08-08): Relay repository-commit signature integrity
+  (workstream 01 S6 G5).** Source review
+  found that `RelayEventValidator` resolves and decodes a repository DID key
+  but accepts the firehose commit without decoding its signed block or verifying
+  `RepoCommit` against that key. The implementation parses and CID-verifies the
+  signed block, binds its DID, and verifies it through `RepoCommit`; it extracts
+  only the published secp256k1 `#atproto` key via one Core primitive now also
+  used by `PDSRepoImportValidator`. P-256 repository keys are explicitly
+  unsupported and fail closed rather than being treated as secp256k1. Workstream
+  01 owns the protocol/security outcome; the change stays at the `ATProtoSync`
+  ingress boundary, shared lower-layer DID-key primitive, and existing `zuk`
+  composition point, rather than introducing a Sync-to-PDS/Network dependency
+  or copying parser logic. `zuk` installs the parsed-mode validator and reuses
+  its `DIDPLCResolver`; source composition and signature-failure metric
+  assertions guard that wiring. Valid/tampered/wrong-key/unresolved-key and
+  validation-mode tests are present; Deno (1,264 passed), source/boundary gates,
+  `RelayEventValidatorTests` (15/15), `ZukCommandTests` (5/5),
+  `RepoAuthRepoTests` (25/25), `ATProtoDIDDocumentFieldsTests` (5/5), and
+  `ATProtoMultibaseTests` (2/2) pass. The full gated native suite was not run
+  with only 13 GB free. Strict drops invalid signatures; lenient and log-only retain
+  availability-first forwarding while reporting truthful failure. A revert is
+  mechanically narrow but knowingly restores forged-commit acceptance. The
+  stale relay graph is history, not backlog; details, gate evidence, and the
+  explicit native-test blocker live only in
+  [workstream 01](workstreams/01-security-and-protocol-correctness.md).
 - Workstream 01 items S1 (duplicate XRPC ownership), S2 (canonical lexicon
   generation), and S4 (HTTP deadlines) have been verified complete against
   the codebase (2026-07-26). S1's three duplicate registrations are resolved
@@ -201,7 +226,8 @@ better-isolated steps.
 | Deno repository-boundary completion           |             4 |               5 |             5 |             2 |      5 | Blocked (publication deferred indefinitely; R1 unblocked) |
 | Relay product decision and assembly           |             4 |               5 |             4 |             2 |      5 | Decided (ADR 0006) |
 | Admin UI structural and accessibility work    |             4 |               5 |             4 |             3 |      4 | ✓ Complete      |
-| Spec conformance matrix (S6)                  |             3 |               2 |             5 |             5 |      4 | ✓ Complete      |
+| Relay repository-commit signature integrity (WS01 S6 G5) |          5 |               2 |             5 |             5 |      5 | ✓ Complete |
+| Spec conformance matrix (S6)                  |             3 |               2 |             5 |             5 |      4 | ✓ Complete |
 | Incremental public sync                       |             4 |               4 |             4 |             2 |      5 | ✓ Complete      |
 | Dedicated space signing key rotation          |             4 |               2 |             3 |             3 |      4 | ✓ Complete      |
 | Space operational readiness (backup, metrics) |             3 |               2 |             3 |             4 |      3 | ✓ Complete      |

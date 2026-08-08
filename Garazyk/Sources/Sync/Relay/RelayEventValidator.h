@@ -72,6 +72,12 @@ typedef NS_ENUM(NSInteger, RelayValidationResult) {
  */
 + (instancetype)errorOutcome:(NSString *)error;
 
+/**
+ * @abstract Creates an outcome for a repository-signature failure.
+ * @param reason Human-readable validation failure.
+ */
++ (instancetype)invalidSignatureOutcome:(NSString *)reason;
+
 @end
 
 /**
@@ -97,7 +103,7 @@ typedef NS_ENUM(NSInteger, RelayValidationResult) {
 @property (nonatomic, weak, nullable) id<RelayEventValidatorDelegate> delegate;
 /** Current validation mode used to decide forwarding policy. */
 @property (nonatomic, assign, readonly) RelayValidationMode validationMode;
-/** Optional PLC resolver for DID-based signature verification. */
+/** DID resolver used to obtain the repository's published signing key. */
 @property (nonatomic, strong, nullable) id<DIDResolving> plcResolver;
 
 /**
