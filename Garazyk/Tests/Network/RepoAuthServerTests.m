@@ -400,7 +400,33 @@
     XCTAssertEqual(deleteWithAuth.statusCode, 200);
 }
 
-- (void)testRequestAccountDeleteMintsTokenAndCanDelete {
+- (void)testDeleteAccountRequiresAuthAndRequiredFields {
+    NSDictionary *body = @{@"did": self.did1, @"password": @"password", @"token": @"test-token"};
+    HttpResponse *unauthorized = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteAccount"
+                                                           body:body
+                                                        headers:@{}];
+    XCTAssertEqual(unauthorized.statusCode, HttpStatusUnauthorized);
+
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    NSArray<NSDictionary *> *invalidBodies = @[
+        @{@"password": @"password", @"token": @"test-token"},
+        @{@"did": self.did1, @"token": @"test-token"},
+        @{@"did": self.did1, @"password": @"password"},
+        @{@"did": @"", @"password": @"password", @"token": @"test-token"},
+        @{@"did": self.did1, @"password": @"", @"token": @"test-token"},
+        @{@"did": self.did1, @"password": @"password", @"token": @""},
+        @{@"did": @"not-a-did", @"password": @"password", @"token": @"test-token"}
+    ];
+    for (NSDictionary *invalidBody in invalidBodies) {
+        HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteAccount"
+                                                           body:invalidBody
+                                                        headers:@{@"authorization": authHeader}];
+        XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+        XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+    }
+}
+
+- (void)testRequestAccountDeleteOnlyInitiatesFlowAndDeleteAccountConsumesToken {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
     // 1. Request account delete (no token) → 200 (mints token).
@@ -427,15 +453,25 @@
     sqlite3_finalize(stmt);
     XCTAssertNotNil(token, @"Expected a delete token to be stored in the database");
 
-    // 3. Exchange token via requestAccountDelete → 200 (deletes account).
-    HttpResponse *deleteResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
+    // 3. A token in requestAccountDelete's body cannot delete the account.
+    HttpResponse *repeatRequest = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
                                                             body:@{@"token": token}
                                                          headers:@{@"authorization": authHeader}];
-    XCTAssertEqual(deleteResponse.statusCode, 200);
-
-    // 4. Account no longer exists.
+    XCTAssertEqual(repeatRequest.statusCode, 200);
     NSError *accountError = nil;
     PDSDatabaseAccount *account = [self.controller.serviceDatabases getAccountByDid:self.did1 error:&accountError];
+    XCTAssertNotNil(account);
+
+    // 4. deleteAccount is the only endpoint that consumes the token.
+    HttpResponse *deleteResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteAccount"
+                                                            body:@{@"did": self.did1, @"password": @"password", @"token": token}
+                                                         headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(deleteResponse.statusCode, 200);
+    XCTAssertTrue([deleteResponse.jsonBody isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqual(((NSDictionary *)deleteResponse.jsonBody).count, 0U);
+
+    // 5. Account no longer exists.
+    account = [self.controller.serviceDatabases getAccountByDid:self.did1 error:&accountError];
     XCTAssertNil(account, @"Account should be deleted");
 }
 
@@ -460,14 +496,14 @@
     XCTAssertEqual(sqlite3_step(stmt), SQLITE_DONE);
     sqlite3_finalize(stmt);
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
-                                                      body:@{@"token": expiredToken}
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteAccount"
+                                                      body:@{@"did": self.did1, @"password": @"password", @"token": expiredToken}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"ExpiredToken");
 }
 
-- (void)testDeleteAccountRejectsReplayToken {
+- (void)testDeleteAccountClaimsTokenBeforeDeletion {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
     // 1. Request account delete (no token) → 200 (stores token).
@@ -492,21 +528,23 @@
     sqlite3_finalize(stmt);
     XCTAssertNotNil(token);
 
-    // 3. First exchange via requestAccountDelete → 200 (deletes account).
-    HttpResponse *firstDelete = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
-                                                         body:@{@"token": token}
+    // 3. A failed deletion still claims the token before service deletion.
+    HttpResponse *firstDelete = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteAccount"
+                                                         body:@{@"did": self.did1, @"password": @"wrong-password", @"token": token}
                                                       headers:@{@"authorization": authHeader}];
-    XCTAssertEqual(firstDelete.statusCode, 200);
+    XCTAssertEqual(firstDelete.statusCode, 400);
+    XCTAssertEqualObjects(firstDelete.jsonBody[@"error"], @"AccountDeletionFailed");
 
-    // 4. Replay with same token → 400.
-    HttpResponse *replayDelete = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
-                                                          body:@{@"token": token}
+    // 4. The claimed token cannot be replayed, and the account was retained.
+    HttpResponse *replayDelete = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteAccount"
+                                                          body:@{@"did": self.did1, @"password": @"password", @"token": token}
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(replayDelete.statusCode, 400);
     XCTAssertEqualObjects(replayDelete.jsonBody[@"error"], @"InvalidToken");
+    XCTAssertNotNil([self.controller.serviceDatabases getAccountByDid:self.did1 error:nil]);
 }
 
-- (void)testRequestAccountDeleteRejectsCrossAccountToken {
+- (void)testDeleteAccountRejectsAuthenticatedDidMismatch {
     NSString *authHeader1 = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
     // 1. Auth as did1, request account delete (no token) → 200 (mints token for did1).
@@ -531,29 +569,22 @@
     sqlite3_finalize(stmt);
     XCTAssertNotNil(did1Token);
 
-    // 3. Auth as did2, try to exchange did1's token → 400 (DID mismatch).
-    NSError *loginError = nil;
-    NSDictionary *session2 = [self.controller loginWithHandle:@"repoauth2.test" password:@"password" error:&loginError];
-    XCTAssertNil(loginError);
-    NSString *accessJwt2 = session2[@"accessJwt"];
-    XCTAssertNotNil(accessJwt2);
-
-    NSString *authHeader2 = [NSString stringWithFormat:@"Bearer %@", accessJwt2];
-    HttpResponse *crossResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.requestAccountDelete"
-                                                           body:@{@"token": did1Token}
-                                                        headers:@{@"authorization": authHeader2}];
-    XCTAssertEqual(crossResponse.statusCode, 400);
-    XCTAssertEqualObjects(crossResponse.jsonBody[@"error"], @"InvalidToken");
+    // 3. Authenticated did1 cannot submit did2, even with did1's token.
+    HttpResponse *crossResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteAccount"
+                                                           body:@{@"did": self.did2, @"password": @"password", @"token": did1Token}
+                                                        headers:@{@"authorization": authHeader1}];
+    XCTAssertEqual(crossResponse.statusCode, HttpStatusForbidden);
+    XCTAssertEqualObjects(crossResponse.jsonBody[@"error"], @"Forbidden");
 }
 
-- (void)testDeleteAccountRejectsCrossAccountToken {
+- (void)testDeleteAccountRejectsExpiredCrossAccountTokenAsInvalid {
     // Insert a token for did1 directly into the database.
     sqlite3 *db = (sqlite3 *)[self.controller.serviceDatabases serviceDatabase];
     XCTAssertTrue(db != NULL);
 
     NSString *crossToken = [NSString stringWithFormat:@"xacct-%lld",
                             (long long)([[NSDate date] timeIntervalSince1970] * 1000.0)];
-    NSTimeInterval futureTime = [[NSDate date] timeIntervalSince1970] + 3600.0;
+    NSTimeInterval expiredTime = [[NSDate date] timeIntervalSince1970] - 3600.0;
 
     sqlite3_stmt *stmt = NULL;
     XCTAssertEqual(sqlite3_prepare_v2(db,
@@ -561,16 +592,20 @@
         -1, &stmt, NULL), SQLITE_OK);
     sqlite3_bind_text(stmt, 1, crossToken.UTF8String, -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, self.did1.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64(stmt, 3, (sqlite3_int64)futureTime);
+    sqlite3_bind_int64(stmt, 3, (sqlite3_int64)expiredTime);
     XCTAssertEqual(sqlite3_step(stmt), SQLITE_DONE);
     sqlite3_finalize(stmt);
 
-    // Call deleteAccount with did2 + did1's token → 400.
+    // An expired token minted for did1 must not reveal ExpiredToken to did2.
+    NSError *loginError = nil;
+    NSDictionary *session2 = [self.controller loginWithHandle:@"repoauth2.test" password:@"password" error:&loginError];
+    XCTAssertNil(loginError);
+    NSString *authHeader2 = [NSString stringWithFormat:@"Bearer %@", session2[@"accessJwt"]];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteAccount"
                                                       body:@{@"token": crossToken,
                                                              @"did": self.did2,
                                                              @"password": @"password"}
-                                                   headers:@{}];
+                                                   headers:@{@"authorization": authHeader2}];
     XCTAssertEqual(response.statusCode, 400);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidToken");
 }

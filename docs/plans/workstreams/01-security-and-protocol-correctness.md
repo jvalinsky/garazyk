@@ -1,7 +1,7 @@
 ---
 title: Security and Protocol Correctness
 status: active
-last_verified: 2026-08-05
+last_verified: 2026-08-08
 ---
 
 # Security and Protocol Correctness
@@ -66,15 +66,28 @@ closed mechanisms before assuming disk pressure. Related context:
 [Garazyk disk pressure](../../../CLAUDE.md) notes that full `--gated=run` runs
 fail with `SQLITE_FULL` near disk capacity.
 
-## Open: S6 gap G3 — account management surfaces
+## Open: S6 gap G3 — Relay `getRepoStatus` status semantics
 
 The rest of S6 is complete and report-only; the matrix lives at
 `docs/reports/spec-conformance-matrix.md` (commit `de67b72a`, 2026-07-17): 21
 rows, 16 supported, 4 partial, 0 gap. Gaps G1, G2, and G4 are closed (see the
 archive). G3 remains:
 
-- **G3: Account management surfaces.** S5 covers propagation; confirm
-  deactivation, deletion, and export UX endpoints against the accounts spec.
+- **G3: Relay `com.atproto.sync.getRepoStatus` status semantics.** The bounded
+  PDS lifecycle-handler contract slice was rechecked on 2026-08-08 and the
+  Accounts conformance row is now Supported: `activateAccount` and
+  `deactivateAccount` return empty procedure responses; `deactivateAccount`
+  validates the optional lexicon `deleteAfter` datetime but does not persist it
+  because the existing admin-service boundary has no retention-deadline storage
+  contract; `requestAccountDelete` only initiates the authenticated email flow;
+  and `deleteAccount` requires matching user auth, non-empty typed lexicon
+  fields, and an atomically claimed deletion token. Focused XCTest coverage was
+  added in `AccountLifecycleXrpcTests` and `RepoAuthServerTests`; source/static
+  gates passed on 2026-08-08. Native focused tests were not run because this
+  worktree has no build directory and only 16 GB free, so rebuilding AllTests
+  would violate this lane's disk-headroom constraint. **G3 remains open:** the
+  separate Relay status contract is intentionally not changed by this PDS-only
+  slice.
 
 Report-only: a red row is a lead, not a release blocker, until triaged into a
 workstream. Rollback is documentation-only until a gap lane starts; each gap

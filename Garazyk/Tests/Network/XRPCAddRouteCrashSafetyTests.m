@@ -132,15 +132,17 @@
         [cases addObject:c];
     };
 
-    // com.atproto.server.deactivateAccount — reason (NSString, optional)
-    addCase(@"deactivateAccount.reason", @"/xrpc/com.atproto.server.deactivateAccount",
-            @{}, @"reason", stringWrongTypes, YES);
+    // com.atproto.server.deactivateAccount — deleteAfter (NSString, optional)
+    addCase(@"deactivateAccount.deleteAfter", @"/xrpc/com.atproto.server.deactivateAccount",
+            @{}, @"deleteAfter", stringWrongTypes, YES);
 
-    // com.atproto.server.deleteAccount — did/password/token (NSString)
+    // com.atproto.server.deleteAccount — did/password/token (NSString, required auth)
     addCase(@"deleteAccount.did", @"/xrpc/com.atproto.server.deleteAccount",
-            @{@"password": @"password", @"token": @"tok"}, @"did", stringWrongTypes, NO);
+            @{@"password": @"password", @"token": @"tok"}, @"did", stringWrongTypes, YES);
     addCase(@"deleteAccount.password", @"/xrpc/com.atproto.server.deleteAccount",
-            @{@"did": @"did:plc:whatever", @"token": @"tok"}, @"password", stringWrongTypes, NO);
+            @{@"did": @"did:plc:whatever", @"token": @"tok"}, @"password", stringWrongTypes, YES);
+    addCase(@"deleteAccount.token", @"/xrpc/com.atproto.server.deleteAccount",
+            @{@"did": @"did:plc:whatever", @"password": @"password"}, @"token", stringWrongTypes, YES);
 
     // com.atproto.server.createAppPassword — name (NSString), privileged (NSNumber, optional)
     addCase(@"createAppPassword.name", @"/xrpc/com.atproto.server.createAppPassword",
