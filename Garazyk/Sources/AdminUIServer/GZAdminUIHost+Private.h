@@ -63,41 +63,6 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString * _Nullab
 
 @end
 
-/** @abstract Escaped HTML partial renderers for already-authorized admin requests. */
-@interface GZAdminUIHost (Renderers)
-
-/** @abstract Renders Ozone subject-status results. */
-- (NSString *)renderOzoneStatusesPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone moderation events. */
-- (NSString *)renderOzoneEventsPartial:(NSDictionary *)result;
-/** @abstract Renders an Ozone subject result. */
-- (NSString *)renderOzoneSubjectPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone team-member results. */
-- (NSString *)renderOzoneTeamPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone set results. */
-- (NSString *)renderOzoneSetsPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone template results. */
-- (NSString *)renderOzoneTemplatesPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone configuration. */
-- (NSString *)renderOzoneConfigPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone moderation reports. */
-- (NSString *)renderOzoneModerationReportsPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone scheduled actions. */
-- (NSString *)renderOzoneScheduledPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone verification results. */
-- (NSString *)renderOzoneVerificationPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone safelink rules. */
-- (NSString *)renderOzoneSafelinksPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone setting options. */
-- (NSString *)renderOzoneSettingsPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone signature-correlation results, including unavailable-state output. */
-- (NSString *)renderOzoneSignaturesPartial:(nullable NSDictionary *)result;
-/** @abstract Renders Ozone signature-search results. */
-- (NSString *)renderOzoneSignatureResultsPartial:(NSDictionary *)result;
-/** @abstract Renders Ozone hosting history, optionally scoped to a DID. */
-- (NSString *)renderOzoneHostingPartial:(NSDictionary *)result did:(nullable NSString *)did;
-@end
-
 /** @abstract Registers authenticated route groups on the runtime HTTP server. */
 @interface GZAdminUIHost (Routes)
 /** @abstract Registers PDS administration routes. */
