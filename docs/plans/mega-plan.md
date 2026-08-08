@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-08-05
+last_verified: 2026-08-08
 ---
 
 # Garazyk Mega Plan
@@ -176,8 +176,10 @@ documentation, TUI, package, and refactor plans.
   scripts use correct roots, smoke test exists. One stale path in
   `generate_xrpc_next_steps.cjs` fixed.
 - Workstream 03 (repository boundaries) remains blocked on maintainer decision
-  to lift the indefinite JSR publication deferral (reaffirmed 2026-07-26).
-  R1 (synchronize forward) is not blocked; R2-R4 are blocked on publication.
+  to lift the indefinite JSR publication deferral (reaffirmed explicitly
+  2026-08-08). R1 (synchronize forward) is not blocked; R2-R4 are blocked on
+  publication. No agent may publish until a future maintainer message grants
+  explicit permission.
 
 ## Priority model
 
@@ -356,14 +358,15 @@ scenario 93/94 runtime passes.
 
 ### Phase 3: boundaries
 
-1. **Blocked (2026-07-18, maintainer decision; reaffirmed 2026-07-26):** complete
-   the two-repository Deno extraction using released package versions as the
-   boundary. Keep thin compatibility launchers until consumers pass.
+1. **Blocked (2026-07-18, maintainer decision; reaffirmed explicitly
+   2026-08-08):** complete the two-repository Deno extraction using released
+   package versions as the boundary. Keep thin compatibility launchers until consumers pass.
    `@garazyk/tui@0.1.0` is the first verified release candidate: its dedicated
    format, lint, type-check, and 252-test tasks pass, and it exposes the required
    root, runtime, and testing exports. Its JSR publication is indefinitely
    deferred by maintainer decision: do not request or use publisher access, or
-   run `deno publish`, until the maintainer explicitly reopens Phase 5. No
+   run `deno publish`, until a future maintainer message grants explicit
+   permission and reopens Phase 5. No
    package has been published; later ATProto package releases and the in-tree
    deletion (R4) remain deferred with it (workstream 03). R1 (synchronize
    forward) is not blocked and can proceed independently.
