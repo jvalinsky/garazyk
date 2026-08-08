@@ -44,6 +44,9 @@ jobs:
       - name: Check Skill Index Drift
         run: deno run -A scripts/dev/generate_skill_index.ts --check
 
+      - name: Check Codex Agent Role Manifests
+        run: deno run -A scripts/dev/check_codex_agent_roles.ts
+
   macos-build-and-test:
     name: macOS Build & Test
     runs-on: macos-14
