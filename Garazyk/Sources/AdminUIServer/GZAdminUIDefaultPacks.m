@@ -24,8 +24,8 @@ NSArray<Class> *GZAdminUIDefaultPacks(void) {
         GZAdminUILabPack.class,
         GZAdminUIOzonePack.class,
         GZAdminUISecurityPack.class,
+        GZAdminUIMSTPack.class,
         GZAdminUIChatPack.class,
         GZAdminUIVideoPack.class,
-        GZAdminUIMSTPack.class,
     ];
 }

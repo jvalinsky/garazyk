@@ -81,6 +81,34 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigi
     [response setHeader:csp forKey:@"content-security-policy"];
 }
 
+static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArray<Class> *packs) {
+    NSMutableArray<NSDictionary<NSString *, NSString *> *> *tabs = [NSMutableArray array];
+    for (Class<GZAdminUIPack> packClass in packs) {
+        for (NSDictionary<NSString *, id> *section in [packClass sidebarSections]) {
+            NSString *identifier = section[@"tabIdentifier"];
+            NSString *displayName = section[@"displayName"];
+            if (identifier.length == 0 || displayName.length == 0) {
+                continue;
+            }
+            [tabs addObject:@{
+                @"tabIdentifier": identifier,
+                @"displayName": displayName,
+            }];
+        }
+    }
+
+    NSMutableArray<NSDictionary<NSString *, NSString *> *> *renderedTabs = [NSMutableArray arrayWithCapacity:tabs.count];
+    [tabs enumerateObjectsUsingBlock:^(NSDictionary<NSString *, NSString *> *tab, NSUInteger index, BOOL *stop) {
+        NSMutableDictionary<NSString *, NSString *> *renderedTab = [tab mutableCopy];
+        BOOL active = index == 0;
+        renderedTab[@"activeClass"] = active ? @" active" : @"";
+        renderedTab[@"ariaSelected"] = active ? @"true" : @"false";
+        renderedTab[@"tabIndex"] = active ? @"0" : @"-1";
+        [renderedTabs addObject:[renderedTab copy]];
+    }];
+    return renderedTabs;
+}
+
 
 @interface HttpServer (GZAdminUIHostTesting)
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request;
@@ -300,10 +328,35 @@ void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigi
 }
 
 - (NSString *)adminShellHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
-    return [UITemplateEngine renderTemplate:@"shell" context:@{
+    NSArray<NSDictionary<NSString *, NSString *> *> *tabs = GZAdminUIShellTabs(self.packs);
+    NSString *activeTabIdentifier = tabs.firstObject[@"tabIdentifier"] ?: @"overview";
+    NSString *shellTitle = tabs.count == 1 ? tabs.firstObject[@"displayName"] : @"Garazyk UI Service";
+    NSMutableDictionary<NSString *, id> *context = [@{
         @"nonce": nonce ?: @"",
-        @"csrfNonce": csrfNonce ?: @""
+        @"csrfNonce": csrfNonce ?: @"",
+        @"tabs": tabs,
+        @"isSingleSurface": @(tabs.count == 1),
+        @"shellTitle": shellTitle,
+        @"peerLinks": @[]
+    } mutableCopy];
+    NSDictionary<NSString *, NSString *> *panelContextKeys = @{
+        @"overview": @"activeOverview",
+        @"connections": @"activeConnections",
+        @"pds": @"activePDS",
+        @"appview": @"activeAppView",
+        @"relay": @"activeRelay",
+        @"plc": @"activePLC",
+        @"explorer": @"activeExplorer",
+        @"ozone": @"activeOzone",
+        @"security": @"activeSecurity",
+        @"mst": @"activeMST",
+        @"chat": @"activeChat",
+        @"video": @"activeVideo",
+    };
+    [panelContextKeys enumerateKeysAndObjectsUsingBlock:^(NSString *identifier, NSString *key, BOOL *stop) {
+        context[key] = @([identifier isEqualToString:activeTabIdentifier]);
     }];
+    return [UITemplateEngine renderTemplate:@"shell" context:context];
 }
 
 @end
