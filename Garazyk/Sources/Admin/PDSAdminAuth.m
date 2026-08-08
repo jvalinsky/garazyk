@@ -68,6 +68,13 @@ static BOOL PDSScopesContainAdmin(NSString *scopeString) {
     return NO;
 }
 
+static NSString *PDSAdminAuthEnvironmentValue(NSString *name) {
+    // GNUstep may retain an NSProcessInfo.environment snapshot after setenv/unsetenv.
+    // getenv is the authoritative current process environment and preserves empty values.
+    const char *value = getenv(name.UTF8String);
+    return value != NULL ? [NSString stringWithUTF8String:value] : nil;
+}
+
 static BOOL PDSAdminAuthEnvBool(NSString *value) {
     if (value.length == 0) {
         return NO;
@@ -79,24 +86,24 @@ static BOOL PDSAdminAuthEnvBool(NSString *value) {
            [normalized isEqualToString:@"on"];
 }
 
-static BOOL PDSAdminAuthIsIssuerRequired(NSDictionary *env) {
-    if (PDSAdminAuthEnvBool(env[@"PDS_REQUIRE_ISSUER"])) {
+static BOOL PDSAdminAuthIsIssuerRequired(void) {
+    if (PDSAdminAuthEnvBool(PDSAdminAuthEnvironmentValue(@"PDS_REQUIRE_ISSUER"))) {
         return YES;
     }
-    NSString *environment = [env[@"PDS_ENV"] lowercaseString];
+    NSString *environment = [PDSAdminAuthEnvironmentValue(@"PDS_ENV") lowercaseString];
     return [environment isEqualToString:@"production"];
 }
 
-static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredButMissing) {
+static NSString *PDSAdminAuthResolvedIssuer(BOOL *requiredButMissing) {
     // First check environment directly
-    NSString *issuer = [env[@"PDS_ISSUER"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *issuer = [PDSAdminAuthEnvironmentValue(@"PDS_ISSUER") stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (issuer.length > 0) {
         if (requiredButMissing) *requiredButMissing = NO;
         return issuer;
     }
     
     // Check if issuer is required before falling back
-    if (PDSAdminAuthIsIssuerRequired(env)) {
+    if (PDSAdminAuthIsIssuerRequired()) {
         if (requiredButMissing) *requiredButMissing = YES;
         return nil;
     }
@@ -134,8 +141,8 @@ static NSInteger PDSAdminAuthParsePositiveInteger(NSString *value) {
     return (NSInteger)parsed;
 }
 
-static NSTimeInterval PDSAdminAuthResolvedTokenTTL(NSDictionary *env) {
-    NSInteger parsed = PDSAdminAuthParsePositiveInteger(env[@"PDS_ADMIN_TOKEN_TTL_SECONDS"]);
+static NSTimeInterval PDSAdminAuthResolvedTokenTTL(void) {
+    NSInteger parsed = PDSAdminAuthParsePositiveInteger(PDSAdminAuthEnvironmentValue(@"PDS_ADMIN_TOKEN_TTL_SECONDS"));
     if (parsed == NSNotFound) {
         return PDSAdminAuthDefaultTokenTTLSeconds;
     }
@@ -148,14 +155,14 @@ static NSTimeInterval PDSAdminAuthResolvedTokenTTL(NSDictionary *env) {
     return (NSTimeInterval)parsed;
 }
 
-static BOOL PDSAdminAuthIsXAdminTokenHeaderDisabled(NSDictionary *env) {
-    NSString *disableEnv = env[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"];
+static BOOL PDSAdminAuthIsXAdminTokenHeaderDisabled(void) {
+    NSString *disableEnv = PDSAdminAuthEnvironmentValue(@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER");
     if (disableEnv != nil) {
         // Explicitly set - honor the value (0 = enabled, 1 = disabled)
         return PDSAdminAuthEnvBool(disableEnv);
     }
     // Not set - default to disabled in production
-    NSString *pdsEnv = env[@"PDS_ENV"];
+    NSString *pdsEnv = PDSAdminAuthEnvironmentValue(@"PDS_ENV");
     if (pdsEnv != nil && [[pdsEnv lowercaseString] isEqualToString:@"production"]) {
         return YES;  // Disabled in production by default
     }
@@ -305,15 +312,13 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
 }
 
 - (BOOL)authenticateHeaders:(NSDictionary<NSString *, NSString *> *)headers error:(NSError **)error {
-    NSDictionary *env = [[NSProcessInfo processInfo] environment];
-
     NSString *authorization = headers[@"Authorization"] ?: headers[@"authorization"];
     NSString *token = nil;
     if ([authorization isKindOfClass:[NSString class]] && [authorization hasPrefix:@"Bearer "]) {
         token = [authorization substringFromIndex:@"Bearer ".length];
     }
 
-    if (token.length == 0 && !PDSAdminAuthIsXAdminTokenHeaderDisabled(env)) {
+    if (token.length == 0 && !PDSAdminAuthIsXAdminTokenHeaderDisabled()) {
         NSString *adminTokenHeader = headers[@"X-Admin-Token"] ?: headers[@"x-admin-token"];
         if ([adminTokenHeader isKindOfClass:[NSString class]]) {
             token = adminTokenHeader;
@@ -381,7 +386,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     }
 
     BOOL issuerRequiredButMissing = NO;
-    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(env, &issuerRequiredButMissing);
+    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(&issuerRequiredButMissing);
     if (issuerRequiredButMissing || expectedIssuer.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:503 userInfo:@{NSLocalizedDescriptionKey: @"Server issuer not configured"}];
@@ -417,10 +422,8 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
 }
 
 - (NSString *)resolveAdminPassword {
-    NSDictionary *env = [[NSProcessInfo processInfo] environment];
-
     // Check PDS_ADMIN_PASSWORD_FILE first (production: secret from file)
-    NSString *passwordFile = env[@"PDS_ADMIN_PASSWORD_FILE"];
+    NSString *passwordFile = PDSAdminAuthEnvironmentValue(@"PDS_ADMIN_PASSWORD_FILE");
     if (passwordFile.length > 0) {
         NSError *readError = nil;
         NSString *content = [NSString stringWithContentsOfFile:passwordFile
@@ -433,7 +436,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     }
 
     // Fall back to PDS_ADMIN_PASSWORD environment variable
-    return env[@"PDS_ADMIN_PASSWORD"];
+    return PDSAdminAuthEnvironmentValue(@"PDS_ADMIN_PASSWORD");
 }
 
 - (BOOL)verifyPassword:(NSString *)password against:(NSString *)expected {
@@ -484,8 +487,6 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
 }
 
 - (BOOL)authenticateWithPassword:(NSString *)password error:(NSError **)error {
-    NSDictionary *env = [[NSProcessInfo processInfo] environment];
-
     NSString *expectedPassword = [self resolveAdminPassword];
     if (expectedPassword.length == 0) {
         if (error) {
@@ -497,7 +498,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     }
 
     if (![self verifyPassword:password against:expectedPassword]) {
-        NSString *runningTests = env[@"PDS_RUNNING_TESTS"];
+        NSString *runningTests = PDSAdminAuthEnvironmentValue(@"PDS_RUNNING_TESTS");
         if (PDSAdminAuthEnvBool(runningTests) &&
             [password isEqualToString:@"admin-localdev"]) {
             GZ_LOG_AUTH_WARN(@"PDSAdminAuth: accepting local test admin password fallback");
@@ -522,7 +523,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     }
 
     BOOL issuerRequiredButMissing = NO;
-    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(env, &issuerRequiredButMissing);
+    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(&issuerRequiredButMissing);
     if (issuerRequiredButMissing || expectedIssuer.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain
@@ -535,7 +536,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     NSString *issuerHost = issuerComponents.host ?: expectedIssuer;
     NSString *adminDID = [NSString stringWithFormat:@"did:web:%@", issuerHost];
 
-    NSTimeInterval tokenTTLSeconds = PDSAdminAuthResolvedTokenTTL(env);
+    NSTimeInterval tokenTTLSeconds = PDSAdminAuthResolvedTokenTTL();
     NSDate *issuedAt = [NSDate date];
     NSDate *expiresAt = [issuedAt dateByAddingTimeInterval:tokenTTLSeconds];
 
@@ -584,8 +585,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     if (did.length == 0) return NO;
     
     // Check if it's the hardcoded admin DID (did:web:<host>)
-    NSDictionary *env = [[NSProcessInfo processInfo] environment];
-    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(env, nil);
+    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(nil);
     if (expectedIssuer) {
         NSURLComponents *components = [NSURLComponents componentsWithString:expectedIssuer];
         NSString *issuerHost = components.host ?: expectedIssuer;
@@ -671,8 +671,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
         return;
     }
 
-    NSDictionary *env = [[NSProcessInfo processInfo] environment];
-    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(env, NULL);
+    NSString *expectedIssuer = PDSAdminAuthResolvedIssuer(NULL);
     NSString *adminDID = @"unknown";
     if (expectedIssuer.length > 0) {
         NSURLComponents *components = [NSURLComponents componentsWithString:expectedIssuer];

@@ -925,6 +925,26 @@ grouped by class) are in this session's scratch log; the largest are
 `AdminAuthXrpcTestBase` subclasses, all part of the 488-failure cascade
 above.
 
+**PDSAdminAuth fixture-environment follow-up (2026-08-08; Linux confirmation pending).**
+`PDSAdminAuth` now obtains every environment setting through a local
+`getenv()` accessor rather than `NSProcessInfo.environment`, preserving the
+difference between an unset and an explicitly empty value. The focused
+`PDSAdminAuthTests` regression first obtains the `NSProcessInfo` environment
+snapshot, then mutates the password, test-mode, issuer, TTL, and token-header
+policy settings (including an explicit empty header-policy value) and exercises
+password authentication, JWT minting, and header authentication. Source/static gates passed: source module boundaries,
+recursive-setter, host-process-exit, NSID constants, skill-index, and raw NSID
+registration checks; a direct source scan finds no remaining
+`NSProcessInfo.environment` access in `PDSAdminAuth`.
+
+Focused macOS execution is blocked in this worktree: `cmake -S . -B build
+-DCMAKE_BUILD_TYPE=Debug` stops because the checked-out `secp256k1/` directory
+has no `CMakeLists.txt`. No GNUstep artifact is present locally and no GNUstep
+image was built for this slice. Therefore this change does **not** yet prove
+that the historic 488-failure cascade is fixed. Linux proof remains a focused
+GNUstep `PDSAdminAuthTests` run followed by the affected shared-fixture suite
+against an existing compatible artifact.
+
 **Decision needed before `ci.yml` itself changes.** Fixing
 `linux-gnustep-build-and-test` "for real" means either (a) adding a
 from-source libobjc2/gnustep-make/gnustep-base build step to that job
