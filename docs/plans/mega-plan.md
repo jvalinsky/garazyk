@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-08-04
+last_verified: 2026-08-05
 ---
 
 # Garazyk Mega Plan
@@ -464,10 +464,12 @@ remaining program does not depend on items 1-2.
     classes, the low-risk pilot) is complete and batch 2 (Core primitives)
     is complete in full (all ~25 classes renamed, including `CID` at 265
     consumers, the largest single rename in the workstream),
+    and batch 3a (the low-consumer half of Storage/Transport, 14 classes,
+    `92395144`) is complete,
     ratcheting the namespace baseline
-    283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228. Batches 3-6
-    (Storage/Transport, PLC/Sync/Services/MediaCore,
-    XRPC/VideoService,
+    283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228 → 214. Batch 3b
+    (the remaining higher-consumer Storage/Transport classes) and batches 4-6
+    (PLC/Sync/Services/MediaCore, XRPC/VideoService,
     Runtime) remain open.
     **M7 is now
     complete (2026-08-04):** the remaining host-process `exit()`/`abort()`
