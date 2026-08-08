@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUIOzonePack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIBackendClient.h"
 #import "Network/HttpRequest.h"
@@ -19,7 +20,7 @@
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchOzoneStatusesWithCursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneStatusesPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneStatusesPartial:result]];
     }];
 
     // Ozone: Moderation events
@@ -28,7 +29,7 @@
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchOzoneEventsWithCursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneEventsPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneEventsPartial:result]];
     }];
 
     // Ozone: Subject status
@@ -37,7 +38,7 @@
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchSubjectStatusForDID:did];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneSubjectPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneSubjectPartial:result]];
     }];
 
     // Ozone: Moderation reports
@@ -46,7 +47,7 @@
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchModerationReportsWithCursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneModerationReportsPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneModerationReportsPartial:result]];
     }];
 
     // Ozone: Scheduled actions
@@ -55,7 +56,7 @@
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchScheduledActionsWithStatuses:nil cursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneScheduledPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneScheduledPartial:result]];
     }];
 
     // Ozone: Schedule action
@@ -87,7 +88,7 @@
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient listOzoneVerifications];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneVerificationPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneVerificationPartial:result]];
     }];
 
     // Ozone: Grant verification
@@ -127,7 +128,7 @@
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchSafelinkRules];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneSafelinksPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneSafelinksPartial:result]];
     }];
 
     // Ozone: Add safelink rule
@@ -160,7 +161,7 @@
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient listOzoneSettings];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneSettingsPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneSettingsPartial:result]];
     }];
 
     // Ozone: Upsert setting
@@ -179,7 +180,7 @@
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-signatures" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneSignaturesPartial:nil]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneSignaturesPartial:nil]];
     }];
 
     // Ozone: Find related accounts
@@ -188,7 +189,7 @@
         NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
         NSDictionary *result = [weakSelf.backendClient findRelatedAccounts:did];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneSignatureResultsPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneSignatureResultsPartial:result]];
     }];
 
     // Ozone: Find correlation
@@ -197,7 +198,7 @@
         NSArray *dids = [request.jsonBody[@"dids"] isKindOfClass:[NSArray class]] ? request.jsonBody[@"dids"] : @[];
         NSDictionary *result = [weakSelf.backendClient findSignatureCorrelation:dids];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneSignatureResultsPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneSignatureResultsPartial:result]];
     }];
 
     // Ozone: Hosting history
@@ -206,7 +207,7 @@
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = did && did.length > 0 ? [weakSelf.backendClient fetchHostingHistoryForDID:did] : @{@"entries": @[]};
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneHostingPartial:result did:did]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneHostingPartial:result did:did]];
     }];
 
     // Ozone: Team members
@@ -214,7 +215,7 @@
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchOzoneTeamMembers];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneTeamPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneTeamPartial:result]];
     }];
 
     // Ozone: Sets
@@ -223,7 +224,7 @@
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchOzoneSetsWithCursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneSetsPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneSetsPartial:result]];
     }];
 
     // Ozone: Templates
@@ -231,7 +232,7 @@
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchOzoneTemplates];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneTemplatesPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneTemplatesPartial:result]];
     }];
 
     // Ozone: Config
@@ -239,7 +240,7 @@
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchOzoneConfig];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderOzoneConfigPartial:result]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneConfigPartial:result]];
     }];
 
     // Ozone: Emit moderation event
