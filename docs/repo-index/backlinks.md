@@ -12,6 +12,13 @@ Inbound links: **2**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/root-entrypoints.md](root-entrypoints.md)
 
+## `CLAUDE.md`
+
+Inbound links: **2**
+
+- [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+
 ## `DESIGN.md`
 
 Inbound links: **1**
@@ -106,7 +113,7 @@ Inbound links: **4**
 
 ## `docs/11-reference/source-adjacent-documentation.md`
 
-Inbound links: **56**
+Inbound links: **58**
 
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
@@ -196,8 +203,8 @@ Inbound links: **2**
 
 Inbound links: **6**
 
+- [docs/archive/planning/phase-prompts/phase-02-spaces-acceptance.md](../archive/planning/phase-prompts/phase-02-spaces-acceptance.md)
 - [docs/permissioned-spaces-compatibility.md](../permissioned-spaces-compatibility.md)
-- [docs/plans/prompts/phase-02-spaces-acceptance.md](../plans/prompts/phase-02-spaces-acceptance.md)
 - [docs/plans/workstreams/06-permissioned-spaces.md](../plans/workstreams/06-permissioned-spaces.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -241,7 +248,7 @@ Inbound links: **2**
 
 Inbound links: **3**
 
-- [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md)
+- [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
@@ -368,7 +375,36 @@ Inbound links: **2**
 
 Inbound links: **3**
 
-- [docs/plans/prompts/phase-25-registration-gate-composition.md](../plans/prompts/phase-25-registration-gate-composition.md)
+- [docs/archive/planning/phase-prompts/phase-25-registration-gate-composition.md](../archive/planning/phase-prompts/phase-25-registration-gate-composition.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/adr/0031-module-boundary-link-time-gate.md`
+
+Inbound links: **3**
+
+- [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/adr/0032-dasl-conformance-profiles.md`
+
+Inbound links: **7**
+
+- [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/adr/0033-per-service-embedded-admin-uis.md`
+
+Inbound links: **5**
+
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
@@ -460,15 +496,189 @@ Inbound links: **2**
 
 Inbound links: **5**
 
+- [docs/archive/planning/phase-prompts/phase-10-deferred-products.md](../archive/planning/phase-prompts/phase-10-deferred-products.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
-- [docs/plans/prompts/phase-10-deferred-products.md](../plans/prompts/phase-10-deferred-products.md)
 - [docs/plans/workstreams/05-embedded-runtime-and-deferred-products.md](../plans/workstreams/05-embedded-runtime-and-deferred-products.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/archive/planning/phase-prompts/phase-01-browser-baseline.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-02-spaces-acceptance.md`
+
+Inbound links: **3**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-03-xrpc-truth-and-spec-matrix.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-04-federation-lifecycle.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-06-nsid-and-cli-adoption.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-07-relay-and-sync.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-08-admin-ui.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-09-spaces-hardening.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-10-deferred-products.md`
+
+Inbound links: **3**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-11-storage-and-mst-optimization.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-12-godfile-decomposition.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-13-auth-json-typing.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-14-wire-auth-cluster.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-15-blob-lifecycle.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-16-storage-pool-and-decoder.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-17-websocket-and-http-framing.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-18-egress-pinning.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-19-core-decoder-bounds.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-20-secret-store-and-cli.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-21-appview-hydration.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-22-mst-viewer-and-dead-cookie.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-25-registration-gate-composition.md`
+
+Inbound links: **3**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/phase-29-refresh-flow-and-parser-test-debt.md`
+
+Inbound links: **3**
+
+- [docs/plans/security-review-2026-07-28.md](../plans/security-review-2026-07-28.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/phase-prompts/README.md`
+
+Inbound links: **5**
+
+- [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/archive/planning/README.md`
 
-Inbound links: **82**
+Inbound links: **44**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -478,8 +688,21 @@ Inbound links: **82**
 
 Inbound links: **3**
 
+- [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/workstream-01-completed-items.md`
+
+Inbound links: **12**
+
+- [docs/archive/planning/phase-prompts/README.md](../archive/planning/phase-prompts/README.md)
+- [docs/plans/README.md](../plans/README.md)
+- [docs/plans/retired-plans.md](../plans/retired-plans.md)
+- [docs/plans/security-review-2026-07-28.md](../plans/security-review-2026-07-28.md)
 - [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/archive/scratchpads/scratchpads/code-review-research/CHECKLISTS.md`
@@ -863,7 +1086,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **287**
+Inbound links: **348**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -891,7 +1114,7 @@ Inbound links: **2**
 
 ## `docs/plans/mega-plan.md`
 
-Inbound links: **15**
+Inbound links: **22**
 
 - [docs/archive/planning/README.md](../archive/planning/README.md)
 - [docs/index.md](../index.md)
@@ -899,39 +1122,6 @@ Inbound links: **15**
 - [docs/plans/prompts/README.md](../plans/prompts/README.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-01-browser-baseline.md`
-
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-02-spaces-acceptance.md`
-
-Inbound links: **4**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/backlinks.md](backlinks.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-03-xrpc-truth-and-spec-matrix.md`
-
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-04-federation-lifecycle.md`
-
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/plans/prompts/phase-05-repo-boundaries.md`
@@ -942,200 +1132,68 @@ Inbound links: **3**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
-## `docs/plans/prompts/phase-06-nsid-and-cli-adoption.md`
+## `docs/plans/prompts/phase-30-admin-ui-library-extraction.md`
 
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-07-relay-and-sync.md`
-
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-08-admin-ui.md`
-
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-09-spaces-hardening.md`
-
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-10-deferred-products.md`
-
-Inbound links: **4**
+Inbound links: **8**
 
 - [docs/plans/prompts/README.md](../plans/prompts/README.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-11-storage-and-mst-optimization.md`
-
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-12-godfile-decomposition.md`
-
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-13-auth-json-typing.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-14-wire-auth-cluster.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-15-blob-lifecycle.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-16-storage-pool-and-decoder.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-17-websocket-and-http-framing.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-18-egress-pinning.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-19-core-decoder-bounds.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-20-secret-store-and-cli.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-21-appview-hydration.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-22-mst-viewer-and-dead-cookie.md`
-
-Inbound links: **3**
-
-- [docs/plans/prompts/README.md](../plans/prompts/README.md)
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-25-registration-gate-composition.md`
-
-Inbound links: **3**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/backlinks.md](backlinks.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-26-admin-adminui-trust-boundary.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-27-chat-trust-boundary.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
-- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
-
-## `docs/plans/prompts/phase-28-admin-trust-boundary.md`
-
-Inbound links: **2**
-
-- [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/plans/prompts/README.md`
 
-Inbound links: **18**
+Inbound links: **9**
 
 - [docs/plans/README.md](../plans/README.md)
+- [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/plans/README.md`
 
-Inbound links: **17**
+Inbound links: **23**
 
 - [docs/index.md](../index.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/plans/retired-plans.md`
 
-Inbound links: **5**
+Inbound links: **6**
 
 - [docs/archive/planning/README.md](../archive/planning/README.md)
 - [docs/index.md](../index.md)
 - [docs/plans/README.md](../plans/README.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/plans/security-review-2026-07-28.md`
 
-Inbound links: **5**
+Inbound links: **7**
+
+- [docs/archive/planning/phase-prompts/README.md](../archive/planning/phase-prompts/README.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/test-suite-speedups-2026-07-30.md`
+
+Inbound links: **6**
 
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/workstreams/09-test-suite-speedups.md](../plans/workstreams/09-test-suite-speedups.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/plans/workstreams/00-baseline-and-governance.md`
@@ -1149,10 +1207,13 @@ Inbound links: **4**
 
 ## `docs/plans/workstreams/01-security-and-protocol-correctness.md`
 
-Inbound links: **6**
+Inbound links: **11**
 
+- [docs/adr/0032-dasl-conformance-profiles.md](../adr/0032-dasl-conformance-profiles.md)
+- [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -1210,6 +1271,50 @@ Inbound links: **4**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/plans/workstreams/08-module-boundaries-and-library-consumption.md`
+
+Inbound links: **4**
+
+- [docs/plans/README.md](../plans/README.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/09-test-suite-speedups.md`
+
+Inbound links: **6**
+
+- [docs/plans/README.md](../plans/README.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/test-suite-speedups-2026-07-30.md](../plans/test-suite-speedups-2026-07-30.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/10-dasl-conformance.md`
+
+Inbound links: **9**
+
+- [docs/adr/0032-dasl-conformance-profiles.md](../adr/0032-dasl-conformance-profiles.md)
+- [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
+- [docs/plans/README.md](../plans/README.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/11-per-service-admin-uis.md`
+
+Inbound links: **6**
+
+- [docs/plans/README.md](../plans/README.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/plc-legacy-create-operation.md`
 
 Inbound links: **2**
@@ -1219,7 +1324,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **244**
+Inbound links: **257**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1230,7 +1335,7 @@ Inbound links: **244**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **45**
+Inbound links: **55**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1239,7 +1344,7 @@ Inbound links: **45**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **174**
+Inbound links: **185**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1290,7 +1395,7 @@ Inbound links: **3**
 
 ## `docs/repo-index/source-adjacent.md`
 
-Inbound links: **33**
+Inbound links: **34**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1327,6 +1432,20 @@ Inbound links: **2**
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/reports/spec-conformance-matrix.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/standard-site-appview-kickstart.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/standard-site-appview.md`
 
 Inbound links: **2**
 
@@ -1625,6 +1744,13 @@ Inbound links: **2**
 - [docs/repo-index/source-adjacent.md](source-adjacent.md)
 
 ## `Garazyk/Tests/fixtures/atproto-interop-tests/README.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/source-adjacent.md](source-adjacent.md)
+
+## `Garazyk/Tests/fixtures/dasl-testing/README.md`
 
 Inbound links: **2**
 
