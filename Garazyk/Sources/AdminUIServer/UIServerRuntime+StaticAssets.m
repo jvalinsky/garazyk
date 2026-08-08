@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIServerRuntime.h"
+#import "AdminUIServer/GZAdminUIHost.h"
 
 #import "AdminUIServer/UIAuthManager.h"
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -12,9 +12,9 @@
 #import "Network/Generated/GZXrpcNSID.h"
 #import "Auth/Crypto/CryptoUtils.h"
 #import "Debug/GZLogger.h"
-#import "AdminUIServer/UIServerRuntime+Private.h"
+#import "AdminUIServer/GZAdminUIHost+Private.h"
 
-@implementation UIServerRuntime (StaticAssets)
+@implementation GZAdminUIHost (StaticAssets)
 
 #pragma mark - Static Asset Serving
 

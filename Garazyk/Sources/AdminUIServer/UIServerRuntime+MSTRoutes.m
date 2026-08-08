@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "AdminUIServer/UIServerRuntime.h"
-#import "AdminUIServer/UIServerRuntime+Private.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/Packs/GZAdminUIMSTPack.h"
 #import "AdminUIServer/UIAuthManager.h"
-#import "AdminUIServer/UIBackendClient.h"
+#import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@implementation UIServerRuntime (MSTRoutes)
+@implementation GZAdminUIHost (MSTRoutes)
 
 - (void)registerMSTRoutes {
     __weak typeof(self) weakSelf = self;
@@ -18,7 +19,7 @@
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchMSTAccounts];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderMSTAccountsPartial:result]];
+        [response setBodyString:[GZAdminUIMSTPack renderMSTAccountsPartial:result]];
     }];
 
     // MST Viewer: Tree for DID
@@ -27,7 +28,7 @@
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchMSTTreeForDID:did];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderMSTTreePartial:result]];
+        [response setBodyString:[GZAdminUIMSTPack renderMSTTreePartial:result]];
     }];
 
     // MST Viewer: Stats for DID
@@ -36,7 +37,7 @@
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchMSTStatsForDID:did];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderMSTStatsPartial:result]];
+        [response setBodyString:[GZAdminUIMSTPack renderMSTStatsPartial:result]];
     }];
 
     // MST Viewer: Export
