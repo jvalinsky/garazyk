@@ -1,3 +1,8 @@
+---
+name: deciduous-viz
+description: Generate a standalone interactive HTML visualization of the deciduous decision graph, combining goals, decisions, actions, and outcomes with narratives, ADRs, and recent git history in one self-contained file.
+---
+
 # Skill: deciduous-viz
 
 Generate a standalone interactive HTML document from the deciduous decision
