@@ -16,6 +16,7 @@
     return @[
         @"PDS_ADMIN_PASSWORD",
         @"PDS_ADMIN_PASSWORD_FILE",
+        @"PDS_RUNNING_TESTS",
         @"PDS_ISSUER",
         @"PDS_REQUIRE_ISSUER",
         @"PDS_ENV",
@@ -56,7 +57,7 @@
 }
 
 - (void)setEnv:(NSString *)key value:(nullable NSString *)value {
-    if (value.length > 0) {
+    if (value != nil) {
         setenv(key.UTF8String, value.UTF8String, 1);
     } else {
         unsetenv(key.UTF8String);
@@ -64,9 +65,9 @@
 }
 
 - (NSString *)expectedIssuer {
-    NSString *configuredIssuer = [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"];
-    if ([configuredIssuer isKindOfClass:[NSString class]] && configuredIssuer.length > 0) {
-        return configuredIssuer;
+    const char *configuredIssuer = getenv("PDS_ISSUER");
+    if (configuredIssuer != NULL && configuredIssuer[0] != '\0') {
+        return [NSString stringWithUTF8String:configuredIssuer];
     }
     return @"https://pds.local:8443";
 }
@@ -185,6 +186,44 @@
     NSTimeInterval ttlSeconds = [jwt.payload.exp timeIntervalSinceDate:jwt.payload.iat];
     XCTAssertGreaterThanOrEqual(ttlSeconds, 119.0);
     XCTAssertLessThanOrEqual(ttlSeconds, 121.0);
+}
+
+- (void)testAuthenticationUsesCurrentEnvironmentAfterProcessInfoSnapshot {
+    NSDictionary<NSString *, NSString *> *environmentSnapshot = [NSProcessInfo processInfo].environment;
+    XCTAssertNotNil(environmentSnapshot);
+
+    NSString *issuer = @"https://fixture-snapshot.pds.example";
+    [self setEnv:@"PDS_ADMIN_PASSWORD_FILE" value:nil];
+    [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"fixture-configured-password"];
+    [self setEnv:@"PDS_RUNNING_TESTS" value:@"1"];
+    [self setEnv:@"PDS_ISSUER" value:issuer];
+    [self setEnv:@"PDS_REQUIRE_ISSUER" value:@"1"];
+    [self setEnv:@"PDS_ENV" value:@"production"];
+    [self setEnv:@"PDS_ADMIN_TOKEN_TTL_SECONDS" value:@"120"];
+    [self setEnv:@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER" value:@"1"];
+
+    NSError *error = nil;
+    BOOL authenticated = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"fixture-configured-password" error:&error];
+    XCTAssertTrue(authenticated);
+    XCTAssertNil(error);
+
+    NSError *jwtError = nil;
+    NSString *token = [PDSAdminAuth sharedAuth].adminToken;
+    ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:&jwtError];
+    XCTAssertNotNil(jwt);
+    XCTAssertNil(jwtError);
+    XCTAssertEqualObjects(jwt.payload.iss, issuer);
+    XCTAssertEqualObjects(jwt.payload.aud, issuer);
+    NSTimeInterval ttlSeconds = [jwt.payload.exp timeIntervalSinceDate:jwt.payload.iat];
+    XCTAssertGreaterThanOrEqual(ttlSeconds, 119.0);
+    XCTAssertLessThanOrEqual(ttlSeconds, 121.0);
+
+    NSDictionary *xAdminTokenOnlyHeaders = @{@"X-Admin-Token": token};
+    XCTAssertFalse([[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:xAdminTokenOnlyHeaders]);
+    [self setEnv:@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER" value:@""];
+    XCTAssertTrue([[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:xAdminTokenOnlyHeaders]);
+    NSDictionary *bearerHeaders = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
+    XCTAssertTrue([[PDSAdminAuth sharedAuth] isAuthenticatedWithRequest:bearerHeaders]);
 }
 
 - (void)testIsAuthenticatedWithRequestRejectsXAdminTokenWhenDisabled {
