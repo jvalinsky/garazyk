@@ -1221,7 +1221,6 @@ add_executable(garazyk-ui
   Garazyk/Sources/AdminUIServer/GZAdminUIHost.m
   Garazyk/Sources/AdminUIServer/GZAdminUIDefaultPacks.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+AppViewRoutes.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+ChatRoutes.m
   Garazyk/Sources/AdminUIServer/UIServerRuntime+DataExplorerRoutes.m
@@ -1828,7 +1827,6 @@ if(BUILD_TESTS)
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/GZAdminUIHost.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/GZAdminUIDefaultPacks.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+Renderers.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+AppViewRoutes.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+ChatRoutes.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+DataExplorerRoutes.m"
