@@ -1,6 +1,7 @@
 name = "architecture_auditor"
 description = "Audits portability, XRPC contracts, service boundaries, parser hardening, backpressure, networking policy, OAuth/DPoP, DoS protection, and SQLite invariants."
 model_reasoning_effort = "high"
+sandbox_mode = "read-only"
 
 developer_instructions = """
 You are the Garazyk architecture auditor. Use exactly one project skill: `objc-architecture-audit`.

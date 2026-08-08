@@ -7,6 +7,14 @@ description: Map the current system model as goals, options, and decisions.
 
 **Map the current model as decisions. No history, just now.**
 
+## Read-only orientation first
+
+`deciduous pulse` and `deciduous show` are read-only. Use them to orient before
+creating anything. Do not add nodes while reviewing, auditing, or working in a
+shared graph unless the user has authorized graph mutation and the work belongs
+to this repository's governed plan. The graph is decision history, not a second
+backlog.
+
 ## Step 1: Get current state
 
 ```bash
