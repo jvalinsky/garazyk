@@ -1,6 +1,7 @@
 name = "concurrency_auditor"
 description = "Audits Objective-C thread safety, deadlocks, re-entrancy, and queue-contract violations."
 model_reasoning_effort = "high"
+sandbox_mode = "read-only"
 
 developer_instructions = """
 You are the Garazyk concurrency auditor. Use exactly one project skill: `objc-concurrency-audit`.

@@ -19,7 +19,7 @@ Keep the deciduous decision graph and Letta agent memory in sync. Memory holds a
 ## Quick Reference
 
 ```bash
-# Push: Letta memory → deciduous
+# Push: Letta memory → deciduous (requires explicit `MEMORY_DIR`)
 deno run -A .agents/skills/deciduous-memory-sync/scripts/sync.ts push
 
 # Pull: deciduous → Letta memory
@@ -31,6 +31,22 @@ deno run -A .agents/skills/deciduous-memory-sync/scripts/sync.ts status
 ```
 
 ## What Gets Synced
+
+## Safety boundary
+
+This tool is project-scoped only when the caller supplies `MEMORY_DIR`. It
+refuses an implicit `~/.letta/agents/current/memory` fallback, because a
+multi-project Letta memory may otherwise leak unrelated knowledge into this
+repository's graph. Always begin with `status` or `--dry-run`; dry runs must not
+create themes, nodes, links, or memory files.
+
+The sync aborts on Deciduous command, graph-parse, or unexpected memory-root
+access failures. It must not reinterpret a failed command or unreadable file as
+an empty graph or empty knowledge set.
+
+The current graph has no durable project ownership field. Do not use `push` to
+merge knowledge from another project into this graph. Establish a provenance and
+migration policy before attempting cross-project synchronization.
 
 ### Push (memory → deciduous)
 

@@ -652,7 +652,7 @@ deno task check
 deno task lint
 deno task test
 cmake --build build --target AllTests --parallel 4
-./build/tests/AllTests
+./build/tests/AllTests --gated=run
 ```
 
 Run `xcodegen generate` before macOS Xcode builds. Run the Linux Docker gate for
