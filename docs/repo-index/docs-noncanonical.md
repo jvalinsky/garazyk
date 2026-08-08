@@ -5,7 +5,7 @@ title: Docs Noncanonical
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **181**
+Total documents in this view: **180**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -142,26 +142,26 @@ Total documents in this view: **181**
 | [docs/happyview-spaces-interop.md](../happyview-spaces-interop.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/permissioned-spaces-compatibility.md](../permissioned-spaces-compatibility.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/permissioned-spaces-key-rotation.md](../permissioned-spaces-key-rotation.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/plans/mega-plan.md](../plans/mega-plan.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-05-repo-boundaries.md](../plans/prompts/phase-05-repo-boundaries.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/prompts/README.md](../plans/prompts/README.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/README.md](../plans/README.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/retired-plans.md](../plans/retired-plans.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/security-review-2026-07-28.md](../plans/security-review-2026-07-28.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/test-suite-speedups-2026-07-30.md](../plans/test-suite-speedups-2026-07-30.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/00-baseline-and-governance.md](../plans/workstreams/00-baseline-and-governance.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/02-core-architecture-and-reliability.md](../plans/workstreams/02-core-architecture-and-reliability.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/03-repository-boundaries.md](../plans/workstreams/03-repository-boundaries.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/04-web-and-admin-ui.md](../plans/workstreams/04-web-and-admin-ui.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/05-embedded-runtime-and-deferred-products.md](../plans/workstreams/05-embedded-runtime-and-deferred-products.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/06-permissioned-spaces.md](../plans/workstreams/06-permissioned-spaces.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/07-storage-and-mst-optimization.md](../plans/workstreams/07-storage-and-mst-optimization.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/08-module-boundaries-and-library-consumption.md](../plans/workstreams/08-module-boundaries-and-library-consumption.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/09-test-suite-speedups.md](../plans/workstreams/09-test-suite-speedups.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
-| [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md) | `internal-reference` | [docs/archive/planning/README.md](../archive/planning/README.md) | `planning` | `reference` |
+| [docs/plans/mega-plan.md](../plans/mega-plan.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-05-repo-boundaries.md](../plans/prompts/phase-05-repo-boundaries.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/README.md](../plans/prompts/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/README.md](../plans/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/retired-plans.md](../plans/retired-plans.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/security-review-2026-07-28.md](../plans/security-review-2026-07-28.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/test-suite-speedups-2026-07-30.md](../plans/test-suite-speedups-2026-07-30.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/00-baseline-and-governance.md](../plans/workstreams/00-baseline-and-governance.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/02-core-architecture-and-reliability.md](../plans/workstreams/02-core-architecture-and-reliability.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/03-repository-boundaries.md](../plans/workstreams/03-repository-boundaries.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/04-web-and-admin-ui.md](../plans/workstreams/04-web-and-admin-ui.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/05-embedded-runtime-and-deferred-products.md](../plans/workstreams/05-embedded-runtime-and-deferred-products.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/06-permissioned-spaces.md](../plans/workstreams/06-permissioned-spaces.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/07-storage-and-mst-optimization.md](../plans/workstreams/07-storage-and-mst-optimization.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/08-module-boundaries-and-library-consumption.md](../plans/workstreams/08-module-boundaries-and-library-consumption.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/09-test-suite-speedups.md](../plans/workstreams/09-test-suite-speedups.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plc-legacy-create-operation.md](../plc-legacy-create-operation.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/all-documents.md](all-documents.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/backlinks.md](backlinks.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
@@ -175,7 +175,6 @@ Total documents in this view: **181**
 | [docs/repo-index/tooling.md](tooling.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-05-21-e2e-run.md](../reports/2026-05-21-e2e-run.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-07-17-optimization-research.md](../reports/2026-07-17-optimization-research.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/spec-conformance-matrix.md](../reports/spec-conformance-matrix.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/standard-site-appview-kickstart.md](../standard-site-appview-kickstart.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/standard-site-appview.md](../standard-site-appview.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
