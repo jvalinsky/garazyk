@@ -20,6 +20,7 @@
 #import "Sync/Relay/RelayAPIHandler.h"
 #import "Sync/Relay/RelayEventBuffer.h"
 #import "Sync/Relay/RelayDownstreamHandler.h"
+#import "Sync/Relay/RelayEventValidator.h"
 #import "Sync/Relay/RelayRepoStateManager.h"
 #if defined(GNUSTEP)
 #import <curl/curl.h>
@@ -336,6 +337,13 @@ int main(int argc, const char * argv[]) {
         }
         downstreamHandler.chainValidationMode = validationMode;
 
+        // The resolver is shared by ingress signature validation and Relay XRPC.
+        DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:@"https://plc.directory"];
+        RelayEventValidator *eventValidator = [[RelayEventValidator alloc]
+            initWithValidationMode:validationMode];
+        eventValidator.plcResolver = plcResolver;
+        downstreamHandler.eventValidator = eventValidator;
+
         // Initialize repo state manager for XRPC queries (with SQLite persistence)
         NSString *relayStatePath = [dataDir stringByAppendingPathComponent:@"relay_state.db"];
         NSError *relayStateError = nil;
@@ -463,8 +471,7 @@ int main(int argc, const char * argv[]) {
 
         // Register XRPC sync endpoints (listRepos, getHead, getRepo, getLatestCommit,
         // getRepoStatus, getHostStatus, requestCrawl)
-        // Initialize PLC resolver for getRepo redirect functionality
-        DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:@"https://plc.directory"];
+        // Reuse the ingress resolver for getRepo redirect functionality.
         RelayXrpcRoutePack *xrpcRoutePack = [[RelayXrpcRoutePack alloc]
             initWithRepoStateManager:repoStateManager
                subscribeReposHandler:subscribeReposHandler

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 
 #import "Core/ATProtoDIDDocumentFields.h"
+#import "Core/ATProtoMultibase.h"
 #import "Core/DID.h"
 
 @implementation ATProtoDIDDocumentFields
@@ -44,6 +45,23 @@
 
 + (nullable NSString *)strictAtprotoSigningKeyMultibaseFromDocument:(ATProtoDIDDocument *)document {
     return [self signingKeyFromDocument:document fragment:@"#atproto"];
+}
+
++ (nullable NSData *)strictAtprotoSigningKeyBytesFromDocument:(ATProtoDIDDocument *)document
+                                                         error:(NSError **)error {
+    NSString *key = [self strictAtprotoSigningKeyMultibaseFromDocument:document];
+    if (key.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDErrorDomain
+                                         code:DIDErrorInvalidDocument
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DID document has no #atproto signing key"}];
+        }
+        return nil;
+    }
+    if ([key hasPrefix:@"did:key:"]) {
+        key = [key substringFromIndex:@"did:key:".length];
+    }
+    return [ATProtoMultibase secp256k1PublicKeyBytesFromMultibase:key error:error];
 }
 
 + (nullable NSString *)spaceSigningKeyMultibaseFromDocument:(ATProtoDIDDocument *)document {
