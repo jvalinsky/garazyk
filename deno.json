@@ -6,6 +6,7 @@
     "./packages/hamownia",
     "./packages/narzedzia",
     "./packages/tui",
+    "./scripts/docs",
     "./scripts/scenario-dashboard"
   ],
   "imports": {
