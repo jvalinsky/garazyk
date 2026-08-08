@@ -23,6 +23,15 @@ repository-root-relative `packages/hamownia/cli.ts` path. The later ATProto
 packages also still rely on the workspace import map instead of self-contained
 published dependencies; those are follow-up work after the first TUI release.
 
+2026-08-08 R1 synchronization: `garazyk-tui` already matched the authoritative
+in-tree package and passed format, lint, check, and 252 tests. External
+`garazyk-atproto-testing` commit `61fd0ef5` was pushed after format, lint, check,
+3,946 tests, 99-scenario discovery, dashboard build, and package-entrypoint
+checks passed; a headless dashboard TUI capture also passed. R1 remains open
+only for one no-setup runtime compatibility check: no services are running, the
+shared binary build lacks `syrena`, and pulling/building the absent Docker
+images with 9.5 GB free is not safe.
+
 2026-07-18 operator decision (reaffirmed explicitly 2026-08-08): defer the
 `@garazyk/tui` publication indefinitely. Do not request or use JSR publisher
 access, and do not run a publish command, unless the maintainer gives explicit

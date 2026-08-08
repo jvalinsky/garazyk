@@ -15,10 +15,18 @@ form the dependency boundary.
 
 ## Current evidence
 
-- Both external repositories exist and have clean worktrees dated 2026-06-07.
+- Both external repositories exist, track their private `origin/main`, and had
+  clean worktrees after the 2026-08-08 synchronization pass.
 - The old split branch contains the in-tree deletion and compatibility cleanup.
-- Current `main` differs from the external copies in Gruszka, Hamownia, Laweta,
-  Schemat, and TUI.
+- `garazyk-tui` already contained the authoritative in-tree TUI changes through
+  the latest package commit, so no source commit or push was needed. Its
+  `fmt --check` (40 files), lint (36 files), check, and 252-test suite passed.
+- `garazyk-atproto-testing` commit `61fd0ef5` synchronized Gruszka, Hamownia,
+  Laweta, Schemat, scenario 99, scenarios 93/94, and the missing scenario and
+  topology adapters, then was pushed to private `origin/main`. Format (2,532
+  files), lint (2,290 files), check, package-entrypoint checks, 3,946 tests (4
+  ignored), 99-scenario discovery, dashboard build (24 routes, 16 islands), and
+  a headless dashboard TUI capture passed.
 - **2026-07-25:** no TypeScript file under `scripts/scenarios/` or `packages/`
   imports through `scripts/lib/deno`; `packages/hamownia/tasks.ts` now imports
   `XrpcClient` from the workspace `@garazyk/gruszka` package. The package-local
@@ -50,10 +58,10 @@ form the dependency boundary.
   or publish this or any later package, until the maintainer gives explicit
   permission in a future message and reopens Phase 5.
   This deferral blocks R2 (publication boundaries), R3 (wrapper removal), and
-  R4 (deletion branch regeneration). R1 (synchronize forward) is not blocked
-  and can proceed when capacity allows.
+  R4 (deletion branch regeneration). R1 source synchronization is not blocked
+  and completed on 2026-08-08; one runtime compatibility check remains.
 
-## R1. Synchronize forward
+## R1. Synchronize forward — source sync complete; runtime gate pending
 
 Treat current `main` as the source for code added after extraction. Port each
 external-repo difference with history-aware commits. Resolve configuration
@@ -72,6 +80,13 @@ deno task test
 
 For ATProto testing, also run scenario discovery, dashboard build, dashboard TUI
 capture smoke, and one no-setup compatibility check.
+
+The first three passed on 2026-08-08. The no-setup runtime check was not run:
+no local services were active, and a bounded binary-network start stopped
+because the shared build lacks `build/bin/syrena`. Docker images for the full
+local topology are not present, and pulling/building them with 9.5 GB free would
+violate the disk-headroom constraint. R1 remains open only for that named
+runtime check; this does not reopen package publication.
 
 ## R2. Establish publication boundaries
 
