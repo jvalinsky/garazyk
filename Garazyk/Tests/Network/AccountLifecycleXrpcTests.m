@@ -110,19 +110,34 @@
 
 #pragma mark - deactivateAccount
 
-- (void)testDeactivateAccountSucceeds {
+- (void)testDeactivateAccountAcceptsDeleteAfterAndReturnsEmptyResponse {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
-                                                       body:@{@"reason": @"testing"}
+                                                       body:@{@"deleteAfter": @"2026-12-31T23:59:59Z"}
                                                     headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    NSDictionary *json = response.jsonBody;
-    XCTAssertEqualObjects(json[@"success"], @YES);
+    XCTAssertTrue([response.jsonBody isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqual(((NSDictionary *)response.jsonBody).count, 0U);
+}
+
+- (void)testDeactivateAccountRejectsInvalidDeleteAfter {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    HttpResponse *wrongType = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
+                                                        body:@{@"deleteAfter": @1}
+                                                     headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(wrongType.statusCode, HttpStatusBadRequest);
+    XCTAssertEqualObjects(wrongType.jsonBody[@"error"], @"InvalidRequest");
+
+    HttpResponse *wrongFormat = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
+                                                          body:@{@"deleteAfter": @"not-a-datetime"}
+                                                       headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(wrongFormat.statusCode, HttpStatusBadRequest);
+    XCTAssertEqualObjects(wrongFormat.jsonBody[@"error"], @"InvalidRequest");
 }
 
 - (void)testDeactivateAccountReturns401WithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
-                                                       body:@{@"reason": @"testing"}
+                                                       body:@{}
                                                     headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
@@ -134,7 +149,7 @@
 
     // First deactivate
     HttpResponse *deactivateResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
-                                                                body:@{@"reason": @"testing"}
+                                                                body:@{}
                                                              headers:@{@"authorization": authHeader}];
     XCTAssertEqual(deactivateResponse.statusCode, 200);
 
@@ -143,8 +158,8 @@
                                                               body:nil
                                                            headers:@{@"authorization": authHeader}];
     XCTAssertEqual(activateResponse.statusCode, 200);
-    NSDictionary *json = activateResponse.jsonBody;
-    XCTAssertEqualObjects(json[@"success"], @YES);
+    XCTAssertTrue([activateResponse.jsonBody isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqual(((NSDictionary *)activateResponse.jsonBody).count, 0U);
 
     // Verify account is valid again
     HttpResponse *statusResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.checkAccountStatus"
