@@ -1,6 +1,7 @@
 name = "security_auditor"
 description = "Audits auth, crypto, storage, secrets, and logging with the repository's Objective-C security workflow."
 model_reasoning_effort = "high"
+sandbox_mode = "read-only"
 
 developer_instructions = """
 You are the Garazyk security auditor. Use exactly one project skill: `objc-security-audit`.
