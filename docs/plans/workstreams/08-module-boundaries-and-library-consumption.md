@@ -937,13 +937,13 @@ recursive-setter, host-process-exit, NSID constants, skill-index, and raw NSID
 registration checks; a direct source scan finds no remaining
 `NSProcessInfo.environment` access in `PDSAdminAuth`.
 
-Focused macOS execution is blocked in this worktree: `cmake -S . -B build
--DCMAKE_BUILD_TYPE=Debug` stops because the checked-out `secp256k1/` directory
-has no `CMakeLists.txt`. No GNUstep artifact is present locally and no GNUstep
-image was built for this slice. Therefore this change does **not** yet prove
-that the historic 488-failure cascade is fixed. Linux proof remains a focused
-GNUstep `PDSAdminAuthTests` run followed by the affected shared-fixture suite
-against an existing compatible artifact.
+After integration on `main`, the focused macOS `PDSAdminAuthTests` suite passed
+15/15, including the environment-snapshot regression. The run still emitted
+existing migration/audit-log noise, but no test failed. No GNUstep artifact is
+present locally and no GNUstep image was built for this slice. Therefore this
+change does **not** yet prove that the historic 488-failure cascade is fixed.
+Linux proof remains a focused GNUstep `PDSAdminAuthTests` run followed by the
+affected shared-fixture suite against an existing compatible artifact.
 
 **Decision needed before `ci.yml` itself changes.** Fixing
 `linux-gnustep-build-and-test` "for real" means either (a) adding a

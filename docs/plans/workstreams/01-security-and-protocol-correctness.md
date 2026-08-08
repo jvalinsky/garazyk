@@ -83,9 +83,9 @@ archive). G3 remains:
   and `deleteAccount` requires matching user auth, non-empty typed lexicon
   fields, and an atomically claimed deletion token. Focused XCTest coverage was
   added in `AccountLifecycleXrpcTests` and `RepoAuthServerTests`; source/static
-  gates passed on 2026-08-08. Native focused tests were not run because this
-  worktree has no build directory and only 16 GB free, so rebuilding AllTests
-  would violate this lane's disk-headroom constraint. **G3 remains open:** the
+  gates and the 1,264-test Deno suite passed on 2026-08-08. After integration on
+  `main`, `AccountLifecycleXrpcTests` passed 8/8, `RepoAuthServerTests` passed
+  35/35, and `XRPCAddRouteCrashSafetyTests` passed 1/1. **G3 remains open:** the
   separate Relay status contract is intentionally not changed by this PDS-only
   slice.
 
