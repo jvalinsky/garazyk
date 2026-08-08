@@ -1,111 +1,146 @@
 # Operational Guidance for AI Assistants
 
-This file defines the rules and workflows for AI assistants working in this repository.
+How to work in this repository: where things live, which gates must pass, and how
+planned work is picked up and recorded.
 
-## Framework Overview
+`CLAUDE.md` is the companion to this file and covers the *codebase*: build and
+test commands, architecture, and the conventions that will bite you (absolute
+imports, two-step test registration, generated NSID constants, SPDX headers,
+per-file style). Read it first for anything that touches `Garazyk/`. This file
+covers the *process* around that work and does not repeat it.
 
-The project uses the **WAT (Workflows, Agents, Tools)** framework:
+## Where things live
 
-- **Workflows**: The plan-governance loop in `docs/plans/` (mega plan, workstreams, and
-  `docs/plans/prompts/` execution prompts). The former `.opencode/workflows/` procedures were
-  removed in `25e72b5a1`.
-- **Agents**: Codex custom agents are defined in `.codex/agents/`; compatibility manifests for
-  Claude Code and opencode remain in `.agents/agents/`.
-- **Tools**: Human-invoked runners in `scripts/`.
-- **Skills**: Domain knowledge in `.agents/skills/`.
+| Path | Holds |
+| --- | --- |
+| `docs/plans/` | The only repository-wide backlog: mega plan, workstreams, phase prompts |
+| `docs/adr/` | Durable design decisions (34 accepted). Check before "fixing" surprising behavior |
+| `.agents/skills/` | 62 domain skills, indexed in [`.agents/skills/INDEX.md`](.agents/skills/INDEX.md) |
+| `.agents/agents/` | Subagent role manifests for Claude Code and opencode |
+| `.codex/agents/` | The same roles as Codex `*.toml` definitions |
+| `.claude/skills/` | Claude-specific skills (`plan-tasks`); `.claude/worktrees/` holds local worktrees |
+| `scripts/` | Human- and agent-invoked runners, generators, and CI gates |
+| deciduous graph | Decision and outcome history. Not a backlog — `docs/plans/` owns that |
 
-### Tool Configuration
+Nothing outside `docs/plans/` is an active plan. If you find a roadmap,
+next-steps file, or remediation plan elsewhere, it is stale by definition;
+fold anything useful into a workstream rather than reviving it.
 
-The repository supports **Claude Code**, **opencode**, and **Codex CLI**. Shared skills live in
-`.agents/skills/`; Codex project configuration lives in `.codex/`. The `.claude/` directory holds
-only local settings and worktrees now (its old symlinks and commands were removed in `25e72b5a1`).
+## Plan governance
 
-## Standard Workflows
+Four rules govern every plan change. They exist because each was violated once
+and cost a session's work.
 
-The old `.opencode/workflows/` files are removed. Current sources of truth:
+1. **The workstream wins.** When a `docs/plans/prompts/phase-*.md` file and its
+   workstream disagree, the workstream is authoritative and the prompt gets
+   corrected. Prompts are derived execution text, not a second backlog.
+2. **Plan state lands in the same change as the code.** A commit that finishes a
+   slice also updates the workstream entry and the phase frontmatter. A code
+   commit followed by a "docs: record …" commit is acceptable; a code commit with
+   no plan update at all leaves the next session reading a lie.
+3. **Evidence is dated and current.** A failing scenario counts only from a
+   current structured `hamownia agent` run. Dated failure snapshots are history,
+   not backlog. Update `last_verified` when you recheck source or test evidence.
+4. **Decide, don't drift.** An item that cannot proceed gets a recorded decision
+   — complete, closed-not-pursued with a rationale, or blocked with a named
+   input under a `## Blocked on` heading — rather than sitting "partial"
+   indefinitely.
 
-- **Quality Gates** (pre-push): `deno task check && deno task lint && deno task test`, then
-  `cmake --build build --target AllTests --parallel 4 && ./build/tests/AllTests --gated=run`.
-  Run `xcodegen generate` before macOS Xcode builds.
-- **Planned work**: pick up phases via `docs/plans/prompts/README.md` (loop protocol); the
-  mega plan and workstreams in `docs/plans/` stay authoritative.
-- **Pull Request Review**: delegate to the Codex `pr_reviewer` agent (or the compatibility
-  `pr-reviewer` role in another client; see below).
+To see what is left, invoke the `plan-tasks` skill. It re-reads the plan files
+fresh every time; do not answer "what's next" from memory or from an earlier
+table in the same conversation.
 
-## Subagent Delegation
+### Phase loop
 
-Delegate independent work through the client's built-in subagent tools. Codex loads project roles from `.codex/agents/*.toml`. The Markdown manifests under `.agents/agents/` describe equivalent roles for other supported clients. Use one skill per subagent invocation.
+`docs/plans/prompts/README.md` holds the full protocol. In short: take the
+lowest-numbered phase whose `status` is `pending`/`in-progress` and whose
+`depends_on` phases are all `complete`; set `in-progress` together with a body
+note saying what started; run the phase's acceptance gate plus the global gates;
+record evidence and set `complete`. A `blocked` dependency does not satisfy
+`depends_on`.
 
-| Codex agent                 | Compatibility manifest        | Responsibility                                                 |
-| --------------------------- | ----------------------------- | -------------------------------------------------------------- |
-| `security_auditor`          | `security-auditor`            | Auth, crypto, storage, secrets, and logging.                   |
-| `concurrency_auditor`       | `concurrency-auditor`         | Threading, queues, and locks.                                  |
-| `architecture_auditor`      | `architecture-auditor`        | XRPC handlers, service boundaries, and platform compatibility. |
-| `web_ui_auditor`            | `web-ui-auditor`              | `AdminUI/` and web assets.                                     |
-| `atproto_coverage_auditor`  | `atproto-coverage-auditor`    | `Lexicons/` and XRPC registration.                             |
-| `sqlite_perf_auditor`       | `sqlite-perf-auditor`         | SQLite schema/query changes, migrations, index and PRAGMA fit. |
-| `scenario_runner`           | `scenario-runner`             | Structured hamownia scenario runs; dated evidence for gates.   |
-| `pr_reviewer`               | `pr-reviewer`                 | Branch and pull request reviews.                               |
+## Quality gates
 
-## Project Skills
+These mirror CI. Run the applicable ones before pushing.
 
-Skills are located in `.agents/skills/`. The LLM loads them on-demand via the `skill` tool when a
-task matches their description.
+```bash
+deno task check && deno task lint && deno task test
+```
 
-| Skill                         | When to Use                                                              |
-| ----------------------------- | ------------------------------------------------------------------------ |
-| `gnustep-compat`              | Platform detection, GNUstep bugs/workarounds, compat shims, Docker build |
-| `tui-capture-replay`          | Record TUI interactions as asciicast + export HTML playback via VirtualTuiHarness |
-| `garazyk-testing`             | Test infrastructure, mock patterns, environment gating, registration     |
-| `garazyk-database`            | SQLite connection pooling, WAL config, migrations, actor store           |
-| `atproto-coverage-audit`      | XRPC endpoint stub detection, schema sync against lexicons               |
-| `atproto-scenario-testing`    | Narrative-driven scenarios against local ATProto services                |
-| `better-code-objc`            | ARC, nullability, generics, GCD, NSError patterns                        |
-| `better-code-opencode`        | Correctness, Clarity, Changeability, Primitives over Features            |
-| `better-code-security-design` | Sink prevention, source-to-sink tracing, safe primitives                 |
-| `debugging-objc-crashes`      | Systematic macOS ObjC crash diagnosis                                    |
-| `deslop`                      | Remove AI writing patterns from prose                                    |
-| `objc-architecture-audit`     | Portability, XRPC contracts, service boundaries, parser hardening        |
-| `objc-concurrency-audit`      | Data races, deadlocks, re-entrancy, queue contracts                      |
-| `objc-security-audit`         | SQL injection, crypto, secrets, log redaction                            |
-| `professional-bash-scripting` | Maintainable, secure bash scripts                                        |
-| `rewriting-code-comments`     | HeaderDoc standards, remove AI-isms                                      |
-| `slop-detector`               | Low-effort LLM code patterns, boilerplate, fragile code                  |
-| `sqlite-sql-best-practices`   | SQLite correctness, query perf, index design, migrations                 |
-| `sqlite-performance-optimization` | Query-plan analysis, indexing strategy, PRAGMA tuning, write batching |
-| `using-deciduous`             | Track goals/decisions in the deciduous decision graph                    |
-| `deciduous-viz`               | Generate interactive HTML from the deciduous decision graph              |
-| `web-ui-audit`                | Accessibility (WCAG), JS patterns, frontend security                     |
-| `expand_md_topic`             | Expand markdown outlines into documentation                              |
+```bash
+cmake --build build --target AllTests --parallel 4 && ./build/tests/AllTests --gated=run
+```
 
-## Development Rules
+`--gated=run` matters: socket and integration classes are skipped by default, so
+a green default run is not a green run. Keep `--parallel` at 4 — unbounded builds
+exhaust memory on 16 GB machines. Run `xcodegen generate` before macOS Xcode
+builds, and the Linux Docker gate for Compat, Network, or binary entrypoint
+changes.
 
-1. **Builds**: Use out-of-source builds.
-2. **macOS**: Run `xcodegen generate` before building.
-3. **Tracking**: Record actions in the `deciduous` graph.
-4. **Style**: Maintain professional and direct communication.
+Repository-specific gates (also enforced in CI):
 
-## Decision Graph Workflow
+```bash
+./scripts/dev/check_module_boundaries.sh .
+./scripts/check_module_boundaries.sh build
+./scripts/check_namespace.sh build
+./scripts/check-recursive-setters.sh
+./scripts/check_no_host_process_exit.sh
+deno run -A scripts/generate_nsid_constants.ts --check
+deno run -A scripts/dev/generate_skill_index.ts --check
+deno run --allow-read packages/narzedzia/nsid_registration_literal_check.ts .
+```
 
-Log decisions in the `deciduous` graph during development.
+## Subagent delegation
 
-### Commands
+Delegate independent work through the client's built-in subagent tools. Codex
+loads roles from `.codex/agents/*.toml`; the Markdown manifests in
+`.agents/agents/` describe the equivalent roles for other clients. Use one skill
+per subagent invocation.
 
-Use the `deciduous` CLI directly. The old `/decision`, `/recover`, `/work`, `/document`, `/build-test`, and `/sync` slash commands were removed in `25e72b5a1`. Load `.agents/skills/using-deciduous` for the workflow.
+| Codex agent | Compatibility manifest | Responsibility |
+| --- | --- | --- |
+| `security_auditor` | `security-auditor` | Auth, crypto, storage, secrets, and logging |
+| `concurrency_auditor` | `concurrency-auditor` | Threading, queues, and locks |
+| `architecture_auditor` | `architecture-auditor` | XRPC handlers, service boundaries, platform compatibility |
+| `web_ui_auditor` | `web-ui-auditor` | Admin UI and web assets |
+| `atproto_coverage_auditor` | `atproto-coverage-auditor` | Lexicons and XRPC registration |
+| `sqlite_perf_auditor` | `sqlite-perf-auditor` | SQLite schema/query changes, migrations, index and PRAGMA fit |
+| `scenario_runner` | `scenario-runner` | Structured hamownia scenario runs; dated evidence for gates |
+| `pr_reviewer` | `pr-reviewer` | Branch and pull request reviews |
 
-### Decision Flow
+## Skills
 
-The standard flow through the graph is: `goal -> options -> decision -> actions -> outcomes`
+[`.agents/skills/INDEX.md`](.agents/skills/INDEX.md) is generated from each
+skill's frontmatter and lists all 62 by category. Regenerate it after adding or
+renaming a skill:
 
-- **Goals**: Define objectives.
-- **Options**: Approaches considered for a goal.
-- **Decisions**: Selected approach from the options.
-- **Actions**: Implementation of the decision.
-- **Outcomes**: Results of the actions.
+```bash
+deno run -A scripts/dev/generate_skill_index.ts
+```
 
-### Prompt Capture
+The generator is also the gate: `--check` fails when the index is stale, when a
+`SKILL.md` has no `description:` (nothing can match it to a task), or when a
+directory name and its frontmatter `name` disagree.
 
-Use the exact user message when creating goal nodes. Use `--prompt-stdin` for multi-line input.
+Worth knowing by name, because they carry constraints you will otherwise
+rediscover the hard way:
+
+| Skill | Why |
+| --- | --- |
+| `garazyk-testing` | Test registration is two steps; a missed one silently runs zero tests |
+| `garazyk-database` | Connection pooling, WAL config, and migration atomicity rules |
+| `gnustep-compat` | Linux is a supported platform; macOS-only assumptions break it |
+| `sqlite-sql-best-practices` | Load before any schema, query, or index change |
+| `sqlite-performance-optimization` | Query-plan analysis before optimizing anything |
+| `using-deciduous` | The decision-graph workflow below |
+
+## Decision graph
+
+Record goals, decisions, and outcomes in the deciduous graph as you work. Load
+`.agents/skills/using-deciduous` for the full workflow.
+
+The standard flow is `goal → options → decision → actions → outcomes`. Use the
+exact user message when creating a goal node:
 
 ```bash
 deciduous add goal "Title" -c 90 --prompt-stdin << 'EOF'
@@ -113,10 +148,37 @@ deciduous add goal "Title" -c 90 --prompt-stdin << 'EOF'
 EOF
 ```
 
-### Quick Commands
+| Action | Command |
+| --- | --- |
+| Orient on current state, gaps, and health | `deciduous pulse` |
+| Inspect one node | `deciduous show <id>` |
+| Update a node's status | `deciduous status <id> <state>` |
+| Export the graph | `deciduous graph` / `deciduous sync` |
 
-| Action       | Command                     |
-| ------------ | --------------------------- |
-| View Graph   | `deciduous graph`           |
-| Sync Graph   | `deciduous sync`            |
-| Check Status | `deciduous opencode status` |
+Close nodes as they land. A `pending` node whose work has actually shipped is
+worse than no node — `pulse` is an orientation tool, and stale entries make it
+point the wrong way. When work is superseded rather than finished, record that
+explicitly instead of leaving the node open.
+
+## Concurrent sessions
+
+Multiple agents and worktrees run against this repository at once
+(`.claude/worktrees/` currently holds several). Before starting any mutating
+work:
+
+- run `git status` and `git log --oneline -5`; uncommitted changes from another
+  phase mean you should commit, stash, or coordinate — never fold two phases into
+  one commit;
+- run mutating phases in separate worktrees, never two in the same one;
+- expect the deciduous graph and plan files to move underneath you, and re-read
+  rather than trusting a snapshot from earlier in the session.
+
+## Development rules
+
+1. Use out-of-source builds (`build/`).
+2. Run `xcodegen generate` before macOS Xcode builds.
+3. Match the style of the file you are editing; do not run `clang-format` over
+   existing files (see `CLAUDE.md`).
+4. Record decisions and outcomes in the deciduous graph.
+5. Keep communication direct and factual. Report what was verified, name what was
+   skipped, and do not describe unrun gates as passing.

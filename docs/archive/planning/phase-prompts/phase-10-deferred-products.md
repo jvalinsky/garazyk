@@ -36,7 +36,7 @@ worker smoke. `kernel/PARSER_STATUS.md` and `docs/runtime-gap-report.md` now
 redirect to the generated matrix.
 
 **Slice 3 complete (2026-07-22): E3 decision brief.**
-See [the product-surface decision brief](../../archive/planning/phase-10-product-surface-decision-brief.md).
+See [the product-surface decision brief](../phase-10-product-surface-decision-brief.md).
 It corrects the stale cloud-blob description and records a support,
 experimental, or remove choice for every incomplete surface.
 

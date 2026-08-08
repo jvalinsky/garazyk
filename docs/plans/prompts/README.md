@@ -1,6 +1,6 @@
 ---
 title: Phase Execution Prompts
-last_verified: 2026-07-24
+last_verified: 2026-08-05
 ---
 
 # Phase Execution Prompts
@@ -10,14 +10,9 @@ These are **derived execution prompts, not plans**: the
 [mega plan](../mega-plan.md) and workstreams stay authoritative. If a prompt
 and a workstream disagree, the workstream wins and the prompt gets fixed.
 
-Phases 13-14 derive from workstream 01 § S8 (auth trust-boundary review,
-2026-07-26). Phase 14 must not start before 13 is complete: it wires code
-whose latent defects phase 13's contracts and phase 14's own steps 1-5 fix.
-
-Phases 15-16 derive from workstream 01 § S9 (Repository/Database/Blob review,
-2026-07-26). Both have empty `depends_on` and touch files that phases 13-14 do
-not, so they may run concurrently — but only in separate git worktrees, per
-the rule below.
+Two phases remain open; see the index below. Completed prompts are archived
+rather than deleted, because several are cited by name from ADRs and review
+documents.
 
 ## Loop protocol
 
@@ -77,21 +72,15 @@ These are Codex built-in agent types; project audit roles live under
 
 ## Phase index
 
-| # | File | Focus | Depends on |
-| - | ---- | ----- | ---------- |
-| 1 | [phase-01](phase-01-browser-baseline.md) | Browser smoke baseline (closes mega Phase 0) | — |
-| 2 | [phase-02](phase-02-spaces-acceptance.md) | Permissioned spaces multi-PDS acceptance | — |
-| 3 | [phase-03](phase-03-xrpc-truth-and-spec-matrix.md) | Truthful XRPC metrics + spec conformance matrix | — |
-| 4 | [phase-04](phase-04-federation-lifecycle.md) | Backpressure, adversarial ingress, account lifecycle, gated CI | — |
-| 5 | [phase-05](phase-05-repo-boundaries.md) | Deno repo extraction and package publication | — |
-| 6 | [phase-06](phase-06-nsid-and-cli-adoption.md) | Generated NSID constants + CLI/lifecycle adoption | 3 |
-| 7 | [phase-07](phase-07-relay-and-sync.md) | Relay product decision + incremental public sync | 4 |
-| 8 | [phase-08](phase-08-admin-ui.md) | Admin UI accessibility and structural cleanup | 1 |
-| 9 | [phase-09](phase-09-spaces-hardening.md) | Space key rotation, ops readiness, attestation decision | 2 |
-| 10 | [phase-10](phase-10-deferred-products.md) | WASM baseline + SMTP/blob/STAR decisions + drift cadence | — |
-| 11 | [phase-11](phase-11-storage-and-mst-optimization.md) | Storage and MST optimization remainder (workstream 07) | 7 |
-| 12 | [phase-12](phase-12-godfile-decomposition.md) | Objective-C god-file decomposition (route packs, OAuth, PDS services) | 6 |
+Only open phases live here. The 23 phases that reached `status: complete` were
+moved to [`docs/archive/planning/phase-prompts/`](../../archive/planning/phase-prompts/README.md)
+on 2026-08-05, with a table mapping each to the workstream or mega-plan entry
+that records its outcome.
 
-<!-- Phases 13-21 exist as files but are not listed here; backfill if needed. -->
+| # | File | Focus | Status | Depends on |
+| - | ---- | ----- | ------ | ---------- |
+| 5 | [phase-05](phase-05-repo-boundaries.md) | Deno repo extraction and package publication | `blocked` — maintainer must lift the publication deferral | — |
+| 30 | [phase-30](phase-30-admin-ui-library-extraction.md) | Extract `ATProtoAdminUI`, invert route registration (workstream 11 M2) | `pending` | — |
 
-| 22 | [phase-22](phase-22-mst-viewer-and-dead-cookie.md) | MST viewer gating + dead admin cookie removal (workstream 01 § S12) | — |
+Phase 30 is the only actionable entry: phase 5 cannot start until the JSR
+publication deferral is explicitly reopened (see its `## Blocked on` section).
