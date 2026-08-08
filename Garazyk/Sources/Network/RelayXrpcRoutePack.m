@@ -392,7 +392,8 @@ static NSURL *didWebDocumentURL(NSString *did) {
                 statusStr = @"desynchronized";
                 break;
             case RelayRepoStatusInProgress:
-                statusStr = @"in-progress";
+                // The lexicon has no published inactive reason for a repo
+                // which is currently being synchronized.
                 break;
             case RelayRepoStatusThrottled:
                 statusStr = @"throttled";

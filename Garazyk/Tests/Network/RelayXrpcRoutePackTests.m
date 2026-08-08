@@ -174,20 +174,88 @@
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
-- (void)testGetRepoStatusReturnsActiveFalseForUnknownRepo {
+- (HttpResponse *)getRepoStatusForDID:(NSString *)did {
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.getRepoStatus"
-                                                   queryString:@"did=did%3Aplc%3Aunknown"
-                                                    queryParams:@{@"did": @"did:plc:unknown"}
+                                                   queryString:@""
+                                                    queryParams:@{@"did": did}
                                                        version:@"HTTP/1.1"
                                                        headers:@{}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [self.server dispatchRequest:request];
-    XCTAssertEqual(response.statusCode, 200);
-    XCTAssertEqualObjects(response.jsonBody[@"active"], @NO);
-    XCTAssertEqualObjects(response.jsonBody[@"did"], @"did:plc:unknown");
+    return [self.server dispatchRequest:request];
+}
+
+- (void)recordActiveRepo:(NSString *)did rev:(NSString *)rev {
+    [self.repoStateManager handleCommitForRepo:did
+                                          root:@"bafyreirepostatus"
+                                           rev:rev
+                                           seq:1];
+}
+
+- (void)testGetRepoStatusReturnsInactiveForUnknownRepo {
+    NSString *did = @"did:plc:unknown";
+    HttpResponse *response = [self getRepoStatusForDID:did];
+
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertEqualObjects(response.jsonBody, (@{
+        @"did": did,
+        @"active": @NO,
+        @"status": @"desynchronized"
+    }));
+}
+
+- (void)testGetRepoStatusReturnsActiveRepoRevision {
+    NSString *did = @"did:plc:active";
+    [self recordActiveRepo:did rev:@"3jzfcijpj2z2a"];
+
+    HttpResponse *response = [self getRepoStatusForDID:did];
+
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertEqualObjects(response.jsonBody, (@{
+        @"did": did,
+        @"active": @YES,
+        @"rev": @"3jzfcijpj2z2a"
+    }));
+}
+
+- (void)testGetRepoStatusMapsInactiveStatesToLexiconKnownValues {
+    NSString *did = @"did:plc:inactive";
+    [self recordActiveRepo:did rev:@"3jzfcijpj2z2a"];
+    NSArray<NSDictionary<NSString *, id> *> *states = @[
+        @{@"state": @(RelayRepoStatusDesynchronized), @"status": @"desynchronized"},
+        @{@"state": @(RelayRepoStatusThrottled), @"status": @"throttled"},
+        @{@"state": @(RelayRepoStatusTombstoned), @"status": @"deleted"}
+    ];
+
+    for (NSDictionary<NSString *, id> *state in states) {
+        [self.repoStateManager handleAccountEventForRepo:did
+                                                   status:[state[@"state"] integerValue]];
+        HttpResponse *response = [self getRepoStatusForDID:did];
+
+        XCTAssertEqual(response.statusCode, HttpStatusOK);
+        XCTAssertEqualObjects(response.jsonBody, (@{
+            @"did": did,
+            @"active": @NO,
+            @"status": state[@"status"]
+        }));
+    }
+}
+
+- (void)testGetRepoStatusOmitsStatusWhileSynchronizationIsInProgress {
+    NSString *did = @"did:plc:in-progress";
+    [self recordActiveRepo:did rev:@"3jzfcijpj2z2a"];
+    [self.repoStateManager handleAccountEventForRepo:did
+                                               status:RelayRepoStatusInProgress];
+
+    HttpResponse *response = [self getRepoStatusForDID:did];
+
+    XCTAssertEqual(response.statusCode, HttpStatusOK);
+    XCTAssertEqualObjects(response.jsonBody, (@{
+        @"did": did,
+        @"active": @NO
+    }));
 }
 
 @end
