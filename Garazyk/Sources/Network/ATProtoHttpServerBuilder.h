@@ -16,7 +16,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpServer;
+@class ATProtoHttpServer;
 @class PDSController;
 @class PDSApplication;
 @class ATProtoServiceConfiguration;
@@ -42,7 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
  builder.serviceDatabases = databases;
 
  NSError *error = nil;
- HttpServer *server = [builder buildWithError:&error];
+ ATProtoHttpServer *server = [builder buildWithError:&error];
  if (server) {
      [server startWithError:nil];
  }
@@ -127,17 +127,17 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Builds and configures an HTTP server.
 
- @discussion Creates an HttpServer instance and registers all enabled routes
+ @discussion Creates an ATProtoHttpServer instance and registers all enabled routes
  based on the builder's configuration. The server is returned in a stopped
  state; the caller must start it.
 
  @param error On return, contains an error if building failed.
- @return A configured HttpServer instance, or nil on failure.
+ @return A configured ATProtoHttpServer instance, or nil on failure.
  */
 /**
  * @abstract Performs the buildWithError operation.
  */
-- (nullable HttpServer *)buildWithError:(NSError **)error;
+- (nullable ATProtoHttpServer *)buildWithError:(NSError **)error;
 
 /*!
  @method configureServer:error:
@@ -154,7 +154,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the configureServer operation.
  */
-- (BOOL)configureServer:(HttpServer *)server error:(NSError **)error;
+- (BOOL)configureServer:(ATProtoHttpServer *)server error:(NSError **)error;
 
 @end
 

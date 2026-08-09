@@ -37,8 +37,8 @@ low-consumer half of Storage/Transport, 14 classes) is complete**. Batch 3b's
 Storage slice is now landed: 17 higher-consumer Storage classes are prefixed;
 its Core HTTP slice is also landed: six Core-owned HTTP classes are prefixed.
 The namespace baseline is 283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 →
-229 → 228 → 214 → 197 → 191. The remaining batch-3b Transport slice and
-batches 4-6 remain open. M6 has not started.
+229 → 228 → 214 → 197 → 191 → 175. Batch 3b is complete; batches 4-6
+remain open. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -1685,9 +1685,11 @@ Namespace baseline ratchets 228 → 214. Verified: 15 touched suites pass;
 source and link-time module-boundary checks and the recursive-setter check
 pass; full `AllTests --gated=run`: 4,975 tests, 0 failures, 583s.
 
-**Batch 3b (the remaining higher-consumer Storage/Transport classes) and
-batches 4-6** (PLC/Sync/Services/MediaCore, XRPC/VideoService, Runtime)
-remain open for future sessions.
+**Batch 3b (the remaining higher-consumer Storage/Transport classes) is
+complete.** Its Storage and Core HTTP slices landed in `4edec630` and
+`604a0870`/`e742580d`; its Transport slice is recorded below. Batches 4-6
+(PLC/Sync/Services/MediaCore, XRPC/VideoService, Runtime) remain open for
+future sessions.
 
 **Batch 3b Storage slice (2026-08-08):** Renamed the remaining higher-consumer
 Storage classes to the `ATProto` prefix: `MST`, `MSTAtomicReference`,
@@ -1708,6 +1710,18 @@ forms. File names and import paths remain unchanged; quoted wire/error strings
 and test category labels remain unchanged. No hard-coded runtime class lookup or
 keyed-archive use references these names. Baseline ratchets 197 → 191. Native
 and global gates remain pending the complete batch-3b slice.
+
+**Batch 3b Transport slice (2026-08-08):** Renamed the remaining higher-
+consumer Transport classes to the `ATProto` prefix: `Http1Parser`,
+`Http1ParserError`, `Http1PipelinePolicy`, `HttpBufferPool`,
+`HttpChunkedBodyParser`, `HttpConnectionIOCoordinator`, `HttpProtocolDriver`,
+`HttpProtocolSession`, `HttpRequestDispatcher`, `HttpResponseSender`,
+`HttpRouteTrie`, `HttpServer`, `RateLimitResult`, `RateLimiter`,
+`SSRFValidator`, and `WebSocketUpgradeHandler`. File names and import paths
+remain unchanged; quoted protocol/error strings and test category labels remain
+unchanged. No hard-coded runtime lookup or keyed-archive use references these
+names. Baseline ratchets 191 → 175. Batch 3b is complete pending the native
+and global gate reruns.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are

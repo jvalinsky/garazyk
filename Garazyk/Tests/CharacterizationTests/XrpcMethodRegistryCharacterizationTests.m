@@ -246,7 +246,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
         PDSApplication *firstApplication = [[PDSApplication alloc] initWithDataDirectory:firstDataURL.path];
         PDSApplication *secondApplication = [[PDSApplication alloc] initWithDataDirectory:secondDataURL.path];
 
-        [ATProtoHttpXrpcRoutePack registerRoutesWithServer:[HttpServer serverWithPort:0]
+        [ATProtoHttpXrpcRoutePack registerRoutesWithServer:[ATProtoHttpServer serverWithPort:0]
                                                 dispatcher:dispatcher
                                                application:firstApplication
                                                 controller:nil
@@ -256,7 +256,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
 
         NSException *exception = nil;
         @try {
-            [ATProtoHttpXrpcRoutePack registerRoutesWithServer:[HttpServer serverWithPort:0]
+            [ATProtoHttpXrpcRoutePack registerRoutesWithServer:[ATProtoHttpServer serverWithPort:0]
                                                     dispatcher:dispatcher
                                                    application:secondApplication
                                                     controller:nil

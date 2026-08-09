@@ -26,7 +26,7 @@
     return self;
 }
 
-- (void)registerRoutesWithServer:(HttpServer *)server {
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server {
     [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getBacklinks" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetBacklinks:request response:response];
     }];
@@ -348,7 +348,7 @@
 }
 
 // NOTE: Blocks the calling GCD thread up to 5s. Local cache is checked first;
-// network call only fires on cache miss. If HttpServer moves to async handler
+// network call only fires on cache miss. If ATProtoHttpServer moves to async handler
 // dispatch, refactor to completion-block pattern.
 - (NSString *)resolveIdentifierToDID:(NSString *)identifier error:(NSError **)error {
     if ([identifier hasPrefix:@"did:"]) return identifier;
@@ -390,7 +390,7 @@
 }
 
 // NOTE: Blocks the calling GCD thread up to 5s. Local database is checked
-// first; network fetch only fires on cache miss. If HttpServer moves to async
+// first; network fetch only fires on cache miss. If ATProtoHttpServer moves to async
 // handler dispatch, refactor to completion-block pattern.
 - (nullable NSDictionary *)fetchRemoteRecordForDID:(NSString *)did
                                        collection:(NSString *)collection

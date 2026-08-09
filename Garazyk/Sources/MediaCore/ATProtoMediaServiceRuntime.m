@@ -13,7 +13,7 @@
 #import "Debug/GZLogger.h"
 
 @interface ATProtoMediaServiceRuntime ()
-@property (nonatomic, strong, readwrite) HttpServer *httpServer;
+@property (nonatomic, strong, readwrite) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong, readwrite) ATProtoMediaWorker *worker;
 @property (nonatomic, strong) ATProtoMediaSQLiteStore *jobStore;
 @property (nonatomic, strong) id<PDSBlobProvider> blobProvider;
@@ -95,7 +95,7 @@
     [xrpcPack registerWithDispatcher:dispatcher services:routeServices];
 
     // ── HTTP Server ───────────────────────────────────────────
-    self.httpServer = [HttpServer serverWithPort:config.port];
+    self.httpServer = [ATProtoHttpServer serverWithPort:config.port];
 
     __weak typeof(self) weakSelf = self;
     void (^xrpcHandler)(ATProtoHttpRequest *, ATProtoHttpResponse *) = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {

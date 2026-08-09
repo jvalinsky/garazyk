@@ -46,7 +46,7 @@ typedef id<ATProtoNetworkListener> _Nullable (^PDSWebSocketListenerFactory)(NSUI
  @abstract Unified WebSocket server supporting both HTTP upgrade and raw sockets.
 
  @discussion Provides a single server implementation that:
- - Accepts HTTP upgrade requests (from HttpServer)
+ - Accepts HTTP upgrade requests (from ATProtoHttpServer)
  - Accepts raw WebSocket connections on a dedicated port
  - Uses ATProtoNetworkTransport for platform abstraction
  - Notifies via callbacks when connections are accepted
@@ -129,7 +129,7 @@ typedef id<ATProtoNetworkListener> _Nullable (^PDSWebSocketListenerFactory)(NSUI
  @param transport The transport wrapping an HTTP-upgraded connection.
  @param path The WebSocket request path (for routing if needed).
 
- @discussion Called by HttpServer when an HTTP upgrade request is received.
+ @discussion Called by ATProtoHttpServer when an HTTP upgrade request is received.
  The transport is wrapped in a PDSWebSocketNetworkAdapter if needed, then
  passed to the connectionHandler.
  */

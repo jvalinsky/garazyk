@@ -99,8 +99,8 @@
 
 #pragma mark - Building
 
-- (nullable HttpServer *)buildWithError:(NSError **)error {
-  HttpServer *server = [HttpServer serverWithPort:self.port];
+- (nullable ATProtoHttpServer *)buildWithError:(NSError **)error {
+  ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:self.port];
 
   if (![self configureServer:server error:error]) {
     return nil;
@@ -109,7 +109,7 @@
   return server;
 }
 
-- (BOOL)configureServer:(HttpServer *)server error:(NSError **)error {
+- (BOOL)configureServer:(ATProtoHttpServer *)server error:(NSError **)error {
   if (!server) {
     if (error) {
       *error =

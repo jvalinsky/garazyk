@@ -54,18 +54,6 @@ GraphService
 GroupService
 HandleResolutionFailure
 HandleResolver
-Http1Parser
-Http1ParserError
-Http1PipelinePolicy
-HttpBufferPool
-HttpChunkedBodyParser
-HttpConnectionIOCoordinator
-HttpProtocolDriver
-HttpProtocolSession
-HttpRequestDispatcher
-HttpResponseSender
-HttpRouteTrie
-HttpServer
 JelczConfiguration
 JelczDatabase
 MSTViewerHandler
@@ -108,8 +96,6 @@ PLCSyncClient
 PLCSyncEngine
 PLCWebSocketTransportRegistration
 RateLimitMiddleware
-RateLimitResult
-RateLimiter
 RecordLifecycleHandler
 RelayAPIHandler
 RelayClient
@@ -124,7 +110,6 @@ RelayUpstreamManager
 RelayValidationOutcome
 RelayXrpcRoutePack
 ResourceOwnershipMiddleware
-SSRFValidator
 SearchIndexService
 SecItemLinuxStore
 SecKeyWrapper
@@ -155,7 +140,6 @@ WebSocketConnection
 WebSocketHeartbeatPolicy
 WebSocketProtocolSession
 WebSocketServer
-WebSocketUpgradeHandler
 XrpcAdminPack
 XrpcAppBskyActorPack
 XrpcAppBskyAgeAssurancePack

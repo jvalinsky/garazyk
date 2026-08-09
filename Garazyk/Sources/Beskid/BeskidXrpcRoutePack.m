@@ -29,7 +29,7 @@
     return self;
 }
 
-- (void)registerRoutesWithServer:(HttpServer *)server {
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server {
     // com.atproto.* queries
     [server addRoute:@"GET" path:@"/xrpc/com.atproto.repo.getRecord" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetRecord:request response:response];

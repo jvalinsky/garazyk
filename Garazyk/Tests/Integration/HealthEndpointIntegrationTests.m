@@ -8,7 +8,7 @@
 #import "Database/Monitoring/PDSHealthCheck.h"
 
 @interface HealthEndpointIntegrationTests : XCTestCase
-@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong) ATProtoHttpServer *server;
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, copy) NSString *tempDir;
 @property (nonatomic, assign) BOOL serverStarted;
@@ -27,7 +27,7 @@
                                                serviceMaxSize:10
                                              userDatabaseSize:1000];
     
-    self.server = [HttpServer serverWithPort:0]; // Random port
+    self.server = [ATProtoHttpServer serverWithPort:0]; // Random port
     XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
     [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:self.controller];
     

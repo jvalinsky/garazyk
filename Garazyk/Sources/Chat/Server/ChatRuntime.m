@@ -22,7 +22,7 @@
 @property (nonatomic, strong, readwrite) ChatConfiguration *configuration;
 @property (nonatomic, strong) PDSDatabase *db;
 @property (nonatomic, strong) ChatService *chatService;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) XrpcDispatcher *dispatcher;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
@@ -98,7 +98,7 @@
     [XrpcChatBskyConvoPack registerWithDispatcher:self.dispatcher services:bag];
     [XrpcChatBskyGroupPack registerWithDispatcher:self.dispatcher services:bag];
 
-    self.httpServer = [HttpServer serverWithHost:@"0.0.0.0" port:self.configuration.httpPort]; // Bind to all interfaces for Docker support
+    self.httpServer = [ATProtoHttpServer serverWithHost:@"0.0.0.0" port:self.configuration.httpPort]; // Bind to all interfaces for Docker support
 
     // Configure auth manager with PDS URL and service DID for ATProtoJWT verification
     if (self.configuration.pdsUrl.length > 0) {

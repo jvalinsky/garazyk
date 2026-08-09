@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpRequestDispatcher.m
+ @file ATProtoHttpRequestDispatcher.m
 
  @abstract Implements request-dispatch flow from routed request to handler execution.
 
@@ -27,7 +27,7 @@ static void HttpRequestDispatcherHandleException(NSException *exception,
                                                   ATProtoHttpResponse *response,
                                                   NSString *context);
 
-@implementation HttpRequestDispatcher
+@implementation ATProtoHttpRequestDispatcher
 
 - (instancetype)initWithRouteLookupHandler:(HttpRouteLookupHandler)routeLookupHandler {
   self = [super init];
@@ -47,9 +47,9 @@ static void HttpRequestDispatcherHandleException(NSException *exception,
 
   ATProtoHttpResponse *response = [ATProtoHttpResponse response];
   if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
-      [RateLimiter sharedLimiter].isEnabled) {
-    RateLimitResult *result =
-        [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+      [ATProtoRateLimiter sharedLimiter].isEnabled) {
+    ATProtoRateLimitResult *result =
+        [[ATProtoRateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
     if (!result.allowed) {
       response.statusCode = 429;
       [response setJsonBody:@{

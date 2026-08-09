@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RateLimiter.h
+ @file ATProtoRateLimiter.h
 
  @abstract Declares rate-limiting interfaces for request-throttling policy enforcement.
 
@@ -9,10 +9,10 @@
  */
 
 /**
- * @file RateLimiter.h
+ * @file ATProtoRateLimiter.h
  * @brief API rate limiting for PDS operations
  *
- * RateLimiter implements sliding window rate limiting for different resource
+ * ATProtoRateLimiter implements sliding window rate limiting for different resource
  * types (DID-based API calls, IP-based requests, blob uploads). Uses SQLite
  * for persistent rate limit tracking across server restarts.
  *
@@ -21,7 +21,7 @@
  *
  * Thread-safe through SQLite serialization.
  *
- * @see HttpServer, ATProtoHttpRequest
+ * @see ATProtoHttpServer, ATProtoHttpRequest
  */
 
 #import <Foundation/Foundation.h>
@@ -36,10 +36,10 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @class ATProtoRateLimiterStorageHandle
 
- @abstract Bundles the connection manager and query runner a @c RateLimiter
+ @abstract Bundles the connection manager and query runner a @c ATProtoRateLimiter
  needs, without naming any concrete Storage class.
 
- @discussion RateLimiter (Transport) previously constructed
+ @discussion ATProtoRateLimiter (Transport) previously constructed
  @c ATProtoConnectionManagerSerial and @c ATProtoDatabaseQueryRunner
  (both Storage) directly, an undeclared Transport -> Storage dependency.
  The concrete construction now happens behind @c RateLimiterStorageFactory,
@@ -58,17 +58,17 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @abstract Opens (or reopens) the SQLite-backed storage a @c RateLimiter uses.
+ @abstract Opens (or reopens) the SQLite-backed storage a @c ATProtoRateLimiter uses.
  @discussion Returns nil and sets @c error on failure to open. Called at most
- once per distinct database path — @c RateLimiter caches the result.
+ once per distinct database path — @c ATProtoRateLimiter caches the result.
  */
 typedef ATProtoRateLimiterStorageHandle * _Nullable (^RateLimiterStorageFactory)(NSString *path,
                                                                           ATProtoDBConfig config,
                                                                           NSError **error);
 
 /*!
- @abstract Registers the factory @c RateLimiter uses to open its storage.
- @discussion Call once at process startup, before any @c RateLimiter method
+ @abstract Registers the factory @c ATProtoRateLimiter uses to open its storage.
+ @discussion Call once at process startup, before any @c ATProtoRateLimiter method
  that touches the database runs. Whichever binary links Storage does this
  via a `+load` self-registration (see @c ATProtoDatabaseQueryRunner.m),
  mirroring the existing @c GZHTTPClientRegistry pattern — no call site in
@@ -91,13 +91,13 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
 };
 
 /**
- * @class RateLimitResult
+ * @class ATProtoRateLimitResult
  * @brief Result of a rate limit check operation
  *
  * Contains information about whether the request is allowed and provides
  * data for HTTP headers (X-RateLimit-* headers per RFC 6585).
  */
-@interface RateLimitResult : NSObject
+@interface ATProtoRateLimitResult : NSObject
 
 /*! Whether the request is allowed (NO if rate limit exceeded) */
 @property (nonatomic, assign) BOOL allowed;
@@ -122,7 +122,7 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  * @param remaining Requests remaining
  * @param resetSeconds Time until window reset
  * @param retryAfter Time to wait before retry
- * @return RateLimitResult instance
+ * @return ATProtoRateLimitResult instance
  */
 + (instancetype)resultAllowed:(BOOL)allowed
                         limit:(NSInteger)limit
@@ -133,7 +133,7 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
 @end
 
 /**
- * @class RateLimiter
+ * @class ATProtoRateLimiter
  * @brief Sliding window rate limiter with SQLite persistence
  *
  * Implements rate limiting using a sliding window algorithm. Tracks request
@@ -149,10 +149,10 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  *
  * Usage:
  * @code
- * RateLimiter *limiter = [[RateLimiter alloc] initWithDatabasePath:@"rate_limits.db"];
+ * ATProtoRateLimiter *limiter = [[ATProtoRateLimiter alloc] initWithDatabasePath:@"rate_limits.db"];
  * limiter.didLimit = 500; // Increase DID limit
  *
- * RateLimitResult *result = [limiter checkRateLimitForDid:@"did:plc:123..."];
+ * ATProtoRateLimitResult *result = [limiter checkRateLimitForDid:@"did:plc:123..."];
  * if (!result.allowed) {
  *     // Return 429 Too Many Requests
  * }
@@ -161,9 +161,9 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  * @note Thread-safe through SQLite connection serialization
  */
 /**
- * @abstract Declares the RateLimiter public API.
+ * @abstract Declares the ATProtoRateLimiter public API.
  */
-@interface RateLimiter : NSObject
+@interface ATProtoRateLimiter : NSObject
 
 /*! Maximum API requests per hour per DID (default: 5000) */
 @property (nonatomic, assign) NSInteger didLimit;
@@ -191,7 +191,7 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  *
  * Uses in-memory storage. For production use, create instance with database path.
  *
- * @return Shared RateLimiter instance
+ * @return Shared ATProtoRateLimiter instance
  */
 + (instancetype)sharedLimiter;
 
@@ -199,7 +199,7 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  * @brief Initialize with persistent SQLite storage
  *
  * @param path Path to SQLite database file, or nil for in-memory storage
- * @return RateLimiter instance
+ * @return ATProtoRateLimiter instance
  */
 - (instancetype)initWithDatabasePath:(nullable NSString *)path;
 
@@ -220,9 +220,9 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  * Records the request timestamp and checks against didLimit/didWindowSeconds.
  *
  * @param did Decentralized identifier to check
- * @return RateLimitResult indicating if request is allowed
+ * @return ATProtoRateLimitResult indicating if request is allowed
  */
-- (RateLimitResult *)checkRateLimitForDid:(NSString *)did;
+- (ATProtoRateLimitResult *)checkRateLimitForDid:(NSString *)did;
 
 /**
  * @brief Check rate limit for an IP address
@@ -230,11 +230,11 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  * Used for unauthenticated requests. Checks against ipLimit/ipWindowSeconds.
  *
  * @param ip IP address to check (IPv4 or IPv6)
- * @return RateLimitResult indicating if request is allowed
+ * @return ATProtoRateLimitResult indicating if request is allowed
  */
-- (RateLimitResult *)checkRateLimitForIP:(NSString *)ip;
+- (ATProtoRateLimitResult *)checkRateLimitForIP:(NSString *)ip;
 
-- (RateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did;
+- (ATProtoRateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did;
 
 /**
  * @brief Check a custom rate limit with specific key, limit and window
@@ -242,9 +242,9 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  * @param key Unique key for the limit
  * @param limit Maximum requests allowed
  * @param windowSeconds Window duration in seconds
- * @return RateLimitResult indicating if request is allowed
+ * @return ATProtoRateLimitResult indicating if request is allowed
  */
-- (RateLimitResult *)checkRateLimitForKey:(NSString *)key limit:(NSInteger)limit windowSeconds:(NSTimeInterval)windowSeconds;
+- (ATProtoRateLimitResult *)checkRateLimitForKey:(NSString *)key limit:(NSInteger)limit windowSeconds:(NSTimeInterval)windowSeconds;
 
 /**
  * @brief Generate X-RateLimit-* headers for DID-based limit

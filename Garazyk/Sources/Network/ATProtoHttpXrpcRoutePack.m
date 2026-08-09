@@ -15,7 +15,7 @@
 
 @implementation ATProtoHttpXrpcRoutePack
 
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                       dispatcher:(nullable XrpcDispatcher *)dispatcher
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller

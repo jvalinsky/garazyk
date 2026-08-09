@@ -116,7 +116,7 @@ static int run_status(NSArray<NSString *> *args) {
 
 #pragma mark - HLS Serving
 
-static void registerHLSRoutes(HttpServer *server, ATProtoVideoHLSGenerator *hlsGenerator) {
+static void registerHLSRoutes(ATProtoHttpServer *server, ATProtoVideoHLSGenerator *hlsGenerator) {
     __weak typeof(hlsGenerator) weakGen = hlsGenerator;
     void (^setCORS)(ATProtoHttpRequest *, ATProtoHttpResponse *) = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *origin = [request headerForKey:@"Origin"];

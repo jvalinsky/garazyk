@@ -11,7 +11,7 @@
 #import "Network/PDSHttpPDSAdminRoutePack.h"
 #import "Network/ATProtoHttpServerBuilder.h"
 
-@interface HttpServer (PDSHttpPDSAdminRoutePackTesting)
+@interface ATProtoHttpServer (PDSHttpPDSAdminRoutePackTesting)
 - (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
 - (nullable RequestHandler)handlerForRoute:(NSString *)path
                                     method:(NSString *)method
@@ -19,7 +19,7 @@
 @end
 
 @interface PDSHttpPDSAdminRoutePackTests : XCTestCase
-@property(nonatomic, strong) HttpServer *server;
+@property(nonatomic, strong) ATProtoHttpServer *server;
 @property(nonatomic, strong) PDSServiceDatabases *databases;
 @property(nonatomic, copy) NSString *testDirectory;
 @property(nonatomic, copy) NSString *adminToken;
@@ -59,7 +59,7 @@
                                                      serviceMaxSize:4
                                                     didCacheMaxSize:2
                                                   sequencerMaxSize:2];
-    self.server = [HttpServer serverWithPort:0];
+    self.server = [ATProtoHttpServer serverWithPort:0];
     [PDSHttpPDSAdminRoutePack registerRoutesWithServer:self.server serviceDatabases:self.databases];
 }
 
@@ -127,7 +127,7 @@
 }
 
 - (void)testBuilderRegistersPrivatePDSAdminRoutes {
-    HttpServer *builderServer = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *builderServer = [ATProtoHttpServer serverWithPort:0];
     ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.serviceDatabases = self.databases;
     builder.enableOAuth = NO;

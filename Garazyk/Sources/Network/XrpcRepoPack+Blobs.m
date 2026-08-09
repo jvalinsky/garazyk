@@ -131,7 +131,7 @@ static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHt
     id<PDSAdminController> adminController = services.adminController;
     PDSBlobService *blobService = services.blobService;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
-    RateLimiter *rateLimiter = services.rateLimiter;
+    ATProtoRateLimiter *rateLimiter = services.rateLimiter;
 
 #pragma mark - com.atproto.repo.uploadBlob
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_uploadBlob handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -173,7 +173,7 @@ static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHt
         NSString *mimeType = normalizedMimeType(contentType) ?: @"application/octet-stream";
         if (!authorizeRepositoryBlobUpload(request, response, mimeType)) return;
 
-        RateLimitResult *blobRateLimit = [rateLimiter checkBlobUploadRateLimitForDid:did];
+        ATProtoRateLimitResult *blobRateLimit = [rateLimiter checkBlobUploadRateLimitForDid:did];
         if (!blobRateLimit.allowed) {
             response.statusCode = HttpStatusTooManyRequests;
             [response setHeader:[NSString stringWithFormat:@"%ld", (long)blobRateLimit.limit] forKey:@"X-RateLimit-Limit"];

@@ -746,12 +746,12 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
         if (!XrpcIdentityAllows(request, response, @"handle")) return;
 
         // Rate Limiting: configurable via env vars
-        RateLimiter *limiter = [RateLimiter sharedLimiter];
+        ATProtoRateLimiter *limiter = [ATProtoRateLimiter sharedLimiter];
         NSDictionary *env = [[NSProcessInfo processInfo] environment];
         NSInteger shortLimit = env[@"PDS_IDENTITY_SHORT_LIMIT"] ? [env[@"PDS_IDENTITY_SHORT_LIMIT"] integerValue] : 10;
         NSTimeInterval shortWindow = env[@"PDS_IDENTITY_SHORT_WINDOW"] ? [env[@"PDS_IDENTITY_SHORT_WINDOW"] doubleValue] : 300;
         NSString *shortKey = [NSString stringWithFormat:@"identity.updateHandle:5m:%@", did];
-        RateLimitResult *shortResult = [limiter checkRateLimitForKey:shortKey limit:shortLimit windowSeconds:shortWindow];
+        ATProtoRateLimitResult *shortResult = [limiter checkRateLimitForKey:shortKey limit:shortLimit windowSeconds:shortWindow];
         if (!shortResult.allowed) {
             response.statusCode = HttpStatusTooManyRequests;
             [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": [NSString stringWithFormat:@"Rate limit exceeded (%ld per %.0f sec)", (long)shortLimit, shortWindow]}];
@@ -763,7 +763,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
         NSInteger longLimit = env[@"PDS_IDENTITY_LONG_LIMIT"] ? [env[@"PDS_IDENTITY_LONG_LIMIT"] integerValue] : 50;
         NSTimeInterval longWindow = env[@"PDS_IDENTITY_LONG_WINDOW"] ? [env[@"PDS_IDENTITY_LONG_WINDOW"] doubleValue] : 86400;
         NSString *longKey = [NSString stringWithFormat:@"identity.updateHandle:1d:%@", did];
-        RateLimitResult *longResult = [limiter checkRateLimitForKey:longKey limit:longLimit windowSeconds:longWindow];
+        ATProtoRateLimitResult *longResult = [limiter checkRateLimitForKey:longKey limit:longLimit windowSeconds:longWindow];
         if (!longResult.allowed) {
             response.statusCode = HttpStatusTooManyRequests;
             [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": [NSString stringWithFormat:@"Rate limit exceeded (%ld per %.0f sec)", (long)longLimit, longWindow]}];

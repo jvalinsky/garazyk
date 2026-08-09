@@ -18,7 +18,7 @@
         lookupCalled = YES;
         return (HttpServerRequestHandler)nil;
     };
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
     XCTAssertNotNil(dispatcher);
     XCTAssertNotNil(dispatcher.routeLookupHandler);
 
@@ -30,7 +30,7 @@
 }
 
 - (void)testInitWithNilRouteLookupHandler_DoesNotCrash {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     XCTAssertNotNil(dispatcher);
     XCTAssertNil(dispatcher.routeLookupHandler);
 }
@@ -38,7 +38,7 @@
 #pragma mark - dispatchRequest with requestHandler
 
 - (void)testDispatchRequest_RequestHandlerSet_CallsHandler {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     __block BOOL handlerCalled = NO;
 
     dispatcher.requestHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -63,7 +63,7 @@
 }
 
 - (void)testDispatchRequest_RequestHandlerSet_SkipsRouteLookup {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     __block BOOL routeLookupCalled = NO;
 
     dispatcher.routeLookupHandler = ^(NSString *path, NSString *method, NSDictionary<NSString *, NSString *> **params) {
@@ -108,7 +108,7 @@
         return (HttpServerRequestHandler)nil;
     };
 
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
 
     ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
@@ -130,7 +130,7 @@
         return (HttpServerRequestHandler)nil;
     };
 
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
 
     ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
@@ -147,7 +147,7 @@
 }
 
 - (void)testDispatchRequest_NilLookupAndNoHandler_Returns404 {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
 
     ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
@@ -166,7 +166,7 @@
 #pragma mark - dispatchRequest with logging (query string)
 
 - (void)testDispatchRequest_WithQueryString_LogsCorrectPath {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     __block BOOL handlerCalled = NO;
 
     dispatcher.requestHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -199,7 +199,7 @@
         };
     };
 
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
 
     ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
@@ -219,9 +219,9 @@
 #pragma mark - Rate limiting for OAuth paths
 
 - (void)testDispatchRequest_OAuthPath_ChecksRateLimit {
-    // Note: This test verifies the structure works. RateLimiter is a singleton
+    // Note: This test verifies the structure works. ATProtoRateLimiter is a singleton
     // so actual rate-limit behavior depends on the shared limiter's state.
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     __block BOOL handlerCalled = NO;
 
     dispatcher.requestHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -256,7 +256,7 @@
         return (HttpServerRequestHandler)nil;
     };
 
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
 
     ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"

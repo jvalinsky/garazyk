@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpRouteTrie.m
+ @file ATProtoHttpRouteTrie.m
 
  @abstract Implements trie-based route matching structures for HTTP path resolution.
 
@@ -36,7 +36,7 @@
 
 @end
 
-@interface HttpRouteTrie ()
+@interface ATProtoHttpRouteTrie ()
 
 @property (nonatomic, strong) ATProtoHttpRouteNode *root;
 @property (nonatomic, strong) NSMutableArray<ATProtoHttpRoute *> *allRoutes;
@@ -44,7 +44,7 @@
 
 @end
 
-@implementation HttpRouteTrie
+@implementation ATProtoHttpRouteTrie
 
 - (instancetype)init {
     self = [super init];

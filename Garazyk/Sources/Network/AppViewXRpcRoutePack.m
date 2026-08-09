@@ -85,7 +85,7 @@ NSInteger parseLimitParam(ATProtoHttpRequest *request, NSInteger defaultLimit, N
     return self;
 }
 
-- (void)registerRoutesWithServer:(HttpServer *)server
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server
 {
     // --- app.bsky.actor ---
     [server addRoute:@"GET"

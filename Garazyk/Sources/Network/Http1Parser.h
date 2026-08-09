@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file Http1Parser.h
+ @file ATProtoHttp1Parser.h
 
  @abstract Parses HTTP/1.x request bytes into structured parse state and message components.
 
@@ -32,7 +32,7 @@ typedef NS_ENUM(NSInteger, Http1ParserState) {
 /**
  * @abstract Structured HTTP parser failure suitable for response generation.
  */
-@interface Http1ParserError : NSObject
+@interface ATProtoHttp1ParserError : NSObject
 /** HTTP status code to return to the client. */
 @property (nonatomic, readonly) NSUInteger statusCode;
 /** Stable application error code. */
@@ -51,7 +51,7 @@ typedef NS_ENUM(NSInteger, Http1ParserState) {
 /**
  * @abstract Incremental parser for one HTTP/1.x request.
  */
-@interface Http1Parser : NSObject
+@interface ATProtoHttp1Parser : NSObject
 
 /** Current parser state. */
 @property (nonatomic, readonly) Http1ParserState state;
@@ -72,7 +72,7 @@ typedef NS_ENUM(NSInteger, Http1ParserState) {
 /** Completed request after feedData: returns YES, or nil when parsing failed. */
 - (nullable ATProtoHttpRequest *)completedRequest;
 /** Parser error after feedData: returns YES, or nil when a request completed successfully. */
-- (nullable Http1ParserError *)parseError;
+- (nullable ATProtoHttp1ParserError *)parseError;
 
 /** Bytes not consumed by the completed request, used for HTTP pipelining. */
 - (NSData *)unconsumedData;

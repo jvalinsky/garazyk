@@ -178,7 +178,7 @@
   }
 
   // Initialize and start HTTP server
-  HttpServer *httpServer = [HttpServer serverWithPort:(uint16_t)port];
+  ATProtoHttpServer *httpServer = [ATProtoHttpServer serverWithPort:(uint16_t)port];
   if (!httpServer) {
     printf("Failed to create HTTP server\n");
     return 0;

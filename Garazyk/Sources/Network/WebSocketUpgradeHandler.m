@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file WebSocketUpgradeHandler.m
+ @file ATProtoWebSocketUpgradeHandler.m
 
  @abstract Implements HTTP-to-WebSocket upgrade handling for eligible connection requests.
 
@@ -15,7 +15,7 @@
 
 static NSString * const kWebSocketGUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-@implementation WebSocketUpgradeHandler
+@implementation ATProtoWebSocketUpgradeHandler
 
 - (BOOL)handleUpgradeRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *upgrade = [[request headerForKey:@"Upgrade"] lowercaseString];

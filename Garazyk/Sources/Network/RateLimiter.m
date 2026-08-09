@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RateLimiter.m
+ @file ATProtoRateLimiter.m
 
  @abstract Implements request rate-limiting policy enforcement for protected operations.
 
@@ -52,14 +52,14 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
 
 @end
 
-@implementation RateLimitResult
+@implementation ATProtoRateLimitResult
 
 + (instancetype)resultAllowed:(BOOL)allowed
                         limit:(NSInteger)limit
                     remaining:(NSInteger)remaining
                   resetSeconds:(NSTimeInterval)resetSeconds
                    retryAfter:(NSTimeInterval)retryAfter {
-    RateLimitResult *result = [[RateLimitResult alloc] init];
+    ATProtoRateLimitResult *result = [[ATProtoRateLimitResult alloc] init];
     result.allowed = allowed;
     result.limit = limit;
     result.remaining = remaining;
@@ -70,20 +70,20 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
 
 @end
 
-@interface RateLimiter ()
+@interface ATProtoRateLimiter ()
 
 @property (nonatomic, copy, nullable) NSString *databasePath;
 @property (nonatomic, strong, nullable) ATProtoRateLimiterStorageHandle *storageHandle;
 
 @end
 
-@implementation RateLimiter
+@implementation ATProtoRateLimiter
 
 + (instancetype)sharedLimiter {
-    static RateLimiter *sharedInstance = nil;
+    static ATProtoRateLimiter *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        sharedInstance = [[RateLimiter alloc] initWithDatabasePath:nil];
+        sharedInstance = [[ATProtoRateLimiter alloc] initWithDatabasePath:nil];
         GZ_LOG_HTTP_DEBUG(@"RateLimiter singleton created (enabled=%@)", @(sharedInstance.isEnabled));
     });
     return sharedInstance;
@@ -200,57 +200,57 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
     [self.storageHandle.queryRunner executeUpdate:createBlobTableSQL params:nil error:nil];
 }
 
-- (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
+- (ATProtoRateLimitResult *)checkRateLimitForDid:(NSString *)did {
     if (!self.isEnabled) {
-        return [RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
     }
     if (!did || did.length == 0) {
-        return [RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
     }
     return [self checkRateLimitInternalForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
 }
 
-- (RateLimitResult *)checkRateLimitForIP:(NSString *)ip {
+- (ATProtoRateLimitResult *)checkRateLimitForIP:(NSString *)ip {
     if (!self.isEnabled || _rateLimiterDisabledGlobally) {
-        return [RateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:0 retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:0 retryAfter:0];
     }
     if (!ip || ip.length == 0) {
-        return [RateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:0 retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:0 retryAfter:0];
     }
     return [self checkRateLimitInternalForIdentifier:ip type:RateLimitTypeIP limit:self.ipLimit windowSeconds:self.ipWindowSeconds];
 }
 
-- (RateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did {
+- (ATProtoRateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did {
     if (!self.isEnabled) {
-        return [RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
     }
     if (!did || did.length == 0) {
-        return [RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
     }
     return [self checkBlobRateLimitInternalForDid:did limit:self.blobLimit windowSeconds:self.blobWindowSeconds];
 }
 
-- (RateLimitResult *)checkRateLimitForKey:(NSString *)key limit:(NSInteger)limit windowSeconds:(NSTimeInterval)windowSeconds {
+- (ATProtoRateLimitResult *)checkRateLimitForKey:(NSString *)key limit:(NSInteger)limit windowSeconds:(NSTimeInterval)windowSeconds {
     if (!self.isEnabled) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
     }
     if (!key || key.length == 0) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
     }
     return [self checkRateLimitInternalForIdentifier:key type:RateLimitTypeCustom limit:limit windowSeconds:windowSeconds];
 }
 
-- (RateLimitResult *)checkRateLimitInternalForIdentifier:(NSString *)identifier
+- (ATProtoRateLimitResult *)checkRateLimitInternalForIdentifier:(NSString *)identifier
                                                     type:(RateLimitType)type
                                                    limit:(NSInteger)limit
                                              windowSeconds:(NSTimeInterval)windowSeconds {
     if (![self ensureDatabaseOpened]) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
     }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
 
-    __block RateLimitResult *outResult = nil;
+    __block ATProtoRateLimitResult *outResult = nil;
     __block NSInteger requestCount = 0;
 
     [self.storageHandle.queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **error) {
@@ -269,7 +269,7 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
             [[GZMetrics sharedMetrics] incrementRateLimitRejection:
                 (type == RateLimitTypeDID ? @"did" :
                  type == RateLimitTypeIP ? @"ip" : @"custom")];
-            outResult = [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
+            outResult = [ATProtoRateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
             return NO;
         }
 
@@ -286,7 +286,7 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
             return NO;
         }
 
-        outResult = [RateLimitResult resultAllowed:YES
+        outResult = [ATProtoRateLimitResult resultAllowed:YES
                                              limit:limit
                                          remaining:(limit - requestCount - 1)
                                        resetSeconds:windowSeconds
@@ -297,19 +297,19 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
     if (outResult) {
         return outResult;
     }
-    return [RateLimitResult resultAllowed:YES
+    return [ATProtoRateLimitResult resultAllowed:YES
                                     limit:limit
                                 remaining:(limit - requestCount - 1)
                               resetSeconds:0
                                retryAfter:0];
 }
 
-- (RateLimitResult *)currentRateLimitForIdentifier:(NSString *)identifier
+- (ATProtoRateLimitResult *)currentRateLimitForIdentifier:(NSString *)identifier
                                               type:(RateLimitType)type
                                              limit:(NSInteger)limit
                                      windowSeconds:(NSTimeInterval)windowSeconds {
     if (![self ensureDatabaseOpened]) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
     }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
@@ -336,23 +336,23 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
     }
 
     NSInteger remaining = allowed ? (limit - requestCount) : 0;
-    return [RateLimitResult resultAllowed:allowed
+    return [ATProtoRateLimitResult resultAllowed:allowed
                                     limit:limit
                                 remaining:remaining
                               resetSeconds:resetSeconds
                                retryAfter:(allowed ? 0 : resetSeconds)];
 }
 
-- (RateLimitResult *)checkBlobRateLimitInternalForDid:(NSString *)did
+- (ATProtoRateLimitResult *)checkBlobRateLimitInternalForDid:(NSString *)did
                                                 limit:(NSInteger)limit
                                           windowSeconds:(NSTimeInterval)windowSeconds {
     if (![self ensureDatabaseOpened]) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
     }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
 
-    __block RateLimitResult *outResult = nil;
+    __block ATProtoRateLimitResult *outResult = nil;
     __block NSInteger uploadCount = 0;
 
     [self.storageHandle.queryRunner performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **error) {
@@ -369,7 +369,7 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
             NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
             if (resetSeconds < 0) resetSeconds = 0;
             [[GZMetrics sharedMetrics] incrementRateLimitRejection:@"blob"];
-            outResult = [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
+            outResult = [ATProtoRateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
             return NO;
         }
 
@@ -386,7 +386,7 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
             return NO;
         }
 
-        outResult = [RateLimitResult resultAllowed:YES
+        outResult = [ATProtoRateLimitResult resultAllowed:YES
                                              limit:limit
                                          remaining:(limit - uploadCount - 1)
                                        resetSeconds:windowSeconds
@@ -397,18 +397,18 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
     if (outResult) {
         return outResult;
     }
-    return [RateLimitResult resultAllowed:YES
+    return [ATProtoRateLimitResult resultAllowed:YES
                                     limit:limit
                                 remaining:(limit - uploadCount - 1)
                               resetSeconds:0
                                retryAfter:0];
 }
 
-- (RateLimitResult *)currentBlobRateLimitForDid:(NSString *)did
+- (ATProtoRateLimitResult *)currentBlobRateLimitForDid:(NSString *)did
                                           limit:(NSInteger)limit
                                    windowSeconds:(NSTimeInterval)windowSeconds {
     if (![self ensureDatabaseOpened]) {
-        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
+        return [ATProtoRateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:windowSeconds retryAfter:0];
     }
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval windowStart = now - windowSeconds;
@@ -435,7 +435,7 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
     }
 
     NSInteger remaining = allowed ? (limit - uploadCount) : 0;
-    return [RateLimitResult resultAllowed:allowed
+    return [ATProtoRateLimitResult resultAllowed:allowed
                                     limit:limit
                                 remaining:remaining
                               resetSeconds:resetSeconds
@@ -444,32 +444,32 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
 
 - (NSDictionary<NSString *, NSString *> *)rateLimitHeadersForDid:(NSString *)did {
     if (!did || did.length == 0) {
-        return [self headersFromResult:[RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:self.didWindowSeconds retryAfter:0]];
+        return [self headersFromResult:[ATProtoRateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:self.didWindowSeconds retryAfter:0]];
     }
 
-    RateLimitResult *result = [self currentRateLimitForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
+    ATProtoRateLimitResult *result = [self currentRateLimitForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
     return [self headersFromResult:result];
 }
 
 - (NSDictionary<NSString *, NSString *> *)rateLimitHeadersForIP:(NSString *)ip {
     if (!ip || ip.length == 0) {
-        return [self headersFromResult:[RateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:self.ipWindowSeconds retryAfter:0]];
+        return [self headersFromResult:[ATProtoRateLimitResult resultAllowed:YES limit:self.ipLimit remaining:self.ipLimit resetSeconds:self.ipWindowSeconds retryAfter:0]];
     }
 
-    RateLimitResult *result = [self currentRateLimitForIdentifier:ip type:RateLimitTypeIP limit:self.ipLimit windowSeconds:self.ipWindowSeconds];
+    ATProtoRateLimitResult *result = [self currentRateLimitForIdentifier:ip type:RateLimitTypeIP limit:self.ipLimit windowSeconds:self.ipWindowSeconds];
     return [self headersFromResult:result];
 }
 
 - (NSDictionary<NSString *, NSString *> *)blobRateLimitHeadersForDid:(NSString *)did {
     if (!did || did.length == 0) {
-        return [self headersFromResult:[RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:self.blobWindowSeconds retryAfter:0]];
+        return [self headersFromResult:[ATProtoRateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:self.blobWindowSeconds retryAfter:0]];
     }
 
-    RateLimitResult *result = [self currentBlobRateLimitForDid:did limit:self.blobLimit windowSeconds:self.blobWindowSeconds];
+    ATProtoRateLimitResult *result = [self currentBlobRateLimitForDid:did limit:self.blobLimit windowSeconds:self.blobWindowSeconds];
     return [self headersFromResult:result];
 }
 
-- (NSDictionary<NSString *, NSString *> *)headersFromResult:(RateLimitResult *)result {
+- (NSDictionary<NSString *, NSString *> *)headersFromResult:(ATProtoRateLimitResult *)result {
     NSMutableDictionary *headers = [NSMutableDictionary dictionary];
     
     [headers setObject:[NSString stringWithFormat:@"%ld", (long)result.limit] forKey:@"X-RateLimit-Limit"];

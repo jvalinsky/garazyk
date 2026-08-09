@@ -16,7 +16,7 @@
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, strong) XrpcDispatcher *dispatcher;
 @property (nonatomic, strong) NSURL *tempURL;
-@property (nonatomic, strong) HttpServer *upstreamServer;
+@property (nonatomic, strong) ATProtoHttpServer *upstreamServer;
 @property (nonatomic, copy, nullable) NSString *savedAppViewProxyURL;
 @property (nonatomic, copy) NSString *testActorDid;
 @property (nonatomic, copy) NSString *testAccessJwt;
@@ -85,7 +85,7 @@
 }
 
 - (BOOL)startUpstreamServerWithError:(NSError **)error {
-    self.upstreamServer = [HttpServer serverWithPort:0];
+    self.upstreamServer = [ATProtoHttpServer serverWithPort:0];
 
     __weak typeof(self) weakSelf = self;
     [self.upstreamServer setValue:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -280,7 +280,7 @@
 }
 
 - (void)testProxyTimeoutReturns504 {
-    self.upstreamServer = [HttpServer serverWithPort:0];
+    self.upstreamServer = [ATProtoHttpServer serverWithPort:0];
 
     [self.upstreamServer setValue:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [NSThread sleepForTimeInterval:3.0];
