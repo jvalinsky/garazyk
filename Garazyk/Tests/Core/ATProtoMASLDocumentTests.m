@@ -115,6 +115,23 @@
     XCTAssertNil(error);
 }
 
+- (void)testBundleResourceCIDLookupIgnoresQueryAndFragment {
+    ATProtoCID *cid = [self sampleCID];
+    ATProtoMASLDocument *document = [ATProtoMASLDocument documentWithObject:@{
+        @"resources": @{
+            @"/": @{ @"src": cid },
+            @"/app.js": @{ @"src": cid }
+        }
+    } error:nil];
+
+    NSError *error = nil;
+    XCTAssertEqualObjects([document resourceCIDForPath:@"/app.js?cache=1#main"
+                                                  error:&error], cid);
+    XCTAssertNil(error);
+    XCTAssertNil([document resourceCIDForPath:@"/missing.js" error:&error]);
+    XCTAssertEqual(error.code, ATProtoMASLErrorInvalidResourcePath);
+}
+
 - (void)testInvalidRootSourceIsIgnoredInBundleMode {
     ATProtoCID *cid = [self sampleCID];
     NSError *error = nil;
