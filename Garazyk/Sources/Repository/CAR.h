@@ -6,6 +6,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class ATProtoMASLDocument;
+
 /*!
  @header CAR.h
  
@@ -92,6 +94,12 @@ NS_ASSUME_NONNULL_BEGIN
  *  (signed commit + DRISL index). */
 @property (nonatomic, copy, readonly, nullable) NSArray<ATProtoCID *> *roots;
 
+/*! The complete DRISL metadata map from the CAR header. */
+@property (nonatomic, copy, readonly, nullable) NSDictionary *metadata;
+
+/*! The header metadata as a validated MASL document, when it is valid MASL. */
+@property (nonatomic, strong, readonly, nullable) ATProtoMASLDocument *maslDocument;
+
 /*! The first root ATProtoCID, equivalent to @c roots.firstObject.  Preserved for
  *  backward compatibility with callers that expect a single root. */
 @property (nonatomic, strong, readonly, nullable) ATProtoCID *rootCID;
@@ -170,6 +178,15 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable ATProtoCARBlock *)blockWithCID:(ATProtoCID *)cid;
 
+/**
+ Looks up a CAR block referenced by a MASL bundle path.
+
+ Query strings and fragments are ignored during path resolution. The reader
+ returns nil with an NSError when the header is not a MASL bundle or the
+ referenced CID is not present in the body.
+ */
+- (nullable ATProtoCARBlock *)blockForMASLPath:(NSString *)path error:(NSError **)error;
+
 @end
 
 /*!
@@ -202,7 +219,10 @@ NS_ASSUME_NONNULL_BEGIN
 @interface ATProtoCARWriter : NSObject
 
 /*! The root ATProtoCID of this CAR archive. */
-@property (nonatomic, strong, readonly) ATProtoCID *rootCID;
+@property (nonatomic, strong, readonly, nullable) ATProtoCID *rootCID;
+
+/*! The validated MASL document used as the CAR header, when supplied. */
+@property (nonatomic, strong, readonly, nullable) ATProtoMASLDocument *maslDocument;
 
 /*! The collection of blocks that have been added. */
 @property (nonatomic, strong, readonly) NSMutableArray<ATProtoCARBlock *> *blocks;
@@ -216,6 +236,18 @@ NS_ASSUME_NONNULL_BEGIN
  @return A new ATProtoCARWriter instance.
  */
 + (instancetype)writerWithRootCID:(ATProtoCID *)rootCID;
+
+/*! Initializes a writer; a nil root is used only for an empty MASL roots array. */
+- (instancetype)initWithRootCID:(nullable ATProtoCID *)rootCID NS_DESIGNATED_INITIALIZER;
+
+/**
+ Creates a writer whose CAR header is the supplied MASL document.
+
+ The document must contain CAR-compatible integer @c version 1 and a
+ CID-only @c roots array. The roots array may be empty, as permitted by CAR.
+ */
++ (nullable instancetype)writerWithMASLDocument:(ATProtoMASLDocument *)document
+                                           error:(NSError **)error;
 
 /*!
  @method addBlock:
@@ -257,6 +289,10 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (nullable NSData *)encodedHeaderWithRootCID:(ATProtoCID *)rootCID error:(NSError **)error;
 
+/*! Encodes a CAR v1 header from a validated MASL document. */
++ (nullable NSData *)encodedHeaderWithMASLDocument:(ATProtoMASLDocument *)document
+                                              error:(NSError **)error;
+
 /*!
  @method encodedBlock:error:
 
@@ -281,6 +317,11 @@ NS_ASSUME_NONNULL_BEGIN
 + (BOOL)writeHeaderWithRootCID:(ATProtoCID *)rootCID
                  toFileHandle:(NSFileHandle *)fileHandle
                         error:(NSError **)error;
+
+/*! Writes a CAR v1 MASL metadata header directly to an open file handle. */
++ (BOOL)writeHeaderWithMASLDocument:(ATProtoMASLDocument *)document
+                       toFileHandle:(NSFileHandle *)fileHandle
+                              error:(NSError **)error;
 
 /*!
  @method writeBlock:toFileHandle:error:

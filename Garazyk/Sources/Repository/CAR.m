@@ -15,8 +15,10 @@
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
 #import "Core/ATProtoDagCBOR.h"
+#import "Core/ATProtoMASLDocument.h"
 #import "Core/CID+DASL.h"
 #import <Security/Security.h>
+#include <string.h>
 
 #pragma mark - ATProtoCARBlock Implementation
 
@@ -42,7 +44,9 @@
 @interface ATProtoCARReader ()
 
 @property (nonatomic, copy, readwrite) NSArray<ATProtoCID *> *roots;
-@property (nonatomic, strong, readwrite) NSArray<ATProtoCARBlock *> *blocks;
+@property (nonatomic, copy, readwrite, nullable) NSDictionary *metadata;
+@property (nonatomic, strong, readwrite, nullable) ATProtoMASLDocument *maslDocument;
+@property (nonatomic, copy, readwrite) NSArray<ATProtoCARBlock *> *blocks;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoCARBlock *> *blockIndex;
 
 - (BOOL)parseCarV1Data:(NSData *)data strict:(BOOL)strict error:(NSError **)error;
@@ -88,6 +92,13 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
     if (cidOut) *cidOut = cid;
     if (cidLengthOut) *cidLengthOut = consumed;
     return YES;
+}
+
+static BOOL CARIsIntegerOne(id value) {
+    if (![value isKindOfClass:[NSNumber class]]) return NO;
+    const char *type = [(NSNumber *)value objCType];
+    if (!type || strlen(type) != 1 || strchr("islqiuILQ", type[0]) == NULL) return NO;
+    return [(NSNumber *)value longLongValue] == 1;
 }
 
 - (ATProtoCID *)rootCID {
@@ -180,7 +191,9 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
     // lengths, sorted string keys, no trailing bytes, tag 42 only) and hands
     // back ATProtoCID objects directly.
     NSError *headerError = nil;
-    id header = [ATProtoDagCBOR decodeData:headerData error:&headerError];
+    id header = [ATProtoDagCBOR decodeData:headerData
+                                    profile:ATProtoDRISLProfileDRISL
+                                      error:&headerError];
     if (![header isKindOfClass:[NSDictionary class]]) {
         if (error) {
             *error = headerError ?: [NSError errorWithDomain:@"com.atproto.car"
@@ -192,7 +205,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
     NSDictionary *headerMap = (NSDictionary *)header;
 
     id rootsValue = headerMap[@"roots"];
-    if (![rootsValue isKindOfClass:[NSArray class]] || ((NSArray *)rootsValue).count == 0) {
+    if (![rootsValue isKindOfClass:[NSArray class]]) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
                                          code:-2
@@ -225,14 +238,26 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
     }
 
     id versionValue = headerMap[@"version"];
-    if (![versionValue isKindOfClass:[NSNumber class]] ||
-        ((NSNumber *)versionValue).unsignedIntegerValue != 1) {
+    if (!CARIsIntegerOne(versionValue)) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
                                          code:-3
                                      userInfo:@{NSLocalizedDescriptionKey: @"Unsupported CAR version"}];
         }
         return NO;
+    }
+
+    _metadata = [headerMap copy];
+    NSError *maslError = nil;
+    ATProtoMASLDocument *maslDocument =
+        [ATProtoMASLDocument documentWithObject:headerMap error:&maslError];
+    if (maslDocument) {
+        NSError *compatibilityError = nil;
+        if (![maslDocument validateForCARWithError:&compatibilityError]) {
+            if (error) *error = compatibilityError;
+            return NO;
+        }
+        _maslDocument = maslDocument;
     }
 
     NSMutableArray<ATProtoCARBlock *> *blocks = [NSMutableArray array];
@@ -429,13 +454,45 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
     return self.blockIndex[cid.stringValue];
 }
 
+- (ATProtoCARBlock *)blockForMASLPath:(NSString *)path error:(NSError **)error {
+    if (!self.maslDocument || !self.maslDocument.isBundle) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-30
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    @"CAR header does not contain a MASL bundle"}];
+        }
+        return nil;
+    }
+
+    NSError *resourceError = nil;
+    ATProtoCID *resourceCID = [self.maslDocument resourceCIDForPath:path
+                                                                 error:&resourceError];
+    if (!resourceCID) {
+        if (error) *error = resourceError;
+        return nil;
+    }
+
+    ATProtoCARBlock *block = [self blockWithCID:resourceCID];
+    if (!block && error) {
+        *error = [NSError errorWithDomain:@"com.atproto.car"
+                                     code:-31
+                                 userInfo:@{NSLocalizedDescriptionKey:
+                                                [NSString stringWithFormat:
+                                                    @"MASL resource %@ references a CID absent from the CAR body",
+                                                    path ?: @"(null)"]}];
+    }
+    return block;
+}
+
 @end
 
 #pragma mark - ATProtoCARWriter Implementation
 
 @interface ATProtoCARWriter ()
 
-@property (nonatomic, strong, readwrite) ATProtoCID *rootCID;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCID *rootCID;
+@property (nonatomic, strong, readwrite, nullable) ATProtoMASLDocument *maslDocument;
 @property (nonatomic, strong, readwrite) NSMutableArray<ATProtoCARBlock *> *blocks;
 
 @end
@@ -446,7 +503,42 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
     return [[self alloc] initWithRootCID:rootCID];
 }
 
-- (instancetype)initWithRootCID:(ATProtoCID *)rootCID {
++ (nullable instancetype)writerWithMASLDocument:(ATProtoMASLDocument *)document
+                                           error:(NSError **)error {
+    if (!document) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-27
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    @"A MASL document is required for CAR metadata"}];
+        }
+        return nil;
+    }
+
+    NSError *compatibilityError = nil;
+    id version = document.object[@"version"];
+    id roots = document.object[@"roots"];
+    if (!version || !roots || ![document validateForCARWithError:&compatibilityError]) {
+        if (error) {
+            *error = compatibilityError ?: [NSError errorWithDomain:@"com.atproto.car"
+                                                                     code:-28
+                                                                 userInfo:@{NSLocalizedDescriptionKey:
+                                                                                @"MASL CAR metadata requires version 1 and a roots array"}];
+        }
+        return nil;
+    }
+
+    ATProtoCID *rootCID = [document.object[@"roots"] firstObject];
+    ATProtoCARWriter *writer = [[self alloc] initWithRootCID:rootCID];
+    writer.maslDocument = document;
+    return writer;
+}
+
+- (instancetype)init {
+    return [self initWithRootCID:nil];
+}
+
+- (instancetype)initWithRootCID:(ATProtoCID * _Nullable)rootCID {
     self = [super init];
     if (self) {
         _rootCID = rootCID;
@@ -498,6 +590,38 @@ static NSData *CARHeaderDataForRootCID(ATProtoCID *rootCID) {
     return [encodedHeader copy];
 }
 
+static NSData *CARHeaderDataForMASLDocument(ATProtoMASLDocument *document,
+                                            NSError **error) {
+    if (!document) return nil;
+
+    NSError *compatibilityError = nil;
+    id version = document.object[@"version"];
+    id roots = document.object[@"roots"];
+    if (!version || !roots || ![document validateForCARWithError:&compatibilityError]) {
+        if (error) {
+            *error = compatibilityError ?: [NSError errorWithDomain:@"com.atproto.car"
+                                                                     code:-28
+                                                                 userInfo:@{NSLocalizedDescriptionKey:
+                                                                                @"MASL CAR metadata requires version 1 and a roots array"}];
+        }
+        return nil;
+    }
+
+    NSError *encodeError = nil;
+    NSData *headerCBOR = [document DRISLDataWithError:&encodeError];
+    if (!headerCBOR) {
+        if (error) *error = encodeError;
+        return nil;
+    }
+
+    uint8_t headerLenBuffer[16];
+    NSUInteger headerLenSize = WriteVarint(headerCBOR.length, headerLenBuffer);
+    NSMutableData *encodedHeader = [NSMutableData dataWithCapacity:headerLenSize + headerCBOR.length];
+    [encodedHeader appendBytes:headerLenBuffer length:headerLenSize];
+    [encodedHeader appendData:headerCBOR];
+    return [encodedHeader copy];
+}
+
 static NSData *CARBlockEntryData(ATProtoCARBlock *block) {
     if (!block || !block.cid || !block.data) {
         return nil;
@@ -519,7 +643,9 @@ static NSData *CARBlockEntryData(ATProtoCARBlock *block) {
 - (NSData *)serialize {
     NSMutableData *data = [NSMutableData data];
 
-    NSData *headerData = CARHeaderDataForRootCID(self.rootCID);
+    NSData *headerData = self.maslDocument
+        ? CARHeaderDataForMASLDocument(self.maslDocument, nil)
+        : CARHeaderDataForRootCID(self.rootCID);
     if (!headerData) {
         return nil;
     }
@@ -547,6 +673,11 @@ static NSData *CARBlockEntryData(ATProtoCARBlock *block) {
         return nil;
     }
     return headerData;
+}
+
++ (nullable NSData *)encodedHeaderWithMASLDocument:(ATProtoMASLDocument *)document
+                                              error:(NSError **)error {
+    return CARHeaderDataForMASLDocument(document, error);
 }
 
 + (nullable NSData *)encodedBlock:(ATProtoCARBlock *)block error:(NSError **)error {
@@ -583,6 +714,34 @@ static NSData *CARBlockEntryData(ATProtoCARBlock *block) {
             *error = [NSError errorWithDomain:@"com.atproto.car"
                                          code:-22
                                      userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Failed to write CAR header"}];
+        }
+        return NO;
+    }
+}
+
++ (BOOL)writeHeaderWithMASLDocument:(ATProtoMASLDocument *)document
+                       toFileHandle:(NSFileHandle *)fileHandle
+                              error:(NSError **)error {
+    NSData *headerData = [[self class] encodedHeaderWithMASLDocument:document error:error];
+    if (!headerData || !fileHandle) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-21
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    @"Invalid CAR MASL header write parameters"}];
+        }
+        return NO;
+    }
+
+    @try {
+        [fileHandle writeData:headerData];
+        return YES;
+    } @catch (NSException *exception) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-22
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    exception.reason ?: @"Failed to write CAR MASL header"}];
         }
         return NO;
     }
@@ -636,7 +795,10 @@ static NSData *CARBlockEntryData(ATProtoCARBlock *block) {
 
     @try {
         NSError *writeError = nil;
-        if (![[self class] writeHeaderWithRootCID:self.rootCID toFileHandle:fileHandle error:&writeError]) {
+        BOOL wroteHeader = self.maslDocument
+            ? [[self class] writeHeaderWithMASLDocument:self.maslDocument toFileHandle:fileHandle error:&writeError]
+            : [[self class] writeHeaderWithRootCID:self.rootCID toFileHandle:fileHandle error:&writeError];
+        if (!wroteHeader) {
             if (error) *error = writeError;
             [fileHandle closeFile];
             return NO;
