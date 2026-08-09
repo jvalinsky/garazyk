@@ -31,7 +31,7 @@ BUILD_DIR="${1:-build}"
 CMAKE_FILE="CMakeLists.txt"
 BASELINE="docs/module-boundary-baseline.txt"
 
-MODULES="ATProtoCore ATProtoStorage ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoPLC ATProtoRuntime ATProtoMediaCore ATProtoVideoService"
+MODULES="ATProtoCore ATProtoStorage ATProtoServices ATProtoTransport ATProtoAdminUI ATProtoXRPC ATProtoSync ATProtoPLC ATProtoRuntime ATProtoMediaCore ATProtoVideoService"
 
 for m in $MODULES; do
   lib="$BUILD_DIR/lib${m}.a"

@@ -14,7 +14,7 @@
 - (void)registerRelayRoutes {
     __weak typeof(self) weakSelf = self;
 
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-metrics" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-metrics" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchRelayMetrics];
         response.statusCode = 200;
@@ -23,7 +23,7 @@
     }];
 
     // Relay: Upstreams
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-upstreams" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-upstreams" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchRelayUpstreams];
         response.statusCode = 200;
@@ -32,7 +32,7 @@
     }];
 
     // Relay: Health check
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchRelayHealth];
         response.statusCode = 200;
@@ -41,7 +41,7 @@
     }];
 
     // Relay: Request crawl action
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/request-crawl" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/request-crawl" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *hostname = [request.jsonBody[@"hostname"] isKindOfClass:[NSString class]] ? request.jsonBody[@"hostname"] : [request queryParamForKey:@"hostname"];
         NSDictionary *result = [weakSelf.backendClient requestCrawlForHostname:hostname ?: @""];
@@ -49,7 +49,7 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Crawl requested.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 }
 

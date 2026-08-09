@@ -3,7 +3,7 @@
 /*!
  @file UIAuthManagerTests.m
 
- @abstract Unit tests for UIAuthManager.
+ @abstract Unit tests for GZAdminUIAuthManager.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -13,14 +13,14 @@
 #import "Network/HttpRequest.h"
 
 @interface UIAuthManagerTests : XCTestCase
-@property (nonatomic, strong) UIAuthManager *authManager;
+@property (nonatomic, strong) GZAdminUIAuthManager *authManager;
 @end
 
 @implementation UIAuthManagerTests
 
 - (void)setUp {
     [super setUp];
-    self.authManager = [[UIAuthManager alloc] initWithPassword:@"testpassword123"];
+    self.authManager = [[GZAdminUIAuthManager alloc] initWithPassword:@"testpassword123"];
 }
 
 - (void)tearDown {
@@ -77,7 +77,7 @@
 
     // Create a request with Bearer token in Authorization header
     NSDictionary *headers = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/admin"
                                                    queryString:nil
@@ -102,7 +102,7 @@
 
     // Create a request with token in cookie
     NSDictionary *headers = @{@"Cookie": [NSString stringWithFormat:@"ui_admin_token=%@", token]};
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/admin"
                                                    queryString:nil
@@ -124,7 +124,7 @@
 - (void)testIsAuthorizedRequestWithInvalidToken {
     // Create a request with invalid token
     NSDictionary *headers = @{@"Authorization": @"Bearer invalid-token-12345"};
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/admin"
                                                    queryString:nil
@@ -151,7 +151,7 @@
 
     // Verify it's authorized
     NSDictionary *headers = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/admin"
                                                    queryString:nil
@@ -217,7 +217,7 @@
  @abstract Verify that validatePassword returns NO when auth manager was initialized with empty password and tested with non-empty input.
  */
 - (void)testValidatePasswordWithEmptyAuthManagerPassword {
-    UIAuthManager *emptyAuthManager = [[UIAuthManager alloc] initWithPassword:@""];
+    GZAdminUIAuthManager *emptyAuthManager = [[GZAdminUIAuthManager alloc] initWithPassword:@""];
     BOOL result = [emptyAuthManager validatePassword:@"somepassword"];
     XCTAssertFalse(result);
 }
@@ -232,7 +232,7 @@
 - (void)testExtractTokenFromRequestWithBearerToken {
     NSString *token = @"test-token-12345";
     NSDictionary *headers = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/admin"
                                                    queryString:nil
@@ -254,7 +254,7 @@
 - (void)testExtractTokenFromRequestWithCookieToken {
     NSString *token = @"cookie-token-12345";
     NSDictionary *headers = @{@"Cookie": [NSString stringWithFormat:@"ui_admin_token=%@", token]};
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/admin"
                                                    queryString:nil
@@ -276,7 +276,7 @@
 - (void)testExtractTokenFromRequestWithMultipleCookies {
     NSString *token = @"admin-token-xyz";
     NSDictionary *headers = @{@"Cookie": [NSString stringWithFormat:@"sessionId=abc123; ui_admin_token=%@; other=value", token]};
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/admin"
                                                    queryString:nil
@@ -297,7 +297,7 @@
  */
 - (void)testExtractTokenFromRequestWithNoToken {
     NSDictionary *headers = @{@"Content-Type": @"application/json"};
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/admin"
                                                    queryString:nil
@@ -314,8 +314,8 @@
 #pragma mark - Service-scoped cookie names
 
 /*! Builds a GET request carrying the supplied Cookie header. */
-- (HttpRequest *)requestWithCookieHeader:(NSString *)cookieHeader {
-    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+- (ATProtoHttpRequest *)requestWithCookieHeader:(NSString *)cookieHeader {
+    return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:@"/admin"
                                    queryString:nil
@@ -344,7 +344,7 @@
  @abstract Verify that an identifier produces distinct session and CSRF cookie names.
  */
 - (void)testServiceScopedManagerDerivesCookieNames {
-    UIAuthManager *plc = [[UIAuthManager alloc] initWithPassword:@"pw"
+    GZAdminUIAuthManager *plc = [[GZAdminUIAuthManager alloc] initWithPassword:@"pw"
                                               serviceIdentifier:@"plc"];
     XCTAssertEqualObjects(plc.sessionCookieName, @"gz_admin_plc_token");
     XCTAssertEqualObjects(plc.csrfCookieName, @"gz_admin_plc_nonce");
@@ -362,9 +362,9 @@
  other's cookies in the same header. Each must read only its own name.
  */
 - (void)testScopedManagerIgnoresSiblingServiceCookie {
-    UIAuthManager *plc = [[UIAuthManager alloc] initWithPassword:@"pw"
+    GZAdminUIAuthManager *plc = [[GZAdminUIAuthManager alloc] initWithPassword:@"pw"
                                               serviceIdentifier:@"plc"];
-    UIAuthManager *relay = [[UIAuthManager alloc] initWithPassword:@"pw"
+    GZAdminUIAuthManager *relay = [[GZAdminUIAuthManager alloc] initWithPassword:@"pw"
                                                 serviceIdentifier:@"relay"];
 
     NSString *plcToken = [plc createSessionToken];
@@ -389,15 +389,15 @@
  sign-in evicts the first UI's session in the browser.
  */
 - (void)testSiblingSessionsRemainIndependent {
-    UIAuthManager *plc = [[UIAuthManager alloc] initWithPassword:@"pw"
+    GZAdminUIAuthManager *plc = [[GZAdminUIAuthManager alloc] initWithPassword:@"pw"
                                               serviceIdentifier:@"plc"];
-    UIAuthManager *relay = [[UIAuthManager alloc] initWithPassword:@"pw"
+    GZAdminUIAuthManager *relay = [[GZAdminUIAuthManager alloc] initWithPassword:@"pw"
                                                 serviceIdentifier:@"relay"];
 
     NSString *bothCookies = [NSString stringWithFormat:
         @"gz_admin_plc_token=%@; gz_admin_relay_token=%@",
         [plc createSessionToken], [relay createSessionToken]];
-    HttpRequest *request = [self requestWithCookieHeader:bothCookies];
+    ATProtoHttpRequest *request = [self requestWithCookieHeader:bothCookies];
 
     XCTAssertTrue([plc isAuthorizedRequest:request]);
     XCTAssertTrue([relay isAuthorizedRequest:request]);
@@ -409,11 +409,11 @@
  @abstract Verify that a scoped UI ignores a legacy unscoped session cookie.
  */
 - (void)testScopedManagerRejectsUnscopedCookie {
-    UIAuthManager *plc = [[UIAuthManager alloc] initWithPassword:@"pw"
+    GZAdminUIAuthManager *plc = [[GZAdminUIAuthManager alloc] initWithPassword:@"pw"
                                               serviceIdentifier:@"plc"];
     NSString *legacy = [NSString stringWithFormat:@"ui_admin_token=%@",
                         [self.authManager createSessionToken]];
-    HttpRequest *request = [self requestWithCookieHeader:legacy];
+    ATProtoHttpRequest *request = [self requestWithCookieHeader:legacy];
 
     XCTAssertNil([plc extractTokenFromRequest:request]);
     XCTAssertFalse([plc isAuthorizedRequest:request]);

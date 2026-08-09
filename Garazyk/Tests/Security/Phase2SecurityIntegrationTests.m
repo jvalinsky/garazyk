@@ -3,7 +3,7 @@
 /*!
  @file Phase2SecurityIntegrationTests.m
  @brief Tests for Phase 2 security integration: ATProtoSafeHTTPClient, GZLogRedactor,
-        PDSSecurityCompare, OAuthClientAuthPolicy, PDSKeyEnvelope, UIAuthManager rework,
+        PDSSecurityCompare, OAuthClientAuthPolicy, PDSKeyEnvelope, GZAdminUIAuthManager rework,
         and SQL hardening.
 
  @discussion Verifies that all Phase 1 security primitives are correctly integrated
@@ -274,11 +274,11 @@
                    @"Short random data should not be mistaken for envelope");
 }
 
-#pragma mark - UIAuthManager Integration
+#pragma mark - GZAdminUIAuthManager Integration
 
 - (void)testUIAuthManagerPasswordHashing {
-    // UIAuthManager should NOT store plaintext passwords
-    UIAuthManager *auth = [[UIAuthManager alloc] initWithPassword:@"admin123"];
+    // GZAdminUIAuthManager should NOT store plaintext passwords
+    GZAdminUIAuthManager *auth = [[GZAdminUIAuthManager alloc] initWithPassword:@"admin123"];
     XCTAssertTrue([auth validatePassword:@"admin123"],
                   @"Correct password should validate");
     XCTAssertFalse([auth validatePassword:@"wrong"],
@@ -290,7 +290,7 @@
 }
 
 - (void)testUIAuthManagerSessionTokenIsCSPRNG {
-    UIAuthManager *auth = [[UIAuthManager alloc] initWithPassword:@"test"];
+    GZAdminUIAuthManager *auth = [[GZAdminUIAuthManager alloc] initWithPassword:@"test"];
     NSString *token1 = [auth createSessionToken];
     NSString *token2 = [auth createSessionToken];
 
@@ -303,7 +303,7 @@
 }
 
 - (void)testUIAuthManagerSessionExpiry {
-    UIAuthManager *auth = [[UIAuthManager alloc] initWithPassword:@"test"];
+    GZAdminUIAuthManager *auth = [[GZAdminUIAuthManager alloc] initWithPassword:@"test"];
     auth.sessionTTL = 0.01; // 10ms TTL for testing
 
     NSString *token = [auth createSessionToken];
@@ -315,7 +315,7 @@
 }
 
 - (void)testUIAuthManagerCSRFNonceGeneration {
-    UIAuthManager *auth = [[UIAuthManager alloc] initWithPassword:@"test"];
+    GZAdminUIAuthManager *auth = [[GZAdminUIAuthManager alloc] initWithPassword:@"test"];
     NSString *cookie1 = [auth createCSRFNonceCookie:NO];
     NSString *cookie2 = [auth createCSRFNonceCookie:NO];
 
@@ -328,7 +328,7 @@
 }
 
 - (void)testUIAuthManagerSecureCookie {
-    UIAuthManager *auth = [[UIAuthManager alloc] initWithPassword:@"test"];
+    GZAdminUIAuthManager *auth = [[GZAdminUIAuthManager alloc] initWithPassword:@"test"];
     NSString *token = [auth createSessionToken];
     NSString *cookie = [auth cookieHeaderValueForToken:token secure:YES];
 

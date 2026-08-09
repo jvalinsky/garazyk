@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
-@class UIServiceConfig;
+@class GZAdminUIServiceConfig;
 @class ATProtoSafeHTTPClient;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -12,9 +12,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface GZAdminUIBackendClient : NSObject
 
-- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration;
+- (instancetype)initWithConfiguration:(GZAdminUIServiceConfig *)configuration;
 
-- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration
+- (instancetype)initWithConfiguration:(GZAdminUIServiceConfig *)configuration
                            httpClient:(nullable ATProtoSafeHTTPClient *)httpClient;
 
 @end

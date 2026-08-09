@@ -25,7 +25,7 @@
 
 + (NSString *)renderPLCDIDPartial:(NSDictionary *)result {
     if (result[@"error"]) {
-        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-grid\">"];
     NSArray *fields = @[@"did", @"handle", @"service", @"rotationKeys", @"alsoKnownAs", @"createdAt"];
@@ -34,9 +34,9 @@
         if (!val) continue;
         if ([val isKindOfClass:[NSArray class]]) {
             NSString *joined = [((NSArray *)val) componentsJoinedByString:@", "];
-            [html appendFormat:@"<div class=\"detail-field\"><span class=\"detail-label\">%@</span><span class=\"detail-value text-mono text-xs\">%@</span></div>", key, UIEscaped(joined)];
+            [html appendFormat:@"<div class=\"detail-field\"><span class=\"detail-label\">%@</span><span class=\"detail-value text-mono text-xs\">%@</span></div>", key, GZAdminUIEscaped(joined)];
         } else {
-            NSString *display = [val isKindOfClass:[NSString class]] ? UIEscaped(val) : UIEscaped([val description]);
+            NSString *display = [val isKindOfClass:[NSString class]] ? GZAdminUIEscaped(val) : GZAdminUIEscaped([val description]);
             [html appendFormat:@"<div class=\"detail-field\"><span class=\"detail-label\">%@</span><span class=\"detail-value text-mono text-xs\">%@</span></div>", key, display];
         }
     }
@@ -46,15 +46,15 @@
 
 + (NSString *)renderPLCLogPartial:(NSDictionary *)result {
     if (result[@"error"]) {
-        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray<NSDictionary *> *entries = [result[@"log"] isKindOfClass:[NSArray class]] ? result[@"log"] : @[];
     NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Seq</th><th>Type</th><th>Time</th><th>Detail</th></tr></thead><tbody>"];
     for (NSDictionary *entry in entries) {
-        NSString *seq = UIEscaped([entry[@"seq"] stringValue] ?: @"");
-        NSString *type = UIEscaped(entry[@"type"] ?: @"");
-        NSString *time = UIEscaped(entry[@"createdAt"] ?: @"");
-        NSString *detail = UIEscaped(entry[@"detail"] ?: @"");
+        NSString *seq = GZAdminUIEscaped([entry[@"seq"] stringValue] ?: @"");
+        NSString *type = GZAdminUIEscaped(entry[@"type"] ?: @"");
+        NSString *time = GZAdminUIEscaped(entry[@"createdAt"] ?: @"");
+        NSString *detail = GZAdminUIEscaped(entry[@"detail"] ?: @"");
         [html appendFormat:@"<tr><td>%@</td><td><span class=\"badge badge-secondary\">%@</span></td><td class=\"text-xs text-mono\">%@</td><td class=\"text-xs\">%@</td></tr>", seq, type, time, detail];
     }
     if (entries.count == 0) {
@@ -70,14 +70,14 @@
     NSString *status = result[@"status"] ?: @"unknown";
     ctx[@"status"] = status;
     ctx[@"statusBadge"] = [status isEqualToString:@"ok"] ? @"badge badge-success" : @"badge badge-destructive";
-    return [UITemplateEngine renderTemplate:@"plc-health" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"plc-health" context:ctx];
 }
 
 + (NSString *)renderPLCMetricsPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
     if (!ctx[@"text"]) ctx[@"text"] = @"";
-    return [UITemplateEngine renderTemplate:@"plc-metrics" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"plc-metrics" context:ctx];
 }
 
 + (NSString *)renderPLCListPartial:(NSDictionary *)result cursor:(nullable NSString *)cursor {
@@ -91,7 +91,7 @@
         }
         ctx[@"mappedDids"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"plc-list" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"plc-list" context:ctx];
 }
 
 @end

@@ -661,11 +661,29 @@ add_library(ATProtoRuntime STATIC ${ATPROTO_RUNTIME_SOURCES})
 add_library(ATProtoMediaCore STATIC ${ATPROTO_MEDIA_CORE_SOURCES})
 add_library(ATProtoVideoService STATIC ${ATPROTO_VIDEO_SOURCES})
 
+# Admin UI library: the shell, authentication, transport client, route packs,
+# and shared tile helpers are reusable HTTP-facing composition code.  Keeping
+# this archive's public closure to Transport and Core prevents it from
+# reaching into service databases or service runtimes.
+file(GLOB_RECURSE ADMIN_UI_SOURCES CONFIGURE_DEPENDS
+  "Garazyk/Sources/AdminUIServer/*.m"
+  "Garazyk/Sources/AdminUIServer/Packs/*.m"
+)
+add_library(ATProtoAdminUI STATIC ${ADMIN_UI_SOURCES})
+target_include_directories(ATProtoAdminUI PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+target_compile_definitions(ATProtoAdminUI PUBLIC SQLITE_THREADSAFE=2)
+target_link_libraries(ATProtoAdminUI PUBLIC ATProtoTransport ATProtoCore)
+
 set(PDS_MODULE_TARGETS
   ATProtoCore
   ATProtoStorage
   ATProtoServices
   ATProtoTransport
+  ATProtoAdminUI
   ATProtoXRPC
   ATProtoSync
   ATProtoPLC
@@ -1203,50 +1221,10 @@ set_target_properties(jelcz PROPERTIES
 )
 
 # Dedicated Admin UI server
-add_executable(garazyk-ui
-  Garazyk/Binaries/garazyk-ui/main.m
-  Garazyk/Sources/AdminUIServer/UIServiceConfig.m
-  Garazyk/Sources/AdminUIServer/UIAuthManager.m
-  Garazyk/Sources/AdminUIServer/GZAdminUIBackendClient.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+AppView.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Chat.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+DataExplorer.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+MST.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Ozone.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+PDS.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+PLC.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Relay.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Security.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Video.m
-  Garazyk/Sources/AdminUIServer/GZAdminUIHost.m
-  Garazyk/Sources/AdminUIServer/GZAdminUIDefaultPacks.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+AppViewRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+ChatRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+DataExplorerRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+LabRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+MSTRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+OzoneRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+PDSRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+PLCRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+RelayRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+SecurityRoutes.m
-  Garazyk/Sources/AdminUIServer/UIServerRuntime+VideoRoutes.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIPDSPack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIAppViewPack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIRelayPack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIPLCPack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIDataExplorerPack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUILabPack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIOzonePack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUISecurityPack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIChatPack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIVideoPack.m
-  Garazyk/Sources/AdminUIServer/Packs/GZAdminUIMSTPack.m
-  Garazyk/Sources/AdminUIServer/UITemplateEngine.m
-  Garazyk/Sources/AdminUIServer/UITileDataProtocol.m
-  Garazyk/Sources/AdminUIServer/UITileExecutionPolicy.m
-)
+    add_executable(garazyk-ui
+        Garazyk/Binaries/garazyk-ui/main.m
+        Garazyk/Sources/CLI/GZCommandLineOptions.m
+    )
 
 target_include_directories(garazyk-ui PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
@@ -1254,17 +1232,12 @@ target_include_directories(garazyk-ui PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-# garazyk-ui is a thin HTTP server that calls XRPC endpoints on backends.
-# It needs HttpServer (in ATProtoTransport) and logging (in ATProtoCore).
-# However, ATProtoTransport depends on components in the other libs, so we link
-# them all to satisfy transitive symbol dependencies.
+# garazyk-ui is the compatibility consumer for the transport-only Admin UI
+# library.  The archive's public closure is deliberately the complete link
+# surface for this target: AdminUI, Transport, and Core.
 if(APPLE)
   target_link_libraries(garazyk-ui PRIVATE
-    ATProtoAppViewServer
-    ATProtoRuntime
-    ATProtoStorage
-    ATProtoServices
-    ATProtoSync
+    ATProtoAdminUI
     ATProtoTransport
     ATProtoCore
     ${PLATFORM_LIBRARIES}
@@ -1274,11 +1247,7 @@ if(APPLE)
 else()
   target_link_libraries(garazyk-ui PRIVATE
     -Wl,--whole-archive
-    ATProtoAppViewServer
-    ATProtoRuntime
-    ATProtoStorage
-    ATProtoServices
-    ATProtoSync
+    ATProtoAdminUI
     ATProtoTransport
     ATProtoCore
     -Wl,--no-whole-archive
@@ -1845,51 +1814,6 @@ if(BUILD_TESTS)
   )
   list(REMOVE_DUPLICATES TEST_OBJC_SOURCES)
 
-  # garazyk-ui sources (needed for tests)
-  list(APPEND TEST_OBJC_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServiceConfig.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIAuthManager.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/GZAdminUIBackendClient.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+AppView.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Chat.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+DataExplorer.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+MST.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Ozone.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+PDS.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+PLC.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Relay.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Security.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIBackendClient+Video.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/GZAdminUIHost.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/GZAdminUIDefaultPacks.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+StaticAssets.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+AppViewRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+ChatRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+DataExplorerRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+LabRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+MSTRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+OzoneRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+PDSRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+PLCRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+RelayRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+SecurityRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime+VideoRoutes.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIPDSPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIAppViewPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIRelayPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIPLCPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIDataExplorerPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUILabPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIOzonePack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUISecurityPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIChatPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIVideoPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Packs/GZAdminUIMSTPack.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UITemplateEngine.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UITileDataProtocol.m"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UITileExecutionPolicy.m"
-  )
-
   # Exclude problematic tests (preserved from original)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Compat/SecItemLinuxStoreTestMain.m")
@@ -1994,6 +1918,7 @@ if(BUILD_TESTS)
     target_link_libraries(AllTests PRIVATE
       ATProtoRuntime
       ATProtoServices
+      ATProtoAdminUI
       ATProtoTransport
       ATProtoXRPC
       ATProtoSync
@@ -2021,6 +1946,7 @@ if(BUILD_TESTS)
        -Wl,--whole-archive
        ATProtoRuntime
        ATProtoServices
+       ATProtoAdminUI
        ATProtoTransport
        ATProtoXRPC
        ATProtoSync

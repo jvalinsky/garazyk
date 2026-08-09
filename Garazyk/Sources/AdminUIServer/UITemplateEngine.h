@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * sections select content by context value. Callers must restrict template names to trusted assets
  * and use triple-brace placeholders only for already-sanitized markup.
  */
-@interface UITemplateEngine : NSObject
+@interface GZAdminUITemplateEngine : NSObject
 
 /**
  * @abstract Loads an admin template and applies the supplied substitution context.

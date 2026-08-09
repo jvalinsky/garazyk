@@ -17,12 +17,12 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
-typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
+typedef void (^UILabRouteHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
 
 @interface UILabAuthTests : XCTestCase
-@property(nonatomic, strong) UIServiceConfig *config;
+@property(nonatomic, strong) GZAdminUIServiceConfig *config;
 @property(nonatomic, strong) GZAdminUIHost *runtime;
-@property(nonatomic, strong) UIAuthManager *authManager;
+@property(nonatomic, strong) GZAdminUIAuthManager *authManager;
 @end
 
 @implementation UILabAuthTests
@@ -30,7 +30,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 - (void)setUp {
     [super setUp];
 
-    self.config = [[UIServiceConfig alloc] init];
+    self.config = [[GZAdminUIServiceConfig alloc] init];
     self.config.host = @"127.0.0.1";
     self.config.port = 0;
     self.config.adminPassword = @"test-admin-password";
@@ -47,7 +47,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 
     self.runtime = [[GZAdminUIHost alloc] initWithConfiguration:self.config
                                                             packs:GZAdminUIDefaultPacks()];
-    self.authManager = [[UIAuthManager alloc] initWithPassword:@"test-admin-password"];
+    self.authManager = [[GZAdminUIAuthManager alloc] initWithPassword:@"test-admin-password"];
 }
 
 - (void)tearDown {
@@ -62,8 +62,8 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 
 #pragma mark - Helper Methods
 
-- (HttpRequest *)requestWithPath:(NSString *)path headers:(NSDictionary<NSString *, NSString *> * _Nullable)headers {
-    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+- (ATProtoHttpRequest *)requestWithPath:(NSString *)path headers:(NSDictionary<NSString *, NSString *> * _Nullable)headers {
+    return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:path
                                    queryString:@""
@@ -74,14 +74,14 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
                                    remoteAddress:@"127.0.0.1"];
 }
 
-- (nullable NSString *)responseBodyString:(HttpResponse *)response {
+- (nullable NSString *)responseBodyString:(ATProtoHttpResponse *)response {
     if (!response.body) {
         return nil;
     }
     return [[NSString alloc] initWithData:response.body encoding:NSUTF8StringEncoding];
 }
 
-- (BOOL)invokeEnsureAuthorizedForRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (BOOL)invokeEnsureAuthorizedForRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     SEL selector = NSSelectorFromString(@"ensureAuthorized:response:");
     NSMethodSignature *signature = [self.runtime methodSignatureForSelector:selector];
     if (!signature) {
@@ -110,7 +110,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 
     SEL selector = NSSelectorFromString(@"handlerForRoute:method:parameters:");
     if (![httpServer respondsToSelector:selector]) {
-        XCTFail(@"HttpServer does not respond to handlerForRoute:method:parameters:");
+        XCTFail(@"ATProtoHttpServer does not respond to handlerForRoute:method:parameters:");
         return nil;
     }
 
@@ -128,8 +128,8 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab route is registered and bypasses the admin auth boundary.
  */
 - (void)testLabRouteDoesNotRequireAdminAuth {
-    HttpRequest *request = [self requestWithPath:@"/lab" headers:nil];
-    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/lab" headers:nil];
+    ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertEqualObjects(response.contentType, @"text/html; charset=utf-8");
@@ -144,8 +144,8 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that GET /admin without authentication is rejected with a redirect to the login page.
  */
 - (void)testAdminRouteRequiresAuth {
-    HttpRequest *request = [self requestWithPath:@"/admin" headers:nil];
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/admin" headers:nil];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     BOOL authorized = [self invokeEnsureAuthorizedForRequest:request response:response];
 
@@ -163,8 +163,8 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  */
 - (void)testAdminHTMXRequestReturns401 {
     NSDictionary *headers = @{@"HX-Request": @"true"};
-    HttpRequest *request = [self requestWithPath:@"/admin" headers:headers];
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/admin" headers:headers];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     BOOL authorized = [self invokeEnsureAuthorizedForRequest:request response:response];
 
@@ -181,8 +181,8 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  */
 - (void)testAdminHTMXPartialReturns401 {
     NSDictionary *headers = @{@"HX-Request": @"true"};
-    HttpRequest *request = [self requestWithPath:@"/admin/partials/overview" headers:headers];
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/admin/partials/overview" headers:headers];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     BOOL authorized = [self invokeEnsureAuthorizedForRequest:request response:response];
 
@@ -195,7 +195,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 /*!
  @test testAdminLoginWithCorrectPassword
 
- @abstract Verify that UIAuthManager validates the configured admin password.
+ @abstract Verify that GZAdminUIAuthManager validates the configured admin password.
  */
 - (void)testAdminLoginWithCorrectPassword {
     XCTAssertTrue([self.authManager validatePassword:@"test-admin-password"]);
@@ -204,7 +204,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 /*!
  @test testAdminLoginWithWrongPassword
 
- @abstract Verify that UIAuthManager rejects an incorrect admin password.
+ @abstract Verify that GZAdminUIAuthManager rejects an incorrect admin password.
  */
 - (void)testAdminLoginWithWrongPassword {
     XCTAssertFalse([self.authManager validatePassword:@"wrong-password"]);
@@ -440,12 +440,12 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 /*!
  @test testSessionTokenCreationAndValidation
 
- @abstract Verify that a created session token is accepted by UIAuthManager.
+ @abstract Verify that a created session token is accepted by GZAdminUIAuthManager.
  */
 - (void)testSessionTokenCreationAndValidation {
     NSString *token = [self.authManager createSessionToken];
     NSDictionary *headers = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
-    HttpRequest *request = [self requestWithPath:@"/admin" headers:headers];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/admin" headers:headers];
 
     XCTAssertTrue([self.authManager isAuthorizedRequest:request]);
 }
@@ -458,7 +458,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 - (void)testSessionTokenInvalidation {
     NSString *token = [self.authManager createSessionToken];
     NSDictionary *headers = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
-    HttpRequest *request = [self requestWithPath:@"/admin" headers:headers];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/admin" headers:headers];
 
     XCTAssertTrue([self.authManager isAuthorizedRequest:request]);
 
@@ -480,8 +480,8 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 
     NSDictionary *headers1 = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token1]};
     NSDictionary *headers2 = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token2]};
-    HttpRequest *request1 = [self requestWithPath:@"/admin" headers:headers1];
-    HttpRequest *request2 = [self requestWithPath:@"/admin" headers:headers2];
+    ATProtoHttpRequest *request1 = [self requestWithPath:@"/admin" headers:headers1];
+    ATProtoHttpRequest *request2 = [self requestWithPath:@"/admin" headers:headers2];
 
     XCTAssertTrue([self.authManager isAuthorizedRequest:request1]);
     XCTAssertTrue([self.authManager isAuthorizedRequest:request2]);

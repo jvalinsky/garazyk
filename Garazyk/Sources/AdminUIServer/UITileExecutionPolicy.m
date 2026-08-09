@@ -10,7 +10,7 @@
 
 #import "AdminUIServer/UITileExecutionPolicy.h"
 
-NSString *UITileExecutionContentSecurityPolicy(void) {
+NSString *GZAdminUITileExecutionContentSecurityPolicy(void) {
     return @"default-src 'self' blob: data:; "
            "script-src 'self' blob: data: 'unsafe-inline' 'wasm-unsafe-eval'; "
            "script-src-attr 'none'; "
@@ -22,9 +22,9 @@ NSString *UITileExecutionContentSecurityPolicy(void) {
            "sandbox allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts";
 }
 
-NSDictionary<NSString *, NSString *> *UITileExecutionSecurityHeaders(void) {
+NSDictionary<NSString *, NSString *> *GZAdminUITileExecutionSecurityHeaders(void) {
     return @{
-        @"content-security-policy": UITileExecutionContentSecurityPolicy(),
+        @"content-security-policy": GZAdminUITileExecutionContentSecurityPolicy(),
         @"cross-origin-opener-policy": @"same-origin",
         @"cross-origin-resource-policy": @"cross-origin",
         @"origin-agent-cluster": @"?1",

@@ -15,7 +15,7 @@
     __weak typeof(self) weakSelf = self;
 
     // MST Viewer: Accounts list
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/mst-accounts" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/mst-accounts" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchMSTAccounts];
         response.contentType = @"text/html; charset=utf-8";
@@ -23,7 +23,7 @@
     }];
 
     // MST Viewer: Tree for DID
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/mst-tree" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/mst-tree" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchMSTTreeForDID:did];
@@ -32,7 +32,7 @@
     }];
 
     // MST Viewer: Stats for DID
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/mst-stats" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/mst-stats" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchMSTStatsForDID:did];
@@ -41,7 +41,7 @@
     }];
 
     // MST Viewer: Export
-    [self.httpServer addRoute:@"GET" path:@"/admin/actions/mst-export" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/actions/mst-export" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSString *format = [request queryParamForKey:@"format"] ?: @"json";

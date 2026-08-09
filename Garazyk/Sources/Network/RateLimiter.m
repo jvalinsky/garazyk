@@ -162,7 +162,15 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
             return NO;
         }
 
-        ATProtoDBConfig dbConfig = ATProtoDBConfigDefault;
+        // Keep the transport-owned fallback local.  The Storage default is
+        // intentionally not linked into ATProtoTransport, and the registered
+        // factory may still apply its own process-specific configuration.
+        ATProtoDBConfig dbConfig = {
+            .flags = ATProtoDBConfigFlagWAL
+                   | ATProtoDBConfigFlagSynchronousNormal
+                   | ATProtoDBConfigFlagForeignKeys
+                   | ATProtoDBConfigFlagTempStoreMemory
+        };
         NSError *openError = nil;
         ATProtoRateLimiterStorageHandle *handle = _rateLimiterStorageFactory(self.databasePath, dbConfig, &openError);
         if (!handle) {

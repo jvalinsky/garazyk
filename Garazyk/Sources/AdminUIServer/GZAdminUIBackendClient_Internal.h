@@ -6,7 +6,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class UIServiceConfig;
+@class GZAdminUIServiceConfig;
 @class ATProtoSafeHTTPClient;
 
 /**
@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface GZAdminUIBackendClient ()
 
 /** @abstract Current endpoint and credential configuration used by this client. */
-@property(nonatomic, strong) UIServiceConfig *configuration;
+@property(nonatomic, strong) GZAdminUIServiceConfig *configuration;
 /** @abstract Optional injected HTTP client; the shared safe client is used when this is nil. */
 @property(nonatomic, strong, nullable) ATProtoSafeHTTPClient *httpClient;
 
