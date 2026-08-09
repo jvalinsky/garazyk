@@ -331,312 +331,186 @@ endif()
 # Source Files & Module Targets
 #=============================
 
-function(pds_filter_common_sources source_var)
-  list(FILTER ${source_var} EXCLUDE REGEX ".*server_main\\.m$")
-  list(FILTER ${source_var} EXCLUDE REGEX ".*/App/main\\.m$")
-  list(FILTER ${source_var} EXCLUDE REGEX ".*/CLI/main\\.m$")
-  list(FILTER ${source_var} EXCLUDE REGEX ".*/PLC/main\\.m$")
-  list(FILTER ${source_var} EXCLUDE REGEX ".*/Relay/main\\.m$")
-  list(FILTER ${source_var} EXCLUDE REGEX ".*/tests/.*")
-  list(FILTER ${source_var} EXCLUDE REGEX ".*/Tests/.*")
-  list(REMOVE_DUPLICATES ${source_var})
-  set(${source_var} "${${source_var}}" PARENT_SCOPE)
+function(pds_resolve_module_manifest manifest_var source_var)
+  set(seen_manifest_sources "")
+  set(resolved_sources "")
+  foreach(manifest_source IN LISTS ${manifest_var})
+    if(IS_ABSOLUTE "${manifest_source}" OR
+       NOT "${manifest_source}" MATCHES "^Garazyk/Sources/[^;]+\\.(m|c)$")
+      message(FATAL_ERROR
+        "M4.5 violation: manifest entry '${manifest_source}' in ${manifest_var} "
+        "must be a repository-relative Garazyk/Sources .m or .c path.")
+    endif()
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${manifest_source}")
+      message(FATAL_ERROR
+        "M4.5 violation: manifest entry '${manifest_source}' in ${manifest_var} "
+        "does not exist. Update the manifest after a source rename or removal.")
+    endif()
+    list(FIND seen_manifest_sources "${manifest_source}" duplicate_index)
+    if(NOT duplicate_index EQUAL -1)
+      message(FATAL_ERROR
+        "M4.5 violation: '${manifest_source}' appears more than once in ${manifest_var}.")
+    endif()
+    list(APPEND seen_manifest_sources "${manifest_source}")
+    list(APPEND resolved_sources "${CMAKE_CURRENT_SOURCE_DIR}/${manifest_source}")
+  endforeach()
+  set(${source_var} "${resolved_sources}" PARENT_SCOPE)
 endfunction()
 
-file(GLOB_RECURSE ATPROTO_CORE_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/Core/*.m"
-  "Garazyk/Sources/Core/*.c"
-  "Garazyk/Sources/Shared/*.m"
-  "Garazyk/Sources/Shared/*.c"
-  "Garazyk/Sources/Runtime/*.m"
-  "Garazyk/Sources/Runtime/*.c"
-  "Garazyk/Sources/Compat/*.m"
-  "Garazyk/Sources/Compat/*.c"
-  "Garazyk/Sources/Debug/*.m"
-  "Garazyk/Sources/Debug/*.c"
-  "Garazyk/Sources/Metrics/*.m"
-  "Garazyk/Sources/Metrics/*.c"
-  "Garazyk/Sources/Auth/Crypto/*.m"
-  "Garazyk/Sources/Auth/Crypto/*.c"
-  "Garazyk/Sources/Auth/Verifier/*.m"
-  "Garazyk/Sources/Auth/Verifier/*.c"
-  "Garazyk/Sources/Security/*.m"
-  "Garazyk/Sources/Security/*.c"
-  "Garazyk/Sources/Lexicon/*.m"
-  "Garazyk/Sources/Lexicon/*.c"
-  "Garazyk/Sources/App/ATProtoServiceConfiguration.m"
-)
-list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.m$")
-list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.c$")
-# PDSSpaceAppAttestationVerifier holds a real Services dependency
-# (Services/PDS/PDSSpaceStore) despite living in Security/Space/ alongside
-# otherwise Core-clean files, so it's carved out to ATProtoServices below
-# rather than staying in the Core glob.
-list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Security/Space/PDSSpaceAppAttestationVerifier\\.m$")
-# Workstream 08 M3: HTTP message value types (Foundation-only, no I/O or
-# socket dependency) carved out of ATProtoTransport into Core so Services
-# can depend on the message types without pulling in the whole HTTP I/O
-# stack. See the matching EXCLUDE filters on ATPROTO_TRANSPORT_SOURCES.
-list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpRequest.m")
-list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpResponse.m")
-list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpRoute.m")
-list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpRetryPolicy.m")
-list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/HttpParsing.m")
-# Workstream 08 M4: ATProtoHandleValidator is a pure validator with no
-# Services/Storage/Transport dependency (see Identity/ note above).
-list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Identity/ATProtoHandleValidator.m")
-# ActorStore constructs the platform-specific actor key managers directly.
-# Both implementations use only Core-owned crypto, configuration, and compat
-# facilities, so Core owns them to keep Storage's declared closure complete.
-list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Auth/PDSAppleActorKeyManager.m")
-list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Auth/PDSOpenSSLKeyManager.m")
-# Blob-reference parsing and CID formatting are shared data primitives used by
-# Storage migrations as well as admin diagnostics. They depend only on Core.
-list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.m")
+# The manifests are deliberately repository-relative. This keeps source
+# ownership reviewable and prevents build-host paths from entering the source
+# contract.
+set(PDS_MODULE_MANIFEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoCore.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoStorage.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoServices.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoTransport.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoXRPC.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoSync.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoPLC.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoRuntime.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoMediaCore.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoVideoService.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoAppViewServer.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoMikrus.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoBeskid.cmake")
 
-file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/Database/*.m"
-  "Garazyk/Sources/Database/*.c"
-  "Garazyk/Sources/Repository/*.m"
-  "Garazyk/Sources/Repository/*.c"
-  "Garazyk/Sources/Core/Repositories/*.m"
-  "Garazyk/Sources/Core/Repositories/*.c"
+set(PDS_MODULE_MANIFEST_VARS
+  ATPROTO_CORE_MANIFEST
+  ATPROTO_STORAGE_MANIFEST
+  ATPROTO_SERVICES_MANIFEST
+  ATPROTO_TRANSPORT_MANIFEST
+  ATPROTO_XRPC_MANIFEST
+  ATPROTO_SYNC_MANIFEST
+  ATPROTO_PLC_MANIFEST
+  ATPROTO_RUNTIME_MANIFEST
+  ATPROTO_MEDIA_CORE_MANIFEST
+  ATPROTO_VIDEO_MANIFEST
+  ATPROTO_APPVIEW_SERVER_MANIFEST
+  ATPROTO_MIKRUS_MANIFEST
+  ATPROTO_BESKID_MANIFEST
 )
 
-file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/Auth/*.m"
-  "Garazyk/Sources/Auth/*.c"
-  "Garazyk/Sources/Blob/*.m"
-  "Garazyk/Sources/Blob/*.c"
-  "Garazyk/Sources/Email/*.m"
-  "Garazyk/Sources/Email/*.c"
-  "Garazyk/Sources/Identity/*.m"
-  "Garazyk/Sources/Identity/*.c"
-  "Garazyk/Sources/Services/*.m"
-  "Garazyk/Sources/Services/*.c"
-  "Garazyk/Sources/Admin/*.m"
-  "Garazyk/Sources/Admin/*.c"
-  "Garazyk/Sources/AppView/*.m"
-  "Garazyk/Sources/AppView/*.c"
-  "Garazyk/Sources/Chat/*.m"
-  "Garazyk/Sources/Chat/*.c"
-  "Garazyk/Sources/Ozone/*.m"
-  "Garazyk/Sources/Ozone/*.c"
-  "Garazyk/Sources/Federation/*.m"
-  "Garazyk/Sources/Federation/*.c"
-  "Garazyk/Sources/Registration/*.m"
-  "Garazyk/Sources/Registration/*.c"
-  "Garazyk/Sources/PhoneVerification/*.m"
-  "Garazyk/Sources/PhoneVerification/*.c"
-  "Garazyk/Sources/Germ/*.m"
-  "Garazyk/Sources/Germ/*.c"
-)
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/PDSAuth/.*")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Crypto/.*")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Verifier/.*")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDS/.*")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleActorKeyManager\\.m$")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLKeyManager\\.m$")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils\\.m$")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/AppView/Server/.*")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Services/PDS(AdminService|PhoneVerificationProvider)\\.m$")
-# PDSInstallerCommand is CLI composition and uses Runtime-owned
-# PDSBaseCommand/PDSCLIDispatcher. Keep the implementation with the CLI
-# runtime rather than making Services depend upward on Runtime.
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Admin/PDSInstallerCommand\\.m$")
-# ChatRuntime and GermRuntime are process orchestration, not service
-# implementations. They construct HttpServer and XRPC route packs, so compile
-# them into Runtime where those dependencies are already part of the closure.
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Chat/Server/ChatRuntime\\.m$")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Germ/Server/Runtime/GermRuntime\\.m$")
-# The diagnostics dispatcher and its rate-limit admin adapter are Runtime
-# composition: they route across Services and Transport, while Runtime already
-# declares both dependencies. Keeping them in Services makes the admin adapter
-# a Services -> Transport leak through RateLimiter.
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Admin/Diagnostics/PDSSystemDiagnosticsHandler\\.m$")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Admin/Diagnostics/PDSRateLimitAdminHandler\\.m$")
-list(APPEND ATPROTO_SERVICES_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Security/Space/PDSSpaceAppAttestationVerifier.m")
-# ATProtoHandleValidator is a pure Foundation-only validator (no network,
-# storage, or keychain dependency) despite living in Identity/ alongside
-# HandleResolver (a real Services class — does live HTTP resolution via
-# ATProtoSafeHTTPClient/SSRFValidator) — carved out to ATProtoCore below.
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Identity/ATProtoHandleValidator\\.m$")
-
-file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/Network/*.m"
-  "Garazyk/Sources/Network/*.c"
-)
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.c$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSRepoImport.*\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpXrpcRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/RelayXrpcRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\+.*\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpServerBuilder\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Generated/GZXrpcNSID\\.m$")
-# These route packs are registered only by ATProtoHttpServerBuilder.m
-# (already Runtime-owned) and each reaches directly into a Runtime,
-# Services, or Sync handler class (workstream 08 M4, Transport -> Runtime
-# inversion) — carved out alongside their only caller rather than left in
-# Transport importing upward.
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpMSTViewerRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpNodeInfoRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpOAuthDemoRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpOAuthRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpRelayAPIRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpPDSAdminRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpWellKnownRoutePack\\.m$")
-# GZXrpcRouteSupport's only consumers (Mikrus/Beskid's own XRPC route
-# packs) already need it linked alongside ATProtoXRPC; it also directly
-# messages XrpcErrorHelper (XRPC-owned) — carved out here rather than
-# left in Transport importing upward (workstream 08 M4).
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/GZXrpcRouteSupport\\.m$")
-# HttpRequest/HttpResponse/HttpRoute/HttpRetryPolicy/HttpParsing are
-# Foundation-only HTTP message value types with no I/O or socket
-# dependency (workstream 08 M3) — carved out to ATProtoCore so Services
-# can depend on the message types without depending on the whole
-# Transport I/O stack (HttpServer, Http1Parser, connection drivers).
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpRequest\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpResponse\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpRoute\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpRetryPolicy\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/HttpParsing\\.m$")
-# UI route packs migrated to garazyk-ui — exclude from service binaries
-
-file(GLOB_RECURSE ATPROTO_XRPC_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/Network/Xrpc*.m"
-  "Garazyk/Sources/Network/Xrpc*.c"
-  "Garazyk/Sources/Video/VideoPDSAuthProvider.m"
-  "Garazyk/Sources/Video/VideoXrpcPack.m"
-  "Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m"
-  "Garazyk/Sources/Network/RelayXrpcRoutePack.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Actor.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack+AgeAssurance.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Contact.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack+DraftsAndBookmarks.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Feed.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Graph.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Identity.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Notification.m"
-  "Garazyk/Sources/Network/AppViewXRpcRoutePack+Search.m"
-  "Garazyk/Sources/Network/PDSRepoImportValidationResult.m"
-  "Garazyk/Sources/Network/PDSRepoImportValidator.m"
-  "Garazyk/Sources/Network/Generated/GZXrpcNSID.m"
-  "Garazyk/Sources/Network/GZXrpcRouteSupport.m"
-)
-# XRPCError.m is included in ATPROTO_TRANSPORT_SOURCES, exclude from here to avoid duplicate
-list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Network/XRPCError\\.m$")
-
-file(GLOB_RECURSE ATPROTO_SYNC_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/Sync/Firehose/*.m"
-  "Garazyk/Sources/Sync/Firehose/*.c"
-  "Garazyk/Sources/Sync/Relay/*.m"
-  "Garazyk/Sources/Sync/Relay/*.c"
-  "Garazyk/Sources/Sync/WebSocket/*.m"
-  "Garazyk/Sources/Sync/WebSocket/*.c"
+set(PDS_MODULE_SOURCE_VARS
+  ATPROTO_CORE_SOURCES
+  ATPROTO_STORAGE_SOURCES
+  ATPROTO_SERVICES_SOURCES
+  ATPROTO_TRANSPORT_SOURCES
+  ATPROTO_XRPC_SOURCES
+  ATPROTO_SYNC_SOURCES
+  ATPROTO_PLC_SOURCES
+  ATPROTO_RUNTIME_SOURCES
+  ATPROTO_MEDIA_CORE_SOURCES
+  ATPROTO_VIDEO_SOURCES
+  ATPROTO_APPVIEW_SERVER_SOURCES
+  ATPROTO_MIKRUS_SOURCES
+  ATPROTO_BESKID_SOURCES
 )
 
-file(GLOB_RECURSE ATPROTO_PLC_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/PLC/*.m"
-  "Garazyk/Sources/PLC/*.c"
-)
+set(PDS_SEEN_SOURCE_FILES "")
+set(PDS_SEEN_SOURCE_OWNERS "")
+list(LENGTH PDS_MODULE_MANIFEST_VARS PDS_MODULE_COUNT)
+math(EXPR PDS_MODULE_LAST_INDEX "${PDS_MODULE_COUNT} - 1")
+foreach(module_index RANGE 0 ${PDS_MODULE_LAST_INDEX})
+  list(GET PDS_MODULE_MANIFEST_VARS ${module_index} manifest_var)
+  list(GET PDS_MODULE_SOURCE_VARS ${module_index} source_var)
+  pds_resolve_module_manifest(${manifest_var} ${source_var})
 
-file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/App/*.m"
-  "Garazyk/Sources/App/*.c"
-  "Garazyk/Sources/CLI/*.m"
-  "Garazyk/Sources/CLI/*.c"
-  "Garazyk/Sources/Auth/PDS/*.m"
-  "Garazyk/Sources/Auth/PDS/*.c"
-  "Garazyk/Sources/Network/ATProtoHttpServerBuilder.m"
-  "Garazyk/Sources/Network/ATProtoHttpMSTViewerRoutePack.m"
-  "Garazyk/Sources/Network/ATProtoHttpNodeInfoRoutePack.m"
-  "Garazyk/Sources/Network/ATProtoHttpOAuthDemoRoutePack.m"
-  "Garazyk/Sources/Network/ATProtoHttpOAuthRoutePack.m"
-  "Garazyk/Sources/Network/ATProtoHttpRelayAPIRoutePack.m"
-  "Garazyk/Sources/Network/PDSHttpPDSAdminRoutePack.m"
-  "Garazyk/Sources/Network/ATProtoHttpWellKnownRoutePack.m"
-  "Garazyk/Sources/Chat/Server/ChatRuntime.m"
-  "Garazyk/Sources/Germ/Server/Runtime/GermRuntime.m"
-  "Garazyk/Sources/Admin/PDSInstallerCommand.m"
-  "Garazyk/Sources/Admin/Diagnostics/PDSSystemDiagnosticsHandler.m"
-  "Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m"
-  "Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m"
-  "Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m"
-)
-list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
-list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/ATProtoServiceConfiguration\\.m$")
+  foreach(manifest_source IN LISTS ${manifest_var})
+    list(FIND PDS_SEEN_SOURCE_FILES "${manifest_source}" existing_index)
+    if(NOT existing_index EQUAL -1)
+      list(GET PDS_SEEN_SOURCE_OWNERS ${existing_index} prior_owner)
+      message(FATAL_ERROR
+        "M4.5 violation: '${manifest_source}' is claimed by both "
+        "${prior_owner} and ${manifest_var}. Every package-target source "
+        "must belong to exactly one module target.")
+    endif()
+    list(APPEND PDS_SEEN_SOURCE_FILES "${manifest_source}")
+    list(APPEND PDS_SEEN_SOURCE_OWNERS "${manifest_var}")
+  endforeach()
+endforeach()
 
-# Handle platform-specific network transport implementations.
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/ATProtoNetworkTransport(Mac|Linux)\\.m$")
-list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m")
-if(APPLE)
-  list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/ATProtoNetworkTransportMac.m")
-  if(NOT PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
-    # OpenSSL-based manager is unavailable on this macOS host.
-    list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")
+# Discover only for validation. The thirteen target source lists above are
+# manifests; this inventory makes a new or renamed package source fail
+# configuration instead of silently falling through.
+file(GLOB_RECURSE PDS_DISCOVERED_MODULE_SOURCES CONFIGURE_DEPENDS
+  "Garazyk/Sources/*.m"
+  "Garazyk/Sources/*.c"
+)
+list(FILTER PDS_DISCOVERED_MODULE_SOURCES EXCLUDE REGEX ".*/AdminUIServer/.*")
+list(FILTER PDS_DISCOVERED_MODULE_SOURCES EXCLUDE REGEX ".*/(tests|Tests)/.*")
+list(FILTER PDS_DISCOVERED_MODULE_SOURCES EXCLUDE REGEX ".*/(server_main|main)\\.m$")
+# JetstreamClient is an experimental source that was outside all thirteen
+# package-target globs; keep that pre-existing exclusion explicit. Any other
+# implementation source under Garazyk/Sources must be assigned above.
+list(FILTER PDS_DISCOVERED_MODULE_SOURCES EXCLUDE REGEX ".*/Sync/Jetstream/JetstreamClient\\.m$")
+
+set(PDS_DISCOVERED_MODULE_RELATIVE_SOURCES "")
+foreach(discovered_source IN LISTS PDS_DISCOVERED_MODULE_SOURCES)
+  file(RELATIVE_PATH discovered_relative_source
+    "${CMAKE_CURRENT_SOURCE_DIR}" "${discovered_source}")
+  list(APPEND PDS_DISCOVERED_MODULE_RELATIVE_SOURCES "${discovered_relative_source}")
+  list(FIND PDS_SEEN_SOURCE_FILES "${discovered_relative_source}" owner_index)
+  if(owner_index EQUAL -1)
+    message(FATAL_ERROR
+      "M4.5 violation: '${discovered_relative_source}' is not assigned to "
+      "any package-target manifest.")
   endif()
-  # PDSOpenSSLES256KeyManager is only for GNUstep/Linux
-  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLES256KeyManager\\.m$")
+endforeach()
+
+foreach(manifest_source IN LISTS PDS_SEEN_SOURCE_FILES)
+  list(FIND PDS_DISCOVERED_MODULE_RELATIVE_SOURCES "${manifest_source}" discovered_index)
+  if(discovered_index EQUAL -1)
+    message(FATAL_ERROR
+      "M4.5 violation: manifest source '${manifest_source}' is not in the "
+      "package-source inventory.")
+  endif()
+endforeach()
+
+list(LENGTH PDS_SEEN_SOURCE_FILES PDS_MANIFEST_SOURCE_COUNT)
+message(STATUS
+  "M4.5: ${PDS_MANIFEST_SOURCE_COUNT} package-target manifest entries each "
+  "claimed by exactly one module")
+
+# Platform-specific ownership remains explicit in the manifests; these filters
+# only select sources that cannot compile on the active platform.
+if(APPLE)
+  list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX
+    ".*/Auth/PDSOpenSSLES256KeyManager\\.m$")
+else()
+  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX
+    ".*/Auth/PDSAppleKeyManager\\.m$")
+  list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX
+    ".*/Network/SSLPinningManager\\.m$")
+  list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX
+    ".*/Sync/WebSocket/WebSocketServer\\.m$")
+endif()
+
+if(APPLE)
+  if(NOT PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
+    list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX
+      ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")
+  endif()
+else()
+  list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX
+    ".*/App/Services/.*")
+  list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX
+    ".*/App/ATProtoServiceConfiguration\\.m$")
+endif()
+
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX
+  ".*/Network/ATProtoNetworkTransport(Mac|Linux)\\.m$")
+list(APPEND ATPROTO_TRANSPORT_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m")
+if(APPLE)
+  list(APPEND ATPROTO_TRANSPORT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/ATProtoNetworkTransportMac.m")
 endif()
 
 if(NOT APPLE)
-  # PDSAppleKeyManager.m uses Security.framework (macOS/iOS only)
-  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleKeyManager\\.m$")
-
-  # PDSOpenSSLES256KeyManager is required by AuthCryptoJWK (Core) on GNUstep.
-  # Keep it in Core to satisfy static-link ordering for Linux binaries.
-  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLES256KeyManager\\.m$")
-  list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m")
-
-  # PDSCLIHealthCommand now has cross-platform guards and is included on Linux.
-
-  # SSLPinningManager.m uses SecTrust (not yet ported).
-  list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
-
-  # WebSocketServer.m uses Network.framework.
-  list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
-
-  # Compat shim implementations are already captured by the GLOB_RECURSE on
-  # Garazyk/Sources/Compat/*.m above — no explicit additions needed here.
+  list(APPEND ATPROTO_CORE_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m")
 endif()
-
-pds_filter_common_sources(ATPROTO_CORE_SOURCES)
-pds_filter_common_sources(ATPROTO_STORAGE_SOURCES)
-pds_filter_common_sources(ATPROTO_SERVICES_SOURCES)
-pds_filter_common_sources(ATPROTO_TRANSPORT_SOURCES)
-pds_filter_common_sources(ATPROTO_XRPC_SOURCES)
-pds_filter_common_sources(ATPROTO_SYNC_SOURCES)
-pds_filter_common_sources(ATPROTO_PLC_SOURCES)
-pds_filter_common_sources(ATPROTO_RUNTIME_SOURCES)
-
-# Video service library (side-car compatible)
-file(GLOB_RECURSE ATPROTO_VIDEO_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/Video/*.m"
-  "Garazyk/Sources/Video/*.c"
-)
-# These are XRPC composition adapters: they register HTTP routes, consume
-# XRPC error helpers, and are constructed by XrpcAppBskyPack. Keep the
-# underlying video worker/storage implementations independent of XRPC while
-# retaining the public headers in the Video namespace.
-list(FILTER ATPROTO_VIDEO_SOURCES EXCLUDE REGEX ".*/Video/VideoPDSAuthProvider\\.m$")
-list(FILTER ATPROTO_VIDEO_SOURCES EXCLUDE REGEX ".*/Video/VideoXrpcPack\\.m$")
-pds_filter_common_sources(ATPROTO_VIDEO_SOURCES)
-
-# MediaCore framework — reusable AT Protocol media CDN abstractions
-file(GLOB_RECURSE ATPROTO_MEDIA_CORE_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/MediaCore/*.m"
-  "Garazyk/Sources/MediaCore/*.c"
-)
-# MediaCore composition: the media service runtime and its XRPC route pack
-# construct XrpcDispatcher/XrpcRoutePackServiceBag and register XRPC routes,
-# so they are Runtime composition, not MediaCore implementations (same
-# carve-out precedent as ChatRuntime/GermRuntime/PDSInstallerCommand).
-list(FILTER ATPROTO_MEDIA_CORE_SOURCES EXCLUDE REGEX ".*/MediaCore/ATProtoMediaServiceRuntime\\.m$")
-list(FILTER ATPROTO_MEDIA_CORE_SOURCES EXCLUDE REGEX ".*/MediaCore/ATProtoMediaXrpcPack\\.m$")
-pds_filter_common_sources(ATPROTO_MEDIA_CORE_SOURCES)
 
 set(ATPROTO_ALL_RUNTIME_SOURCES
   ${ATPROTO_CORE_SOURCES}
@@ -890,13 +764,8 @@ set_target_properties(zuk PROPERTIES
   LINK_FLAGS "-ObjC"
 )
 
-# AppView server source library
-file(GLOB_RECURSE ATPROTO_APPVIEW_SERVER_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/AppView/Server/*.m"
-  "Garazyk/Sources/AppView/Server/*.c"
-)
-# Exclude binary entrypoint from the library
-list(FILTER ATPROTO_APPVIEW_SERVER_SOURCES EXCLUDE REGEX ".*/AppView/Server/Binary/.*\\.m$")
+# AppView server source library. Membership is defined by the explicit
+# manifest resolved above; the binary entrypoint is not listed there.
 
 add_library(ATProtoAppViewServer STATIC ${ATPROTO_APPVIEW_SERVER_SOURCES})
 
@@ -917,12 +786,7 @@ target_link_libraries(ATProtoAppViewServer PRIVATE
   ${SECP256K1_LIBRARIES}
 )
 
-# Mikrus-style link index service library
-file(GLOB_RECURSE ATPROTO_MIKRUS_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/Mikrus/*.m"
-  "Garazyk/Sources/Mikrus/*.c"
-)
-
+# Mikrus-style link index service library. Membership comes from its manifest.
 add_library(ATProtoMikrus STATIC ${ATPROTO_MIKRUS_SOURCES})
 
 target_include_directories(ATProtoMikrus PRIVATE
@@ -944,12 +808,8 @@ target_link_libraries(ATProtoMikrus PRIVATE
   ${SECP256K1_LIBRARIES}
 )
 
-# Beskid-style edge record and identity cache service library
-file(GLOB_RECURSE ATPROTO_BESKID_SOURCES CONFIGURE_DEPENDS
-  "Garazyk/Sources/Beskid/*.m"
-  "Garazyk/Sources/Beskid/*.c"
-)
-
+# Beskid-style edge record and identity cache service library. Membership comes
+# from its manifest.
 add_library(ATProtoBeskid STATIC ${ATPROTO_BESKID_SOURCES})
 
 target_include_directories(ATProtoBeskid PRIVATE
@@ -968,50 +828,6 @@ target_link_libraries(ATProtoBeskid PRIVATE
   ATProtoPLC
   ATProtoCore
 )
-
-#=============================
-# M4.5: deterministic module membership
-#=============================
-# Configure-time assertion that no source file is claimed by two package
-# targets. All thirteen GLOB_RECURSE source lists are finalized by this
-# point (their platform filters and pds_filter_common_sources calls have
-# already run). See docs/plans/workstreams/08-module-boundaries-and-library-consumption.md M4.5.
-set(PDS_MODULE_SOURCE_VARS
-  ATPROTO_CORE_SOURCES
-  ATPROTO_STORAGE_SOURCES
-  ATPROTO_SERVICES_SOURCES
-  ATPROTO_TRANSPORT_SOURCES
-  ATPROTO_XRPC_SOURCES
-  ATPROTO_SYNC_SOURCES
-  ATPROTO_PLC_SOURCES
-  ATPROTO_RUNTIME_SOURCES
-  ATPROTO_VIDEO_SOURCES
-  ATPROTO_MEDIA_CORE_SOURCES
-  ATPROTO_APPVIEW_SERVER_SOURCES
-  ATPROTO_MIKRUS_SOURCES
-  ATPROTO_BESKID_SOURCES
-)
-
-set(PDS_SEEN_SOURCE_FILES "")
-set(PDS_SEEN_SOURCE_OWNERS "")
-foreach(module_var IN LISTS PDS_MODULE_SOURCE_VARS)
-  foreach(src IN LISTS ${module_var})
-    list(FIND PDS_SEEN_SOURCE_FILES "${src}" pds_existing_index)
-    if(NOT pds_existing_index EQUAL -1)
-      list(GET PDS_SEEN_SOURCE_OWNERS ${pds_existing_index} pds_prior_owner)
-      message(FATAL_ERROR
-        "M4.5 violation: '${src}' is claimed by both ${pds_prior_owner} and "
-        "${module_var}. Every package-target source must belong to exactly "
-        "one module target.")
-    endif()
-    list(APPEND PDS_SEEN_SOURCE_FILES "${src}")
-    list(APPEND PDS_SEEN_SOURCE_OWNERS "${module_var}")
-  endforeach()
-endforeach()
-list(LENGTH PDS_SEEN_SOURCE_FILES PDS_MODULE_SOURCE_FILE_COUNT)
-message(STATUS "M4.5: ${PDS_MODULE_SOURCE_FILE_COUNT} package-target sources each claimed by exactly one module")
-unset(PDS_SEEN_SOURCE_FILES)
-unset(PDS_SEEN_SOURCE_OWNERS)
 
 # AppView Server binary (syrena)
 add_executable(syrena
