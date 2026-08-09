@@ -187,7 +187,16 @@ invent a network sidecar format or silently trust an HTTP server.
 BLAKE3 is vendored (`Security/Space/Vendor/BLAKE3`) and already linked into `ATProtoCore` (used by
 `PDSSpaceLtHash`). This phase does not emit BDASL CIDs into records, alter blob upload/CID
 assignment, or wire unverified existing HTTP blob responses to the new verifier. The production
-HTTP-range integration remains the next BDASL slice after a sidecar transport contract is chosen.
+HTTP-range integration is the next bounded slice. The bounded sidecar transport contract is now
+recorded: the caller supplies the conformant
+BLAKE3 CID, exact payload length, and complete per-1 KiB chunk digest array; no sidecar is fetched
+from a server. HTTP integration requests one single inclusive range per chunk. The requested
+range is authoritative, so a response is accepted only for HTTP 206 with a body whose length is
+exactly the requested range length; `Content-Range`, `Content-Length`, and server-specific
+metadata are observational only and cannot define ranges, lengths, chunk counts, or digests.
+Each response is verified against its caller-supplied chunk digest, and the assembled payload is
+verified against the caller-supplied BLAKE3 CID before return. This is a repository-owned boundary,
+not an invented full BDASL hash-tree wire format.
 
 - Owner boundary: `Garazyk/Sources/Core` for the reusable verifier; future integration belongs to
   blob/video download paths only (`Blob`, `Services/PDS`, `Video`).

@@ -10,8 +10,25 @@
  the byte-range to chunk-range mapping described by BDASL. The sidecar is
  intentionally explicit: BDASL requires hash-tree metadata for trustless
  partial verification, and this slice does not invent a wire format for that
- metadata. The verifier is therefore a reusable integrity primitive, not a
- complete HTTP client or BDASL sidecar transport.
+ metadata.
+
+ The bounded transport contract for HTTP range integration is:
+ (1) the caller supplies the conformant BLAKE3 CID, exact payload length, and
+     the complete sidecar array; no sidecar is fetched from the server;
+ (2) the client issues one single-range request for each requested chunk, and
+     the requested inclusive byte bounds—not response headers—define the
+     expected response length and destination offset;
+ (3) a response is accepted only when it is HTTP 206 and its body is exactly
+     the requested number of bytes; Content-Range, Content-Length, and
+     server-specific metadata are observational only and never supply the
+     range, length, chunk count, or digest;
+ (4) every returned body is checked against its caller-supplied chunk digest,
+     and the assembled payload is checked against the caller-supplied CID
+     root before it is returned.
+
+ This is a repository-owned transport boundary, not a claim about the full
+ BDASL hash-tree wire format. The verifier remains a reusable integrity
+ primitive; the Network layer owns HTTP and SSRF/pinned-egress policy.
  */
 
 #import <Foundation/Foundation.h>
