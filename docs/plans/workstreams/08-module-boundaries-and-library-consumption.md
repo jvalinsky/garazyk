@@ -28,9 +28,10 @@ now met**: `docs/module-boundary-baseline.txt` is empty and
 all ten modules.
 **M7 is now complete (2026-08-04).** The residual host-process exits and the
 installer's `/var/db/kaszlak` fallback are fixed; see "M7 residual cleanup
-complete" below. **M4.5 items 1 and 3 are complete** (`CONFIGURE_DEPENDS` +
-a configure-time disjoint-source assertion); item 2 (glob-to-manifest
-conversion) remains open. M5 has started: the namespace gate landed, and
+complete" below. **M4.5 is complete (2026-08-08):** all thirteen
+package-target source globs are replaced with explicit manifests, with
+configure-time checks for missing, duplicate, renamed, and unassigned sources.
+M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**,
 **batch 2 is complete in full** (all ~25 classes renamed), and **batch 3a (the
 low-consumer half of Storage/Transport, 14 classes) is complete**. Batch 3b's
@@ -1404,35 +1405,45 @@ curation begins.
    configure and an incremental `kaszlak`/`AllTests` build both succeed with
    no unexpected rebuilds (only the `CMakeLists.txt` directive itself
    changed, not source content).
-2. **Not started.** Replacing the globs with hand-maintained per-target
-   manifests under `cmake/modules/` is a separate, much larger change
-   (~491 files across 13 lists) deliberately left for its own slice rather
-   than folded into this one.
-3. **Done (2026-08-04).** Added a configure-time assertion (`CMakeLists.txt`,
-   right after `ATProtoBeskid`'s target definition, once all thirteen
-   `ATPROTO_*_SOURCES` lists are finalized) that walks all thirteen lists and
-   fails configure with `FATAL_ERROR` naming both owning targets if any
-   source file appears in more than one. Verified it passes cleanly today
-   (`-- M4.5: 491 package-target sources each claimed by exactly one
-   module`) and verified it actually catches a violation: temporarily
-   appending an `ATProtoCore`-owned file to `ATPROTO_STORAGE_SOURCES` made
-   configure fail with the expected message, then reverted.
-4. **N/A until item 2 lands.** "Do not export build-host absolute paths in
-   those manifests" only applies once per-target manifest files exist; there
-   are none yet.
+2. **Done (2026-08-08).** Replaced all thirteen package-target globs with
+   hand-maintained, repository-relative manifests under `cmake/modules/`.
+   The manifests contain 492 cross-platform package-target entries; platform
+   filters preserve the 491-source macOS target set while retaining the
+   Linux-only ES256 key-manager source in the Core manifest. Configure-time
+   validation rejects missing manifest entries, duplicate ownership, and every
+   discovered implementation source that is not assigned to exactly one
+   manifest. The pre-existing Jetstream client WIP remains explicitly outside
+   the package-target inventory because it was outside all thirteen globs.
+   Verified with fresh configure, exact macOS target-source parity, and
+   negative configure cases for a missing manifest entry, renamed source,
+   duplicate entry, and unassigned source.
+3. **Done (2026-08-04; retained and strengthened 2026-08-08).** The
+   configure-time ownership check now walks the thirteen resolved manifests
+   before target definitions and fails with `FATAL_ERROR`, naming both owning
+   manifests if any source file appears in more than one. It passes cleanly
+   today (`-- M4.5: 492 package-target manifest entries each claimed by
+   exactly one module`) and the duplicate-entry negative case confirms the
+   failure path.
+4. **Done (2026-08-08).** All manifest entries are repository-relative; the
+   configure-time resolver rejects absolute paths and paths outside the
+   repository source tree.
 
-Owner boundary: `CMakeLists.txt` only; no `Garazyk/Sources/` file moved,
-renamed, or reassigned by this slice.
+Owner boundary: `CMakeLists.txt` and `cmake/modules/*.cmake`; no source
+content was moved or renamed by this slice.
 
-Verification gate: `cmake -S . -B build` reconfigures cleanly and reports the
-per-target file count; `cmake --build build --target kaszlak AllTests
---parallel 4` succeeds; `./scripts/check_module_boundaries.sh build` still
-reports 0 current / 0 baselined leaks (unaffected — this slice is CMake
-bookkeeping, not a source move).
+Verification gate: fresh configure reports 492 package-target manifest entries
+claimed by exactly one module; the native `kaszlak`/`AllTests` build succeeds
+with `--parallel 4`; `./scripts/check_module_boundaries.sh <build-dir>` and
+`./scripts/dev/check_module_boundaries.sh .` pass.
+The full `./tests/AllTests --gated=run` execution was started but intentionally
+interrupted with exit 130 before aggregate completion; it had reached
+`RepoAuthRepoTests`, where 22 of 25 tests were reported failing (6 unexpected).
+No full-suite test pass is claimed for this slice.
 
 Verification gate: adding an unassigned implementation, assigning one file to
 two targets, or renaming a source without updating its manifest fails
-configuration.
+configuration. All four negative configure cases were exercised on
+2026-08-08.
 
 ## M5. Namespace the exported symbols
 
