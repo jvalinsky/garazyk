@@ -3,6 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Repository/CAR.h"
 #import "Core/CBOR.h"
+#import "Core/ATProtoMASLDocument.h"
 #import "Repository/MST.h"
 #import "Core/CID.h"
 
@@ -210,6 +211,42 @@ static NSData *HexToNSData(NSString *hex) {
     XCTAssertNil(notFound, @"Should not find nonexistent CID");
 }
 
+- (void)testMASLBundleMetadataRoundTripAndResourceLookup {
+    NSData *resourceData = [@"bundle resource" dataUsingEncoding:NSUTF8StringEncoding];
+    ATProtoCID *resourceCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:resourceData] codec:0x55];
+    NSDictionary *metadata = @{
+        @"$type": @"ing.dasl.masl",
+        @"name": @"bundle",
+        @"version": @1,
+        @"roots": @[],
+        @"resources": @{
+            @"/": @{ @"src": resourceCID, @"content-type": @"text/plain" },
+            @"/app.js": @{ @"src": resourceCID, @"content-type": @"text/javascript" }
+        }
+    };
+
+    NSError *error = nil;
+    ATProtoMASLDocument *document = [ATProtoMASLDocument documentWithObject:metadata error:&error];
+    XCTAssertNotNil(document);
+    XCTAssertNil(error);
+
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithMASLDocument:document error:&error];
+    XCTAssertNotNil(writer);
+    [writer addBlock:[ATProtoCARBlock blockWithCID:resourceCID data:resourceData]];
+    NSData *carData = [writer serialize];
+    XCTAssertNotNil(carData);
+    XCTAssertNil(error);
+
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData strict:YES error:&error];
+    XCTAssertNotNil(reader);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(reader.metadata, metadata);
+    XCTAssertTrue(reader.maslDocument.isBundle);
+    ATProtoCARBlock *block = [reader blockForMASLPath:@"/app.js?cache=1" error:&error];
+    XCTAssertEqualObjects(block.data, resourceData);
+    XCTAssertNil(error);
+}
+
 - (void)testCARReaderRejectsMalformedCIDInBlock {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
     ATProtoCID *rootCID = [ATProtoCID cidFromString:cidStr];
@@ -253,6 +290,70 @@ static NSData *HexToNSData(NSString *hex) {
 
     ATProtoCARBlock *parsedBlock = reader.blocks.firstObject;
     XCTAssertEqualObjects(parsedBlock.cid, expectedBlockCID, @"Block CID should match computed CID");
+}
+
+- (void)testMASLHeaderRoundTripAndBundleLookup {
+    NSData *rootData = [@"root resource" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *scriptData = [@"console.log('masl');" dataUsingEncoding:NSUTF8StringEncoding];
+    ATProtoCID *rootCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:rootData] codec:0x71];
+    ATProtoCID *scriptCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:scriptData] codec:0x71];
+    NSDictionary *metadata = @{
+        @"$type": @"ing.dasl.masl",
+        @"version": @1,
+        @"roots": @[rootCID],
+        @"name": @"CAR MASL fixture",
+        @"resources": @{
+            @"/": @{ @"src": rootCID, @"content-type": @"text/html" },
+            @"/app.js": @{ @"src": scriptCID, @"content-type": @"text/javascript" }
+        }
+    };
+
+    NSError *error = nil;
+    ATProtoMASLDocument *document = [ATProtoMASLDocument documentWithObject:metadata error:&error];
+    XCTAssertNotNil(document);
+    XCTAssertNil(error);
+
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithMASLDocument:document error:&error];
+    XCTAssertNotNil(writer);
+    XCTAssertNil(error);
+    [writer addBlock:[ATProtoCARBlock blockWithCID:rootCID data:rootData]];
+    [writer addBlock:[ATProtoCARBlock blockWithCID:scriptCID data:scriptData]];
+
+    NSData *carData = [writer serialize];
+    XCTAssertNotNil(carData);
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData strict:YES error:&error];
+    XCTAssertNotNil(reader);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(reader.metadata, metadata);
+    XCTAssertTrue(reader.maslDocument.isBundle);
+    XCTAssertEqualObjects(reader.rootCID, rootCID);
+
+    ATProtoCARBlock *scriptBlock = [reader blockForMASLPath:@"/app.js?cache=1#entry"
+                                                       error:&error];
+    XCTAssertEqualObjects(scriptBlock.data, scriptData);
+    XCTAssertNil(error);
+    XCTAssertNil([reader blockForMASLPath:@"/missing.js" error:&error]);
+    XCTAssertNotNil(error);
+}
+
+- (void)testMASLHeaderAllowsEmptyRoots {
+    ATProtoCID *resourceCID = [ATProtoCID cidWithDigest:
+        [ATProtoCID sha256Digest:[@"resource" dataUsingEncoding:NSUTF8StringEncoding]] codec:0x71];
+    ATProtoMASLDocument *document = [ATProtoMASLDocument documentWithObject:@{
+        @"version": @1,
+        @"roots": @[],
+        @"resources": @{@"/": @{ @"src": resourceCID }}
+    } error:nil];
+    NSError *error = nil;
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithMASLDocument:document error:&error];
+    XCTAssertNotNil(writer);
+    XCTAssertNil(error);
+    NSData *carData = [writer serialize];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData strict:YES error:&error];
+    XCTAssertNotNil(reader);
+    XCTAssertEqual(reader.roots.count, 0);
+    XCTAssertNil(reader.rootCID);
+    XCTAssertNil(error);
 }
 
 - (void)testMSTEnumerateNodeBlocksMatchesExportCAR {
