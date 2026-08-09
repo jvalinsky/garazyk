@@ -146,8 +146,9 @@ minting, and header-policy checks on GNUstep.
 
 The affected shared-fixture rerun remains open: broad and narrowed selections
 were interrupted by repeated OrbStack Docker-daemon resets before their final
-summaries. See workstream 08's dated evidence for the exact 54-suite and
-28-suite commands, logs, and failure classifications. This does not change the
+summaries; a final 2-suite bounded retry entered an uninterruptible database
+fixture wait without a summary. See workstream 08's dated evidence for the
+exact commands, logs, and failure classifications. This does not change the
 three recorded CI-policy options; no CI policy or product code was changed.
 
 ## Phases 5–11 — the remaining specs
