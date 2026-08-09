@@ -1207,7 +1207,7 @@ Inbound links: **4**
 
 ## `docs/plans/workstreams/01-security-and-protocol-correctness.md`
 
-Inbound links: **11**
+Inbound links: **12**
 
 - [docs/adr/0032-dasl-conformance-profiles.md](../adr/0032-dasl-conformance-profiles.md)
 - [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)

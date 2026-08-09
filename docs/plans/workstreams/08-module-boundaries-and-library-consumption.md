@@ -1,7 +1,7 @@
 ---
 title: Module Boundaries and Library Consumption
 status: active
-last_verified: 2026-08-05
+last_verified: 2026-08-08
 ---
 
 ## Verified status (2026-08-04)
@@ -925,7 +925,7 @@ grouped by class) are in this session's scratch log; the largest are
 `AdminAuthXrpcTestBase` subclasses, all part of the 488-failure cascade
 above.
 
-**PDSAdminAuth fixture-environment follow-up (2026-08-08; Linux confirmation pending).**
+**PDSAdminAuth fixture-environment follow-up (2026-08-08; focused GNUstep proof complete; shared-fixture rerun interrupted).**
 `PDSAdminAuth` now obtains every environment setting through a local
 `getenv()` accessor rather than `NSProcessInfo.environment`, preserving the
 difference between an unset and an explicitly empty value. The focused
@@ -939,11 +939,47 @@ registration checks; a direct source scan finds no remaining
 
 After integration on `main`, the focused macOS `PDSAdminAuthTests` suite passed
 15/15, including the environment-snapshot regression. The run still emitted
-existing migration/audit-log noise, but no test failed. No GNUstep artifact is
-present locally and no GNUstep image was built for this slice. Therefore this
-change does **not** yet prove that the historic 488-failure cascade is fixed.
-Linux proof remains a focused GNUstep `PDSAdminAuthTests` run followed by the
-affected shared-fixture suite against an existing compatible artifact.
+existing migration/audit-log noise, but no test failed. That macOS result alone
+did **not** prove that the historic 488-failure cascade was fixed on GNUstep.
+
+**GNUstep focused proof (2026-08-08).** A fresh
+`docker build -f docker/Dockerfile.gnustep --target builder`
+completed successfully as image `garazyk-gnustep-proof:2026-08-08`, using the
+Dockerfile's from-source libobjc2/gnustep-make/gnustep-base toolchain. Inside
+that image, `cmake -S /src -B /src/build-tests -G "Unix Makefiles"
+-DBUILD_TESTS=ON ...` completed and
+`cmake --build /src/build-tests --target AllTests --parallel 4` linked the
+test binary successfully. The focused GNUstep command
+`./build-tests/tests/AllTests --filter PDSAdminAuthTests --gated=run` passed
+**15/15 tests, 0 failures, 0.206s**, including
+`testAuthenticationUsesCurrentEnvironmentAfterProcessInfoSnapshot`. The
+captured host log was `/tmp/garazyk-gnustep-PDSAdminAuthTests-2026-08-08.log`.
+
+The affected shared-fixture rerun is not a pass. A broad selection reached 54
+suites and emitted the unrelated one-off
+`XrpcProxyTests/testProxyTimeoutReturns504` failure before entering an
+uninterruptible wait with repeated `SearchIndexService` "no such table:
+search_actors" messages. A narrowed selection of 28 suites (the
+`AdminAuthXrpcTestBase`/`RepoAuthXrpcTestBase` populations and their
+`XrpcAppBsky*`, `XrpcChatBsky*`, and `XrpcToolsOzone*` subclasses) was retried
+with `--timeout 10`, but the OrbStack Docker daemon reset before a summary was
+written. The two incomplete logs were
+`/tmp/garazyk-gnustep-shared-auth-fixtures-2026-08-08.log` and
+`/tmp/garazyk-gnustep-shared-auth-fixtures-retry-2026-08-08.log`. The focused
+15/15 result proves the environment accessor fix itself on GNUstep; it does
+not yet prove that all 488 historical shared-fixture failures are gone.
+
+The remaining full-suite classifications are unchanged and were not silently
+reclassified by this interrupted rerun: approximately 57 template failures
+remain a reproduction-container asset-layout gap until rerun with the runtime
+`Assets` tree; approximately 9 environment-variable configuration failures
+remain a distinct GNUstep configuration-reading/test-order investigation; 3
+`ffprobe` failures remain a missing-toolchain-binary gap; and the handful of
+one-offs remain individually untriaged. The `XrpcProxyTests` timeout observed
+in the broad selection is recorded as an additional unrelated GNUstep/network
+one-off, not as evidence against `PDSAdminAuth`.
+
+Linux proof is therefore **focused-complete but shared-fixture-incomplete**.
 
 **Decision needed before `ci.yml` itself changes.** Fixing
 `linux-gnustep-build-and-test` "for real" means either (a) adding a
