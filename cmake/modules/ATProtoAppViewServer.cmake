@@ -1,0 +1,31 @@
+# Explicit source manifest for ATProtoAppViewServer.
+# Entries are repository-relative; CMake validates existence, ownership, and
+# build-host independence before resolving them into target source lists.
+set(ATPROTO_APPVIEW_SERVER_MANIFEST
+  "Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m"
+  "Garazyk/Sources/AppView/Server/AppViewDatabase.m"
+  "Garazyk/Sources/AppView/Server/AppViewRuntime.m"
+  "Garazyk/Sources/AppView/Server/AppViewTypes.m"
+  "Garazyk/Sources/AppView/Server/Auth/AppViewOAuth2Middleware.m"
+  "Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillOrchestrator.m"
+  "Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m"
+  "Garazyk/Sources/AppView/Server/Config/AppViewCollectionFilter.m"
+  "Garazyk/Sources/AppView/Server/Config/AppViewConfiguration.m"
+  "Garazyk/Sources/AppView/Server/Hooks/AppViewIndexHookRegistry.m"
+  "Garazyk/Sources/AppView/Server/Hooks/AppViewSearchIndexHook.m"
+  "Garazyk/Sources/AppView/Server/Hooks/AppViewWebhookHook.m"
+  "Garazyk/Sources/AppView/Server/Indexers/AppViewActorIndexer.m"
+  "Garazyk/Sources/AppView/Server/Indexers/AppViewBookmarkIndexer.m"
+  "Garazyk/Sources/AppView/Server/Indexers/AppViewFeedIndexer.m"
+  "Garazyk/Sources/AppView/Server/Indexers/AppViewGenericIndexer.m"
+  "Garazyk/Sources/AppView/Server/Indexers/AppViewGraphIndexer.m"
+  "Garazyk/Sources/AppView/Server/Indexers/AppViewGroupIndexer.m"
+  "Garazyk/Sources/AppView/Server/Indexers/AppViewNotificationIndexer.m"
+  "Garazyk/Sources/AppView/Server/Ingest/AppViewIngestEngine.m"
+  "Garazyk/Sources/AppView/Server/Lexicon/AppViewCustomQueryRegistry.m"
+  "Garazyk/Sources/AppView/Server/Lexicon/AppViewGenericQueryHandler.m"
+  "Garazyk/Sources/AppView/Server/Lexicon/AppViewGraphQueryHandler.m"
+  "Garazyk/Sources/AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.m"
+  "Garazyk/Sources/AppView/Server/Relevance/AppViewRelevanceSet.m"
+  "Garazyk/Sources/AppView/Server/WriteProxy/AppViewWriteProxy.m"
+)
