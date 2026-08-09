@@ -276,16 +276,16 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     // Build HTTP server for query API + admin
     _httpServer = [HttpServer serverWithPort:(uint16_t)config.httpPort];
-    [HttpResponse setDefaultServerHeader:@"garazyk-appview/1.0.0"];
+    [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-appview/1.0.0"];
 
     // Root serves ASCII service banner
-    [_httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *res) {
+    [_httpServer addRoute:@"GET" path:@"/" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         res.statusCode = 200;
         res.contentType = @"text/plain; charset=utf-8";
         [res setBodyString:@"_____                            \n/  ___|                           \n\\ `--. _   _ _ __ ___ _ __   __ _ \n `--. \\ | | | '__/ _ \\ '_ \\ / _` |\n/\\__/ / |_| | | |  __/ | | | (_| |\n\\____/ \\__, |_|  \\___|_| |_|\\__,_|\n        __/ |                     \n       |___/  \n"];
     }];
 
-    [_httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(HttpRequest *req, HttpResponse *res) {
+    [_httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         res.statusCode = HttpStatusNoContent;
         res.contentType = @"image/x-icon";
         [res setBodyData:[NSData data]];

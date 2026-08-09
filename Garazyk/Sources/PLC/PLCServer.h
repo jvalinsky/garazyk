@@ -165,7 +165,7 @@ FOUNDATION_EXPORT void PLCServerSetWebSocketTransportFactory(PLCWebSocketTranspo
 /**
  * @abstract Performs the setCorsHeaders operation.
  */
-- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request;
+- (void)setCorsHeaders:(ATProtoHttpResponse *)response forRequest:(ATProtoHttpRequest *)request;
 
 @end
 

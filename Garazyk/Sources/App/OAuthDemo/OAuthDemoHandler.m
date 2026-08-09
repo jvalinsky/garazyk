@@ -30,7 +30,7 @@
     _dataDirectory = [controller.dataDirectory copy];
 }
 
-- (BOOL)canHandleRequest:(HttpRequest *)request {
+- (BOOL)canHandleRequest:(ATProtoHttpRequest *)request {
     return [request.path hasPrefix:@"/oauth-demo"];
 }
 
@@ -61,7 +61,7 @@
     return assetsPath;
 }
 
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *path = request.path;
     NSString *relativePath = nil;
     if ([path isEqualToString:@"/oauth-demo"] ||

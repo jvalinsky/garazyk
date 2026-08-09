@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpRequest.m
+ @file ATProtoHttpRequest.m
 
  @abstract Implements HTTP request model behavior and request data accessors.
 
@@ -53,7 +53,7 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
   return NO;
 }
 
-@interface HttpRequest ()
+@interface ATProtoHttpRequest ()
 
 @property(nonatomic, readwrite, copy) NSDictionary *jsonBody;
 @property(nonatomic, readwrite, copy) NSDictionary *multipartFormData;
@@ -61,7 +61,7 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
 
 @end
 
-@implementation HttpRequest
+@implementation ATProtoHttpRequest
 
 + (instancetype)requestWithData:(NSData *)data {
   return [[self alloc] parseFromData:data remoteAddress:nil];
@@ -107,7 +107,7 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
     // an empty queryParams dictionary.
     if (normalizedQueryParams.count == 0 && normalizedQueryString.length > 0) {
       NSDictionary<NSString *, id> *parsed =
-          [HttpParsing parseQueryString:normalizedQueryString];
+          [ATProtoHttpParsing parseQueryString:normalizedQueryString];
       normalizedQueryParams = parsed ?: @{};
     }
 
@@ -398,13 +398,13 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
   }
 
   NSDictionary<NSString *, id> *queryParams =
-      [HttpParsing parseQueryString:queryString];
+      [ATProtoHttpParsing parseQueryString:queryString];
 
   NSDictionary<NSString *, NSString *> *headers = [self parseHeaders:lines];
 
   NSData *body = [self parseBody:lines fromData:data];
 
-  HttpMethod method = [HttpParsing methodFromString:methodString];
+  HttpMethod method = [ATProtoHttpParsing methodFromString:methodString];
 
   return [self initWithMethod:method
                  methodString:methodString

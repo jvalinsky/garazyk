@@ -31,11 +31,11 @@
     XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
     [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:self.controller];
     
-    [self.server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.server addHandlerForPath:@"/xrpc" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [dispatcher handleRequest:request response:response];
     }];
     
-    [self.server addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.server addRoute:@"GET" path:@"/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
         response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
         [response setJsonBody:health];

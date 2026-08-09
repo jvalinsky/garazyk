@@ -28,7 +28,7 @@
 }
 
 - (void)testGetServiceAuthReturnsToken {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.server.getServiceAuth"
                                                    queryString:@"aud=did:web:example.com"
@@ -37,7 +37,7 @@
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     
     [self.dispatcher handleRequest:request response:response];
     

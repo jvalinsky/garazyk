@@ -14,8 +14,8 @@
 
 @implementation OAuth2Handler (PAR)
 
-- (void)handlePARRequest:(HttpRequest *)request
-                response:(HttpResponse *)response {
+- (void)handlePARRequest:(ATProtoHttpRequest *)request
+                response:(ATProtoHttpResponse *)response {
   GZ_LOG_AUTH_INFO(@"Handling PAR request");
 
   // Parse body parameters

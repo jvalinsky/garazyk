@@ -24,7 +24,7 @@
 @class EventFormatter;
 @class ATProtoRepoCommit;
 @class ATProtoCID;
-@class HttpRequest;
+@class ATProtoHttpRequest;
 /**
  * @abstract Defines the ATProtoNetworkConnection protocol contract.
  */
@@ -110,7 +110,7 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (BOOL)waitForIdleWithTimeout:(NSTimeInterval)timeout;
 
 /*! Accepts a WebSocket-upgraded connection from the main HTTP server. */
-- (void)acceptUpgradedConnection:(id<ATProtoNetworkConnection>)connection request:(HttpRequest *)request;
+- (void)acceptUpgradedConnection:(id<ATProtoNetworkConnection>)connection request:(ATProtoHttpRequest *)request;
 
 /*! Broadcasts a repository commit event object. */
 - (void)broadcastCommitEvent:(FirehoseCommitEvent *)event;

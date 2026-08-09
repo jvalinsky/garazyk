@@ -14,7 +14,7 @@
 @class PDSDatabase;
 @class PDSDatabasePool;
 @class PDSServiceDatabases;
-@class HttpResponse;
+@class ATProtoHttpResponse;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -26,7 +26,7 @@ BOOL XrpcParseAtURI(NSString *uri, NSString *_Nullable *_Nullable outDid, NSStri
 #pragma mark - Limit Parsing
 
 /// Parses and validates a limit parameter. Returns YES if valid (or empty/default).
-BOOL XrpcParseLimit(NSString *limitParam, NSInteger *outValue, NSInteger min, NSInteger max, HttpResponse *response);
+BOOL XrpcParseLimit(NSString *limitParam, NSInteger *outValue, NSInteger min, NSInteger max, ATProtoHttpResponse *response);
 
 #pragma mark - Preference Helpers
 

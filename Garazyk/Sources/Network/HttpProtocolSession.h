@@ -59,13 +59,13 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
  * policy.
  * @return The request to dispatch, or nil if none are ready or allowed.
  */
-- (nullable HttpRequest *)nextRequestToDispatch;
+- (nullable ATProtoHttpRequest *)nextRequestToDispatch;
 
 /**
  * @method currentUpgradeRequest
  * @abstract Returns the request that triggered an upgrade event.
  */
-- (nullable HttpRequest *)currentUpgradeRequest;
+- (nullable ATProtoHttpRequest *)currentUpgradeRequest;
 
 /**
  * @method currentParseError
@@ -96,7 +96,7 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
  * @abstract Queues a response to be sent for the oldest in-flight request.
  * @param response The HTTP response to send.
  */
-- (void)queueResponse:(HttpResponse *)response;
+- (void)queueResponse:(ATProtoHttpResponse *)response;
 
 /**
  * @method responseDidFinishSending

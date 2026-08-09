@@ -51,7 +51,7 @@
   id<XrpcRoutePackServices> resolvedServices = services;
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_startPhoneVerification
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -92,7 +92,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_verifyPhone
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -136,7 +136,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_importContacts
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -178,7 +178,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_getMatches
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -201,7 +201,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_dismissMatch
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -238,7 +238,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_getSyncStatus
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -262,7 +262,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_removeData
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -285,7 +285,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_sendNotification
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response

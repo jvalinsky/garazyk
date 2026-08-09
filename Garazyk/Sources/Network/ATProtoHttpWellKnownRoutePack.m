@@ -99,10 +99,10 @@
         return NO;
       };
 
-  void (^handleWellKnownAtprotoDid)(HttpRequest *request,
-                                    HttpResponse *response,
+  void (^handleWellKnownAtprotoDid)(ATProtoHttpRequest *request,
+                                    ATProtoHttpResponse *response,
                                     BOOL includeBody) =
-      ^(HttpRequest *request, HttpResponse *response, BOOL includeBody) {
+      ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response, BOOL includeBody) {
         NSString *hostHeader = [request headerForKey:@"Host"];
         NSString *handle = normalizedHostFromHostHeader(hostHeader);
 
@@ -175,7 +175,7 @@
       };
 
   [server addHandlerForPath:@"/.well-known/atproto-did"
-                    handler:^(HttpRequest *request, HttpResponse *response) {
+                    handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                       setCorsHeaders(response, request);
                       NSString *method = request.methodString.uppercaseString;
                       if ([method isEqualToString:@"OPTIONS"]) {
@@ -194,8 +194,8 @@
   // ATProtoCID -> bytes resolution is a bounded scan across locally known accounts'
   // block and blob stores (see PDSRASLResolver) — Garazyk has no host-wide
   // ATProtoCID index today. See workstream 10 Phase 5 for the design tradeoff.
-  void (^handleWellKnownRasl)(HttpRequest *request, HttpResponse *response, BOOL includeBody) =
-      ^(HttpRequest *request, HttpResponse *response, BOOL includeBody) {
+  void (^handleWellKnownRasl)(ATProtoHttpRequest *request, ATProtoHttpResponse *response, BOOL includeBody) =
+      ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response, BOOL includeBody) {
         NSString *cidParam = [request.pathParameters[@"cid"] stringByRemovingPercentEncoding];
         // Phase 5 only verifies SHA-256 CIDs. Big DASL/BLAKE3 retrieval is
         // deliberately rejected until Phase 6 supplies the streaming verifier;
@@ -254,11 +254,11 @@
       };
 
   [server addRoute:@"GET" path:@"/.well-known/rasl/:cid"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              handleWellKnownRasl(request, response, YES);
            }];
   [server addRoute:@"HEAD" path:@"/.well-known/rasl/:cid"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              handleWellKnownRasl(request, response, NO);
            }];
 

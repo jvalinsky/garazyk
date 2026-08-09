@@ -88,7 +88,7 @@
     [super tearDown];
 }
 
-- (HttpResponse *)sendJsonRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendJsonRequestWithPath:(NSString *)path
                                      body:(NSDictionary *)body
                                   headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSData *bodyData = [NSJSONSerialization dataWithJSONObject:body options:0 error:nil];
@@ -97,7 +97,7 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:path
                                                    queryString:@""
@@ -106,12 +106,12 @@
                                                        headers:allHeaders
                                                           body:bodyData
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
 
-- (HttpResponse *)sendGetRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendGetRequestWithPath:(NSString *)path
                               queryString:(NSString *)queryString
                               queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
                                   headers:(NSDictionary<NSString *, NSString *> *)headers {
@@ -120,7 +120,7 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:path
                                                    queryString:queryString ?: @""
@@ -129,7 +129,7 @@
                                                        headers:allHeaders
                                                           body:[NSData data]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
@@ -233,7 +233,7 @@
 }
 
 - (void)testGetAccountInfoReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{}];
@@ -241,7 +241,7 @@
 }
 
 - (void)testGetAccountInfosReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
                                               queryString:[NSString stringWithFormat:@"dids=%@", self.userDid]
                                               queryParams:@{@"dids": self.userDid}
                                                   headers:@{}];
@@ -250,7 +250,7 @@
 
 - (void)testGetAccountInfoReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
@@ -259,7 +259,7 @@
 
 - (void)testGetAccountInfosReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
                                               queryString:[NSString stringWithFormat:@"dids=%@", self.userDid]
                                               queryParams:@{@"dids": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
@@ -277,7 +277,7 @@
     XCTAssertNil(error);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", token];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
@@ -296,7 +296,7 @@
     XCTAssertNil(error);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", token];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
@@ -306,7 +306,7 @@
 
 - (void)testGetAccountInfoAdminSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
@@ -320,7 +320,7 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     NSString *queryString = [NSString stringWithFormat:@"dids=%@&dids=%@", self.userDid, self.adminDid];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
                                               queryString:queryString
                                               queryParams:@{@"dids": self.adminDid}
                                                   headers:@{@"authorization": authHeader}];
@@ -332,7 +332,7 @@
 }
 
 - (void)testGetInviteCodesReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
                                               queryString:@"limit=10"
                                               queryParams:@{@"limit": @"10"}
                                                   headers:@{}];
@@ -341,7 +341,7 @@
 
 - (void)testGetInviteCodesReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
                                               queryString:@"limit=10"
                                               queryParams:@{@"limit": @"10"}
                                                   headers:@{@"authorization": authHeader}];
@@ -350,7 +350,7 @@
 
 - (void)testGetInviteCodesAdminSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
                                               queryString:@"limit=10"
                                               queryParams:@{@"limit": @"10"}
                                                   headers:@{@"authorization": authHeader}];
@@ -371,7 +371,7 @@
 }
 
 - (void)testSearchAccountsReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.searchAccounts"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.searchAccounts"
                                               queryString:@"limit=10"
                                               queryParams:@{@"limit": @"10"}
                                                   headers:@{}];
@@ -380,7 +380,7 @@
 
 - (void)testSearchAccountsAdminSuccessWithEmailFilter {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.searchAccounts"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.searchAccounts"
                                               queryString:@"email=user%40example.com&limit=10"
                                               queryParams:@{@"email": @"user@example.com", @"limit": @"10"}
                                                   headers:@{@"authorization": authHeader}];
@@ -392,7 +392,7 @@
 }
 
 - (void)testSendEmailReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.sendEmail"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.sendEmail"
                                                       body:@{
                                                           @"recipientDid": self.userDid,
                                                           @"senderDid": self.adminDid,
@@ -404,7 +404,7 @@
 
 - (void)testSendEmailReturnsSuccessForAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.sendEmail"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.sendEmail"
                                                       body:@{
                                                           @"recipientDid": self.userDid,
                                                           @"senderDid": self.adminDid,
@@ -418,7 +418,7 @@
 
 - (void)testUpdateAccountEmailAdminSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateAccountEmail"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateAccountEmail"
                                                       body:@{@"account": self.userDid, @"email": @"updated-user@example.com"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -431,7 +431,7 @@
 
 - (void)testUpdateAccountHandleAdminSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateAccountHandle"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateAccountHandle"
                                                       body:@{@"did": self.userDid, @"handle": @"user-renamed.test"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -450,7 +450,7 @@
     XCTAssertNotNil(beforeHash);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateAccountPassword"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateAccountPassword"
                                                       body:@{@"did": self.userDid, @"password": @"new-password-123"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -476,7 +476,7 @@
 
 - (void)testUpdateAccountSigningKeyReturnsSuccessForAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateAccountSigningKey"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateAccountSigningKey"
                                                       body:@{
                                                           @"did": self.userDid,
                                                           @"signingKey": @"did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme"
@@ -489,7 +489,7 @@
 
 - (void)testModerateAccountReturnsUnauthorizedWithoutAuth {
     // DEPRECATED: com.atproto.admin.moderateAccount -> tools.ozone.moderation.emitEvent
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{@"did": self.userDid, @"reason": @"test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
@@ -499,7 +499,7 @@
 - (void)testModerateAccountReturnsForbiddenForNonAdmin {
     // DEPRECATED: com.atproto.admin.moderateAccount -> tools.ozone.moderation.emitEvent
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{@"did": self.userDid, @"reason": @"test"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
@@ -509,7 +509,7 @@
 - (void)testModerateAccountAdminSuccessPersistsStatus {
     // DEPRECATED: com.atproto.admin.moderateAccount -> tools.ozone.moderation.emitEvent
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{
                                                           @"did": self.userDid,
                                                           @"action": @"takedown",
@@ -524,7 +524,7 @@
     // DEPRECATED: com.atproto.admin.moderateRecord -> tools.ozone.moderation.emitEvent
     NSString *recordURI = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid];
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
                                                       body:@{
                                                           @"uri": recordURI,
                                                           @"action": @"takedown",
@@ -537,7 +537,7 @@
 
 - (void)testTakeDownAccountReturnsUnauthorizedWithoutAuth {
     // DEPRECATED: com.atproto.admin.takeDownAccount -> tools.ozone.moderation.emitEvent
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.takeDownAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.takeDownAccount"
                                                       body:@{@"did": self.userDid, @"reason": @"test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
@@ -545,7 +545,7 @@
 }
 
 - (void)testAdminDeleteAccountReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.deleteAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.deleteAccount"
                                                       body:@{@"did": self.userDid}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -553,7 +553,7 @@
 
 - (void)testAdminDeleteAccountReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.deleteAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.deleteAccount"
                                                       body:@{@"did": self.userDid}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
@@ -571,7 +571,7 @@
 
     NSString *targetDid = target[@"did"];
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.deleteAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.deleteAccount"
                                                       body:@{@"did": targetDid}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -581,7 +581,7 @@
 }
 
 - (void)testDisableAccountInvitesReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableAccountInvites"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableAccountInvites"
                                                       body:@{@"account": self.userDid}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -589,7 +589,7 @@
 
 - (void)testDisableAccountInvitesReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableAccountInvites"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableAccountInvites"
                                                       body:@{@"account": self.userDid}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
@@ -598,7 +598,7 @@
 - (void)testEnableDisableAccountInvitesAdminSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
 
-    HttpResponse *enableResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.enableAccountInvites"
+    ATProtoHttpResponse *enableResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.enableAccountInvites"
                                                             body:@{@"account": self.userDid}
                                                          headers:@{@"authorization": authHeader}];
     XCTAssertEqual(enableResponse.statusCode, 200);
@@ -608,7 +608,7 @@
     XCTAssertNil(error);
     XCTAssertEqual(enabledValue.integerValue, 1);
 
-    HttpResponse *disableResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableAccountInvites"
+    ATProtoHttpResponse *disableResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableAccountInvites"
                                                              body:@{@"account": self.userDid}
                                                           headers:@{@"authorization": authHeader}];
     XCTAssertEqual(disableResponse.statusCode, 200);
@@ -619,7 +619,7 @@
 }
 
 - (void)testDisableInviteCodesReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableInviteCodes"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableInviteCodes"
                                                       body:@{@"accounts": @[self.userDid]}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -636,7 +636,7 @@
     XCTAssertNil(error);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableInviteCodes"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableInviteCodes"
                                                       body:@{@"codes": @[extraInviteCode], @"accounts": @[self.userDid]}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -648,7 +648,7 @@
 }
 
 - (void)testLabelCreateReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.label.createLabel"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.label.createLabel"
                                                       body:@{@"src": self.adminDid, @"uri": @"at://did:plc:test/app.bsky.feed.post/1", @"val": @"spam"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -656,7 +656,7 @@
 
 - (void)testLabelCreateReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.label.createLabel"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.label.createLabel"
                                                       body:@{@"src": self.adminDid, @"uri": @"at://did:plc:test/app.bsky.feed.post/1", @"val": @"spam"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
@@ -664,7 +664,7 @@
 
 - (void)testAdminGetRecordMissingUriReturnsBadRequest {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getRecord"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getRecord"
                                               queryString:@""
                                               queryParams:@{}
                                                   headers:@{@"authorization": authHeader}];
@@ -675,7 +675,7 @@
 - (void)testAdminGetRecordMalformedUriReturnsBadRequest {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     NSString *malformed = @"at://did:plc:test/app.bsky.feed.post/";
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getRecord"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getRecord"
                                               queryString:@"uri=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2F"
                                               queryParams:@{@"uri": malformed}
                                                   headers:@{@"authorization": authHeader}];
@@ -686,7 +686,7 @@
 - (void)testAdminGetRecordUnknownRecordReturnsNotFound {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     NSString *uri = @"at://did:plc:test/app.bsky.feed.post/nonexistent";
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getRecord"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getRecord"
                                               queryString:@"uri=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fnonexistent"
                                               queryParams:@{@"uri": uri}
                                                   headers:@{@"authorization": authHeader}];

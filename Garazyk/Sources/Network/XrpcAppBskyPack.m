@@ -107,7 +107,7 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
   [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
   [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_labeler_getServices
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        id didsParam = request.queryParams[@"dids"];
                        NSArray *dids = nil;
                        if ([didsParam isKindOfClass:[NSArray class]]) {

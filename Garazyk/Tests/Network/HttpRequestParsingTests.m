@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
                     "X-Request-Id: req-123\r\n"
                     "\r\n";
     NSData *data = [raw dataUsingEncoding:NSUTF8StringEncoding];
-    HttpRequest *request = [HttpRequest requestWithData:data];
+    ATProtoHttpRequest *request = [ATProtoHttpRequest requestWithData:data];
 
     XCTAssertNotNil(request);
     XCTAssertEqual(request.method, HttpMethodGET);
@@ -48,7 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
                     "\r\n"
                     "{\"name\":\"test\"}";
     NSData *data = [raw dataUsingEncoding:NSUTF8StringEncoding];
-    HttpRequest *request = [HttpRequest requestWithData:data];
+    ATProtoHttpRequest *request = [ATProtoHttpRequest requestWithData:data];
 
     XCTAssertNotNil(request);
     XCTAssertEqual(request.method, HttpMethodPOST);
@@ -72,7 +72,7 @@ NS_ASSUME_NONNULL_BEGIN
                      "\r\n"
                      "%@", boundary, body];
     NSData *data = [raw dataUsingEncoding:NSUTF8StringEncoding];
-    HttpRequest *request = [HttpRequest requestWithData:data];
+    ATProtoHttpRequest *request = [ATProtoHttpRequest requestWithData:data];
 
     XCTAssertNotNil(request);
     XCTAssertNotNil(request.multipartFormData);
@@ -91,7 +91,7 @@ NS_ASSUME_NONNULL_BEGIN
                     "5\r\nHello\r\n"
                     "0\r\n\r\n";
     NSData *data = [raw dataUsingEncoding:NSUTF8StringEncoding];
-    HttpRequest *request = [HttpRequest requestWithData:data];
+    ATProtoHttpRequest *request = [ATProtoHttpRequest requestWithData:data];
 
     XCTAssertNotNil(request);
     XCTAssertEqual(request.method, HttpMethodPOST);
@@ -105,7 +105,7 @@ NS_ASSUME_NONNULL_BEGIN
                     "3\r\nBye\r\n"
                     "0\r\n\r\n";
     NSData *data = [raw dataUsingEncoding:NSUTF8StringEncoding];
-    HttpRequest *request = [HttpRequest requestWithData:data];
+    ATProtoHttpRequest *request = [ATProtoHttpRequest requestWithData:data];
 
     XCTAssertNotNil(request);
     XCTAssertEqualObjects([request headerForKey:@"Transfer-Encoding"], @"CHUNKED");
@@ -116,7 +116,7 @@ NS_ASSUME_NONNULL_BEGIN
     unsetenv("PDS_TRUST_PROXY_HEADERS");
 
     @try {
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                        methodString:@"GET"
                                                                path:@"/xrpc/test"
                                                         queryString:@""
@@ -136,7 +136,7 @@ NS_ASSUME_NONNULL_BEGIN
     setenv("PDS_TRUST_PROXY_HEADERS", "1", 1);
 
     @try {
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                        methodString:@"GET"
                                                                path:@"/xrpc/test"
                                                         queryString:@""
@@ -165,7 +165,7 @@ NS_ASSUME_NONNULL_BEGIN
         // test previously asserted the pre-S20E left-to-right value. Use a
         // real RFC1918 address for the proxy hop so the walk actually skips
         // it and returns the genuine client IP, matching this test's name.
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                        methodString:@"GET"
                                                                path:@"/xrpc/test"
                                                         queryString:@""

@@ -13,28 +13,28 @@
 @interface AppViewXRpcRoutePack (Graph)
 
 /** @abstract Returns one actor's follows after validating `actor`, with cursor pagination. */
-- (void)handleGetFollows:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetFollows:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns one actor's followers after validating `actor`, with cursor pagination. */
-- (void)handleGetFollowers:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetFollowers:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns the authenticated actor's blocks, with cursor pagination. */
-- (void)handleGetBlocks:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetBlocks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns the authenticated actor's mutes, with cursor pagination. */
-- (void)handleGetMutes:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetMutes:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns the relationship for `actor` and the first supplied `others` target. */
-- (void)handleGetRelationships:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetRelationships:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns a starter pack for `uri`, or 404 when no pack is available. */
-- (void)handleGetStarterPack:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetStarterPack:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns an actor's starter packs after validating `actor`, with cursor pagination. */
-- (void)handleGetStarterPacks:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetStarterPacks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns an actor's lists after validating `actor`, with cursor pagination. */
-- (void)handleGetLists:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetLists:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns a list for `list`, with cursor pagination, or 404 when absent. */
-- (void)handleGetList:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetList:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Authenticates the caller, validates a JSON `actor`, and adds it to the caller's mutes. */
-- (void)handleMuteActor:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleMuteActor:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Authenticates the caller, validates a JSON `actor`, and removes it from the caller's mutes. */
-- (void)handleUnmuteActor:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleUnmuteActor:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns starter packs for the supplied `uris` values; an absent list yields an empty result. */
-- (void)handleGetStarterPacksBulk:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetStarterPacksBulk:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end

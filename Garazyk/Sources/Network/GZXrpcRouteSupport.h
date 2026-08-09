@@ -3,8 +3,8 @@
 
 #import <Foundation/Foundation.h>
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -12,14 +12,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)init NS_UNAVAILABLE;
 
-+ (BOOL)checkIPRateLimitForRequest:(HttpRequest *)request response:(HttpResponse *)response;
-+ (nullable NSString *)requiredQueryParam:(NSString *)name request:(HttpRequest *)request response:(HttpResponse *)response;
-+ (BOOL)parseLimitForRequest:(HttpRequest *)request
++ (BOOL)checkIPRateLimitForRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
++ (nullable NSString *)requiredQueryParam:(NSString *)name request:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
++ (BOOL)parseLimitForRequest:(ATProtoHttpRequest *)request
                 defaultLimit:(NSInteger)defaultLimit
                          min:(NSInteger)min
                          max:(NSInteger)max
                       output:(NSInteger *)output
-                    response:(HttpResponse *)response;
+                    response:(ATProtoHttpResponse *)response;
 
 @end
 

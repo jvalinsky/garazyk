@@ -29,7 +29,7 @@
 #import "Network/Generated/GZXrpcNSID.h"
 #import "Email/PDSEmailProvider.h"
 
-static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse *response) {
+static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     if ([ATProtoPermissionScopeEvaluator evaluateAccountScopes:request.permissionScopes ?: @[]
                                                   forAttribute:@"email"
                                                         action:@"manage"]) {
@@ -52,7 +52,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
     PDSDatabasePool *userDatabasePool = services.userDatabasePool;
 
 #pragma mark - com.atproto.server.accountManagement.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestEmailConfirmation handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestEmailConfirmation handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -116,7 +116,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestEmailUpdate handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestEmailUpdate handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -132,7 +132,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         [response setJsonBody:@{@"tokenRequired": @NO}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_confirmEmail handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_confirmEmail handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -228,7 +228,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_updateEmail handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_updateEmail handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -264,7 +264,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestAccountDelete handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestAccountDelete handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -338,7 +338,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         }
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestPasswordReset handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestPasswordReset handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
         BOOL typeMismatch = NO;
         NSString *email = AuthTypedValue(body, @"email", [NSString class], &typeMismatch);
@@ -411,7 +411,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         }
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_resetPassword handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_resetPassword handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
         BOOL typeMismatch = NO;
         NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
@@ -528,7 +528,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_reserveSigningKey handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_reserveSigningKey handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
         BOOL typeMismatch = NO;
         NSString *did = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
@@ -587,7 +587,7 @@ static BOOL XrpcAccountAllowsEmailManagement(HttpRequest *request, HttpResponse 
         [response setJsonBody:@{@"signingKey": signingKey}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getServiceAuth handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getServiceAuth handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *aud = [request queryParamForKey:@"aud"];
         if (!aud) {
             response.statusCode = HttpStatusBadRequest;

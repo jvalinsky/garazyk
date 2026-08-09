@@ -52,11 +52,11 @@
     return protocolEvents;
 }
 
-- (nullable HttpRequest *)nextDispatchableRequest {
+- (nullable ATProtoHttpRequest *)nextDispatchableRequest {
     return [self.session nextRequestToDispatch];
 }
 
-- (nullable HttpRequest *)currentUpgradeRequest {
+- (nullable ATProtoHttpRequest *)currentUpgradeRequest {
     return [self.session currentUpgradeRequest];
 }
 

@@ -8,7 +8,7 @@
 
 @implementation AppViewXRpcRoutePack (Notification)
 
-- (void)handleListNotifications:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleListNotifications:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -35,7 +35,7 @@
     }];
 }
 
-- (void)handleGetUnreadCount:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetUnreadCount:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -54,7 +54,7 @@
     [response setJsonBody:@{ @"count": @(count) }];
 }
 
-- (void)handleUpdateSeen:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleUpdateSeen:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -78,7 +78,7 @@
     [response setJsonBody:@{}];
 }
 
-- (void)handleRegisterPush:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleRegisterPush:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -115,7 +115,7 @@
     [response setJsonBody:@{}];
 }
 
-- (void)handleUnregisterPush:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleUnregisterPush:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -127,7 +127,7 @@
     [response setJsonBody:@{}];
 }
 
-- (void)handleListActivitySubscriptions:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleListActivitySubscriptions:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -141,7 +141,7 @@
     [response setJsonBody:result ?: @{ @"subscriptions": @[] }];
 }
 
-- (void)handlePutActivitySubscription:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handlePutActivitySubscription:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -178,7 +178,7 @@
     [response setJsonBody:@{}];
 }
 
-- (void)handleGetNotificationPreferences:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetNotificationPreferences:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -200,7 +200,7 @@
     [response setJsonBody:prefs ?: @{ @"preferences": @[] }];
 }
 
-- (void)handlePutNotificationPreferences:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handlePutNotificationPreferences:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;

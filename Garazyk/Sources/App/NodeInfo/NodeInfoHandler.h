@@ -14,8 +14,8 @@
 #import <Foundation/Foundation.h>
 
 @class HttpServer;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 /**
  * @abstract Defines the PDSAccountService protocol contract.
  */
@@ -73,7 +73,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The HTTP request.
  @param response The HTTP response to write to.
  */
-- (void)handleDiscoveryRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleDiscoveryRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @brief Handle NodeInfo 2.0 schema request.
@@ -81,7 +81,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The HTTP request.
  @param response The HTTP response to write to.
  */
-- (void)handleNodeInfo20Request:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleNodeInfo20Request:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @brief Handle NodeInfo 2.1 schema request.
@@ -89,7 +89,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The HTTP request.
  @param response The HTTP response to write to.
  */
-- (void)handleNodeInfo21Request:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleNodeInfo21Request:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end
 

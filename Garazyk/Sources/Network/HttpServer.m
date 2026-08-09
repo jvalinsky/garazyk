@@ -75,7 +75,7 @@
     NSMutableDictionary<NSString *, HttpRouteTrie *> *routeTries;
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
-@property(nonatomic, copy) void (^requestHandler)(HttpRequest *, HttpResponse *)
+@property(nonatomic, copy) void (^requestHandler)(ATProtoHttpRequest *, ATProtoHttpResponse *)
     ;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_semaphore_t readySemaphore;
@@ -101,8 +101,8 @@
 @property(nonatomic, strong) HttpRequestDispatcher *requestDispatcher;
 @property(nonatomic, strong) HttpResponseSender *responseSender;
 
-- (ATProtoHttpQueuedResponse *)queueItemForResponse:(HttpResponse *)response;
-- (void)enqueueResponse:(HttpResponse *)response
+- (ATProtoHttpQueuedResponse *)queueItemForResponse:(ATProtoHttpResponse *)response;
+- (void)enqueueResponse:(ATProtoHttpResponse *)response
            forConnection:(id<ATProtoNetworkConnection>)connection;
 - (void)sendNextQueuedResponseForState:(ATProtoHttpConnectionState *)state
                              connection:(id<ATProtoNetworkConnection>)connection;
@@ -115,7 +115,7 @@
 - (void)streamGeneratedQueueItem:(ATProtoHttpQueuedResponse *)queueItem
                        forState:(ATProtoHttpConnectionState *)state
                      connection:(id<ATProtoNetworkConnection>)connection;
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
 - (RequestHandler _Nullable)handlerForRoute:(NSString *)path
                                    method:(NSString *)method
                                parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters;
@@ -398,13 +398,13 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           __weak typeof(strongConnection) weakInnerConn = strongConnection;
           __weak ATProtoHttpConnectionState *weakConnState = connState;
           __weak HttpConnectionIOCoordinator *weakCoord = coordinator;
-          coordinator.requestReadyHandler = ^(HttpRequest *request) {
+          coordinator.requestReadyHandler = ^(ATProtoHttpRequest *request) {
             __strong typeof(weakInnerSelf) s = weakInnerSelf;
             __strong typeof(weakInnerConn) c = weakInnerConn;
             if (!s || !c) return;
             [s dispatchRequest:request onConnection:c];
           };
-          coordinator.upgradeHandler = ^(HttpRequest *request) {
+          coordinator.upgradeHandler = ^(ATProtoHttpRequest *request) {
             __strong typeof(weakInnerSelf) s = weakInnerSelf;
             __strong typeof(weakInnerConn) c = weakInnerConn;
             ATProtoHttpConnectionState *cs = weakConnState;
@@ -422,7 +422,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
               [s.connectionStates removeObjectForKey:c];
               [[GZMetrics sharedMetrics] setActiveConnections:(NSInteger)s.activeConnections.count];
             });
-            HttpResponse *response = [HttpResponse responseWithStatusCode:error.code ?: 400];
+            ATProtoHttpResponse *response = [ATProtoHttpResponse responseWithStatusCode:error.code ?: 400];
             response.keepAlive = NO;
             [response setJsonBody:@{
               @"error": error.userInfo[@"errorCode"] ?: @"ProtocolError",
@@ -465,7 +465,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 - (void)handleUpgradeEventForState:(ATProtoHttpConnectionState *)state
                          connection:(id<ATProtoNetworkConnection>)connection {
-  HttpRequest *request = [state.driver currentUpgradeRequest];
+  ATProtoHttpRequest *request = [state.driver currentUpgradeRequest];
   if (!request) return;
 
   NSString *path = request.path;
@@ -474,7 +474,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   
   if (webSocketHandler) {
 
-    HttpResponse *upgradeResponse = [HttpResponse response];
+    ATProtoHttpResponse *upgradeResponse = [ATProtoHttpResponse response];
     BOOL shouldUpgrade = [self.webSocketUpgradeHandler handleUpgradeRequest:request
                                                                   response:upgradeResponse];
     if (!shouldUpgrade) {
@@ -523,11 +523,11 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   return state;
 }
 
-- (void)dispatchRequest:(HttpRequest *)request
+- (void)dispatchRequest:(ATProtoHttpRequest *)request
            onConnection:(id<ATProtoNetworkConnection>)connection {
   __weak typeof(self) weakSelf = self;
   __weak id<ATProtoNetworkConnection> weakConnection = connection;
-  HttpRequest *requestRef = request;
+  ATProtoHttpRequest *requestRef = request;
 
   // Capture dispatch objects as strong locals so they survive into the block.
   // On Linux, dispatch_queue/semaphore/group properties are 'assign' (not
@@ -584,7 +584,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                           requestRef.remoteAddress, requestRef.methodString,
                           logPath);
         NSTimeInterval requestStart = [NSDate timeIntervalSinceReferenceDate];
-        HttpResponse *response = [strongSelf dispatchRequest:requestRef];
+        ATProtoHttpResponse *response = [strongSelf dispatchRequest:requestRef];
         NSString *connectionHeader =
             [[requestRef headerForKey:@"Connection"] lowercaseString];
         if ([connectionHeader isEqualToString:@"close"] ||
@@ -618,7 +618,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
       });
 }
 
-- (void)enqueueResponse:(HttpResponse *)response
+- (void)enqueueResponse:(ATProtoHttpResponse *)response
           forConnection:(id<ATProtoNetworkConnection>)connection {
   ATProtoHttpConnectionState *state = [self connectionStateForConnection:connection];
   ATProtoHttpQueuedResponse *queueItem = [self queueItemForResponse:response];
@@ -688,7 +688,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
       }];
 }
 
-- (ATProtoHttpQueuedResponse *)queueItemForResponse:(HttpResponse *)response {
+- (ATProtoHttpQueuedResponse *)queueItemForResponse:(ATProtoHttpResponse *)response {
   ATProtoHttpQueuedResponse *queueItem = [[ATProtoHttpQueuedResponse alloc] init];
   NSString *bodyFilePath = response.bodyFilePath;
   if (bodyFilePath.length > 0) {
@@ -1049,9 +1049,9 @@ static BOOL ParseHttpRangeHeader(NSString *rangeHeader, NSUInteger fileSize, NSU
     return YES;
 }
 
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request {
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request {
   self.requestDispatcher.requestHandler = self.requestHandler;
-  HttpResponse *response = [self.requestDispatcher dispatchRequest:request];
+  ATProtoHttpResponse *response = [self.requestDispatcher dispatchRequest:request];
   
   if (response.statusCode == HttpStatusOK && response.bodyFilePath.length > 0) {
       NSString *rangeHeader = [request headerForKey:@"Range"];
@@ -1156,7 +1156,7 @@ static BOOL ParseHttpRangeHeader(NSString *rangeHeader, NSUInteger fileSize, NSU
   return handler;
 }
 
-- (void)sendResponse:(HttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection {
+- (void)sendResponse:(ATProtoHttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection {
   [self enqueueResponse:response forConnection:connection];
 }
 

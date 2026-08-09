@@ -35,8 +35,9 @@ conversion) remains open. M5 has started: the namespace gate landed, and
 **batch 2 is complete in full** (all ~25 classes renamed), and **batch 3a (the
 low-consumer half of Storage/Transport, 14 classes) is complete**. Batch 3b's
 Storage slice is now landed: 17 higher-consumer Storage classes are prefixed;
-the namespace baseline is 283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 →
-229 → 228 → 214 → 197. The remaining batch-3b Transport/Core HTTP slice and
+its Core HTTP slice is also landed: six Core-owned HTTP classes are prefixed.
+The namespace baseline is 283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 →
+229 → 228 → 214 → 197 → 191. The remaining batch-3b Transport slice and
 batches 4-6 remain open. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
@@ -1699,6 +1700,14 @@ skipped import/include lines, and preserved quoted literals. `RepoCommit`'s
 `NSSecureCoding` methods remain intact; no keyed-archive call site or hard-coded
 runtime class lookup for these names exists in the repository. Baseline ratchets
 214 → 197. Native and global gates remain pending the complete batch-3b slice.
+
+**Batch 3b Core HTTP slice (2026-08-08):** Renamed the Core-owned HTTP message
+and policy classes `HttpParsing`, `HttpRequest`, `HttpResponse`,
+`HttpRetryPolicy`, `HttpRetryResult`, and `HttpRoute` to their `ATProtoHttp*`
+forms. File names and import paths remain unchanged; quoted wire/error strings
+and test category labels remain unchanged. No hard-coded runtime class lookup or
+keyed-archive use references these names. Baseline ratchets 197 → 191. Native
+and global gates remain pending the complete batch-3b slice.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are

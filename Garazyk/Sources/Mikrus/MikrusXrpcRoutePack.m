@@ -27,34 +27,34 @@
 }
 
 - (void)registerRoutesWithServer:(HttpServer *)server {
-    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getBacklinks" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getBacklinks" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetBacklinks:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getBacklinkDids" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getBacklinkDids" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetBacklinkDids:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getBacklinksCount" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getBacklinksCount" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetBacklinksCount:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getManyToMany" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getManyToMany" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetManyToMany:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getManyToManyCounts" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.links.getManyToManyCounts" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetManyToManyCounts:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.identity.resolveMiniDoc" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.identity.resolveMiniDoc" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleResolveMiniDoc:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.repo.getRecordByUri" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.repo.getRecordByUri" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetRecordByUri:request response:response];
     }];
 }
 
-- (BOOL)checkRateLimitForRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (BOOL)checkRateLimitForRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     return [GZXrpcRouteSupport checkIPRateLimitForRequest:request response:response];
 }
 
-- (void)handleGetBacklinks:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleGetBacklinks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
@@ -84,7 +84,7 @@
     [response setJsonBody:body];
 }
 
-- (void)handleGetBacklinkDids:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleGetBacklinkDids:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
@@ -113,7 +113,7 @@
     [response setJsonBody:body];
 }
 
-- (void)handleGetBacklinksCount:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleGetBacklinksCount:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
@@ -129,7 +129,7 @@
     [response setJsonBody:@{@"total": @(total)}];
 }
 
-- (void)handleGetManyToMany:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleGetManyToMany:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
@@ -162,7 +162,7 @@
     [response setJsonBody:body];
 }
 
-- (void)handleGetManyToManyCounts:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleGetManyToManyCounts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
@@ -194,7 +194,7 @@
     [response setJsonBody:body];
 }
 
-- (void)handleResolveMiniDoc:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleResolveMiniDoc:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *identifier = [self requiredParam:@"identifier" request:request response:response];
     if (!identifier) return;
@@ -229,7 +229,7 @@
     }];
 }
 
-- (void)handleGetRecordByUri:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleGetRecordByUri:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     @try {
     if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *atURI = [self requiredParam:@"at_uri" request:request response:response];
@@ -280,11 +280,11 @@
 
 #pragma mark - Helpers
 
-- (NSString *)requiredParam:(NSString *)name request:(HttpRequest *)request response:(HttpResponse *)response {
+- (NSString *)requiredParam:(NSString *)name request:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     return [GZXrpcRouteSupport requiredQueryParam:name request:request response:response];
 }
 
-- (MikrusSourceSpec *)sourceFromRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (MikrusSourceSpec *)sourceFromRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *sourceValue = [self requiredParam:@"source" request:request response:response];
     if (!sourceValue) return nil;
     NSError *error = nil;
@@ -296,7 +296,7 @@
     return source;
 }
 
-- (BOOL)validatePath:(NSString *)path response:(HttpResponse *)response {
+- (BOOL)validatePath:(NSString *)path response:(ATProtoHttpResponse *)response {
     NSError *error = nil;
     if (![MikrusSourceSpec validatePath:path error:&error]) {
         [self writeInvalidRequest:error.localizedDescription ?: @"Invalid path" response:response];
@@ -305,10 +305,10 @@
     return YES;
 }
 
-- (BOOL)parseLimitFromRequest:(HttpRequest *)request
+- (BOOL)parseLimitFromRequest:(ATProtoHttpRequest *)request
                  defaultLimit:(NSInteger)defaultLimit
                        output:(NSInteger *)output
-                     response:(HttpResponse *)response {
+                     response:(ATProtoHttpResponse *)response {
     return [GZXrpcRouteSupport parseLimitForRequest:request
                                        defaultLimit:defaultLimit
                                                 min:1
@@ -317,7 +317,7 @@
                                            response:response];
 }
 
-- (NSArray<NSString *> *)stringArrayParam:(NSString *)name request:(HttpRequest *)request {
+- (NSArray<NSString *> *)stringArrayParam:(NSString *)name request:(ATProtoHttpRequest *)request {
     NSArray<NSString *> *raw = [request queryParamsForKey:name] ?: @[];
     NSMutableArray<NSString *> *values = [NSMutableArray array];
     NSMutableSet<NSString *> *seen = [NSMutableSet set];
@@ -334,7 +334,7 @@
     return [values copy];
 }
 
-- (NSArray<NSString *> *)combinedStringArrayParams:(NSArray<NSString *> *)names request:(HttpRequest *)request {
+- (NSArray<NSString *> *)combinedStringArrayParams:(NSArray<NSString *> *)names request:(ATProtoHttpRequest *)request {
     NSMutableArray<NSString *> *values = [NSMutableArray array];
     NSMutableSet<NSString *> *seen = [NSMutableSet set];
     for (NSString *name in names) {
@@ -444,11 +444,11 @@
     return [json isKindOfClass:[NSDictionary class]] ? json : nil;
 }
 
-- (void)writeInvalidRequest:(NSString *)message response:(HttpResponse *)response {
+- (void)writeInvalidRequest:(NSString *)message response:(ATProtoHttpResponse *)response {
     [XrpcErrorHelper setInvalidRequestError:response message:message ?: @"Invalid request"];
 }
 
-- (void)writeDatabaseError:(NSError *)error response:(HttpResponse *)response {
+- (void)writeDatabaseError:(NSError *)error response:(ATProtoHttpResponse *)response {
     if ([error.domain isEqualToString:MikrusDatabaseErrorDomain] && error.code == 400) {
         [self writeInvalidRequest:error.localizedDescription response:response];
         return;

@@ -117,7 +117,7 @@
   XCTAssertNotNil(created);
 
   NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
-  HttpResponse *response =
+  ATProtoHttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:query
                        queryParams:@{@"did" : self.userDid}
@@ -149,7 +149,7 @@
   XCTAssertNotNil(created);
 
   NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
-  HttpResponse *response =
+  ATProtoHttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:query
                        queryParams:@{@"did" : self.userDid}
@@ -174,7 +174,7 @@
 
 - (void)testApplicationSyncGetRepoPrefersHigherQualityCAR {
   NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
-  HttpResponse *response =
+  ATProtoHttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:query
                        queryParams:@{@"did" : self.userDid}
@@ -204,7 +204,7 @@
   XCTAssertNotNil(created);
 
   NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
-  HttpResponse *fullResponse =
+  ATProtoHttpResponse *fullResponse =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:query
                        queryParams:@{@"did" : self.userDid}
@@ -219,7 +219,7 @@
 
   NSString *deltaQuery =
       [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, rev];
-  HttpResponse *deltaResponse =
+  ATProtoHttpResponse *deltaResponse =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:deltaQuery
                        queryParams:@{@"did" : self.userDid, @"since" : rev}
@@ -254,7 +254,7 @@
   XCTAssertNotNil(created);
 
   NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
-  HttpResponse *fullResponse =
+  ATProtoHttpResponse *fullResponse =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:query
                        queryParams:@{@"did" : self.userDid}
@@ -273,7 +273,7 @@
 
   NSString *unknownSinceQuery = [NSString
       stringWithFormat:@"did=%@&since=%@", self.userDid, @"3jzfcijpj2z2a"];
-  HttpResponse *unknownResponse =
+  ATProtoHttpResponse *unknownResponse =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:unknownSinceQuery
                        queryParams:@{
@@ -315,7 +315,7 @@
   }
 
   NSString *baselineQuery = [NSString stringWithFormat:@"did=%@", self.userDid];
-  HttpResponse *baselineResponse =
+  ATProtoHttpResponse *baselineResponse =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:baselineQuery
                        queryParams:@{@"did" : self.userDid}
@@ -344,14 +344,14 @@
 
   NSString *deltaQuery =
       [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, baselineRev];
-  HttpResponse *deltaResponse = [self
+  ATProtoHttpResponse *deltaResponse = [self
       sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                  queryString:deltaQuery
                  queryParams:@{@"did" : self.userDid, @"since" : baselineRev}
                      headers:@{}];
   XCTAssertEqual(deltaResponse.statusCode, 200);
 
-  HttpResponse *fullAfterResponse =
+  ATProtoHttpResponse *fullAfterResponse =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:baselineQuery
                        queryParams:@{@"did" : self.userDid}
@@ -399,7 +399,7 @@
   XCTAssertTrue(deletedCID.length > 0);
 
   NSString *fullQuery = [NSString stringWithFormat:@"did=%@", self.userDid];
-  HttpResponse *beforeDeleteResponse =
+  ATProtoHttpResponse *beforeDeleteResponse =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:fullQuery
                        queryParams:@{@"did" : self.userDid}
@@ -427,7 +427,7 @@
 
   NSString *deltaQuery = [NSString
       stringWithFormat:@"did=%@&since=%@", self.userDid, beforeDeleteRev];
-  HttpResponse *deltaResponse =
+  ATProtoHttpResponse *deltaResponse =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                        queryString:deltaQuery
                        queryParams:@{
@@ -469,7 +469,7 @@
     }
   };
 
-  HttpResponse *applyResponse = [self
+  ATProtoHttpResponse *applyResponse = [self
       sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
                          body:@{
                            @"repo" : self.userDid,
@@ -497,7 +497,7 @@
 
   NSString *query =
       [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, commitRev];
-  HttpResponse *deltaResponse = [self
+  ATProtoHttpResponse *deltaResponse = [self
       sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                  queryString:query
                  queryParams:@{@"did" : self.userDid, @"since" : commitRev}
@@ -528,7 +528,7 @@
       @"createdAt" : [self iso8601String]
     }
   };
-  HttpResponse *createResponse = [self
+  ATProtoHttpResponse *createResponse = [self
       sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
                          body:@{
                            @"repo" : self.userDid,
@@ -551,7 +551,7 @@
     @"collection" : @"app.bsky.feed.post",
     @"rkey" : @"aw-since-delete"
   };
-  HttpResponse *deleteResponse = [self
+  ATProtoHttpResponse *deleteResponse = [self
       sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
                          body:@{
                            @"repo" : self.userDid,
@@ -579,7 +579,7 @@
 
   NSString *query =
       [NSString stringWithFormat:@"did=%@&since=%@", self.userDid, deleteRev];
-  HttpResponse *deltaResponse = [self
+  ATProtoHttpResponse *deltaResponse = [self
       sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                  queryString:query
                  queryParams:@{@"did" : self.userDid, @"since" : deleteRev}
@@ -779,7 +779,7 @@
 
 - (void)testApplicationSyncGetRepoStatusReturnsActiveAndRev {
   NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
-  HttpResponse *response =
+  ATProtoHttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepoStatus"
                        queryString:query
                        queryParams:@{@"did" : self.userDid}
@@ -803,7 +803,7 @@
                                          validationMode:PDSValidationModeOff
                                                   error:nil];
 
-  HttpResponse *responseWithRev =
+  ATProtoHttpResponse *responseWithRev =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepoStatus"
                        queryString:query
                        queryParams:@{@"did" : self.userDid}
@@ -822,7 +822,7 @@
   XCTAssertTrue(takenDown, @"takeDownAccount failed: %@", takedownError);
 
   NSString *query = [NSString stringWithFormat:@"did=%@", self.userDid];
-  HttpResponse *response =
+  ATProtoHttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepoStatus"
                        queryString:query
                        queryParams:@{@"did" : self.userDid}
@@ -837,7 +837,7 @@
 }
 
 - (void)testApplicationSyncGetRepoStatusReturnsNotFoundForInvalidDid {
-  NSString *query = @"did=did:plc:aaaaaaaaaaaaaaaaaaaaaaaa";    HttpResponse *response =
+  NSString *query = @"did=did:plc:aaaaaaaaaaaaaaaaaaaaaaaa";    ATProtoHttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepoStatus"
                        queryString:query
                        queryParams:@{@"did" : @"did:plc:aaaaaaaaaaaaaaaaaaaaaaaa"}

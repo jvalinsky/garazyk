@@ -48,7 +48,7 @@ static const NSUInteger kMaximumFailureCacheEntries = 1024;
     dispatch_queue_t _rateLimitQueue;
     dispatch_queue_t _cacheQueue;
 }
-@property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
+@property (nonatomic, strong) ATProtoHttpRetryPolicy *retryPolicy;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *resolutionCacheTimestamps;
 - (void)pruneExpiredFailureCacheEntriesLockedAtDate:(NSDate *)now;
 - (void)executeSafeHTTPSRequest:(NSURLRequest *)request
@@ -82,7 +82,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
             _rateLimitPerMinute = [envLimit integerValue];
         }
         _requestTimestamps = [NSMutableArray array];
-        _retryPolicy = [[HttpRetryPolicy alloc] init];
+        _retryPolicy = [[ATProtoHttpRetryPolicy alloc] init];
         if (isTestEnv) {
             _retryPolicy.initialDelay = 0.01;
         }
@@ -398,7 +398,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
                                                    options:options
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         NSInteger statusCode = response ? response.statusCode : 0;
-        HttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
+        ATProtoHttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
                                                                 networkError:error
                                                                attemptNumber:attempt];
 

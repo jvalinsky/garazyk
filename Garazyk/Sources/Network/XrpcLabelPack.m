@@ -41,7 +41,7 @@ static BOOL parseStrictIntegerString(NSString *value, NSInteger *outValue) {
     return YES;
 }
 
-static void setSubscribeLabelsUpgradeRequired(HttpResponse *response) {
+static void setSubscribeLabelsUpgradeRequired(ATProtoHttpResponse *response) {
     response.statusCode = 426;
     [response setHeader:@"websocket" forKey:@"Upgrade"];
     [response setHeader:@"Upgrade" forKey:@"Connection"];
@@ -107,7 +107,7 @@ static NSArray<NSDictionary *> *loadFetchedLabels(PDSServiceDatabases *serviceDa
     return rows;
 }
 
-static NSArray<NSString *> *queryArrayValues(HttpRequest *request, NSString *key) {
+static NSArray<NSString *> *queryArrayValues(ATProtoHttpRequest *request, NSString *key) {
     NSString *value = [request queryParamForKey:key];
     if (!value || value.length == 0) {
         return @[];
@@ -115,7 +115,7 @@ static NSArray<NSString *> *queryArrayValues(HttpRequest *request, NSString *key
     return [value componentsSeparatedByString:@","];
 }
 
-static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString **errorMessage) {
+static NSDictionary *labelLookupParamsFromRequest(ATProtoHttpRequest *request, NSString **errorMessage) {
     NSInteger limit = 50;
     NSString *limitParam = [request queryParamForKey:@"limit"];
     if (limitParam.length > 0 && (!parseStrictIntegerString(limitParam, &limit) || limit < 1 || limit > 250)) {
@@ -176,7 +176,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     // not part of the public AT Protocol lexicon. Use tools.ozone.* for production moderation.
 
     // com.atproto.label.queryLabels - Public label query endpoint
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_queryLabels handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_queryLabels handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *paramError = nil;
         NSDictionary *params = labelLookupParamsFromRequest(request, &paramError);
         if (!params) {
@@ -199,7 +199,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
     
     // com.atproto.label.createLabel - Admin-only label creation
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_createLabel handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_createLabel handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                           response:response
                                   serviceDatabases:serviceDatabases
@@ -236,7 +236,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
     
     // com.atproto.label.getLabels - Admin-only label lookup
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_getLabels handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_getLabels handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                           response:response
                                   serviceDatabases:serviceDatabases
@@ -277,7 +277,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
 
     // com.atproto.label.subscribeLabels - WebSocket subscription endpoint
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_subscribeLabels handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_subscribeLabels handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodGET) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"GET" forKey:@"Allow"];
@@ -304,7 +304,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
     
     // com.atproto.temp.fetchLabels - Deprecated label fetching
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_fetchLabels handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_fetchLabels handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodGET) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"GET" forKey:@"Allow"];
@@ -351,7 +351,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
     
     // com.atproto.temp.requestPhoneVerification - Phone verification
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_requestPhoneVerification handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_requestPhoneVerification handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodPOST) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"POST" forKey:@"Allow"];
@@ -422,7 +422,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
     
     // com.atproto.temp.addReservedHandle - Admin endpoint to reserve handles
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_addReservedHandle handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_addReservedHandle handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -465,7 +465,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
     
     // com.atproto.temp.checkHandleAvailability - Check if handle is available
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_checkHandleAvailability handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_checkHandleAvailability handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodGET) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"GET" forKey:@"Allow"];
@@ -539,7 +539,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
     
     // com.atproto.temp.checkSignupQueue - Check signup queue status
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_checkSignupQueue handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_checkSignupQueue handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodGET) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"GET" forKey:@"Allow"];
@@ -552,7 +552,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
     
     // com.atproto.temp.dereferenceScope - Dereference OAuth scope references
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_dereferenceScope handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_dereferenceScope handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodGET) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"GET" forKey:@"Allow"];
@@ -599,7 +599,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     }];
     
     // com.atproto.temp.revokeAccountCredentials - Revoke all credentials for an account
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_revokeAccountCredentials handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_revokeAccountCredentials handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodPOST) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"POST" forKey:@"Allow"];

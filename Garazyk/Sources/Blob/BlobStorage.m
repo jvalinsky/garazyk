@@ -418,8 +418,8 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
 - (BOOL)respondWithBlobData:(nullable NSData *)blobData
                    filePath:(nullable NSString *)filePath
                 totalLength:(unsigned long long)totalLength
-                 forRequest:(HttpRequest *)request
-                   response:(HttpResponse *)response
+                 forRequest:(ATProtoHttpRequest *)request
+                   response:(ATProtoHttpResponse *)response
                       error:(NSError **)outError {
     [response setHeader:@"bytes" forKey:@"Accept-Ranges"];
 

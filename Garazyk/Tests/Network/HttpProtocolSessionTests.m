@@ -26,7 +26,7 @@
   NSArray<NSNumber *> *events = [self.session feedData:requestData];
   XCTAssertTrue([events containsObject:@(HttpSessionEventRequestReady)]);
 
-  HttpRequest *request = [self.session nextRequestToDispatch];
+  ATProtoHttpRequest *request = [self.session nextRequestToDispatch];
   XCTAssertNotNil(request);
   XCTAssertEqualObjects(request.path, @"/test");
 }
@@ -55,10 +55,10 @@
           dataUsingEncoding:NSUTF8StringEncoding];
   NSArray<NSNumber *> *events = [self.session feedData:requestData];
   XCTAssertTrue([events containsObject:@(HttpSessionEventRequestReady)]);
-  HttpRequest *first = [self.session nextRequestToDispatch];
+  ATProtoHttpRequest *first = [self.session nextRequestToDispatch];
   XCTAssertNotNil(first);
   [self.session responseDidFinishSending];
-  HttpRequest *second = [self.session nextRequestToDispatch];
+  ATProtoHttpRequest *second = [self.session nextRequestToDispatch];
   XCTAssertNotNil(second);
 }
 

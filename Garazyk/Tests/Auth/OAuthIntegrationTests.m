@@ -100,7 +100,7 @@
                                             delegateQueue:nil];
     
 	    // Add a simple health handler
-	    [self.server addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *res) {
+	    [self.server addRoute:@"GET" path:@"/health" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
 	        res.statusCode = 200;
 	        [res setBodyString:@"OK"];
 	    }];

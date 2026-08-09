@@ -74,14 +74,14 @@
     if (![self.database runMigrations:error]) return NO;
 
     self.httpServer = [HttpServer serverWithPort:config.httpPort];
-    [HttpResponse setDefaultServerHeader:@"garazyk-mikrus/1.0.0"];
-    [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
+    [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-mikrus/1.0.0"];
+    [self.httpServer addRoute:@"GET" path:@"/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         response.contentType = @"text/plain; charset=utf-8";
         [response setBodyString:@"garazyk mikrus\n"];
     }];
     __weak typeof(self) weakSelf = self;
-    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{

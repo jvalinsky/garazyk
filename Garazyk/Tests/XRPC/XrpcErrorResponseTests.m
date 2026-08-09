@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testErrorResponseFormat {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.method"
                                                    queryString:@""
@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     XCTAssertEqual(response.statusCode, HttpStatusNotFound);
     NSDictionary *body = response.jsonBody;
@@ -43,7 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testUnknownMethodReturnsNotImplemented {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.example.unknown"
                                                    queryString:@""
@@ -52,14 +52,14 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     XCTAssertEqual(response.statusCode, HttpStatusNotFound);
 }
 
 - (void)testRateLimitResponse {
     __block BOOL rateLimited = NO;
-    [self.dispatcher registerMethod:@"test.rateLimited" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.rateLimited" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusTooManyRequests;
         [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": @"Rate limit exceeded"}];
         [response setHeader:@"100" forKey:@"X-RateLimit-Limit"];
@@ -67,7 +67,7 @@ NS_ASSUME_NONNULL_BEGIN
         [response setHeader:@"1700000000" forKey:@"X-RateLimit-Reset"];
         rateLimited = YES;
     }];
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.rateLimited"
                                                    queryString:@""
@@ -76,7 +76,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     XCTAssertEqual(response.statusCode, HttpStatusTooManyRequests);
     XCTAssertTrue(rateLimited);
@@ -85,7 +85,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testUnauthorizedForMissingAuth {
     __block BOOL authRequiredCalled = NO;
-    [self.dispatcher registerMethod:@"test.authRequired" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.authRequired" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *auth = [request headerForKey:@"Authorization"];
         if (!auth) {
             response.statusCode = HttpStatusUnauthorized;
@@ -96,7 +96,7 @@ NS_ASSUME_NONNULL_BEGIN
             [response setJsonBody:@{@"result": @"success"}];
         }
     }];
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.authRequired"
                                                    queryString:@""
@@ -105,7 +105,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     XCTAssertEqual(response.statusCode, HttpStatusUnauthorized);
     XCTAssertTrue(authRequiredCalled);
@@ -113,12 +113,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testForbiddenForInsufficientScope {
     __block BOOL scopeErrorCalled = NO;
-    [self.dispatcher registerMethod:@"test.privileged" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.privileged" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusForbidden;
         [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Insufficient scope"}];
         scopeErrorCalled = YES;
     }];
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.privileged"
                                                    queryString:@""
@@ -127,7 +127,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     XCTAssertEqual(response.statusCode, HttpStatusForbidden);
     XCTAssertTrue(scopeErrorCalled);
@@ -135,7 +135,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testNotFoundForMissingResource {
     __block BOOL notFoundCalled = NO;
-    [self.dispatcher registerMethod:@"test.getRecord" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.getRecord" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *did = request.queryParams[@"repo"];
         if (!did) {
             response.statusCode = HttpStatusNotFound;
@@ -146,7 +146,7 @@ NS_ASSUME_NONNULL_BEGIN
             [response setJsonBody:@{@"result": @"success"}];
         }
     }];
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.getRecord"
                                                    queryString:@""
@@ -155,7 +155,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     XCTAssertEqual(response.statusCode, HttpStatusNotFound);
     XCTAssertTrue(notFoundCalled);
@@ -163,7 +163,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testMissingRequiredParameterMatchesResponseStatusCodeBadRequest {
     __block BOOL paramErrorCalled = NO;
-    [self.dispatcher registerMethod:@"test.requiredParams" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.requiredParams" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *required = request.queryParams[@"required"];
         if (!required) {
             response.statusCode = HttpStatusBadRequest;
@@ -174,7 +174,7 @@ NS_ASSUME_NONNULL_BEGIN
             [response setJsonBody:@{@"result": @"success"}];
         }
     }];
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.requiredParams"
                                                    queryString:@"optional=value"
@@ -183,7 +183,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     XCTAssertTrue(paramErrorCalled);
     XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
@@ -193,13 +193,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testRecordNotFoundError {
     __block BOOL handlerCalled = NO;
-    [self.dispatcher registerMethod:@"com.atproto.repo.getRecord" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"com.atproto.repo.getRecord" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"RecordNotFound", @"message": @"Record not found"}];
         handlerCalled = YES;
     }];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.repo.getRecord"
                                                    queryString:@"repo=did:plc:test&collection=app.bsky.feed.post&rkey=nonexistent"
@@ -208,7 +208,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertTrue(handlerCalled);
@@ -218,13 +218,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testRepoNotFoundError {
     __block BOOL handlerCalled = NO;
-    [self.dispatcher registerMethod:@"com.atproto.repo.describeRepo" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"com.atproto.repo.describeRepo" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"RepoNotFound", @"message": @"Repository not found"}];
         handlerCalled = YES;
     }];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.repo.describeRepo"
                                                    queryString:@"repo=did:plc:nonexistent"
@@ -233,7 +233,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertTrue(handlerCalled);
@@ -243,13 +243,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testInvalidTokenError {
     __block BOOL handlerCalled = NO;
-    [self.dispatcher registerMethod:@"test.invalidToken" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.invalidToken" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Token is malformed or invalid"}];
         handlerCalled = YES;
     }];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.invalidToken"
                                                    queryString:@""
@@ -258,7 +258,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{@"Authorization": @"Bearer invalid.token.here"}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertTrue(handlerCalled);
@@ -268,13 +268,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testExpiredTokenError {
     __block BOOL handlerCalled = NO;
-    [self.dispatcher registerMethod:@"test.expiredToken" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.expiredToken" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{@"error": @"ExpiredToken", @"message": @"Token has expired"}];
         handlerCalled = YES;
     }];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.expiredToken"
                                                    queryString:@""
@@ -283,7 +283,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{@"Authorization": @"Bearer expired.jwt.token"}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertTrue(handlerCalled);
@@ -293,13 +293,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testUpstreamFailureError {
     __block BOOL handlerCalled = NO;
-    [self.dispatcher registerMethod:@"test.upstreamTimeout" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.upstreamTimeout" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusGatewayTimeout;
         [response setJsonBody:@{@"error": @"UpstreamFailure", @"message": @"Upstream service timed out"}];
         handlerCalled = YES;
     }];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.upstreamTimeout"
                                                    queryString:@""
@@ -308,7 +308,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertTrue(handlerCalled);
@@ -318,14 +318,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testInternalServerError {
     __block BOOL handlerCalled = NO;
-    [self.dispatcher registerMethod:@"test.serverError" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.serverError" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         // Simulate an internal error
         response.statusCode = HttpStatusInternalServerError;
         [response setJsonBody:@{@"error": @"InternalServerError", @"message": @"An unexpected error occurred"}];
         handlerCalled = YES;
     }];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.serverError"
                                                    queryString:@""
@@ -334,7 +334,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertTrue(handlerCalled);
@@ -344,7 +344,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testErrorResponseStructure {
     // All XRPC errors must have 'error' field, 'message' is optional
-    [self.dispatcher registerMethod:@"test.errorStructure" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.errorStructure" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusBadRequest;
         [response setJsonBody:@{
             @"error": @"TestError",
@@ -352,7 +352,7 @@ NS_ASSUME_NONNULL_BEGIN
         }];
     }];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.errorStructure"
                                                    queryString:@""
@@ -361,7 +361,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     NSDictionary *body = response.jsonBody;

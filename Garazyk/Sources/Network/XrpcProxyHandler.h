@@ -9,8 +9,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class ATProtoJWTMinter;
 
 /*!
@@ -68,15 +68,15 @@ typedef _Nullable id<PDSActorKeyManager> (^ServiceAuthSigningKeyResolver)(NSStri
  
  @abstract Forwards the request to the fixed target.
  */
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @method handleRequest:response:baseURL:upstreamDID:
  
  @abstract Forwards the request to a dynamic target.
  */
-- (void)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (void)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
               baseURL:(NSURL *)baseURL
           upstreamDID:(NSString *)upstreamDID;
 

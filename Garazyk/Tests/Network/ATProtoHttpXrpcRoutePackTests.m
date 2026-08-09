@@ -8,7 +8,7 @@
 #import "Network/XrpcHandler.h"
 
 @interface HttpServer (ATProtoHttpXrpcRoutePackTesting)
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
 - (nullable RequestHandler)handlerForRoute:(NSString *)path
                                     method:(NSString *)method
                                 parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters;
@@ -28,7 +28,7 @@
                                        application:nil
                                         controller:nil
                              subscribeReposHandler:nil
-                                    setCorsHeaders:^(HttpResponse *r, HttpRequest *req) {}];
+                                    setCorsHeaders:^(ATProtoHttpResponse *r, ATProtoHttpRequest *req) {}];
 }
 
 - (void)tearDown {
@@ -72,7 +72,7 @@
 }
 
 - (void)testOPTIONSReturns200 {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodOPTIONS
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodOPTIONS
                                                   methodString:@"OPTIONS"
                                                           path:@"/xrpc"
                                                    queryString:@""
@@ -81,7 +81,7 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [self.server dispatchRequest:request];
+    ATProtoHttpResponse *response = [self.server dispatchRequest:request];
     XCTAssertEqual(response.statusCode, 200);
 }
 

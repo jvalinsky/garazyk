@@ -5,8 +5,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class HttpServer;
 /**
  * @abstract Defines the ATProtoNetworkConnection protocol contract.
@@ -32,8 +32,8 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The incoming HTTP request.
  @param response The response object to populate.
  */
-typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
-typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *response, id<ATProtoNetworkConnection> connection);
+typedef void (^RequestHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
+typedef void (^WebSocketRequestHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response, id<ATProtoNetworkConnection> connection);
 
 /*!
  @abstract Default concurrency limit applied when a server is created without an explicit one.
@@ -52,7 +52,7 @@ extern const NSUInteger kHttpServerDefaultMaxConcurrentRequests;
  @code
  HttpServer *server = [HttpServer serverWithPort:8080];
  
- [server addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *resp) {
+ [server addRoute:@"GET" path:@"/health" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
      resp.statusCode = 200;
      [resp setBody:@"OK"];
  }];
@@ -75,7 +75,7 @@ extern const NSUInteger kHttpServerDefaultMaxConcurrentRequests;
 @property (atomic, readonly, getter=isRunning) BOOL running;
 
 /*! Optional callback invoked for every request received. */
-@property (nonatomic, copy, nullable) void (^didReceiveRequest)(HttpRequest *request, HttpResponse *response);
+@property (nonatomic, copy, nullable) void (^didReceiveRequest)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
 
 /*! Maximum number of requests this server dispatches concurrently. */
 @property (nonatomic, readonly) NSUInteger maxConcurrentRequests;

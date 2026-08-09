@@ -19,8 +19,8 @@ static const NSUInteger kDefaultBufferSize = 4096;
 @interface HttpBufferPool ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<NSMutableData *> *> *bufferPools;
-@property (nonatomic, strong) NSMutableArray<HttpRequest *> *requestPool;
-@property (nonatomic, strong) NSMutableArray<HttpResponse *> *responsePool;
+@property (nonatomic, strong) NSMutableArray<ATProtoHttpRequest *> *requestPool;
+@property (nonatomic, strong) NSMutableArray<ATProtoHttpResponse *> *responsePool;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t poolQueue;
 @property (nonatomic, strong) NSArray<NSNumber *> *sizeClasses;
 
@@ -152,8 +152,8 @@ static const NSUInteger kDefaultBufferSize = 4096;
     });
 }
 
-- (nullable HttpRequest *)acquireRequest {
-    __block HttpRequest *request = nil;
+- (nullable ATProtoHttpRequest *)acquireRequest {
+    __block ATProtoHttpRequest *request = nil;
 
     dispatch_sync(self.poolQueue, ^{
         if (self.requestPool.count > 0) {
@@ -165,7 +165,7 @@ static const NSUInteger kDefaultBufferSize = 4096;
     return request;
 }
 
-- (void)releaseRequest:(HttpRequest *)request {
+- (void)releaseRequest:(ATProtoHttpRequest *)request {
     if (!request) return;
 
     dispatch_sync(self.poolQueue, ^{
@@ -175,8 +175,8 @@ static const NSUInteger kDefaultBufferSize = 4096;
     });
 }
 
-- (nullable HttpResponse *)acquireResponse {
-    __block HttpResponse *response = nil;
+- (nullable ATProtoHttpResponse *)acquireResponse {
+    __block ATProtoHttpResponse *response = nil;
 
     dispatch_sync(self.poolQueue, ^{
         if (self.responsePool.count > 0) {
@@ -188,7 +188,7 @@ static const NSUInteger kDefaultBufferSize = 4096;
     return response;
 }
 
-- (void)releaseResponse:(HttpResponse *)response {
+- (void)releaseResponse:(ATProtoHttpResponse *)response {
     if (!response) return;
 
     dispatch_sync(self.poolQueue, ^{

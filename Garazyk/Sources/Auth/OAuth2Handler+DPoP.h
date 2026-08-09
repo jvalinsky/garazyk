@@ -19,8 +19,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param outThumbprint Optional storage for the verified proof key's JWK thumbprint.
  * @return YES when the proof is valid for the canonical request; otherwise NO.
  */
-- (BOOL)validateDPoPForRequest:(HttpRequest *)request
-                      response:(HttpResponse *)response
+- (BOOL)validateDPoPForRequest:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response
                  outThumbprint:(NSString **)outThumbprint;
 /**
  * @abstract Adds a fresh DPoP nonce response header when no nonce is already present.
@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
  * from the process nonce manager and is not persisted by this method.
  * @param response The response to inspect and, when needed, mutate.
  */
-- (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response;
+- (void)attachDPoPNonceToResponseIfMissing:(ATProtoHttpResponse *)response;
 /**
  * @abstract Derives the canonical URL used to compare a DPoP proof's `htu` claim.
  * @discussion Outside local development and an explicitly trusted reverse proxy, this method uses
@@ -38,7 +38,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request The request supplying the path, query, and conditionally trusted origin headers.
  * @return The canonical request URL, or nil when the target cannot be formed.
  */
-- (NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request;
+- (NSURL *)expectedDPoPURLForRequest:(ATProtoHttpRequest *)request;
 /**
  * @abstract Derives the canonical origin used by OAuth metadata and audience comparisons.
  * @discussion Applies the same Host and forwarded-header trust boundary as
@@ -47,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request The request supplying the conditionally trusted origin headers.
  * @return The canonical scheme-and-authority origin, or the configured issuer fallback.
  */
-- (NSString *)requestOriginForRequest:(HttpRequest *)request;
+- (NSString *)requestOriginForRequest:(ATProtoHttpRequest *)request;
 /**
  * @abstract Reports whether this request may supply trusted forwarded origin headers.
  * @discussion Forwarded headers are trusted only when `PDS_TRUST_PROXY_HEADERS` is enabled and
@@ -56,7 +56,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request The request whose peer address is evaluated.
  * @return YES when forwarded headers may participate in origin derivation; otherwise NO.
  */
-- (BOOL)requestShouldTrustForwardedHeaders:(HttpRequest *)request;
+- (BOOL)requestShouldTrustForwardedHeaders:(ATProtoHttpRequest *)request;
 @end
 
 NS_ASSUME_NONNULL_END

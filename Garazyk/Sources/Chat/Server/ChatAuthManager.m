@@ -40,13 +40,13 @@
 
 #pragma mark - Authentication
 
-- (nullable NSString *)authenticateRequest:(HttpRequest *)request
-                                  response:(nullable HttpResponse *)response {
+- (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
+                                  response:(nullable ATProtoHttpResponse *)response {
     return [self authenticateRequest:request response:response expectedMethod:nil];
 }
 
-- (nullable NSString *)authenticateRequest:(HttpRequest *)request
-                                  response:(nullable HttpResponse *)response
+- (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
+                                  response:(nullable ATProtoHttpResponse *)response
                              expectedMethod:(nullable NSString *)expectedLxm {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (!authHeader) {

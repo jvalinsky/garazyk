@@ -17,7 +17,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class HttpResponse;
+@class ATProtoHttpResponse;
 
 NS_ASSUME_NONNULL_BEGIN
 

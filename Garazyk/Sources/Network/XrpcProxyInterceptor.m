@@ -100,7 +100,7 @@ static NSDictionary *proxyServiceEntryFromDocument(ATProtoDIDDocument *document,
   return nil;
 }
 
-static BOOL isInternalRequest(HttpRequest *request) {
+static BOOL isInternalRequest(ATProtoHttpRequest *request) {
   NSString *ip = request.remoteAddress;
   if (!ip) return NO;
   if ([ip isEqualToString:@"127.0.0.1"] || [ip isEqualToString:@"::1"] || [ip isEqualToString:@"localhost"]) {
@@ -291,7 +291,7 @@ static NSString *configuredAppViewProxyDescriptor(ATProtoServiceConfiguration *c
   return nil;
 }
 
-static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
+static BOOL proxyXrpcRequest(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                              NSString *methodId, NSString *proxyDescriptor,
                              ATProtoServiceConfiguration *config,
                              BOOL explicitProxyHeader,
@@ -495,7 +495,7 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
            serviceDatabases:(PDSServiceDatabases *)serviceDatabases
            userDatabasePool:(PDSDatabasePool *)userDatabasePool {
   dispatcher.requestInterceptor =
-      ^BOOL(HttpRequest *request, HttpResponse *response, NSString *methodId,
+      ^BOOL(ATProtoHttpRequest *request, ATProtoHttpResponse *response, NSString *methodId,
             BOOL hasLocalHandler) {
         NSString *explicitProxyTarget =
             trimmedNonEmptyString([request headerForKey:@"atproto-proxy"]);

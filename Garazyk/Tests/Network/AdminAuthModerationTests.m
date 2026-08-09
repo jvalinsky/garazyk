@@ -8,7 +8,7 @@
 @implementation AdminAuthModerationTests
 
 - (void)testApplicationGetSubjectStatusRequiresAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{}];
@@ -18,7 +18,7 @@
 
 - (void)testApplicationGetSubjectStatusNonAdminForbidden {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
@@ -28,7 +28,7 @@
 
 - (void)testApplicationGetSubjectStatusAdminSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
@@ -40,7 +40,7 @@
 
 - (void)testApplicationGetAccountTakedownRequiresAuth {
     // DEPRECATED: com.atproto.admin.getAccountTakedown -> tools.ozone.moderation.getRepo
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
                                                       body:@{@"did": self.userDid}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
@@ -50,7 +50,7 @@
 - (void)testApplicationGetAccountTakedownNonAdminForbidden {
     // DEPRECATED: com.atproto.admin.getAccountTakedown -> tools.ozone.moderation.getRepo
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
                                                       body:@{@"did": self.userDid}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
@@ -61,7 +61,7 @@
     // DEPRECATED: com.atproto.admin.getAccountTakedown -> tools.ozone.moderation.getRepo
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
                                                     body:@{@"did": self.userDid}
                                                  headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
@@ -69,7 +69,7 @@
 }
 
 - (void)testApplicationUpdateSubjectStatusRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateSubjectStatus"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateSubjectStatus"
                                                       body:@{
                                                           @"subject": @{@"did": self.userDid},
                                                           @"reason": @"test"
@@ -81,7 +81,7 @@
 
 - (void)testApplicationModerateAccountRequiresAuth {
     // DEPRECATED: com.atproto.admin.moderateAccount -> tools.ozone.moderation.emitEvent
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{
                                                           @"did": self.userDid,
                                                           @"reason": @"test"
@@ -93,7 +93,7 @@
 
 - (void)testApplicationModerateRecordRequiresAuth {
     // DEPRECATED: com.atproto.admin.moderateRecord -> tools.ozone.moderation.emitEvent
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
                                                       body:@{
                                                           @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid],
                                                           @"reason": @"test"
@@ -104,7 +104,7 @@
 }
 
 - (void)testApplicationCreateLabelRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.label.createLabel"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.label.createLabel"
                                                       body:@{
                                                           @"src": self.userDid,
                                                           @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid],
@@ -116,7 +116,7 @@
 }
 
 - (void)testApplicationGetLabelsRequiresAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.label.getLabels"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.label.getLabels"
                                               queryString:@"limit=10"
                                               queryParams:@{@"limit": @"10"}
                                                   headers:@{}];
@@ -125,7 +125,7 @@
 }
 
 - (void)testApplicationSubscribeLabelsRequiresWebSocketUpgrade {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.label.subscribeLabels"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.label.subscribeLabels"
                                               queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -134,7 +134,7 @@
 }
 
 - (void)testApplicationSubscribeLabelsRejectsFutureCursor {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.label.subscribeLabels"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.label.subscribeLabels"
                                               queryString:@"cursor=1"
                                               queryParams:@{@"cursor": @"1"}
                                                   headers:@{}];

@@ -329,7 +329,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)acceptUpgradedConnection:(id<ATProtoNetworkConnection>)connection
-                         request:(HttpRequest *)request {
+                         request:(ATProtoHttpRequest *)request {
   GZ_LOG_SYNC_INFO(@"Accepting upgraded connection for subscribeRepos from %@", request.remoteAddress);
   [self ensureSequenceInitialized];
 

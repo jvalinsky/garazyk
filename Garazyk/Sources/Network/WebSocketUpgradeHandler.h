@@ -4,8 +4,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 /*!
  @class WebSocketUpgradeHandler
@@ -32,7 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the handleUpgradeRequest operation.
  */
-- (BOOL)handleUpgradeRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (BOOL)handleUpgradeRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @method computeAcceptKey:
@@ -54,7 +54,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return YES if the request has WebSocket upgrade headers.
  */
-- (BOOL)isWebSocketUpgradeRequest:(HttpRequest *)request;
+- (BOOL)isWebSocketUpgradeRequest:(ATProtoHttpRequest *)request;
 
 /*!
  @method subscriptionPathPrefix

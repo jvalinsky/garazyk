@@ -13,7 +13,7 @@
 - (void)testBasicInsertionAndRetrievalReturnsValidHandler {
     HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
     
-    [trie insertRoute:@"GET" pattern:@"/api/v1/status" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
+    [trie insertRoute:@"GET" pattern:@"/api/v1/status" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res){} priority:1];
     
     NSDictionary *params = nil;
     HttpRouteHandler handler = [trie handlerForMethod:@"GET" path:@"/api/v1/status" outParameters:&params];
@@ -25,7 +25,7 @@
 - (void)testParameterExtractionMatchesParamsId {
     HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
     
-    [trie insertRoute:@"GET" pattern:@"/users/:id" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
+    [trie insertRoute:@"GET" pattern:@"/users/:id" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res){} priority:1];
     
     NSDictionary *params = nil;
     HttpRouteHandler handler = [trie handlerForMethod:@"GET" path:@"/users/123" outParameters:&params];
@@ -37,7 +37,7 @@
 - (void)testWildcardMatchingReturnsValidHandler {
     HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
     
-    [trie insertRoute:@"GET" pattern:@"/files/*" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
+    [trie insertRoute:@"GET" pattern:@"/files/*" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res){} priority:1];
     
     NSDictionary *params = nil;
     HttpRouteHandler handler = [trie handlerForMethod:@"GET" path:@"/files/document.txt" outParameters:&params];
@@ -58,7 +58,7 @@
     dispatch_queue_t queue = dispatch_queue_create("com.atproto.pds.test.stress", DISPATCH_QUEUE_CONCURRENT);
     
     // Insert initial route
-    [trie insertRoute:@"GET" pattern:@"/initial" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
+    [trie insertRoute:@"GET" pattern:@"/initial" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res){} priority:1];
     
     for (int i = 0; i < 100; i++) {
         dispatch_group_enter(group);
@@ -67,7 +67,7 @@
             if (i % 2 == 0) {
                 [trie insertRoute:@"GET" 
                           pattern:[NSString stringWithFormat:@"/route/%d", i] 
-                          handler:^(HttpRequest *req, HttpResponse *res){} 
+                          handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res){}
                          priority:1];
             } else {
                 NSDictionary *params = nil;

@@ -42,7 +42,7 @@
 
     // getJobStatus
     if (getJobStatusNSID.length > 0) {
-        [dispatcher registerMethod:getJobStatusNSID handler:^(HttpRequest *request, HttpResponse *response) {
+        [dispatcher registerMethod:getJobStatusNSID handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             NSString *jobId = [request queryParamForKey:@"jobId"];
             if (!jobId) {
                 [XrpcErrorHelper setValidationError:response message:@"Missing jobId parameter"];
@@ -61,7 +61,7 @@
 
     // uploadMedia
     if (uploadNSID.length > 0) {
-        [dispatcher registerMethod:uploadNSID handler:^(HttpRequest *request, HttpResponse *response) {
+        [dispatcher registerMethod:uploadNSID handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             if (request.body.length == 0) {
                 [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
                 return;
@@ -122,7 +122,7 @@
 
     // getUploadLimits
     if (getUploadLimitsNSID.length > 0) {
-        [dispatcher registerMethod:getUploadLimitsNSID handler:^(HttpRequest *request, HttpResponse *response) {
+        [dispatcher registerMethod:getUploadLimitsNSID handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             response.statusCode = HttpStatusOK;
             [response setJsonBody:@{
                 @"canUpload": @YES,

@@ -9,7 +9,7 @@
 
 @implementation AppViewXRpcRoutePack (Feed)
 
-- (void)handleGetTimeline:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetTimeline:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -36,7 +36,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetAuthorFeed:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetAuthorFeed:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actor = [request queryParamForKey:@"actor"];
     if (!actor || actor.length == 0)
@@ -70,7 +70,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetPostThread:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetPostThread:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *uri = [request queryParamForKey:@"uri"];
     if (!uri || uri.length == 0)
@@ -108,7 +108,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetFeed:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetFeed:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *feedURI = [request queryParamForKey:@"feed"];
     if (!feedURI || feedURI.length == 0)
@@ -141,7 +141,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetActorLikes:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetActorLikes:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actor = [request queryParamForKey:@"actor"];
     if (!actor || actor.length == 0)
@@ -174,7 +174,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetPosts:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetPosts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *urisParam = [request queryParamForKey:@"uris"];
     if (!urisParam || urisParam.length == 0)
@@ -205,7 +205,7 @@
     [response setJsonBody:result ?: @{ @"posts": @[] }];
 }
 
-- (void)handleGetFeedGenerators:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetFeedGenerators:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *urisParam = [request queryParamForKey:@"uris"];
     if (!urisParam || urisParam.length == 0)
@@ -236,7 +236,7 @@
     [response setJsonBody:result ?: @{ @"feeds": @[] }];
 }
 
-- (void)handleGetLikes:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetLikes:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *uri = [request queryParamForKey:@"uri"];
     if (!uri || uri.length == 0)
@@ -255,7 +255,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetRepostedBy:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetRepostedBy:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *uri = [request queryParamForKey:@"uri"];
     if (!uri || uri.length == 0)

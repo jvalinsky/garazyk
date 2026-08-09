@@ -49,7 +49,7 @@
     __weak typeof(self) weakSelf = self;
     
     for (NSString *method in @[@"POST", @"PUT", @"DELETE"]) {
-        [self.httpServer addRoute:method path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [self.httpServer addRoute:method path:@"/:did" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
             [weakSelf setCorsHeaders:resp forRequest:req];
             [[PLCMetrics sharedMetrics] recordRequest];
             resp.statusCode = 405;
@@ -60,13 +60,13 @@
         }];
     }
     
-    [self.httpServer addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/health" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetHealth:req response:resp];
     }];
 }
 
-- (void)handleGetHealth:(HttpRequest *)req response:(HttpResponse *)resp {
+- (void)handleGetHealth:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp {
     NSMutableDictionary *health = [NSMutableDictionary dictionary];
     health[@"status"] = @"ok";
     health[@"mode"] = @"replica";

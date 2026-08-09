@@ -40,7 +40,7 @@
     #pragma mark - com.atproto.admin.* Account Lookup, Search & Email
 
     // Register com.atproto.admin.searchAccounts
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_searchAccounts handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_searchAccounts handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -108,7 +108,7 @@
     }];
 
     // Register com.atproto.admin.sendEmail
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_sendEmail handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_sendEmail handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -160,7 +160,7 @@
     }];
 
     // Register com.atproto.admin.updateAccountEmail
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountEmail handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountEmail handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -221,7 +221,7 @@
     }];
 
     // Register com.atproto.admin.updateAccountHandle
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountHandle handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountHandle handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -282,7 +282,7 @@
     }];
 
     // Register com.atproto.admin.updateAccountPassword
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountPassword handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountPassword handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases

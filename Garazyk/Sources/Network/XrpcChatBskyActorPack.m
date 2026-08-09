@@ -54,7 +54,7 @@
   }
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_actor_deleteAccount
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -67,7 +67,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_actor_exportAccountData
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -87,7 +87,7 @@
 #pragma mark - Moderation
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_moderation_getActorMetadata
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -114,7 +114,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_moderation_getMessageContext
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -138,7 +138,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_moderation_updateActorAccess
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response

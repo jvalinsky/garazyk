@@ -35,8 +35,8 @@
     [super tearDown];
 }
 
-- (HttpRequest *)requestWithQueryParams:(NSDictionary *)queryParams {
-    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+- (ATProtoHttpRequest *)requestWithQueryParams:(NSDictionary *)queryParams {
+    return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:@"/xrpc/test"
                                    queryString:@""
@@ -48,8 +48,8 @@
 }
 
 - (void)testRequiredQueryParamWritesInvalidRequest {
-    HttpRequest *request = [self requestWithQueryParams:@{}];
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpRequest *request = [self requestWithQueryParams:@{}];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     NSString *value = [GZXrpcRouteSupport requiredQueryParam:@"subject"
                                                      request:request
@@ -63,7 +63,7 @@
 
 - (void)testParseLimitUsesDefaultAndAcceptsBounds {
     NSInteger limit = 0;
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     XCTAssertTrue([GZXrpcRouteSupport parseLimitForRequest:[self requestWithQueryParams:@{}]
                                               defaultLimit:16
@@ -86,7 +86,7 @@
     NSArray<NSString *> *invalidValues = @[@"0", @"101", @"1x", @" 1"];
     for (NSString *value in invalidValues) {
         NSInteger limit = 16;
-        HttpResponse *response = [HttpResponse response];
+        ATProtoHttpResponse *response = [ATProtoHttpResponse response];
         XCTAssertFalse([GZXrpcRouteSupport parseLimitForRequest:[self requestWithQueryParams:@{@"limit": value}]
                                                    defaultLimit:16
                                                             min:1
@@ -107,7 +107,7 @@
     limiter.ipWindowSeconds = 60;
     [limiter reconfigureDatabasePath:@":memory:"];
 
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     BOOL allowed = [GZXrpcRouteSupport checkIPRateLimitForRequest:[self requestWithQueryParams:@{}]
                                                          response:response];
 

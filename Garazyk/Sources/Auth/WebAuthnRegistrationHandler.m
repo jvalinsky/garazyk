@@ -42,20 +42,20 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
 }
 
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {
-    [httpServer addRoute:@"POST" path:@"/auth/webauthn/register/begin" handler:^(HttpRequest *req, HttpResponse *res) {
+    [httpServer addRoute:@"POST" path:@"/auth/webauthn/register/begin" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         [self handleRegisterBegin:req response:res];
     }];
-    [httpServer addRoute:@"POST" path:@"/auth/webauthn/register/complete" handler:^(HttpRequest *req, HttpResponse *res) {
+    [httpServer addRoute:@"POST" path:@"/auth/webauthn/register/complete" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         [self handleRegisterComplete:req response:res];
     }];
-    [httpServer addRoute:@"POST" path:@"/auth/webauthn/assert" handler:^(HttpRequest *req, HttpResponse *res) {
+    [httpServer addRoute:@"POST" path:@"/auth/webauthn/assert" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         [self handleAssert:req response:res];
     }];
 }
 
 #pragma mark - Register Begin
 
-- (void)handleRegisterBegin:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRegisterBegin:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSDictionary *body = [self parseJSONBody:request.body];
     if (!body) {
         [self respondWithError:response code:400 message:@"Invalid request body"];
@@ -105,7 +105,7 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
 
 #pragma mark - Register Complete
 
-- (void)handleRegisterComplete:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRegisterComplete:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSDictionary *body = [self parseJSONBody:request.body];
     if (!body) {
         [self respondWithError:response code:400 message:@"Invalid request body"];
@@ -159,7 +159,7 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
 
 #pragma mark - Assert
 
-- (void)handleAssert:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleAssert:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSDictionary *body = [self parseJSONBody:request.body];
     if (!body) {
         [self respondWithError:response code:400 message:@"Invalid request body"];
@@ -262,14 +262,14 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
     return b64;
 }
 
-- (void)respondWithJSON:(HttpResponse *)response code:(NSInteger)code body:(NSDictionary *)body {
+- (void)respondWithJSON:(ATProtoHttpResponse *)response code:(NSInteger)code body:(NSDictionary *)body {
     response.statusCode = code;
     [response setHeader:@"application/json" forKey:@"Content-Type"];
     NSData *json = [NSJSONSerialization dataWithJSONObject:body options:0 error:nil];
     response.body = json;
 }
 
-- (void)respondWithError:(HttpResponse *)response code:(NSInteger)code message:(NSString *)message {
+- (void)respondWithError:(ATProtoHttpResponse *)response code:(NSInteger)code message:(NSString *)message {
     response.statusCode = code;
     [response setHeader:@"application/json" forKey:@"Content-Type"];
     NSDictionary *body = @{@"error": message};

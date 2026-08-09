@@ -8,7 +8,7 @@
 
 @implementation AppViewXRpcRoutePack (Actor)
 
-- (void)handleGetProfile:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetProfile:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actor = [request queryParamForKey:@"actor"];
     if (!actor || actor.length == 0)
@@ -38,7 +38,7 @@
     [response setJsonBody:profile];
 }
 
-- (void)handleGetProfiles:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetProfiles:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorsParam = [request queryParamForKey:@"actors"];
     if (!actorsParam || actorsParam.length == 0)
@@ -69,7 +69,7 @@
     [response setJsonBody:@{ @"profiles": profiles ?: @[] }];
 }
 
-- (void)handleSearchActors:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleSearchActors:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *term = [request queryParamForKey:@"q"] ?: [request queryParamForKey:@"term"] ?: @"";
     NSInteger limit = parseLimitParam(request, 25, 100);
@@ -92,7 +92,7 @@
     [response setJsonBody:result ?: @{ @"actors": @[] }];
 }
 
-- (void)handleSearchActorsTypeahead:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleSearchActorsTypeahead:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *term = [request queryParamForKey:@"q"] ?: [request queryParamForKey:@"term"] ?: @"";
     NSInteger limit = parseLimitParam(request, 20, 100);
@@ -114,7 +114,7 @@
     [response setJsonBody:@{ @"actors": actors ?: @[] }];
 }
 
-- (void)handleGetPreferences:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetPreferences:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -136,7 +136,7 @@
     [response setJsonBody:prefs ?: @{ @"preferences": @[] }];
 }
 
-- (void)handlePutPreferences:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handlePutPreferences:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -192,7 +192,7 @@
     [response setJsonBody:@{}];
 }
 
-- (void)handleGetSuggestions:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetSuggestions:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     response.statusCode = 200;
     [response setJsonBody:@{ @"actors": @[] }];

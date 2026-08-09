@@ -23,8 +23,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class AppViewDatabase;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 extern NSErrorDomain const AppViewWriteProxyErrorDomain;
 
@@ -69,8 +69,8 @@ typedef NS_ENUM(NSInteger, AppViewWriteProxyErrorCode) {
  @param nsid      The NSID of the procedure being called.
  @param callerDID The authenticated caller's DID.
  */
-- (void)proxyWriteRequest:(HttpRequest *)request
-                  response:(HttpResponse *)response
+- (void)proxyWriteRequest:(ATProtoHttpRequest *)request
+                  response:(ATProtoHttpResponse *)response
                      nsid:(NSString *)nsid
                  callerDID:(NSString *)callerDID;
 

@@ -67,23 +67,23 @@
 @end
 
 @interface PLCServer (TestAccess)
-- (void)handleGetDID:(HttpRequest *)req response:(HttpResponse *)resp;
-- (void)handlePostDID:(HttpRequest *)req response:(HttpResponse *)resp;
-- (void)handleGetData:(HttpRequest *)req response:(HttpResponse *)resp;
-- (void)handleGetLog:(HttpRequest *)req response:(HttpResponse *)resp includeNullified:(BOOL)includeNullified includeMetadata:(BOOL)includeMetadata;
-- (void)handleExport:(HttpRequest *)req response:(HttpResponse *)resp;
-- (void)handleExportStream:(HttpRequest *)req connection:(id<ATProtoNetworkConnection>)connection;
+- (void)handleGetDID:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
+- (void)handlePostDID:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
+- (void)handleGetData:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
+- (void)handleGetLog:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp includeNullified:(BOOL)includeNullified includeMetadata:(BOOL)includeMetadata;
+- (void)handleExport:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
+- (void)handleExportStream:(ATProtoHttpRequest *)req connection:(id<ATProtoNetworkConnection>)connection;
 @end
 
 @implementation PLCServerTests
 
-- (HttpRequest *)requestWithMethod:(HttpMethod)method
+- (ATProtoHttpRequest *)requestWithMethod:(HttpMethod)method
                       methodString:(NSString *)methodString
                               path:(NSString *)path
                         pathParams:(NSDictionary<NSString *, NSString *> *)pathParams
                            headers:(NSDictionary<NSString *, NSString *> *)headers
                               body:(NSData *)body {
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:method
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:method
                                               methodString:methodString
                                                     path:path
                                              queryString:@""
@@ -230,13 +230,13 @@
     op.prev = nil;
     [self.store appendOperation:op nullifyCIDs:@[] error:nil];
 
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:[NSString stringWithFormat:@"/%@", did]
                                     pathParams:@{@"did": did}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handleGetDID:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 200);
@@ -264,13 +264,13 @@
     NSString *did = [PLCOperation calculateDIDForSignedOperation:payload];
 
     NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    HttpRequest *req = [self requestWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodPOST
                                   methodString:@"POST"
                                           path:[NSString stringWithFormat:@"/%@", did]
                                     pathParams:@{@"did": did}
                                        headers:@{@"content-type": @"application/json"}
                                           body:body];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handlePostDID:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 200);
@@ -285,7 +285,7 @@
     PLCOperation *op = [self insertTestOperationForDID:nil];
     XCTAssertNotNil(op.sequence);
 
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                               methodString:@"GET"
                                                       path:@"/export"
                                                queryString:@"after=0"
@@ -294,7 +294,7 @@
                                                    headers:@{}
                                                       body:[NSData data]
                                              remoteAddress:@"127.0.0.1"];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handleExport:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 200);
@@ -326,13 +326,13 @@
     NSString *did = [PLCOperation calculateDIDForSignedOperation:payload];
 
     NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-    HttpRequest *req = [self requestWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodPOST
                                   methodString:@"POST"
                                           path:[NSString stringWithFormat:@"/%@", wrongDid]
                                     pathParams:@{@"did": wrongDid}
                                        headers:@{@"content-type": @"application/json"}
                                           body:body];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handlePostDID:req response:resp];
     XCTAssertEqual(resp.statusCode, 400);
     XCTAssertNotEqualObjects(did, wrongDid);
@@ -423,13 +423,13 @@
     PLCOperation *op = [self insertTestOperationForDID:@"any"];
     NSString *did = op.did;
 
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:[NSString stringWithFormat:@"/%@/data", did]
                                     pathParams:@{@"did": did}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handleGetData:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 200);
@@ -452,13 +452,13 @@
 }
 
 - (void)testGetDataReturns404ForUnknownDID {
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:@"/did:plc:nonexistent/data"
                                     pathParams:@{@"did": @"did:plc:nonexistent"}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handleGetData:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 404);
@@ -470,13 +470,13 @@
     PLCOperation *op = [self insertTestOperationForDID:@"any"];
     NSString *did = op.did;
 
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:[NSString stringWithFormat:@"/%@/log", did]
                                     pathParams:@{@"did": did}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handleGetLog:req response:resp includeNullified:NO includeMetadata:NO];
 
     XCTAssertEqual(resp.statusCode, 200);
@@ -501,13 +501,13 @@
     // PLCMockStore returns empty array for unknown DIDs (not nil),
     // so the server returns 200 with [] rather than 404.
     // This matches upstream plc.directory behavior for unknown DIDs.
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:@"/did:plc:nonexistent/log"
                                     pathParams:@{@"did": @"did:plc:nonexistent"}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handleGetLog:req response:resp includeNullified:NO includeMetadata:NO];
 
     // Upstream returns 200 with [] for unknown DIDs
@@ -522,13 +522,13 @@
 - (void)testExportReturnsNDJSONWithEnvelope {
     [self insertTestOperationForDID:@"any"];
 
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:@"/export"
                                     pathParams:@{}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handleExport:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 200);
@@ -573,7 +573,7 @@
 #pragma mark - export stream (WebSocket) cursor validation
 
 - (void)testHandleExportStreamRejectsInvalidCursorWithFutureCursorClose {
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                               methodString:@"GET"
                                                       path:@"/export"
                                                queryString:@"cursor=notanumber"
@@ -626,13 +626,13 @@
 #pragma mark - /_health endpoint
 
 - (void)testGetHealthReturnsOk {
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:@"/_health"
                                     pathParams:@{}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
 
     // The _health handler is registered on the httpServer, not directly callable.
     // Test via the PLCServer's internal handler approach.
@@ -651,13 +651,13 @@
     PLCOperation *op = [self insertTestOperationForDID:@"any"];
     NSString *did = op.did;
 
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:[NSString stringWithFormat:@"/%@", did]
                                     pathParams:@{@"did": did}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.server handleGetDID:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 200);
