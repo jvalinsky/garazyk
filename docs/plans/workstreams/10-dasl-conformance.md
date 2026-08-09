@@ -1,7 +1,7 @@
 ---
 title: DASL Conformance
 status: active
-last_verified: 2026-08-04
+last_verified: 2026-08-08
 ---
 
 # DASL Conformance
@@ -132,6 +132,24 @@ drops files fails loudly). Registered in `Garazyk/Tests/test_main.m`.
    follow-up workstream item, not attempted here — this entry proves the suite now runs to
    completion and records a precise, complete accounting of what it found, including the
    high-leverage root-cause finding above.
+
+### GNUstep auth-fixture evidence (2026-08-08)
+
+The focused GNUstep proof is now complete: a fresh builder image from
+`docker/Dockerfile.gnustep` was built as `garazyk-gnustep-proof:2026-08-08`,
+`AllTests` was configured with `BUILD_TESTS=ON` and built with
+`cmake --build ... --target AllTests --parallel 4`, and
+`./build-tests/tests/AllTests --filter PDSAdminAuthTests --gated=run` passed
+15/15 with 0 failures. This includes the environment-snapshot regression and
+confirms that the `getenv()` correction reaches password authentication, JWT
+minting, and header-policy checks on GNUstep.
+
+The affected shared-fixture rerun remains open: broad and narrowed selections
+were interrupted by repeated OrbStack Docker-daemon resets before their final
+summaries; a final 2-suite bounded retry entered an uninterruptible database
+fixture wait without a summary. See workstream 08's dated evidence for the
+exact commands, logs, and failure classifications. This does not change the
+three recorded CI-policy options; no CI policy or product code was changed.
 
 ## Phases 5–11 — the remaining specs
 
