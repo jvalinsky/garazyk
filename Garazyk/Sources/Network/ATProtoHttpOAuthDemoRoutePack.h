@@ -12,7 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpServer;
+@class ATProtoHttpServer;
 @class PDSController;
 
 @interface ATProtoHttpOAuthDemoRoutePack : NSObject
@@ -20,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the registerRoutesWithServer operation.
  */
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                    dataDirectory:(nullable NSString *)dataDirectory
                       controller:(nullable PDSController *)controller;
 

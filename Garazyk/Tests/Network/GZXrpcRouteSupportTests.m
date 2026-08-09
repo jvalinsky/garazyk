@@ -19,7 +19,7 @@
 
 - (void)setUp {
     [super setUp];
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *limiter = [ATProtoRateLimiter sharedLimiter];
     self.oldGlobalDisabled = RateLimiterIsDisabledGlobally();
     self.oldEnabled = limiter.isEnabled;
     self.oldIPLimit = limiter.ipLimit;
@@ -27,7 +27,7 @@
 }
 
 - (void)tearDown {
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *limiter = [ATProtoRateLimiter sharedLimiter];
     limiter.ipLimit = self.oldIPLimit;
     limiter.ipWindowSeconds = self.oldIPWindowSeconds;
     limiter.enabled = self.oldEnabled;
@@ -100,7 +100,7 @@
 }
 
 - (void)testRateLimitResponseHeadersAndBody {
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *limiter = [ATProtoRateLimiter sharedLimiter];
     RateLimiterSetDisabledGlobally(NO);
     limiter.enabled = YES;
     limiter.ipLimit = 0;

@@ -225,7 +225,7 @@ static ATProtoHttpRequest *BeskidRequest(NSString *path, NSDictionary *queryPara
     ATProtoHttpRequest *request = BeskidRequest(@"/xrpc/com.bad-example.repo.getUriRecord", @{});
     ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
-    [self.routes registerRoutesWithServer:[HttpServer serverWithPort:0]]; // Route registration smoke test
+    [self.routes registerRoutesWithServer:[ATProtoHttpServer serverWithPort:0]]; // Route registration smoke test
     
     // Call record by URI directly to verify validation bounds
 #pragma clang diagnostic push

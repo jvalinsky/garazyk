@@ -8,7 +8,7 @@
  @discussion Iterates all loaded schemas in the ATProtoLexiconRegistry
  and registers dynamic XRPC endpoints for query and procedure definitions.
  Domain-specific routes (app.bsky.*) registered by AppViewXRpcRoutePack
- take priority via the HttpRouteTrie's exact-match-first behavior.
+ take priority via the ATProtoHttpRouteTrie's exact-match-first behavior.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class AppViewDatabase;
 @class AppViewCustomQueryRegistry;
 @class AppViewGenericQueryHandler;
-@class HttpServer;
+@class ATProtoHttpServer;
 
 extern NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain;
 
@@ -45,7 +45,7 @@ extern NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain;
  */
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
                          database:(AppViewDatabase *)database
-                      httpServer:(HttpServer *)httpServer
+                      httpServer:(ATProtoHttpServer *)httpServer
                  customHandlers:(AppViewCustomQueryRegistry *)customHandlers;
 
 /*!

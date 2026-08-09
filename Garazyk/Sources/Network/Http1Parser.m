@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file Http1Parser.m
+ @file ATProtoHttp1Parser.m
 
  @abstract Implements HTTP/1.x parser state transitions and token extraction logic.
 
@@ -16,7 +16,7 @@
 #import <CFNetwork/CFNetwork.h>
 #endif
 
-@implementation Http1ParserError
+@implementation ATProtoHttp1ParserError
 
 - (instancetype)initWithStatusCode:(NSUInteger)statusCode
                          errorCode:(NSString *)errorCode
@@ -37,7 +37,7 @@
 // macOS implementation using CFHTTPMessage (Apple native API)
 // ============================================================================
 
-@interface Http1Parser ()
+@interface ATProtoHttp1Parser ()
 
 @property (nonatomic, assign, readwrite) Http1ParserState state;
 @property (nonatomic, strong) NSMutableData *buffer;
@@ -46,14 +46,14 @@
 @property (nonatomic, assign) NSUInteger expectedBodyLength;
 @property (nonatomic, assign) NSUInteger headerEndOffset;
 @property (nonatomic, assign) BOOL isChunkedEncoding;
-@property (nonatomic, strong, nullable) HttpChunkedBodyParser *chunkedBodyParser;
+@property (nonatomic, strong, nullable) ATProtoHttpChunkedBodyParser *chunkedBodyParser;
 @property (nonatomic, strong, nullable) ATProtoHttpRequest *parsedRequest;
-@property (nonatomic, strong, nullable) Http1ParserError *currentError;
+@property (nonatomic, strong, nullable) ATProtoHttp1ParserError *currentError;
 @property (nonatomic, assign) NSUInteger consumedOffset;
 
 @end
 
-@implementation Http1Parser
+@implementation ATProtoHttp1Parser
 
 - (instancetype)init {
     self = [super init];
@@ -189,7 +189,7 @@
 
 - (void)setErrorWithStatusCode:(NSUInteger)statusCode errorCode:(NSString *)errorCode message:(NSString *)message {
     self.state = Http1ParserStateError;
-    self.currentError = [[Http1ParserError alloc] initWithStatusCode:statusCode errorCode:errorCode message:message];
+    self.currentError = [[ATProtoHttp1ParserError alloc] initWithStatusCode:statusCode errorCode:errorCode message:message];
 }
 
 - (BOOL)feedData:(NSData *)data {
@@ -251,7 +251,7 @@
         self.isChunkedEncoding = [transferEncoding containsString:@"chunked"];
 
         if (self.isChunkedEncoding) {
-            self.chunkedBodyParser = [[HttpChunkedBodyParser alloc] initWithMaxSize:self.maxBodyBytes];
+            self.chunkedBodyParser = [[ATProtoHttpChunkedBodyParser alloc] initWithMaxSize:self.maxBodyBytes];
             self.expectedBodyLength = 0;
             self.state = Http1ParserStateReadingChunkedBody;
         } else {
@@ -350,7 +350,7 @@
     return self.parsedRequest;
 }
 
-- (nullable Http1ParserError *)parseError {
+- (nullable ATProtoHttp1ParserError *)parseError {
     return self.currentError;
 }
 
@@ -368,7 +368,7 @@
 // GNUstep/Linux implementation using deterministic manual parsing
 // ============================================================================
 
-@interface Http1Parser ()
+@interface ATProtoHttp1Parser ()
 
 @property (nonatomic, assign, readwrite) Http1ParserState state;
 @property (nonatomic, strong) NSMutableData *buffer;
@@ -376,9 +376,9 @@
 @property (nonatomic, assign) NSUInteger expectedBodyLength;
 @property (nonatomic, assign) NSUInteger headerEndOffset;
 @property (nonatomic, assign) BOOL isChunkedEncoding;
-@property (nonatomic, strong, nullable) HttpChunkedBodyParser *chunkedBodyParser;
+@property (nonatomic, strong, nullable) ATProtoHttpChunkedBodyParser *chunkedBodyParser;
 @property (nonatomic, strong, nullable) ATProtoHttpRequest *parsedRequest;
-@property (nonatomic, strong, nullable) Http1ParserError *currentError;
+@property (nonatomic, strong, nullable) ATProtoHttp1ParserError *currentError;
 @property (nonatomic, assign) NSUInteger consumedOffset;
 
 // Parsed request line components
@@ -389,7 +389,7 @@
 
 @end
 
-@implementation Http1Parser
+@implementation ATProtoHttp1Parser
 
 - (instancetype)init {
     self = [super init];
@@ -601,7 +601,7 @@
 
 - (void)setErrorWithStatusCode:(NSUInteger)statusCode errorCode:(NSString *)errorCode message:(NSString *)message {
     self.state = Http1ParserStateError;
-    self.currentError = [[Http1ParserError alloc] initWithStatusCode:statusCode errorCode:errorCode message:message];
+    self.currentError = [[ATProtoHttp1ParserError alloc] initWithStatusCode:statusCode errorCode:errorCode message:message];
 }
 
 - (BOOL)feedData:(NSData *)data {
@@ -660,7 +660,7 @@
         self.isChunkedEncoding = [transferEncoding containsString:@"chunked"];
 
         if (self.isChunkedEncoding) {
-            self.chunkedBodyParser = [[HttpChunkedBodyParser alloc] initWithMaxSize:self.maxBodyBytes];
+            self.chunkedBodyParser = [[ATProtoHttpChunkedBodyParser alloc] initWithMaxSize:self.maxBodyBytes];
             self.expectedBodyLength = 0;
             self.state = Http1ParserStateReadingChunkedBody;
         } else {
@@ -773,7 +773,7 @@
     return self.parsedRequest;
 }
 
-- (nullable Http1ParserError *)parseError {
+- (nullable ATProtoHttp1ParserError *)parseError {
     return self.currentError;
 }
 

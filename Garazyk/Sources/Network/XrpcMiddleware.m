@@ -194,7 +194,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 @property (nonatomic, assign) NSInteger limit;
 @property (nonatomic, assign) NSTimeInterval windowSeconds;
 @property (nonatomic, assign) BOOL perUser; // NO = per IP
-@property (nonatomic, strong) RateLimiter *limiter;
+@property (nonatomic, strong) ATProtoRateLimiter *limiter;
 @end
 
 @implementation RateLimitMiddleware
@@ -208,7 +208,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     middleware.limit = limit;
     middleware.windowSeconds = windowSeconds;
     middleware.perUser = YES;
-    middleware.limiter = [RateLimiter sharedLimiter];
+    middleware.limiter = [ATProtoRateLimiter sharedLimiter];
     return middleware;
 }
 
@@ -217,7 +217,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     middleware.limit = limit;
     middleware.windowSeconds = windowSeconds;
     middleware.perUser = NO;
-    middleware.limiter = [RateLimiter sharedLimiter];
+    middleware.limiter = [ATProtoRateLimiter sharedLimiter];
     return middleware;
 }
 
@@ -241,7 +241,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
         key = [NSString stringWithFormat:@"ratelimit:ip:%@:%.0f", identifier, self.windowSeconds];
     }
 
-    RateLimitResult *result = [self.limiter checkRateLimitForKey:key
+    ATProtoRateLimitResult *result = [self.limiter checkRateLimitForKey:key
                                                            limit:self.limit
                                                     windowSeconds:self.windowSeconds];
 

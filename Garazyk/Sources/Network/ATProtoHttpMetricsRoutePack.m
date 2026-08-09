@@ -18,7 +18,7 @@
 
 @implementation ATProtoHttpMetricsRoutePack
 
-+ (void)registerRoutesWithServer:(HttpServer *)server {
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server {
   [server addRoute:@"GET"
               path:@"/metrics"
            handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {

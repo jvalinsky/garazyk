@@ -42,7 +42,7 @@
 static const char *executable_name = "zuk";
 
 @interface ZukRuntimeComposite : NSObject <GZServiceRuntimeProtocol>
-@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong) ATProtoHttpServer *server;
 @property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
 @property (nonatomic, strong) NSArray<NSString *> *upstreamURLs;
 @property (nonatomic, assign) BOOL noUpstream;
@@ -371,7 +371,7 @@ int main(int argc, const char * argv[]) {
         [relayAPIHandler setUpstreamManager:upstreamManager];
 
         // Create HTTP server
-        HttpServer *server = [HttpServer serverWithPort:port];
+        ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:port];
 
         // Root ASCII service banner
         [server addRoute:@"GET"

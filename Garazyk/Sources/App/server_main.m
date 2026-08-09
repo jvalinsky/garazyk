@@ -37,7 +37,7 @@ int main(int argc, const char * argv[]) {
         PDSController *controller = [[PDSController alloc] initWithDirectory:dataDirectory
                                                            serviceMaxSize:100
                                                          userDatabaseSize:30000];
-        HttpServer *server = [HttpServer serverWithPort:2583];
+        ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:2583];
         XrpcDispatcher *xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
 
         [XrpcMethodRegistry registerMethodsWithDispatcher:xrpcDispatcher controller:controller];

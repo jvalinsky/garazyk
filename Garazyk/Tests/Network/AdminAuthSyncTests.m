@@ -613,7 +613,7 @@
   XCTAssertNotNil(created);
 
   NSError *startError = nil;
-  HttpServer *server =
+  ATProtoHttpServer *server =
       [PDSHttpTestUtilities startSocketServerWithDispatcher:self.dispatcher
                                                       error:&startError];
   if (!server) {
@@ -712,7 +712,7 @@
   XCTAssertNotNil(created);
 
   NSError *startError = nil;
-  HttpServer *server =
+  ATProtoHttpServer *server =
       [PDSHttpTestUtilities startSocketServerWithDispatcher:self.dispatcher
                                                       error:&startError];
   if (!server) {

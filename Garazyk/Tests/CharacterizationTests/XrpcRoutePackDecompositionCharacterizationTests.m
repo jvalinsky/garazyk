@@ -15,7 +15,7 @@
 #import "Network/Generated/GZXrpcNSID.h"
 
 // Private category for route lookup (same pattern as PDSHttpPDSAdminRoutePackTests)
-@interface HttpServer (RoutePackDecompositionTesting)
+@interface ATProtoHttpServer (RoutePackDecompositionTesting)
 - (nullable RequestHandler)handlerForRoute:(NSString *)path
                                     method:(NSString *)method
                                 parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters;
@@ -181,7 +181,7 @@
 #pragma mark - AppViewXRpcRoutePack
 
 - (void)testAppViewPackRegistersAllExpectedRoutes {
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     // NOTE: feedService, actorService, and notificationService are not nullable in the
     // AppViewXRpcRoutePack init signature, but the init only stores ivars without
     // validating them. Passing nil here is intentional — it tests unconditional route

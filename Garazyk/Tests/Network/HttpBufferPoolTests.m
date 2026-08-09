@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @implementation HttpBufferPoolTests
 
 - (void)testAcquireReleaseBuffer {
-    HttpBufferPool *pool = [[HttpBufferPool alloc] init];
+    ATProtoHttpBufferPool *pool = [[ATProtoHttpBufferPool alloc] init];
 
     NSMutableData *buffer1 = [pool acquireBufferOfSize:100];
     XCTAssertNotNil(buffer1);
@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testBufferSizeClasses {
-    HttpBufferPool *pool = [[HttpBufferPool alloc] initWithSizeClasses:@[@(256), @(1024)]];
+    ATProtoHttpBufferPool *pool = [[ATProtoHttpBufferPool alloc] initWithSizeClasses:@[@(256), @(1024)]];
 
     NSMutableData *smallBuffer = [pool acquireBufferOfSize:100];
     XCTAssertNotNil(smallBuffer);
@@ -48,7 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testBufferReuse {
-    HttpBufferPool *pool = [[HttpBufferPool alloc] init];
+    ATProtoHttpBufferPool *pool = [[ATProtoHttpBufferPool alloc] init];
 
     NSMutableData *buffer1 = [pool acquireBufferOfSize:500];
     [buffer1 appendBytes:"hello" length:5];
@@ -62,7 +62,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testAcquireReleaseRequest {
-    HttpBufferPool *pool = [[HttpBufferPool alloc] init];
+    ATProtoHttpBufferPool *pool = [[ATProtoHttpBufferPool alloc] init];
 
     ATProtoHttpRequest *request1 = [pool acquireRequest];
     XCTAssertNil(request1);
@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testAcquireReleaseResponse {
-    HttpBufferPool *pool = [[HttpBufferPool alloc] init];
+    ATProtoHttpBufferPool *pool = [[ATProtoHttpBufferPool alloc] init];
 
     ATProtoHttpResponse *response1 = [pool acquireResponse];
     XCTAssertNil(response1);
@@ -103,7 +103,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testMaxPoolSize {
-    HttpBufferPool *pool = [[HttpBufferPool alloc] init];
+    ATProtoHttpBufferPool *pool = [[ATProtoHttpBufferPool alloc] init];
     pool.maxPoolSize = 3;
 
     NSMutableArray<NSMutableData *> *buffers;
@@ -117,7 +117,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testDrainPoolsEmptiesPool {
-    HttpBufferPool *pool = [[HttpBufferPool alloc] init];
+    ATProtoHttpBufferPool *pool = [[ATProtoHttpBufferPool alloc] init];
 
     for (int i = 0; i < 10; i++) {
         NSMutableData *buffer = [pool acquireBufferOfSize:100];
@@ -132,7 +132,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testZeroSizeBufferReturnsEmptyData {
-    HttpBufferPool *pool = [[HttpBufferPool alloc] init];
+    ATProtoHttpBufferPool *pool = [[ATProtoHttpBufferPool alloc] init];
 
     NSMutableData *buffer = [pool acquireBufferOfSize:0];
     XCTAssertNotNil(buffer);
@@ -142,7 +142,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testLargeBufferExceedingSizeClasses {
-    HttpBufferPool *pool = [[HttpBufferPool alloc] initWithSizeClasses:@[@(256), @(1024)]];
+    ATProtoHttpBufferPool *pool = [[ATProtoHttpBufferPool alloc] initWithSizeClasses:@[@(256), @(1024)]];
 
     NSMutableData *largeBuffer = [pool acquireBufferOfSize:10000];
     XCTAssertNotNil(largeBuffer);
@@ -152,8 +152,8 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testSharedPool {
-    HttpBufferPool *shared1 = [HttpBufferPool sharedPool];
-    HttpBufferPool *shared2 = [HttpBufferPool sharedPool];
+    ATProtoHttpBufferPool *shared1 = [ATProtoHttpBufferPool sharedPool];
+    ATProtoHttpBufferPool *shared2 = [ATProtoHttpBufferPool sharedPool];
 
     XCTAssertEqualObjects(shared1, shared2);
 }

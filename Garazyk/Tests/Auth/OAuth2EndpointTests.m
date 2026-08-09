@@ -12,7 +12,7 @@
 #import "Database/PDSDatabase.h"
 
 @interface OAuth2EndpointTests : XCTestCase
-@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong) ATProtoHttpServer *server;
 @property (nonatomic, strong) OAuth2Handler *oauthHandler;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, copy) NSString *baseURL;
@@ -30,7 +30,7 @@
     NSError *error = nil;
     [self.database openWithError:&error];
 
-    self.server = [HttpServer serverWithPort:0];
+    self.server = [ATProtoHttpServer serverWithPort:0];
     self.oauthHandler = [[OAuth2Handler alloc] initWithDatabase:self.database];
     [self.oauthHandler registerRoutesWithServer:self.server];
 

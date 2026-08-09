@@ -796,7 +796,7 @@ int main(int argc, char *argv[]) {
 
     // Disable rate limiting for tests
     RateLimiterSetDisabledGlobally(YES);
-    [RateLimiter sharedLimiter].enabled = NO;
+    [ATProtoRateLimiter sharedLimiter].enabled = NO;
 
     // Disable biometric protection for tests
     [ATProtoServiceConfiguration sharedConfiguration].useBiometricProtection = NO;

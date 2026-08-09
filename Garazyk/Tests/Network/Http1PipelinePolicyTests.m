@@ -4,14 +4,14 @@
 #import "Network/Http1PipelinePolicy.h"
 
 @interface Http1PipelinePolicyTests : XCTestCase
-@property (nonatomic, strong) Http1PipelinePolicy *policy;
+@property (nonatomic, strong) ATProtoHttp1PipelinePolicy *policy;
 @end
 
 @implementation Http1PipelinePolicyTests
 
 - (void)setUp {
     [super setUp];
-    self.policy = [[Http1PipelinePolicy alloc] init];
+    self.policy = [[ATProtoHttp1PipelinePolicy alloc] init];
     // Default maxPipelinedRequests = 4
 }
 

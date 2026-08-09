@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpResponseSender.h
+ @file ATProtoHttpResponseSender.h
 
  @abstract Manages HTTP response queueing, streaming, and backpressure.
 
@@ -21,11 +21,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-// Forward declare ATProtoHttpQueuedResponse; full definition is in HttpServer.h
+// Forward declare ATProtoHttpQueuedResponse; full definition is in ATProtoHttpServer.h
 @class ATProtoHttpQueuedResponse;
 
 /*!
- @class HttpResponseSender
+ @class ATProtoHttpResponseSender
 
  @abstract Manages HTTP response queueing and transmission.
 
@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
  backpressure by checking queue size, and coordinates with the I/O layer
  for transmission.
  */
-@interface HttpResponseSender : NSObject
+@interface ATProtoHttpResponseSender : NSObject
 
 /*!
  @property maxQueueSize

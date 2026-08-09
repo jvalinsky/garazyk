@@ -35,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)init NS_UNAVAILABLE;
 
 /** Registers relay routes on the supplied HTTP server. */
-- (void)registerRoutesWithServer:(HttpServer *)server;
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server;
 
 @end
 

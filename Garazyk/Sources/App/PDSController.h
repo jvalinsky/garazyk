@@ -46,7 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSRepositoryService;
 @class PDSRelayService;
 @class PDSAdminController;
-@class RateLimiter;
+@class ATProtoRateLimiter;
 @class ATProtoJWTMinter;
 
 /*!
@@ -112,7 +112,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong, readonly) PDSAdminController *adminController;
 
 /*! The rate limiter for throttling requests. */
-@property(nonatomic, strong, readonly) RateLimiter *rateLimiter;
+@property(nonatomic, strong, readonly) ATProtoRateLimiter *rateLimiter;
 
 /*! ATProtoJWT minting for access tokens. */
 @property(nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;

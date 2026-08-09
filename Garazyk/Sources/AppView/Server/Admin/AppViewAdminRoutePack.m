@@ -45,7 +45,7 @@
 
 #pragma mark - Route Registration
 
-- (void)registerRoutesWithServer:(HttpServer *)server {
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server {
     __weak typeof(self) weakSelf = self;
 
     // GET /admin/backfill/status

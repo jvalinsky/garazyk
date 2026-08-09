@@ -444,31 +444,31 @@
     XCTAssertNotNil(error, @"Should error for HTTP when allowHTTP=NO");
 }
 
-#pragma mark - SSRFValidator Integration
+#pragma mark - ATProtoSSRFValidator Integration
 
 - (void)testSSRFValidatorBlocksPrivateIPs {
     NSError *error = nil;
-    XCTAssertFalse([SSRFValidator validateHostResolvesToPublicIP:@"127.0.0.1" error:&error],
+    XCTAssertFalse([ATProtoSSRFValidator validateHostResolvesToPublicIP:@"127.0.0.1" error:&error],
                    @"127.0.0.1 should be blocked");
-    XCTAssertFalse([SSRFValidator validateHostResolvesToPublicIP:@"10.0.0.1" error:&error],
+    XCTAssertFalse([ATProtoSSRFValidator validateHostResolvesToPublicIP:@"10.0.0.1" error:&error],
                    @"10.x.x.x should be blocked");
-    XCTAssertFalse([SSRFValidator validateHostResolvesToPublicIP:@"192.168.1.1" error:&error],
+    XCTAssertFalse([ATProtoSSRFValidator validateHostResolvesToPublicIP:@"192.168.1.1" error:&error],
                    @"192.168.x.x should be blocked");
-    XCTAssertFalse([SSRFValidator validateHostResolvesToPublicIP:@"172.16.0.1" error:&error],
+    XCTAssertFalse([ATProtoSSRFValidator validateHostResolvesToPublicIP:@"172.16.0.1" error:&error],
                    @"172.16.x.x should be blocked");
 }
 
 - (void)testSSRFValidatorBlocksCloudMetadata {
     NSError *error = nil;
-    XCTAssertFalse([SSRFValidator validateHostResolvesToPublicIP:@"169.254.169.254" error:&error],
+    XCTAssertFalse([ATProtoSSRFValidator validateHostResolvesToPublicIP:@"169.254.169.254" error:&error],
                    @"Cloud metadata endpoint should be blocked");
 }
 
 - (void)testSSRFValidatorBlocksEmptyHost {
     NSError *error = nil;
-    XCTAssertFalse([SSRFValidator validateHostResolvesToPublicIP:@"" error:&error],
+    XCTAssertFalse([ATProtoSSRFValidator validateHostResolvesToPublicIP:@"" error:&error],
                    @"Empty host should be blocked");
-    XCTAssertFalse([SSRFValidator validateHostResolvesToPublicIP:nil error:&error],
+    XCTAssertFalse([ATProtoSSRFValidator validateHostResolvesToPublicIP:nil error:&error],
                    @"nil host should be blocked");
 }
 

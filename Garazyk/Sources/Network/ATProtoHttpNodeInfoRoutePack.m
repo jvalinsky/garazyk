@@ -19,7 +19,7 @@
 
 @implementation ATProtoHttpNodeInfoRoutePack
 
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                           issuer:(nullable NSString *)issuer
                             port:(NSUInteger)port
                    configuration:(nullable ATProtoServiceConfiguration *)configuration

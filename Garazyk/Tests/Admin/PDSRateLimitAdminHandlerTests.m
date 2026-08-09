@@ -7,7 +7,7 @@
 #import "Debug/GZLogger.h"
 #import <sqlite3.h>
 
-// Mock RateLimiter for testing
+// Mock ATProtoRateLimiter for testing
 @interface MockRateLimiter : NSObject
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *limits;
 @end

@@ -215,7 +215,7 @@ static NSString * const kTestJWKD = @"GE8ea5wxqv-uyg35MjN4QwaINAa6wl4uSXJtZbDzNg
 
 - (void)testEndToEndFetchesMetadataAndJWKSThenVerifies {
   setenv("GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS", "1", 1);
-  HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1" port:0];
+  ATProtoHttpServer *server = [ATProtoHttpServer serverWithHost:@"127.0.0.1" port:0];
   NSDictionary *jwks = [self testJWKSWithKid:nil];
   __block NSString *clientID = nil;
   [server addRoute:@"GET" path:@"/client-metadata.json" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -238,7 +238,7 @@ static NSString * const kTestJWKD = @"GE8ea5wxqv-uyg35MjN4QwaINAa6wl4uSXJtZbDzNg
 
 - (void)testEndToEndRejectsMismatchedMetadataClientID {
   setenv("GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS", "1", 1);
-  HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1" port:0];
+  ATProtoHttpServer *server = [ATProtoHttpServer serverWithHost:@"127.0.0.1" port:0];
   NSDictionary *jwks = [self testJWKSWithKid:nil];
   [server addRoute:@"GET" path:@"/client-metadata.json" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     response.statusCode = HttpStatusOK;

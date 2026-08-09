@@ -11,7 +11,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpServer;
+@class ATProtoHttpServer;
 @class PDSApplication;
 @class PDSController;
 @class SubscribeReposHandler;
@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the registerRoutesWithServer operation.
  */
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                       dispatcher:(nullable XrpcDispatcher *)dispatcher
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller

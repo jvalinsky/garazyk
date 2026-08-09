@@ -26,7 +26,7 @@
 @end
 
 @interface ATProtoHttpServerBuilderTests : XCTestCase
-@property (nonatomic, strong) HttpServer *testServer;
+@property (nonatomic, strong) ATProtoHttpServer *testServer;
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSController *testController;
 @end
@@ -386,7 +386,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableNodeInfo = NO;
 
     NSError *error = nil;
-    HttpServer *server = [builder buildWithError:&error];
+    ATProtoHttpServer *server = [builder buildWithError:&error];
 
     XCTAssertNotNil(server);
     XCTAssertNil(error);
@@ -404,7 +404,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableNodeInfo = NO;
 
     NSError *error = nil;
-    HttpServer *server = [builder buildWithError:&error];
+    ATProtoHttpServer *server = [builder buildWithError:&error];
     
     XCTAssertNotNil(server);
     XCTAssertEqual(server.port, 9999);
@@ -433,7 +433,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
 
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
 
     NSError *error = nil;
     BOOL result = [builder configureServer:server error:&error];
@@ -456,7 +456,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableNodeInfo = NO;
 
     NSError *error = nil;
-    HttpServer *server = [builder buildWithError:&error];
+    ATProtoHttpServer *server = [builder buildWithError:&error];
 
     // Should still succeed, but XRPC routes won't be registered
     XCTAssertNotNil(server);
@@ -479,7 +479,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
 
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     NSError *error = nil;
     BOOL result = [builder configureServer:server error:&error];
 
@@ -503,7 +503,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
 
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     NSError *error = nil;
     BOOL result = [builder configureServer:server error:&error];
 
@@ -529,7 +529,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableNodeInfo = NO;
 
     NSError *error = nil;
-    HttpServer *server = [builder buildWithError:&error];
+    ATProtoHttpServer *server = [builder buildWithError:&error];
 
     // Should still succeed, but OAuth routes won't be registered
     XCTAssertNotNil(server);
@@ -613,11 +613,11 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableNodeInfo = NO;
 
     NSError *error1 = nil;
-    HttpServer *server1 = [builder buildWithError:&error1];
+    ATProtoHttpServer *server1 = [builder buildWithError:&error1];
 
     builder.port = 8081;
     NSError *error2 = nil;
-    HttpServer *server2 = [builder buildWithError:&error2];
+    ATProtoHttpServer *server2 = [builder buildWithError:&error2];
     
     XCTAssertNotNil(server1);
     XCTAssertNotNil(server2);
@@ -639,7 +639,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableNodeInfo = NO;
 
     NSError *error = nil;
-    HttpServer *server = [builder buildWithError:&error];
+    ATProtoHttpServer *server = [builder buildWithError:&error];
     
     XCTAssertNotNil(server);
     XCTAssertEqual(server.port, 0);
@@ -656,7 +656,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
 
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     
     NSError *error1 = nil;
     BOOL result1 = [builder configureServer:server error:&error1];
@@ -717,7 +717,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableNodeInfo = NO;
 
     NSError *buildError = nil;
-    HttpServer *server = [builder buildWithError:&buildError];
+    ATProtoHttpServer *server = [builder buildWithError:&buildError];
     
     if (!server) {
         [serviceDatabases closeAll];
@@ -790,7 +790,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableMSTViewer = NO;
 
     NSError *buildError = nil;
-    HttpServer *server = [builder buildWithError:&buildError];
+    ATProtoHttpServer *server = [builder buildWithError:&buildError];
     
     if (!server) {
         PDSCleanupControllerTestDirectory(controller, tempDir);
@@ -856,7 +856,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableNodeInfo = NO;
 
     NSError *buildError = nil;
-    HttpServer *server = [builder buildWithError:&buildError];
+    ATProtoHttpServer *server = [builder buildWithError:&buildError];
     
     if (!server) {
         PDSCleanupControllerTestDirectory(controller, tempDir);
@@ -904,7 +904,7 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     builder.enableNodeInfo = NO;
 
     NSError *buildError = nil;
-    HttpServer *server = [builder buildWithError:&buildError];
+    ATProtoHttpServer *server = [builder buildWithError:&buildError];
     if (!server) {
         PDSCleanupControllerTestDirectory(controller, tempDir);
         XCTFail(@"Failed to build HTTP server: %@", buildError);

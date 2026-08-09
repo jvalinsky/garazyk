@@ -19,7 +19,7 @@
 #import "Auth/Crypto/JWT.h"
 
 @class OAuth2Server;
-@class HttpServer;
+@class ATProtoHttpServer;
 @class PDSDatabase;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
@@ -121,7 +121,7 @@ NS_ASSUME_NONNULL_BEGIN
     - POST /oauth/introspect
  */
 /** Registers OAuth routes on the supplied HTTP server. */
-- (void)registerRoutesWithServer:(HttpServer *)httpServer;
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)httpServer;
 
 /*!
  @method handleTokenRequest:response:

@@ -11,7 +11,7 @@
 
 @interface MockExternalServer : NSObject
 
-@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong) ATProtoHttpServer *server;
 @property (nonatomic, assign) uint16_t port;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *mockResponses;
 
@@ -34,7 +34,7 @@
 }
 
 - (void)start {
-    self.server = [HttpServer serverWithPort:self.port];
+    self.server = [ATProtoHttpServer serverWithPort:self.port];
     __weak typeof(self) weakSelf = self;
 
     [self.server addHandlerForPath:@"/*" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -132,7 +132,7 @@
 
 @interface XrpcIntegrationTests : XCTestCase
 
-@property (nonatomic, strong) HttpServer *testServer;
+@property (nonatomic, strong) ATProtoHttpServer *testServer;
 @property (nonatomic, strong) XrpcTestClient *client;
 @property (nonatomic, strong) MockExternalServer *plcServer;
 @property (nonatomic, strong) MockExternalServer *handleServer;
@@ -146,7 +146,7 @@
 - (void)setUp {
     [super setUp];
 
-    self.testServer = [HttpServer serverWithPort:0];
+    self.testServer = [ATProtoHttpServer serverWithPort:0];
     self.client = [[XrpcTestClient alloc] init];
     self.plcServer = [[MockExternalServer alloc] initWithPort:0];
     self.handleServer = [[MockExternalServer alloc] initWithPort:0];

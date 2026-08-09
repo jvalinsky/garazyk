@@ -5,7 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class HttpChunkedBodyParser
+ @class ATProtoHttpChunkedBodyParser
 
  @abstract Parses HTTP/1.1 chunked transfer encoding per RFC 9112 Section 7.1.
 
@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  Chunk extensions and trailers are ignored.
  */
-@interface HttpChunkedBodyParser : NSObject
+@interface ATProtoHttpChunkedBodyParser : NSObject
 
 /*!
  @method init

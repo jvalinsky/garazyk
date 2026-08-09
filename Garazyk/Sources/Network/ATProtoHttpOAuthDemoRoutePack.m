@@ -19,7 +19,7 @@
 
 @implementation ATProtoHttpOAuthDemoRoutePack
 
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                    dataDirectory:(nullable NSString *)dataDirectory
                       controller:(nullable PDSController *)controller {
   if (dataDirectory.length == 0 && !controller) {

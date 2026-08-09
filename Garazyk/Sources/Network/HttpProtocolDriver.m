@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpProtocolDriver.m
+ @file ATProtoHttpProtocolDriver.m
 
  @abstract Implements protocol-driver flow between parsed HTTP messages and dispatch execution.
 
@@ -13,16 +13,16 @@
 #import "Http1Parser.h"
 #import "HttpRequest.h"
 
-@interface HttpProtocolDriver ()
-@property (nonatomic, strong) HttpProtocolSession *session;
+@interface ATProtoHttpProtocolDriver ()
+@property (nonatomic, strong) ATProtoHttpProtocolSession *session;
 @end
 
-@implementation HttpProtocolDriver
+@implementation ATProtoHttpProtocolDriver
 
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _session = [[HttpProtocolSession alloc] init];
+        _session = [[ATProtoHttpProtocolSession alloc] init];
     }
     return self;
 }
@@ -61,7 +61,7 @@
 }
 
 - (nullable NSError *)currentParseError {
-    Http1ParserError *parserError = [self.session currentParseError];
+    ATProtoHttp1ParserError *parserError = [self.session currentParseError];
     if (!parserError) return nil;
 
     return [NSError errorWithDomain:@"HttpProtocol"

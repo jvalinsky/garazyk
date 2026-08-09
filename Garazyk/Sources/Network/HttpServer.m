@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpServer.m
+ @file ATProtoHttpServer.m
 
  @abstract HTTP server implementation for the PDS.
 
@@ -31,7 +31,7 @@
 #import "Network/HttpConnectionIOCoordinator.h"
 #import <CoreFoundation/CoreFoundation.h>
 
-@class HttpRouteTrie;
+@class ATProtoHttpRouteTrie;
 
 @interface ATProtoHttpQueuedResponse : NSObject
 @property(nonatomic, strong) NSData *headerData;
@@ -52,7 +52,7 @@
 
 @interface ATProtoHttpConnectionState : NSObject
 
-@property(nonatomic, strong) HttpProtocolDriver *driver;
+@property(nonatomic, strong) ATProtoHttpProtocolDriver *driver;
 @property(nonatomic, assign) NSTimeInterval headerStartTime;
 @property(nonatomic, strong) NSMutableArray<ATProtoHttpQueuedResponse *> *outputQueue;
 @property(nonatomic, assign) NSUInteger outputQueueSize;
@@ -60,11 +60,11 @@
 @property(nonatomic, assign) BOOL upgradedToWebSocket;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_queue_t transportQueue;
-@property(nonatomic, strong, nullable) HttpConnectionIOCoordinator *coordinator;
+@property(nonatomic, strong, nullable) ATProtoHttpConnectionIOCoordinator *coordinator;
 
 @end
 
-@interface HttpServer ()
+@interface ATProtoHttpServer ()
 
 @property(nonatomic, readwrite, nullable) NSString *host;
 @property(atomic, readwrite) NSUInteger port;
@@ -72,7 +72,7 @@
 @property(nonatomic, strong) id<ATProtoNetworkListener> listener;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t serverQueue;
 @property(nonatomic, strong)
-    NSMutableDictionary<NSString *, HttpRouteTrie *> *routeTries;
+    NSMutableDictionary<NSString *, ATProtoHttpRouteTrie *> *routeTries;
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, RequestHandler> *pathHandlers;
 @property(nonatomic, copy) void (^requestHandler)(ATProtoHttpRequest *, ATProtoHttpResponse *)
@@ -95,11 +95,11 @@
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_semaphore_t concurrencySemaphore;
 @property(nonatomic, readwrite) NSUInteger maxConcurrentRequests;
-@property(nonatomic, strong) WebSocketUpgradeHandler *webSocketUpgradeHandler;
+@property(nonatomic, strong) ATProtoWebSocketUpgradeHandler *webSocketUpgradeHandler;
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, WebSocketRequestHandler> *webSocketHandlers;
-@property(nonatomic, strong) HttpRequestDispatcher *requestDispatcher;
-@property(nonatomic, strong) HttpResponseSender *responseSender;
+@property(nonatomic, strong) ATProtoHttpRequestDispatcher *requestDispatcher;
+@property(nonatomic, strong) ATProtoHttpResponseSender *responseSender;
 
 - (ATProtoHttpQueuedResponse *)queueItemForResponse:(ATProtoHttpResponse *)response;
 - (void)enqueueResponse:(ATProtoHttpResponse *)response
@@ -140,7 +140,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _driver = [[HttpProtocolDriver alloc] init];
+    _driver = [[ATProtoHttpProtocolDriver alloc] init];
     _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
     _outputQueue = [NSMutableArray array];
     _outputQueueSize = 0;
@@ -161,7 +161,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 @end
 
-@implementation HttpServer
+@implementation ATProtoHttpServer
 
 + (instancetype)serverWithPort:(NSUInteger)port {
   return [[self alloc] initWithHost:nil port:port];
@@ -236,10 +236,10 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
         dispatch_semaphore_create((long)_maxConcurrentRequests);
     _taskGroup = dispatch_group_create();
     _connectionStates = [NSMapTable strongToStrongObjectsMapTable];
-    _webSocketUpgradeHandler = [[WebSocketUpgradeHandler alloc] init];
+    _webSocketUpgradeHandler = [[ATProtoWebSocketUpgradeHandler alloc] init];
     _webSocketHandlers = [NSMutableDictionary dictionary];
     __weak typeof(self) weakSelf = self;
-    _requestDispatcher = [[HttpRequestDispatcher alloc]
+    _requestDispatcher = [[ATProtoHttpRequestDispatcher alloc]
         initWithRouteLookupHandler:^HttpServerRequestHandler _Nullable(
             NSString *path, NSString *method,
             NSDictionary<NSString *, NSString *> *__autoreleasing _Nullable *_Nullable parameters) {
@@ -250,7 +250,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           return [strongSelf handlerForRoute:path method:method parameters:parameters];
         }];
     
-    _responseSender = [[HttpResponseSender alloc] init];
+    _responseSender = [[ATProtoHttpResponseSender alloc] init];
     _listenerReady = NO;
     _startupFinished = NO;
     _running = NO;
@@ -390,14 +390,14 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
         case ATProtoNetworkConnectionStateReady: {
           ATProtoHttpConnectionState *connState = [strongSelf connectionStateForConnection:strongConnection];
           [connState.driver setRemoteAddressForRequests:strongConnection.remoteAddress];
-          HttpConnectionIOCoordinator *coordinator = [[HttpConnectionIOCoordinator alloc]
+          ATProtoHttpConnectionIOCoordinator *coordinator = [[ATProtoHttpConnectionIOCoordinator alloc]
               initWithConnection:strongConnection
                           protocol:connState.driver
                       responseSender:strongSelf.responseSender];
           __weak typeof(strongSelf) weakInnerSelf = strongSelf;
           __weak typeof(strongConnection) weakInnerConn = strongConnection;
           __weak ATProtoHttpConnectionState *weakConnState = connState;
-          __weak HttpConnectionIOCoordinator *weakCoord = coordinator;
+          __weak ATProtoHttpConnectionIOCoordinator *weakCoord = coordinator;
           coordinator.requestReadyHandler = ^(ATProtoHttpRequest *request) {
             __strong typeof(weakInnerSelf) s = weakInnerSelf;
             __strong typeof(weakInnerConn) c = weakInnerConn;
@@ -414,7 +414,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           coordinator.errorHandler = ^(NSError *error) {
             __strong typeof(weakInnerSelf) s = weakInnerSelf;
             __strong typeof(weakInnerConn) c = weakInnerConn;
-            HttpConnectionIOCoordinator *coord = weakCoord;
+            ATProtoHttpConnectionIOCoordinator *coord = weakCoord;
             if (!s || !c) return;
             [coord close];
             dispatch_async(s.connectionQueue, ^{
@@ -487,7 +487,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     [state.outputQueue removeAllObjects];
     state.outputQueueSize = 0;
 
-    HttpConnectionIOCoordinator *priorCoordinator = state.coordinator;
+    ATProtoHttpConnectionIOCoordinator *priorCoordinator = state.coordinator;
     NSData *responseData = [upgradeResponse serialize];
     [connection sendData:responseData
               completion:^(NSError *_Nullable error) {
@@ -1115,9 +1115,9 @@ static BOOL ParseHttpRangeHeader(NSString *rangeHeader, NSUInteger fileSize, NSU
   }
   NSString *normalizedMethod =
       [method.uppercaseString length] ? method.uppercaseString : @"*";
-  HttpRouteTrie *trie = self.routeTries[normalizedMethod];
+  ATProtoHttpRouteTrie *trie = self.routeTries[normalizedMethod];
   if (!trie) {
-    trie = [[HttpRouteTrie alloc] init];
+    trie = [[ATProtoHttpRouteTrie alloc] init];
     self.routeTries[normalizedMethod] = trie;
   }
   [trie insertRoute:normalizedMethod
@@ -1142,7 +1142,7 @@ static BOOL ParseHttpRangeHeader(NSString *rangeHeader, NSUInteger fileSize, NSU
 - (RequestHandler _Nullable)handlerForRoute:(NSString *)path
                                      method:(NSString *)method
                                  parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters {
-  HttpRouteTrie *trie = self.routeTries[method.uppercaseString];
+  ATProtoHttpRouteTrie *trie = self.routeTries[method.uppercaseString];
   RequestHandler handler = nil;
   if (trie) {
     handler = [trie handlerForMethod:method path:path outParameters:parameters];

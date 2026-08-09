@@ -5,14 +5,14 @@
 #import "Network/HttpRequest.h"
 
 @interface HttpProtocolDriverTests : XCTestCase
-@property (nonatomic, strong) HttpProtocolDriver *driver;
+@property (nonatomic, strong) ATProtoHttpProtocolDriver *driver;
 @end
 
 @implementation HttpProtocolDriverTests
 
 - (void)setUp {
     [super setUp];
-    self.driver = [[HttpProtocolDriver alloc] init];
+    self.driver = [[ATProtoHttpProtocolDriver alloc] init];
 }
 
 - (void)tearDown {

@@ -41,7 +41,7 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
     return self;
 }
 
-- (void)registerRoutesWithServer:(HttpServer *)httpServer {
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)httpServer {
     [httpServer addRoute:@"POST" path:@"/auth/webauthn/register/begin" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         [self handleRegisterBegin:req response:res];
     }];

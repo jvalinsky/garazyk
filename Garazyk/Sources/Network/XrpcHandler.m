@@ -191,7 +191,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     [self setCorsHeaders:response forRequest:request];
 
     // Check Rate Limit (per-IP)
-    RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+    ATProtoRateLimitResult *rateLimit = [[ATProtoRateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
     if (!rateLimit.allowed) {
         response.statusCode = HttpStatusTooManyRequests;
         [response setJsonBody:@{
@@ -216,7 +216,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     if (authHeader.length > 0) {
         NSString *did = [self _extractDIDFromAuthHeader:authHeader];
         if (did.length > 0) {
-            RateLimitResult *didRateLimit = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
+            ATProtoRateLimitResult *didRateLimit = [[ATProtoRateLimiter sharedLimiter] checkRateLimitForDid:did];
             if (!didRateLimit.allowed) {
                 response.statusCode = HttpStatusTooManyRequests;
                 [response setJsonBody:@{

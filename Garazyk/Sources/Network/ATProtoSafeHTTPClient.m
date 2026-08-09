@@ -224,7 +224,7 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
 
     if (!allowPrivate) {
         NSError *ssrfError = nil;
-        if (isLoopback || ![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+        if (isLoopback || ![ATProtoSSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
             if (error) {
                 *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
                                  description:@"Outbound request target failed SSRF validation"
@@ -264,7 +264,7 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
     NSArray<NSString *> *pinnedAddresses = nil;
     if (!PDSIsLoopbackHost(url.host) && !effective.allowPrivateHosts) {
         NSError *resolutionError = nil;
-        if (![SSRFValidator resolvePinnedAddressesForHost:url.host
+        if (![ATProtoSSRFValidator resolvePinnedAddressesForHost:url.host
                                                   timeout:effective.timeout
                                                 resolver:nil
                                                 addresses:&pinnedAddresses
@@ -780,7 +780,7 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
 
     if (!allowPrivate) {
         NSError *ssrfError = nil;
-        if (isLoopback || ![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+        if (isLoopback || ![ATProtoSSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
             if (error) {
                 *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
                                  description:@"Outbound request target failed SSRF validation"
@@ -816,7 +816,7 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
     if (!PDSIsLoopbackHost(request.URL.host) && !effective.allowPrivateHosts) {
         NSArray<NSString *> *pinnedAddresses = nil;
         NSError *resolutionError = nil;
-        if (![SSRFValidator resolvePinnedAddressesForHost:request.URL.host
+        if (![ATProtoSSRFValidator resolvePinnedAddressesForHost:request.URL.host
                                                   timeout:effective.timeout
                                                 resolver:nil
                                                 addresses:&pinnedAddresses

@@ -67,7 +67,7 @@ FOUNDATION_EXPORT void PLCServerSetWebSocketTransportFactory(PLCWebSocketTranspo
 @interface PLCServer : NSObject <GZServiceRuntimeProtocol>
 
 /*! The underlying HTTP server instance. */
-@property (nonatomic, readonly) HttpServer *httpServer;
+@property (nonatomic, readonly) ATProtoHttpServer *httpServer;
 
 /*! The PLC store for operations. */
 @property (nonatomic, readonly) id<PLCStore> store;

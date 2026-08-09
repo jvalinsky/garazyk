@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpConnectionIOCoordinator.h
+ @file ATProtoHttpConnectionIOCoordinator.h
 
  @abstract Coordinates I/O and protocol driving for HTTP connections.
 
@@ -18,8 +18,8 @@
  * @abstract Defines the ATProtoNetworkConnection protocol contract.
  */
 @protocol ATProtoNetworkConnection;
-@class HttpProtocolDriver;
-@class HttpResponseSender;
+@class ATProtoHttpProtocolDriver;
+@class ATProtoHttpResponseSender;
 @class ATProtoHttpRequest;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -49,7 +49,7 @@ typedef void (^HttpIOUpgradeHandler)(ATProtoHttpRequest *request);
 typedef void (^HttpIOErrorHandler)(NSError *error);
 
 /*!
- @class HttpConnectionIOCoordinator
+ @class ATProtoHttpConnectionIOCoordinator
 
  @abstract Coordinates HTTP request/response I/O and protocol driving.
 
@@ -57,7 +57,7 @@ typedef void (^HttpIOErrorHandler)(NSError *error);
  protocol driver, routes events to handlers, and enforces backpressure.
  Uses a serial dispatch queue for thread-safe state management.
  */
-@interface HttpConnectionIOCoordinator : NSObject
+@interface ATProtoHttpConnectionIOCoordinator : NSObject
 
 /*!
  @property requestReadyHandler
@@ -105,8 +105,8 @@ typedef void (^HttpIOErrorHandler)(NSError *error);
  * @abstract Performs the initWithConnection operation.
  */
 - (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
-                           protocol:(HttpProtocolDriver *)driver
-                    responseSender:(HttpResponseSender *)sender;
+                           protocol:(ATProtoHttpProtocolDriver *)driver
+                    responseSender:(ATProtoHttpResponseSender *)sender;
 
 /*!
  @method initWithConnection:protocol:responseSender:idleHeaderTimeout:aggregateHeaderTimeout:
@@ -121,8 +121,8 @@ typedef void (^HttpIOErrorHandler)(NSError *error);
  limits. The aggregate deadline does not reset as individual header bytes arrive.
  */
 - (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
-                           protocol:(HttpProtocolDriver *)driver
-                    responseSender:(HttpResponseSender *)sender
+                           protocol:(ATProtoHttpProtocolDriver *)driver
+                    responseSender:(ATProtoHttpResponseSender *)sender
                  idleHeaderTimeout:(NSTimeInterval)idleHeaderTimeout
             aggregateHeaderTimeout:(NSTimeInterval)aggregateHeaderTimeout NS_DESIGNATED_INITIALIZER;
 

@@ -16,7 +16,7 @@
 #import <Foundation/Foundation.h>
 
 @class PDSDatabase;
-@class HttpServer;
+@class ATProtoHttpServer;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
 @class Session;
@@ -40,7 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)new NS_UNAVAILABLE;
 
 /** Registers WebAuthn routes with the supplied HTTP server. */
-- (void)registerRoutesWithServer:(HttpServer *)httpServer;
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)httpServer;
 
 /** Starts credential registration and returns challenge parameters. */
 - (void)handleRegisterBegin:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

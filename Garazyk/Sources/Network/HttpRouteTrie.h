@@ -10,15 +10,15 @@ NS_ASSUME_NONNULL_BEGIN
 typedef void (^HttpRouteHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
 
 /*!
- @class HttpRouteTrie
+ @class ATProtoHttpRouteTrie
 
  @abstract Trie-based router for O(k) route lookup performance.
 
- @discussion HttpRouteTrie organizes routes in a tree structure where each
+ @discussion ATProtoHttpRouteTrie organizes routes in a tree structure where each
  node represents a path segment. This enables efficient route matching
  with support for parameters and wildcards.
  */
-@interface HttpRouteTrie : NSObject
+@interface ATProtoHttpRouteTrie : NSObject
 
 /*!
  @method insertRoute:pattern:handler:priority:
