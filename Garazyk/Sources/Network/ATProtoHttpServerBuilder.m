@@ -99,8 +99,8 @@
 
 #pragma mark - Building
 
-- (nullable HttpServer *)buildWithError:(NSError **)error {
-  HttpServer *server = [HttpServer serverWithPort:self.port];
+- (nullable ATProtoHttpServer *)buildWithError:(NSError **)error {
+  ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:self.port];
 
   if (![self configureServer:server error:error]) {
     return nil;
@@ -109,7 +109,7 @@
   return server;
 }
 
-- (BOOL)configureServer:(HttpServer *)server error:(NSError **)error {
+- (BOOL)configureServer:(ATProtoHttpServer *)server error:(NSError **)error {
   if (!server) {
     if (error) {
       *error =
@@ -143,8 +143,8 @@
                                         controller:self.controller
                              subscribeReposHandler:self.subscribeReposHandler
                                     setCorsHeaders:^(
-                                        HttpResponse *response,
-                                        HttpRequest *request) {
+                                        ATProtoHttpResponse *response,
+                                        ATProtoHttpRequest *request) {
                                       [self setCorsHeaders:response
                                                 forRequest:request];
                                     }];
@@ -166,8 +166,8 @@
                                             controller:self.controller
                                          configuration:self.configuration
                                         setCorsHeaders:^(
-                                            HttpResponse *response,
-                                            HttpRequest *request) {
+                                            ATProtoHttpResponse *response,
+                                            ATProtoHttpRequest *request) {
                                           [self setCorsHeaders:response
                                                     forRequest:request];
                                         }];
@@ -184,7 +184,7 @@
   NSString *issuer = self.issuer ?: @"pds.garazyk.xyz";
   [server addRoute:@"GET"
               path:@"/"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              const char *uiServerURLEnv = getenv("PDS_UI_SERVER_URL");
              if (uiServerURLEnv != NULL && strlen(uiServerURLEnv) > 0) {
                  response.statusCode = HttpStatusOK;
@@ -254,7 +254,7 @@
   // shipped with the current runtime bundle.
   [server addRoute:@"GET"
               path:@"/favicon.ico"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              response.statusCode = HttpStatusNoContent;
              response.contentType = @"image/x-icon";
              [response setBodyData:[NSData data]];
@@ -263,7 +263,7 @@
   return YES;
 }
 
-- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
+- (void)setCorsHeaders:(ATProtoHttpResponse *)response forRequest:(ATProtoHttpRequest *)request {
   NSArray<NSString *> *allowedOrigins = [self getCorsAllowedOrigins];
   NSString *origin = [request headerForKey: @"Origin"];
   if (origin && ([allowedOrigins containsObject: @"*"] || [origin hasPrefix: @"http://127.0.0.1"] || [origin hasPrefix: @"http://localhost"])) {

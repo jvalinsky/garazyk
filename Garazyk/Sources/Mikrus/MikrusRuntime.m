@@ -17,7 +17,7 @@
 @property (nonatomic, strong, readwrite) MikrusDatabase *database;
 @property (nonatomic, strong) AppViewDatabase *ingestStateDatabase;
 @property (nonatomic, strong) AppViewIngestEngine *ingestEngine;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
 
@@ -73,15 +73,15 @@
     if (!self.database) return NO;
     if (![self.database runMigrations:error]) return NO;
 
-    self.httpServer = [HttpServer serverWithPort:config.httpPort];
-    [HttpResponse setDefaultServerHeader:@"garazyk-mikrus/1.0.0"];
-    [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
+    self.httpServer = [ATProtoHttpServer serverWithPort:config.httpPort];
+    [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-mikrus/1.0.0"];
+    [self.httpServer addRoute:@"GET" path:@"/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         response.contentType = @"text/plain; charset=utf-8";
         [response setBodyString:@"garazyk mikrus\n"];
     }];
     __weak typeof(self) weakSelf = self;
-    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{
@@ -93,7 +93,7 @@
     // Configure per-IP rate limiting for Mikrus endpoints.
     // Defaults: 200 req/min per IP (more generous than PDS default of 100).
     // Override via MIKRUS_RATELIMIT_IP_LIMIT, MIKRUS_RATELIMIT_IP_WINDOW, MIKRUS_RATELIMIT_ENABLED.
-    RateLimiter *rateLimiter = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *rateLimiter = [ATProtoRateLimiter sharedLimiter];
     rateLimiter.enabled = config.rateLimitEnabled;
     rateLimiter.ipLimit = config.rateLimitIpLimit;
     rateLimiter.ipWindowSeconds = config.rateLimitIpWindowSeconds;

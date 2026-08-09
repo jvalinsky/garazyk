@@ -48,7 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response HTTP response to modify
  * @param message Error message (defaults to "Authentication required")
  */
-+ (void)setAuthenticationError:(HttpResponse *)response
++ (void)setAuthenticationError:(ATProtoHttpResponse *)response
                        message:(nullable NSString *)message;
 
 /**
@@ -57,7 +57,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response HTTP response to modify
  * @param message Error message (defaults to "Forbidden")
  */
-+ (void)setAuthorizationError:(HttpResponse *)response
++ (void)setAuthorizationError:(ATProtoHttpResponse *)response
                       message:(nullable NSString *)message;
 
 /**
@@ -66,7 +66,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response HTTP response to modify
  * @param message Error message (defaults to "Invalid request")
  */
-+ (void)setValidationError:(HttpResponse *)response
++ (void)setValidationError:(ATProtoHttpResponse *)response
                    message:(nullable NSString *)message;
 
 /**
@@ -75,7 +75,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response HTTP response to modify
  * @param message Error message (defaults to "Not found")
  */
-+ (void)setNotFoundError:(HttpResponse *)response
++ (void)setNotFoundError:(ATProtoHttpResponse *)response
                  message:(nullable NSString *)message;
 
 /**
@@ -84,7 +84,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response HTTP response to modify
  * @param message Error message (defaults to "Internal server error")
  */
-+ (void)setInternalServerError:(HttpResponse *)response
++ (void)setInternalServerError:(ATProtoHttpResponse *)response
                        message:(nullable NSString *)message;
 
 /**
@@ -94,7 +94,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param allowedMethod Allowed HTTP method (e.g., "GET", "POST")
  * @param message Error message (defaults to "Method not allowed")
  */
-+ (void)setMethodNotAllowedError:(HttpResponse *)response
++ (void)setMethodNotAllowedError:(ATProtoHttpResponse *)response
                    allowedMethod:(NSString *)allowedMethod
                          message:(nullable NSString *)message;
 
@@ -108,7 +108,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param errorCode XRPC error code
  * @param message Error message
  */
-+ (void)setError:(HttpResponse *)response
++ (void)setError:(ATProtoHttpResponse *)response
       statusCode:(HttpStatusCode)statusCode
        errorCode:(NSString *)errorCode
          message:(NSString *)message;
@@ -121,7 +121,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response HTTP response to modify
  * @param message Error message
  */
-+ (void)setInvalidRequestError:(HttpResponse *)response
++ (void)setInvalidRequestError:(ATProtoHttpResponse *)response
                        message:(NSString *)message;
 
 /**
@@ -130,7 +130,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response HTTP response to modify
  * @param identifier Account identifier (DID or handle)
  */
-+ (void)setAccountNotFoundError:(HttpResponse *)response
++ (void)setAccountNotFoundError:(ATProtoHttpResponse *)response
                      identifier:(NSString *)identifier;
 
 /**
@@ -139,7 +139,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response HTTP response to modify
  * @param nsid Lexicon NSID
  */
-+ (void)setLexiconNotFoundError:(HttpResponse *)response
++ (void)setLexiconNotFoundError:(ATProtoHttpResponse *)response
                            nsid:(NSString *)nsid;
 
 @end

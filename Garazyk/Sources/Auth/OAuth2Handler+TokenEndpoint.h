@@ -5,8 +5,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface OAuth2Handler (TokenEndpoint)
-- (void)handleTokenRequest:(HttpRequest *)request
-                  response:(HttpResponse *)response;
+- (void)handleTokenRequest:(ATProtoHttpRequest *)request
+                  response:(ATProtoHttpResponse *)response;
 @end
 
 NS_ASSUME_NONNULL_END

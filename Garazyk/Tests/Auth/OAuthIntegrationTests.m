@@ -49,7 +49,7 @@
 @end
 
 @interface OAuthIntegrationTests : XCTestCase
-@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong) ATProtoHttpServer *server;
 @property (nonatomic, strong) OAuth2Server *oauthServer;
 @property (nonatomic, strong) OAuth2Handler *oauthHandler;
 @property (nonatomic, strong) PDSDatabase *db;
@@ -71,7 +71,7 @@
     self.oauthServer = [[OAuth2Server alloc] initWithDatabase:self.db];
     
     // Setup HTTP Server
-    self.server = [HttpServer serverWithPort:0];
+    self.server = [ATProtoHttpServer serverWithPort:0];
     self.oauthHandler = [[OAuth2Handler alloc] initWithDatabase:self.db];
     self.oauthHandler.oauthServer = self.oauthServer;
     [self.oauthHandler registerRoutesWithServer:self.server];
@@ -100,7 +100,7 @@
                                             delegateQueue:nil];
     
 	    // Add a simple health handler
-	    [self.server addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *res) {
+	    [self.server addRoute:@"GET" path:@"/health" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
 	        res.statusCode = 200;
 	        [res setBodyString:@"OK"];
 	    }];

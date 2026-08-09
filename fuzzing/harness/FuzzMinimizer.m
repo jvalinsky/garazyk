@@ -110,7 +110,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             recordEdge(200 + (initial & 0x1F));  // Additional info
         }
         
-        // 5. Try NSData as-is (for MST/blob)
+        // 5. Try NSData as-is (for ATProtoMST/blob)
         if (size > 4) {
             recordEdge(300);  // Has data
             uint32_t magic = *(uint32_t *)data;

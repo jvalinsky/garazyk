@@ -116,9 +116,9 @@ static int run_status(NSArray<NSString *> *args) {
 
 #pragma mark - HLS Serving
 
-static void registerHLSRoutes(HttpServer *server, ATProtoVideoHLSGenerator *hlsGenerator) {
+static void registerHLSRoutes(ATProtoHttpServer *server, ATProtoVideoHLSGenerator *hlsGenerator) {
     __weak typeof(hlsGenerator) weakGen = hlsGenerator;
-    void (^setCORS)(HttpRequest *, HttpResponse *) = ^(HttpRequest *request, HttpResponse *response) {
+    void (^setCORS)(ATProtoHttpRequest *, ATProtoHttpResponse *) = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *origin = [request headerForKey:@"Origin"];
         if (origin.length > 0) {
             [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
@@ -134,7 +134,7 @@ static void registerHLSRoutes(HttpServer *server, ATProtoVideoHLSGenerator *hlsG
         [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
     };
 
-    void (^watchHandler)(HttpRequest *, HttpResponse *) = ^(HttpRequest *request, HttpResponse *response) {
+    void (^watchHandler)(ATProtoHttpRequest *, ATProtoHttpResponse *) = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         setCORS(request, response);
         if (request.method == HttpMethodOPTIONS) {
             response.statusCode = HttpStatusNoContent;

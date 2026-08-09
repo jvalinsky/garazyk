@@ -15,7 +15,7 @@
 
 @implementation RepoAuthIdentityTests
 
-- (nullable NSString *)plcOperationTokenFromResponse:(HttpResponse *)response {
+- (nullable NSString *)plcOperationTokenFromResponse:(ATProtoHttpResponse *)response {
     NSString *token = response.jsonBody[@"token"];
     if (token.length > 0) return token;
 
@@ -32,7 +32,7 @@
 }
 
 - (void)testIdentityUpdateHandleReturnsStatus401WithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
                                                       body:@{@"handle": @"repoauth1-renamed.test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -40,7 +40,7 @@
 
 - (void)testIdentityUpdateHandleUpdatesAccountHandle {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
                                                       body:@{@"handle": @"repoauth1-renamed.test"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -56,7 +56,7 @@
 }
 
 - (void)testRefreshIdentityReturnsIdentityInfo {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.refreshIdentity"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.refreshIdentity"
                                                       body:@{@"identifier": @"repoauth1.test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -68,14 +68,14 @@
 - (void)testIdentitySignAndSubmitPlcOperation {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
-    HttpResponse *requestSignature = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
+    ATProtoHttpResponse *requestSignature = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
                                                               body:@{}
                                                            headers:@{@"authorization": authHeader}];
     XCTAssertEqual(requestSignature.statusCode, 200);
     NSString *token = [self plcOperationTokenFromResponse:requestSignature];
     XCTAssertNotNil(token);
 
-    HttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
+    ATProtoHttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
                                                           body:@{@"token": token}
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(signResponse.statusCode, 200);
@@ -93,7 +93,7 @@
     XCTAssertFalse([sig containsString:@"+"]);
     XCTAssertFalse([sig containsString:@"/"]);
 
-    HttpResponse *submitResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.submitPlcOperation"
+    ATProtoHttpResponse *submitResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.submitPlcOperation"
                                                             body:@{@"operation": operation}
                                                          headers:@{@"authorization": authHeader}];
     XCTAssertEqual(submitResponse.statusCode, 200);
@@ -106,12 +106,12 @@
     XCTAssertTrue([spaceKey hasPrefix:@"did:key:z"]);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *requestSignature = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
+    ATProtoHttpResponse *requestSignature = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.requestPlcOperationSignature"
                                                               body:@{}
                                                            headers:@{@"authorization": authHeader}];
     NSString *token = [self plcOperationTokenFromResponse:requestSignature];
     XCTAssertNotNil(token);
-    HttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
+    ATProtoHttpResponse *signResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.signPlcOperation"
                                                           body:@{ @"token": token,
                                                                   @"verificationMethods": @{ @"atproto_space": spaceKey } }
                                                        headers:@{@"authorization": authHeader}];
@@ -123,7 +123,7 @@
 - (void)testIdentityUpdateHandleUniquenessReturns409 {
     // repoauth2.test is taken by did2
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
                                                       body:@{@"handle": @"repoauth2.test"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 409);
@@ -137,7 +137,7 @@
     XCTAssertNil(error);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
                                                       body:@{@"handle": @"repoauth1-broadcast.test"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -173,7 +173,7 @@
 - (void)testIdentityUpdateHandleRateLimiting {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *limiter = [ATProtoRateLimiter sharedLimiter];
     BOOL oldGlobalDisabled = RateLimiterIsDisabledGlobally();
     BOOL oldEnabled = limiter.isEnabled;
     NSString *dbPath = [self.tempURL.path stringByAppendingPathComponent:@"identity-rate-limits.sqlite"];
@@ -187,13 +187,13 @@
         // Seed the endpoint's limiter directly so the request exercises the
         // rejected XRPC path without performing ten full identity updates.
         for (int i = 0; i < 10; i++) {
-            RateLimitResult *seedResult = [limiter checkRateLimitForKey:shortKey
+            ATProtoRateLimitResult *seedResult = [limiter checkRateLimitForKey:shortKey
                                                                   limit:10
                                                           windowSeconds:300];
             XCTAssertTrue(seedResult.allowed, @"Seed request %d should be allowed", i);
         }
 
-        HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
+        ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
                                                           body:@{@"handle": @"too-many.test"}
                                                        headers:@{@"authorization": authHeader}];
         XCTAssertEqual(response.statusCode, 429, @"Seeded request should be rate limited");
@@ -219,7 +219,7 @@
 
     // 2. Update to the SAME handle
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
                                                       body:@{@"handle": currentHandle}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);

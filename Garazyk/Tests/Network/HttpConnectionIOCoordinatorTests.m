@@ -98,10 +98,10 @@
 @end
 
 @interface HttpConnectionIOCoordinatorTests : XCTestCase
-@property (nonatomic, strong) HttpConnectionIOCoordinator *coordinator;
+@property (nonatomic, strong) ATProtoHttpConnectionIOCoordinator *coordinator;
 @property (nonatomic, strong) MockIOConnection *mockConnection;
-@property (nonatomic, strong) HttpProtocolDriver *driver;
-@property (nonatomic, strong) HttpResponseSender *sender;
+@property (nonatomic, strong) ATProtoHttpProtocolDriver *driver;
+@property (nonatomic, strong) ATProtoHttpResponseSender *sender;
 @end
 
 @implementation HttpConnectionIOCoordinatorTests
@@ -109,9 +109,9 @@
 - (void)setUp {
     [super setUp];
     self.mockConnection = [[MockIOConnection alloc] init];
-    self.driver = [[HttpProtocolDriver alloc] init];
-    self.sender = [[HttpResponseSender alloc] init];
-    self.coordinator = [[HttpConnectionIOCoordinator alloc] initWithConnection:self.mockConnection
+    self.driver = [[ATProtoHttpProtocolDriver alloc] init];
+    self.sender = [[ATProtoHttpResponseSender alloc] init];
+    self.coordinator = [[ATProtoHttpConnectionIOCoordinator alloc] initWithConnection:self.mockConnection
                                                                       protocol:self.driver
                                                                   responseSender:self.sender];
 }
@@ -128,7 +128,7 @@
 - (void)testRequestReadyHandlerFiredOnCompleteRequest {
     XCTestExpectation *handlerExpectation = [self expectationWithDescription:@"Request handler called"];
 
-    self.coordinator.requestReadyHandler = ^(HttpRequest * _Nonnull request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest * _Nonnull request) {
         XCTAssertEqualObjects(request.path, @"/x");
         [handlerExpectation fulfill];
     };
@@ -145,7 +145,7 @@
 - (void)testUpgradeHandlerFiredOnUpgradeRequest {
     XCTestExpectation *handlerExpectation = [self expectationWithDescription:@"Upgrade handler called"];
 
-    self.coordinator.upgradeHandler = ^(HttpRequest * _Nonnull request) {
+    self.coordinator.upgradeHandler = ^(ATProtoHttpRequest * _Nonnull request) {
         XCTAssertNotNil(request);
         [handlerExpectation fulfill];
     };
@@ -179,7 +179,7 @@
     XCTestExpectation *noHandlerExp = [self expectationWithDescription:@"handler not called"];
     noHandlerExp.inverted = YES;
 
-    self.coordinator.requestReadyHandler = ^(HttpRequest * _Nonnull request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest * _Nonnull request) {
         [noHandlerExp fulfill];
     };
 
@@ -193,7 +193,7 @@
 - (void)testResumeAfterPauseResumesReads {
     XCTestExpectation *handlerExpectation = [self expectationWithDescription:@"Request handler called"];
 
-    self.coordinator.requestReadyHandler = ^(HttpRequest * _Nonnull request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest * _Nonnull request) {
         [handlerExpectation fulfill];
     };
 
@@ -209,7 +209,7 @@
 }
 
 - (void)testIdleHeaderDeadlineTerminatesStalledReceiveExactlyOnce {
-    self.coordinator = [[HttpConnectionIOCoordinator alloc]
+    self.coordinator = [[ATProtoHttpConnectionIOCoordinator alloc]
         initWithConnection:self.mockConnection
                    protocol:self.driver
              responseSender:self.sender
@@ -242,7 +242,7 @@
 }
 
 - (void)testAggregateHeaderDeadlineDoesNotResetForTrickleInput {
-    self.coordinator = [[HttpConnectionIOCoordinator alloc]
+    self.coordinator = [[ATProtoHttpConnectionIOCoordinator alloc]
         initWithConnection:self.mockConnection
                    protocol:self.driver
              responseSender:self.sender
@@ -274,7 +274,7 @@
 }
 
 - (void)testRequestWithinConfiguredHeaderDeadlinesRemainsAccepted {
-    self.coordinator = [[HttpConnectionIOCoordinator alloc]
+    self.coordinator = [[ATProtoHttpConnectionIOCoordinator alloc]
         initWithConnection:self.mockConnection
                    protocol:self.driver
              responseSender:self.sender
@@ -284,7 +284,7 @@
     XCTestExpectation *requestExpectation = [self expectationWithDescription:@"request accepted"];
     XCTestExpectation *timeoutExpectation = [self expectationWithDescription:@"no timeout"];
     timeoutExpectation.inverted = YES;
-    self.coordinator.requestReadyHandler = ^(HttpRequest *request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest *request) {
         XCTAssertEqualObjects(request.path, @"/within-limits");
         [requestExpectation fulfill];
     };
@@ -301,7 +301,7 @@
 }
 
 - (void)testCompletedSplitHeaderDoesNotApplyAggregateDeadlineToBody {
-    self.coordinator = [[HttpConnectionIOCoordinator alloc]
+    self.coordinator = [[ATProtoHttpConnectionIOCoordinator alloc]
         initWithConnection:self.mockConnection
                    protocol:self.driver
              responseSender:self.sender
@@ -311,7 +311,7 @@
     XCTestExpectation *requestExpectation = [self expectationWithDescription:@"body request accepted"];
     XCTestExpectation *timeoutExpectation = [self expectationWithDescription:@"no header timeout after terminator"];
     timeoutExpectation.inverted = YES;
-    self.coordinator.requestReadyHandler = ^(HttpRequest *request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest *request) {
         XCTAssertEqualObjects(request.path, @"/body");
         XCTAssertEqualObjects(request.body, [@"body" dataUsingEncoding:NSUTF8StringEncoding]);
         [requestExpectation fulfill];
@@ -356,7 +356,7 @@
     XCTestExpectation *noHandlerExp = [self expectationWithDescription:@"handler not called after closeForUpgrade"];
     noHandlerExp.inverted = YES;
 
-    self.coordinator.requestReadyHandler = ^(HttpRequest *request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest *request) {
         [noHandlerExp fulfill];
     };
 

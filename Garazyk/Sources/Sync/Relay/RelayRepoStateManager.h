@@ -7,7 +7,7 @@
 
  @discussion
     RelayRepoStateManager tracks:
-    - Current signed commit ATProtoCID and MST data-root ATProtoCID for each repo
+    - Current signed commit ATProtoCID and ATProtoMST data-root ATProtoCID for each repo
     - Last sequence number for each repo
     - Repo status (active, desynchronized, etc.)
     
@@ -53,7 +53,7 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
     RelayRepoAdvanceResultUnverifiableAdvanced,
     /** The event's ``since`` revision did not match the stored revision. */
     RelayRepoAdvanceResultSinceMismatch,
-    /** The event's ``prevData`` did not match the stored MST data root. */
+    /** The event's ``prevData`` did not match the stored ATProtoMST data root. */
     RelayRepoAdvanceResultPrevDataMismatch
 };
 
@@ -91,7 +91,7 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
  * @abstract Records a structurally validated repository commit as the current baseline.
  * @param repoDID Repository DID.
  * @param commitCID Signed repository commit-object ATProtoCID.
- * @param dataCID MST data-root ATProtoCID from the signed commit object.
+ * @param dataCID ATProtoMST data-root ATProtoCID from the signed commit object.
  * @param rev Repository revision.
  * @param seq Upstream firehose sequence.
  */
@@ -118,7 +118,7 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
 /**
  * @abstract Observes a commit head from ``com.atproto.sync.listRepos``.
  *
- * Inventory contains a commit ATProtoCID and revision but no MST data root. Existing
+ * Inventory contains a commit ATProtoCID and revision but no ATProtoMST data root. Existing
  * live state is not regressed by an older inventory response.
  */
 - (void)observeInventoryForRepo:(NSString *)repoDID
@@ -155,7 +155,7 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
 /** Returns the current signed repository commit-object ATProtoCID. */
 - (nullable NSString *)commitCIDForRepo:(NSString *)repoDID;
 
-/** Returns the current MST data-root ATProtoCID extracted from the signed commit. */
+/** Returns the current ATProtoMST data-root ATProtoCID extracted from the signed commit. */
 - (nullable NSString *)dataCIDForRepo:(NSString *)repoDID;
 
 /**
@@ -190,12 +190,12 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
 - (NSUInteger)repoCount;
 
 /**
- * @abstract Compatibility alias for the current MST data-root ATProtoCID.
+ * @abstract Compatibility alias for the current ATProtoMST data-root ATProtoCID.
  *
- * This method's historical implementation conflated commit CIDs with MST data
+ * This method's historical implementation conflated commit CIDs with ATProtoMST data
  * roots. New code must use ``dataCIDForRepo:``.
  * @param repoDID The repository DID to query.
- * @return The current MST data-root ATProtoCID, or nil when unknown.
+ * @return The current ATProtoMST data-root ATProtoCID, or nil when unknown.
  */
 - (nullable NSString *)prevDataCIDForRepo:(NSString *)repoDID
     __attribute__((deprecated("Use dataCIDForRepo:; relay state stores the current signed commit data root")));

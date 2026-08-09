@@ -36,7 +36,7 @@
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 
 #pragma mark - com.atproto.server.appPasswords.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createAppPassword handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createAppPassword handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodPOST) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"POST" forKey:@"Allow"];
@@ -85,7 +85,7 @@
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_listAppPasswords handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_listAppPasswords handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodGET) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"GET" forKey:@"Allow"];
@@ -115,7 +115,7 @@
         [response setJsonBody:@{@"passwords": passwords ?: @[]}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_revokeAppPassword handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_revokeAppPassword handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodPOST) {
             response.statusCode = HttpStatusMethodNotAllowed;
             [response setHeader:@"POST" forKey:@"Allow"];

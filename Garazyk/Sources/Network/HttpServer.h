@@ -5,16 +5,16 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
-@class HttpServer;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
+@class ATProtoHttpServer;
 /**
  * @abstract Defines the ATProtoNetworkConnection protocol contract.
  */
 @protocol ATProtoNetworkConnection;
 
 /*!
- @header HttpServer.h
+ @header ATProtoHttpServer.h
  
  @abstract HTTP server implementation for the PDS.
  
@@ -32,8 +32,8 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The incoming HTTP request.
  @param response The response object to populate.
  */
-typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
-typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *response, id<ATProtoNetworkConnection> connection);
+typedef void (^RequestHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
+typedef void (^WebSocketRequestHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response, id<ATProtoNetworkConnection> connection);
 
 /*!
  @abstract Default concurrency limit applied when a server is created without an explicit one.
@@ -41,18 +41,18 @@ typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *resp
 extern const NSUInteger kHttpServerDefaultMaxConcurrentRequests;
 
 /*!
- @class HttpServer
+ @class ATProtoHttpServer
  
  @abstract HTTP server for handling PDS requests.
  
- @discussion HttpServer provides a simple HTTP server implementation
+ @discussion ATProtoHttpServer provides a simple HTTP server implementation
  for the PDS. It supports route registration for different HTTP methods
  and paths, with handlers invoked for matching requests.
  
  @code
- HttpServer *server = [HttpServer serverWithPort:8080];
+ ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:8080];
  
- [server addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *resp) {
+ [server addRoute:@"GET" path:@"/health" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
      resp.statusCode = 200;
      [resp setBody:@"OK"];
  }];
@@ -61,9 +61,9 @@ extern const NSUInteger kHttpServerDefaultMaxConcurrentRequests;
  @endcode
  */
 /**
- * @abstract Declares the HttpServer public API.
+ * @abstract Declares the ATProtoHttpServer public API.
  */
-@interface HttpServer : NSObject
+@interface ATProtoHttpServer : NSObject
 
 /*! Optional local host/interface to bind to (nil binds to all interfaces). */
 @property (nonatomic, readonly, nullable) NSString *host;
@@ -75,7 +75,7 @@ extern const NSUInteger kHttpServerDefaultMaxConcurrentRequests;
 @property (atomic, readonly, getter=isRunning) BOOL running;
 
 /*! Optional callback invoked for every request received. */
-@property (nonatomic, copy, nullable) void (^didReceiveRequest)(HttpRequest *request, HttpResponse *response);
+@property (nonatomic, copy, nullable) void (^didReceiveRequest)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
 
 /*! Maximum number of requests this server dispatches concurrently. */
 @property (nonatomic, readonly) NSUInteger maxConcurrentRequests;
@@ -86,7 +86,7 @@ extern const NSUInteger kHttpServerDefaultMaxConcurrentRequests;
  @abstract Creates a server instance for the specified port.
 
  @param port The port to listen on.
- @return A new HttpServer instance.
+ @return A new ATProtoHttpServer instance.
  */
 + (instancetype)serverWithPort:(NSUInteger)port;
 

@@ -8,7 +8,7 @@
  @discussion Implements CIDv1 content-addressed identifiers using multibase,
  multicodec, and multihash. CIDs provide cryptographic verification of data
  integrity through SHA-256 hashing. Used for blob references, commit roots,
- and MST node addressing.
+ and ATProtoMST node addressing.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */

@@ -10,7 +10,7 @@
 @implementation MSTUTF8Tests
 
 - (void)testMSTWithUTF8Keys {
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     // Use real-looking ATProtoCID digest (32 bytes for SHA-256)
     uint8_t digest[32] = {0};
     digest[0] = 1; digest[1] = 2; digest[2] = 3;
@@ -31,16 +31,16 @@
     NSData *cbor = [tree serializeToCBOR];
     XCTAssertNotNil(cbor, @"Serialization should produce data");
     
-    MST *roundTrip = [MST deserializeFromCBOR:cbor];
+    ATProtoMST *roundTrip = [ATProtoMST deserializeFromCBOR:cbor];
     XCTAssertNotNil(roundTrip, @"Deserialization should succeed");
     
     XCTAssertEqualObjects([roundTrip get:key1], cid, @"Round-tripped tree should retrieve key1 correctly");
     XCTAssertEqualObjects([roundTrip get:key2], cid, @"Round-tripped tree should retrieve key2 correctly");
     
-    NSArray<MSTEntry *> *all = [roundTrip allEntries];
+    NSArray<ATProtoMSTEntry *> *all = [roundTrip allEntries];
     XCTAssertEqual(all.count, 2, @"Should have exactly 2 entries");
     
-    // MST entries are sorted by key bytes
+    // ATProtoMST entries are sorted by key bytes
     XCTAssertEqualObjects(all[0].key, key1);
     XCTAssertEqualObjects(all[1].key, key2);
 }

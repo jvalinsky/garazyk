@@ -123,7 +123,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     return [formatter stringFromDate:date];
 }
 
-- (HttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
+- (ATProtoHttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
                                        clientID:(NSString *)clientID {
     NSError *error = nil;
     BOOL created = [self.database executeParameterizedUpdate:
@@ -144,7 +144,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                            error:&error];
     XCTAssertTrue(inserted, @"Failed to insert PAR row: %@", error);
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/oauth/authorize"
                                                    queryString:@""
@@ -156,7 +156,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{}
                                                           body:[NSData data]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeRequest:request response:response];
     return response;
 }
@@ -180,7 +180,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     // Setup request with valid client_id but wrong client_secret (when secret is configured)
     NSString *body = @"grant_type=authorization_code&code=valid&client_id=test-client-confidential&client_secret=wrong";
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/token"
                                                    queryString:@""
@@ -189,7 +189,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     // Execute handler
     [self.handler handleTokenRequest:request response:response];
@@ -206,7 +206,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"redirect_uri": @"http://localhost/cb"
         // Note: no state parameter
     };
-    HttpResponse *response =
+    ATProtoHttpResponse *response =
         [self authorizeViaPARWithParameters:queryParams clientID:@"test-client"];
 
     // Assert 400 Bad Request
@@ -251,7 +251,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertNil(proofError);
 
         NSString *body = @"grant_type=refresh_token&refresh_token=invalid-refresh&client_id=test-client";
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+        ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                       methodString:@"POST"
                                                               path:@"/oauth/token"
                                                        queryString:@""
@@ -264,7 +264,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                            }
                                                               body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                         remoteAddress:@"127.0.0.1"];
-        HttpResponse *response = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
         [self.handler handleTokenRequest:request response:response];
 
         XCTAssertEqual(response.statusCode, 400);
@@ -280,7 +280,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
 - (void)testTokenRequestReturnsInvalidDPoPProofForMalformedProof {
     NSString *body = @"grant_type=refresh_token&refresh_token=invalid-refresh&client_id=test-client";
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/token"
                                                    queryString:@""
@@ -293,7 +293,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        }
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleTokenRequest:request response:response];
 
     XCTAssertEqual(response.statusCode, 400);
@@ -322,7 +322,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertNil(proofError);
 
         NSString *body = @"grant_type=refresh_token&refresh_token=invalid-refresh&client_id=test-client";
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+        ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                       methodString:@"POST"
                                                               path:@"/oauth/token"
                                                        queryString:@""
@@ -336,7 +336,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                            }
                                                               body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                         remoteAddress:@"127.0.0.1"];
-        HttpResponse *response = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
         [self.handler handleTokenRequest:request response:response];
 
         XCTAssertEqual(response.statusCode, 400);
@@ -369,7 +369,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertNil(proofError);
 
         NSString *body = @"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=test-state&scope=atproto&code_challenge=test-challenge&code_challenge_method=S256";
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+        ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                       methodString:@"POST"
                                                               path:@"/oauth/par"
                                                        queryString:@""
@@ -382,7 +382,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                            }
                                                               body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                         remoteAddress:@"127.0.0.1"];
-        HttpResponse *response = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
         [self.handler handlePARRequest:request response:response];
 
         XCTAssertEqual(response.statusCode, 400);
@@ -414,7 +414,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"code_challenge": @"test_challenge",
         @"code_challenge_method": @"S256"
     };
-    HttpResponse *response =
+    ATProtoHttpResponse *response =
         [self authorizeViaPARWithParameters:queryParams clientID:@"test-client"];
     
     XCTAssertEqual(response.statusCode, 200, @"Should serve consent page");
@@ -423,7 +423,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     NSString *csrfToken = @"test-csrf-token-12345";
     NSString *signInBody = @"handle=test-user.test&password=test-password";
-    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *signInRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                          methodString:@"POST"
                                                                  path:@"/oauth/authorize/signin"
                                                           queryString:@""
@@ -436,7 +436,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                               }
                                                                  body:[signInBody dataUsingEncoding:NSUTF8StringEncoding]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *signInResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
     
     XCTAssertEqual(signInResponse.statusCode, 200, @"Sign-in should succeed");
@@ -444,7 +444,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertNotNil(sessionToken, @"Should receive session token");
     
     NSString *consentBody = [NSString stringWithFormat:@"decision=allow&client_id=test-client&state=test-state-123&redirect_uri=%@&session_token=%@&response_type=code&code_challenge=test_challenge&code_challenge_method=S256", redirectWithQuery, sessionToken];
-    HttpRequest *consentRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *consentRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                           methodString:@"POST"
                                                                   path:@"/oauth/authorize/confirm"
                                                            queryString:@""
@@ -453,7 +453,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                                headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                                   body:[consentBody dataUsingEncoding:NSUTF8StringEncoding]
                                                         remoteAddress:@"127.0.0.1"];
-    HttpResponse *consentResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *consentResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeConfirm:consentRequest response:consentResponse];
     
     XCTAssertEqual(consentResponse.statusCode, 302, @"Should redirect with 302");
@@ -488,7 +488,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"code_challenge": @"test_challenge",
         @"code_challenge_method": @"S256"
     };
-    HttpResponse *response =
+    ATProtoHttpResponse *response =
         [self authorizeViaPARWithParameters:queryParams clientID:@"test-client"];
     
     XCTAssertEqual(response.statusCode, 200, @"Should serve consent page");
@@ -497,7 +497,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     NSString *csrfToken = @"test-csrf-token-67890";
     NSString *signInBody = @"handle=test-user.test&password=test-password";
-    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *signInRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                          methodString:@"POST"
                                                                  path:@"/oauth/authorize/signin"
                                                           queryString:@""
@@ -510,7 +510,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                               }
                                                                  body:[signInBody dataUsingEncoding:NSUTF8StringEncoding]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *signInResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
     
     XCTAssertEqual(signInResponse.statusCode, 200, @"Sign-in should succeed");
@@ -518,7 +518,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertNotNil(sessionToken, @"Should receive session token");
     
     NSString *consentBody = [NSString stringWithFormat:@"decision=allow&client_id=test-client&state=test-state-456&redirect_uri=%@&session_token=%@&response_type=code&code_challenge=test_challenge&code_challenge_method=S256", redirectWithoutQuery, sessionToken];
-    HttpRequest *consentRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *consentRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                           methodString:@"POST"
                                                                   path:@"/oauth/authorize/confirm"
                                                            queryString:@""
@@ -527,7 +527,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                                headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                                   body:[consentBody dataUsingEncoding:NSUTF8StringEncoding]
                                                         remoteAddress:@"127.0.0.1"];
-    HttpResponse *consentResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *consentResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeConfirm:consentRequest response:consentResponse];
     
     XCTAssertEqual(consentResponse.statusCode, 302, @"Should redirect with 302");
@@ -555,12 +555,12 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"code_challenge": @"test_challenge",
         @"code_challenge_method": @"S256"
     };
-    HttpResponse *authorizeResponse =
+    ATProtoHttpResponse *authorizeResponse =
         [self authorizeViaPARWithParameters:authorizeParams clientID:@"test-client"];
     XCTAssertEqual(authorizeResponse.statusCode, 200);
 
     NSString *csrfToken = @"csrf-permissioned-scope";
-    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *signInRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                          methodString:@"POST"
                                                                  path:@"/oauth/authorize/sign-in"
                                                           queryString:@""
@@ -573,7 +573,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                               }
                                                                  body:[@"handle=test-user.test&password=test-password" dataUsingEncoding:NSUTF8StringEncoding]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *signInResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
     XCTAssertEqual(signInResponse.statusCode, 200);
     NSString *sessionToken = signInResponse.jsonBody[@"session_token"];
@@ -584,7 +584,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     NSString *confirmBody = [NSString stringWithFormat:
         @"decision=allow&client_id=test-client&state=permissioned-scope-state&scope=atproto+space%%3Acom.garazyk.permissioned%%3Fauthority%%3Dself%%26skey%%3Drecon-test%%26collection%%3Dapp.bsky.feed.post%%26action%%3Dread%%26action%%3Dcreate&redirect_uri=http%%3A%%2F%%2Flocalhost%%2Fcb&response_type=code&code_challenge=test_challenge&code_challenge_method=S256&session_token=%@",
         encodedSessionToken];
-    HttpRequest *confirmRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *confirmRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                          methodString:@"POST"
                                                                  path:@"/oauth/authorize/confirm"
                                                           queryString:@""
@@ -593,7 +593,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                               headers:@{ @"Content-Type": @"application/x-www-form-urlencoded" }
                                                                  body:[confirmBody dataUsingEncoding:NSUTF8StringEncoding]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *confirmResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *confirmResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeConfirm:confirmRequest response:confirmResponse];
 
     XCTAssertEqual(confirmResponse.statusCode, 302);
@@ -614,7 +614,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     NSString *body = [NSString stringWithFormat:@"decision=deny&client_id=test-client&state=deny-state&redirect_uri=%@",
                       [redirectURI stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/authorize/confirm"
                                                    queryString:@""
@@ -623,7 +623,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeConfirm:request response:response];
 
     XCTAssertEqual(response.statusCode, 302);
@@ -639,7 +639,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 - (void)testAuthorizeConfirmDenyReturns400ForEvilRedirect {
     NSString *body = @"decision=deny&client_id=test-client&state=deny-state&redirect_uri=https%3A%2F%2Fevil.example%2Fcallback";
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/authorize/confirm"
                                                    queryString:@""
@@ -648,7 +648,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeConfirm:request response:response];
 
     XCTAssertEqual(response.statusCode, 400);
@@ -658,7 +658,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 - (void)testAuthorizeAllowBlocksUnregisteredRedirect {
     NSString *csrfToken = @"csrf-allow-reject";
     NSString *signInBody = @"handle=test-user.test&password=test-password";
-    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *signInRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                          methodString:@"POST"
                                                                  path:@"/oauth/authorize/signin"
                                                           queryString:@""
@@ -671,7 +671,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                               }
                                                                  body:[signInBody dataUsingEncoding:NSUTF8StringEncoding]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *signInResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
     XCTAssertEqual(signInResponse.statusCode, 200);
     NSString *sessionToken = signInResponse.jsonBody[@"session_token"];
@@ -679,7 +679,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
     NSString *allowBody = [NSString stringWithFormat:@"decision=allow&client_id=test-client&state=allow-state&redirect_uri=https%%3A%%2F%%2Fevil.example%%2Fcallback&session_token=%@&response_type=code&code_challenge=test_challenge&code_challenge_method=S256",
                            [sessionToken stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
-    HttpRequest *allowRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *allowRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                         methodString:@"POST"
                                                                 path:@"/oauth/authorize/confirm"
                                                          queryString:@""
@@ -688,7 +688,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                              headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                                 body:[allowBody dataUsingEncoding:NSUTF8StringEncoding]
                                                       remoteAddress:@"127.0.0.1"];
-    HttpResponse *allowResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *allowResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeConfirm:allowRequest response:allowResponse];
 
     XCTAssertEqual(allowResponse.statusCode, 400);
@@ -705,14 +705,14 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"code_challenge": @"test_challenge",
         @"code_challenge_method": @"S256"
     };
-    HttpResponse *authorizeResponse =
+    ATProtoHttpResponse *authorizeResponse =
         [self authorizeViaPARWithParameters:authorizeParams
                                     clientID:@"test-client"];
     XCTAssertEqual(authorizeResponse.statusCode, 200);
 
     NSString *csrfToken = @"csrf-consent-cap";
     NSString *signInBody = @"handle=test-user.test&password=test-password";
-    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *signInRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                          methodString:@"POST"
                                                                  path:@"/oauth/authorize/signin"
                                                           queryString:@""
@@ -727,7 +727,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        remoteAddress:@"127.0.0.1"];
 
     for (NSUInteger i = 0; i < 1100; i++) {
-        HttpResponse *signInResponse = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *signInResponse = [[ATProtoHttpResponse alloc] init];
         [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
         XCTAssertEqual(signInResponse.statusCode, 200);
         XCTAssertNotNil(signInResponse.jsonBody[@"session_token"]);
@@ -745,14 +745,14 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"code_challenge": @"test_challenge",
         @"code_challenge_method": @"S256"
     };
-    HttpResponse *authorizeResponse =
+    ATProtoHttpResponse *authorizeResponse =
         [self authorizeViaPARWithParameters:authorizeParams
                                     clientID:@"test-client"];
     XCTAssertEqual(authorizeResponse.statusCode, 200);
 
     NSString *csrfToken = @"csrf-deny-cleanup";
     NSString *signInBody = @"handle=test-user.test&password=test-password";
-    HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *signInRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                          methodString:@"POST"
                                                                  path:@"/oauth/authorize/signin"
                                                           queryString:@""
@@ -765,7 +765,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                               }
                                                                  body:[signInBody dataUsingEncoding:NSUTF8StringEncoding]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *signInResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *signInResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeSignIn:signInRequest response:signInResponse];
     XCTAssertEqual(signInResponse.statusCode, 200);
     NSString *sessionToken = signInResponse.jsonBody[@"session_token"];
@@ -776,7 +776,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     NSString *encodedSessionToken = [sessionToken stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
     NSString *denyBody = [NSString stringWithFormat:@"decision=deny&client_id=test-client&state=deny-cleanup&redirect_uri=%@&session_token=%@",
                           encodedRedirect, encodedSessionToken];
-    HttpRequest *denyRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *denyRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                       methodString:@"POST"
                                                               path:@"/oauth/authorize/confirm"
                                                        queryString:@""
@@ -785,7 +785,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                            headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                               body:[denyBody dataUsingEncoding:NSUTF8StringEncoding]
                                                         remoteAddress:@"127.0.0.1"];
-    HttpResponse *denyResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *denyResponse = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeConfirm:denyRequest response:denyResponse];
 
     XCTAssertEqual(denyResponse.statusCode, 302);
@@ -831,7 +831,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"client_metadata": metadataString
     };
     
-    HttpResponse *response =
+    ATProtoHttpResponse *response =
         [self authorizeViaPARWithParameters:queryParams
                                     clientID:@"https://example.com"];
 
@@ -857,7 +857,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"client_metadata": @"{invalid json}"
     };
     
-    HttpResponse *invalidResponse =
+    ATProtoHttpResponse *invalidResponse =
         [self authorizeViaPARWithParameters:invalidQueryParams
                                     clientID:@"unregistered-invalid-client"];
 
@@ -877,7 +877,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"code_challenge_method": @"S256"
     };
     
-    HttpResponse *noMetadataResponse =
+    ATProtoHttpResponse *noMetadataResponse =
         [self authorizeViaPARWithParameters:noMetadataParams
                                     clientID:@"unregistered-client"];
     
@@ -887,7 +887,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 }
 
 - (void)testAuthorizeBlocksDirectRequestWithoutRequestURI {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/oauth/authorize"
                                                    queryString:@"client_id=test-client&response_type=code&redirect_uri=http://localhost/cb&state=state123"
@@ -901,7 +901,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{}
                                                           body:[NSData data]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeRequest:request response:response];
 
     XCTAssertEqual(response.statusCode, 400);
@@ -1074,7 +1074,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"grant_type=authorization_code&code=test-code&client_id=%@&redirect_uri=https://example.com/callback&client_assertion=%@&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
         clientID, assertion];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/token"
                                                    queryString:@""
@@ -1083,7 +1083,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     [self.handler handleTokenRequest:request response:response];
 
@@ -1141,7 +1141,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"grant_type=authorization_code&code=test-code&client_id=%@&client_assertion=%@&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
         clientID, tamperedAssertion];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/token"
                                                    queryString:@""
@@ -1150,7 +1150,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     [self.handler handleTokenRequest:request response:response];
 
@@ -1194,7 +1194,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"grant_type=authorization_code&code=test-code&client_id=%@&client_assertion=%@&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
         clientID, assertion];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/token"
                                                    queryString:@""
@@ -1203,7 +1203,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     [self.handler handleTokenRequest:request response:response];
 
@@ -1247,7 +1247,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"grant_type=authorization_code&code=test-code&client_id=%@&client_assertion=%@&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
         clientID, assertion];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/token"
                                                    queryString:@""
@@ -1256,7 +1256,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     [self.handler handleTokenRequest:request response:response];
 
@@ -1292,7 +1292,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         @"grant_type=authorization_code&code=test-code&client_id=%@&redirect_uri=https://example.com/callback",
         clientID];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/token"
                                                    queryString:@""
@@ -1301,7 +1301,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                           body:[body dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     [self.handler handleTokenRequest:request response:response];
 

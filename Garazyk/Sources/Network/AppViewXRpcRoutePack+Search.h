@@ -12,10 +12,10 @@
 @interface AppViewXRpcRoutePack (Search)
 
 /** @abstract Searches actor skeletons for the required `q` query. */
-- (void)handleSearchActorsSkeleton:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleSearchActorsSkeleton:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Searches post skeletons for the required `q` query. */
-- (void)handleSearchPostsSkeleton:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleSearchPostsSkeleton:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Searches starter-pack skeletons for the required `q` query. */
-- (void)handleSearchStarterPacksSkeleton:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleSearchStarterPacksSkeleton:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end

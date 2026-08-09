@@ -30,7 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoAuthVerifier;
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
-@class RateLimiter;
+@class ATProtoRateLimiter;
 @class XrpcDispatcher;
 /**
  * @abstract Defines the PDSAdminController protocol contract.
@@ -60,7 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) PDSDatabasePool *userDatabasePool;
 @property (nonatomic, readonly, nullable) PDSSpaceStore *spaceStore;
 @property (nonatomic, readonly, nullable) PDSSpaceReconciler *spaceReconciler;
-@property (nonatomic, readonly, nullable) RateLimiter *rateLimiter;
+@property (nonatomic, readonly, nullable) ATProtoRateLimiter *rateLimiter;
 
 /*! Pack-specific services populated before registration when needed. */
 @property (nonatomic, readonly, nullable) AgeAssuranceService *ageAssuranceService;
@@ -101,7 +101,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) NSString *adminSecret;
 @property (nonatomic, readonly, nullable) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, readonly, nullable) PDSDatabasePool *userDatabasePool;
-@property (nonatomic, readonly, nullable) RateLimiter *rateLimiter;
+@property (nonatomic, readonly, nullable) ATProtoRateLimiter *rateLimiter;
 @property (nonatomic, strong, nullable) AgeAssuranceService *ageAssuranceService;
 @property (nonatomic, strong, nullable) BookmarkService *bookmarkService;
 @property (nonatomic, strong, nullable) DraftService *draftService;
@@ -135,7 +135,7 @@ NS_ASSUME_NONNULL_BEGIN
                         adminSecret:(nullable NSString *)adminSecret
                   serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
                   userDatabasePool:(nullable PDSDatabasePool *)userDatabasePool
-                        rateLimiter:(nullable RateLimiter *)rateLimiter
+                        rateLimiter:(nullable ATProtoRateLimiter *)rateLimiter
     NS_DESIGNATED_INITIALIZER;
 
 /**

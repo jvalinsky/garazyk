@@ -4,20 +4,20 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
-typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
+typedef void (^HttpRouteHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
 
 /*!
- @class HttpRoute
+ @class ATProtoHttpRoute
 
  @abstract Represents a single HTTP route with method, pattern, and handler.
 
- @discussion HttpRoute encapsulates all the information needed for a route:
+ @discussion ATProtoHttpRoute encapsulates all the information needed for a route:
  the HTTP method, URL pattern, handler block, and priority for resolution order.
  */
-@interface HttpRoute : NSObject
+@interface ATProtoHttpRoute : NSObject
 
 /**
  * @abstract Exposes the method value.
@@ -37,7 +37,7 @@ typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
  @param handler The handler block to execute for matching requests.
  @param priority Route priority for resolution ordering (higher = more specific).
 
- @return An initialized HttpRoute instance.
+ @return An initialized ATProtoHttpRoute instance.
  */
 /**
  * @abstract Performs the initWithMethod operation.

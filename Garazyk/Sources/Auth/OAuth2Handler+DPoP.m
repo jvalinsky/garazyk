@@ -10,7 +10,7 @@
 @implementation OAuth2Handler (DPoP)
 
 #pragma mark - Forwarded Header Trust
-- (BOOL)requestShouldTrustForwardedHeaders:(HttpRequest *)request {
+- (BOOL)requestShouldTrustForwardedHeaders:(ATProtoHttpRequest *)request {
   NSDictionary *env = [[NSProcessInfo processInfo] environment];
   NSString *rawTrustProxy = [env[@"PDS_TRUST_PROXY_HEADERS"] lowercaseString];
   BOOL trustProxy = [rawTrustProxy isEqualToString:@"1"] ||
@@ -47,7 +47,7 @@
 }
 
 #pragma mark - DPoP & Request Origin Helpers
-- (NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request {
+- (NSURL *)expectedDPoPURLForRequest:(ATProtoHttpRequest *)request {
   NSString *path = request.path ?: @"/";
   NSString *hostHeader = [[request headerForKey:@"host"]
       stringByTrimmingCharactersInSet:[NSCharacterSet
@@ -125,7 +125,7 @@
   return [NSURL URLWithString:urlString];
 }
 
-- (NSString *)requestOriginForRequest:(HttpRequest *)request {
+- (NSString *)requestOriginForRequest:(ATProtoHttpRequest *)request {
   NSString *hostHeader = [[request headerForKey:@"host"]
       stringByTrimmingCharactersInSet:[NSCharacterSet
                                           whitespaceAndNewlineCharacterSet]];
@@ -189,7 +189,7 @@
 }
 
 #pragma mark - DPoP Validation
-- (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response {
+- (void)attachDPoPNonceToResponseIfMissing:(ATProtoHttpResponse *)response {
   NSString *existingNonce = response.headers[@"DPoP-Nonce"] ?: response.headers[@"dpop-nonce"];
   if (existingNonce.length > 0) {
     return;
@@ -201,8 +201,8 @@
   }
 }
 
-- (BOOL)validateDPoPForRequest:(HttpRequest *)request
-                      response:(HttpResponse *)response
+- (BOOL)validateDPoPForRequest:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response
                  outThumbprint:(NSString **)outThumbprint {
   NSString *dpopProof = [request headerForKey:@"dpop"];
   if (!dpopProof || dpopProof.length == 0) {

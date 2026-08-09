@@ -50,8 +50,8 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     [self.middlewares addObjectsFromArray:middlewares];
 }
 
-- (BOOL)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (BOOL)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
                 error:(NSError **)error {
     for (id<XrpcMiddleware> middleware in self.middlewares) {
         NSError *middlewareError = nil;
@@ -113,8 +113,8 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     return middleware;
 }
 
-- (BOOL)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (BOOL)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
                 error:(NSError **)error {
     // Get auth components
     ATProtoJWTMinter *jwtMinter = self.jwtMinter ?: self.controller.jwtMinter;
@@ -194,7 +194,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 @property (nonatomic, assign) NSInteger limit;
 @property (nonatomic, assign) NSTimeInterval windowSeconds;
 @property (nonatomic, assign) BOOL perUser; // NO = per IP
-@property (nonatomic, strong) RateLimiter *limiter;
+@property (nonatomic, strong) ATProtoRateLimiter *limiter;
 @end
 
 @implementation RateLimitMiddleware
@@ -208,7 +208,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     middleware.limit = limit;
     middleware.windowSeconds = windowSeconds;
     middleware.perUser = YES;
-    middleware.limiter = [RateLimiter sharedLimiter];
+    middleware.limiter = [ATProtoRateLimiter sharedLimiter];
     return middleware;
 }
 
@@ -217,12 +217,12 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     middleware.limit = limit;
     middleware.windowSeconds = windowSeconds;
     middleware.perUser = NO;
-    middleware.limiter = [RateLimiter sharedLimiter];
+    middleware.limiter = [ATProtoRateLimiter sharedLimiter];
     return middleware;
 }
 
-- (BOOL)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (BOOL)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
                 error:(NSError **)error {
     NSString *key = nil;
     NSString *identifier = nil;
@@ -241,7 +241,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
         key = [NSString stringWithFormat:@"ratelimit:ip:%@:%.0f", identifier, self.windowSeconds];
     }
 
-    RateLimitResult *result = [self.limiter checkRateLimitForKey:key
+    ATProtoRateLimitResult *result = [self.limiter checkRateLimitForKey:key
                                                            limit:self.limit
                                                     windowSeconds:self.windowSeconds];
 
@@ -301,8 +301,8 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     return middleware;
 }
 
-- (BOOL)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (BOOL)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
                 error:(NSError **)error {
     // Get authenticated DID from middleware context
     NSString *authDID = request.authenticatedDid;

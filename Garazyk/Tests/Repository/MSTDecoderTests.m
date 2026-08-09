@@ -32,27 +32,27 @@
 
 - (void)testDecoderAcceptsCanonicalNode {
     NSData *data = [self nodeDataWithEntries:@[[self entryWithPrefix:0 value:[self validCIDTag]]]];
-    XCTAssertNotNil([MST deserializeFromCBOR:data]);
+    XCTAssertNotNil([ATProtoMST deserializeFromCBOR:data]);
 }
 
 - (void)testDecoderRejectsMalformedEntry {
     NSData *data = [self nodeDataWithEntries:@[[ATProtoCBORValue textString:@"not-a-map"]]];
-    XCTAssertNil([MST deserializeFromCBOR:data]);
+    XCTAssertNil([ATProtoMST deserializeFromCBOR:data]);
 }
 
 - (void)testDecoderRejectsOverlongPrefix {
     NSData *data = [self nodeDataWithEntries:@[[self entryWithPrefix:1 value:[self validCIDTag]]]];
-    XCTAssertNil([MST deserializeFromCBOR:data]);
+    XCTAssertNil([ATProtoMST deserializeFromCBOR:data]);
 }
 
 - (void)testDecoderRejectsNonTagValue {
     NSData *data = [self nodeDataWithEntries:@[[self entryWithPrefix:0 value:[ATProtoCBORValue byteString:[NSData data]]]]];
-    XCTAssertNil([MST deserializeFromCBOR:data]);
+    XCTAssertNil([ATProtoMST deserializeFromCBOR:data]);
 }
 
 - (void)testDecoderRejectsEmptyNode {
     NSData *data = [self nodeDataWithEntries:@[]];
-    XCTAssertNil([MST deserializeFromCBOR:data]);
+    XCTAssertNil([ATProtoMST deserializeFromCBOR:data]);
 }
 
 @end

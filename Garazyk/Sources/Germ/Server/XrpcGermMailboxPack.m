@@ -29,31 +29,31 @@
 - (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher {
     // com.germnetwork.mailbox.claimAddresses
     [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_mailbox_claimAddresses
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleClaimAddresses:request response:response];
     }];
 
     // com.germnetwork.mailbox.deliver
     [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_mailbox_deliver
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleMailboxDeliver:request response:response];
     }];
 
     // com.germnetwork.mailbox.poll
     [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_mailbox_poll
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleMailboxPoll:request response:response];
     }];
 
     // com.germnetwork.rendezvous.register
     [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_rendezvous_register
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleRendezvousRegister:request response:response];
     }];
 
     // com.germnetwork.rendezvous.deliver
     [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_rendezvous_deliver
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleRendezvousDeliver:request response:response];
     }];
 
@@ -62,8 +62,8 @@
 
 #pragma mark - Authentication
 
-- (nullable NSString *)authenticateRequest:(HttpRequest *)request
-                                  response:(HttpResponse *)response {
+- (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
+                                  response:(ATProtoHttpResponse *)response {
     // Reuse ChatAuthManager for ATProtoJWT verification — Germ mailbox
     // uses the same auth infrastructure as chat.bsky.*
     NSString *did = [self.authManager authenticateRequest:request response:response];
@@ -76,7 +76,7 @@
 
 #pragma mark - com.germnetwork.mailbox.claimAddresses
 
-- (void)handleClaimAddresses:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleClaimAddresses:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 
@@ -115,7 +115,7 @@
 
 #pragma mark - com.germnetwork.mailbox.deliver
 
-- (void)handleMailboxDeliver:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleMailboxDeliver:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 
@@ -155,7 +155,7 @@
 
 #pragma mark - com.germnetwork.mailbox.poll
 
-- (void)handleMailboxPoll:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleMailboxPoll:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 
@@ -196,7 +196,7 @@
 
 #pragma mark - com.germnetwork.rendezvous.register
 
-- (void)handleRendezvousRegister:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRendezvousRegister:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 
@@ -230,7 +230,7 @@
 
 #pragma mark - com.germnetwork.rendezvous.deliver
 
-- (void)handleRendezvousDeliver:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRendezvousDeliver:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 

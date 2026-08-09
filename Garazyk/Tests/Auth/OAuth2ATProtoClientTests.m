@@ -70,7 +70,7 @@
     return [formatter stringFromDate:date];
 }
 
-- (HttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
+- (ATProtoHttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
                                        clientID:(NSString *)clientID {
     NSError *error = nil;
     BOOL created = [self.database executeParameterizedUpdate:
@@ -91,7 +91,7 @@
                                                            error:&error];
     XCTAssertTrue(inserted, @"Failed to insert PAR row: %@", error);
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/oauth/authorize"
                                                    queryString:@""
@@ -103,7 +103,7 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeRequest:request response:response];
     return response;
 }
@@ -145,7 +145,7 @@
         @"client_metadata": metadataString
     } mutableCopy];
     
-    HttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
+    ATProtoHttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
     
     // EXPECTED BEHAVIOR: Authorization should succeed (serve consent page)
     // UNFIXED BEHAVIOR: Returns 400 with "unauthorized_client" error
@@ -194,7 +194,7 @@
         @"client_metadata": metadataString
     } mutableCopy];
     
-    HttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
+    ATProtoHttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
     
     // EXPECTED BEHAVIOR: Authorization should succeed
     XCTAssertNotEqual(response.statusCode, 400,
@@ -242,7 +242,7 @@
         @"client_metadata": metadataString
     } mutableCopy];
     
-    HttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
+    ATProtoHttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
     
     // EXPECTED BEHAVIOR: Loopback redirect should be allowed
     XCTAssertNotEqual(response.statusCode, 400,
@@ -290,7 +290,7 @@
         @"client_metadata": metadataString
     } mutableCopy];
     
-    HttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
+    ATProtoHttpResponse *response = [self authorizeViaPARWithParameters:queryParams clientID:clientID];
     
     // EXPECTED BEHAVIOR: IPv6 loopback redirect should be allowed
     XCTAssertNotEqual(response.statusCode, 400,

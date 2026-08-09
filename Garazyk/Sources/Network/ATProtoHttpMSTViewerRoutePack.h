@@ -3,16 +3,16 @@
 /*!
  @file ATProtoHttpMSTViewerRoutePack.h
 
- @abstract Declares MST viewer route-pack registration entry points.
+ @abstract Declares ATProtoMST viewer route-pack registration entry points.
 
- @discussion Specifies interfaces used to register MST viewer HTTP endpoints with the server router. Defines registration contracts, not MST data processing behavior.
+ @discussion Specifies interfaces used to register ATProtoMST viewer HTTP endpoints with the server router. Defines registration contracts, not ATProtoMST data processing behavior.
  */
 
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpServer;
+@class ATProtoHttpServer;
 @class PDSController;
 
 @interface ATProtoHttpMSTViewerRoutePack : NSObject
@@ -20,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the registerRoutesWithServer operation.
  */
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                       controller:(nullable PDSController *)controller;
 
 @end

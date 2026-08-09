@@ -42,8 +42,8 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
     return [self initWithDatabase:database plcUrl:nil];
 }
 
-- (void)proxyWriteRequest:(HttpRequest *)request
-                  response:(HttpResponse *)response
+- (void)proxyWriteRequest:(ATProtoHttpRequest *)request
+                  response:(ATProtoHttpResponse *)response
                      nsid:(NSString *)nsid
                  callerDID:(NSString *)callerDID {
     // 1. Parse the input body

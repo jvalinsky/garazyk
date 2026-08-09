@@ -50,7 +50,7 @@
 
 #pragma mark - Helper Methods
 
-- (HttpRequest *)introspectionRequestWithToken:(NSString *)token clientID:(nullable NSString *)clientID {
+- (ATProtoHttpRequest *)introspectionRequestWithToken:(NSString *)token clientID:(nullable NSString *)clientID {
     NSMutableString *bodyStr = [NSMutableString stringWithFormat:@"token=%@",
                             [self urlEncodeString:token]];
     if (clientID) {
@@ -58,7 +58,7 @@
     }
 
     NSData *bodyData = [bodyStr dataUsingEncoding:NSUTF8StringEncoding];
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/introspect"
                                                    queryString:@""
@@ -78,9 +78,9 @@
 #pragma mark - Test Cases: Invalid Tokens
 
 - (void)testIntrospectMalformedJWT {
-    HttpRequest *request = [self introspectionRequestWithToken:@"invalid.jwt.token"
+    ATProtoHttpRequest *request = [self introspectionRequestWithToken:@"invalid.jwt.token"
                                                       clientID:nil];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request response:response];
 
     XCTAssertEqual(response.statusCode, 200);
@@ -89,9 +89,9 @@
 }
 
 - (void)testIntrospectNotAJWT {
-    HttpRequest *request = [self introspectionRequestWithToken:@"not-a-jwt"
+    ATProtoHttpRequest *request = [self introspectionRequestWithToken:@"not-a-jwt"
                                                       clientID:nil];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request response:response];
 
     XCTAssertEqual(response.statusCode, 200);
@@ -100,9 +100,9 @@
 }
 
 - (void)testIntrospectEmptyToken {
-    HttpRequest *request = [self introspectionRequestWithToken:@""
+    ATProtoHttpRequest *request = [self introspectionRequestWithToken:@""
                                                       clientID:nil];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request response:response];
 
     // Empty string should fail to verify
@@ -114,7 +114,7 @@
 #pragma mark - Test Cases: Missing Parameters
 
 - (void)testIntrospectMissingTokenParameter {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/introspect"
                                                    queryString:@""
@@ -124,7 +124,7 @@
                                                           body:[@"" dataUsingEncoding:NSUTF8StringEncoding]
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request response:response];
 
     XCTAssertEqual(response.statusCode, 400);
@@ -134,7 +134,7 @@
 }
 
 - (void)testIntrospectMissingRequestBody {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/introspect"
                                                    queryString:@""
@@ -144,7 +144,7 @@
                                                           body:nil
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request response:response];
 
     XCTAssertEqual(response.statusCode, 400);
@@ -155,9 +155,9 @@
 #pragma mark - Test Cases: RFC 7662 Compliance
 
 - (void)testIntrospectionResponseFormatInactiveToken {
-    HttpRequest *request = [self introspectionRequestWithToken:@"invalid.token"
+    ATProtoHttpRequest *request = [self introspectionRequestWithToken:@"invalid.token"
                                                       clientID:nil];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request response:response];
 
     NSDictionary *result = response.jsonBody;
@@ -172,14 +172,14 @@
 
 - (void)testIntrospectionReturnsHTTP200ForBothActiveAndInactive {
     // Invalid token should return 200 with active=false
-    HttpRequest *request1 = [self introspectionRequestWithToken:@"invalid.token"
+    ATProtoHttpRequest *request1 = [self introspectionRequestWithToken:@"invalid.token"
                                                         clientID:nil];
-    HttpResponse *response1 = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response1 = [[ATProtoHttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request1 response:response1];
     XCTAssertEqual(response1.statusCode, 200);
 
     // Missing token should return 400 (missing parameter, not introspection)
-    HttpRequest *request2 = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request2 = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/introspect"
                                                    queryString:@""
@@ -188,7 +188,7 @@
                                                        headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
                                                           body:[@"" dataUsingEncoding:NSUTF8StringEncoding]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response2 = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response2 = [[ATProtoHttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request2 response:response2];
     XCTAssertEqual(response2.statusCode, 400);
 }
@@ -197,9 +197,9 @@
 
 - (void)testIntrospectWithClientIDParameter {
     // Request with client_id (client authentication is optional per RFC 7662)
-    HttpRequest *request = [self introspectionRequestWithToken:@"invalid.token"
+    ATProtoHttpRequest *request = [self introspectionRequestWithToken:@"invalid.token"
                                                       clientID:@"https://app.bsky.app"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request response:response];
 
     // Even without valid client_id, token introspection should work

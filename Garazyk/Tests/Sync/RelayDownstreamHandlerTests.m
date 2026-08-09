@@ -71,7 +71,7 @@
                                       since:(nullable NSString *)since
                                    prevData:(nullable ATProtoCID *)prevData
                                         seq:(int64_t)seq {
-    RepoCommit *commit = [RepoCommit createCommitWithDid:repo
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:repo
                                                     data:dataCID
                                                      rev:rev
                                                     prev:prevCommitCID];
@@ -589,8 +589,8 @@
                                      rev:@"1"
                                      seq:1];
 
-    RepoCommit *recoveryCommit =
-        [RepoCommit createCommitWithDid:did
+    ATProtoRepoCommit *recoveryCommit =
+        [ATProtoRepoCommit createCommitWithDid:did
                                    data:[ATProtoCID sha256:[@"recovery-data"
                                        dataUsingEncoding:NSUTF8StringEncoding]]
                                     rev:@"3"

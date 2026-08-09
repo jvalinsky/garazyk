@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "HttpRoute.h"
 
-@interface HttpRoute ()
+@interface ATProtoHttpRoute ()
 
 @property (nonatomic, readwrite, copy) NSString *method;
 @property (nonatomic, readwrite, copy) NSString *pattern;
@@ -11,7 +11,7 @@
 
 @end
 
-@implementation HttpRoute
+@implementation ATProtoHttpRoute
 
 - (instancetype)initWithMethod:(NSString *)method
                        pattern:(NSString *)pattern

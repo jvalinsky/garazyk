@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpProtocolDriver.h
+ @file ATProtoHttpProtocolDriver.h
 
  @abstract Protocol-level coordination for HTTP/1.1 session management.
 
@@ -17,8 +17,8 @@
 
 #import <Foundation/Foundation.h>
 
-@class HttpRequest;
-@class HttpProtocolSession;
+@class ATProtoHttpRequest;
+@class ATProtoHttpProtocolSession;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -34,7 +34,7 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
 };
 
 /*!
- @class HttpProtocolDriver
+ @class ATProtoHttpProtocolDriver
 
  @abstract Sans-I/O HTTP/1.1 protocol coordination.
 
@@ -42,14 +42,14 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
  The caller feeds raw bytes via feedData: and receives events via the returned
  array. The caller is responsible for sending responses and managing I/O.
  */
-@interface HttpProtocolDriver : NSObject
+@interface ATProtoHttpProtocolDriver : NSObject
 
 /*!
  @property session
 
  @abstract The underlying protocol session (contains parser and pipeline policy).
  */
-@property (nonatomic, readonly) HttpProtocolSession *session;
+@property (nonatomic, readonly) ATProtoHttpProtocolSession *session;
 
 /*!
  @method feedData:
@@ -80,7 +80,7 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
  @discussion The caller should call this after receiving HttpProtocolEventRequestReady.
  Requests are held in the session's pending queue until pipelining policy allows.
  */
-- (nullable HttpRequest *)nextDispatchableRequest;
+- (nullable ATProtoHttpRequest *)nextDispatchableRequest;
 
 /*!
  @method currentUpgradeRequest
@@ -89,7 +89,7 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
 
  @return The request with the Upgrade header, or nil if no upgrade.
  */
-- (nullable HttpRequest *)currentUpgradeRequest;
+- (nullable ATProtoHttpRequest *)currentUpgradeRequest;
 
 /*!
  @method currentParseError

@@ -92,7 +92,7 @@ static NSData *HexToNSData(NSString *hex) {
     [carData appendData:cidBytes];
     
     NSError *error = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&error];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&error];
     
     XCTAssertNotNil(reader, @"CARReader should parse valid CAR data");
     XCTAssertNil(error, @"There should be no error");
@@ -107,7 +107,7 @@ static NSData *HexToNSData(NSString *hex) {
 
     NSMutableData *block1Data = [NSMutableData dataWithBytes:"block1" length:6];
     ATProtoCID *block1CID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block1Data] codec:0x71];
-    CARBlock *block1 = [CARBlock blockWithCID:block1CID data:block1Data];
+    ATProtoCARBlock *block1 = [ATProtoCARBlock blockWithCID:block1CID data:block1Data];
 
     // Debug: print block ATProtoCID bytes
     NSData *blockCIDBytes = [block1CID bytes];
@@ -117,7 +117,7 @@ static NSData *HexToNSData(NSString *hex) {
     }
     NSLog(@"Block CID bytes (%lu): %@", (unsigned long)blockCIDBytes.length, cidHex);
 
-    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:rootCID];
     [writer addBlock:block1];
 
     NSData *carData = [writer serialize];
@@ -132,7 +132,7 @@ static NSData *HexToNSData(NSString *hex) {
     NSLog(@"CAR v1 data (leading %lu bytes): %@", (unsigned long)MIN(100, carData.length), hex);
 
     NSError *error = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&error];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&error];
     if (!reader) {
         NSLog(@"CARReader error: %@", error);
     }
@@ -141,11 +141,11 @@ static NSData *HexToNSData(NSString *hex) {
     XCTAssertEqualObjects(reader.rootCID, rootCID, @"Root CID should match");
     XCTAssertEqual(reader.blocks.count, 1, @"Should have exactly one block");
 
-    CARBlock *roundTripped = reader.blocks.firstObject;
+    ATProtoCARBlock *roundTripped = reader.blocks.firstObject;
     XCTAssertEqualObjects(block1.cid, roundTripped.cid, @"Block CID should match");
     XCTAssertEqualObjects(block1.data, roundTripped.data, @"Block data should match");
 
-    CARBlock *foundBlock = [reader blockWithCID:block1CID];
+    ATProtoCARBlock *foundBlock = [reader blockWithCID:block1CID];
     XCTAssertNotNil(foundBlock, @"Should be able to lookup block by CID");
     XCTAssertEqualObjects(foundBlock.data, block1Data, @"Found block data should match");
 }
@@ -153,18 +153,18 @@ static NSData *HexToNSData(NSString *hex) {
 - (void)testCARv1WriterSerialization {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
     ATProtoCID *rootCID = [ATProtoCID cidFromString:cidStr];
-    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:rootCID];
 
     NSData *blockData = [@"hello world" dataUsingEncoding:NSUTF8StringEncoding];
     ATProtoCID *blockCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:blockData] codec:0x71];
-    CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
+    ATProtoCARBlock *block = [ATProtoCARBlock blockWithCID:blockCID data:blockData];
     [writer addBlock:block];
 
     NSData *serialized = [writer serialize];
     XCTAssertNotNil(serialized, @"Serialized data should not be nil");
 
     NSError *error = nil;
-    CARReader *reader = [CARReader readFromData:serialized error:&error];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:serialized error:&error];
     XCTAssertNotNil(reader, @"CARReader should parse CAR v1 data");
     XCTAssertNil(error, @"There should be no error parsing CAR v1");
     XCTAssertEqualObjects(reader.rootCID, rootCID, @"Root CID should match");
@@ -178,13 +178,13 @@ static NSData *HexToNSData(NSString *hex) {
 
     NSMutableData *block1Data = [NSMutableData dataWithBytes:"block1" length:6];
     ATProtoCID *block1CID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block1Data] codec:0x71];
-    CARBlock *block1 = [CARBlock blockWithCID:block1CID data:block1Data];
+    ATProtoCARBlock *block1 = [ATProtoCARBlock blockWithCID:block1CID data:block1Data];
 
     NSMutableData *block2Data = [NSMutableData dataWithBytes:"block2" length:6];
     ATProtoCID *block2CID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block2Data] codec:0x71];
-    CARBlock *block2 = [CARBlock blockWithCID:block2CID data:block2Data];
+    ATProtoCARBlock *block2 = [ATProtoCARBlock blockWithCID:block2CID data:block2Data];
 
-    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:rootCID];
     [writer addBlock:block1];
     [writer addBlock:block2];
 
@@ -192,21 +192,21 @@ static NSData *HexToNSData(NSString *hex) {
     XCTAssertNotNil(carData, @"Serialized data should not be nil");
 
     NSError *error = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&error];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&error];
     XCTAssertNotNil(reader, @"CARReader should parse valid CAR v1 data");
     XCTAssertNil(error, @"There should be no error");
     XCTAssertEqual(reader.blocks.count, 2, @"Should have two blocks");
 
-    CARBlock *foundBlock1 = [reader blockWithCID:block1CID];
+    ATProtoCARBlock *foundBlock1 = [reader blockWithCID:block1CID];
     XCTAssertNotNil(foundBlock1, @"Should be able to lookup block by CID");
     XCTAssertEqualObjects(foundBlock1.data, block1Data, @"Found block data should match");
 
-    CARBlock *foundBlock2 = [reader blockWithCID:block2CID];
+    ATProtoCARBlock *foundBlock2 = [reader blockWithCID:block2CID];
     XCTAssertNotNil(foundBlock2, @"Should be able to lookup block by CID");
     XCTAssertEqualObjects(foundBlock2.data, block2Data, @"Found block data should match");
 
     ATProtoCID *nonexistentCID = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
-    CARBlock *notFound = [reader blockWithCID:nonexistentCID];
+    ATProtoCARBlock *notFound = [reader blockWithCID:nonexistentCID];
     XCTAssertNil(notFound, @"Should not find nonexistent CID");
 }
 
@@ -216,7 +216,7 @@ static NSData *HexToNSData(NSString *hex) {
     XCTAssertNotNil(rootCID);
 
     NSError *headerError = nil;
-    NSData *header = [CARWriter encodedHeaderWithRootCID:rootCID error:&headerError];
+    NSData *header = [ATProtoCARWriter encodedHeaderWithRootCID:rootCID error:&headerError];
     XCTAssertNotNil(header);
     XCTAssertNil(headerError);
 
@@ -226,7 +226,7 @@ static NSData *HexToNSData(NSString *hex) {
     [carData appendBytes:malformedEntry length:sizeof(malformedEntry)];
 
     NSError *parseError = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&parseError];
     XCTAssertNil(reader, @"CARReader should reject block with malformed CID");
     XCTAssertNotNil(parseError, @"Parse error should be reported");
 }
@@ -237,26 +237,26 @@ static NSData *HexToNSData(NSString *hex) {
 
     NSData *blockData = [@"test block data for CID consistency" dataUsingEncoding:NSUTF8StringEncoding];
     ATProtoCID *expectedBlockCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:blockData] codec:0x71];
-    CARBlock *block = [CARBlock blockWithCID:expectedBlockCID data:blockData];
+    ATProtoCARBlock *block = [ATProtoCARBlock blockWithCID:expectedBlockCID data:blockData];
 
-    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:rootCID];
     [writer addBlock:block];
 
     NSData *carData = [writer serialize];
     XCTAssertNotNil(carData, @"Serialized data should not be nil");
 
     NSError *error = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&error];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&error];
     XCTAssertNotNil(reader, @"CARReader should parse valid CAR v1 data");
     XCTAssertNil(error, @"There should be no error");
     XCTAssertEqual(reader.blocks.count, 1, @"Should have exactly one block");
 
-    CARBlock *parsedBlock = reader.blocks.firstObject;
+    ATProtoCARBlock *parsedBlock = reader.blocks.firstObject;
     XCTAssertEqualObjects(parsedBlock.cid, expectedBlockCID, @"Block CID should match computed CID");
 }
 
 - (void)testMSTEnumerateNodeBlocksMatchesExportCAR {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
 
     NSData *value1 = [@"record-1" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *value2 = [@"record-2" dataUsingEncoding:NSUTF8StringEncoding];
@@ -287,12 +287,12 @@ static NSData *HexToNSData(NSString *hex) {
     XCTAssertNotNil(carData);
 
     NSError *carError = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&carError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&carError];
     XCTAssertNotNil(reader);
     XCTAssertNil(carError);
 
     NSMutableDictionary<NSString *, NSData *> *exportedBlocks = [NSMutableDictionary dictionary];
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         NSString *cidString = block.cid.stringValue ?: @"";
         if (cidString.length == 0) {
             continue;

@@ -22,8 +22,8 @@
 @property (nonatomic, strong) NSSet<NSString *> *protectedMethods;
 
 - (BOOL)validateHTTPMethodForMethodId:(NSString *)methodId
-                               request:(HttpRequest *)request
-                              response:(HttpResponse *)response;
+                               request:(ATProtoHttpRequest *)request
+                              response:(ATProtoHttpResponse *)response;
 - (NSSet<NSString *> *)queryMethodIds;
 - (NSSet<NSString *> *)procedureMethodIds;
 - (XrpcProxyHandler *)proxyHandlerWithMinter;
@@ -130,7 +130,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     }
     
     // Create a wrapped handler that executes middleware chain first
-    XrpcMethodHandler wrappedHandler = ^(HttpRequest *request, HttpResponse *response) {
+    XrpcMethodHandler wrappedHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         // Execute middleware chain
         XrpcMiddlewareChain *chain = [[XrpcMiddlewareChain alloc] init];
         [chain addMiddlewares:middlewares];
@@ -147,7 +147,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     [self registerMethod:methodId handler:wrappedHandler];
 }
 
-- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
+- (void)setCorsHeaders:(ATProtoHttpResponse *)response forRequest:(ATProtoHttpRequest *)request {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSArray<NSString *> *allowedOrigins = [config arrayForKey:@"cors.allowed_origins"];
     if (!allowedOrigins) {
@@ -177,7 +177,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     [response setHeader:@"Origin" forKey:@"Vary"];
 }
 
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     // Handle CORS preflight immediately — the /xrpc pathHandler prefix match
     // catches OPTIONS before the route trie's explicit OPTIONS route, so we
     // must handle it here to guarantee a 200 response for browsers.
@@ -191,7 +191,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     [self setCorsHeaders:response forRequest:request];
 
     // Check Rate Limit (per-IP)
-    RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+    ATProtoRateLimitResult *rateLimit = [[ATProtoRateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
     if (!rateLimit.allowed) {
         response.statusCode = HttpStatusTooManyRequests;
         [response setJsonBody:@{
@@ -216,7 +216,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     if (authHeader.length > 0) {
         NSString *did = [self _extractDIDFromAuthHeader:authHeader];
         if (did.length > 0) {
-            RateLimitResult *didRateLimit = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
+            ATProtoRateLimitResult *didRateLimit = [[ATProtoRateLimiter sharedLimiter] checkRateLimitForDid:did];
             if (!didRateLimit.allowed) {
                 response.statusCode = HttpStatusTooManyRequests;
                 [response setJsonBody:@{
@@ -234,7 +234,7 @@ static XrpcDispatcher *_sharedInstance = nil;
 
     // Timeout signal: set default timeout for all network calls
     static const NSTimeInterval kDefaultRequestTimeout = 30.0;
-    // request.timeoutInterval is not available on HttpRequest
+    // request.timeoutInterval is not available on ATProtoHttpRequest
     // Timeout should be configured at the session/connection level
 
     NSString *path = request.path;
@@ -367,8 +367,8 @@ static XrpcDispatcher *_sharedInstance = nil;
 
 - (void)executeHandler:(XrpcMethodHandler)handler 
              methodId:(NSString *)methodId 
-              request:(HttpRequest *)request 
-             response:(HttpResponse *)response {
+              request:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response {
     @try {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (authHeader.length > 0 && !request.permissionScopes) {
@@ -402,7 +402,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     }
 }
 
-- (void)sendMethodNotFound:(NSString *)methodId response:(HttpResponse *)response {
+- (void)sendMethodNotFound:(NSString *)methodId response:(ATProtoHttpResponse *)response {
     response.statusCode = HttpStatusNotFound;
     [response setJsonBody:@{
         @"error": @"MethodNotFound",
@@ -411,8 +411,8 @@ static XrpcDispatcher *_sharedInstance = nil;
 }
 
 - (BOOL)validateHTTPMethodForMethodId:(NSString *)methodId
-                               request:(HttpRequest *)request
-                              response:(HttpResponse *)response {
+                               request:(ATProtoHttpRequest *)request
+                              response:(ATProtoHttpResponse *)response {
     HttpMethod expectedMethod = HttpMethodUnknown;
     if ([[self queryMethodIds] containsObject:methodId]) {
         expectedMethod = HttpMethodGET;

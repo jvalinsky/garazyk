@@ -9,7 +9,7 @@
 @implementation AdminModerationAuthTests
 
 - (void)testModerateAccountReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{
                                                           @"did": self.userDid,
                                                           @"action": @"flag"
@@ -21,7 +21,7 @@
 
 - (void)testModerateAccountReturnsForbiddenForNonAdmin {
     NSDictionary *headers = @{@"authorization": [NSString stringWithFormat:@"Bearer %@", self.userJwt]};
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{
                                                           @"did": self.userDid,
                                                           @"action": @"flag"
@@ -32,7 +32,7 @@
 }
 
 - (void)testModerateRecordReturnsUnauthorizedWithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
                                                       body:@{
                                                           @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid],
                                                           @"action": @"flag"
@@ -44,7 +44,7 @@
 
 - (void)testModerateRecordReturnsForbiddenForNonAdmin {
     NSDictionary *headers = @{@"authorization": [NSString stringWithFormat:@"Bearer %@", self.userJwt]};
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
                                                       body:@{
                                                           @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid],
                                                           @"action": @"flag"
@@ -55,7 +55,7 @@
 }
 
 - (void)testGetSubjectStatusRequiresAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:nil];
@@ -64,7 +64,7 @@
 
 - (void)testGetSubjectStatusNonAdminForbidden {
     NSDictionary *headers = @{@"authorization": [NSString stringWithFormat:@"Bearer %@", self.userJwt]};
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getSubjectStatus"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
                                                   headers:headers];
@@ -72,7 +72,7 @@
 }
 
 - (void)testUpdateSubjectStatusRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateSubjectStatus"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateSubjectStatus"
                                                       body:@{
                                                           @"subject": @{@"did": self.userDid},
                                                           @"takedown": @{@"applied": @YES}
@@ -83,7 +83,7 @@
 
 - (void)testUpdateSubjectStatusNonAdminForbidden {
     NSDictionary *headers = @{@"authorization": [NSString stringWithFormat:@"Bearer %@", self.userJwt]};
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateSubjectStatus"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateSubjectStatus"
                                                       body:@{
                                                           @"subject": @{@"did": self.userDid},
                                                           @"takedown": @{@"applied": @YES}

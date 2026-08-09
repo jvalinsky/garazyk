@@ -31,8 +31,8 @@ static MikrusDatabase *MikrusOpenTestDB(XCTestCase *testCase) {
     return db;
 }
 
-static HttpRequest *MikrusRequest(NSDictionary *queryParams) {
-    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
+    return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                  methodString:@"GET"
                                          path:@"/xrpc/test"
                                   queryString:@""
@@ -400,11 +400,11 @@ static HttpRequest *MikrusRequest(NSDictionary *queryParams) {
 }
 
 - (void)testGetBacklinksResponseShape {
-    HttpRequest *request = MikrusRequest(@{
+    ATProtoHttpRequest *request = MikrusRequest(@{
         @"subject": @"at://did:plc:target/app.bsky.feed.post/one",
         @"source": @"app.bsky.feed.like:subject.uri"
     });
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     [self.routes handleGetBacklinks:request response:response];
 
@@ -416,12 +416,12 @@ static HttpRequest *MikrusRequest(NSDictionary *queryParams) {
 }
 
 - (void)testRejectsLimitAboveLexiconMaximum {
-    HttpRequest *request = MikrusRequest(@{
+    ATProtoHttpRequest *request = MikrusRequest(@{
         @"subject": @"at://did:plc:target/app.bsky.feed.post/one",
         @"source": @"app.bsky.feed.like:subject.uri",
         @"limit": @"101"
     });
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     [self.routes handleGetBacklinks:request response:response];
 
@@ -430,11 +430,11 @@ static HttpRequest *MikrusRequest(NSDictionary *queryParams) {
 }
 
 - (void)testGetRecordByUriLocalRecord {
-    HttpRequest *request = MikrusRequest(@{
+    ATProtoHttpRequest *request = MikrusRequest(@{
         @"at_uri": @"at://did:plc:alice/app.bsky.feed.like/like1",
         @"cid": @"cid1"
     });
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     [self.routes handleGetRecordByUri:request response:response];
 
@@ -456,13 +456,13 @@ static HttpRequest *MikrusRequest(NSDictionary *queryParams) {
                                    seq:20
                                  error:&error], @"%@", error);
 
-    HttpRequest *request = MikrusRequest(@{
+    ATProtoHttpRequest *request = MikrusRequest(@{
         @"subject": @"did:plc:bob",
         @"source": @"app.bsky.graph.listitem:subject",
         @"pathToOther": @"list",
         @"did": @"did:plc:alice"
     });
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     [self.routes handleGetManyToMany:request response:response];
 

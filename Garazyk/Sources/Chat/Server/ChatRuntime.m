@@ -22,7 +22,7 @@
 @property (nonatomic, strong, readwrite) ChatConfiguration *configuration;
 @property (nonatomic, strong) PDSDatabase *db;
 @property (nonatomic, strong) ChatService *chatService;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) XrpcDispatcher *dispatcher;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
@@ -98,7 +98,7 @@
     [XrpcChatBskyConvoPack registerWithDispatcher:self.dispatcher services:bag];
     [XrpcChatBskyGroupPack registerWithDispatcher:self.dispatcher services:bag];
 
-    self.httpServer = [HttpServer serverWithHost:@"0.0.0.0" port:self.configuration.httpPort]; // Bind to all interfaces for Docker support
+    self.httpServer = [ATProtoHttpServer serverWithHost:@"0.0.0.0" port:self.configuration.httpPort]; // Bind to all interfaces for Docker support
 
     // Configure auth manager with PDS URL and service DID for ATProtoJWT verification
     if (self.configuration.pdsUrl.length > 0) {
@@ -117,7 +117,7 @@
     // Add health endpoint
     [self.httpServer addRoute:@"GET"
                         path:@"/_health"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = 200;
                          [response setBodyString:@"ok"];
                      }];
@@ -125,7 +125,7 @@
     // Root endpoint - display ASCII art
     [self.httpServer addRoute:@"GET"
                         path:@"/"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = 200;
                          response.contentType = @"text/plain; charset=utf-8";
                          [response setBodyString:@".|'''.|                                            '         '||                .   \n"
@@ -140,7 +140,7 @@
     // DID document endpoint (did:web support)
     [self.httpServer addRoute:@"GET"
                         path:@"/.well-known/did.json"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          ChatConfiguration *c = self.configuration;
                          NSString *did = c.serviceDID;
                          NSString *scheme = [c.serviceDomain containsString:@":"] ? @"http" : @"https";
@@ -162,7 +162,7 @@
 
     // Add XRPC Route
     __weak typeof(self) weakSelf = self;
-    [self.httpServer addRoute:@"*" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"*" path:@"/xrpc/:method" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [weakSelf.dispatcher handleRequest:request response:response];
     }];
     

@@ -103,8 +103,8 @@
   return nil;
 }
 
-- (void)handleCSSRequest:(HttpRequest *)request
-                response:(HttpResponse *)response {
+- (void)handleCSSRequest:(ATProtoHttpRequest *)request
+                response:(ATProtoHttpResponse *)response {
   NSString *cssDir = [self sharedCSSPath];
   if (!cssDir) {
     response.statusCode = 404;

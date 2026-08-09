@@ -13,7 +13,7 @@
 }
 
 - (void)testTempRevokeAccountCredentialsReturns401WithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
                                                       body:@{@"account": self.did1}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -21,7 +21,7 @@
 
 - (void)testTempRevokeAccountCredentialsReturnsForbiddenForOtherAccount {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
                                                       body:@{@"account": self.did2}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
@@ -30,14 +30,14 @@
 - (void)testTempRevokeAccountCredentialsRevokesRefreshAndAppPasswords {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
-    HttpResponse *createdResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAppPassword"
+    ATProtoHttpResponse *createdResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAppPassword"
                                                              body:@{@"name": @"temp-revoke-test"}
                                                           headers:@{@"authorization": authHeader}];
     XCTAssertEqual(createdResponse.statusCode, 200);
     NSString *appPassword = createdResponse.jsonBody[@"password"];
     XCTAssertNotNil(appPassword);
 
-    HttpResponse *revokeResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
+    ATProtoHttpResponse *revokeResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
                                                             body:@{@"account": @"repoauth1.test"}
                                                          headers:@{@"authorization": authHeader}];
     XCTAssertEqual(revokeResponse.statusCode, 200);
@@ -49,7 +49,7 @@
     XCTAssertNil(refreshed);
     XCTAssertNotNil(refreshError);
 
-    HttpResponse *sessionAfterRevoke = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createSession"
+    ATProtoHttpResponse *sessionAfterRevoke = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createSession"
                                                                 body:@{@"identifier": @"repoauth1.test",
                                                                        @"password": appPassword}
                                                              headers:@{}];
@@ -58,7 +58,7 @@
 
 - (void)testTempAddReservedHandleReturnsForbiddenWithoutAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.addReservedHandle"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.addReservedHandle"
                                                       body:@{@"handle": @"reserved-temp.test"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
@@ -66,12 +66,12 @@
 
 - (void)testTempAddReservedHandleAdminMakesHandleUnavailable {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminAccessJwt];
-    HttpResponse *reserveResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.addReservedHandle"
+    ATProtoHttpResponse *reserveResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.addReservedHandle"
                                                              body:@{@"handle": @"reserved-temp.test"}
                                                           headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(reserveResponse.statusCode, 200);
 
-    HttpResponse *checkResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkHandleAvailability"
+    ATProtoHttpResponse *checkResponse = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkHandleAvailability"
                                                    queryParams:@{@"handle": @"reserved-temp.test"}
                                                        headers:@{}];
     XCTAssertEqual(checkResponse.statusCode, 200);
@@ -84,7 +84,7 @@
 
 - (void)testTempAddReservedHandlePersistsInServiceDatabase {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminAccessJwt];
-    HttpResponse *reserveResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.addReservedHandle"
+    ATProtoHttpResponse *reserveResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.addReservedHandle"
                                                              body:@{@"handle": @"reserved-persisted.test"}
                                                           headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(reserveResponse.statusCode, 200);
@@ -96,7 +96,7 @@
 }
 
 - (void)testTempCheckHandleAvailabilityAvailable {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkHandleAvailability"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkHandleAvailability"
                                               queryParams:@{@"handle": @"fresh-temp.test"}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -107,7 +107,7 @@
 }
 
 - (void)testTempCheckHandleAvailabilityUnavailableForExistingAccount {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkHandleAvailability"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkHandleAvailability"
                                               queryParams:@{@"handle": @"repoauth2.test"}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -119,7 +119,7 @@
 }
 
 - (void)testTempCheckHandleAvailabilityBlocksBadEmail {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkHandleAvailability"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkHandleAvailability"
                                               queryParams:@{@"handle": @"fresh-email.test",
                                                             @"email": @"not-an-email"}
                                                   headers:@{}];
@@ -128,7 +128,7 @@
 }
 
 - (void)testTempCheckSignupQueueReturnsActivated {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkSignupQueue"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkSignupQueue"
                                               queryParams:@{}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -136,7 +136,7 @@
 }
 
 - (void)testTempDereferenceScopeBlocksBadReference {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
                                               queryParams:@{@"scope": @"com.atproto.transition:generic"}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 400);
@@ -145,7 +145,7 @@
 
 - (void)testTempDereferenceScopeReturnsResolvedScope {
     // XCTAssertEqual(actual, expected);
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
                                               queryParams:@{@"scope": @"ref:com.atproto.transition:generic"}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -153,7 +153,7 @@
 }
 
 - (void)testTempDereferenceScopeBlocksUnknownReference {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
                                               queryParams:@{@"scope": @"ref:com.atproto.transition:does-not-exist"}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 400);
@@ -162,7 +162,7 @@
 
 - (void)testTempDereferenceScopeResolvesKnownCompositeReference {
     // XCTAssertEqual(actual, expected);
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
                                               queryParams:@{@"scope": @"ref:com.atproto.transition:chat.bsky"}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -180,7 +180,7 @@
     XCTAssertNotNil(label);
     XCTAssertNil(error);
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.fetchLabels"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.fetchLabels"
                                               queryParams:@{@"limit": @"10"}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -194,7 +194,7 @@
 }
 
 - (void)testTempRequestPhoneVerificationReturns400OnBadInput {
-    HttpResponse *invalidResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.requestPhoneVerification"
+    ATProtoHttpResponse *invalidResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.requestPhoneVerification"
                                                              body:@{@"phoneNumber": @"bad-phone"}
                                                           headers:@{}];
     XCTAssertEqual(invalidResponse.statusCode, 400);
@@ -205,7 +205,7 @@
     NSString *previousValue = existingProvider ? [NSString stringWithUTF8String:existingProvider] : nil;
     unsetenv("PDS_PHONE_VERIFICATION_PROVIDER");
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.requestPhoneVerification"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.requestPhoneVerification"
                                                       body:@{@"phoneNumber": @"+12025550123"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 501);
@@ -223,7 +223,7 @@
     NSString *previousValue = existingProvider ? [NSString stringWithUTF8String:existingProvider] : nil;
     setenv("PDS_PHONE_VERIFICATION_PROVIDER", "mock", 1);
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.requestPhoneVerification"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.requestPhoneVerification"
                                                       body:@{@"phoneNumber": @"+12025550123"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -242,7 +242,7 @@
     NSString *previousValue = existingProvider ? [NSString stringWithUTF8String:existingProvider] : nil;
     setenv("PDS_PHONE_VERIFICATION_PROVIDER", "example-provider", 1);
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.requestPhoneVerification"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.requestPhoneVerification"
                                                       body:@{@"phoneNumber": @"+12025550123"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 501);

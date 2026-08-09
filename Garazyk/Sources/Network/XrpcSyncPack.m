@@ -33,18 +33,18 @@
 
 static NSString *trimmedNonEmptyString(NSString *value);
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
-static void setSubscribeReposUpgradeRequired(HttpRequest *request,
-                                             HttpResponse *response);
+static void setSubscribeReposUpgradeRequired(ATProtoHttpRequest *request,
+                                             ATProtoHttpResponse *response);
 static NSString *normalizedHostnameString(NSString *hostInput);
-static BOOL validateSyncDIDParam(NSString *did, HttpResponse *response);
+static BOOL validateSyncDIDParam(NSString *did, ATProtoHttpResponse *response);
 static BOOL rejectUnavailableSyncDid(NSString *did,
                                      PDSServiceDatabases *serviceDatabases,
                                      id<PDSAdminController> adminController,
-                                     HttpResponse *response);
+                                     ATProtoHttpResponse *response);
 static BOOL rejectSyncRecordTakedown(NSString *uri,
                                      PDSServiceDatabases *serviceDatabases,
-                                     HttpResponse *response);
-static void applyBlobDownloadHeaders(NSString *mimeType, HttpResponse *response);
+                                     ATProtoHttpResponse *response);
+static void applyBlobDownloadHeaders(NSString *mimeType, ATProtoHttpResponse *response);
 static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                                         ATProtoServiceConfiguration *config);
 static const NSUInteger kPDSSyncGetBlocksMaxCIDs = 100;
@@ -80,8 +80,8 @@ static BOOL parseStrictIntegerString(NSString *value, NSInteger *result) {
   return YES;
 }
 
-static void setSubscribeReposUpgradeRequired(HttpRequest *request,
-                                             HttpResponse *response) {
+static void setSubscribeReposUpgradeRequired(ATProtoHttpRequest *request,
+                                             ATProtoHttpResponse *response) {
   if (request.method != HttpMethodGET) {
     response.statusCode = HttpStatusMethodNotAllowed;
     [response setHeader:@"GET" forKey:@"Allow"];
@@ -148,7 +148,7 @@ static NSString *normalizedHostnameString(NSString *hostInput) {
   return [hostname lowercaseString];
 }
 
-static BOOL validateSyncDIDParam(NSString *did, HttpResponse *response) {
+static BOOL validateSyncDIDParam(NSString *did, ATProtoHttpResponse *response) {
   NSError *didError = nil;
   if (did.length == 0 || ![ATProtoValidator validateDID:did error:&didError]) {
     response.statusCode = HttpStatusBadRequest;
@@ -164,7 +164,7 @@ static BOOL validateSyncDIDParam(NSString *did, HttpResponse *response) {
 static BOOL rejectUnavailableSyncDid(NSString *did,
                                      PDSServiceDatabases *serviceDatabases,
                                      id<PDSAdminController> adminController,
-                                     HttpResponse *response) {
+                                     ATProtoHttpResponse *response) {
   NSError *accountError = nil;
   PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
   if (!account) {
@@ -192,7 +192,7 @@ static BOOL rejectUnavailableSyncDid(NSString *did,
 
 static BOOL rejectSyncRecordTakedown(NSString *uri,
                                      PDSServiceDatabases *serviceDatabases,
-                                     HttpResponse *response) {
+                                     ATProtoHttpResponse *response) {
   NSError *dbError = nil;
   PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&dbError];
   if (!database) return NO;
@@ -219,7 +219,7 @@ static BOOL blobMimeTypeShouldAttach(NSString *mimeType) {
   return NO;
 }
 
-static void applyBlobDownloadHeaders(NSString *mimeType, HttpResponse *response) {
+static void applyBlobDownloadHeaders(NSString *mimeType, ATProtoHttpResponse *response) {
   [response setHeader:@"nosniff" forKey:@"X-Content-Type-Options"];
   [response setHeader:@"default-src 'none'; sandbox" forKey:@"Content-Security-Policy"];
   if (blobMimeTypeShouldAttach(mimeType)) {
@@ -260,8 +260,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     ATProtoServiceConfiguration *config = services.configuration;
 
   // com.atproto.sync.getRepo
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRepo handler:^(HttpRequest *request,
-                                              HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRepo handler:^(ATProtoHttpRequest *request,
+                                              ATProtoHttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     NSString *sinceRev = [request queryParamForKey:@"since"];
     if (!validateSyncDIDParam(did, response)) {
@@ -340,8 +340,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getCheckout
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getCheckout handler:^(HttpRequest *request,
-                                                  HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getCheckout handler:^(ATProtoHttpRequest *request,
+                                                  ATProtoHttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     if (!validateSyncDIDParam(did, response)) {
       return;
@@ -395,8 +395,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   // com.atproto.sync.getHead
   // Public per AT Proto sync spec: relays must be able to read repo heads
   // without authentication. The DID comes from the query string, not auth.
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getHead handler:^(HttpRequest *request,
-                                              HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getHead handler:^(ATProtoHttpRequest *request,
+                                              ATProtoHttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     if (!validateSyncDIDParam(did, response)) {
       return;
@@ -419,8 +419,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getLatestCommit
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getLatestCommit handler:^(HttpRequest *request,
-                                                      HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getLatestCommit handler:^(ATProtoHttpRequest *request,
+                                                      ATProtoHttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     if (!validateSyncDIDParam(did, response)) {
       return;
@@ -447,8 +447,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getBlocks
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getBlocks handler:^(HttpRequest *request,
-                                                HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getBlocks handler:^(ATProtoHttpRequest *request,
+                                                ATProtoHttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     NSArray<NSString *> *cids = [request queryParamsForKey:@"cids"];
     if (!validateSyncDIDParam(did, response)) {
@@ -497,8 +497,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getHostStatus
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getHostStatus handler:^(HttpRequest *request,
-                                                    HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getHostStatus handler:^(ATProtoHttpRequest *request,
+                                                    ATProtoHttpResponse *response) {
     NSString *hostnameParam = [request queryParamForKey:@"hostname"];
     if (hostnameParam.length == 0) {
       response.statusCode = HttpStatusBadRequest;
@@ -526,8 +526,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.listHosts
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listHosts handler:^(HttpRequest *request,
-                                                HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listHosts handler:^(ATProtoHttpRequest *request,
+                                                ATProtoHttpResponse *response) {
     NSString *limitParam = [request queryParamForKey:@"limit"];
     NSInteger limit = 200;
     if (limitParam.length > 0) {
@@ -576,8 +576,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.listRepos
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listRepos handler:^(HttpRequest *request,
-                                                HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listRepos handler:^(ATProtoHttpRequest *request,
+                                                ATProtoHttpResponse *response) {
     NSString *limitParam = [request queryParamForKey:@"limit"];
     NSInteger limit = 500;
     if (limitParam.length > 0) {
@@ -632,7 +632,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
         nextCursor = account.did;
         if (account.did.length > 0) {
           // Use lightweight headInfoForDid (reads stored head commit metadata
-          // without loading all records and rebuilding the MST) instead of
+          // without loading all records and rebuilding the ATProtoMST) instead of
           // the expensive getLatestCommitForDid which does full export prep.
           NSDictionary *headInfo =
               [repositoryService headInfoForDid:account.did error:nil];
@@ -676,7 +676,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
   // com.atproto.sync.listReposByCollection
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listReposByCollection handler:^(
-                  HttpRequest *request, HttpResponse *response) {
+                  ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *collection = [request queryParamForKey:@"collection"];
     if (collection.length == 0) {
       response.statusCode = HttpStatusBadRequest;
@@ -808,8 +808,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.listBlobs
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listBlobs handler:^(HttpRequest *request,
-                                                HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_listBlobs handler:^(ATProtoHttpRequest *request,
+                                                ATProtoHttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     if (!validateSyncDIDParam(did, response)) {
       return;
@@ -886,8 +886,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getBlob
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getBlob handler:^(HttpRequest *request,
-                                              HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getBlob handler:^(ATProtoHttpRequest *request,
+                                              ATProtoHttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     NSString *cid = [request queryParamForKey:@"cid"];
     if (!validateSyncDIDParam(did, response)) {
@@ -982,14 +982,14 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.subscribeRepos
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_subscribeRepos handler:^(HttpRequest *request,
-                                                     HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_subscribeRepos handler:^(ATProtoHttpRequest *request,
+                                                     ATProtoHttpResponse *response) {
     setSubscribeReposUpgradeRequired(request, response);
   }];
 
   // com.atproto.sync.getRecord
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRecord handler:^(HttpRequest *request,
-                                                HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRecord handler:^(ATProtoHttpRequest *request,
+                                                ATProtoHttpResponse *response) {
     if (request.method != HttpMethodGET) {
       response.statusCode = HttpStatusMethodNotAllowed;
       [response setHeader:@"GET" forKey:@"Allow"];
@@ -1041,7 +1041,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     // a narrow slice of the repo containing only the requested record.
     //
     // Open the actor store once and reuse it for the commit ATProtoCID lookup,
-    // commit block fetch, record block fetch, and MST proof path — avoiding
+    // commit block fetch, record block fetch, and ATProtoMST proof path — avoiding
     // redundant store opens that would each hit the pool lock and open the
     // SQLite database file again.
     PDSActorStore *store = [userDatabasePool storeForDid:did error:nil];
@@ -1076,16 +1076,16 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
-    CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:commitCID];
 
     // Add the commit block (reuses the already-open store).
     NSData *commitBlock =
         [store getBlockForCID:[commitCID bytes] forDid:did error:nil];
     if (commitBlock) {
-      [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlock]];
+      [writer addBlock:[ATProtoCARBlock blockWithCID:commitCID data:commitBlock]];
     }
 
-    // Add the record block and MST proof path
+    // Add the record block and ATProtoMST proof path
     NSString *recordCIDStr = record[@"cid"];
     if (recordCIDStr) {
       ATProtoCID *recordCID = [ATProtoCID cidFromString:recordCIDStr];
@@ -1112,11 +1112,11 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
           }
         }
         if (blockData) {
-          [writer addBlock:[CARBlock blockWithCID:recordCID data:blockData]];
+          [writer addBlock:[ATProtoCARBlock blockWithCID:recordCID data:blockData]];
         }
 
-        // Add MST proof path (reuses the already-open store)
-        MST *mst = [repositoryService loadMSTForDid:did store:store error:nil];
+        // Add ATProtoMST proof path (reuses the already-open store)
+        ATProtoMST *mst = [repositoryService loadMSTForDid:did store:store error:nil];
         if (mst && store) {
           NSString *mstKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
           
@@ -1125,10 +1125,10 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
               return [store getBlockForCID:targetCid.bytes forDid:did error:nil];
           };
           
-          NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:mstKey blockProvider:blockProvider];
+          NSArray<ATProtoMSTNode *> *proofNodes = [mst getProofNodesForKey:mstKey blockProvider:blockProvider];
 
-          NSMapTable<MSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
-          for (MSTNode *node in proofNodes) {
+          NSMapTable<ATProtoMSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+          for (ATProtoMSTNode *node in proofNodes) {
             ATProtoCID *nodeCID = [node getCID:cache];
             if (nodeCID) {
               // Fetch original block from DB to ensure ATProtoCID consistency
@@ -1139,7 +1139,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
               }
               
               if (nodeData) {
-                [writer addBlock:[CARBlock blockWithCID:nodeCID data:nodeData]];
+                [writer addBlock:[ATProtoCARBlock blockWithCID:nodeCID data:nodeData]];
               }
             }
           }
@@ -1154,8 +1154,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.requestCrawl
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_requestCrawl handler:^(HttpRequest *request,
-                                                   HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_requestCrawl handler:^(ATProtoHttpRequest *request,
+                                                   ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody ?: @{};
     NSString *hostname = body[@"hostname"];
     if (![hostname isKindOfClass:[NSString class]] ||
@@ -1193,8 +1193,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.notifyOfUpdate
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_notifyOfUpdate handler:^(HttpRequest *request,
-                                                     HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_notifyOfUpdate handler:^(ATProtoHttpRequest *request,
+                                                     ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody ?: @{};
     NSString *hostname = body[@"hostname"];
     if (![hostname isKindOfClass:[NSString class]] ||
@@ -1214,8 +1214,8 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getRepoStatus
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRepoStatus handler:^(HttpRequest *request,
-                                                    HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRepoStatus handler:^(ATProtoHttpRequest *request,
+                                                    ATProtoHttpResponse *response) {
     NSString *did = [request queryParamForKey:@"did"];
     if (did.length == 0) {
       response.statusCode = HttpStatusBadRequest;

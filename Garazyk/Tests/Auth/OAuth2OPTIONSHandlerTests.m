@@ -23,7 +23,7 @@
 
 - (void)testOPTIONSResponseSerialization {
     // Create a 204 No Content response like the OPTIONS handler does
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
     [response setHeader:@"GET, POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
     [response setHeader:@"Authorization, Content-Type, DPoP, DPoP-Nonce" forKey:@"Access-Control-Allow-Headers"];
@@ -53,7 +53,7 @@
 
 - (void)testOPTIONSResponseWithExplicitEmptyBody {
     // Test setting an explicit empty body (potential fix)
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
     [response setHeader:@"GET, POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
     [response setHeader:@"Authorization, Content-Type, DPoP, DPoP-Nonce" forKey:@"Access-Control-Allow-Headers"];
@@ -74,7 +74,7 @@
 }
 
 - (void)testOPTIONSResponseHeaders {
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
     [response setHeader:@"GET, POST, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
     [response setHeader:@"Authorization, Content-Type, DPoP, DPoP-Nonce" forKey:@"Access-Control-Allow-Headers"];
@@ -91,7 +91,7 @@
 
 - (void)test200ResponseWithEmptyBodyForComparison {
     // Test that 200 OK with empty body works differently than 204
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     response.statusCode = 200;
     response.statusMessage = @"OK";
     [response setBodyData:[NSData data]];

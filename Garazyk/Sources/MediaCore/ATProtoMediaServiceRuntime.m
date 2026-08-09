@@ -13,7 +13,7 @@
 #import "Debug/GZLogger.h"
 
 @interface ATProtoMediaServiceRuntime ()
-@property (nonatomic, strong, readwrite) HttpServer *httpServer;
+@property (nonatomic, strong, readwrite) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong, readwrite) ATProtoMediaWorker *worker;
 @property (nonatomic, strong) ATProtoMediaSQLiteStore *jobStore;
 @property (nonatomic, strong) id<PDSBlobProvider> blobProvider;
@@ -95,10 +95,10 @@
     [xrpcPack registerWithDispatcher:dispatcher services:routeServices];
 
     // ── HTTP Server ───────────────────────────────────────────
-    self.httpServer = [HttpServer serverWithPort:config.port];
+    self.httpServer = [ATProtoHttpServer serverWithPort:config.port];
 
     __weak typeof(self) weakSelf = self;
-    void (^xrpcHandler)(HttpRequest *, HttpResponse *) = ^(HttpRequest *request, HttpResponse *response) {
+    void (^xrpcHandler)(ATProtoHttpRequest *, ATProtoHttpResponse *) = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [weakSelf setCORSHeaders:request response:response];
         [dispatcher handleRequest:request response:response];
     };
@@ -112,14 +112,14 @@
     [self.httpServer addHandlerForPath:@"/xrpc" handler:xrpcHandler];
 
     // Health endpoint
-    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = 200;
         response.contentType = @"application/json";
         [response setJsonBody:@{@"status": @"ok", @"service": weakSelf.processor.mediaTypeIdentifier}];
     }];
 
     // Admin: list jobs
-    [self.httpServer addRoute:@"GET" path:@"/admin/api/media/jobs" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/api/media/jobs" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *stateFilter = [request queryParamForKey:@"state"];
         if (stateFilter.length == 0) stateFilter = nil;
         NSString *limitStr = [request queryParamForKey:@"limit"];
@@ -143,7 +143,7 @@
     }];
 
     // Admin: retry job
-    [self.httpServer addRoute:@"POST" path:@"/admin/api/media/jobs/:jobId/retry" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/api/media/jobs/:jobId/retry" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *jobId = request.pathParameters[@"jobId"];
         if (jobId.length == 0) {
             response.statusCode = 400;
@@ -179,7 +179,7 @@
 
 #pragma mark - CORS
 
-- (void)setCORSHeaders:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)setCORSHeaders:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *origin = [request headerForKey:@"Origin"];
     if (origin.length > 0) {
         [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];

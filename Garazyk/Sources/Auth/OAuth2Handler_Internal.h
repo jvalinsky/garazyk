@@ -46,34 +46,34 @@ extern dispatch_once_t sClientCacheOnceToken;
 @property (nonatomic, copy) NSString *serverOrigin;
 
 /** @abstract Validates a passkey challenge request and stores a short-lived challenge session. */
-- (void)handlePasskeyChallenge:(HttpRequest *)request
-                      response:(HttpResponse *)response;
+- (void)handlePasskeyChallenge:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response;
 /** @abstract Verifies a one-time passkey assertion and continues the associated sign-in flow. */
-- (void)handlePasskeySignIn:(HttpRequest *)request
-                     response:(HttpResponse *)response;
+- (void)handlePasskeySignIn:(ATProtoHttpRequest *)request
+                     response:(ATProtoHttpResponse *)response;
 /** @abstract Validates a token grant and emits no-store OAuth token or error response data. */
-- (void)handleTokenRequest:(HttpRequest *)request
-                  response:(HttpResponse *)response;
+- (void)handleTokenRequest:(ATProtoHttpRequest *)request
+                  response:(ATProtoHttpResponse *)response;
 /** @abstract Authenticates a revocation request and invalidates the specified token when permitted. */
-- (void)handleRevokeRequest:(HttpRequest *)request
-                   response:(HttpResponse *)response;
+- (void)handleRevokeRequest:(ATProtoHttpRequest *)request
+                   response:(ATProtoHttpResponse *)response;
 /** @abstract Emits authorization-server metadata derived from the configured public origin. */
-- (void)handleAuthorizationServerMetadata:(HttpRequest *)request
-                                 response:(HttpResponse *)response;
+- (void)handleAuthorizationServerMetadata:(ATProtoHttpRequest *)request
+                                 response:(ATProtoHttpResponse *)response;
 /** @abstract Emits protected-resource metadata for DPoP-aware resource clients. */
-- (void)handleProtectedResourceMetadata:(HttpRequest *)request
-                               response:(HttpResponse *)response;
+- (void)handleProtectedResourceMetadata:(ATProtoHttpRequest *)request
+                               response:(ATProtoHttpResponse *)response;
 /** @abstract Emits the public JWK set used by this authorization server. */
-- (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleJWKS:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Validates and stores a pushed authorization request before returning its request URI. */
-- (void)handlePARRequest:(HttpRequest *)request
-                response:(HttpResponse *)response;
+- (void)handlePARRequest:(ATProtoHttpRequest *)request
+                response:(ATProtoHttpResponse *)response;
 /** @abstract Authenticates an introspection request and reports token activity without exposing secrets. */
-- (void)handleIntrospectRequest:(HttpRequest *)request
-                       response:(HttpResponse *)response;
+- (void)handleIntrospectRequest:(ATProtoHttpRequest *)request
+                       response:(ATProtoHttpResponse *)response;
 /** @abstract Adds CORS headers only when the request origin matches configured allowed origins. */
-- (void)setCorsHeaders:(HttpResponse *)response
-            forRequest:(HttpRequest *)request;
+- (void)setCorsHeaders:(ATProtoHttpResponse *)response
+            forRequest:(ATProtoHttpRequest *)request;
 
 #pragma mark - Client Validation
 /** @abstract Validates and normalizes dynamic client metadata before it is trusted or cached. */
@@ -92,7 +92,7 @@ extern dispatch_once_t sClientCacheOnceToken;
 /** @abstract Reports whether an error represents the synchronous client-validation timeout. */
 - (BOOL)isClientValidationTimeoutError:(NSError *)error;
 /** @abstract Writes a protocol-safe OAuth error response from the supplied status and OAuth fields. */
-- (void)setOAuthErrorResponse:(HttpResponse *)response
+- (void)setOAuthErrorResponse:(ATProtoHttpResponse *)response
                        status:(NSInteger)status
                         error:(NSString *)errorCode
              errorDescription:(NSString *)errorDescription;
@@ -129,17 +129,17 @@ extern dispatch_once_t sClientCacheOnceToken;
  * @discussion Uses the canonical expected URL and returns the validated key thumbprint only after
  * method, URL, proof, and replay protections succeed.
  */
-- (BOOL)validateDPoPForRequest:(HttpRequest *)request
-                      response:(HttpResponse *)response
+- (BOOL)validateDPoPForRequest:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response
                  outThumbprint:(NSString * _Nullable * _Nullable)outThumbprint;
 /** @abstract Adds a fresh DPoP nonce only when the response does not already carry one. */
-- (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response;
+- (void)attachDPoPNonceToResponseIfMissing:(ATProtoHttpResponse *)response;
 /** @abstract Builds the canonical URL used for DPoP htu validation. */
-- (NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request;
+- (NSURL *)expectedDPoPURLForRequest:(ATProtoHttpRequest *)request;
 /** @abstract Returns the canonical request origin for OAuth audience and origin comparisons. */
-- (NSString *)requestOriginForRequest:(HttpRequest *)request;
+- (NSString *)requestOriginForRequest:(ATProtoHttpRequest *)request;
 /** @abstract Returns whether forwarded headers may be trusted for this request's origin derivation. */
-- (BOOL)requestShouldTrustForwardedHeaders:(HttpRequest *)request;
+- (BOOL)requestShouldTrustForwardedHeaders:(ATProtoHttpRequest *)request;
 
 #pragma mark - PAR
 /** @abstract Atomically consumes a pushed authorization request only for its bound client identifier. */

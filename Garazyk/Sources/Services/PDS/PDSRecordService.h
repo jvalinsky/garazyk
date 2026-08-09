@@ -28,7 +28,7 @@ typedef NS_ENUM(NSInteger, PDSRecordServiceError) {
     PDSRecordServiceErrorUnauthorized = 1,
 };
 
-@class MST;
+@class ATProtoMST;
 @class ATProtoCID;
 
 /**

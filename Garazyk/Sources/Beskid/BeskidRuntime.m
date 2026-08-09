@@ -13,7 +13,7 @@
 @interface BeskidRuntime ()
 @property (nonatomic, strong, readwrite) BeskidConfiguration *configuration;
 @property (nonatomic, strong, readwrite) BeskidDatabase *database;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
 
@@ -69,16 +69,16 @@
     if (!self.database) return NO;
     if (![self.database runMigrations:error]) return NO;
 
-    self.httpServer = [HttpServer serverWithPort:config.httpPort];
-    [HttpResponse setDefaultServerHeader:@"garazyk-beskid/1.0.0"];
+    self.httpServer = [ATProtoHttpServer serverWithPort:config.httpPort];
+    [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-beskid/1.0.0"];
 
-    [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         response.contentType = @"text/plain; charset=utf-8";
         [response setBodyString:@"garazyk beskid edge cache\n"];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{
             @"status": @"ok",
@@ -87,7 +87,7 @@
     }];
 
     // Configure per-IP rate limiting
-    RateLimiter *rateLimiter = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *rateLimiter = [ATProtoRateLimiter sharedLimiter];
     rateLimiter.enabled = config.rateLimitEnabled;
     rateLimiter.ipLimit = config.rateLimitIpLimit;
     rateLimiter.ipWindowSeconds = config.rateLimitIpWindowSeconds;

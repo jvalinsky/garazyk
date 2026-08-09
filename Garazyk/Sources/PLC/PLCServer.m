@@ -361,7 +361,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
 @interface PLCServer ()
 @property (nonatomic, strong) id<PLCStore> store;
 @property (nonatomic, strong) PLCAuditor *auditor;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, copy, nullable) NSString *adminSecret;
 @end
 
@@ -385,14 +385,14 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
         _store = store;
         _auditor = auditor;
         _adminSecret = [adminSecret copy];
-        _httpServer = [HttpServer serverWithHost:host port:port];
-        [HttpResponse setDefaultServerHeader:@"campagnola/1.0.0 (garazyk)"];
+        _httpServer = [ATProtoHttpServer serverWithHost:host port:port];
+        [ATProtoHttpResponse setDefaultServerHeader:@"campagnola/1.0.0 (garazyk)"];
         [self setupRoutes];
     }
     return self;
 }
 
-- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
+- (void)setCorsHeaders:(ATProtoHttpResponse *)response forRequest:(ATProtoHttpRequest *)request {
     NSString *origin = [request headerForKey:@"Origin"];
     [response setHeader:(origin.length > 0 ? origin : @"*") forKey:@"Access-Control-Allow-Origin"];
 
@@ -407,7 +407,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     __weak typeof(self) weakSelf = self;
 
     // OPTIONS preflight routes for CORS
-    RequestHandler optionsHandler = ^(HttpRequest *req, HttpResponse *resp) {
+    RequestHandler optionsHandler = ^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         resp.statusCode = HttpStatusOK;
     };
@@ -423,14 +423,14 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     [self.httpServer addRoute:@"OPTIONS" path:@"/:did/log/last" handler:optionsHandler];
     [self.httpServer addRoute:@"OPTIONS" path:@"/:did/data" handler:optionsHandler];
 
-    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [[PLCMetrics sharedMetrics] recordRequest];
         resp.statusCode = HttpStatusOK;
         [resp setJsonBody:@{@"status": @"ok"}];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/_list" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/_list" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [[PLCMetrics sharedMetrics] recordRequest];
         NSError *error = nil;
@@ -445,7 +445,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
         }
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/_metrics" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/_metrics" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [[PLCMetrics sharedMetrics] recordRequest];
         NSString *metrics = [[PLCMetrics sharedMetrics] renderMetrics];
@@ -454,56 +454,56 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
         [resp setBodyString:metrics];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         resp.statusCode = HttpStatusNoContent;
         resp.contentType = @"image/x-icon";
         [resp setBodyData:[NSData data]];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         resp.statusCode = HttpStatusOK;
         resp.contentType = @"text/plain; charset=utf-8";
         [resp setBodyString:@"___                                                _        \n  / (_)                                              | |       \n |      __,   _  _  _     _   __,   __,  _  _    __  | |  __,  \n |     /  |  / |/ |/ |  |/ \\_/  |  /  | / |/ |  /  \\_|/  /  |  \n  \\___/\\_/|_/  |  |  |_/|__/ \\_/|_/\\_/|/  |  |_/\\__/ |__/\\_/|_/\n                       /|            /|                        \n                       \\|            \\| \n"];
     }];
 
-    [self.httpServer addRoute:@"GET" path:PLCRouteExport handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:PLCRouteExport handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleExport:req response:resp];
     }];
 
     [self.httpServer addWebSocketRoute:PLCRouteExportStream
-                               handler:^(HttpRequest *request, HttpResponse *response, id<ATProtoNetworkConnection> connection) {
+                               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response, id<ATProtoNetworkConnection> connection) {
         [weakSelf handleExportStream:request connection:connection];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/:did/log/last" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/:did/log/last" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetLatestLog:req response:resp];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/:did/log" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/:did/log" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetLog:req response:resp includeNullified:NO includeMetadata:NO];
     }];
 
-    [self.httpServer addRoute:@"GET" path:PLCRouteLogAudit handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:PLCRouteLogAudit handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetLog:req response:resp includeNullified:YES includeMetadata:YES];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/:did/data" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/:did/data" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetData:req response:resp];
     }];
 
-    [self.httpServer addRoute:@"POST" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"POST" path:@"/:did" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         [[PLCMetrics sharedMetrics] recordRequest];
         [weakSelf handlePostDID:req response:resp];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:@"GET" path:@"/:did" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
         NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
         if ([did hasPrefix:@"did:plc:"]) {
@@ -512,12 +512,12 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
         } else {
             // No fallback here, let other routes match or 404
             resp.statusCode = HttpStatusNotFound;
-            resp.statusMessage = [HttpResponse defaultMessageForCode:HttpStatusNotFound];
+            resp.statusMessage = [ATProtoHttpResponse defaultMessageForCode:HttpStatusNotFound];
         }
     }];
 }
 
-- (void)handleGetDID:(HttpRequest *)req response:(HttpResponse *)resp {
+- (void)handleGetDID:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp {
     NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
     if (!did) {
         resp.statusCode = HttpStatusBadRequest;
@@ -560,8 +560,8 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     resp.contentType = @"application/did+json; charset=utf-8";
 }
 
-- (void)handleGetLog:(HttpRequest *)req
-           response:(HttpResponse *)resp
+- (void)handleGetLog:(ATProtoHttpRequest *)req
+           response:(ATProtoHttpResponse *)resp
   includeNullified:(BOOL)includeNullified
     includeMetadata:(BOOL)includeMetadata {
     NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
@@ -609,7 +609,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     [resp setJsonBody:historyDicts];
 }
 
-- (void)handlePostDID:(HttpRequest *)req response:(HttpResponse *)resp {
+- (void)handlePostDID:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp {
     NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
     if (!did) {
         resp.statusCode = HttpStatusBadRequest;
@@ -700,7 +700,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     [resp setJsonBody:@{@"status": @"ok"}];
 }
 
-- (void)handleGetLatestLog:(HttpRequest *)req response:(HttpResponse *)resp {
+- (void)handleGetLatestLog:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp {
     NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
     if (!did) {
         resp.statusCode = HttpStatusBadRequest;
@@ -727,7 +727,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     [resp setJsonBody:[op toDictionary]];
 }
 
-- (void)handleGetData:(HttpRequest *)req response:(HttpResponse *)resp {
+- (void)handleGetData:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp {
     // Per did-method-plc spec, /:did/data returns the current DID state data
     // (operation content without sig/prev/type), plus the did field.
     NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
@@ -784,7 +784,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     };
 }
 
-- (BOOL)parseExportCountFromRequest:(HttpRequest *)req count:(NSUInteger *)count response:(HttpResponse *)resp {
+- (BOOL)parseExportCountFromRequest:(ATProtoHttpRequest *)req count:(NSUInteger *)count response:(ATProtoHttpResponse *)resp {
     NSString *countStr = req.queryParams[@"count"];
     NSUInteger parsedCount = PLCExportDefaultCount;
     if (countStr.length > 0) {
@@ -800,7 +800,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     return YES;
 }
 
-- (void)handleExport:(HttpRequest *)req response:(HttpResponse *)resp {
+- (void)handleExport:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp {
     [[PLCMetrics sharedMetrics] recordRequest];
 
     NSUInteger requestedCount = 0;
@@ -861,7 +861,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     } chunkedTransferEncoding:YES];
 }
 
-- (void)handleExportStream:(HttpRequest *)req connection:(id<ATProtoNetworkConnection>)connection {
+- (void)handleExportStream:(ATProtoHttpRequest *)req connection:(id<ATProtoNetworkConnection>)connection {
     id<PDSWebSocketTransport> adapter = _plcWebSocketTransportFactory ? _plcWebSocketTransportFactory(connection) : nil;
     if (!adapter) {
         // No factory registered (should not happen in any real binary — see

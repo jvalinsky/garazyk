@@ -9,8 +9,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)parseFormUrlEncodedString:(NSString *)input;
 - (NSString *)iso8601StringFromDate:(NSDate *)date;
 - (NSDate *)dateFromISO8601String:(NSString *)dateString;
-- (void)setCorsHeaders:(HttpResponse *)response
-            forRequest:(HttpRequest *)request;
+- (void)setCorsHeaders:(ATProtoHttpResponse *)response
+            forRequest:(ATProtoHttpRequest *)request;
 @end
 
 NS_ASSUME_NONNULL_END

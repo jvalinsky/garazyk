@@ -66,14 +66,14 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   PDSRepositoryService *_repositoryService;
   PDSRelayService *_relayService;
   PDSAdminController *_adminController;
-  RateLimiter *_rateLimiter;
+  ATProtoRateLimiter *_rateLimiter;
   ATProtoJWTMinter *_jwtMinter;
-  NSMutableDictionary<NSString *, MST *> *_repos;
+  NSMutableDictionary<NSString *, ATProtoMST *> *_repos;
   NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
   dispatch_queue_t _repoQueue;
   dispatch_queue_t _controllerQueue;
   SubscribeReposHandler *_subscribeReposHandler;
-  HttpServer *_httpServer;
+  ATProtoHttpServer *_httpServer;
   XrpcDispatcher *_xrpcDispatcher;
   NSString *_dataDirectory;
   BOOL _running;
@@ -91,7 +91,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   return _adminController;
 }
 
-- (RateLimiter *)rateLimiter {
+- (ATProtoRateLimiter *)rateLimiter {
   if (_backingApplication) {
     return _backingApplication.rateLimiter;
   }

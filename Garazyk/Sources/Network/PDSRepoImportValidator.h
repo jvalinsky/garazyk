@@ -12,8 +12,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PDSRepoImportValidator : NSObject
 + (nullable PDSRepoImportValidationResult *)validateCARData:(NSData *)carData
-                                                     reader:(CARReader *)reader
-                                                     commit:(RepoCommit *)commit
+                                                     reader:(ATProtoCARReader *)reader
+                                                     commit:(ATProtoRepoCommit *)commit
                                                         did:(NSString *)did
                                               databasePool:(PDSDatabasePool *)databasePool
                                      allowLocalKeyFallback:(BOOL)allowLocalKeyFallback

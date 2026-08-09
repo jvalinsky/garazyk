@@ -65,7 +65,7 @@
     [super tearDown];
 }
 
-- (HttpResponse *)sendJsonRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendJsonRequestWithPath:(NSString *)path
                                      body:(NSDictionary *)body
                                   headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSData *bodyData = body ? [NSJSONSerialization dataWithJSONObject:body options:0 error:nil] : [NSData data];
@@ -74,7 +74,7 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:path
                                                    queryString:@""
@@ -83,7 +83,7 @@
                                                        headers:allHeaders
                                                           body:bodyData
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
@@ -92,7 +92,7 @@
 
 - (void)testCheckAccountStatusReturnsValidForActiveAccount {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.checkAccountStatus"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.checkAccountStatus"
                                                        body:nil
                                                     headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -102,7 +102,7 @@
 }
 
 - (void)testCheckAccountStatusReturns401WithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.checkAccountStatus"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.checkAccountStatus"
                                                        body:nil
                                                     headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -112,7 +112,7 @@
 
 - (void)testDeactivateAccountAcceptsDeleteAfterAndReturnsEmptyResponse {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
                                                        body:@{@"deleteAfter": @"2026-12-31T23:59:59Z"}
                                                     headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -122,13 +122,13 @@
 
 - (void)testDeactivateAccountRejectsInvalidDeleteAfter {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *wrongType = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
+    ATProtoHttpResponse *wrongType = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
                                                         body:@{@"deleteAfter": @1}
                                                      headers:@{@"authorization": authHeader}];
     XCTAssertEqual(wrongType.statusCode, HttpStatusBadRequest);
     XCTAssertEqualObjects(wrongType.jsonBody[@"error"], @"InvalidRequest");
 
-    HttpResponse *wrongFormat = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
+    ATProtoHttpResponse *wrongFormat = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
                                                           body:@{@"deleteAfter": @"not-a-datetime"}
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(wrongFormat.statusCode, HttpStatusBadRequest);
@@ -136,7 +136,7 @@
 }
 
 - (void)testDeactivateAccountReturns401WithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
                                                        body:@{}
                                                     headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -148,13 +148,13 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // First deactivate
-    HttpResponse *deactivateResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
+    ATProtoHttpResponse *deactivateResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deactivateAccount"
                                                                 body:@{}
                                                              headers:@{@"authorization": authHeader}];
     XCTAssertEqual(deactivateResponse.statusCode, 200);
 
     // Then activate
-    HttpResponse *activateResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.activateAccount"
+    ATProtoHttpResponse *activateResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.activateAccount"
                                                               body:nil
                                                            headers:@{@"authorization": authHeader}];
     XCTAssertEqual(activateResponse.statusCode, 200);
@@ -162,7 +162,7 @@
     XCTAssertEqual(((NSDictionary *)activateResponse.jsonBody).count, 0U);
 
     // Verify account is valid again
-    HttpResponse *statusResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.checkAccountStatus"
+    ATProtoHttpResponse *statusResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.checkAccountStatus"
                                                             body:nil
                                                          headers:@{@"authorization": authHeader}];
     XCTAssertEqual(statusResponse.statusCode, 200);
@@ -170,7 +170,7 @@
 }
 
 - (void)testActivateAccountReturns401WithoutAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.activateAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.activateAccount"
                                                        body:nil
                                                     headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -180,7 +180,7 @@
 
 - (void)testGetAccountReturnsAccountInfo {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.getAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.getAccount"
                                                        body:nil
                                                     headers:@{@"authorization": authHeader}];
     // getAccount may return 200 with account data or 404 if not implemented

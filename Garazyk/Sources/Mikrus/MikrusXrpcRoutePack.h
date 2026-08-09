@@ -10,9 +10,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class MikrusDatabase;
-@class HttpRequest;
-@class HttpResponse;
-@class HttpServer;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
+@class ATProtoHttpServer;
 
 /**
  * @abstract Registry and handler for Mikrus XRPC endpoints.
@@ -35,42 +35,42 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Registers Mikrus-specific routes with the provided server.
  * @param server The HTTP server to register routes with.
  */
-- (void)registerRoutesWithServer:(HttpServer *)server;
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server;
 
 /**
  * @abstract Handles the getBacklinks XRPC endpoint.
  */
-- (void)handleGetBacklinks:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetBacklinks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getBacklinkDids XRPC endpoint.
  */
-- (void)handleGetBacklinkDids:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetBacklinkDids:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getBacklinksCount XRPC endpoint.
  */
-- (void)handleGetBacklinksCount:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetBacklinksCount:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getManyToMany XRPC endpoint.
  */
-- (void)handleGetManyToMany:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetManyToMany:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getManyToManyCounts XRPC endpoint.
  */
-- (void)handleGetManyToManyCounts:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetManyToManyCounts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the resolveMiniDoc XRPC endpoint.
  */
-- (void)handleResolveMiniDoc:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleResolveMiniDoc:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getRecordByUri XRPC endpoint.
  */
-- (void)handleGetRecordByUri:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetRecordByUri:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end
 

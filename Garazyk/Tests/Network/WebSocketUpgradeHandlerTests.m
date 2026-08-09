@@ -13,9 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
 @implementation WebSocketUpgradeHandlerTests
 
 - (void)testValidWebSocketUpgradeRequest {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                 methodString:@"GET"
                                                         path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                                  queryString:@""
@@ -30,7 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     BOOL shouldUpgrade = [handler handleUpgradeRequest:request response:response];
 
     XCTAssertTrue(shouldUpgrade);
@@ -42,9 +42,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testMissingUpgradeHeaderReturns426 {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                 methodString:@"GET"
                                                         path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                                  queryString:@""
@@ -58,7 +58,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     BOOL shouldUpgrade = [handler handleUpgradeRequest:request response:response];
 
     XCTAssertFalse(shouldUpgrade);
@@ -70,9 +70,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testMissingConnectionHeaderReturns426 {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                 methodString:@"GET"
                                                         path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                                  queryString:@""
@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     BOOL shouldUpgrade = [handler handleUpgradeRequest:request response:response];
 
     XCTAssertFalse(shouldUpgrade);
@@ -98,9 +98,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testNonGetRequestReturns405 {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                 methodString:@"POST"
                                                         path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                                  queryString:@""
@@ -115,7 +115,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     BOOL shouldUpgrade = [handler handleUpgradeRequest:request response:response];
 
     XCTAssertFalse(shouldUpgrade);
@@ -124,9 +124,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testInvalidWebSocketVersionReturns501 {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                 methodString:@"GET"
                                                         path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                                  queryString:@""
@@ -141,7 +141,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     BOOL shouldUpgrade = [handler handleUpgradeRequest:request response:response];
 
     XCTAssertFalse(shouldUpgrade);
@@ -149,9 +149,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testInvalidSecWebSocketKeyReturns400 {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                 methodString:@"GET"
                                                         path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                                  queryString:@""
@@ -166,7 +166,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     BOOL shouldUpgrade = [handler handleUpgradeRequest:request response:response];
 
     XCTAssertFalse(shouldUpgrade);
@@ -174,9 +174,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testNonSubscriptionPathNotUpgraded {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                 methodString:@"GET"
                                                         path:@"/api/health"
                                                  queryString:@""
@@ -191,7 +191,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     BOOL shouldUpgrade = [handler handleUpgradeRequest:request response:response];
 
     XCTAssertFalse(shouldUpgrade);
@@ -199,7 +199,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testComputeAcceptKeyIsCorrect {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
     NSString *key = @"dGhlIHNhbXBsZSBub25jZQ==";
     NSString *acceptKey = [handler computeAcceptKey:key];
@@ -211,9 +211,9 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testIsWebSocketUpgradeRequestDetection {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
-    HttpRequest *wsRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *wsRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                                    queryString:@""
@@ -226,7 +226,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                              body:[NSData data]
                                                      remoteAddress:@"127.0.0.1"];
 
-    HttpRequest *httpRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *httpRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                    methodString:@"GET"
                                                            path:@"/api/health"
                                                     queryString:@""
@@ -241,13 +241,13 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testSubscriptionPathPrefix {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
     XCTAssertEqualObjects([handler subscriptionPathPrefix], @"/xrpc/");
 }
 
 - (void)testIsSubscriptionPath {
-    WebSocketUpgradeHandler *handler = [[WebSocketUpgradeHandler alloc] init];
+    ATProtoWebSocketUpgradeHandler *handler = [[ATProtoWebSocketUpgradeHandler alloc] init];
 
     XCTAssertTrue([handler isSubscriptionPath:@"/xrpc/com.atproto.sync.subscribeRepos"]);
     XCTAssertTrue([handler isSubscriptionPath:@"/xrpc/other.method"]);

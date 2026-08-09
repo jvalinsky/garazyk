@@ -9,7 +9,7 @@
 
 @implementation AppViewXRpcRoutePack (AgeAssurance)
 
-- (void)handleAgeAssuranceBegin:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleAgeAssuranceBegin:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -49,7 +49,7 @@
     [response setJsonBody:result];
 }
 
-- (void)handleAgeAssuranceGetConfig:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleAgeAssuranceGetConfig:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     if (!self.ageAssuranceService) {
         response.statusCode = 503;
@@ -64,7 +64,7 @@
     [response setJsonBody:config];
 }
 
-- (void)handleAgeAssuranceGetState:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleAgeAssuranceGetState:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;

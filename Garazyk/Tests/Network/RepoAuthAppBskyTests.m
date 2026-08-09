@@ -36,17 +36,17 @@ static NSString *const kGraphMuteStatePreferenceType = @"com.atproto.pds.app.bsk
 }
 
 - (void)testNotificationPreferencesHandlersRequireAuthAndPersist {
-    HttpResponse *unauthorized = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.getPreferences"
+    ATProtoHttpResponse *unauthorized = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.getPreferences"
                                                       headers:@{}];
     XCTAssertEqual(unauthorized.statusCode, 401);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *update = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
+    ATProtoHttpResponse *update = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
                                                     body:@{@"follow": @{@"include": @"all", @"list": @NO, @"push": @YES}}
                                                  headers:@{@"authorization": authHeader}];
     XCTAssertEqual(update.statusCode, 200);
 
-    HttpResponse *fetch = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.getPreferences"
+    ATProtoHttpResponse *fetch = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.getPreferences"
                                                headers:@{@"authorization": authHeader}];
     XCTAssertEqual(fetch.statusCode, 200);
     NSDictionary *preferences = fetch.jsonBody[@"preferences"];
@@ -59,23 +59,23 @@ static NSString *const kGraphMuteStatePreferenceType = @"com.atproto.pds.app.bsk
 - (void)testGraphMuteActorListValidationAndIdempotence {
     NSString *listURI = [NSString stringWithFormat:@"at://%@/app.bsky.graph.list/test-list", self.did1];
 
-    HttpResponse *unauthorized = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteActorList"
+    ATProtoHttpResponse *unauthorized = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteActorList"
                                                           body:@{@"list": listURI}
                                                        headers:@{}];
     XCTAssertEqual(unauthorized.statusCode, 401);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *invalid = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteActorList"
+    ATProtoHttpResponse *invalid = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteActorList"
                                                      body:@{@"list": @"not-an-at-uri"}
                                                   headers:@{@"authorization": authHeader}];
     XCTAssertEqual(invalid.statusCode, 400);
 
-    HttpResponse *firstMute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteActorList"
+    ATProtoHttpResponse *firstMute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteActorList"
                                                        body:@{@"list": listURI}
                                                     headers:@{@"authorization": authHeader}];
     XCTAssertEqual(firstMute.statusCode, 200);
 
-    HttpResponse *secondMute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteActorList"
+    ATProtoHttpResponse *secondMute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteActorList"
                                                         body:@{@"list": listURI}
                                                      headers:@{@"authorization": authHeader}];
     XCTAssertEqual(secondMute.statusCode, 200);
@@ -85,12 +85,12 @@ static NSString *const kGraphMuteStatePreferenceType = @"com.atproto.pds.app.bsk
     XCTAssertEqual(mutedLists.count, 1);
     XCTAssertEqualObjects(mutedLists.firstObject, listURI);
 
-    HttpResponse *firstUnmute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.unmuteActorList"
+    ATProtoHttpResponse *firstUnmute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.unmuteActorList"
                                                          body:@{@"list": listURI}
                                                       headers:@{@"authorization": authHeader}];
     XCTAssertEqual(firstUnmute.statusCode, 200);
 
-    HttpResponse *secondUnmute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.unmuteActorList"
+    ATProtoHttpResponse *secondUnmute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.unmuteActorList"
                                                           body:@{@"list": listURI}
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(secondUnmute.statusCode, 200);
@@ -104,17 +104,17 @@ static NSString *const kGraphMuteStatePreferenceType = @"com.atproto.pds.app.bsk
     NSString *threadRoot = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/thread-root", self.did1];
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
-    HttpResponse *invalid = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteThread"
+    ATProtoHttpResponse *invalid = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteThread"
                                                      body:@{@"root": @"bad-root"}
                                                   headers:@{@"authorization": authHeader}];
     XCTAssertEqual(invalid.statusCode, 400);
 
-    HttpResponse *firstMute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteThread"
+    ATProtoHttpResponse *firstMute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteThread"
                                                        body:@{@"root": threadRoot}
                                                     headers:@{@"authorization": authHeader}];
     XCTAssertEqual(firstMute.statusCode, 200);
 
-    HttpResponse *secondMute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteThread"
+    ATProtoHttpResponse *secondMute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.muteThread"
                                                         body:@{@"root": threadRoot}
                                                      headers:@{@"authorization": authHeader}];
     XCTAssertEqual(secondMute.statusCode, 200);
@@ -124,12 +124,12 @@ static NSString *const kGraphMuteStatePreferenceType = @"com.atproto.pds.app.bsk
     XCTAssertEqual(mutedThreads.count, 1);
     XCTAssertEqualObjects(mutedThreads.firstObject, threadRoot);
 
-    HttpResponse *firstUnmute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.unmuteThread"
+    ATProtoHttpResponse *firstUnmute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.unmuteThread"
                                                          body:@{@"root": threadRoot}
                                                       headers:@{@"authorization": authHeader}];
     XCTAssertEqual(firstUnmute.statusCode, 200);
 
-    HttpResponse *secondUnmute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.unmuteThread"
+    ATProtoHttpResponse *secondUnmute = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.graph.unmuteThread"
                                                           body:@{@"root": threadRoot}
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(secondUnmute.statusCode, 200);

@@ -9,7 +9,7 @@
 /**
  * Sync 1.1 streamable-CAR byte-level regression test.
  *
- * Builds a deterministic eight-rkey MST (rkeys span depths 0, 1, and 2 so the
+ * Builds a deterministic eight-rkey ATProtoMST (rkeys span depths 0, 1, and 2 so the
  * tree is genuinely multi-level), emits a CAR via the pre-order DFS walker
  * with record blocks interleaved, and asserts byte-equality with the
  * committed fixture at Tests/fixtures/mst/sync11-preorder-fixture.car.
@@ -39,7 +39,7 @@
 
 // Hand-picked rkeys spanning three distinct SHA-256 depths so the tree is
 // multi-level (forces pre-order to walk into subtrees layer by layer).
-// Depths verified against MST.m:keyDepthFromBytes at test design time.
+// Depths verified against ATProtoMST.m:keyDepthFromBytes at test design time.
 //   - depth-0 entries: 3jzfcijpj2zek, 2zel, post/aaa, post/ccc, post/ddd
 //   - depth-1 entries: post/bbb, test/key.005
 //   - depth-2 entry:   3jzfcijpj2zep (forces a sub-tree level)
@@ -76,12 +76,12 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 
 - (ATProtoCID *)fixtureValueCIDForKey:(NSString *)key {
     // Self-consistent: each record's ATProtoCID is the SHA-256 of its own bytes,
-    // so the MST's valueCID matches what the recordProvider returns.
+    // so the ATProtoMST's valueCID matches what the recordProvider returns.
     return [ATProtoCID sha256:[self fixtureRecordBytesForKey:key]];
 }
 
-- (MST *)buildFixtureMST {
-    MST *tree = [[MST alloc] init];
+- (ATProtoMST *)buildFixtureMST {
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     for (NSString *key in FixtureKeys()) {
         [tree put:key valueCID:[self fixtureValueCIDForKey:key]];
     }
@@ -100,16 +100,16 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 }
 
 - (NSData *)buildFixtureCAR {
-    MST *tree = [self buildFixtureMST];
+    ATProtoMST *tree = [self buildFixtureMST];
     ATProtoCID *rootCID = tree.rootCID;
     XCTAssertNotNil(rootCID, @"MST root CID must be deterministic");
-    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:rootCID];
     MSTBlockProvider provider = [self recordProviderForFixture];
 
     NSError *err = nil;
     BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **e) {
         (void)e;
-        [writer addBlock:[CARBlock blockWithCID:cid data:data]];
+        [writer addBlock:[ATProtoCARBlock blockWithCID:cid data:data]];
         return YES;
     } recordProvider:provider error:&err];
 
@@ -188,10 +188,10 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 
 #pragma mark - Helper: block classifier (debug-log only)
 
-/// Returns the kind of a CAR block: "node" (MST node), "record" (DAG-CBOR),
+/// Returns the kind of a CAR block: "node" (ATProtoMST node), "record" (DAG-CBOR),
 /// "commit", "empty", or "other". Decodes the block's CBOR structure and
-/// sniffs for the MST "e" (entries) key; a byte-only sniff (0xa0–0xbf)
-/// cannot distinguish MST nodes from DAG-CBOR records because both
+/// sniffs for the ATProtoMST "e" (entries) key; a byte-only sniff (0xa0–0xbf)
+/// cannot distinguish ATProtoMST nodes from DAG-CBOR records because both
 /// serialize as CBOR maps. Mirrors classifyChunk: in STARPreorderTests.m.
 - (NSString *)classifyBlock:(NSData *)data {
     if (data.length == 0) {
@@ -231,12 +231,12 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 
 - (void)setUp {
     [super setUp];
-    self.originalFlag = [MST streamableCARBlockOrderingEnabled];
-    [MST setStreamableCARBlockOrderingEnabled:YES];
+    self.originalFlag = [ATProtoMST streamableCARBlockOrderingEnabled];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
 }
 
 - (void)tearDown {
-    [MST setStreamableCARBlockOrderingEnabled:(BOOL)self.originalFlag];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:(BOOL)self.originalFlag];
     [super tearDown];
 }
 
@@ -327,7 +327,7 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
     if (!getenv("MST_FIXTURE_DEBUG")) {
         XCTSkip(@"Set MST_FIXTURE_DEBUG=1 to print the pre-order walk sequence.");
     }
-    MST *tree = [self buildFixtureMST];
+    ATProtoMST *tree = [self buildFixtureMST];
     MSTBlockProvider provider = [self recordProviderForFixture];
     NSMutableArray<NSString *> *labels = [NSMutableArray array];
     NSError *err = nil;
@@ -347,13 +347,13 @@ static NSString *const kFixtureFileName = @"sync11-preorder-fixture.car";
 }
 
 - (void)testFixtureKeysSpanMultipleDepths {
-    // Uses the canonical [MST keyDepthString:] API so depth parity with the
-    // MST's own algorithm is automatic. Span must be exactly {0, 1, 2}; any
+    // Uses the canonical [ATProtoMST keyDepthString:] API so depth parity with the
+    // ATProtoMST's own algorithm is automatic. Span must be exactly {0, 1, 2}; any
     // future maintainer editing FixtureKeys() must preserve this or the
     // regression coverage degrades.
     NSMutableSet<NSNumber *> *depths = [NSMutableSet set];
     for (NSString *key in FixtureKeys()) {
-        NSUInteger d = [MST keyDepthString:key];
+        NSUInteger d = [ATProtoMST keyDepthString:key];
         [depths addObject:@(d)];
     }
     XCTAssertTrue([depths containsObject:@(0)],

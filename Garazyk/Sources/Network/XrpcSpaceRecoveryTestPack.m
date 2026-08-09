@@ -46,7 +46,7 @@ static BOOL XrpcSpaceRecoveryTestIsLoopbackAddress(NSString *address) {
       [normalized isEqualToString:@"localhost"];
 }
 
-static void XrpcSpaceRecoveryTestError(HttpResponse *response, NSInteger status, NSString *message) {
+static void XrpcSpaceRecoveryTestError(ATProtoHttpResponse *response, NSInteger status, NSString *message) {
   response.statusCode = status;
   [response setJsonBody:@{ @"error" : @"RecoveryTestControlError", @"message" : message ?: @"Invalid request" }];
 }
@@ -62,7 +62,7 @@ static void XrpcSpaceRecoveryTestError(HttpResponse *response, NSInteger status,
       [token isKindOfClass:[NSString class]] && token.length >= 32;
 }
 
-+ (BOOL)isAuthorizedRequest:(HttpRequest *)request
++ (BOOL)isAuthorizedRequest:(ATProtoHttpRequest *)request
                 environment:(NSDictionary<NSString *, NSString *> *)environment {
   NSString *token = environment[XrpcSpaceRecoveryTestControlTokenEnvironment];
   NSString *authorization = [request headerForKey:@"Authorization"];
@@ -88,7 +88,7 @@ static void XrpcSpaceRecoveryTestError(HttpResponse *response, NSInteger status,
   if (!spaceStore || !reconciler) return;
   NSDictionary<NSString *, NSString *> *environment = NSProcessInfo.processInfo.environment;
 
-  [dispatcher registerMethod:XrpcSpaceRecoveryTestNSID handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:XrpcSpaceRecoveryTestNSID handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     if (![self isAuthorizedRequest:request environment:environment]) {
       XrpcSpaceRecoveryTestError(response, 401, @"Recovery test control requires local bearer authorization");
       return;

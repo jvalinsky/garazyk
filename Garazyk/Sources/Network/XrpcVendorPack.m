@@ -42,7 +42,7 @@
 
     // Register tools.garazyk.sync.getRepoFiltered
     [dispatcher registerMethod:kGZXrpcNSID_tools_garazyk_sync_getRepoFiltered
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodGET) {
             [XrpcErrorHelper setMethodNotAllowedError:response
                                        allowedMethod:@"GET"
@@ -114,7 +114,7 @@
     // GET action=stats → returns collection_membership row count
     // POST action=prune → triggers stale-entry cleanup
     [dispatcher registerMethod:kGZXrpcNSID_tools_garazyk_admin_getCollectionMembershipStats
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -176,7 +176,7 @@
 
     // Register tools.garazyk.account.getUsage
     [dispatcher registerMethod:kGZXrpcNSID_tools_garazyk_account_getUsage
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         // Require authenticated user
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];

@@ -19,7 +19,7 @@
 
 @implementation ATProtoHttpOAuthDemoRoutePack
 
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                    dataDirectory:(nullable NSString *)dataDirectory
                       controller:(nullable PDSController *)controller {
   if (dataDirectory.length == 0 && !controller) {
@@ -36,13 +36,13 @@
   }
 
   [server addHandlerForPath:@"/oauth-demo"
-                    handler:^(HttpRequest *request, HttpResponse *response) {
+                    handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                       [oauthDemoHandler handleRequest:request response:response];
                     }];
 
   [server addRoute:@"GET"
               path:@"/oauth-demo/*"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              [oauthDemoHandler handleRequest:request response:response];
            }];
 

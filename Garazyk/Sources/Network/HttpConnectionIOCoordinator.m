@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpConnectionIOCoordinator.m
+ @file ATProtoHttpConnectionIOCoordinator.m
 
  @abstract Coordinates low-level HTTP connection I/O sequencing and buffer handoff.
 
@@ -15,10 +15,10 @@
 #import "Network/ATProtoNetworkTransport.h"
 #import "Compat/PDSTypes.h"
 
-@interface HttpConnectionIOCoordinator ()
+@interface ATProtoHttpConnectionIOCoordinator ()
 @property (nonatomic, strong) id<ATProtoNetworkConnection> connection;
-@property (nonatomic, strong) HttpProtocolDriver *driver;
-@property (nonatomic, strong) HttpResponseSender *sender;
+@property (nonatomic, strong) ATProtoHttpProtocolDriver *driver;
+@property (nonatomic, strong) ATProtoHttpResponseSender *sender;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t coordinationQueue;
 @property (nonatomic, assign) BOOL isPaused;
 @property (nonatomic, assign) BOOL readScheduled;
@@ -38,7 +38,7 @@ static const NSTimeInterval kDefaultHttpHeaderAggregateTimeout = 30.0;
 static NSString * const kHttpConnectionIOCoordinatorErrorDomain = @"HttpConnectionIOCoordinator";
 static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
 
-@implementation HttpConnectionIOCoordinator
+@implementation ATProtoHttpConnectionIOCoordinator
 
 - (instancetype)init {
     [self doesNotRecognizeSelector:_cmd];
@@ -46,8 +46,8 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
 }
 
 - (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
-                           protocol:(HttpProtocolDriver *)driver
-                       responseSender:(HttpResponseSender *)sender {
+                           protocol:(ATProtoHttpProtocolDriver *)driver
+                       responseSender:(ATProtoHttpResponseSender *)sender {
     return [self initWithConnection:connection
                            protocol:driver
                      responseSender:sender
@@ -56,8 +56,8 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
 }
 
 - (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
-                           protocol:(HttpProtocolDriver *)driver
-                     responseSender:(HttpResponseSender *)sender
+                           protocol:(ATProtoHttpProtocolDriver *)driver
+                     responseSender:(ATProtoHttpResponseSender *)sender
                   idleHeaderTimeout:(NSTimeInterval)idleHeaderTimeout
              aggregateHeaderTimeout:(NSTimeInterval)aggregateHeaderTimeout {
     self = [super init];
@@ -212,7 +212,7 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)),
                    self.coordinationQueue, ^{
-        HttpConnectionIOCoordinator *strongSelf = weakSelf;
+        ATProtoHttpConnectionIOCoordinator *strongSelf = weakSelf;
         if (!strongSelf || strongSelf.isClosed || !strongSelf.readScheduled ||
             strongSelf.idleDeadlineGeneration != generation) {
             return;
@@ -234,7 +234,7 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)),
                    self.coordinationQueue, ^{
-        HttpConnectionIOCoordinator *strongSelf = weakSelf;
+        ATProtoHttpConnectionIOCoordinator *strongSelf = weakSelf;
         if (!strongSelf || strongSelf.isClosed || strongSelf.headerStartTime <= 0 ||
             strongSelf.aggregateDeadlineGeneration != generation) {
             return;
@@ -322,7 +322,7 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
 
         switch (event) {
             case HttpProtocolEventRequestReady: {
-                HttpRequest *request = [self.driver nextDispatchableRequest];
+                ATProtoHttpRequest *request = [self.driver nextDispatchableRequest];
                 if (request && self.requestReadyHandler) {
                     self.requestReadyHandler(request);
                 }
@@ -331,7 +331,7 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
             }
 
             case HttpProtocolEventUpgradeRequested: {
-                HttpRequest *upgradeRequest = [self.driver currentUpgradeRequest];
+                ATProtoHttpRequest *upgradeRequest = [self.driver currentUpgradeRequest];
                 if (upgradeRequest && self.upgradeHandler) {
                     self.upgradeHandler(upgradeRequest);
                 }

@@ -40,8 +40,8 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
     _adminDids = [adminDids copy];
 }
 
-- (BOOL)verifyAdminAccessForRequest:(HttpRequest *)request
-                           response:(HttpResponse *)response
+- (BOOL)verifyAdminAccessForRequest:(ATProtoHttpRequest *)request
+                           response:(ATProtoHttpResponse *)response
                               error:(NSError **)error {
     NSError *sessionError = nil;
     Session *session = [self extractSessionFromRequest:request error:&sessionError];
@@ -95,7 +95,7 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
     return YES;
 }
 
-- (nullable Session *)extractSessionFromRequest:(HttpRequest *)request error:(NSError **)error {
+- (nullable Session *)extractSessionFromRequest:(ATProtoHttpRequest *)request error:(NSError **)error {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     
     if (!authHeader) {

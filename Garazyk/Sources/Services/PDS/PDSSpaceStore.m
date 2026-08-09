@@ -1432,7 +1432,7 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
     return NO;
   }
 
-  CARReader *reader = [CARReader readFromData:carData error:error];
+  ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:error];
   if (!reader) {
     if (error && !*error) *error = [NSError errorWithDomain:PDSSpaceStoreErrorDomain
                                                        code:PDSSpaceStoreErrorInvalidCAR
@@ -1446,8 +1446,8 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
     return NO;
   }
 
-  CARBlock *commitBlock = [reader blockWithCID:reader.roots[0]];
-  CARBlock *indexBlock = [reader blockWithCID:reader.roots[1]];
+  ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.roots[0]];
+  ATProtoCARBlock *indexBlock = [reader blockWithCID:reader.roots[1]];
   if (!commitBlock || !indexBlock) {
     if (error) *error = [NSError errorWithDomain:PDSSpaceStoreErrorDomain
                                             code:PDSSpaceStoreErrorMissingBlock
@@ -1503,7 +1503,7 @@ static NSString *PDSSpaceActionString(PDSSpaceWriteAction action) {
                                           userInfo:@{NSLocalizedDescriptionKey: @"Index entry has no CID"}];
       return NO;
     }
-    CARBlock *recordBlock = [reader blockWithCID:recordCID];
+    ATProtoCARBlock *recordBlock = [reader blockWithCID:recordCID];
     if (!recordBlock) {
       if (error) *error = [NSError errorWithDomain:PDSSpaceStoreErrorDomain
                                               code:PDSSpaceStoreErrorMissingBlock

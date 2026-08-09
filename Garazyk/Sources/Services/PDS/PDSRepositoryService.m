@@ -39,7 +39,7 @@
         rootCid = [ATProtoCID cidFromString:cids.firstObject];
     }
     
-    CARWriter *writer = [CARWriter writerWithRootCID:rootCid];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:rootCid];
     
     __block BOOL success = YES;
     
@@ -49,7 +49,7 @@
         
         PDSDatabaseBlock *block = [self.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];
         if (block && block.blockData) {
-            [writer addBlock:[CARBlock blockWithCID:cid data:block.blockData]];
+            [writer addBlock:[ATProtoCARBlock blockWithCID:cid data:block.blockData]];
         }
     }
     
@@ -62,7 +62,7 @@
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error {
     if (STARDetectFormatFromData(commitData)) {
         NSError *starErr = nil;
-        NSData *carData = [STARConverter carDataFromSTARData:commitData error:&starErr];
+        NSData *carData = [ATProtoSTARConverter carDataFromSTARData:commitData error:&starErr];
         if (!carData) {
             if (error) *error = starErr ?: [NSError errorWithDomain:@"com.atproto.repo"
                                                                code:7

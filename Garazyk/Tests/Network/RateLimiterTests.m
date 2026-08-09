@@ -5,7 +5,7 @@
 
 @interface RateLimiterTests : XCTestCase
 
-@property (nonatomic, strong) RateLimiter *limiter;
+@property (nonatomic, strong) ATProtoRateLimiter *limiter;
 @property (nonatomic, copy) NSString *testDbPath;
 
 @end
@@ -24,7 +24,7 @@
     RateLimiterSetDisabledGlobally(NO);
     self.testDbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"ratelimit_test.db"];
     [self removeDbFiles];
-    self.limiter = [[RateLimiter alloc] initWithDatabasePath:self.testDbPath];
+    self.limiter = [[ATProtoRateLimiter alloc] initWithDatabasePath:self.testDbPath];
 }
 
 - (void)tearDown {
@@ -34,8 +34,8 @@
 }
 
 - (void)testSingletonTest {
-    RateLimiter *singleton1 = [RateLimiter sharedLimiter];
-    RateLimiter *singleton2 = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *singleton1 = [ATProtoRateLimiter sharedLimiter];
+    ATProtoRateLimiter *singleton2 = [ATProtoRateLimiter sharedLimiter];
     XCTAssertTrue(singleton1 == singleton2, @"Shared limiter should be the same instance");
 }
 
@@ -49,15 +49,15 @@
 }
 
 - (void)testRateLimitAllowedTest {
-    RateLimitResult *result = [self.limiter checkRateLimitForDid:@"did:test:user1"];
+    ATProtoRateLimitResult *result = [self.limiter checkRateLimitForDid:@"did:test:user1"];
 
     XCTAssertTrue(result.allowed, @"First request should be allowed");
     XCTAssertEqual(result.limit, 5000, @"Limit should be 5000");
 }
 
 - (void)testRateLimitDecrementsRemaining {
-    RateLimitResult *result1 = [self.limiter checkRateLimitForDid:@"did:test:user2"];
-    RateLimitResult *result2 = [self.limiter checkRateLimitForDid:@"did:test:user2"];
+    ATProtoRateLimitResult *result1 = [self.limiter checkRateLimitForDid:@"did:test:user2"];
+    ATProtoRateLimitResult *result2 = [self.limiter checkRateLimitForDid:@"did:test:user2"];
 
     XCTAssertTrue(result1.allowed, @"First request should be allowed");
     XCTAssertTrue(result2.allowed, @"Second request should be allowed");
@@ -65,14 +65,14 @@
 }
 
 - (void)testRateLimitForIP {
-    RateLimitResult *ipResult = [self.limiter checkRateLimitForIP:@"192.168.1.1"];
+    ATProtoRateLimitResult *ipResult = [self.limiter checkRateLimitForIP:@"192.168.1.1"];
 
     XCTAssertTrue(ipResult.allowed, @"IP request should be allowed");
     XCTAssertEqual(ipResult.limit, 100, @"IP limit should be 100");
 }
 
 - (void)testBlobUploadRateLimit {
-    RateLimitResult *blobResult = [self.limiter checkBlobUploadRateLimitForDid:@"did:test:blobuser"];
+    ATProtoRateLimitResult *blobResult = [self.limiter checkBlobUploadRateLimitForDid:@"did:test:blobuser"];
 
     XCTAssertTrue(blobResult.allowed, @"Blob upload should be allowed");
     XCTAssertEqual(blobResult.limit, 50, @"Blob limit should be 50");
@@ -102,7 +102,7 @@
 }
 
 - (void)testNilDIDReturnsAllowed {
-    RateLimitResult *nilDidResult = [self.limiter checkRateLimitForDid:nil];
+    ATProtoRateLimitResult *nilDidResult = [self.limiter checkRateLimitForDid:nil];
 
     XCTAssertTrue(nilDidResult.allowed, @"Nil DID should return allowed");
     XCTAssertEqual(nilDidResult.limit, 5000, @"Nil DID limit should be 5000");
@@ -110,13 +110,13 @@
 }
 
 - (void)testEmptyDIDReturnsAllowed {
-    RateLimitResult *emptyDidResult = [self.limiter checkRateLimitForDid:@""];
+    ATProtoRateLimitResult *emptyDidResult = [self.limiter checkRateLimitForDid:@""];
 
     XCTAssertTrue(emptyDidResult.allowed, @"Empty DID should return allowed");
 }
 
 - (void)testNilIPReturnsAllowed {
-    RateLimitResult *nilIpResult = [self.limiter checkRateLimitForIP:nil];
+    ATProtoRateLimitResult *nilIpResult = [self.limiter checkRateLimitForIP:nil];
 
     XCTAssertTrue(nilIpResult.allowed, @"Nil IP should return allowed");
     XCTAssertEqual(nilIpResult.limit, 100, @"Nil IP limit should be 100");
@@ -127,8 +127,8 @@
     NSString *did2 = @"did:test:user2";
     [self.limiter checkRateLimitForDid:did1];
     [self.limiter checkRateLimitForDid:did1];
-    RateLimitResult *result1_ind = [self.limiter checkRateLimitForDid:did1];
-    RateLimitResult *result2_ind = [self.limiter checkRateLimitForDid:did2];
+    ATProtoRateLimitResult *result1_ind = [self.limiter checkRateLimitForDid:did1];
+    ATProtoRateLimitResult *result2_ind = [self.limiter checkRateLimitForDid:did2];
 
     XCTAssertLessThan(result1_ind.remaining, result2_ind.remaining, @"did1 should have fewer remaining requests");
 }
@@ -138,8 +138,8 @@
     NSString *typeTestIp = @"ip:test:typespecific";
     [self.limiter checkRateLimitForDid:typeTestDid];
     [self.limiter checkRateLimitForIP:typeTestIp];
-    RateLimitResult *didTypeResult = [self.limiter checkRateLimitForDid:typeTestDid];
-    RateLimitResult *ipTypeResult = [self.limiter checkRateLimitForIP:typeTestIp];
+    ATProtoRateLimitResult *didTypeResult = [self.limiter checkRateLimitForDid:typeTestDid];
+    ATProtoRateLimitResult *ipTypeResult = [self.limiter checkRateLimitForIP:typeTestIp];
 
     XCTAssertEqual(didTypeResult.limit, 5000, @"DID type limit should be 5000");
     XCTAssertEqual(ipTypeResult.limit, 100, @"IP type limit should be 100");
@@ -163,11 +163,11 @@
     self.limiter.didLimit = 2;
     NSString *did = @"did:test:exceed";
     
-    RateLimitResult *r1 = [self.limiter checkRateLimitForDid:did];
+    ATProtoRateLimitResult *r1 = [self.limiter checkRateLimitForDid:did];
     XCTAssertTrue(r1.allowed, @"First request allowed");
-    RateLimitResult *r2 = [self.limiter checkRateLimitForDid:did];
+    ATProtoRateLimitResult *r2 = [self.limiter checkRateLimitForDid:did];
     XCTAssertTrue(r2.allowed, @"Second request allowed");
-    RateLimitResult *r3 = [self.limiter checkRateLimitForDid:did];
+    ATProtoRateLimitResult *r3 = [self.limiter checkRateLimitForDid:did];
     XCTAssertFalse(r3.allowed, @"Third request should be rejected when limit is 2");
     XCTAssertEqual(r3.remaining, 0, @"Remaining should be 0 when rejected");
     XCTAssertGreaterThan(r3.retryAfter, 0, @"Retry-After should be positive");
@@ -178,7 +178,7 @@
 
 - (void)testCheckRateLimitForKey {
     NSString *key = @"custom:endpoint:/xrpc/app.bsky.feed.getTimeline";
-    RateLimitResult *r1 = [self.limiter checkRateLimitForKey:key limit:5 windowSeconds:60];
+    ATProtoRateLimitResult *r1 = [self.limiter checkRateLimitForKey:key limit:5 windowSeconds:60];
     XCTAssertTrue(r1.allowed);
     XCTAssertEqual(r1.limit, 5);
     XCTAssertEqual(r1.remaining, 4);
@@ -207,13 +207,13 @@
     [self.limiter checkRateLimitForDid:did];
     [self.limiter checkRateLimitForDid:did];
     
-    RateLimitResult *beforeClear = [self.limiter checkRateLimitForDid:did];
+    ATProtoRateLimitResult *beforeClear = [self.limiter checkRateLimitForDid:did];
     XCTAssertEqual(beforeClear.remaining, 0);
     
     NSInteger cleared = [self.limiter clearRateLimitForIdentifier:did type:@"0"]; // RateLimitTypeDID is 0
     XCTAssertGreaterThanOrEqual(cleared, 1, @"Should clear at least 1 row");
     
-    RateLimitResult *afterClear = [self.limiter checkRateLimitForDid:did];
+    ATProtoRateLimitResult *afterClear = [self.limiter checkRateLimitForDid:did];
     XCTAssertTrue(afterClear.allowed);
     XCTAssertEqual(afterClear.remaining, 2, @"Remaining should be reset after clearing");
 }

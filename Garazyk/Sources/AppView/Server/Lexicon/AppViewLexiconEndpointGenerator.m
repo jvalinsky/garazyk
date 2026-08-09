@@ -25,7 +25,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
 
 @property (nonatomic, strong) ATProtoLexiconRegistry *registry;
 @property (nonatomic, strong) AppViewDatabase *database;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) AppViewCustomQueryRegistry *customHandlers;
 @property (nonatomic, strong) AppViewGenericQueryHandler *queryHandler;
 @property (nonatomic, assign) NSUInteger registeredCount;
@@ -36,7 +36,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
 
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
                          database:(AppViewDatabase *)database
-                      httpServer:(HttpServer *)httpServer
+                      httpServer:(ATProtoHttpServer *)httpServer
                  customHandlers:(AppViewCustomQueryRegistry *)customHandlers {
     self = [super init];
     if (self) {
@@ -166,7 +166,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
 
     [self.httpServer addRoute:@"GET"
                         path:path
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AppViewLexiconEndpointGenerator *strongSelf = weakSelf;
         if (!strongSelf) {
             response.statusCode = 500;
@@ -191,7 +191,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
 
     [self.httpServer addRoute:@"POST"
                         path:path
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AppViewLexiconEndpointGenerator *strongSelf = weakSelf;
         if (!strongSelf) {
             response.statusCode = 500;

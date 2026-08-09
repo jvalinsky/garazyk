@@ -15,19 +15,19 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     MSTPersistenceErrorCodeSerializationFailed,
 };
 
-@interface MSTNode (MSTPersistenceAccess)
-- (instancetype)initWithLevel:(uint32_t)level left:(nullable MSTNode *)left entries:(NSArray<MSTNodeEntry *> *)entries;
+@interface ATProtoMSTNode (MSTPersistenceAccess)
+- (instancetype)initWithLevel:(uint32_t)level left:(nullable ATProtoMSTNode *)left entries:(NSArray<ATProtoMSTNodeEntry *> *)entries;
 @end
 
-@interface MSTNodeEntry (MSTPersistenceAccess)
-- (instancetype)initWithKey:(NSString *)key value:(ATProtoCID *)value tree:(nullable MSTNode *)tree;
+@interface ATProtoMSTNodeEntry (MSTPersistenceAccess)
+- (instancetype)initWithKey:(NSString *)key value:(ATProtoCID *)value tree:(nullable ATProtoMSTNode *)tree;
 @end
 
 @interface ATProtoMSTPersistence ()
-- (nullable MSTNode *)loadNodeWithCID:(ATProtoCID *)cid
+- (nullable ATProtoMSTNode *)loadNodeWithCID:(ATProtoCID *)cid
                                repoDid:(NSString *)repoDid
                              database:(PDSDatabase *)database
-                            nodeCache:(NSMutableDictionary<NSString *, MSTNode *> *)nodeCache
+                            nodeCache:(NSMutableDictionary<NSString *, ATProtoMSTNode *> *)nodeCache
                            levelCache:(NSMutableDictionary<NSString *, NSNumber *> *)levelCache
                        computedLevel:(uint32_t *)computedLevel
                                  error:(NSError **)error;
@@ -57,7 +57,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     return _database;
 }
 
-- (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error {
+- (nullable ATProtoMST *)loadMSTForDid:(NSString *)did error:(NSError **)error {
     PDSDatabase *db = [self getDatabase];
     if (![db openWithError:error]) return nil;
 
@@ -69,7 +69,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     }
 
     if (!repoInfo || repoInfo.rootCid.length == 0) {
-        return [[MST alloc] init];
+        return [[ATProtoMST alloc] init];
     }
 
     ATProtoCID *rootCID = [ATProtoCID cidFromBytes:repoInfo.rootCid];
@@ -82,9 +82,9 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         return nil;
     }
 
-    NSMutableDictionary<NSString *, MSTNode *> *nodeCache = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, ATProtoMSTNode *> *nodeCache = [NSMutableDictionary dictionary];
     NSMutableDictionary<NSString *, NSNumber *> *levelCache = [NSMutableDictionary dictionary];
-    MSTNode *rootNode = [self loadNodeWithCID:rootCID
+    ATProtoMSTNode *rootNode = [self loadNodeWithCID:rootCID
                                        repoDid:did
                                      database:db
                                     nodeCache:nodeCache
@@ -95,10 +95,10 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         return nil;
     }
 
-    return [[MST alloc] initWithRootNode:rootNode];
+    return [[ATProtoMST alloc] initWithRootNode:rootNode];
 }
 
-- (BOOL)saveMST:(MST *)mst forDid:(NSString *)did error:(NSError **)error {
+- (BOOL)saveMST:(ATProtoMST *)mst forDid:(NSString *)did error:(NSError **)error {
     PDSDatabase *db = [self getDatabase];
     if (![db openWithError:error]) return NO;
 
@@ -122,7 +122,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     return [db updateRepoRoot:did rootCid:rootData error:error];
 }
 
-- (BOOL)saveMSTNode:(MSTNode *)node withCID:(ATProtoCID *)cid forDid:(NSString *)did error:(NSError **)error {
+- (BOOL)saveMSTNode:(ATProtoMSTNode *)node withCID:(ATProtoCID *)cid forDid:(NSString *)did error:(NSError **)error {
     if (!node || !cid) {
         if (error) {
             *error = [NSError errorWithDomain:MSTPersistenceErrorDomain
@@ -135,7 +135,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     PDSDatabase *db = [self getDatabase];
     if (![db openWithError:error]) return NO;
 
-    MST *serializer = [[MST alloc] init];
+    ATProtoMST *serializer = [[ATProtoMST alloc] init];
     NSData *nodeData = [serializer serializeNode:node];
     if (!nodeData) {
         if (error) {
@@ -157,7 +157,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     return [db saveBlock:block error:error];
 }
 
-- (nullable MSTNode *)loadMSTNodeWithCID:(ATProtoCID *)cid forDid:(NSString *)did error:(NSError **)error {
+- (nullable ATProtoMSTNode *)loadMSTNodeWithCID:(ATProtoCID *)cid forDid:(NSString *)did error:(NSError **)error {
     if (!cid) {
         if (error) {
             *error = [NSError errorWithDomain:MSTPersistenceErrorDomain
@@ -170,7 +170,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     PDSDatabase *db = [self getDatabase];
     if (![db openWithError:error]) return nil;
 
-    NSMutableDictionary<NSString *, MSTNode *> *nodeCache = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, ATProtoMSTNode *> *nodeCache = [NSMutableDictionary dictionary];
     NSMutableDictionary<NSString *, NSNumber *> *levelCache = [NSMutableDictionary dictionary];
 
     return [self loadNodeWithCID:cid
@@ -240,15 +240,15 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
     return cid;
 }
 
-- (nullable MSTNode *)loadNodeWithCID:(ATProtoCID *)cid
+- (nullable ATProtoMSTNode *)loadNodeWithCID:(ATProtoCID *)cid
                                repoDid:(NSString *)repoDid
                              database:(PDSDatabase *)database
-                            nodeCache:(NSMutableDictionary<NSString *, MSTNode *> *)nodeCache
+                            nodeCache:(NSMutableDictionary<NSString *, ATProtoMSTNode *> *)nodeCache
                            levelCache:(NSMutableDictionary<NSString *, NSNumber *> *)levelCache
                        computedLevel:(uint32_t *)computedLevel
                                  error:(NSError **)error {
     NSString *cacheKey = cid.stringValue;
-    MSTNode *cachedNode = nodeCache[cacheKey];
+    ATProtoMSTNode *cachedNode = nodeCache[cacheKey];
     if (cachedNode) {
         if (computedLevel) {
             NSNumber *cachedLevel = levelCache[cacheKey];
@@ -282,7 +282,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         ? entriesValue.array
         : @[];
 
-    NSMutableArray<MSTNodeEntry *> *entries = [NSMutableArray array];
+    NSMutableArray<ATProtoMSTNodeEntry *> *entries = [NSMutableArray array];
     NSString *prevKey = @"";
     uint32_t nodeLevel = 0;
 
@@ -304,7 +304,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
 
         ATProtoCBORValue *treeTag = entryMap.map[[ATProtoCBORValue textString:@"t"]];
         ATProtoCID *treeCID = [self cidFromTaggedValue:treeTag allowNil:YES error:error];
-        MSTNode *treeNode = nil;
+        ATProtoMSTNode *treeNode = nil;
         uint32_t treeLevel = 0;
         if (treeCID) {
             treeNode = [self loadNodeWithCID:treeCID
@@ -318,13 +318,13 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
             nodeLevel = MAX(nodeLevel, treeLevel + 1);
         }
 
-        MSTNodeEntry *entry = [[MSTNodeEntry alloc] initWithKey:fullKey value:valueCID tree:treeNode];
+        ATProtoMSTNodeEntry *entry = [[ATProtoMSTNodeEntry alloc] initWithKey:fullKey value:valueCID tree:treeNode];
         [entries addObject:entry];
     }
 
     ATProtoCBORValue *leftTag = nodeValue.map[[ATProtoCBORValue textString:@"l"]];
     ATProtoCID *leftCID = [self cidFromTaggedValue:leftTag allowNil:YES error:error];
-    MSTNode *leftNode = nil;
+    ATProtoMSTNode *leftNode = nil;
     uint32_t leftLevel = 0;
     if (leftCID) {
         leftNode = [self loadNodeWithCID:leftCID
@@ -338,7 +338,7 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         nodeLevel = MAX(nodeLevel, leftLevel + 1);
     }
 
-    MSTNode *node = [[MSTNode alloc] initWithLevel:nodeLevel left:leftNode entries:entries];
+    ATProtoMSTNode *node = [[ATProtoMSTNode alloc] initWithLevel:nodeLevel left:leftNode entries:entries];
     nodeCache[cacheKey] = node;
     levelCache[cacheKey] = @(nodeLevel);
     if (computedLevel) *computedLevel = nodeLevel;
