@@ -13,7 +13,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         BOOL didFeed = [parser feedData:input];
         if (didFeed) {
             // Check both success and error paths
-            HttpRequest *req = [parser completedRequest];
+            ATProtoHttpRequest *req = [parser completedRequest];
             if (req) {
                 (void)req.path;
                 (void)req.jsonBody;
