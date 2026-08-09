@@ -37,7 +37,7 @@
         return NO;
     }
 
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *dataCID = mst.rootCID;
     if (!dataCID) {
         if (error) {
@@ -48,7 +48,7 @@
     }
 
     NSString *rev = [[ATProtoTID tid] stringValue];
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did
                                                     data:dataCID
                                                      rev:rev
                                                     prev:nil];

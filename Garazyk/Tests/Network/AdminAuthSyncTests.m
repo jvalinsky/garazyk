@@ -16,14 +16,14 @@
 
 - (nullable NSString *)commitRevFromCARData:(NSData *)carData {
   NSError *carError = nil;
-  CARReader *reader = [CARReader readFromData:carData error:&carError];
+  ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&carError];
   XCTAssertNil(carError);
   XCTAssertNotNil(reader);
   if (!reader) {
     return nil;
   }
 
-  CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+  ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
   XCTAssertNotNil(commitBlock);
   if (!commitBlock) {
     return nil;
@@ -44,14 +44,14 @@
 
 - (nullable ATProtoCID *)commitDataCIDFromCARData:(NSData *)carData {
   NSError *carError = nil;
-  CARReader *reader = [CARReader readFromData:carData error:&carError];
+  ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&carError];
   XCTAssertNil(carError);
   XCTAssertNotNil(reader);
   if (!reader) {
     return nil;
   }
 
-  CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+  ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
   XCTAssertNotNil(commitBlock);
   if (!commitBlock) {
     return nil;
@@ -87,14 +87,14 @@
 - (BOOL)carData:(NSData *)carData
     containsBlockWithCIDString:(NSString *)cidString {
   NSError *parseError = nil;
-  CARReader *reader = [CARReader readFromData:carData error:&parseError];
+  ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&parseError];
   XCTAssertNil(parseError);
   XCTAssertNotNil(reader);
   if (!reader) {
     return NO;
   }
 
-  for (CARBlock *block in reader.blocks) {
+  for (ATProtoCARBlock *block in reader.blocks) {
     if ([block.cid.stringValue isEqualToString:cidString]) {
       return YES;
     }
@@ -165,7 +165,7 @@
   XCTAssertTrue(STARDetectFormatFromData(response.body));
 
   NSError *parseError = nil;
-  STARReader *reader = [STARReader readFromData:response.body error:&parseError];
+  ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:response.body error:&parseError];
   XCTAssertNil(parseError);
   XCTAssertNotNil(reader);
   XCTAssertEqual(reader.variant, STARVariantL0);
@@ -228,8 +228,8 @@
   XCTAssertEqualObjects(deltaResponse.contentType, @"application/vnd.ipld.car");
 
   NSError *parseError = nil;
-  CARReader *reader =
-      [CARReader readFromData:deltaResponse.body error:&parseError];
+  ATProtoCARReader *reader =
+      [ATProtoCARReader readFromData:deltaResponse.body error:&parseError];
   XCTAssertNil(parseError);
   XCTAssertNotNil(reader);
   XCTAssertEqual(reader.blocks.count, 0U);
@@ -262,8 +262,8 @@
   XCTAssertEqual(fullResponse.statusCode, 200);
 
   NSError *fullParseError = nil;
-  CARReader *fullReader =
-      [CARReader readFromData:fullResponse.body error:&fullParseError];
+  ATProtoCARReader *fullReader =
+      [ATProtoCARReader readFromData:fullResponse.body error:&fullParseError];
   XCTAssertNil(fullParseError);
   XCTAssertNotNil(fullReader);
   if (fullResponse.bodyFilePath.length > 0) {
@@ -286,8 +286,8 @@
                         @"application/vnd.ipld.car");
 
   NSError *unknownParseError = nil;
-  CARReader *unknownReader =
-      [CARReader readFromData:unknownResponse.body error:&unknownParseError];
+  ATProtoCARReader *unknownReader =
+      [ATProtoCARReader readFromData:unknownResponse.body error:&unknownParseError];
   XCTAssertNil(unknownParseError);
   XCTAssertNotNil(unknownReader);
   XCTAssertEqual(unknownReader.blocks.count, fullReader.blocks.count);
@@ -359,14 +359,14 @@
   XCTAssertEqual(fullAfterResponse.statusCode, 200);
 
   NSError *deltaParseError = nil;
-  CARReader *deltaReader =
-      [CARReader readFromData:deltaResponse.body error:&deltaParseError];
+  ATProtoCARReader *deltaReader =
+      [ATProtoCARReader readFromData:deltaResponse.body error:&deltaParseError];
   XCTAssertNil(deltaParseError);
   XCTAssertNotNil(deltaReader);
 
   NSError *fullParseError = nil;
-  CARReader *fullReader =
-      [CARReader readFromData:fullAfterResponse.body error:&fullParseError];
+  ATProtoCARReader *fullReader =
+      [ATProtoCARReader readFromData:fullAfterResponse.body error:&fullParseError];
   XCTAssertNil(fullParseError);
   XCTAssertNotNil(fullReader);
   XCTAssertLessThan(deltaReader.blocks.count, fullReader.blocks.count);
@@ -440,8 +440,8 @@
       [self carData:deltaResponse.body containsBlockWithCIDString:deletedCID]);
 
   NSError *parseError = nil;
-  CARReader *reader =
-      [CARReader readFromData:deltaResponse.body error:&parseError];
+  ATProtoCARReader *reader =
+      [ATProtoCARReader readFromData:deltaResponse.body error:&parseError];
   XCTAssertNil(parseError);
   XCTAssertNotNil(reader);
   XCTAssertGreaterThan(reader.blocks.count, 0U);
@@ -505,8 +505,8 @@
   XCTAssertEqual(deltaResponse.statusCode, 200);
 
   NSError *parseError = nil;
-  CARReader *reader =
-      [CARReader readFromData:deltaResponse.body error:&parseError];
+  ATProtoCARReader *reader =
+      [ATProtoCARReader readFromData:deltaResponse.body error:&parseError];
   XCTAssertNil(parseError);
   XCTAssertNotNil(reader);
   XCTAssertEqual(reader.blocks.count, 0U);
@@ -587,8 +587,8 @@
   XCTAssertEqual(deltaResponse.statusCode, 200);
 
   NSError *parseError = nil;
-  CARReader *reader =
-      [CARReader readFromData:deltaResponse.body error:&parseError];
+  ATProtoCARReader *reader =
+      [ATProtoCARReader readFromData:deltaResponse.body error:&parseError];
   XCTAssertNil(parseError);
   XCTAssertNotNil(reader);
   XCTAssertEqual(reader.blocks.count, 0U);
@@ -673,7 +673,7 @@
   XCTAssertTrue(carData.length > 0);
 
   NSError *carError = nil;
-  CARReader *reader = [CARReader readFromData:carData error:&carError];
+  ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&carError];
   XCTAssertNil(carError);
   XCTAssertNotNil(reader);
   XCTAssertNotNil(reader.rootCID);

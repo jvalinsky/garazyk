@@ -3,9 +3,9 @@
 /*!
  @file ATProtoHttpMSTViewerRoutePack.m
 
- @abstract Registers HTTP routes for MST viewer pages and related inspection endpoints.
+ @abstract Registers HTTP routes for ATProtoMST viewer pages and related inspection endpoints.
 
- @discussion Wires MST viewer route handlers into the HTTP server namespace so runtime components can render and serve MST inspection content. This file defines route exposure and registration flow, not MST business processing internals.
+ @discussion Wires ATProtoMST viewer route handlers into the HTTP server namespace so runtime components can render and serve ATProtoMST inspection content. This file defines route exposure and registration flow, not ATProtoMST business processing internals.
  */
 
 #import "Network/ATProtoHttpMSTViewerRoutePack.h"

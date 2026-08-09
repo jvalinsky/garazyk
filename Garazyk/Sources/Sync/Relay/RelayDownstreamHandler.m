@@ -36,9 +36,9 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 @property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
 @property (nonatomic, strong) NSMutableSet<NSString *> *bootstrappingUpstreams;
 @property (nonatomic, strong) NSMutableSet<NSString *> *recoveringRepos;
-- (nullable RepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
+- (nullable ATProtoRepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
                                            error:(NSError **)error;
-- (nullable RepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
+- (nullable ATProtoRepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
                                            commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCID
                                                error:(NSError **)error;
 - (void)recoverRepo:(NSString *)repoDID
@@ -133,7 +133,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
             FirehoseSyncEvent *syncEvent = (FirehoseSyncEvent *)event;
             NSError *syncError = nil;
             ATProtoCID *commitCID = nil;
-            RepoCommit *commit =
+            ATProtoRepoCommit *commit =
                 [self validatedCommitForSyncEvent:syncEvent
                                        commitCID:&commitCID
                                            error:&syncError];
@@ -258,14 +258,14 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
 #pragma mark - Chain Verification
 
-- (nullable RepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
+- (nullable ATProtoRepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
                                            commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCID
                                                error:(NSError **)error {
-    CARReader *reader = [CARReader readFromData:event.blocks error:error];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:event.blocks error:error];
     if (!reader || !reader.rootCID) {
         return nil;
     }
-    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
     if (!commitBlock) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
@@ -286,7 +286,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         }
         return nil;
     }
-    RepoCommit *commit = [RepoCommit fromSignedBlockData:commitBlock.data
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit fromSignedBlockData:commitBlock.data
                                                    error:error];
     if (!commit) {
         return nil;
@@ -306,7 +306,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
     return commit;
 }
 
-- (nullable RepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
+- (nullable ATProtoRepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
                                            error:(NSError **)error {
     if (!event.commit || event.blocks.length == 0) {
         if (error) {
@@ -318,7 +318,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         return nil;
     }
 
-    CARReader *reader = [CARReader readFromData:event.blocks error:error];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:event.blocks error:error];
     if (!reader) {
         return nil;
     }
@@ -332,7 +332,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         return nil;
     }
 
-    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
     if (!commitBlock) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
@@ -355,7 +355,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         return nil;
     }
 
-    RepoCommit *commit = [RepoCommit fromSignedBlockData:commitBlock.data
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit fromSignedBlockData:commitBlock.data
                                                    error:error];
     if (!commit) {
         return nil;
@@ -396,7 +396,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
     }
 
     NSError *parseError = nil;
-    RepoCommit *commit = [self validatedCommitForEvent:event error:&parseError];
+    ATProtoRepoCommit *commit = [self validatedCommitForEvent:event error:&parseError];
     if (!commit) {
         GZ_LOG_SYNC_WARN(@"Relay continuity: invalid commit envelope seq=%lld repo=%@: %@",
                          (long long)event.seq, event.repo,
@@ -548,12 +548,12 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
             }
 
             NSError *carError = nil;
-            CARReader *reader = [CARReader readFromData:data error:&carError];
-            CARBlock *rootBlock =
+            ATProtoCARReader *reader = [ATProtoCARReader readFromData:data error:&carError];
+            ATProtoCARBlock *rootBlock =
                 reader.rootCID ? [reader blockWithCID:reader.rootCID] : nil;
-            RepoCommit *commit =
+            ATProtoRepoCommit *commit =
                 rootBlock
-                    ? [RepoCommit fromSignedBlockData:rootBlock.data
+                    ? [ATProtoRepoCommit fromSignedBlockData:rootBlock.data
                                                 error:&carError]
                     : nil;
             if (!commit || ![commit.did isEqualToString:repoDID] ||
@@ -577,7 +577,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
             ATProtoCID *commitCID = nil;
             NSError *syncError = nil;
-            RepoCommit *validated =
+            ATProtoRepoCommit *validated =
                 [strongSelf validatedCommitForSyncEvent:syncEvent
                                               commitCID:&commitCID
                                                   error:&syncError];

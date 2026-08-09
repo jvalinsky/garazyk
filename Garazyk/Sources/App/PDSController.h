@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabase;
 @class PDSDatabasePool;
 @class PDSActorStore;
-@class MST;
+@class ATProtoMST;
 @class BlobStorage;
 @class SubscribeReposHandler;
 @class PDSDatabaseAccount;

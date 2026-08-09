@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file MST.h
+ * @file ATProtoMST.h
  * @abstract Merkle Search Tree implementation for ATProto repositories.
- * @discussion This header defines the Merkle Search Tree (MST) data structure used by
- * ATProto for content-addressable record storage. The MST provides efficient
+ * @discussion This header defines the Merkle Search Tree (ATProtoMST) data structure used by
+ * ATProto for content-addressable record storage. The ATProtoMST provides efficient
  * key-value storage with cryptographic integrity guarantees through content addressing.
  */
 
@@ -15,12 +15,12 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class ATProtoCID;
-@class MSTNode;
-@class MSTEntry;
-@class MSTNodeEntry;
+@class ATProtoMSTNode;
+@class ATProtoMSTEntry;
+@class ATProtoMSTNodeEntry;
 
 /**
- * @abstract Specifies the type of an MST node.
+ * @abstract Specifies the type of an ATProtoMST node.
  */
 typedef NS_ENUM(NSUInteger, MSTNodeKind) {
     /** Leaf node containing key-value entries. */
@@ -30,7 +30,7 @@ typedef NS_ENUM(NSUInteger, MSTNodeKind) {
 };
 
 /**
- * @abstract Specifies the type of change in an MST diff operation.
+ * @abstract Specifies the type of change in an ATProtoMST diff operation.
  */
 typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
     /** A new key-value pair was added. */
@@ -41,14 +41,14 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
     MSTDiffOperationTypeDelete
 };
 
-@class MSTDiffOperation;
+@class ATProtoMSTDiffOperation;
 
 /**
- * @abstract Represents a single change between two MST versions.
+ * @abstract Represents a single change between two ATProtoMST versions.
  * @discussion Used for sync operations to describe changes between commits.
  * For adds, previousCID is nil. For deletes, currentCID is nil. For updates, both are set.
  */
-@interface MSTDiffOperation : NSObject
+@interface ATProtoMSTDiffOperation : NSObject
 
 /** @abstract The key associated with the change. */
 @property(nonatomic, copy) NSString *key;
@@ -73,9 +73,9 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 @end
 
 /**
- * @abstract Represents a key-value entry in the MST.
+ * @abstract Represents a key-value entry in the ATProtoMST.
  */
-@interface MSTEntry : NSObject <NSCopying>
+@interface ATProtoMSTEntry : NSObject <NSCopying>
 
 /** @abstract The key of the entry. */
 @property(nonatomic, copy, readonly) NSString *key;
@@ -105,9 +105,9 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 @end
 
 /**
- * @abstract An entry within an MST node.
+ * @abstract An entry within an ATProtoMST node.
  */
-@interface MSTNodeEntry : NSObject
+@interface ATProtoMSTNodeEntry : NSObject
 
 /** @abstract Length of the key prefix. */
 @property(nonatomic, assign) NSUInteger prefixLen;
@@ -138,40 +138,40 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
 /**
  * @abstract A node in the Merkle Search Tree.
  */
-@interface MSTNode : NSObject
+@interface ATProtoMSTNode : NSObject
 
 /** @abstract The node type (leaf or internal). */
 @property(nonatomic, assign, readonly) MSTNodeKind kind;
 /** @abstract The node hash ATProtoCID. */
 @property(nonatomic, strong, readonly, nullable) ATProtoCID *nodeHash;
 /** @abstract Entries contained in this node. */
-@property(nonatomic, copy, readonly) NSArray<MSTNodeEntry *> *entries;
+@property(nonatomic, copy, readonly) NSArray<ATProtoMSTNodeEntry *> *entries;
 /** @abstract ATProtoCID of the left subtree. */
 @property(nonatomic, strong, readonly, nullable) ATProtoCID *left;
 
 /** @abstract Creates a leaf node. */
-+ (instancetype)leafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries;
++ (instancetype)leafNodeWithEntries:(NSArray<ATProtoMSTNodeEntry *> *)entries;
 /** @abstract Creates an internal (non-leaf) node. */
-+ (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries
++ (instancetype)nonLeafNodeWithEntries:(NSArray<ATProtoMSTNodeEntry *> *)entries
                                   left:(nullable ATProtoCID *)left;
 
 /** @abstract Initializes a node. */
 - (instancetype)initWithKind:(MSTNodeKind)kind
-                     entries:(NSArray<MSTNodeEntry *> *)entries
+                     entries:(NSArray<ATProtoMSTNodeEntry *> *)entries
                         left:(nullable ATProtoCID *)left;
 
 /** @abstract Serializes the node data. */
 - (NSData *)serialize;
 /** @abstract Serializes the node to CBOR, using a cache for CIDs. */
-- (NSData *)serializeToCBOR:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
+- (NSData *)serializeToCBOR:(NSMapTable<ATProtoMSTNode *, ATProtoCID *> *)cache;
 /** @abstract Computes the ATProtoCID of the node. */
-- (ATProtoCID *)getCID:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
+- (ATProtoCID *)getCID:(NSMapTable<ATProtoMSTNode *, ATProtoCID *> *)cache;
 /** @abstract Computes the hash of the node. */
 - (NSData *)computeHash;
 /** @abstract Sets the node hash. */
 - (void)setNodeHash:(ATProtoCID *)hash;
 /** @abstract Retrieves all entries in the tree rooted at this node. */
-- (NSArray<MSTEntry *> *)fullEntries;
+- (NSArray<ATProtoMSTEntry *> *)fullEntries;
 
 @end
 
@@ -179,12 +179,12 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
  * @abstract The Merkle Search Tree data structure.
  *
  * @discussion Thread safety. The `root` property is backed by a per-instance
- * `_Atomic(MSTNode *)` cell updated only via C11 acquire/release primitives,
+ * `_Atomic(ATProtoMSTNode *)` cell updated only via C11 acquire/release primitives,
  * *not* via Apple's `@property(atomic)` OSSpinLock-style implementation.
  * Concurrent readers and writers never tear the tree because the writer path
  * (`-put:`, `-delete:`) reproduces the tree from the existing root via
  * copy-on-write (each `addRecursive:`/`deleteRecursive:`/`split:`/`merge:`
- * returns a freshly allocated `MSTNode`; existing nodes are never mutated in
+ * returns a freshly allocated `ATProtoMSTNode`; existing nodes are never mutated in
  * place). A walker captures `self.root` once at entry — the returned
  * autoreleased reference retains the published tree until the walk completes,
  * so a concurrent writer publishing a new root cannot disturb the walker's
@@ -192,25 +192,25 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
  * guarantee end-to-end.
  *
  * Proof collection extends the atomic-publish invariant with a per-instance
- * `lazySubtreeCache` side-table (declared on the MST () class extension in
- * MST.m) that resolves `MSTNode` subtrees on demand rather than writing them
+ * `lazySubtreeCache` side-table (declared on the ATProtoMST () class extension in
+ * ATProtoMST.m) that resolves `ATProtoMSTNode` subtrees on demand rather than writing them
  * back into the published tree. The cache is invalidated on every
  * `-put:/-delete:` so it always tracks the currently-published root; callers
  * MUST NOT assume a cached subtree is valid across publish cycles.
  */
-@interface MST : NSObject
+@interface ATProtoMST : NSObject
 
 /** @abstract The root node of the tree. */
-@property(strong, readonly, nullable) MSTNode *root;
+@property(strong, readonly, nullable) ATProtoMSTNode *root;
 /** @abstract The ATProtoCID of the root node. */
 @property(nonatomic, strong, readonly, nullable) ATProtoCID *rootCID;
 /** @abstract Hash of an empty tree. */
 @property(nonatomic, copy, readonly) NSData *emptyTreeHash;
 
-/** @abstract Initializes an MST with a root ATProtoCID. */
+/** @abstract Initializes an ATProtoMST with a root ATProtoCID. */
 - (instancetype)initWithRootCID:(nullable ATProtoCID *)rootCID;
-/** @abstract Initializes an MST with a root node. */
-- (instancetype)initWithRootNode:(nullable MSTNode *)rootNode;
+/** @abstract Initializes an ATProtoMST with a root node. */
+- (instancetype)initWithRootNode:(nullable ATProtoMSTNode *)rootNode;
 
 /** @abstract Gets a value ATProtoCID for a given key. */
 - (nullable ATProtoCID *)get:(NSString *)key;
@@ -227,32 +227,32 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
 /** @abstract Deletes an entry for a key and sub-key. */
 - (void)delete:(NSString *)key subKey:(nullable NSString *)subKey;
 /** @abstract Retrieves all entries in the tree. */
-- (NSArray<MSTEntry *> *)allEntries;
+- (NSArray<ATProtoMSTEntry *> *)allEntries;
 /** @abstract Retrieves entries matching the prefix. */
-- (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
+- (NSArray<ATProtoMSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
 
 /** @abstract Exports the tree as a CAR file. */
 - (NSData *)exportCAR;
 /** @abstract Serializes the tree to CBOR. */
 - (NSData *)serializeToCBOR;
-/** @abstract Deserializes an MST from CBOR (single-node only). */
+/** @abstract Deserializes an ATProtoMST from CBOR (single-node only). */
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data;
 
 /**
- * @abstract Deserializes an MST from CBOR, recursively resolving child subtrees via a block provider.
+ * @abstract Deserializes an ATProtoMST from CBOR, recursively resolving child subtrees via a block provider.
  * @param data The root node's CBOR data.
  * @param blockProvider A block that resolves a ATProtoCID to its CBOR data, or nil for lazy resolution.
- * @return A fully reconstructed MST, or nil if deserialization fails.
+ * @return A fully reconstructed ATProtoMST, or nil if deserialization fails.
  */
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data
                                blockProvider:(nullable MSTBlockProvider)blockProvider;
 
 /**
  * @abstract Computes differences between this tree and an older version.
- * @param oldTree The older MST to compare against.
- * @return Array of MSTDiffOperation objects.
+ * @param oldTree The older ATProtoMST to compare against.
+ * @return Array of ATProtoMSTDiffOperation objects.
  */
-- (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree;
+- (NSArray<ATProtoMSTDiffOperation *> *)diffFrom:(nullable ATProtoMST *)oldTree;
 
 /**
  * @abstract Computes the depth of a key based on its hash.
@@ -280,22 +280,22 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
  * @param key The key to get proof nodes for.
  * @return Array of nodes.
  */
-- (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key;
+- (nullable NSArray<ATProtoMSTNode *> *)getProofNodesForKey:(NSString *)key;
 /**
  * @abstract Gets the proof nodes path using a block provider.
  */
-- (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key
+- (nullable NSArray<ATProtoMSTNode *> *)getProofNodesForKey:(NSString *)key
                                        blockProvider:(nullable MSTBlockProvider)blockProvider;
 
 /**
  * @abstract Enumerates all nodes in depth-first, key-ordered traversal.
  */
-- (void)enumerateNodesDepthFirstUsingBlock:(void (^)(MSTNode *node, NSUInteger depth, BOOL *stop))block;
+- (void)enumerateNodesDepthFirstUsingBlock:(void (^)(ATProtoMSTNode *node, NSUInteger depth, BOOL *stop))block;
 
 /**
- * @abstract Serializes an MST node to CBOR data.
+ * @abstract Serializes an ATProtoMST node to CBOR data.
  */
-- (nullable NSData *)serializeNode:(MSTNode *)node;
+- (nullable NSData *)serializeNode:(ATProtoMSTNode *)node;
 
 /**
  * @abstract Enumerates all node blocks in CAR-ready form.
@@ -340,18 +340,18 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
  * @param block           Called once per emitted block, in spec order.
  * @param recordProvider  Optional. Resolves a record ATProtoCID to its data;
  *                        required for records to be interleaved. When
- *                        nil, only MST node blocks are emitted.
+ *                        nil, only ATProtoMST node blocks are emitted.
  * @param error           Out-parameter for error reporting.
  *
  * @discussion The relative order of yielded (cid, data) tuples is:
- *   1. The root MST node block.
+ *   1. The root ATProtoMST node block.
  *   2. Pre-order recursion into the left subtree (keys < first entry).
  *   3. For each entry in node.entries[] (left-to-right in the entries
  *      array as serialized):
  *      - the record block for entry.value (if a leaf entry);
  *      - then pre-order recursion into entry.tree (if not a leaf).
  *
- *   Each MST node and record block is yielded at most once (CIDs are
+ *   Each ATProtoMST node and record block is yielded at most once (CIDs are
  *   tracked in a per-call dedup set); the block returning NO aborts
  *   the walk and surfaces the callback's error.
  *

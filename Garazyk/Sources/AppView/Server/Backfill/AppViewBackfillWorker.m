@@ -289,19 +289,19 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
     GZ_LOG_DEBUG(@"[AppView BackfillWorker] Data length: %lu",
                  (unsigned long)archiveData.length);
 
-    CARReader *reader = nil;
+    ATProtoCARReader *reader = nil;
     if (STARDetectFormatFromData(archiveData)) {
         // STAR format detected — convert to CAR for downstream processing
         GZ_LOG_DEBUG(@"[AppView BackfillWorker] Detected STAR format, converting to CAR");
         NSData *carBytes =
-            [STARConverter carDataFromSTARData:archiveData error:error];
+            [ATProtoSTARConverter carDataFromSTARData:archiveData error:error];
         if (carBytes) {
-            reader = [CARReader readFromData:carBytes strict:YES error:error];
+            reader = [ATProtoCARReader readFromData:carBytes strict:YES error:error];
         }
     } else {
         // Archive fetched from a remote PDS: verify block CIDs against their
         // payloads rather than trusting what the peer labelled them.
-        reader = [CARReader readFromData:archiveData strict:YES error:error];
+        reader = [ATProtoCARReader readFromData:archiveData strict:YES error:error];
     }
     if (!reader) {
         GZ_LOG_ERROR(@"[AppView BackfillWorker] Failed to read repo data: %@",
@@ -317,7 +317,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
     NSMutableArray<NSDictionary *> *snapshotRecords = [NSMutableArray array];
     NSMutableArray<NSDictionary *> *snapshotBlocks = [NSMutableArray array];
 
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         if (!block.cid.bytes || !block.data) continue;
         [snapshotBlocks addObject:@{
             @"cid_data": block.cid.bytes,
@@ -326,12 +326,12 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
         }];
     }
 
-    // Find and parse the data MST from commit object
-    NSArray<MSTEntry *> *entries = nil;
+    // Find and parse the data ATProtoMST from commit object
+    NSArray<ATProtoMSTEntry *> *entries = nil;
     ATProtoCID *dataMSTCID = nil;
 
     if (reader.rootCID) {
-        CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+        ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
         if (commitBlock) {
             if (AppViewBackfillBlockLooksLikeMSTNode(commitBlock.data)) {
                 dataMSTCID = reader.rootCID;
@@ -350,16 +350,16 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
         }
     }
 
-    // Now load the data MST using its ATProtoCID
+    // Now load the data ATProtoMST using its ATProtoCID
     if (dataMSTCID) {
-        CARBlock *dataMSTBlock = [reader blockWithCID:dataMSTCID];
+        ATProtoCARBlock *dataMSTBlock = [reader blockWithCID:dataMSTCID];
         if (dataMSTBlock) {
             GZ_LOG_INFO(@"[AppView BackfillWorker] Trying to deserialize data MST...");
             MSTBlockProvider provider = ^NSData *(ATProtoCID *cid) {
-                CARBlock *block = [reader blockWithCID:cid];
+                ATProtoCARBlock *block = [reader blockWithCID:cid];
                 return block.data;
             };
-            MST *dataMST = [MST deserializeFromCBOR:dataMSTBlock.data blockProvider:provider];
+            ATProtoMST *dataMST = [ATProtoMST deserializeFromCBOR:dataMSTBlock.data blockProvider:provider];
             if (dataMST && dataMST.root) {
                 entries = [dataMST allEntries];
                 GZ_LOG_INFO(@"[AppView BackfillWorker] Parsed data MST with %lu entries",
@@ -377,7 +377,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
 
     // Index entries
     if (entries.count > 0) {
-        for (MSTEntry *entry in entries) {
+        for (ATProtoMSTEntry *entry in entries) {
             ATProtoCID *valueCID = entry.valueCID;
             if (!valueCID) continue;
 
@@ -399,7 +399,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
             // Skip internal keys (not a record collection)
             if ([collection hasPrefix:@"_"] || [collection hasPrefix:@"#"]) continue;
 
-            CARBlock *block = [reader blockWithCID:valueCID];
+            ATProtoCARBlock *block = [reader blockWithCID:valueCID];
             if (!block) {
                 GZ_LOG_WARN(@"[AppView BackfillWorker] Missing block for CID %@ in %@",
                           valueCID, did);
@@ -504,8 +504,8 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
 // Fallback CBOR parsing for older CAR formats
 // ---------------------------------------------------------------------------
 
-- (NSArray<MSTEntry *> *)_parseCBOREntriesFromBlock:(NSData *)data {
-    NSMutableArray<MSTEntry *> *entries = [NSMutableArray array];
+- (NSArray<ATProtoMSTEntry *> *)_parseCBOREntriesFromBlock:(NSData *)data {
+    NSMutableArray<ATProtoMSTEntry *> *entries = [NSMutableArray array];
     NSError *error = nil;
     id cbor = [ATProtoDagCBOR decodeData:data error:&error];
     if (![cbor isKindOfClass:[NSDictionary class]]) return entries;
@@ -522,7 +522,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
                 NSData *valueData = (NSData *)value;
                 ATProtoCID *cid = [ATProtoCID cidFromBytes:valueData];
                 if (cid) {
-                    MSTEntry *entry = [MSTEntry entryWithKey:key valueCID:cid];
+                    ATProtoMSTEntry *entry = [ATProtoMSTEntry entryWithKey:key valueCID:cid];
                     [entries addObject:entry];
                 }
             }

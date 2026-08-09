@@ -3,7 +3,7 @@
 /*!
  @file PDSRecordService+CommitPlumbing.h
 
- @abstract MST and signed commit plumbing for PDSRecordService.
+ @abstract ATProtoMST and signed commit plumbing for PDSRecordService.
  */
 
 #import "PDSRecordService_Internal.h"

@@ -54,7 +54,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
 
 - (id)JSONObjectWithData:(NSData *)data error:(NSError **)error {
   // §S19 candidate 4: branch the wrapped [ATProtoCBORDecoder decode:] call on
-  // _isContentAddressed. Content-addressed callers (RepoCommit, MST/CAR
+  // _isContentAddressed. Content-addressed callers (ATProtoRepoCommit, ATProtoMST/CAR
   // blocks, Firehose, AppView ingest, sync, identity, profile records)
   // route through the strict [ATProtoDagCBOR decodeDataAsJSON:] path --
   // the same dispatch as the direct-from-DagCBOR identity at

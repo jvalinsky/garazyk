@@ -15,7 +15,7 @@
 
 @class PDSActorStore;
 @class PDSDatabaseBlock;
-@class RepoCommit;
+@class ATProtoRepoCommit;
 @class PDSDatabaseRecord;
 @class PDSSQLiteRecordRepository;
 
@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Declares PDSRecordService state and helpers shared by implementation categories.
  * @discussion Repository mutations are serialized per DID before the methods that change records,
- * MST state, and commit metadata are called.
+ * ATProtoMST state, and commit metadata are called.
  */
 @interface PDSRecordService ()
 
@@ -51,7 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Applies already-authorized writes while the caller holds the DID's mutation lane.
  * @discussion Validates the optional swap commit before building operations, then persists record,
- * block, MST, and commit-root changes through the actor-store transaction.
+ * block, ATProtoMST, and commit-root changes through the actor-store transaction.
  * @return Apply-writes result metadata, or nil when validation or persistence fails.
  */
 - (nullable NSDictionary *)_applyWritesSerialized:(NSArray<NSDictionary *> *)writes
@@ -61,19 +61,19 @@ NS_ASSUME_NONNULL_BEGIN
                                      swapCommit:(nullable NSString *)swapCommit
                                           error:(NSError **)error;
 
-/** @abstract Rebuilds a repository MST from the actor's stored records. */
-- (nullable MST *)loadRepoMSTForDid:(NSString *)did
+/** @abstract Rebuilds a repository ATProtoMST from the actor's stored records. */
+- (nullable ATProtoMST *)loadRepoMSTForDid:(NSString *)did
                                store:(PDSActorStore *)store
                                error:(NSError **)error;
 
-/** @abstract Computes the current MST root ATProtoCID for a DID from its actor store. */
+/** @abstract Computes the current ATProtoMST root ATProtoCID for a DID from its actor store. */
 - (nullable ATProtoCID *)computeRepoRootCIDForDid:(NSString *)did
                                       store:(PDSActorStore *)store
                                       error:(NSError **)error;
 
 /**
- * @abstract Updates the MST, signed commit, persisted blocks, and repository root after mutations.
- * @discussion Must run in the DID's serialized write lane. It reloads or rebuilds cached MST state,
+ * @abstract Updates the ATProtoMST, signed commit, persisted blocks, and repository root after mutations.
+ * @discussion Must run in the DID's serialized write lane. It reloads or rebuilds cached ATProtoMST state,
  * applies the supplied ATProtoCID mutations, signs a new commit, and writes blocks and root atomically.
  * @return Metadata for the new repository root, or nil when loading, signing, or the transaction fails.
  */
@@ -85,10 +85,10 @@ NS_ASSUME_NONNULL_BEGIN
                                                                            error:(NSError **)error;
 
 /**
- * @abstract Materializes the updated MST root and proof-path nodes for changed record keys.
+ * @abstract Materializes the updated ATProtoMST root and proof-path nodes for changed record keys.
  * @discussion Returned blocks are deduplicated by ATProtoCID and carry rev for transactional persistence.
  */
-- (nullable NSArray<PDSDatabaseBlock *> *)changedMSTBlocksForMST:(MST *)mst
+- (nullable NSArray<PDSDatabaseBlock *> *)changedMSTBlocksForMST:(ATProtoMST *)mst
                                                      changedKeys:(NSArray<NSString *> *)changedKeys
                                                             rev:(NSString *)rev
                                                           error:(NSError **)error;

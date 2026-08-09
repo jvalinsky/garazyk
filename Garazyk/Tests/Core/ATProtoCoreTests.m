@@ -295,10 +295,10 @@
     XCTAssertEqual(decoded.type, CBORTypeMap);
 }
 
-#pragma mark - MST Tests
+#pragma mark - ATProtoMST Tests
 
 - (void)testMSTBasicOperationsGetEqualsObject {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
 
     ATProtoCID *cid1 = [ATProtoCID sha256:[@"value1" dataUsingEncoding:NSUTF8StringEncoding]];
     ATProtoCID *cid2 = [ATProtoCID sha256:[@"value2" dataUsingEncoding:NSUTF8StringEncoding]];
@@ -311,7 +311,7 @@
 }
 
 - (void)testMSTDelete {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *cid = [ATProtoCID sha256:[@"delete test" dataUsingEncoding:NSUTF8StringEncoding]];
 
     [mst put:@"deleteMe" valueCID:cid];
@@ -322,19 +322,19 @@
 }
 
 - (void)testMSTAllEntries {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
 
     for (int i = 0; i < 10; i++) {
         ATProtoCID *cid = [ATProtoCID sha256:[[NSString stringWithFormat:@"entry%d", i] dataUsingEncoding:NSUTF8StringEncoding]];
         [mst put:[NSString stringWithFormat:@"key%d", i] valueCID:cid];
     }
 
-    NSArray<MSTEntry *> *entries = [mst allEntries];
+    NSArray<ATProtoMSTEntry *> *entries = [mst allEntries];
     XCTAssertEqual(entries.count, 10);
 }
 
 - (void)testEntriesWithPrefixReturnsExpectedCount {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
 
     ATProtoCID *cid1 = [ATProtoCID sha256:[@"app.bsky.feed.post1" dataUsingEncoding:NSUTF8StringEncoding]];
     ATProtoCID *cid2 = [ATProtoCID sha256:[@"app.bsky.feed.post2" dataUsingEncoding:NSUTF8StringEncoding]];
@@ -344,19 +344,19 @@
     [mst put:@"app.bsky.feed.post2" valueCID:cid2];
     [mst put:@"app.bsky.actor.profile" valueCID:cid3];
 
-    NSArray<MSTEntry *> *feedEntries = [mst entriesWithPrefix:@"app.bsky.feed."];
+    NSArray<ATProtoMSTEntry *> *feedEntries = [mst entriesWithPrefix:@"app.bsky.feed."];
     XCTAssertEqual(feedEntries.count, 2);
 }
 
 - (void)testMSTCBORSerialization {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *cid = [ATProtoCID sha256:[@"cbor test" dataUsingEncoding:NSUTF8StringEncoding]];
     [mst put:@"testKey" valueCID:cid];
 
     NSData *cborData = [mst serializeToCBOR];
     XCTAssertNotNil(cborData);
 
-    MST *deserialized = [MST deserializeFromCBOR:cborData];
+    ATProtoMST *deserialized = [ATProtoMST deserializeFromCBOR:cborData];
     XCTAssertNotNil(deserialized);
     XCTAssertEqualObjects([deserialized get:@"testKey"], cid);
 }

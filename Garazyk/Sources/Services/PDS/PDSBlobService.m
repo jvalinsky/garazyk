@@ -54,7 +54,7 @@
     // However, if the old logic put BLOBS as BLOCKS, do we need to emulate that?
     // The previous implementation put the blob as a block in the ActorStore. 
     // If the system expects blobs to be readable via `getRecord` or `getBlock`, we might break that.
-    // BUT: Blobs are usually separate from the Repo MST blocks.
+    // BUT: Blobs are usually separate from the Repo ATProtoMST blocks.
     // `PDSBlobService` was using `putBlock` likely because it lacked a real blob store.
     
     return @{

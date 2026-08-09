@@ -10,32 +10,32 @@
 @implementation MSTInteropTests
 
 - (void)testLeadingZeros {
-    // MST 'depth' computation (SHA-256 leading zeros)
+    // ATProtoMST 'depth' computation (SHA-256 leading zeros)
     // Reference values from indigo/mst/mst_interop_test.go and custom gen_mst_vectors.go
     
-    XCTAssertEqual([MST keyDepthBytes:[@"" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    XCTAssertEqual([MST keyDepthBytes:[@"asdf" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    XCTAssertEqual([MST keyDepthBytes:[@"blue" dataUsingEncoding:NSUTF8StringEncoding]], 1);
-    XCTAssertEqual([MST keyDepthBytes:[@"2653ae71" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    XCTAssertEqual([MST keyDepthBytes:[@"88bfafc7" dataUsingEncoding:NSUTF8StringEncoding]], 2);
-    XCTAssertEqual([MST keyDepthBytes:[@"2a92d355" dataUsingEncoding:NSUTF8StringEncoding]], 4);
-    XCTAssertEqual([MST keyDepthBytes:[@"884976f5" dataUsingEncoding:NSUTF8StringEncoding]], 6);
-    XCTAssertEqual([MST keyDepthBytes:[@"app.bsky.feed.post/454397e440ec" dataUsingEncoding:NSUTF8StringEncoding]], 4);
-    XCTAssertEqual([MST keyDepthBytes:[@"app.bsky.feed.post/9adeb165882c" dataUsingEncoding:NSUTF8StringEncoding]], 8);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"asdf" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"blue" dataUsingEncoding:NSUTF8StringEncoding]], 1);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"2653ae71" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"88bfafc7" dataUsingEncoding:NSUTF8StringEncoding]], 2);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"2a92d355" dataUsingEncoding:NSUTF8StringEncoding]], 4);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"884976f5" dataUsingEncoding:NSUTF8StringEncoding]], 6);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"app.bsky.feed.post/454397e440ec" dataUsingEncoding:NSUTF8StringEncoding]], 4);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"app.bsky.feed.post/9adeb165882c" dataUsingEncoding:NSUTF8StringEncoding]], 8);
 
     // Verified against Go reference implementation (gen_mst_vectors.go)
-    XCTAssertEqual([MST keyDepthBytes:[@"com.example.test" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    XCTAssertEqual([MST keyDepthBytes:[@"bsky/posts/abcdefg" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    XCTAssertEqual([MST keyDepthBytes:[@"bsky/posts/abcdehi" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    XCTAssertEqual([MST keyDepthBytes:[@"a" dataUsingEncoding:NSUTF8StringEncoding]], 0);
-    XCTAssertEqual([MST keyDepthBytes:[@"b" dataUsingEncoding:NSUTF8StringEncoding]], 1);
-    XCTAssertEqual([MST keyDepthBytes:[@"c" dataUsingEncoding:NSUTF8StringEncoding]], 1);
-    XCTAssertEqual([MST keyDepthBytes:[@"very_deep_nesting_check_string_12345" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"com.example.test" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"bsky/posts/abcdefg" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"bsky/posts/abcdehi" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"a" dataUsingEncoding:NSUTF8StringEncoding]], 0);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"b" dataUsingEncoding:NSUTF8StringEncoding]], 1);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"c" dataUsingEncoding:NSUTF8StringEncoding]], 1);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"very_deep_nesting_check_string_12345" dataUsingEncoding:NSUTF8StringEncoding]], 0);
     
     // High-depth vectors found via brute-force
-    XCTAssertEqual([MST keyDepthBytes:[@"test_key_750" dataUsingEncoding:NSUTF8StringEncoding]], 5);
-    XCTAssertEqual([MST keyDepthBytes:[@"test_key_756" dataUsingEncoding:NSUTF8StringEncoding]], 5);
-    XCTAssertEqual([MST keyDepthBytes:[@"test_key_3299" dataUsingEncoding:NSUTF8StringEncoding]], 5);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"test_key_750" dataUsingEncoding:NSUTF8StringEncoding]], 5);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"test_key_756" dataUsingEncoding:NSUTF8StringEncoding]], 5);
+    XCTAssertEqual([ATProtoMST keyDepthBytes:[@"test_key_3299" dataUsingEncoding:NSUTF8StringEncoding]], 5);
 }
 
 - (void)testInteropKnownMaps {
@@ -46,13 +46,13 @@
     fprintf(stderr, "cid1 created\n");
     
     // Empty map
-    MST *emptyMST = [[MST alloc] init];
+    ATProtoMST *emptyMST = [[ATProtoMST alloc] init];
     fprintf(stderr, "emptyMST created\n");
     XCTAssertEqualObjects(emptyMST.rootCID.stringValue, @"bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm");
     fprintf(stderr, "emptyMST rootCID checked\n");
 
     // Trivial map
-    MST *trivialMST = [[MST alloc] init];
+    ATProtoMST *trivialMST = [[ATProtoMST alloc] init];
     fprintf(stderr, "trivialMST created\n");
     [trivialMST put:@"com.example.record/3jqfcqzm3fo2j" valueCID:cid1];
     fprintf(stderr, "trivialMST put finished\n");
@@ -60,12 +60,12 @@
     fprintf(stderr, "trivialMST rootCID checked\n");
     
     // Layer 2 map
-    MST *layer2MST = [[MST alloc] init];
+    ATProtoMST *layer2MST = [[ATProtoMST alloc] init];
     [layer2MST put:@"com.example.record/3jqfcqzm3fx2j" valueCID:cid1];
     XCTAssertEqualObjects(layer2MST.rootCID.stringValue, @"bafyreih7wfei65pxzhauoibu3ls7jgmkju4bspy4t2ha2qdjnzqvoy33ai");
     
     // Simple map
-    MST *simpleMST = [[MST alloc] init];
+    ATProtoMST *simpleMST = [[ATProtoMST alloc] init];
     [simpleMST put:@"com.example.record/3jqfcqzm3fp2j" valueCID:cid1];
     [simpleMST put:@"com.example.record/3jqfcqzm3fr2j" valueCID:cid1];
     [simpleMST put:@"com.example.record/3jqfcqzm3fs2j" valueCID:cid1];
@@ -82,7 +82,7 @@
     NSString *l1root = @"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4";
     NSString *l0root = @"bafyreie4kjuxbwkhzg2i5dljaswcroeih4dgiqq6pazcmunwt2byd725vi";
     
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     [mst put:@"com.example.record/3jqfcqzm3fn2j" valueCID:cid1];
     [mst put:@"com.example.record/3jqfcqzm3fo2j" valueCID:cid1];
     [mst put:@"com.example.record/3jqfcqzm3fp2j" valueCID:cid1];
@@ -104,7 +104,7 @@
     NSString *l1root = @"bafyreiettyludka6fpgp33stwxfuwhkzlur6chs4d2v4nkmq2j3ogpdjem";
     NSString *l2root = @"bafyreid2x5eqs4w4qxvc5jiwda4cien3gw2q6cshofxwnvv7iucrmfohpm";
 
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     [mst put:@"com.example.record/3jqfcqzm3fo2j" valueCID:cid1];
     [mst put:@"com.example.record/3jqfcqzm3fp2j" valueCID:cid1];
     [mst put:@"com.example.record/3jqfcqzm3fr2j" valueCID:cid1];
@@ -134,7 +134,7 @@
     NSString *l0root = @"bafyreidfcktqnfmykz2ps3dbul35pepleq7kvv526g47xahuz3rqtptmky";
     NSString *l2root = @"bafyreiavxaxdz7o7rbvr3zg2liox2yww46t7g6hkehx4i4h3lwudly7dhy";
 
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     [mst put:@"com.example.record/3jqfcqzm3ft2j" valueCID:cid1];
     [mst put:@"com.example.record/3jqfcqzm3fz2j" valueCID:cid1];
     
@@ -176,7 +176,7 @@
 }
 
 - (void)testPutAndGet {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     ATProtoCID *cid2 = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
@@ -189,7 +189,7 @@
 }
 
 - (void)testDeletion {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
     [mst put:@"com.example.record/1" valueCID:cid1];
@@ -201,7 +201,7 @@
 }
 
 - (void)testListing {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
     // Insert out of order
@@ -209,7 +209,7 @@
     [mst put:@"a" valueCID:cid];
     [mst put:@"c" valueCID:cid];
     
-    NSArray<MSTEntry *> *entries = [mst allEntries];
+    NSArray<ATProtoMSTEntry *> *entries = [mst allEntries];
     XCTAssertEqual(entries.count, 3);
     XCTAssertEqualObjects(entries[0].key, @"a");
     XCTAssertEqualObjects(entries[1].key, @"b");
@@ -217,7 +217,7 @@
 }
 
 - (void)testCARGenerationReturnsData {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     [mst put:@"test" valueCID:cid];
     
@@ -232,7 +232,7 @@
     ATProtoCID *cid2 = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
     // Create old tree with 2 records
-    MST *oldTree = [[MST alloc] init];
+    ATProtoMST *oldTree = [[ATProtoMST alloc] init];
     [oldTree put:@"com.example/key1" valueCID:cid1];
     [oldTree put:@"com.example/key2" valueCID:cid1];
     
@@ -240,27 +240,27 @@
     // - key1 updated (cid1 -> cid2)
     // - key2 deleted
     // - key3 added
-    MST *newTree = [[MST alloc] init];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
     [newTree put:@"com.example/key1" valueCID:cid2]; // Update
     [newTree put:@"com.example/key3" valueCID:cid1]; // Add
     
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
     XCTAssertEqual(diff.count, 3, "Should have 3 operations: add, update, delete");
     
     // Operations are sorted by key
-    MSTDiffOperation *op1 = diff[0];
+    ATProtoMSTDiffOperation *op1 = diff[0];
     XCTAssertEqualObjects(op1.key, @"com.example/key1");
     XCTAssertEqual(op1.type, MSTDiffOperationTypeUpdate);
     XCTAssertEqualObjects(op1.previousCID.stringValue, cid1.stringValue);
     XCTAssertEqualObjects(op1.currentCID.stringValue, cid2.stringValue);
     
-    MSTDiffOperation *op2 = diff[1];
+    ATProtoMSTDiffOperation *op2 = diff[1];
     XCTAssertEqualObjects(op2.key, @"com.example/key2");
     XCTAssertEqual(op2.type, MSTDiffOperationTypeDelete);
     XCTAssertEqualObjects(op2.previousCID.stringValue, cid1.stringValue);
     XCTAssertNil(op2.currentCID);
     
-    MSTDiffOperation *op3 = diff[2];
+    ATProtoMSTDiffOperation *op3 = diff[2];
     XCTAssertEqualObjects(op3.key, @"com.example/key3");
     XCTAssertEqual(op3.type, MSTDiffOperationTypeAdd);
     XCTAssertNil(op3.previousCID);
@@ -270,12 +270,12 @@
 - (void)testDiffFromEmptyTree {
     ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
-    MST *newTree = [[MST alloc] init];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
     [newTree put:@"key1" valueCID:cid];
     [newTree put:@"key2" valueCID:cid];
     
     // Diff from nil (empty) tree - all should be additions
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:nil];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:nil];
     XCTAssertEqual(diff.count, 2);
     XCTAssertEqual(diff[0].type, MSTDiffOperationTypeAdd);
     XCTAssertEqual(diff[1].type, MSTDiffOperationTypeAdd);
@@ -284,44 +284,44 @@
 - (void)testGetProofNodesForKey {
     ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     [mst put:@"a" valueCID:cid];
     [mst put:@"b" valueCID:cid];
     [mst put:@"c" valueCID:cid];
     
-    NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:@"b"];
+    NSArray<ATProtoMSTNode *> *proofNodes = [mst getProofNodesForKey:@"b"];
     XCTAssertNotNil(proofNodes, "Should return proof nodes for existing key");
     XCTAssertGreaterThan(proofNodes.count, 0, "Should have at least one node in proof path");
     
     // Verify that the proof path starts from root
-    MSTNode *rootProof = proofNodes[0];
+    ATProtoMSTNode *rootProof = proofNodes[0];
     XCTAssertNotNil(rootProof, "First node should be root");
 }
 
 - (void)testGetProofNodesForMissingKey {
     ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     [mst put:@"a" valueCID:cid];
     
-    NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:@"nonexistent"];
+    NSArray<ATProtoMSTNode *> *proofNodes = [mst getProofNodesForKey:@"nonexistent"];
     XCTAssertNil(proofNodes, "Should return nil for non-existent key");
 }
 
 - (void)testFullEntriesReturnsEntries {
     ATProtoCID *cid = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     [mst put:@"a" valueCID:cid];
     [mst put:@"b" valueCID:cid];
     
     // Get proof nodes to access internal nodes
-    NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:@"a"];
+    NSArray<ATProtoMSTNode *> *proofNodes = [mst getProofNodesForKey:@"a"];
     XCTAssertNotNil(proofNodes);
     
     // Test fullEntries on root node
-    MSTNode *root = proofNodes[0];
-    NSArray<MSTEntry *> *entries = [root fullEntries];
+    ATProtoMSTNode *root = proofNodes[0];
+    NSArray<ATProtoMSTEntry *> *entries = [root fullEntries];
     XCTAssertGreaterThan(entries.count, 0, "Root should have entries");
 }
 

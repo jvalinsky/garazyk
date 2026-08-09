@@ -16,12 +16,12 @@
 
 @implementation PDSRecordService (CommitPlumbing)
 
-#pragma mark - Commit Plumbing (MST & Signed Commits)
+#pragma mark - Commit Plumbing (ATProtoMST & Signed Commits)
 
 - (nullable ATProtoCID *)computeRepoRootCIDForDid:(NSString *)did
                                       store:(PDSActorStore *)store
                                       error:(NSError **)error {
-    MST *mst = [self loadRepoMSTForDid:did store:store error:error];
+    ATProtoMST *mst = [self loadRepoMSTForDid:did store:store error:error];
     if (!mst) {
         return nil;
     }
@@ -35,16 +35,16 @@
     return rootCID;
 }
 
-- (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
+- (nullable ATProtoMST *)loadMSTFromRepoBlocksForDid:(NSString *)did
                                          store:(PDSActorStore *)store
                                          error:(NSError **)error {
-    return [MSTCacheManager loadMSTFromRepoBlocksForDid:did store:store error:error];
+    return [ATProtoMSTCacheManager loadMSTFromRepoBlocksForDid:did store:store error:error];
 }
 
-- (nullable MST *)loadRepoMSTForDid:(NSString *)did
+- (nullable ATProtoMST *)loadRepoMSTForDid:(NSString *)did
                                store:(PDSActorStore *)store
                                error:(NSError **)error {
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     const NSUInteger pageSize = 1000;
     NSUInteger offset = 0;
     const NSUInteger maxIterations = 1000; // Safety: max 1M records
@@ -86,7 +86,7 @@
     return mst;
 }
 
-- (nullable NSArray<PDSDatabaseBlock *> *)changedMSTBlocksForMST:(MST *)mst
+- (nullable NSArray<PDSDatabaseBlock *> *)changedMSTBlocksForMST:(ATProtoMST *)mst
                                                      changedKeys:(NSArray<NSString *> *)changedKeys
                                                             rev:(NSString *)rev
                                                           error:(NSError **)error {
@@ -130,8 +130,8 @@
         if (key.length == 0) {
             continue;
         }
-        NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:key];
-        for (MSTNode *node in proofNodes ?: @[]) {
+        NSArray<ATProtoMSTNode *> *proofNodes = [mst getProofNodesForKey:key];
+        for (ATProtoMSTNode *node in proofNodes ?: @[]) {
             NSData *nodeData = [mst serializeNode:node];
             if (nodeData.length == 0) {
                 continue;
@@ -159,10 +159,10 @@
         return nil;
     }
 
-    // Load or retrieve MST — no serial queue needed
+    // Load or retrieve ATProtoMST — no serial queue needed
     // Per-DID serialization is guaranteed by GZPerDidWriteDispatcher
-    // MSTCacheManager uses MSTAtomicReference for thread-safe access
-    MST *mst = [[MSTCacheManager sharedManager] mstForDid:did];
+    // ATProtoMSTCacheManager uses ATProtoMSTAtomicReference for thread-safe access
+    ATProtoMST *mst = [[ATProtoMSTCacheManager sharedManager] mstForDid:did];
     if (!mst) {
         // Try incremental loading from stored repo blocks first
         NSError *loadError = nil;
@@ -204,7 +204,7 @@
                                          code:-3
                                      userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute updated MST root"}];
         }
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         dispatch_sync(self.statsCacheQueue, ^{
             [self.statsCacheByDid removeObjectForKey:did];
         });
@@ -227,7 +227,7 @@
     NSData *prevCommitBytes = [store getRepoRootForDid:did error:nil];
     ATProtoCID *prevCommitCID = prevCommitBytes ? [ATProtoCID cidFromBytes:prevCommitBytes] : nil;
 
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did
                                                     data:dataCID
                                                      rev:rev
                                                     prev:prevCommitCID];
@@ -235,7 +235,7 @@
     NSError *signError = nil;
     NSData *signature = [store signData:[commit serialize] error:&signError];
     if (!signature) {
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         if (error && signError) *error = signError;
         return nil;
     }
@@ -249,7 +249,7 @@
                                          code:-1
                                      userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize signed commit"}];
         }
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         return nil;
     }
 
@@ -266,7 +266,7 @@
                                                                        rev:rev
                                                                      error:&mstBlocksError];
     if (!mstBlocks) {
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         if (error && mstBlocksError) *error = mstBlocksError;
         return nil;
     }
@@ -298,7 +298,7 @@
     } error:&txError];
 
     if (!updated) {
-        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        [[ATProtoMSTCacheManager sharedManager] removeMSTForDid:did];
         if (error) {
             if (txError) *error = txError;
             else *error = [NSError errorWithDomain:@"PDSRecordService"
@@ -308,7 +308,7 @@
         return nil;
     }
 
-    [[MSTCacheManager sharedManager] setMST:mst forDid:did];
+    [[ATProtoMSTCacheManager sharedManager] setMST:mst forDid:did];
     return @{
         @"cid": commitCID.stringValue ?: @"",
         @"rev": rev ?: @""
