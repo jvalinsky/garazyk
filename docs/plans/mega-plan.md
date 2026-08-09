@@ -503,7 +503,8 @@ remaining program does not depend on items 1-2.
     classes) is complete. Focused Core/Storage/Transport builds and all
     namespace/module-boundary checks pass; the full native `AllTests` target
     is currently blocked by the excluded Admin UI sources' stale HTTP forward
-    declarations. Batches 4-6
+    declarations, and the GNUstep Docker builder stopped before compilation
+    when OrbStack ran out of storage copying the source context. Batches 4-6
     (PLC/Sync/Services/MediaCore, XRPC/VideoService,
     Runtime) remain open.
     **M7 is now
