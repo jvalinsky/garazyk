@@ -40,7 +40,8 @@ Phase 0 (this doc + ADR 0032) landed alongside the initial implementation, delib
 implementation so it records what was built rather than what was predicted. Phase 5 has strict URL
 parsing, a registered GET/HEAD well-known route, bounded local block/blob resolution, mandatory
 SHA-256 CID verification, and an SSRF-safe parallel client. Phase 6 has the reusable BLAKE3
-streaming verifier and range mapper, but no invented HTTP sidecar transport. Phases 7–11 are
+streaming verifier, range mapper, and verified HTTP range integration that keeps the sidecar
+caller-supplied. Phases 7–11 are
 bounded document, identifier, media, COSE, and data-protocol/policy slices; their explicit
 production integration remainders remain open.
 
@@ -175,7 +176,7 @@ and client verification boundary and remains Phase 6 work, rather than being ser
   because the current test harness has no local TLS fixture.
 - Rollback: route and client are additive; delete the route registration and the client class.
 
-**Phase 6 — BDASL — PARTIAL (bounded verifier primitive).** The CID half was already done
+**Phase 6 — BDASL — IMPLEMENTED (bounded sidecar and HTTP range integration).** The CID half was already done
 (Phase 2, `ATProtoDASLCIDProfileBig`). `Core/ATProtoBDASLVerifier` now verifies an explicit sidecar
 of one BLAKE3 digest per 1 KiB payload chunk while data arrives in arbitrary-sized pieces, then
 verifies the complete payload root against the BLAKE3 CID. It also maps inclusive HTTP byte ranges
@@ -185,10 +186,13 @@ explicit caller-supplied array because BDASL requires hash-tree metadata, and th
 invent a network sidecar format or silently trust an HTTP server.
 
 BLAKE3 is vendored (`Security/Space/Vendor/BLAKE3`) and already linked into `ATProtoCore` (used by
-`PDSSpaceLtHash`). This phase does not emit BDASL CIDs into records, alter blob upload/CID
-assignment, or wire unverified existing HTTP blob responses to the new verifier. The production
-HTTP-range integration is the next bounded slice. The bounded sidecar transport contract is now
-recorded: the caller supplies the conformant
+`PDSSpaceLtHash`). The RASL client now fetches one exact single-range response per chunk through
+the existing SSRF-safe/pinned-egress HTTP boundary, verifies each body against the caller-supplied
+sidecar, assembles the bytes in chunk order, and verifies the complete payload against the BLAKE3
+CID. It falls back across hints per chunk, and rejects non-206 or wrong-length responses before
+verification. This phase does not emit BDASL CIDs into records, alter blob upload/CID assignment,
+or wire existing blob download paths to the new verifier. The bounded sidecar transport contract
+is: the caller supplies the conformant
 BLAKE3 CID, exact payload length, and complete per-1 KiB chunk digest array; no sidecar is fetched
 from a server. HTTP integration requests one single inclusive range per chunk. The requested
 range is authoritative, so a response is accepted only for HTTP 206 with a body whose length is
@@ -198,14 +202,18 @@ Each response is verified against its caller-supplied chunk digest, and the asse
 verified against the caller-supplied BLAKE3 CID before return. This is a repository-owned boundary,
 not an invented full BDASL hash-tree wire format.
 
-- Owner boundary: `Garazyk/Sources/Core` for the reusable verifier; future integration belongs to
-  blob/video download paths only (`Blob`, `Services/PDS`, `Video`).
+- Owner boundary: `Garazyk/Sources/Core` owns the reusable verifier and range mapper;
+  `Garazyk/Sources/Network` owns RASL HTTP and SSRF/pinned-egress composition. Existing blob/video
+  download and upload paths remain untouched.
 - Evidence: `ATProtoBDASLVerifierTests` covers split-input verification, sidecar and payload
   corruption (including the final short chunk), truncated streams, root mismatch, exact chunk
-  boundaries, open-ended/clamped ranges, and reversed-range rejection. Registered in
-  `Tests/test_main.m`.
-- Rollback: remove the additive verifier and test registration; existing blob upload and download
-  behavior is unchanged.
+  boundaries, open-ended/clamped ranges, and reversed-range rejection. `ATProtoRASLClientTests`
+  covers three exact chunk ranges, deliberately incorrect response metadata, final CID verification,
+  and corrupted-range rejection through an injected HTTP seam. The focused macOS run is 11 tests,
+  0 failures. GNUstep live HTTPS/SSRF evidence is recorded separately below. Both suites remain
+  registered in `Tests/test_main.m`.
+- Rollback: remove the additive verifier, range method, HTTP seam, and test updates; existing blob
+  upload and download behavior is unchanged.
 
 **Phase 7 — MASL — PARTIAL (validated Core document model).** `Core/ATProtoMASLDocument` now
 validates DRISL metadata documents in single mode (`src`) and bundle mode (`resources` with an
