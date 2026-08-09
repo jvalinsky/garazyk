@@ -1701,15 +1701,19 @@ tracked `.m`/`.h` consumers, excluded `Tests/fixtures/` and Admin UI sources,
 skipped import/include lines, and preserved quoted literals. `RepoCommit`'s
 `NSSecureCoding` methods remain intact; no keyed-archive call site or hard-coded
 runtime class lookup for these names exists in the repository. Baseline ratchets
-214 → 197. Native and global gates remain pending the complete batch-3b slice.
+214 → 197. The focused `ATProtoStorage` build passed; the full `AllTests`
+build remains blocked outside this slice by the excluded Admin UI target's
+stale `HttpRequest` forward declaration.
 
 **Batch 3b Core HTTP slice (2026-08-08):** Renamed the Core-owned HTTP message
 and policy classes `HttpParsing`, `HttpRequest`, `HttpResponse`,
 `HttpRetryPolicy`, `HttpRetryResult`, and `HttpRoute` to their `ATProtoHttp*`
 forms. File names and import paths remain unchanged; quoted wire/error strings
 and test category labels remain unchanged. No hard-coded runtime class lookup or
-keyed-archive use references these names. Baseline ratchets 197 → 191. Native
-and global gates remain pending the complete batch-3b slice.
+keyed-archive use references these names. Baseline ratchets 197 → 191. The
+focused `ATProtoCore` build passed; the full `AllTests` build remains blocked
+outside this slice by the excluded Admin UI target's stale `HttpRequest`
+forward declaration.
 
 **Batch 3b Transport slice (2026-08-08):** Renamed the remaining higher-
 consumer Transport classes to the `ATProto` prefix: `Http1Parser`,
@@ -1720,8 +1724,16 @@ consumer Transport classes to the `ATProto` prefix: `Http1Parser`,
 `SSRFValidator`, and `WebSocketUpgradeHandler`. File names and import paths
 remain unchanged; quoted protocol/error strings and test category labels remain
 unchanged. No hard-coded runtime lookup or keyed-archive use references these
-names. Baseline ratchets 191 → 175. Batch 3b is complete pending the native
-and global gate reruns.
+names. Baseline ratchets 191 → 175. The focused `ATProtoTransport` build,
+source boundary check, namespace gate (175 current / 175 baselined), link-time
+gate (0 current / 0 baselined), recursive-setter check, host-process-exit
+check, NSID drift check, raw-registration-literal check, agent-role check, and
+Deno lint pass. The full `AllTests` and fast test-target builds stop in the
+excluded Admin UI source/test files, which still forward-declare old
+`HttpRequest`/`HttpResponse`; those files are reserved for the Admin UI phase.
+Deno check/test stop before execution because this worktree lacks npm cache
+entries for `cborg` and `zod`; repository-doc validation is blocked by its
+missing generated registry. Batch 3b is complete; batches 4–6 remain open.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
