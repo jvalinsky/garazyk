@@ -1400,24 +1400,60 @@ set_target_properties(germ PROPERTIES
 # Copy UI server assets to build output.  A POST_BUILD command only runs when
 # Objective-C sources relink the executable, leaving CSS/JS/template-only
 # changes stale in incremental builds.  Track every source asset through a
-# stamp target so `cmake --build --target garazyk-ui` serves the current tree.
+# shared stamp target so each service can depend on the same merged Assets/
+# directory when it gains an embedded UI.
+set(ADMIN_UI_ASSET_SOURCE_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets")
+set(ADMIN_UI_LIBRARY_ASSET_DIR "${ADMIN_UI_ASSET_SOURCE_DIR}/library")
+set(ADMIN_UI_PACK_ASSET_DIR "${ADMIN_UI_ASSET_SOURCE_DIR}/packs")
+file(GLOB ADMIN_UI_ROOT_ASSET_FILES CONFIGURE_DEPENDS
+  "${ADMIN_UI_ASSET_SOURCE_DIR}/*.md"
+)
 file(GLOB_RECURSE ADMIN_UI_ASSET_FILES CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets/*"
+  "${ADMIN_UI_LIBRARY_ASSET_DIR}/*"
+  "${ADMIN_UI_PACK_ASSET_DIR}/*"
 )
+list(APPEND ADMIN_UI_ASSET_FILES ${ADMIN_UI_ROOT_ASSET_FILES})
 set(ADMIN_UI_ASSET_STAMP "${CMAKE_BINARY_DIR}/bin/.garazyk-ui-assets.stamp")
-add_custom_command(
-  OUTPUT "${ADMIN_UI_ASSET_STAMP}"
-  COMMAND ${CMAKE_COMMAND} -E rm -rf "${CMAKE_BINARY_DIR}/bin/Assets"
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets"
-    "${CMAKE_BINARY_DIR}/bin/Assets"
-  COMMAND ${CMAKE_COMMAND} -E touch "${ADMIN_UI_ASSET_STAMP}"
-  DEPENDS ${ADMIN_UI_ASSET_FILES}
-  COMMENT "Synchronizing UI server assets to build output"
-  VERBATIM
-)
-add_custom_target(garazyk-ui-assets DEPENDS "${ADMIN_UI_ASSET_STAMP}")
-add_dependencies(garazyk-ui garazyk-ui-assets)
+
+function(add_admin_ui_assets target)
+  if(NOT TARGET admin-ui-assets)
+    set(asset_copy_commands
+      COMMAND ${CMAKE_COMMAND} -E rm -rf "${CMAKE_BINARY_DIR}/bin/Assets"
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${ADMIN_UI_LIBRARY_ASSET_DIR}"
+        "${CMAKE_BINARY_DIR}/bin/Assets"
+    )
+    file(GLOB ADMIN_UI_PACK_DIRS LIST_DIRECTORIES true
+      "${ADMIN_UI_PACK_ASSET_DIR}/*")
+    foreach(pack_dir IN LISTS ADMIN_UI_PACK_DIRS)
+      if(IS_DIRECTORY "${pack_dir}")
+        list(APPEND asset_copy_commands
+          COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${pack_dir}"
+            "${CMAKE_BINARY_DIR}/bin/Assets")
+      endif()
+    endforeach()
+    foreach(root_asset IN LISTS ADMIN_UI_ROOT_ASSET_FILES)
+      list(APPEND asset_copy_commands
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${root_asset}"
+          "${CMAKE_BINARY_DIR}/bin/Assets")
+    endforeach()
+    add_custom_command(
+      OUTPUT "${ADMIN_UI_ASSET_STAMP}"
+      ${asset_copy_commands}
+      COMMAND ${CMAKE_COMMAND} -E touch "${ADMIN_UI_ASSET_STAMP}"
+      DEPENDS ${ADMIN_UI_ASSET_FILES}
+      COMMENT "Synchronizing Admin UI library and pack assets"
+      VERBATIM
+    )
+    add_custom_target(admin-ui-assets DEPENDS "${ADMIN_UI_ASSET_STAMP}")
+  endif()
+  add_dependencies(${target} admin-ui-assets)
+endfunction()
+
+add_admin_ui_assets(garazyk-ui)
 
 # Tutorial examples are optional; local/dev checkouts may omit examples/.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/tutorial-1-hello-pds/src/main.m")
@@ -2053,7 +2089,9 @@ if(BUILD_TESTS)
   add_test(
     NAME AdminUIAssetsSync
     COMMAND ${CMAKE_COMMAND}
-      "-DSOURCE_ASSETS=${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets"
+      "-DSOURCE_LIBRARY_ASSETS=${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets/library"
+      "-DSOURCE_PACK_ASSETS=${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets/packs"
+      "-DSOURCE_ROOT_ASSETS=${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets"
       "-DBUILT_ASSETS=${CMAKE_BINARY_DIR}/bin/Assets"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/scripts/test/assert_admin_ui_assets_synced.cmake"
   )
