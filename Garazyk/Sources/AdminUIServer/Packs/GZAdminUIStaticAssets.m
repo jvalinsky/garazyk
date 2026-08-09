@@ -18,7 +18,7 @@
 
 #pragma mark - Static Asset Serving
 
-- (void)serveStaticAssetForPath:(NSString *)path response:(HttpResponse *)response {
+- (void)serveStaticAssetForPath:(NSString *)path response:(ATProtoHttpResponse *)response {
     // Sanitize: only serve files from the assets directory, no path traversal
     NSString *filename = path;
     // Strip leading slashes

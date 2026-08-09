@@ -15,7 +15,7 @@
     __weak typeof(self) weakSelf = self;
 
     // Security: Active sessions
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/sessions" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/sessions" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchActiveSessionsForDID:did];
@@ -24,7 +24,7 @@
     }];
 
     // Security: App passwords
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/app-passwords" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/app-passwords" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchAppPasswordsForDID:did];
@@ -33,7 +33,7 @@
     }];
 
     // Security: Revoke session
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/revoke-session" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/revoke-session" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
         NSString *sessionID = [request.jsonBody[@"id"] isKindOfClass:[NSString class]] ? request.jsonBody[@"id"] : @"";
@@ -42,11 +42,11 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Session revoked.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 
     // Security: Delete app password
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-app-password" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-app-password" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
         NSString *name = [request.jsonBody[@"name"] isKindOfClass:[NSString class]] ? request.jsonBody[@"name"] : @"";
@@ -55,11 +55,11 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"App password deleted.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 
     // Security: Create app password
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/create-app-password" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/create-app-password" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
         NSString *name = [request.jsonBody[@"name"] isKindOfClass:[NSString class]] ? request.jsonBody[@"name"] : @"";
@@ -68,7 +68,7 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"App password created.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 }
 

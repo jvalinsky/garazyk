@@ -42,7 +42,7 @@ fi
 
 BASELINE="docs/namespace-baseline.txt"
 
-MODULES="ATProtoCore ATProtoStorage ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoPLC ATProtoRuntime ATProtoMediaCore ATProtoVideoService"
+MODULES="ATProtoCore ATProtoStorage ATProtoServices ATProtoTransport ATProtoAdminUI ATProtoXRPC ATProtoSync ATProtoPLC ATProtoRuntime ATProtoMediaCore ATProtoVideoService"
 
 for m in $MODULES; do
   lib="$BUILD_DIR/lib${m}.a"

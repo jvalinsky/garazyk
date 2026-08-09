@@ -26,13 +26,13 @@
 + (NSString *)renderSessionsPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"sessions" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"sessions" context:ctx];
 }
 
 + (NSString *)renderAppPasswordsPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"app-passwords" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"app-passwords" context:ctx];
 }
 
 @end
