@@ -346,13 +346,13 @@ static NSData *SpaceRepoCAR(PDSSpaceStore *store, PDSDatabasePool *pool, PDSSpac
   ATProtoCID *commitCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:commitData] codec:0x71]; if (!commitData || !commitCID) return nil;
   NSMutableArray *records = [NSMutableArray array]; NSString *cursor = nil;
   while (YES) { NSArray *page = [store recordsForSpace:space.spaceURI author:repo collection:nil limit:100 cursor:cursor reverse:NO error:error]; if (!page) return nil; [records addObjectsFromArray:page]; if (page.count < 100) break; NSDictionary *last = page.lastObject; cursor = [NSString stringWithFormat:@"%@/%@", last[@"collection"], last[@"rkey"]]; }
-  NSMutableDictionary *index = [NSMutableDictionary dictionary]; NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
-  for (NSDictionary *record in records) { ATProtoCID *cid = [ATProtoCID cidFromString:record[@"cid"]]; if (!cid) { if (error) *error = [NSError errorWithDomain:@"com.garazyk.space" code:1 userInfo:@{NSLocalizedDescriptionKey:@"Stored record CID is invalid"}]; return nil; } NSString *path = [NSString stringWithFormat:@"%@/%@", record[@"collection"], record[@"rkey"]]; index[path] = cid; [blocks addObject:[CARBlock blockWithCID:cid data:record[@"value"]]]; }
+  NSMutableDictionary *index = [NSMutableDictionary dictionary]; NSMutableArray<ATProtoCARBlock *> *blocks = [NSMutableArray array];
+  for (NSDictionary *record in records) { ATProtoCID *cid = [ATProtoCID cidFromString:record[@"cid"]]; if (!cid) { if (error) *error = [NSError errorWithDomain:@"com.garazyk.space" code:1 userInfo:@{NSLocalizedDescriptionKey:@"Stored record CID is invalid"}]; return nil; } NSString *path = [NSString stringWithFormat:@"%@/%@", record[@"collection"], record[@"rkey"]]; index[path] = cid; [blocks addObject:[ATProtoCARBlock blockWithCID:cid data:record[@"value"]]]; }
   NSData *indexData = [ATProtoDagCBOR encodeObject:index error:error]; ATProtoCID *indexCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:indexData] codec:0x71]; if (!indexData || !indexCID) return nil;
   NSMutableData *output = [NSMutableData data]; NSData *header = [ATProtoDagCBOR encodeObject:@{ @"version" : @1, @"roots" : @[commitCID, indexCID] } error:error]; if (!header) return nil;
   SpaceAppendVarint(output, header.length); [output appendData:header];
-  for (CARBlock *block in @[[CARBlock blockWithCID:commitCID data:commitData], [CARBlock blockWithCID:indexCID data:indexData]]) { NSData *encoded = [CARWriter encodedBlock:block error:error]; if (!encoded) return nil; [output appendData:encoded]; }
-  for (CARBlock *block in blocks) { NSData *encoded = [CARWriter encodedBlock:block error:error]; if (!encoded) return nil; [output appendData:encoded]; }
+  for (ATProtoCARBlock *block in @[[ATProtoCARBlock blockWithCID:commitCID data:commitData], [ATProtoCARBlock blockWithCID:indexCID data:indexData]]) { NSData *encoded = [ATProtoCARWriter encodedBlock:block error:error]; if (!encoded) return nil; [output appendData:encoded]; }
+  for (ATProtoCARBlock *block in blocks) { NSData *encoded = [ATProtoCARWriter encodedBlock:block error:error]; if (!encoded) return nil; [output appendData:encoded]; }
   return output;
 }
 

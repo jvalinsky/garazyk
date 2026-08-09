@@ -48,7 +48,7 @@
 }
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
-    // Require admin auth for all MST viewer requests, including static assets.
+    // Require admin auth for all ATProtoMST viewer requests, including static assets.
     if (![[PDSAdminAuth sharedAuth] authenticateHeaders:request.headers
                                                   error:nil]) {
         response.statusCode = HttpStatusUnauthorized;
@@ -266,8 +266,8 @@
         return;
     }
 
-    // Load MST from repository service
-    MST *mst = [self loadMSTForDid:did];
+    // Load ATProtoMST from repository service
+    ATProtoMST *mst = [self loadMSTForDid:did];
     if (!mst) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"MST not found", @"did": did}];
@@ -299,8 +299,8 @@
         return;
     }
 
-    // Load MST
-    MST *mst = [self loadMSTForDid:did];
+    // Load ATProtoMST
+    ATProtoMST *mst = [self loadMSTForDid:did];
     if (!mst) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"MST not found", @"did": did}];
@@ -318,8 +318,8 @@
 }
 
 - (void)handleExportRequest:(NSString *)did format:(NSString *)format response:(HttpResponse *)response {
-    // Load MST
-    MST *mst = [self loadMSTForDid:did];
+    // Load ATProtoMST
+    ATProtoMST *mst = [self loadMSTForDid:did];
     if (!mst) {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{@"error": @"MST not found", @"did": did}];
@@ -381,25 +381,25 @@
 
 #pragma mark - Helper Methods
 
-- (nullable MST *)loadMSTForDid:(NSString *)did {
+- (nullable ATProtoMST *)loadMSTForDid:(NSString *)did {
     if (!self.controller) {
-        return [[MST alloc] init];
+        return [[ATProtoMST alloc] init];
     }
 
     PDSRepositoryService *repoService = self.controller.repositoryService;
     if (!repoService) {
-        return [[MST alloc] init];
+        return [[ATProtoMST alloc] init];
     }
 
     NSError *error = nil;
-    MST *mst = [repoService loadMSTForDid:did error:&error];
+    ATProtoMST *mst = [repoService loadMSTForDid:did error:&error];
 
     if (error) {
         GZ_LOG_ERROR(@"Failed to load MST for %@: %@", did, error.localizedDescription);
-        return [[MST alloc] init];
+        return [[ATProtoMST alloc] init];
     }
 
-    return mst ?: [[MST alloc] init];
+    return mst ?: [[ATProtoMST alloc] init];
 }
 
 @end

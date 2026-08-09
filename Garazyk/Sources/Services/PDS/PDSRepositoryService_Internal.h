@@ -4,18 +4,18 @@
 #import "Repository/MST.h"
 #import "Database/Pool/DatabasePool.h"
 
-@class MST;
+@class ATProtoMST;
 @class PDSActorStore;
 @class PDSDatabaseBlock;
 @class PDSDatabaseRecord;
 @class PDSDatabaseRepo;
-@class RepoCommit;
+@class ATProtoRepoCommit;
 @class ATProtoCID;
-@class CARWriter;
-@class CARBlock;
-@class STARCommit;
-@class STARL0Writer;
-@class STARLiteWriter;
+@class ATProtoCARWriter;
+@class ATProtoCARBlock;
+@class ATProtoSTARCommit;
+@class ATProtoSTARL0Writer;
+@class ATProtoSTARLiteWriter;
 @class ATProtoCBORValue;
 @class PDSBlockRepository;
 @class PDSRepoRepository;
@@ -33,12 +33,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSArray<PDSDatabaseRecord *> *)loadAllRecordsForStore:(PDSActorStore *)store
                                                        did:(NSString *)did
                                                      error:(NSError **)error;
-/** @abstract Reconstructs the repository MST from persisted repository blocks when available. */
-- (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
+/** @abstract Reconstructs the repository ATProtoMST from persisted repository blocks when available. */
+- (nullable ATProtoMST *)loadMSTFromRepoBlocksForDid:(NSString *)did
                                         store:(PDSActorStore *)store
                                         error:(NSError **)error;
-/** @abstract Builds an MST containing the supplied record collection/rkey-to-ATProtoCID entries. */
-- (MST *)mstFromRecords:(NSArray<PDSDatabaseRecord *> *)records;
+/** @abstract Builds an ATProtoMST containing the supplied record collection/rkey-to-ATProtoCID entries. */
+- (ATProtoMST *)mstFromRecords:(NSArray<PDSDatabaseRecord *> *)records;
 /** @abstract Returns serialized record block data when the record can be encoded for CAR export. */
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record;
 /** @abstract Wraps a ATProtoCID as the DAG-CBOR link value used by repository commits. */
@@ -52,7 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
                                 rev:(NSString * _Nullable * _Nonnull)revOut
                            isSigned:(BOOL *)isSignedOut;
 /** @abstract Assembles a complete or incremental CAR writer rooted at did's head commit. */
-- (nullable CARWriter *)buildRepoWriterForDid:(NSString *)did
+- (nullable ATProtoCARWriter *)buildRepoWriterForDid:(NSString *)did
                                          since:(nullable NSString *)sinceRev
                                          error:(NSError **)error;
 /**
@@ -63,7 +63,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)prepareRepoExportForDid:(NSString *)did
                           since:(nullable NSString *)sinceRev
                           store:(PDSActorStore * _Nullable * _Nonnull)storeOut
-                            mst:(MST * _Nullable * _Nonnull)mstOut
+                            mst:(ATProtoMST * _Nullable * _Nonnull)mstOut
                       commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCIDOut
                     commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
                  noChangesSince:(BOOL *)noChangesSinceOut
@@ -73,8 +73,8 @@ NS_ASSUME_NONNULL_BEGIN
                      recordByCID:(NSDictionary<NSString *, PDSDatabaseRecord *> * _Nullable * _Nonnull)recordByCIDOut
              materializedBlocks:(NSDictionary<NSString *, NSData *> * _Nullable * _Nonnull)materializedBlocksOut
                           error:(NSError **)error;
-/** @abstract Emits full-MST blocks or proof-path blocks and optionally record blocks for CAR export. */
-- (nullable NSArray<CARBlock *> *)mstBlocksForExport:(MST *)mst
+/** @abstract Emits full-ATProtoMST blocks or proof-path blocks and optionally record blocks for CAR export. */
+- (nullable NSArray<ATProtoCARBlock *> *)mstBlocksForExport:(ATProtoMST *)mst
                                        includeAllMST:(BOOL)includeAllMST
                                            proofKeys:(NSArray<NSString *> *)proofKeys
                                       recordProvider:(nullable MSTBlockProvider)recordProvider

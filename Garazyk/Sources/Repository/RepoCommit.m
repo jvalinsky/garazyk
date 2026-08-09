@@ -12,13 +12,13 @@
 
 NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 
-@implementation RepoCommit
+@implementation ATProtoRepoCommit
 
 + (instancetype)createCommitWithDid:(NSString *)did
                                data:(nullable ATProtoCID *)dataCID
                                 rev:(nullable NSString *)rev
                               prev:(nullable ATProtoCID *)prevCID {
-    RepoCommit *commit = [[self alloc] init];
+    ATProtoRepoCommit *commit = [[self alloc] init];
     commit.did = did;
     commit.version = 3;
     commit.dataCID = dataCID;
@@ -84,8 +84,8 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     NSData *signedData = [self serializeSigned];
     ATProtoCID *commitCID = [self computeCID];
     
-    CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
-    [writer addBlock:[CARBlock blockWithCID:commitCID data:signedData]];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:commitCID];
+    [writer addBlock:[ATProtoCARBlock blockWithCID:commitCID data:signedData]];
     
     return [writer serialize];
 }
@@ -139,17 +139,17 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     // Detect format: STAR (0x2A magic) vs CAR
     NSData *carData = data;
     if (STARDetectFormatFromData(data)) {
-        carData = [STARConverter carDataFromSTARData:data error:error];
+        carData = [ATProtoSTARConverter carDataFromSTARData:data error:error];
         if (!carData) return nil;
     }
 
-    CARReader *reader = [CARReader readFromData:carData error:error];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:error];
     if (!reader) {
         return nil;
     }
 
     // Find the commit block (the root ATProtoCID)
-    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
     if (!commitBlock) {
         if (error) {
             *error = [NSError errorWithDomain:RepoCommitErrorDomain
@@ -175,7 +175,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     }
 
     NSDictionary *commitMap = (NSDictionary *)decoded;
-    RepoCommit *commit = [[self alloc] init];
+    ATProtoRepoCommit *commit = [[self alloc] init];
 
     // did (required)
     if (![commitMap[@"did"] isKindOfClass:[NSString class]]) {

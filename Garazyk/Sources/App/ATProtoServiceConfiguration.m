@@ -536,7 +536,7 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
                     default:[debug[@"use_new_repository"] boolValue]];
   }
 
-  // MST viewer: default off in production, on otherwise.
+  // ATProtoMST viewer: default off in production, on otherwise.
   // PDS_ENABLE_MST_VIEWER overrides the default in either direction.
   {
     BOOL isProduction =

@@ -41,7 +41,7 @@
  When DAG-CBOR decoding produces ATProtoCID objects (from tag 42), they need to be
  resolved by looking up the referenced blocks in the CAR and decoding them.
  */
-static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *visitedCIDs, int depth) {
+static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutableSet *visitedCIDs, int depth) {
     // Prevent infinite loops and excessive recursion
     if (depth > 10 || !reader) {
         return object;
@@ -59,7 +59,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         [visitedCIDs addObject:cidString];
 
         // Look up the block and decode it
-        CARBlock *block = [reader blockWithCID:cid];
+        ATProtoCARBlock *block = [reader blockWithCID:cid];
         if (block) {
             NSError *decodeErr = nil;
             id decoded = [ATProtoDagCBOR decodeDataAsJSON:block.data error:&decodeErr];
@@ -737,17 +737,17 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     }
 
     // Materialize blocks and records
-    CARReader *reader = nil;
+    ATProtoCARReader *reader = nil;
     if (event.blocks) {
         NSError *carErr = nil;
         if (STARDetectFormatFromData(event.blocks)) {
             // STAR format — convert to CAR for downstream processing
-            NSData *carData = [STARConverter carDataFromSTARData:event.blocks error:&carErr];
+            NSData *carData = [ATProtoSTARConverter carDataFromSTARData:event.blocks error:&carErr];
             if (carData) {
-                reader = [CARReader readFromData:carData error:&carErr];
+                reader = [ATProtoCARReader readFromData:carData error:&carErr];
             }
         } else {
-            reader = [CARReader readFromData:event.blocks error:&carErr];
+            reader = [ATProtoCARReader readFromData:event.blocks error:&carErr];
         }
         if (!reader) {
             GZ_LOG_WARN(@"[AppView Ingest] Failed to parse blocks for seq %lld: %@", (long long)seq, carErr.localizedDescription);
@@ -763,7 +763,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     NSMutableArray *blocksToSave = [NSMutableArray array]; // Collect blocks for persist
 
     if (reader) {
-        for (CARBlock *block in reader.blocks) {
+        for (ATProtoCARBlock *block in reader.blocks) {
             [blocksToSave addObject:block];
         }
     }
@@ -791,7 +791,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             // Try by ATProtoCID first, then fall back to path matching if ATProtoCID is missing
             NSDictionary *record = op[@"record"];
             if (!record && reader && opCID) {
-                CARBlock *block = [reader blockWithCID:opCID];
+                ATProtoCARBlock *block = [reader blockWithCID:opCID];
                 if (block) {
                     id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.data error:nil];
                     if (!decoded) {
@@ -810,7 +810,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             }
             // If still no record, try path-based matching in CAR blocks
             if (!record && reader) {
-                for (CARBlock *block in reader.blocks) {
+                for (ATProtoCARBlock *block in reader.blocks) {
                     NSError *decodeErr = nil;
                     id decoded = [[[ATProtoCBORSerialization alloc] initWithContentAddressed:YES] JSONObjectWithData:block.data error:nil];
 
@@ -912,7 +912,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     }
 
     // Persist blocks (each call dispatches to the database queue internally).
-    for (CARBlock *block in blocksToSave) {
+    for (ATProtoCARBlock *block in blocksToSave) {
         if (!block.cid || !block.cid.bytes || !block.data) {
             GZ_LOG_WARN(@"[AppView Ingest] Skipping block with nil cid/data for %@ seq=%lld",
                          did, (long long)seq);

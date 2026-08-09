@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file MSTAtomicReference.m
+ @file ATProtoMSTAtomicReference.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -10,11 +10,11 @@
 #import "Repository/MST.h"
 #include <pthread.h>
 
-@implementation MSTAtomicReference {
-    MST *_mst;
+@implementation ATProtoMSTAtomicReference {
+    ATProtoMST *_mst;
 }
 
-- (instancetype)initWithMST:(MST *)mst {
+- (instancetype)initWithMST:(ATProtoMST *)mst {
     self = [super init];
     if (self) {
         pthread_mutex_init(&_mutex, NULL);
@@ -28,14 +28,14 @@
     // ARC releases _mst
 }
 
-- (MST *)currentSnapshot {
+- (ATProtoMST *)currentSnapshot {
     pthread_mutex_lock(&_mutex);
-    MST *result = _mst;
+    ATProtoMST *result = _mst;
     pthread_mutex_unlock(&_mutex);
     return result;
 }
 
-- (void)swapMST:(MST *)newMst {
+- (void)swapMST:(ATProtoMST *)newMst {
     pthread_mutex_lock(&_mutex);
     _mst = newMst;  // ARC releases old, retains new
     pthread_mutex_unlock(&_mutex);

@@ -47,7 +47,7 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
 
 @implementation PDSRepoImportValidator
 
-+ (BOOL)validateCommitSignature:(RepoCommit *)commit did:(NSString *)did databasePool:(PDSDatabasePool *)databasePool allowLocalKeyFallback:(BOOL)allowLocalKeyFallback error:(NSError **)error {
++ (BOOL)validateCommitSignature:(ATProtoRepoCommit *)commit did:(NSString *)did databasePool:(PDSDatabasePool *)databasePool allowLocalKeyFallback:(BOOL)allowLocalKeyFallback error:(NSError **)error {
     NSError *resolveError = nil;
     ATProtoDIDDocument *document = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did error:&resolveError];
     NSMutableArray<NSData *> *candidateKeys = [NSMutableArray array];
@@ -82,7 +82,7 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
 
 + (nullable NSArray<PDSDatabaseRecord *> *)extractRecordsFromMSTRoot:(ATProtoCID *)rootCID
                                                                  did:(NSString *)did
-                                                              reader:(CARReader *)reader
+                                                              reader:(ATProtoCARReader *)reader
                                                                  rev:(NSString *)rev
                                                                error:(NSError **)error {
     if (!rootCID) {
@@ -123,7 +123,7 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
             return nil;
         }
 
-        CARBlock *block = [reader blockWithCID:nodeCID];
+        ATProtoCARBlock *block = [reader blockWithCID:nodeCID];
         if (!block) {
             if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Imported MST references a missing block");
             return nil;
@@ -159,7 +159,7 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
 
             ATProtoCID *valueCID = cidFromTaggedCBORValue(entryMap.map[[ATProtoCBORValue textString:@"v"]]);
             if (valueCID) {
-                CARBlock *valueBlock = [reader blockWithCID:valueCID];
+                ATProtoCARBlock *valueBlock = [reader blockWithCID:valueCID];
                 if (!valueBlock) {
                     if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Imported MST references a missing record block");
                     return nil;
@@ -213,8 +213,8 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
 }
 
 + (nullable PDSRepoImportValidationResult *)validateCARData:(NSData *)carData
-                                                     reader:(CARReader *)reader
-                                                     commit:(RepoCommit *)commit
+                                                     reader:(ATProtoCARReader *)reader
+                                                     commit:(ATProtoRepoCommit *)commit
                                                         did:(NSString *)did
                                               databasePool:(PDSDatabasePool *)databasePool
                                      allowLocalKeyFallback:(BOOL)allowLocalKeyFallback
@@ -234,7 +234,7 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
         return nil;
     }
 
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         ATProtoCID *computed = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block.data] codec:block.cid.codec];
         if (!computed || ![computed isEqualToCID:block.cid]) {
             if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"CAR block CID does not match block data");
@@ -256,7 +256,7 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
     }
 
     NSMutableArray<PDSDatabaseBlock *> *blocks = [NSMutableArray arrayWithCapacity:reader.blocks.count];
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         PDSDatabaseBlock *dbBlock = [[PDSDatabaseBlock alloc] init];
         dbBlock.cid = block.cid.bytes;
         dbBlock.blockData = block.data;

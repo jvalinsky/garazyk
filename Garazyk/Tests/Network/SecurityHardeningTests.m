@@ -597,7 +597,7 @@
 - (void)testImportTamperRejection {
     // importRepo must reject a structurally corrupted CAR payload at the parser, not just an
     // empty body. Send real (non-empty) bytes that are not a valid CAR: the leading byte is
-    // read as a CAR varint header length that runs past the buffer, so CARReader rejects it.
+    // read as a CAR varint header length that runs past the buffer, so ATProtoCARReader rejects it.
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt];
     NSData *tamperedCar = [@"tampered-car-not-a-valid-archive" dataUsingEncoding:NSUTF8StringEncoding];
     NSString *contentLength = [NSString stringWithFormat:@"%lu", (unsigned long)tamperedCar.length];

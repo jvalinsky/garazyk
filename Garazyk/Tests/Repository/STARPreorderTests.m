@@ -12,9 +12,9 @@
  * Pins STAR-L0's depth-first / record-interleaved chunk emission order against
  * Sync 1.1 "Streamable CAR Block Ordering" (the draft spec's pre-order DFS rules).
  *
- * Cross-validates STARL0Writer against the MST pre-order walker landed in
+ * Cross-validates ATProtoSTARL0Writer against the ATProtoMST pre-order walker landed in
  * MSTPreorderTests; both implementations should produce the same
- * "(MST node / record)" sequence for any given repo's MST. A failure of the
+ * "(MST node / record)" sequence for any given repo's ATProtoMST. A failure of the
  * equivalence assertion tells us which side drifted (this test unblocks future
  * spec promotion by being the one place we have to update either side from).
  *
@@ -68,14 +68,14 @@
 
 - (void)setUp {
     [super setUp];
-    // The MST pre-order walker is gated; enable it for the duration of this
+    // The ATProtoMST pre-order walker is gated; enable it for the duration of this
     // suite so we can cross-validate STAR emission against it. MSTPreorderTests
     // also enables this flag and tears it down; we do the same.
-    [MST setStreamableCARBlockOrderingEnabled:YES];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
 }
 
 - (void)tearDown {
-    [MST setStreamableCARBlockOrderingEnabled:NO];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:NO];
     [super tearDown];
 }
 
@@ -91,7 +91,7 @@
     return cbor;
 }
 
-- (MSTBlockProvider)recordProviderForTree:(MST *)tree {
+- (MSTBlockProvider)recordProviderForTree:(ATProtoMST *)tree {
     // ATProtoCID→recordData mapping was precomputed in buildSmallDeterministicFixture.
     NSDictionary<NSString *, NSData *> *cache = [_cidToRecordData copy];
     return ^NSData *(ATProtoCID *cid) {
@@ -99,10 +99,10 @@
     };
 }
 
-- (MST *)buildSmallDeterministicFixture {
+- (ATProtoMST *)buildSmallDeterministicFixture {
     // Eight ATProtoTID-format keys; their SHA-256 depths span multiple levels so the
-    // MST is multi-level. The exact tree shape is irrelevant — invariants are
-    // cross-checked against the MST pre-order walker for these exact keys.
+    // ATProtoMST is multi-level. The exact tree shape is irrelevant — invariants are
+    // cross-checked against the ATProtoMST pre-order walker for these exact keys.
     //
     // Record data is computed first, then CIDs are derived from SHA-256(data),
     // so ATProtoCID(record) == entry.value — the invariant required for verifying
@@ -118,7 +118,7 @@
         @"app.bsky.feed.post/3jzfcijpj2z2h"
     ];
     _cidToRecordData = [NSMutableDictionary dictionary];
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     for (NSString *key in keys) {
         NSData *recordData = [self testRecordDataForKey:key];
         ATProtoCID *cid = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:recordData] codec:0x71];
@@ -128,8 +128,8 @@
     return tree;
 }
 
-- (STARCommit *)buildCommitForRoot:(ATProtoCID *)rootCID {
-    return [STARCommit commitWithDid:@"did:plc:starfixture"
+- (ATProtoSTARCommit *)buildCommitForRoot:(ATProtoCID *)rootCID {
+    return [ATProtoSTARCommit commitWithDid:@"did:plc:starfixture"
                               version:3
                                 data:rootCID
                                  rev:@"3jzfcijpj2z2z"
@@ -173,10 +173,10 @@
 #pragma mark - Header structure
 
 - (void)testSTARL0HeaderIsFourChunks {
-    MST *tree = [self buildSmallDeterministicFixture];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
     NSMutableArray<NSData *> *chunks = [NSMutableArray array];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc]
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc]
         initWithCommit:commit
             outputBlock:^(NSData *chunk) { [chunks addObject:chunk]; }];
     NSError *err = nil;
@@ -203,10 +203,10 @@
 #pragma mark - Spec-order equivalence
 
 - (void)testSTARL0EmissionMatchesMSTPreorderSpec {
-    MST *tree = [self buildSmallDeterministicFixture];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
     MSTBlockProvider recProvider = [self recordProviderForTree:tree];
 
-    // Expected order via the new MST pre-order walker (gated, enabled in setUp).
+    // Expected order via the new ATProtoMST pre-order walker (gated, enabled in setUp).
     NSMutableArray<NSString *> *expectedOrder = [NSMutableArray array];
     NSError *e1 = nil;
     BOOL ok1 = [tree
@@ -220,10 +220,10 @@
     XCTAssertTrue(ok1, @"MST preorder walker failed: %@", e1);
     XCTAssertGreaterThan(expectedOrder.count, (NSUInteger)0);
 
-    // Actual order from STARL0Writer streamed chunks.
+    // Actual order from ATProtoSTARL0Writer streamed chunks.
     NSMutableArray<NSData *> *chunks = [NSMutableArray array];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc]
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc]
         initWithCommit:commit
             outputBlock:^(NSData *chunk) { [chunks addObject:chunk]; }];
     NSError *e2 = nil;
@@ -245,10 +245,10 @@
 #pragma mark - Structural invariants
 
 - (void)testSTARL0FirstContentChunkIsMSTNode {
-    MST *tree = [self buildSmallDeterministicFixture];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
     NSMutableArray<NSData *> *chunks = [NSMutableArray array];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc]
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc]
         initWithCommit:commit
             outputBlock:^(NSData *chunk) { [chunks addObject:chunk]; }];
     NSError *err = nil;
@@ -262,10 +262,10 @@
 }
 
 - (void)testSTARL0ChunkCountMatchesBlockCount {
-    MST *tree = [self buildSmallDeterministicFixture];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
     MSTBlockProvider recProvider = [self recordProviderForTree:tree];
 
-    // Count emitted blocks via MST pre-order walker.
+    // Count emitted blocks via ATProtoMST pre-order walker.
     NSError *err = nil;
     __block NSUInteger blockCount = 0;
     [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data,
@@ -276,8 +276,8 @@
 
     // Capture chunks from STAR and assert header(4) + 2*blockCount.
     NSMutableArray<NSData *> *chunks = [NSMutableArray array];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc]
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc]
         initWithCommit:commit
             outputBlock:^(NSData *chunk) { [chunks addObject:chunk]; }];
     NSError *e2 = nil;
@@ -291,10 +291,10 @@
 #pragma mark - Fixture capture (pin)
 
 - (void)testEmitsSTARL0FixtureForComparison {
-    MST *tree = [self buildSmallDeterministicFixture];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
     NSMutableArray<NSData *> *chunks = [NSMutableArray array];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc]
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc]
         initWithCommit:commit
             outputBlock:^(NSData *chunk) { [chunks addObject:chunk]; }];
     NSError *err = nil;
@@ -366,9 +366,9 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     // follows inline), and the absence of 'v' IS the archived signal.
     // This test asserts the wire-format fix from Slice A: no 'V' key
     // appears in any entry that lacks a 'v' key.
-    MST *tree = [self buildSmallDeterministicFixture];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
     NSError *err = nil;
     XCTAssertTrue([w writeFromMST:tree
                     blockProvider:[self recordProviderForTree:tree]
@@ -419,7 +419,7 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
         ATProtoCBORValue *v = [ATProtoCBORValue decode:blockData];
         if (!v || v.type != CBORTypeMap) continue;
 
-        // Is this an MST node? (has 'e' key)
+        // Is this an ATProtoMST node? (has 'e' key)
         ATProtoCBORValue *entriesVal = v.map[[ATProtoCBORValue textString:@"e"]];
         if (!entriesVal || entriesVal.type != CBORTypeArray) continue;
 
@@ -451,9 +451,9 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
 /// Build a STAR-L0 archive from the deterministic fixture and read it back
 /// with the verifying reader, asserting CIDs match and blocks are correct.
 - (void)testSTARL0RoundTripViaVerifyingReader {
-    MST *tree = [self buildSmallDeterministicFixture];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
     NSError *err = nil;
     XCTAssertTrue([w writeFromMST:tree
                     blockProvider:[self recordProviderForTree:tree]
@@ -461,29 +461,29 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     NSData *starData = [w serialize];
 
     // Read back with verifying reader
-    STARReader *reader = [STARReader readFromData:starData error:&err];
+    ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:starData error:&err];
     XCTAssertNotNil(reader, @"Verifying reader failed: %@", err);
     XCTAssertNil(err);
     XCTAssertEqual(reader.variant, STARVariantL0);
     XCTAssertNotNil(reader.commit);
 
-    // Root ATProtoCID must match commit.data (the MST root)
+    // Root ATProtoCID must match commit.data (the ATProtoMST root)
     XCTAssertNotNil(reader.rootCID);
     XCTAssertEqualObjects(reader.rootCID, tree.rootCID,
         @"Reader rootCID must match the MST root CID");
 
     // Blocks must be present and indexed
     XCTAssertGreaterThan(reader.blocks.count, (NSUInteger)0);
-    for (CARBlock *block in reader.blocks) {
-        CARBlock *found = [reader blockWithCID:block.cid];
+    for (ATProtoCARBlock *block in reader.blocks) {
+        ATProtoCARBlock *found = [reader blockWithCID:block.cid];
         XCTAssertNotNil(found, @"Block %@ not indexed", block.cid.stringValue);
         XCTAssertEqualObjects(found.data, block.data);
     }
 
-    // Every MST node block must be tagged as a node
+    // Every ATProtoMST node block must be tagged as a node
     NSUInteger nodeCount = 0;
     NSUInteger recordCount = 0;
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         NSString *kind = [self classifyChunk:block.data];
         if ([kind isEqualToString:@"node"]) nodeCount++;
         else if ([kind isEqualToString:@"record"]) recordCount++;
@@ -496,20 +496,20 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
 /// Empty tree: the writer emits only a header (commit with nil data).
 /// The verifying reader must accept this and return zero blocks.
 - (void)testSTARL0EmptyTreeRoundTrip {
-    STARCommit *emptyCommit = [STARCommit commitWithDid:@"did:plc:empty"
+    ATProtoSTARCommit *emptyCommit = [ATProtoSTARCommit commitWithDid:@"did:plc:empty"
                                                  version:3
                                                    data:nil
                                                     rev:@"3jzfcijpj2z2z"
                                                    prev:nil
                                                     sig:[@"fixture-sig" dataUsingEncoding:NSUTF8StringEncoding]];
-    STARL0Writer *w = [[STARL0Writer alloc] initWithCommit:emptyCommit];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc] initWithCommit:emptyCommit];
     NSError *err = nil;
-    // nil MST = truly empty tree (no root node)
+    // nil ATProtoMST = truly empty tree (no root node)
     XCTAssertTrue([w writeFromMST:nil blockProvider:nil error:&err]);
     NSData *starData = [w serialize];
     XCTAssertGreaterThan(starData.length, (NSUInteger)0);
 
-    STARReader *reader = [STARReader readFromData:starData error:&err];
+    ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:starData error:&err];
     XCTAssertNotNil(reader, @"Reader failed on empty tree: %@", err);
     XCTAssertNil(err);
     XCTAssertNil(reader.rootCID, @"Empty tree must have nil rootCID");
@@ -519,9 +519,9 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
 
 /// Malformed: trailing bytes after the tree completes must be rejected.
 - (void)testSTARL0ReaderRejectsTrailingBytes {
-    MST *tree = [self buildSmallDeterministicFixture];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
     NSError *err = nil;
     XCTAssertTrue([w writeFromMST:tree
                     blockProvider:[self recordProviderForTree:tree]
@@ -533,7 +533,7 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     uint8_t garbage[] = {0xFF, 0xFF, 0xFF, 0xFF};
     [malformed appendBytes:garbage length:4];
 
-    STARReader *reader = [STARReader readFromData:malformed error:&err];
+    ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:malformed error:&err];
     XCTAssertNil(reader, @"Reader must reject trailing bytes");
     XCTAssertNotNil(err);
     XCTAssertEqual(err.code, 44, @"Expected error 44 (trailing bytes after tree completes), got %ld", (long)err.code);
@@ -541,9 +541,9 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
 
 /// Malformed: truncated block length varint must be rejected.
 - (void)testSTARL0ReaderRejectsTruncatedBlock {
-    MST *tree = [self buildSmallDeterministicFixture];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
     NSError *err = nil;
     XCTAssertTrue([w writeFromMST:tree
                     blockProvider:[self recordProviderForTree:tree]
@@ -563,7 +563,7 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     // Truncate right at the start of the first body block's length varint
     NSData *truncated = [starData subdataWithRange:NSMakeRange(0, offset)];
 
-    STARReader *reader = [STARReader readFromData:truncated error:&err];
+    ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:truncated error:&err];
     XCTAssertNil(reader, @"Reader must reject truncated body");
     XCTAssertNotNil(err);
     XCTAssertEqual(err.code, 31, @"Expected error 31 (truncated stream), got %ld", (long)err.code);
@@ -571,9 +571,9 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
 
 /// Full STAR -> CAR conversion round trip.
 - (void)testSTARL0STARToCARConversion {
-    MST *tree = [self buildSmallDeterministicFixture];
-    STARCommit *commit = [self buildCommitForRoot:tree.rootCID];
-    STARL0Writer *w = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
+    ATProtoSTARCommit *commit = [self buildCommitForRoot:tree.rootCID];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
     NSError *err = nil;
     XCTAssertTrue([w writeFromMST:tree
                     blockProvider:[self recordProviderForTree:tree]
@@ -581,29 +581,29 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     NSData *starData = [w serialize];
 
     // Convert STAR to CAR
-    NSData *carData = [STARConverter carDataFromSTARData:starData error:&err];
+    NSData *carData = [ATProtoSTARConverter carDataFromSTARData:starData error:&err];
     XCTAssertNotNil(carData, @"STAR->CAR conversion failed: %@", err);
     XCTAssertNil(err);
 
     // Parse the CAR
-    CARReader *carReader = [CARReader readFromData:carData error:&err];
+    ATProtoCARReader *carReader = [ATProtoCARReader readFromData:carData error:&err];
     XCTAssertNotNil(carReader, @"CAR parse failed: %@", err);
     XCTAssertNil(err);
 
-    // CAR root must be the commit ATProtoCID, not the MST root
+    // CAR root must be the commit ATProtoCID, not the ATProtoMST root
     XCTAssertNotNil(carReader.rootCID);
     XCTAssertNotEqualObjects(carReader.rootCID, tree.rootCID,
         @"CAR root must be commit CID, not MST root CID");
 
     // Must contain a commit block (with did key)
-    CARBlock *commitBlock = [carReader blockWithCID:carReader.rootCID];
+    ATProtoCARBlock *commitBlock = [carReader blockWithCID:carReader.rootCID];
     XCTAssertNotNil(commitBlock, @"CAR must contain commit block");
     ATProtoCBORValue *commitVal = [ATProtoCBORValue decode:commitBlock.data];
     XCTAssertNotNil(commitVal);
     XCTAssertNotNil(commitVal.map[[ATProtoCBORValue textString:@"did"]]);
 
     // Must contain at least the same number of blocks as the STAR reader produced
-    STARReader *starReader = [STARReader readFromData:starData error:&err];
+    ATProtoSTARReader *starReader = [ATProtoSTARReader readFromData:starData error:&err];
     XCTAssertNotNil(starReader);
     // CAR has 1 extra block (the commit) beyond what STAR reader produces
     XCTAssertGreaterThanOrEqual(carReader.blocks.count, starReader.blocks.count + 1,
@@ -612,14 +612,14 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
 
 /// Sig-less STAR must be rejected by the CAR converter.
 - (void)testSTARL0CARConversionRejectsSigmlessArchive {
-    MST *tree = [self buildSmallDeterministicFixture];
-    STARCommit *commit = [STARCommit commitWithDid:@"did:plc:nosig"
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
+    ATProtoSTARCommit *commit = [ATProtoSTARCommit commitWithDid:@"did:plc:nosig"
                                            version:3
                                              data:tree.rootCID
                                               rev:@"3jzfcijpj2z2z"
                                              prev:nil
                                               sig:nil];
-    STARL0Writer *w = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoSTARL0Writer *w = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
     NSError *err = nil;
     XCTAssertTrue([w writeFromMST:tree
                     blockProvider:[self recordProviderForTree:tree]
@@ -627,11 +627,11 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     NSData *starData = [w serialize];
 
     // STAR reader should still parse it (verifying reader only checks CIDs, sig is for CAR conversion)
-    STARReader *reader = [STARReader readFromData:starData error:&err];
+    ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:starData error:&err];
     XCTAssertNotNil(reader, @"Reader must accept sig-less STAR for verification");
 
     // But CAR conversion must reject
-    NSData *carData = [STARConverter carDataFromSTARData:starData error:&err];
+    NSData *carData = [ATProtoSTARConverter carDataFromSTARData:starData error:&err];
     XCTAssertNil(carData, @"CAR conversion must reject sig-less STAR");
     XCTAssertNotNil(err);
     XCTAssertEqual(err.code, 21, @"Expected error 21 (no signature), got %ld", (long)err.code);
@@ -640,8 +640,8 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
 #pragma mark - STAR-Lite (separate format)
 
 - (void)testSTARLiteHasNoMSTNodesAndUsesVersionTwo {
-    MST *tree = [self buildSmallDeterministicFixture];
-    STARLiteWriter *w = [[STARLiteWriter alloc]
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
+    ATProtoSTARLiteWriter *w = [[ATProtoSTARLiteWriter alloc]
         initWithCommit:[self buildCommitForRoot:tree.rootCID]];
     NSError *err = nil;
     XCTAssertTrue([w writeFromMST:tree
@@ -653,16 +653,16 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
     // STAR-Lite magic is the same byte (0x2A) but version varint is 2.
     XCTAssertEqual(((const uint8_t *)starLite.bytes)[0], (uint8_t)0x2A);
 
-    // Round-trip: STARReader reports STARVariantLite and contains only record
-    // blocks (no MST nodes, because Lite is a flat key-record format that does
+    // Round-trip: ATProtoSTARReader reports STARVariantLite and contains only record
+    // blocks (no ATProtoMST nodes, because Lite is a flat key-record format that does
     // NOT follow the Sync 1.1 depth-first + record-interleaved layout; it
     // drains [mst allEntries] in key order).
-    STARReader *reader = [STARReader readFromData:starLite error:&err];
+    ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:starLite error:&err];
     XCTAssertNil(err);
     XCTAssertEqual(reader.variant, STARVariantLite);
     NSUInteger nodes = 0;
     NSUInteger records = 0;
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         if ([[self classifyChunk:block.data] isEqualToString:@"node"]) {
             nodes++;
         } else if ([[self classifyChunk:block.data] isEqualToString:@"record"]) {

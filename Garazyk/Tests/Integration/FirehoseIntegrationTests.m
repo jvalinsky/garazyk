@@ -156,7 +156,7 @@
     XCTAssertNotNil(carData);
     
     // Verify CAR Content
-    CARReader *reader = [CARReader readFromData:carData error:&error];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&error];
     XCTAssertNotNil(reader, @"Failed to read CAR: %@", error);
     
     // Should contain at least 2 blocks: Commit and Record
@@ -164,7 +164,7 @@
     
     // Verify Record Block
     BOOL foundRecord = NO;
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         id obj = [ATProtoDagCBOR decodeData:block.data error:nil];
         if ([obj isKindOfClass:[NSDictionary class]]) {
             NSDictionary *dict = (NSDictionary *)obj;

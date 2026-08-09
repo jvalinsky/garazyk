@@ -98,7 +98,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 
 // Optional fields
 
-/*! The root ATProtoCID of the MST tree for the previous commit. */
+/*! The root ATProtoCID of the ATProtoMST tree for the previous commit. */
 @property (nonatomic, strong, nullable) ATProtoCID *prevData;
 
 + (instancetype)eventWithRepo:(NSString *)repo commit:(ATProtoCID *)commit ops:(NSArray<NSDictionary *> *)ops;

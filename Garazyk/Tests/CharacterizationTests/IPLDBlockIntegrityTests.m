@@ -90,7 +90,7 @@
     // Check if we found the record block
     XCTAssertTrue(found, @"Record block for CID %@ NOT found in ipld_blocks table!", cidString);
     
-    // Check if we found other blocks (commit, MST nodes)
+    // Check if we found other blocks (commit, ATProtoMST nodes)
     XCTAssertGreaterThan(blocks.count, 1, @"Only one block (or zero) found? Expected commit + MST nodes + record block.");
 }
 
@@ -121,7 +121,7 @@
     PDSActorStore *store = [self.controller.userDatabasePool storeForDid:did error:&error];
     NSArray<PDSDatabaseBlock *> *blocks = [store listBlocksForDid:did limit:100 offset:0 error:&error];
     
-    // We expect at least: 1 commit block, some MST blocks, and 2 record blocks.
+    // We expect at least: 1 commit block, some ATProtoMST blocks, and 2 record blocks.
     XCTAssertGreaterThanOrEqual(blocks.count, 4, @"Not enough blocks found");
     
     // Find record blocks specifically

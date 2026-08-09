@@ -3,11 +3,11 @@
 /*!
  @file RelayEventValidator.h
 
- @abstract Validates firehose events (MST proofs, signatures) for ATProto Relay
+ @abstract Validates firehose events (ATProtoMST proofs, signatures) for ATProto Relay
 
  @discussion
     RelayEventValidator performs:
-    - MST (Merkle Search Tree) proof validation for commits
+    - ATProtoMST (Merkle Search Tree) proof validation for commits
     - Signature verification for repo operations
     - Event schema validation
     

@@ -333,8 +333,8 @@
     
     printf("Re-initializing repository...\n");
     
-    // Create empty MST and commit
-    MST *mst = [[MST alloc] init];
+    // Create empty ATProtoMST and commit
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *dataCID = mst.rootCID;
     if (!dataCID) {
         [context printError:@"Failed to compute empty MST root"];
@@ -342,7 +342,7 @@
     }
     
     NSString *rev = [[ATProtoTID tid] stringValue];
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did
                                                     data:dataCID
                                                      rev:rev
                                                     prev:nil];

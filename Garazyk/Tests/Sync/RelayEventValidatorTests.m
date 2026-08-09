@@ -107,8 +107,8 @@
 
 - (FirehoseCommitEvent *)signedCommitEventForDID:(NSString *)did
                                          keyPair:(ATProtoSecp256k1KeyPair *)keyPair
-                                          commit:(RepoCommit **)commitOut {
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did
+                                          commit:(ATProtoRepoCommit **)commitOut {
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did
                                                      data:[ATProtoCID sha256:[@"relay-signature-root" dataUsingEncoding:NSUTF8StringEncoding]]
                                                       rev:@"3lr5msvv5dk2d"
                                                      prev:nil];
@@ -175,7 +175,7 @@
 - (void)testCommitSignatureVerificationRejectsTamperedCommitWithMatchingCID {
     NSString *did = @"did:plc:relaytampered";
     ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
-    RepoCommit *commit = nil;
+    ATProtoRepoCommit *commit = nil;
     FirehoseCommitEvent *event = [self signedCommitEventForDID:did keyPair:keyPair commit:&commit];
     NSMutableData *signature = [commit.signature mutableCopy];
     ((uint8_t *)signature.mutableBytes)[0] ^= 0x01;

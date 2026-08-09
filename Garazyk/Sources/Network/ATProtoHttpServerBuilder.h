@@ -93,7 +93,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Whether to register OAuth Demo routes (default: YES). */
 @property (nonatomic, assign) BOOL enableOAuthDemo;
 
-/*! Whether to register MST Viewer routes (default: YES). */
+/*! Whether to register ATProtoMST Viewer routes (default: YES). */
 @property (nonatomic, assign) BOOL enableMSTViewer;
 
 /*! Whether to register NodeInfo routes (default: YES). */

@@ -26,7 +26,7 @@
 - (void)testSequentialKeysStress {
     // Stress test with sequential keys and various key patterns.
     // Sequential keys (e.g. poison0001, poison0002, ...) produce random
-    // SHA-256 hashes due to the avalanche effect, so the MST should handle
+    // SHA-256 hashes due to the avalanche effect, so the ATProtoMST should handle
     // them the same as random TIDs.
     int count = 100;
     NSArray<NSString *> *patterns = @[
@@ -37,7 +37,7 @@
     ];
 
     for (NSString *pattern in patterns) {
-        MST *tree = [[MST alloc] init];
+        ATProtoMST *tree = [[ATProtoMST alloc] init];
         NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
 
         for (int i = 0; i < count; i++) {
@@ -79,7 +79,7 @@
 }
 
 - (void)testLargeScaleRebalancing {
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     NSMutableDictionary<NSString *, ATProtoCID *> *expectedEntries = [NSMutableDictionary dictionary];
     
     // Insert 1000 keys with pseudo-random TIDs
@@ -133,7 +133,7 @@
 }
 
 - (void)testSmallScaleInsertDeleteRoundtrip {
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
     int count = 20;
 
@@ -177,11 +177,11 @@
 }
 
 - (void)testSerializeDeserializeRoundtrip {
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
     int count = 20;
 
-    // Use random ATProtoTID keys (will produce multi-node MST at various depths)
+    // Use random ATProtoTID keys (will produce multi-node ATProtoMST at various depths)
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
@@ -207,7 +207,7 @@
     MSTBlockProvider provider = ^NSData *(ATProtoCID *cid) {
         return nodeMap[cid.stringValue];
     };
-    MST *restored = [MST deserializeFromCBOR:cbor blockProvider:provider];
+    ATProtoMST *restored = [ATProtoMST deserializeFromCBOR:cbor blockProvider:provider];
     XCTAssertNotNil(restored);
 
     // Verify all entries survive roundtrip
@@ -223,7 +223,7 @@
 
 - (void)testDeserializeWithNilBlockProvider {
     // Verify backward compatibility: nil blockProvider returns single-node tree
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     int count = 5;
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
@@ -236,14 +236,14 @@
     XCTAssertNotNil(cbor);
 
     // Deserialize with nil blockProvider — should not crash, returns root node only
-    MST *restored = [MST deserializeFromCBOR:cbor blockProvider:nil];
+    ATProtoMST *restored = [ATProtoMST deserializeFromCBOR:cbor blockProvider:nil];
     XCTAssertNotNil(restored);
 
     GZ_LOG_INFO(@"[MST TEST] Deserialize with nil blockProvider completed.");
 }
 
 - (void)testLazyProofCacheIsBounded {
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     NSMutableArray<NSString *> *keys = [NSMutableArray array];
     for (NSUInteger index = 0; index < 1000; index++) {
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/lazy-%04lu", (unsigned long)index];
@@ -256,7 +256,7 @@
         nodeDataByCID[cid.stringValue] = data;
         return YES;
     } error:nil]);
-    MST *lazyTree = [MST deserializeFromCBOR:[tree serializeToCBOR] blockProvider:nil];
+    ATProtoMST *lazyTree = [ATProtoMST deserializeFromCBOR:[tree serializeToCBOR] blockProvider:nil];
     XCTAssertNotNil(lazyTree);
     MSTBlockProvider provider = ^NSData * _Nullable(ATProtoCID *cid) {
         return nodeDataByCID[cid.stringValue];
@@ -270,7 +270,7 @@
 
 - (void)testLazyRootOnlyHydrationBoundsTenThousandRecordRepo {
     const NSUInteger recordCount = 10000;
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     NSMutableArray<NSString *> *keys = [NSMutableArray arrayWithCapacity:recordCount];
     for (NSUInteger index = 0; index < recordCount; index++) {
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/profile-%05lu",
@@ -299,7 +299,7 @@
 #if !defined(GNUSTEP)
     uint64_t lazyBefore = [self currentResidentMemory];
 #endif
-    MST *lazyTree = [MST deserializeFromCBOR:rootData blockProvider:nil];
+    ATProtoMST *lazyTree = [ATProtoMST deserializeFromCBOR:rootData blockProvider:nil];
 #if !defined(GNUSTEP)
     uint64_t lazyRootOnlyResident = [self currentResidentMemory];
 #endif
@@ -309,7 +309,7 @@
     XCTAssertLessThan(lazyTree.root.entries.count, recordCount,
                       @"Root-only deserialization must leave child subtrees unresolved");
 
-    NSArray<MSTNode *> *proof = [lazyTree getProofNodesForKey:keys.lastObject
+    NSArray<ATProtoMSTNode *> *proof = [lazyTree getProofNodesForKey:keys.lastObject
                                                   blockProvider:lazyProvider];
     XCTAssertNotNil(proof);
     XCTAssertGreaterThan(proof.count, 1UL,
@@ -328,7 +328,7 @@
 #if !defined(GNUSTEP)
     uint64_t eagerBefore = [self currentResidentMemory];
 #endif
-    MST *eagerTree = [MST deserializeFromCBOR:rootData blockProvider:eagerProvider];
+    ATProtoMST *eagerTree = [ATProtoMST deserializeFromCBOR:rootData blockProvider:eagerProvider];
 #if !defined(GNUSTEP)
     uint64_t eagerResident = [self currentResidentMemory];
 #endif
@@ -356,7 +356,7 @@
 
 - (void)testDeserializeWithMissingCIDInBlockProvider {
     // Verify graceful handling when block provider returns nil for a ATProtoCID
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     int count = 10;
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
@@ -372,7 +372,7 @@
     MSTBlockProvider missingProvider = ^NSData *(ATProtoCID *cid) {
         return nil;
     };
-    MST *restored = [MST deserializeFromCBOR:cbor blockProvider:missingProvider];
+    ATProtoMST *restored = [ATProtoMST deserializeFromCBOR:cbor blockProvider:missingProvider];
     XCTAssertNotNil(restored);
 
     // Should still have the root node's entries (child subtrees gracefully skipped)
@@ -383,20 +383,20 @@
 
 - (void)testDeserializeEmptyTreeIsRejected {
     // Empty tree serialization/deserialization
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     XCTAssertEqual(tree.allEntries.count, 0);
 
     NSData *cbor = [tree serializeToCBOR];
     XCTAssertNotNil(cbor);
 
     // Deserialize with nil blockProvider
-    MST *restored = [MST deserializeFromCBOR:cbor blockProvider:nil];
+    ATProtoMST *restored = [ATProtoMST deserializeFromCBOR:cbor blockProvider:nil];
     XCTAssertNil(restored);
     XCTAssertEqual(restored.allEntries.count, 0);
 
     // Deserialize with block provider
     MSTBlockProvider provider = ^NSData *(ATProtoCID *cid) { return nil; };
-    MST *restored2 = [MST deserializeFromCBOR:cbor blockProvider:provider];
+    ATProtoMST *restored2 = [ATProtoMST deserializeFromCBOR:cbor blockProvider:provider];
     XCTAssertNil(restored2);
     XCTAssertEqual(restored2.allEntries.count, 0);
 
@@ -405,7 +405,7 @@
 
 - (void)testDeserializeSingleNodeTree {
     // Single-node tree (all keys at depth 0) — no child subtree CIDs to resolve
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
     int count = 10;
     int added = 0;
@@ -415,7 +415,7 @@
     for (int i = 0; i < maxAttempts && added < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
-        if ([MST keyDepth:key] == 0) {
+        if ([ATProtoMST keyDepth:key] == 0) {
             ATProtoCID *cid = [ATProtoCID sha256:[key dataUsingEncoding:NSUTF8StringEncoding]];
             [tree put:key valueCID:cid];
             expected[key] = cid;
@@ -428,7 +428,7 @@
     XCTAssertNotNil(cbor);
 
     // Deserialize without block provider
-    MST *restored = [MST deserializeFromCBOR:cbor];
+    ATProtoMST *restored = [ATProtoMST deserializeFromCBOR:cbor];
     XCTAssertNotNil(restored);
     XCTAssertEqual((NSUInteger)count, restored.allEntries.count);
     for (NSString *key in expected) {
@@ -455,7 +455,7 @@
 
     for (NSString *pattern in patterns) {
         @autoreleasepool {
-            MST *tree = [[MST alloc] init];
+            ATProtoMST *tree = [[ATProtoMST alloc] init];
             NSMutableDictionary<NSString *, ATProtoCID *> *expected = [NSMutableDictionary dictionary];
 
             GZ_LOG_INFO(@"[MST FUZZ] Pattern '%@': inserting %d keys...", pattern, count);
@@ -520,14 +520,14 @@
 - (void)testDepthConsistency {
     // Verify that key depth is deterministic and consistent with the spec
     NSString *key1 = @"app.bsky.feed.post/3jzfcijpj2z2a";
-    uint32_t depth1 = [MST keyDepth:key1];
+    uint32_t depth1 = [ATProtoMST keyDepth:key1];
     
     // Re-calculating should give same result
-    XCTAssertEqual([MST keyDepth:key1], depth1);
+    XCTAssertEqual([ATProtoMST keyDepth:key1], depth1);
     
     // Different key should (likely) have different depth or at least valid range
     NSString *key2 = @"app.bsky.feed.post/3jzfcijpj2z2b";
-    uint32_t depth2 = [MST keyDepth:key2];
+    uint32_t depth2 = [ATProtoMST keyDepth:key2];
     XCTAssertTrue(depth1 >= 0);
     XCTAssertTrue(depth2 >= 0);
 }
