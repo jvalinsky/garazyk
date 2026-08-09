@@ -969,6 +969,16 @@ written. The two incomplete logs were
 15/15 result proves the environment accessor fix itself on GNUstep; it does
 not yet prove that all 488 historical shared-fixture failures are gone.
 
+A final bounded retry of the two highest-signal fixtures,
+`--filter AdminAuthXrpcTests --filter RepoAuthTempTests --gated=run
+--timeout 20`, selected 2 suites but again produced no summary. After roughly
+43 seconds the GNUstep process entered uninterruptible wait while emitting
+repeated `SearchIndexService` "no such table: search_actors" errors. The
+captured log was `/tmp/garazyk-gnustep-shared-fixture-key-2026-08-08.log`.
+This is classified as an environment/database fixture hang; it prevents a
+complete shared-fixture pass/fail result and is not evidence that the
+`PDSAdminAuth` accessor fix regressed.
+
 The remaining full-suite classifications are unchanged and were not silently
 reclassified by this interrupted rerun: approximately 57 template failures
 remain a reproduction-container asset-layout gap until rerun with the runtime
