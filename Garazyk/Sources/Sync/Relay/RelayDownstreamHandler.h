@@ -71,7 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @property eventValidator
 
- @abstract Optional event validator for schema, MST, and signature checks.
+ @abstract Optional event validator for schema, ATProtoMST, and signature checks.
  */
 @property (nonatomic, strong, readwrite, nullable) RelayEventValidator *eventValidator;
 
@@ -169,7 +169,7 @@ NS_ASSUME_NONNULL_BEGIN
  @method verifyChainForCommitEvent:
 
  @abstract Validates the commit envelope and checks ``since``/``prevData``
-           against the stored revision and MST data root.
+           against the stored revision and ATProtoMST data root.
 
  @discussion In log-only mode, a mismatch is recorded and the structurally
              valid event becomes the new baseline. In strict mode, mismatches

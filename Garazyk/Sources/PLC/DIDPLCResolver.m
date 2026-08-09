@@ -13,7 +13,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 @property (nonatomic, copy) NSString *plcUrl;
 @property (nonatomic, strong) NSCache<NSString *, NSDictionary *> *cache;
 @property (nonatomic, strong) NSURLSession *session;
-@property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
+@property (nonatomic, strong) ATProtoHttpRetryPolicy *retryPolicy;
 
 @end
 
@@ -35,7 +35,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         config.timeoutIntervalForRequest = _timeout;
         config.timeoutIntervalForResource = _timeout * 2;
         _session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
-        _retryPolicy = [[HttpRetryPolicy alloc] init];
+        _retryPolicy = [[ATProtoHttpRetryPolicy alloc] init];
     }
     return self;
 }
@@ -137,7 +137,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         NSInteger statusCode = httpResponse ? httpResponse.statusCode : 0;
         
-        HttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode networkError:error attemptNumber:attempt];
+        ATProtoHttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode networkError:error attemptNumber:attempt];
         
         if (retryResult.decision == HttpRetryDecisionRetryAfter) {
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(retryResult.retryDelay * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{

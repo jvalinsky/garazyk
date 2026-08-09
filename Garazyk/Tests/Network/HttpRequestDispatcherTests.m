@@ -18,7 +18,7 @@
         lookupCalled = YES;
         return (HttpServerRequestHandler)nil;
     };
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
     XCTAssertNotNil(dispatcher);
     XCTAssertNotNil(dispatcher.routeLookupHandler);
 
@@ -30,7 +30,7 @@
 }
 
 - (void)testInitWithNilRouteLookupHandler_DoesNotCrash {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     XCTAssertNotNil(dispatcher);
     XCTAssertNil(dispatcher.routeLookupHandler);
 }
@@ -38,16 +38,16 @@
 #pragma mark - dispatchRequest with requestHandler
 
 - (void)testDispatchRequest_RequestHandlerSet_CallsHandler {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     __block BOOL handlerCalled = NO;
 
-    dispatcher.requestHandler = ^(HttpRequest *request, HttpResponse *response) {
+    dispatcher.requestHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         handlerCalled = YES;
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"status": @"ok"}];
     };
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/health"
                                                    queryString:@""
@@ -57,27 +57,27 @@
                                                           body:[NSData data]
                                                   remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [dispatcher dispatchRequest:request];
+    ATProtoHttpResponse *response = [dispatcher dispatchRequest:request];
     XCTAssertTrue(handlerCalled);
     XCTAssertEqual(response.statusCode, HttpStatusOK);
 }
 
 - (void)testDispatchRequest_RequestHandlerSet_SkipsRouteLookup {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     __block BOOL routeLookupCalled = NO;
 
     dispatcher.routeLookupHandler = ^(NSString *path, NSString *method, NSDictionary<NSString *, NSString *> **params) {
         routeLookupCalled = YES;
-        return ^(HttpRequest *req, HttpResponse *res) {
+        return ^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
             res.statusCode = HttpStatusOK;
         };
     };
-    dispatcher.requestHandler = ^(HttpRequest *request, HttpResponse *response) {
+    dispatcher.requestHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusAccepted;
         [response setJsonBody:@{@"handled": @"requestHandler"}];
     };
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/test"
                                                    queryString:@""
@@ -87,7 +87,7 @@
                                                           body:[NSData data]
                                                   remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [dispatcher dispatchRequest:request];
+    ATProtoHttpResponse *response = [dispatcher dispatchRequest:request];
     // requestHandler should take priority — routeLookupHandler should NOT be called
     XCTAssertFalse(routeLookupCalled);
     XCTAssertEqual(response.statusCode, HttpStatusAccepted);
@@ -96,7 +96,7 @@
 #pragma mark - dispatchRequest with routeLookupHandler
 
 - (void)testDispatchRequest_RouteLookupMatch_ReturnsHandlerResponse {
-    __block HttpServerRequestHandler matchedHandler = ^(HttpRequest *req, HttpResponse *res) {
+    __block HttpServerRequestHandler matchedHandler = ^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         res.statusCode = HttpStatusOK;
         [res setJsonBody:@{@"result": @"matched"}];
     };
@@ -108,9 +108,9 @@
         return (HttpServerRequestHandler)nil;
     };
 
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/api/ping"
                                                    queryString:@""
@@ -120,7 +120,7 @@
                                                           body:[NSData data]
                                                   remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [dispatcher dispatchRequest:request];
+    ATProtoHttpResponse *response = [dispatcher dispatchRequest:request];
     XCTAssertEqual(response.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(request.pathParameters[@"version"], @"1");
 }
@@ -130,9 +130,9 @@
         return (HttpServerRequestHandler)nil;
     };
 
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/nonexistent"
                                                    queryString:@""
@@ -142,14 +142,14 @@
                                                           body:[NSData data]
                                                   remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [dispatcher dispatchRequest:request];
+    ATProtoHttpResponse *response = [dispatcher dispatchRequest:request];
     XCTAssertEqual(response.statusCode, HttpStatusNotFound);
 }
 
 - (void)testDispatchRequest_NilLookupAndNoHandler_Returns404 {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/test"
                                                    queryString:@""
@@ -159,22 +159,22 @@
                                                           body:[NSData data]
                                                   remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [dispatcher dispatchRequest:request];
+    ATProtoHttpResponse *response = [dispatcher dispatchRequest:request];
     XCTAssertEqual(response.statusCode, HttpStatusNotFound);
 }
 
 #pragma mark - dispatchRequest with logging (query string)
 
 - (void)testDispatchRequest_WithQueryString_LogsCorrectPath {
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     __block BOOL handlerCalled = NO;
 
-    dispatcher.requestHandler = ^(HttpRequest *request, HttpResponse *response) {
+    dispatcher.requestHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         handlerCalled = YES;
         response.statusCode = HttpStatusOK;
     };
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/search"
                                                    queryString:@"q=test"
@@ -184,7 +184,7 @@
                                                           body:[NSData data]
                                                   remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [dispatcher dispatchRequest:request];
+    ATProtoHttpResponse *response = [dispatcher dispatchRequest:request];
     XCTAssertTrue(handlerCalled);
     XCTAssertEqual(response.statusCode, HttpStatusOK);
 }
@@ -194,14 +194,14 @@
 - (void)testDispatchRequest_RouteLookupSetsPathParametersOnRequest {
     HttpRouteLookupHandler lookup = ^(NSString *path, NSString *method, NSDictionary<NSString *, NSString *> **params) {
         *params = @{@"id": @"42", @"action": @"edit"};
-        return ^(HttpRequest *req, HttpResponse *res) {
+        return ^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
             res.statusCode = HttpStatusOK;
         };
     };
 
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/users/42/edit"
                                                    queryString:@""
@@ -219,17 +219,17 @@
 #pragma mark - Rate limiting for OAuth paths
 
 - (void)testDispatchRequest_OAuthPath_ChecksRateLimit {
-    // Note: This test verifies the structure works. RateLimiter is a singleton
+    // Note: This test verifies the structure works. ATProtoRateLimiter is a singleton
     // so actual rate-limit behavior depends on the shared limiter's state.
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:nil];
     __block BOOL handlerCalled = NO;
 
-    dispatcher.requestHandler = ^(HttpRequest *request, HttpResponse *response) {
+    dispatcher.requestHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         handlerCalled = YES;
         response.statusCode = HttpStatusOK;
     };
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/token"
                                                    queryString:@""
@@ -240,7 +240,7 @@
                                                   remoteAddress:@"127.0.0.1"];
 
     // Should not crash — rate limiter may or may not be enabled
-    HttpResponse *response = [dispatcher dispatchRequest:request];
+    ATProtoHttpResponse *response = [dispatcher dispatchRequest:request];
     XCTAssertNotNil(response);
     // If rate limiter is disabled (default in tests), handler should be called
     // If it's enabled and rate-limited, response would be 429
@@ -256,9 +256,9 @@
         return (HttpServerRequestHandler)nil;
     };
 
-    HttpRequestDispatcher *dispatcher = [[HttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
+    ATProtoHttpRequestDispatcher *dispatcher = [[ATProtoHttpRequestDispatcher alloc] initWithRouteLookupHandler:lookup];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/create"
                                                    queryString:@""

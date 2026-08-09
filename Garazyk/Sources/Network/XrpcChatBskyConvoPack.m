@@ -32,8 +32,8 @@
   return @"chat.bsky.convo";
 }
 
-static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
-                                            HttpResponse *response,
+static NSString *XrpcChatActorDIDForRequest(ATProtoHttpRequest *request,
+                                            ATProtoHttpResponse *response,
                                             id<XrpcRoutePackServices> services) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (!authHeader) {
@@ -74,7 +74,7 @@ static BOOL XrpcChatConversationIncludesActor(NSDictionary *convo, NSString *act
 
 /// Verifies the actor is a member of the conversation.
 /// Sets 404/403 on `response` and returns NO on failure; returns YES if the actor is a member.
-static BOOL XrpcChatGuardConvoMembership(NSString *convoId, NSString *actorDID, id chatService, HttpResponse *response) {
+static BOOL XrpcChatGuardConvoMembership(NSString *convoId, NSString *actorDID, id chatService, ATProtoHttpResponse *response) {
     NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
     if (!convo) {
         [XrpcErrorHelper setNotFoundError:response message:@"Conversation not found"];
@@ -212,7 +212,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.getConvoForMembers
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getConvoForMembers
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -278,7 +278,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.acceptConvo
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_acceptConvo
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -319,7 +319,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.leaveConvo
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_leaveConvo
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -350,7 +350,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.listConvoRequests
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_listConvoRequests
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -367,7 +367,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.getConvoAvailability
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getConvoAvailability
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
         if (!did || did.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"did is required"];
@@ -387,7 +387,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.addReaction
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_addReaction
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -425,7 +425,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.removeReaction
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_removeReaction
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -463,7 +463,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.updateRead
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_updateRead
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -498,7 +498,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.updateAllRead
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_updateAllRead
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -530,7 +530,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.muteConvo
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_muteConvo
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -561,7 +561,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.unmuteConvo
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_unmuteConvo
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -592,7 +592,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.sendMessageBatch
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_sendMessageBatch
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -653,7 +653,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.lockConvo
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_lockConvo
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -684,7 +684,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.unlockConvo
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_unlockConvo
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -715,7 +715,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.deleteMessageForSelf
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_deleteMessageForSelf
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -743,7 +743,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.listConvos
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_listConvos
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -815,7 +815,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.getConvo
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getConvo
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -852,7 +852,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.getMessages
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getMessages
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -941,7 +941,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.sendMessage
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_sendMessage
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
@@ -1013,7 +1013,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // chat.bsky.convo.getLog
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getLog
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];

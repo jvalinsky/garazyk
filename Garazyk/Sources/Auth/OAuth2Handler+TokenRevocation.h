@@ -5,10 +5,10 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface OAuth2Handler (TokenRevocation)
-- (void)handleRevokeRequest:(HttpRequest *)request
-                   response:(HttpResponse *)response;
-- (void)handleIntrospectRequest:(HttpRequest *)request
-                       response:(HttpResponse *)response;
+- (void)handleRevokeRequest:(ATProtoHttpRequest *)request
+                   response:(ATProtoHttpResponse *)response;
+- (void)handleIntrospectRequest:(ATProtoHttpRequest *)request
+                       response:(ATProtoHttpResponse *)response;
 @end
 
 NS_ASSUME_NONNULL_END

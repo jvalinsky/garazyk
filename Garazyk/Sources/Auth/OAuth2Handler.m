@@ -115,53 +115,53 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
 }
 
 #pragma mark - Route Registration
-- (void)registerRoutesWithServer:(HttpServer *)httpServer {
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)httpServer {
   // Serve shared design system CSS files (tokens, reset, components, etc.)
   [httpServer addHandlerForPath:@"/css/"
-                        handler:^(HttpRequest *request, HttpResponse *response) {
+                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                           [self handleCSSRequest:request response:response];
                         }];
 
   [httpServer addRoute:@"GET"
                   path:@"/oauth/authorize"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleAuthorizeRequest:request response:response];
                }];
 
   [httpServer addRoute:@"POST"
                   path:@"/oauth/authorize/confirm"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleAuthorizeConfirm:request response:response];
                }];
 
   [httpServer addRoute:@"POST"
                   path:@"/oauth/authorize/sign-in"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleAuthorizeSignIn:request response:response];
                }];
 
   [httpServer addRoute:@"POST"
                   path:@"/oauth/authorize/passkey/challenge"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handlePasskeyChallenge:request response:response];
                }];
 
   [httpServer addRoute:@"POST"
                   path:@"/oauth/authorize/passkey"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handlePasskeySignIn:request response:response];
                }];
 
   [httpServer addRoute:@"POST"
                   path:@"/oauth/token"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self setCorsHeaders:response forRequest:request];
                  [self handleTokenRequest:request response:response];
                }];
 
   [httpServer addRoute:@"POST"
                   path:@"/oauth/revoke"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self setCorsHeaders:response forRequest:request];
                  [self handleRevokeRequest:request response:response];
                }];
@@ -169,7 +169,7 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
   // Phase 1: Add /oauth/introspect endpoint for token introspection (RFC 7662)
   [httpServer addRoute:@"POST"
                   path:@"/oauth/introspect"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self setCorsHeaders:response forRequest:request];
                  [self handleIntrospectRequest:request response:response];
                }];
@@ -177,7 +177,7 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
   [httpServer
       addRoute:@"GET"
           path:@"/.well-known/oauth-authorization-server"
-       handler:^(HttpRequest *request, HttpResponse *response) {
+       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
          [self setCorsHeaders:response forRequest:request];
          [self handleAuthorizationServerMetadata:request response:response];
        }];
@@ -185,7 +185,7 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
   [httpServer
       addRoute:@"GET"
           path:@"/.well-known/oauth-protected-resource"
-       handler:^(HttpRequest *request, HttpResponse *response) {
+       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
          [self setCorsHeaders:response forRequest:request];
          [self handleProtectedResourceMetadata:request response:response];
        }];
@@ -193,7 +193,7 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
   // Phase 4: Add /oauth/jwks endpoint for publishing public keys
   [httpServer addRoute:@"GET"
                   path:@"/oauth/jwks"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self setCorsHeaders:response forRequest:request];
                  [self handleJWKS:request response:response];
                }];
@@ -201,14 +201,14 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
   // Phase 4: Add /oauth/par endpoint for Pushed Authorization Requests
   [httpServer addRoute:@"POST"
                   path:@"/oauth/par"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self setCorsHeaders:response forRequest:request];
                  [self handlePARRequest:request response:response];
                }];
 
   // CORS preflight handlers for ATProto OAuth client compatibility
-  void (^corsPreflightHandler)(HttpRequest *, HttpResponse *) =
-      ^(HttpRequest *req, HttpResponse *resp) {
+  void (^corsPreflightHandler)(ATProtoHttpRequest *, ATProtoHttpResponse *) =
+      ^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [self setCorsHeaders:resp forRequest:req];
         resp.statusCode = 204;
         resp.statusMessage = @"No Content";

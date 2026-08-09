@@ -395,7 +395,7 @@ extern BOOL ATProtoServiceConfigRunningUnderTests(void);
 /*! @abstract Enable verbose logging. */
 @property (nonatomic, readonly) BOOL debugVerboseLogging;
 
-/*! @abstract Enable MST viewer (default: YES in dev, NO in production). */
+/*! @abstract Enable ATProtoMST viewer (default: YES in dev, NO in production). */
 @property (nonatomic, readonly) BOOL mstViewerEnabled;
 
 /*! @abstract Use in-memory databases. */

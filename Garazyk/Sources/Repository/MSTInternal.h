@@ -12,18 +12,18 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoCID;
 
 /**
- * @abstract Internal accessors for MSTNode.
- * @discussion Used by MSTWalker for efficient tree traversal.
+ * @abstract Internal accessors for ATProtoMSTNode.
+ * @discussion Used by ATProtoMSTWalker for efficient tree traversal.
  */
-@interface MSTNode (Internal)
+@interface ATProtoMSTNode (Internal)
 
 /** @abstract Leftmost subtree pointer (may be nil). */
-@property (nonatomic, strong, readonly, nullable) MSTNode *internalLeft;
+@property (nonatomic, strong, readonly, nullable) ATProtoMSTNode *internalLeft;
 
 /** @abstract Mutable array of entries at this node. */
-@property (nonatomic, strong, readonly) NSMutableArray<MSTNodeEntry *> *internalEntries;
+@property (nonatomic, strong, readonly) NSMutableArray<ATProtoMSTNodeEntry *> *internalEntries;
 
-/** @abstract Level of this node in the MST. */
+/** @abstract Level of this node in the ATProtoMST. */
 @property (nonatomic, assign, readonly) uint32_t level;
 
 /**
@@ -31,17 +31,17 @@ NS_ASSUME_NONNULL_BEGIN
  * @param cache Map table for storing node CIDs.
  * @return The node's ATProtoCID.
  */
-- (ATProtoCID *)getCID:(NSMapTable<MSTNode *, ATProtoCID *> *)cache;
+- (ATProtoCID *)getCID:(NSMapTable<ATProtoMSTNode *, ATProtoCID *> *)cache;
 
 @end
 
 /**
- * @abstract Internal accessors for MSTNodeEntry.
+ * @abstract Internal accessors for ATProtoMSTNodeEntry.
  */
-@interface MSTNodeEntry (Internal)
+@interface ATProtoMSTNodeEntry (Internal)
 
 /** @abstract Subtree pointer (may be nil for leaf entries). */
-@property (nonatomic, strong, readonly, nullable) MSTNode *internalTree;
+@property (nonatomic, strong, readonly, nullable) ATProtoMSTNode *internalTree;
 
 /** @abstract Full key of this entry. */
 @property (nonatomic, copy, readonly) NSString *fullKey;

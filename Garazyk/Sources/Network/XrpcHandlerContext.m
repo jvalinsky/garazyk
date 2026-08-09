@@ -13,8 +13,8 @@
 
 @implementation XrpcHandlerContext
 
-- (instancetype)initWithRequest:(HttpRequest *)request
-                       response:(HttpResponse *)response
+- (instancetype)initWithRequest:(ATProtoHttpRequest *)request
+                       response:(ATProtoHttpResponse *)response
                        services:(id<XrpcRoutePackServices>)services {
   self = [super init];
   if (self) {

@@ -20,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Reports whether an error represents the bounded synchronous-validation timeout. */
 - (BOOL)isClientValidationTimeoutError:(NSError *)error;
 /** @abstract Writes a protocol-safe OAuth error response using the supplied status and OAuth fields. */
-- (void)setOAuthErrorResponse:(HttpResponse *)response
+- (void)setOAuthErrorResponse:(ATProtoHttpResponse *)response
                        status:(NSInteger)status
                         error:(NSString *)errorCode
              errorDescription:(NSString *)errorDescription;

@@ -91,8 +91,8 @@
 }
 
 - (void)testHandlerContextRequiresAuthorizationHeader {
-  HttpRequest *request =
-      [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+  ATProtoHttpRequest *request =
+      [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                              methodString:@"POST"
                                      path:@"/xrpc/chat.bsky.actor.deleteAccount"
                               queryString:@""
@@ -101,7 +101,7 @@
                                   headers:@{}
                                      body:[NSData data]
                               remoteAddress:@"127.0.0.1"];
-  HttpResponse *response = [[HttpResponse alloc] init];
+  ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
   id<XrpcRoutePackServices> services =
       [[XrpcRoutePackServiceBag alloc] initWithDispatcher:nil
                                                 jwtMinter:nil

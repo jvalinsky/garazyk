@@ -58,7 +58,7 @@
 
 - (void)testJWKSResponse {
     NSData *emptyBody = [NSData data];
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/oauth/jwks"
                                                    queryString:@""
@@ -67,7 +67,7 @@
                                                        headers:@{}
                                                           body:emptyBody
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     
     // We need to invoke the handler logic. 
     // Since handleJWKS is private, we can't call it directly easily without exposing it.
@@ -133,7 +133,7 @@
     }
     NSData *bodyData = [body dataUsingEncoding:NSUTF8StringEncoding];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/par"
                                                    queryString:@""
@@ -146,7 +146,7 @@
     }
                                                           body:bodyData
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     
     // Call handlePARRequest
     [self.handler performSelector:@selector(handlePARRequest:response:) withObject:request withObject:response];
@@ -157,7 +157,7 @@
         dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:@"http://localhost/oauth/par" nonce:nonce key:self.privateKey error:&dpopError];
         XCTAssertNotNil(dpopToken);
         
-        request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+        request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                       methodString:@"POST"
                                               path:@"/oauth/par"
                                        queryString:@""
@@ -170,7 +170,7 @@
         }
                                               body:bodyData
                                      remoteAddress:@"127.0.0.1"];
-        response = [[HttpResponse alloc] init];
+        response = [[ATProtoHttpResponse alloc] init];
         [self.handler performSelector:@selector(handlePARRequest:response:) withObject:request withObject:response];
     }
     
@@ -209,7 +209,7 @@
     NSData *bodyData = [body dataUsingEncoding:NSUTF8StringEncoding];
 
     // Create introspection request
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/oauth/introspect"
                                                    queryString:@""
@@ -220,7 +220,7 @@
     }
                                                           body:bodyData
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     // Call handleIntrospectRequest
     [self.handler performSelector:@selector(handleIntrospectRequest:response:)

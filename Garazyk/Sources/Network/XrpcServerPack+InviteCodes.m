@@ -34,7 +34,7 @@
     id<PDSAdminController> adminController = services.adminController;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 #pragma mark - com.atproto.server.inviteCodes.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createInviteCode handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createInviteCode handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -68,7 +68,7 @@
         [response setJsonBody:@{@"code": code ?: @""}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createInviteCodes handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createInviteCodes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -124,7 +124,7 @@
         [response setJsonBody:@{@"codes": codesByAccount}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getAccountInviteCodes handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getAccountInviteCodes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {

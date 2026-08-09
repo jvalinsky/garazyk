@@ -10,8 +10,8 @@
 
 @implementation OAuth2Handler (TokenEndpoint)
 
-- (void)handleTokenRequest:(HttpRequest *)request
-                  response:(HttpResponse *)response {
+- (void)handleTokenRequest:(ATProtoHttpRequest *)request
+                  response:(ATProtoHttpResponse *)response {
   [response setHeader:@"no-store" forKey:@"Cache-Control"];
   [response setHeader:@"no-cache" forKey:@"Pragma"];
 

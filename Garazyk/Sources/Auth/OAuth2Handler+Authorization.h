@@ -19,8 +19,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request The GET authorization request containing the PAR reference.
  * @param response The response populated with the consent page or an OAuth error.
  */
-- (void)handleAuthorizeRequest:(HttpRequest *)request
-                      response:(HttpResponse *)response;
+- (void)handleAuthorizeRequest:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response;
 /**
  * @abstract Consumes an authorization consent decision and completes or rejects the OAuth flow.
  * @discussion The form input is untrusted. A denial removes the supplied pending-consent token and
@@ -31,8 +31,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request The form submission containing the consent decision and authorization parameters.
  * @param response The response populated with a validated redirect or an OAuth error.
  */
-- (void)handleAuthorizeConfirm:(HttpRequest *)request
-                      response:(HttpResponse *)response;
+- (void)handleAuthorizeConfirm:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response;
 /**
  * @abstract Authenticates a password sign-in for a pending consent flow.
  * @discussion Requires a matching `X-CSRF-Token` header and `csrf_token` cookie, compared in
@@ -43,8 +43,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request The form submission containing credentials and the CSRF token.
  * @param response The JSON success or failure response.
  */
-- (void)handleAuthorizeSignIn:(HttpRequest *)request
-                     response:(HttpResponse *)response;
+- (void)handleAuthorizeSignIn:(ATProtoHttpRequest *)request
+                     response:(ATProtoHttpResponse *)response;
 /**
  * @abstract Renders the authorization HTML with validated request and client values.
  * @discussion Reads the authorization template from the configured asset path, HTML-escapes every
@@ -54,7 +54,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param params Validated authorization parameters to interpolate into the template.
  * @param client Validated client metadata used for the consent display.
  */
-- (void)serveAuthorizePage:(HttpResponse *)response
+- (void)serveAuthorizePage:(ATProtoHttpResponse *)response
                     params:(NSDictionary *)params
                     client:(NSDictionary *)client;
 @end

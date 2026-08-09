@@ -8,7 +8,7 @@
 
 @implementation AppViewXRpcRoutePack (Graph)
 
-- (void)handleGetFollows:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetFollows:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actor = [request queryParamForKey:@"actor"];
     if (!actor || actor.length == 0)
@@ -27,7 +27,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetFollowers:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetFollowers:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actor = [request queryParamForKey:@"actor"];
     if (!actor || actor.length == 0)
@@ -46,7 +46,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetBlocks:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetBlocks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -60,7 +60,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetMutes:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetMutes:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -74,7 +74,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetRelationships:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetRelationships:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [request queryParamForKey:@"actor"];
     if (!actorDID || ![actorDID isKindOfClass:[NSString class]] || actorDID.length == 0)
@@ -102,7 +102,7 @@
     [response setJsonBody:@{ @"relationships": result ? @[result] : @[] }];
 }
 
-- (void)handleGetStarterPack:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetStarterPack:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *uri = [request queryParamForKey:@"uri"];
     if (!uri || uri.length == 0)
@@ -119,7 +119,7 @@
     [response setJsonBody:@{ @"starterPack": result }];
 }
 
-- (void)handleGetStarterPacks:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetStarterPacks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actor = [request queryParamForKey:@"actor"];
     if (!actor || actor.length == 0)
@@ -138,7 +138,7 @@
     [response setJsonBody:result ?: @{ @"starterPacks": @[] }];
 }
 
-- (void)handleGetLists:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetLists:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actor = [request queryParamForKey:@"actor"];
     if (!actor || actor.length == 0)
@@ -157,7 +157,7 @@
     [response setJsonBody:result ?: @{ @"lists": @[] }];
 }
 
-- (void)handleGetList:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetList:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *list = [request queryParamForKey:@"list"];
     if (!list || list.length == 0)
@@ -177,7 +177,7 @@
     [response setJsonBody:result];
 }
 
-- (void)handleMuteActor:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleMuteActor:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -207,7 +207,7 @@
     [response setJsonBody:@{}];
 }
 
-- (void)handleUnmuteActor:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleUnmuteActor:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -237,7 +237,7 @@
     [response setJsonBody:@{}];
 }
 
-- (void)handleGetStarterPacksBulk:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetStarterPacksBulk:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     id urisParam = [request queryParamForKey:@"uris"];
     NSArray *uris = [urisParam isKindOfClass:[NSArray class]] ? (NSArray *)urisParam : (urisParam ? @[urisParam] : @[]);

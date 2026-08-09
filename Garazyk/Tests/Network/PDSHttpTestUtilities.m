@@ -11,11 +11,11 @@
 
 @implementation PDSHttpTestUtilities
 
-+ (nullable HttpServer *)startSocketServerWithDispatcher:(XrpcDispatcher *)dispatcher error:(NSError **)error {
-    HttpServer *server = [HttpServer serverWithPort:0];
++ (nullable ATProtoHttpServer *)startSocketServerWithDispatcher:(XrpcDispatcher *)dispatcher error:(NSError **)error {
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     __weak XrpcDispatcher *weakDispatcher = dispatcher;
     
-    [server setValue:^(HttpRequest *request, HttpResponse *response) {
+    [server setValue:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         __strong XrpcDispatcher *strongDispatcher = weakDispatcher;
         if (!strongDispatcher) {
             response.statusCode = 500;

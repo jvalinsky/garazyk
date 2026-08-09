@@ -496,10 +496,15 @@ remaining program does not depend on items 1-2.
     is complete in full (all ~25 classes renamed, including `CID` at 265
     consumers, the largest single rename in the workstream),
     and batch 3a (the low-consumer half of Storage/Transport, 14 classes,
-    `92395144`) is complete,
-    ratcheting the namespace baseline
-    283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228 → 214. Batch 3b
-    (the remaining higher-consumer Storage/Transport classes) and batches 4-6
+    `92395144`) is complete. Batch 3b's Storage slice (17 higher-consumer
+    classes) is also complete, ratcheting the namespace baseline
+    283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228 → 214 → 197
+    → 191 → 175. Batch 3b (the remaining higher-consumer Storage/Transport
+    classes) is complete. Focused Core/Storage/Transport builds and all
+    namespace/module-boundary checks pass; the full native `AllTests` target
+    is currently blocked by the excluded Admin UI sources' stale HTTP forward
+    declarations, and the GNUstep Docker builder stopped before compilation
+    when OrbStack ran out of storage copying the source context. Batches 4-6
     (PLC/Sync/Services/MediaCore, XRPC/VideoService,
     Runtime) remain open.
     **M7 is now

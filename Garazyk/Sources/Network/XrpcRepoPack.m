@@ -21,7 +21,7 @@ BOOL isReplyNotAllowedError(NSError *error) {
 
 BOOL rejectUnavailableRepoDid(NSString *did,
                               id<XrpcRoutePackServices> services,
-                              HttpResponse *response) {
+                              ATProtoHttpResponse *response) {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     id<PDSAdminController> adminController = services.adminController;
     if (did.length == 0) {
@@ -65,7 +65,7 @@ BOOL rejectUnavailableRepoDid(NSString *did,
 
 BOOL rejectUnavailableRepoDidIfKnown(NSString *did,
                                      id<XrpcRoutePackServices> services,
-                                     HttpResponse *response) {
+                                     ATProtoHttpResponse *response) {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     id<PDSAdminController> adminController = services.adminController;
     if (did.length == 0) {
@@ -107,7 +107,7 @@ BOOL rejectUnavailableRepoDidIfKnown(NSString *did,
 
 BOOL rejectRecordTakedown(NSString *uri,
                           id<XrpcRoutePackServices> services,
-                          HttpResponse *response) {
+                          ATProtoHttpResponse *response) {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     NSError *dbError = nil;
     PDSDatabase *database = [serviceDatabases serviceDatabaseWithError:&dbError];

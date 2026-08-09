@@ -13,7 +13,7 @@
 #pragma mark - registerPush
 
 - (void)testRegisterPushRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
                                                     body:@{
                                                         @"serviceDid": @"did:web:push.example.com",
                                                         @"token": @"apns-token-abc",
@@ -44,7 +44,7 @@
     ];
 
     for (NSUInteger i = 0; i < invalidBodies.count; i++) {
-        HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
+        ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
                                                         body:invalidBodies[i]
                                                      headers:@{@"authorization": authHeader}];
         XCTAssertEqual(response.statusCode, 400,
@@ -56,7 +56,7 @@
             (unsigned long)i, expectedMessages[i], response.jsonBody[@"message"]);
     }
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
                                                     body:@{@"serviceDid": @"did:web:push.example.com",
                                                            @"token": @"tok",
                                                            @"platform": @"android",
@@ -78,7 +78,7 @@
 
 - (void)testRegisterPushSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
                                                     body:@{
                                                         @"serviceDid": @"did:web:push.example.com",
                                                         @"token": @"apns-token-xyz",
@@ -95,7 +95,7 @@
 #pragma mark - unregisterPush
 
 - (void)testUnregisterPushRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.unregisterPush"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.unregisterPush"
                                                     body:@{
                                                         @"serviceDid": @"did:web:push.example.com",
                                                         @"token": @"apns-token-xyz",
@@ -119,7 +119,7 @@
     NSArray *expectedMessages = @[@"serviceDid", @"token", @"platform", @"appId"];
 
     for (NSUInteger i = 0; i < invalidBodies.count; i++) {
-        HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.unregisterPush"
+        ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.unregisterPush"
                                                         body:invalidBodies[i]
                                                      headers:@{@"authorization": authHeader}];
         XCTAssertEqual(response.statusCode, 400,
@@ -135,7 +135,7 @@
 - (void)testUnregisterPushSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
-    HttpResponse *reg = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
+    ATProtoHttpResponse *reg = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.registerPush"
                                                  body:@{
                                                      @"serviceDid": @"did:web:push.example.com",
                                                      @"token": @"tok-to-unreg",
@@ -145,7 +145,7 @@
                                               headers:@{@"authorization": authHeader}];
     XCTAssertEqual(reg.statusCode, 200);
 
-    HttpResponse *unreg = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.unregisterPush"
+    ATProtoHttpResponse *unreg = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.unregisterPush"
                                                  body:@{
                                                      @"serviceDid": @"did:web:push.example.com",
                                                      @"token": @"tok-to-unreg",
@@ -162,7 +162,7 @@
 #pragma mark - putPreferencesV2
 
 - (void)testPutPreferencesV2RequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
                                                     body:@{@"follow": @{@"include": @"all", @"list": @NO, @"push": @YES}}
                                                  headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -170,7 +170,7 @@
 
 - (void)testPutPreferencesV2EmptyBody {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
                                                     body:@{}
                                                  headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400,
@@ -183,7 +183,7 @@
 
 - (void)testPutPreferencesV2SuccessPersists {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
                                                     body:@{
                                                         @"follow": @{@"include": @"all", @"list": @NO, @"push": @YES},
                                                         @"like": @{@"include": @"follows", @"list": @YES, @"push": @NO}
@@ -230,7 +230,7 @@
 #pragma mark - putActivitySubscription
 
 - (void)testPutActivitySubscriptionRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putActivitySubscription"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putActivitySubscription"
                                                     body:@{
                                                         @"subject": self.did2,
                                                         @"activitySubscription": @{@"post": @YES, @"reply": @NO}
@@ -242,7 +242,7 @@
 - (void)testPutActivitySubscriptionValidationErrors {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putActivitySubscription"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putActivitySubscription"
                                                     body:@{
                                                         @"activitySubscription": @{@"post": @YES, @"reply": @NO}
                                                     }
@@ -267,7 +267,7 @@
 - (void)testPutActivitySubscriptionUpsert {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putActivitySubscription"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putActivitySubscription"
                                                     body:@{
                                                         @"subject": self.did2,
                                                         @"activitySubscription": @{@"post": @YES, @"reply": @NO}
@@ -305,7 +305,7 @@
 #pragma mark - listActivitySubscriptions
 
 - (void)testListActivitySubscriptionsRequiresAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.listActivitySubscriptions"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.listActivitySubscriptions"
                                                 headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
@@ -315,7 +315,7 @@
 
     NSArray *subjects = @[self.did2, @"did:plc:sub3", @"did:plc:sub4"];
     for (id subject in subjects) {
-        HttpResponse *put = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putActivitySubscription"
+        ATProtoHttpResponse *put = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putActivitySubscription"
                                                     body:@{
                                                         @"subject": subject,
                                                         @"activitySubscription": @{@"post": @YES, @"reply": @YES}
@@ -324,7 +324,7 @@
         XCTAssertEqual(put.statusCode, 200, @"Setup: put for %@ failed: %@", subject, put.jsonBody);
     }
 
-    HttpResponse *page1 = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.listActivitySubscriptions"
+    ATProtoHttpResponse *page1 = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.listActivitySubscriptions"
                                           queryParams:@{@"limit": @"2"}
                                                headers:@{@"authorization": authHeader}];
     XCTAssertEqual(page1.statusCode, 200,
@@ -341,7 +341,7 @@
     }
 
     NSString *cursor = page1.jsonBody[@"cursor"];
-    HttpResponse *page2 = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.listActivitySubscriptions"
+    ATProtoHttpResponse *page2 = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.listActivitySubscriptions"
                                           queryParams:@{@"cursor": cursor}
                                                headers:@{@"authorization": authHeader}];
     XCTAssertEqual(page2.statusCode, 200,
@@ -357,7 +357,7 @@
 
 - (void)testUploadVideoRequiresAuth {
     NSData *mp4Data = [self mp4FixtureDataWithSize:1024 * 1024];
-    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
+    ATProtoHttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
                                                    bodyData:mp4Data
                                                     headers:@{
                                                         @"content-type": @"video/mp4",
@@ -369,7 +369,7 @@
 
 - (void)testUploadVideoEmptyBody {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
+    ATProtoHttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
                                                    bodyData:[NSData data]
                                                     headers:@{
                                                         @"content-type": @"video/mp4",
@@ -386,7 +386,7 @@
 - (void)testUploadVideoSuccessShape {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     NSData *mp4Data = [self mp4FixtureDataWithSize:1024 * 1024];
-    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
+    ATProtoHttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
                                                    bodyData:mp4Data
                                                     headers:@{
                                                         @"content-type": @"video/mp4",

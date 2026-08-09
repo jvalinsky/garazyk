@@ -234,7 +234,7 @@
         }
     }
 
-    // Serialize DB write + MST update to prevent concurrent repo mutation races
+    // Serialize DB write + ATProtoMST update to prevent concurrent repo mutation races
     __block BOOL success = NO;
     __block NSString *newRootCID = nil;
     __block NSString *newRev = nil;
@@ -369,7 +369,7 @@
                                       ? existingRecord.cid
                                       : nil;
 
-    // Serialize DB write + MST update to prevent concurrent repo mutation races
+    // Serialize DB write + ATProtoMST update to prevent concurrent repo mutation races
     __block BOOL success = YES;
     __block NSString *newRootCID = nil;
     __block NSString *newRev = nil;

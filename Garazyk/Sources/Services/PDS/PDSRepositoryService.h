@@ -5,9 +5,9 @@
  *
  * @abstract Repository management service layer.
  *
- * @discussion Provides high-level repository operations including MST loading,
+ * @discussion Provides high-level repository operations including ATProtoMST loading,
  * updates, commit processing, and repo synchronization. Coordinates between
- * database pool and MST persistence layer.
+ * database pool and ATProtoMST persistence layer.
  *
  * @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -24,7 +24,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 @class PDSDatabasePool;
 @class PDSActorStore;
 
-@class MST;
+@class ATProtoMST;
 @class ATProtoCID;
 
 /**
@@ -38,11 +38,11 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  * @abstract Service for ATProto repository operations.
  *
  * @discussion PDSRepositoryService manages user repositories, providing access
- * to Merkle Search Trees (MST) and commit processing. Repositories are stored
+ * to Merkle Search Trees (ATProtoMST) and commit processing. Repositories are stored
  * per-DID with content-addressed blocks.
  *
  * Responsibilities:
- * - Load and persist MST structures
+ * - Load and persist ATProtoMST structures
  * - Update repository records by key
  * - Generate and apply repository commits
  * - Retrieve repository contents and roots
@@ -79,13 +79,13 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 
 /**
  * @abstract Loads the Merkle Search Tree for a repository DID.
- * @discussion Loads the current MST structure from the repository database.
- * The MST provides content-addressed record storage with cryptographic integrity.
+ * @discussion Loads the current ATProtoMST structure from the repository database.
+ * The ATProtoMST provides content-addressed record storage with cryptographic integrity.
  * @param did Decentralized identifier of repository owner.
  * @param error Error pointer for loading failures.
- * @return MST instance or nil if repository doesn't exist or loading fails.
+ * @return ATProtoMST instance or nil if repository doesn't exist or loading fails.
  */
-- (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error;
+- (nullable ATProtoMST *)loadMSTForDid:(NSString *)did error:(NSError **)error;
 
 /**
  * @abstract Loads the Merkle Search Tree for a repository DID, reusing an already-open actor store.
@@ -96,13 +96,13 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  * @param did Decentralized identifier of repository owner.
  * @param store Already-open actor store for the same DID.
  * @param error Error pointer for loading failures.
- * @return MST instance or nil if loading fails.
+ * @return ATProtoMST instance or nil if loading fails.
  */
-- (nullable MST *)loadMSTForDid:(NSString *)did store:(PDSActorStore *)store error:(NSError **)error;
+- (nullable ATProtoMST *)loadMSTForDid:(NSString *)did store:(PDSActorStore *)store error:(NSError **)error;
 
 /**
- * @abstract Updates or deletes a key in a repository MST.
- * @discussion Updates or deletes a key-value entry in the MST. Passing nil
+ * @abstract Updates or deletes a key in a repository ATProtoMST.
+ * @discussion Updates or deletes a key-value entry in the ATProtoMST. Passing nil
  * for cid deletes the key. Changes are persisted to the repository database.
  * @param did Decentralized identifier of repository owner.
  * @param key Record key (e.g., "app.bsky.feed.post/123").
@@ -115,7 +115,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 /**
  * @abstract Returns the repository root data for a DID.
  * @discussion Returns the ATProtoCID of the repository's current commit, which
- * references the MST root. Used for sync and verification.
+ * references the ATProtoMST root. Used for sync and verification.
  * @param did Decentralized identifier of repository owner.
  * @param error Error pointer for retrieval failures.
  * @return CAR-encoded commit root data, or nil if not found.
@@ -161,7 +161,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 /**
  * @abstract Exports repository contents as STAR-L0 data.
  * @discussion Returns STAR-L0 encoded repository data. STAR-L0 preserves the
- * MST structure and enables streaming verification with reduced archive size
+ * ATProtoMST structure and enables streaming verification with reduced archive size
  * (~80% fewer CIDs than CAR).
  * @param did Decentralized identifier of repository owner.
  * @param sinceRev Previous commit revision for incremental sync, or nil for full export.
@@ -175,7 +175,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 /**
  * @abstract Exports repository contents as STAR-lite data.
  * @discussion Returns STAR-lite encoded repository data. STAR-lite is a flat
- * key-record encoding with no MST structure, providing the best compression
+ * key-record encoding with no ATProtoMST structure, providing the best compression
  * ratio.
  * @param did Decentralized identifier of repository owner.
  * @param sinceRev Previous commit revision for incremental sync, or nil for full export.
@@ -215,7 +215,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 /**
  * @abstract Creates a chunk producer for collection-filtered CAR repository contents.
  * @discussion The returned CAR contains only records matching the specified collections.
- * Includes the commit block, MST proof nodes for matching keys, and the record blocks.
+ * Includes the commit block, ATProtoMST proof nodes for matching keys, and the record blocks.
  * A consumer can verify the commit signature and reconstruct just the requested subtree.
  * @param did Decentralized identifier of repository owner.
  * @param sinceRev Previous commit revision for incremental sync, or nil for full export.
@@ -233,7 +233,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  * @discussion Processes a CAR-encoded commit, validates signature and structure,
  * and applies changes to the repository database. Used for repo synchronization.
  * @param did Decentralized identifier of repository owner.
- * @param commitData CAR-encoded commit containing MST root and signature.
+ * @param commitData CAR-encoded commit containing ATProtoMST root and signature.
  * @param error Error pointer for commit failures.
  * @return YES if commit applied successfully, NO on validation or application failure.
  */
@@ -251,7 +251,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 /**
  * @abstract Gets the latest commit ATProtoCID and revision from stored head commit metadata.
  * @discussion Lightweight lookup: reads the stored signed head commit ATProtoCID and rev
- * from the repo_root table without loading all records, rebuilding the MST, or
+ * from the repo_root table without loading all records, rebuilding the ATProtoMST, or
  * signing a new commit. Returns nil when no signed head commit exists, which is
  * distinct from getLatestCommitForDid's self-healing fallback.
  *

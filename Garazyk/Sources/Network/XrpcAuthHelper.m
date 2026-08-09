@@ -83,7 +83,7 @@ static BOOL XrpcAuthIsTrustedProxyRemoteAddress(NSString *remoteAddress) {
     return NO;
 }
 
-static BOOL XrpcAuthShouldTrustForwardedHeaders(HttpRequest *request) {
+static BOOL XrpcAuthShouldTrustForwardedHeaders(ATProtoHttpRequest *request) {
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
     if (!XrpcAuthEnvBool(env[@"PDS_TRUST_PROXY_HEADERS"])) {
         return NO;
@@ -100,7 +100,7 @@ static NSString *XrpcAuthSanitizedErrorSummary(NSError *error) {
                                       (long)error.code];
 }
 
-static void XrpcAuthAttachDPoPNonceToResponseIfMissing(HttpResponse *response) {
+static void XrpcAuthAttachDPoPNonceToResponseIfMissing(ATProtoHttpResponse *response) {
     if (!response) {
         return;
     }
@@ -114,7 +114,7 @@ static void XrpcAuthAttachDPoPNonceToResponseIfMissing(HttpResponse *response) {
     }
 }
 
-static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jwtMinter) {
+static NSURL *XrpcAuthExpectedDPoPURL(ATProtoHttpRequest *request, ATProtoJWTMinter *jwtMinter) {
     NSString *hostHeader = [[request headerForKey:@"Host"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSString *hostLower = [hostHeader lowercaseString];
     BOOL localHostHeader = [hostLower containsString:@"localhost"] ||
@@ -180,7 +180,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jw
 
 #pragma mark - Private Helpers
 
-+ (void)setAuthRequiredResponse:(HttpResponse *)response {
++ (void)setAuthRequiredResponse:(ATProtoHttpResponse *)response {
     if (response && response.statusCode == HttpStatusOK) {
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{
@@ -195,7 +195,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jw
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                              jwtMinter:(ATProtoJWTMinter *)jwtMinter
                        adminController:(id<PDSAdminController>)adminController
-                               request:(HttpRequest *)request {
+                               request:(ATProtoHttpRequest *)request {
     return [self extractDIDFromAuthHeader:authHeader
                                jwtMinter:jwtMinter
                          adminController:adminController
@@ -206,8 +206,8 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jw
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                              jwtMinter:(ATProtoJWTMinter *)jwtMinter
                        adminController:(nullable id<PDSAdminController>)adminController
-                               request:(HttpRequest *)request
-                              response:(nullable HttpResponse *)response {
+                               request:(ATProtoHttpRequest *)request
+                              response:(nullable ATProtoHttpResponse *)response {
     return [self extractDIDFromAuthHeader:authHeader
                                jwtMinter:jwtMinter
                          adminController:adminController
@@ -220,8 +220,8 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jw
                              jwtMinter:(ATProtoJWTMinter *)jwtMinter
                        adminController:(nullable id<PDSAdminController>)adminController
                      sessionRepository:(nullable id<PDSSessionRepository>)sessionRepository
-                               request:(HttpRequest *)request
-                              response:(nullable HttpResponse *)response {
+                               request:(ATProtoHttpRequest *)request
+                              response:(nullable ATProtoHttpResponse *)response {
 
     if (!authHeader) {
         [self setAuthRequiredResponse:response];
@@ -413,8 +413,8 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jw
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                             controller:(PDSController *)controller
-                               request:(HttpRequest *)request
-                              response:(HttpResponse *)response {
+                               request:(ATProtoHttpRequest *)request
+                              response:(ATProtoHttpResponse *)response {
     // When the ATProtoAuthVerifier switch is on, delegate to the application-owned verifier.
     if (XrpcAuthUseAuthVerifier()) {
         ATProtoAuthVerifier *verifier = controller.application.authVerifier;
@@ -454,8 +454,8 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jw
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                               services:(id<XrpcRoutePackServices>)services
-                               request:(HttpRequest *)request
-                              response:(nullable HttpResponse *)response {
+                               request:(ATProtoHttpRequest *)request
+                              response:(nullable ATProtoHttpResponse *)response {
     // When the ATProtoAuthVerifier switch is on, delegate to the registry-injected verifier.
     if (XrpcAuthUseAuthVerifier()) {
         ATProtoAuthVerifier *verifier = services.authVerifier;
@@ -492,8 +492,8 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, ATProtoJWTMinter *jw
                                 response:response];
 }
 
-+ (BOOL)authorizeAdminRequest:(HttpRequest *)request
-                      response:(HttpResponse *)response
++ (BOOL)authorizeAdminRequest:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController {

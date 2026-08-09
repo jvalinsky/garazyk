@@ -20,7 +20,7 @@
                         adminSecret:(NSString *)adminSecret
                   serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                   userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                        rateLimiter:(RateLimiter *)rateLimiter {
+                        rateLimiter:(ATProtoRateLimiter *)rateLimiter {
   self = [super init];
   if (self) {
     _dispatcher = dispatcher;

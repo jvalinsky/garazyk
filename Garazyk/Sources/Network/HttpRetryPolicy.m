@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpRetryPolicy.m
+ @file ATProtoHttpRetryPolicy.m
 
  @abstract Implements retry eligibility and backoff decisions for network operations.
 
@@ -11,7 +11,7 @@
 #import "Network/HttpRetryPolicy.h"
 #import <math.h>
 
-@implementation HttpRetryResult
+@implementation ATProtoHttpRetryResult
 
 - (instancetype)initWithDecision:(HttpRetryDecision)decision delay:(NSTimeInterval)delay {
     self = [super init];
@@ -24,7 +24,7 @@
 
 @end
 
-@implementation HttpRetryPolicy
+@implementation ATProtoHttpRetryPolicy
 
 - (instancetype)init {
     self = [super init];
@@ -36,7 +36,7 @@
     return self;
 }
 
-- (HttpRetryResult *)evaluateStatusCode:(NSInteger)statusCode
+- (ATProtoHttpRetryResult *)evaluateStatusCode:(NSInteger)statusCode
                            networkError:(nullable NSError *)error
                           attemptNumber:(NSInteger)attempt {
     // Determine if it's a transient failure
@@ -45,18 +45,18 @@
     if (isTransientFailure) {
         if (attempt < self.maxRetries) {
             NSTimeInterval delay = self.initialDelay * pow(self.backoffMultiplier, attempt);
-            return [[HttpRetryResult alloc] initWithDecision:HttpRetryDecisionRetryAfter delay:delay];
+            return [[ATProtoHttpRetryResult alloc] initWithDecision:HttpRetryDecisionRetryAfter delay:delay];
         } else {
-            return [[HttpRetryResult alloc] initWithDecision:HttpRetryDecisionFail delay:0.0];
+            return [[ATProtoHttpRetryResult alloc] initWithDecision:HttpRetryDecisionFail delay:0.0];
         }
     }
 
     if (statusCode >= 200 && statusCode < 300) {
-        return [[HttpRetryResult alloc] initWithDecision:HttpRetryDecisionSucceed delay:0.0];
+        return [[ATProtoHttpRetryResult alloc] initWithDecision:HttpRetryDecisionSucceed delay:0.0];
     }
 
     // Any other status code (like 4xx or 3xx) fails immediately (not retryable)
-    return [[HttpRetryResult alloc] initWithDecision:HttpRetryDecisionFail delay:0.0];
+    return [[ATProtoHttpRetryResult alloc] initWithDecision:HttpRetryDecisionFail delay:0.0];
 }
 
 @end

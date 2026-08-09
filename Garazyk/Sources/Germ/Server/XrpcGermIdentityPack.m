@@ -29,7 +29,7 @@
 - (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher {
     // com.germnetwork.identity.getAnchorKey
     [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_identity_getAnchorKey
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetAnchorKey:request response:response];
     }];
 
@@ -38,8 +38,8 @@
 
 #pragma mark - Authentication
 
-- (nullable NSString *)authenticateRequest:(HttpRequest *)request
-                                  response:(HttpResponse *)response {
+- (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
+                                  response:(ATProtoHttpResponse *)response {
     NSString *did = [self.authManager authenticateRequest:request response:response];
     if (!did) {
         return nil;
@@ -49,7 +49,7 @@
 
 #pragma mark - com.germnetwork.identity.getAnchorKey
 
-- (void)handleGetAnchorKey:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleGetAnchorKey:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *did = [self authenticateRequest:request response:response];
     if (!did) return;
 

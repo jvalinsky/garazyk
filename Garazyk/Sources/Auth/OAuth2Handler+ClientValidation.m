@@ -245,7 +245,7 @@
 }
 
 #pragma mark - OAuth Error Response
-- (void)setOAuthErrorResponse:(HttpResponse *)response
+- (void)setOAuthErrorResponse:(ATProtoHttpResponse *)response
                        status:(NSInteger)status
                         error:(NSString *)errorCode
              errorDescription:(NSString *)errorDescription {

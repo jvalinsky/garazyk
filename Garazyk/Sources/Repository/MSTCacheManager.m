@@ -9,18 +9,18 @@
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
-@interface MSTCacheManager ()
-@property (nonatomic, strong) NSMutableDictionary<NSString *, MSTAtomicReference *> *cache;
+@interface ATProtoMSTCacheManager ()
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoMSTAtomicReference *> *cache;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @end
 
-@implementation MSTCacheManager
+@implementation ATProtoMSTCacheManager
 
 + (instancetype)sharedManager {
-    static MSTCacheManager *shared = nil;
+    static ATProtoMSTCacheManager *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[MSTCacheManager alloc] init];
+        shared = [[ATProtoMSTCacheManager alloc] init];
     });
     return shared;
 }
@@ -36,27 +36,27 @@
     return self;
 }
 
-- (nullable MST *)mstForDid:(NSString *)did {
+- (nullable ATProtoMST *)mstForDid:(NSString *)did {
     // Fast path: concurrent read from dictionary, then atomic snapshot read
-    __block MSTAtomicReference *ref = nil;
+    __block ATProtoMSTAtomicReference *ref = nil;
     dispatch_sync(self.queue, ^{
         ref = self.cache[did];
     });
     // The atomic reference provides thread-safe snapshot access via pthread_mutex
-    // No need to hold the queue while reading the MST
+    // No need to hold the queue while reading the ATProtoMST
     return [ref currentSnapshot];
 }
 
-- (void)setMST:(MST *)mst forDid:(NSString *)did {
+- (void)setMST:(ATProtoMST *)mst forDid:(NSString *)did {
     // Barrier write: exclusive access while updating the cache dictionary
     dispatch_barrier_sync(self.queue, ^{
-        MSTAtomicReference *ref = self.cache[did];
+        ATProtoMSTAtomicReference *ref = self.cache[did];
         if (ref) {
             // Atomic swap — readers always see a consistent snapshot
             [ref swapMST:mst];
         } else {
             // Create new reference and store
-            ref = [[MSTAtomicReference alloc] initWithMST:mst];
+            ref = [[ATProtoMSTAtomicReference alloc] initWithMST:mst];
             self.cache[did] = ref;
         }
     });
@@ -65,9 +65,9 @@
 - (void)removeMSTForDid:(NSString *)did {
     // Barrier write: exclusive access while removing from cache
     dispatch_barrier_sync(self.queue, ^{
-        MSTAtomicReference *ref = self.cache[did];
+        ATProtoMSTAtomicReference *ref = self.cache[did];
         if (ref) {
-            [ref clear];  // Release the MST
+            [ref clear];  // Release the ATProtoMST
             [self.cache removeObjectForKey:did];
         }
     });
@@ -76,16 +76,16 @@
 - (void)removeAllMSTs {
     // Barrier write: exclusive access while clearing cache
     dispatch_barrier_sync(self.queue, ^{
-        for (MSTAtomicReference *ref in self.cache.allValues) {
+        for (ATProtoMSTAtomicReference *ref in self.cache.allValues) {
             [ref clear];
         }
         [self.cache removeAllObjects];
     });
 }
 
-#pragma mark - Incremental MST Loading
+#pragma mark - Incremental ATProtoMST Loading
 
-+ (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
++ (nullable ATProtoMST *)loadMSTFromRepoBlocksForDid:(NSString *)did
                                         store:(PDSActorStore *)store
                                         error:(NSError **)error {
     // 1. Read the current repo root ATProtoCID
@@ -101,7 +101,7 @@
         return nil;
     }
 
-    // 2. Read the commit block to get the data ATProtoCID (MST root)
+    // 2. Read the commit block to get the data ATProtoCID (ATProtoMST root)
     NSData *commitBlockData = [store getBlockForCID:rootCID.bytes forDid:did error:nil];
     if (!commitBlockData) {
         GZ_LOG_INFO(@"MSTCacheManager: no commit block for %@, falling back", did);
@@ -135,15 +135,15 @@
         return nil;
     }
 
-    // 4. Read the MST root block
+    // 4. Read the ATProtoMST root block
     NSData *mstBlockData = [store getBlockForCID:dataCID.bytes forDid:did error:nil];
     if (!mstBlockData) {
         GZ_LOG_INFO(@"MSTCacheManager: no MST root block for %@, falling back", did);
         return nil;
     }
 
-    // 5. Deserialize the MST from CBOR
-    MST *mst = [MST deserializeFromCBOR:mstBlockData];
+    // 5. Deserialize the ATProtoMST from CBOR
+    ATProtoMST *mst = [ATProtoMST deserializeFromCBOR:mstBlockData];
     if (!mst) {
         GZ_LOG_ERROR(@"MSTCacheManager: CBOR deserialization failed for %@, falling back", did);
         return nil;

@@ -60,14 +60,14 @@
 
 - (nullable NSString *)commitRevFromCARData:(NSData *)carData {
     NSError *carError = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&carError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&carError];
     XCTAssertNil(carError);
     XCTAssertNotNil(reader);
     if (!reader) {
         return nil;
     }
 
-    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
     XCTAssertNotNil(commitBlock);
     if (!commitBlock) {
         return nil;
@@ -88,14 +88,14 @@
 
 - (nullable ATProtoCID *)commitDataCIDFromCARData:(NSData *)carData {
     NSError *carError = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&carError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&carError];
     XCTAssertNil(carError);
     XCTAssertNotNil(reader);
     if (!reader) {
         return nil;
     }
 
-    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
     XCTAssertNotNil(commitBlock);
     if (!commitBlock) {
         return nil;
@@ -137,14 +137,14 @@
 
 - (BOOL)carData:(NSData *)carData containsBlockWithCIDString:(NSString *)cidString {
     NSError *parseError = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&parseError];
     XCTAssertNil(parseError);
     XCTAssertNotNil(reader);
     if (!reader) {
         return NO;
     }
 
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         if ([block.cid.stringValue isEqualToString:cidString]) {
             return YES;
         }
@@ -176,7 +176,7 @@
     XCTAssertTrue(carData.length > 0);
 
     NSError *carError = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&carError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&carError];
     XCTAssertNotNil(reader);
     XCTAssertNil(carError);
     XCTAssertNotNil(reader.rootCID);
@@ -205,7 +205,7 @@
     XCTAssertNil(deltaError);
 
     NSError *parseError = nil;
-    CARReader *reader = [CARReader readFromData:deltaCAR error:&parseError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:deltaCAR error:&parseError];
     XCTAssertNotNil(reader);
     XCTAssertNil(parseError);
     XCTAssertEqual(reader.blocks.count, 0U);
@@ -244,7 +244,7 @@
     XCTAssertNil(deltaError);
 
     NSError *parseError = nil;
-    CARReader *reader = [CARReader readFromData:deltaCAR error:&parseError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:deltaCAR error:&parseError];
     XCTAssertNotNil(reader);
     XCTAssertNil(parseError);
     XCTAssertTrue(reader.blocks.count > 0);
@@ -268,12 +268,12 @@
     XCTAssertNotNil(unknownSinceCAR);
 
     NSError *fullParseError = nil;
-    CARReader *fullReader = [CARReader readFromData:fullCAR error:&fullParseError];
+    ATProtoCARReader *fullReader = [ATProtoCARReader readFromData:fullCAR error:&fullParseError];
     XCTAssertNil(fullParseError);
     XCTAssertNotNil(fullReader);
 
     NSError *unknownParseError = nil;
-    CARReader *unknownReader = [CARReader readFromData:unknownSinceCAR error:&unknownParseError];
+    ATProtoCARReader *unknownReader = [ATProtoCARReader readFromData:unknownSinceCAR error:&unknownParseError];
     XCTAssertNil(unknownParseError);
     XCTAssertNotNil(unknownReader);
 
@@ -346,7 +346,7 @@
     XCTAssertNotNil(dataCID);
 
     NSError *parseError = nil;
-    CARReader *reader = [CARReader readFromData:deltaCAR error:&parseError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:deltaCAR error:&parseError];
     XCTAssertNil(parseError);
     XCTAssertNotNil(reader);
     XCTAssertNotNil([reader blockWithCID:dataCID]);
@@ -383,12 +383,12 @@
     XCTAssertNotNil(fullAfterCAR);
 
     NSError *deltaParseError = nil;
-    CARReader *deltaReader = [CARReader readFromData:deltaCAR error:&deltaParseError];
+    ATProtoCARReader *deltaReader = [ATProtoCARReader readFromData:deltaCAR error:&deltaParseError];
     XCTAssertNil(deltaParseError);
     XCTAssertNotNil(deltaReader);
 
     NSError *fullParseError = nil;
-    CARReader *fullReader = [CARReader readFromData:fullAfterCAR error:&fullParseError];
+    ATProtoCARReader *fullReader = [ATProtoCARReader readFromData:fullAfterCAR error:&fullParseError];
     XCTAssertNil(fullParseError);
     XCTAssertNotNil(fullReader);
 
@@ -424,7 +424,7 @@
     XCTAssertFalse([self carData:deltaCAR containsBlockWithCIDString:deletedCID]);
 
     NSError *deltaParseError = nil;
-    CARReader *deltaReader = [CARReader readFromData:deltaCAR error:&deltaParseError];
+    ATProtoCARReader *deltaReader = [ATProtoCARReader readFromData:deltaCAR error:&deltaParseError];
     XCTAssertNil(deltaParseError);
     XCTAssertNotNil(deltaReader);
     XCTAssertGreaterThan(deltaReader.blocks.count, 0U);
@@ -453,7 +453,7 @@
     XCTAssertNil(deltaError);
 
     NSError *parseError = nil;
-    CARReader *reader = [CARReader readFromData:deltaCAR error:&parseError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:deltaCAR error:&parseError];
     XCTAssertNotNil(reader);
     XCTAssertNil(parseError);
     XCTAssertEqual(reader.blocks.count, 0U);
@@ -484,7 +484,7 @@
     XCTAssertNil(deltaError);
 
     NSError *parseError = nil;
-    CARReader *reader = [CARReader readFromData:deltaCAR error:&parseError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:deltaCAR error:&parseError];
     XCTAssertNotNil(reader);
     XCTAssertNil(parseError);
     XCTAssertEqual(reader.blocks.count, 0U);
@@ -509,7 +509,7 @@
     XCTAssertNil(fullWriteError);
 
     NSError *fullReadError = nil;
-    CARReader *fullReader = [CARReader readFromPath:fullPath error:&fullReadError];
+    ATProtoCARReader *fullReader = [ATProtoCARReader readFromPath:fullPath error:&fullReadError];
     XCTAssertNotNil(fullReader);
     XCTAssertNil(fullReadError);
     XCTAssertNotNil(fullReader.rootCID);
@@ -528,14 +528,14 @@
     XCTAssertNil(deltaWriteError);
 
     NSError *deltaReadError = nil;
-    CARReader *deltaReader = [CARReader readFromPath:deltaPath error:&deltaReadError];
+    ATProtoCARReader *deltaReader = [ATProtoCARReader readFromPath:deltaPath error:&deltaReadError];
     XCTAssertNotNil(deltaReader);
     XCTAssertNil(deltaReadError);
     XCTAssertEqual(deltaReader.blocks.count, 0U);
     XCTAssertNotNil(deltaReader.rootCID);
 }
 
-#pragma mark - MST Operations
+#pragma mark - ATProtoMST Operations
 
 - (void)testLoadMSTForDidReturnsMSTAfterWrite {
     BOOL writeOK = [self.recordService putRecord:@"app.bsky.feed.post"
@@ -547,15 +547,15 @@
     XCTAssertTrue(writeOK);
 
     NSError *mstError = nil;
-    MST *mst = [self.repositoryService loadMSTForDid:self.testDID error:&mstError];
+    ATProtoMST *mst = [self.repositoryService loadMSTForDid:self.testDID error:&mstError];
     XCTAssertNotNil(mst);
     XCTAssertNil(mstError);
 }
 
 - (void)testLoadMSTForNonexistentDidReturnsEmptyMST {
     NSError *mstError = nil;
-    MST *mst = [self.repositoryService loadMSTForDid:@"did:web:nonexistent.example.com" error:&mstError];
-    // loadMST returns an empty MST for nonexistent repos, not nil
+    ATProtoMST *mst = [self.repositoryService loadMSTForDid:@"did:web:nonexistent.example.com" error:&mstError];
+    // loadMST returns an empty ATProtoMST for nonexistent repos, not nil
     XCTAssertNotNil(mst);
     XCTAssertEqual([mst allEntries].count, 0U);
 }
@@ -570,10 +570,10 @@
     XCTAssertTrue(writeOK);
 
     NSError *mstError = nil;
-    MST *mst = [self.repositoryService loadMSTForDid:self.testDID error:&mstError];
+    ATProtoMST *mst = [self.repositoryService loadMSTForDid:self.testDID error:&mstError];
     XCTAssertNotNil(mst);
 
-    // The MST should have at least one entry
+    // The ATProtoMST should have at least one entry
     NSArray *entries = [mst allEntries];
     XCTAssertGreaterThan(entries.count, 0U);
 }
@@ -905,7 +905,7 @@
     }
 
     NSError *parseError = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&parseError];
     XCTAssertNotNil(reader);
     XCTAssertNil(parseError);
     XCTAssertNotNil(reader.rootCID, @"a commit root must still be produced with no matching records");
@@ -974,9 +974,9 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
 }
 
 /// Helper: parse CAR data and return the reader for structural assertions.
-- (nullable CARReader *)parseCARData:(NSData *)carData label:(NSString *)label {
+- (nullable ATProtoCARReader *)parseCARData:(NSData *)carData label:(NSString *)label {
     NSError *parseError = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&parseError];
     XCTAssertNil(parseError, @"%@: CAR parse error: %@", label, parseError);
     XCTAssertNotNil(reader, @"%@: CAR reader is nil", label);
     return reader;
@@ -994,19 +994,19 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
     XCTAssertTrue(carData.length > 0, @"Golden CAR should not be empty");
 
     // Parse and assert structure
-    CARReader *reader = [self parseCARData:carData label:@"Golden CAR"];
+    ATProtoCARReader *reader = [self parseCARData:carData label:@"Golden CAR"];
     if (!reader) return;
 
     // Root ATProtoCID must be set
     XCTAssertNotNil(reader.rootCID, @"Golden CAR must have a root CID");
     XCTAssertTrue(reader.rootCID.stringValue.length > 0, @"Root CID must be non-empty");
 
-    // Must contain at least: commit block + 3 record blocks + MST nodes
+    // Must contain at least: commit block + 3 record blocks + ATProtoMST nodes
     XCTAssertTrue(reader.blocks.count >= 4, @"Golden CAR should have >=4 blocks (commit + 3 records + MST), got %lu",
                   (unsigned long)reader.blocks.count);
 
     // The commit block must be present
-    CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+    ATProtoCARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
     XCTAssertNotNil(commitBlock, @"Commit block must be present");
     XCTAssertTrue(commitBlock.data.length > 0, @"Commit block must have data");
 
@@ -1039,23 +1039,23 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
     XCTAssertTrue(sigVal.byteString.length > 0, @"Commit sig must be non-empty");
 
     // ATProtoCID determinism: with a fixed signing key and fixed record timestamps,
-    // the commit data ATProtoCID (MST root) and record CIDs are deterministic.
+    // the commit data ATProtoCID (ATProtoMST root) and record CIDs are deterministic.
     // Two exports of the same repo must produce identical CIDs.
     ATProtoCID *commitDataCID = [self commitDataCIDFromCARData:carData];
     XCTAssertNotNil(commitDataCID, @"Commit must have a data CID");
     XCTAssertTrue(commitDataCID.stringValue.length > 0, @"MST root CID must be non-empty");
 
     // Every block must have a valid ATProtoCID matching its data
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         ATProtoCID *expectedCID = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block.data] codec:0x71]; // dag-cbor codec
         XCTAssertTrue([block.cid isEqual:expectedCID] ||
                       [block.cid.stringValue isEqualToString:expectedCID.stringValue],
                       @"Block CID mismatch: %@ != %@", block.cid.stringValue, expectedCID.stringValue);
     }
 
-    // Non-commit block count: 3 records + MST nodes (at least 1 root node)
+    // Non-commit block count: 3 records + ATProtoMST nodes (at least 1 root node)
     NSUInteger nonCommitCount = 0;
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         if (![block.cid isEqual:reader.rootCID]) {
             nonCommitCount++;
         }
@@ -1104,8 +1104,8 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
                           @"Chunk-producer CAR must match direct export byte-for-byte");
 
     // Verify both exports parse identically
-    CARReader *reader1 = [self parseCARData:firstCAR label:@"first export"];
-    CARReader *reader2 = [self parseCARData:secondCAR label:@"second export"];
+    ATProtoCARReader *reader1 = [self parseCARData:firstCAR label:@"first export"];
+    ATProtoCARReader *reader2 = [self parseCARData:secondCAR label:@"second export"];
     if (reader1 && reader2) {
         XCTAssertEqualObjects(reader1.rootCID.stringValue, reader2.rootCID.stringValue,
                               @"Root CID must match across exports");
@@ -1131,7 +1131,7 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
         XCTAssertEqual(firstByte, 0x2A, @"STAR-L0 must start with 0x2A magic byte");
     }
 
-    // STAR-L0 should be smaller than equivalent CAR (STAR deduplicates MST nodes)
+    // STAR-L0 should be smaller than equivalent CAR (STAR deduplicates ATProtoMST nodes)
     NSData *carData = [self.repositoryService getRepoContents:goldenDID since:nil error:nil];
     if (carData.length > 0) {
         XCTAssertLessThanOrEqual(starData.length, carData.length,
@@ -1221,7 +1221,7 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
             XCTAssertNil(exportError);
 
             // Verify the CAR is valid (parse inside @autoreleasepool)
-            CARReader *reader = [CARReader readFromData:carData error:nil];
+            ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:nil];
             XCTAssertNotNil(reader, @"CAR must be parseable");
             XCTAssertTrue(reader.blocks.count >= 50,
                           @"Should have at least 50 record blocks (got %lu)",
@@ -1273,7 +1273,7 @@ static NSData * _Nonnull PDSTestFixedSigningKey(void) {
                       (unsigned long)carSizeMB, (unsigned long)carData.length);
 
     // Verify the CAR is valid
-    CARReader *reader = [CARReader readFromData:carData error:nil];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:nil];
     XCTAssertNotNil(reader);
     XCTAssertTrue(reader.blocks.count >= 50);
 }

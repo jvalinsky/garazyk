@@ -17,23 +17,23 @@
 @end
 
 @interface PLCReplicaServer (TestAccess)
-- (void)handleGetHealth:(HttpRequest *)req response:(HttpResponse *)resp;
+- (void)handleGetHealth:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
 @end
 
 @interface PLCServer (ReplicaTestAccess)
-- (void)handleGetDID:(HttpRequest *)req response:(HttpResponse *)resp;
-- (void)handleGetData:(HttpRequest *)req response:(HttpResponse *)resp;
+- (void)handleGetDID:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
+- (void)handleGetData:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
 @end
 
 @implementation PLCReplicaServerTests
 
-- (HttpRequest *)requestWithMethod:(HttpMethod)method
+- (ATProtoHttpRequest *)requestWithMethod:(HttpMethod)method
                       methodString:(NSString *)methodString
                               path:(NSString *)path
                         pathParams:(NSDictionary<NSString *, NSString *> *)pathParams
                            headers:(NSDictionary<NSString *, NSString *> *)headers
                               body:(NSData *)body {
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:method
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:method
                                               methodString:methodString
                                                     path:path
                                              queryString:@""
@@ -115,13 +115,13 @@
     NSString *did = op.did;
 
     NSData *body = [NSJSONSerialization dataWithJSONObject:@{} options:0 error:nil];
-    HttpRequest *req = [self requestWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodPOST
                                   methodString:@"POST"
                                           path:[NSString stringWithFormat:@"/%@", did]
                                     pathParams:@{@"did": did}
                                        headers:@{}
                                           body:body];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
 
     // The replica routes are registered on httpServer, so we test via the server
     // by starting it and making a real HTTP request
@@ -191,13 +191,13 @@
 #pragma mark - Health endpoint
 
 - (void)testReplicaHealthReturnsMode {
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:@"/health"
                                     pathParams:@{}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.replicaServer handleGetHealth:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 200);
@@ -211,13 +211,13 @@
 - (void)testReplicaHealthIncludesOperationCounts {
     [self insertTestOperation];
 
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:@"/health"
                                     pathParams:@{}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
     [self.replicaServer handleGetHealth:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 200);
@@ -235,13 +235,13 @@
     PLCOperation *op = [self insertTestOperation];
     NSString *did = op.did;
 
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:[NSString stringWithFormat:@"/%@", did]
                                     pathParams:@{@"did": did}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
 
     // Use the inherited PLCServer handler
     [self.replicaServer handleGetDID:req response:resp];
@@ -255,13 +255,13 @@
     PLCOperation *op = [self insertTestOperation];
     NSString *did = op.did;
 
-    HttpRequest *req = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:[NSString stringWithFormat:@"/%@/data", did]
                                     pathParams:@{@"did": did}
                                        headers:@{}
                                           body:nil];
-    HttpResponse *resp = [HttpResponse response];
+    ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
 
     [self.replicaServer handleGetData:req response:resp];
 

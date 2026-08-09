@@ -17,8 +17,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class AppViewDatabase;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 extern NSErrorDomain const AppViewCustomQueryRegistryErrorDomain;
 

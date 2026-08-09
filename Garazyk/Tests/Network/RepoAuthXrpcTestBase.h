@@ -27,22 +27,22 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSString *)iso8601String;
 
-- (HttpResponse *)sendJsonRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendJsonRequestWithPath:(NSString *)path
                                      body:(NSDictionary *)body
                                   headers:(NSDictionary<NSString *, NSString *> *)headers;
 
-- (HttpResponse *)sendGetRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendGetRequestWithPath:(NSString *)path
                                  headers:(NSDictionary<NSString *, NSString *> *)headers;
 
-- (HttpResponse *)sendGetRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendGetRequestWithPath:(NSString *)path
                              queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
                                  headers:(NSDictionary<NSString *, NSString *> *)headers;
 
-- (HttpResponse *)sendRawPostRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendRawPostRequestWithPath:(NSString *)path
                                     bodyData:(NSData *)bodyData
                                      headers:(NSDictionary<NSString *, NSString *> *)headers;
 
-- (nullable NSData *)drainResponseBody:(HttpResponse *)response error:(NSError **)error;
+- (nullable NSData *)drainResponseBody:(ATProtoHttpResponse *)response error:(NSError **)error;
 
 @end
 

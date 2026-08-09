@@ -117,7 +117,7 @@
   return [formatter stringFromDate:date];
 }
 
-- (HttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
+- (ATProtoHttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
                                        clientID:(NSString *)clientID {
   NSError *error = nil;
   BOOL created = [self.database executeParameterizedUpdate:
@@ -151,7 +151,7 @@
                                                            error:&error];
   XCTAssertTrue(inserted, @"Failed to insert PAR row: %@", error);
 
-  HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+  ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                 methodString:@"GET"
                                                         path:@"/oauth/authorize"
                                                  queryString:@""
@@ -163,7 +163,7 @@
                                                      headers:@{}
                                                         body:[NSData data]
                                                remoteAddress:@"127.0.0.1"];
-  HttpResponse *response = [[HttpResponse alloc] init];
+  ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
   [self.handler handleAuthorizeRequest:request response:response];
   return response;
 }
@@ -225,7 +225,7 @@
     @"client_metadata" : clientMetadataJSON
   };
 
-  HttpResponse *authResp =
+  ATProtoHttpResponse *authResp =
       [self authorizeViaPARWithParameters:authParams
                                  clientID:@"https://bsky.app"];
 
@@ -305,7 +305,7 @@
     @"client_metadata" : clientMetadataJSON
   };
 
-  HttpResponse *authResp =
+  ATProtoHttpResponse *authResp =
       [self authorizeViaPARWithParameters:authParams
                                  clientID:@"https://witchsky.app"];
 
@@ -382,7 +382,7 @@
     @"client_metadata" : clientMetadataJSON
   };
 
-  HttpResponse *authResp =
+  ATProtoHttpResponse *authResp =
       [self authorizeViaPARWithParameters:authParams
                                  clientID:@"https://example.com/native-app"];
 
@@ -462,7 +462,7 @@
     @"client_metadata" : clientMetadataJSON
   };
 
-  HttpResponse *authResp =
+  ATProtoHttpResponse *authResp =
       [self authorizeViaPARWithParameters:authParams
                                  clientID:@"https://example.com/ipv6-app"];
 

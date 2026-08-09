@@ -21,17 +21,17 @@ extern NSString * const _Nonnull PDSRepoPackValidationErrorDomain;
 BOOL isReplyNotAllowedError(NSError * _Nonnull error);
 BOOL rejectUnavailableRepoDid(NSString * _Nonnull did,
                               id<XrpcRoutePackServices> _Nonnull services,
-                              HttpResponse * _Nonnull response);
+                              ATProtoHttpResponse * _Nonnull response);
 BOOL rejectUnavailableRepoDidIfKnown(NSString * _Nonnull did,
                                      id<XrpcRoutePackServices> _Nonnull services,
-                                     HttpResponse * _Nonnull response);
+                                     ATProtoHttpResponse * _Nonnull response);
 BOOL rejectRecordTakedown(NSString * _Nonnull uri,
                           id<XrpcRoutePackServices> _Nonnull services,
-                          HttpResponse * _Nonnull response);
+                          ATProtoHttpResponse * _Nonnull response);
 PDSValidationMode validationModeFromValidateParameter(id _Nullable validateParam);
 NSString * _Nonnull normalizedMimeType(NSString * _Nullable contentType);
 BOOL isActiveUploadMimeType(NSString * _Nullable contentType);
-void applyRepoBlobDownloadHeaders(NSString * _Nonnull mimeType, HttpResponse * _Nonnull response);
+void applyRepoBlobDownloadHeaders(NSString * _Nonnull mimeType, ATProtoHttpResponse * _Nonnull response);
 BOOL validateApplyWritesPayload(id _Nullable writes, NSError * _Nullable * _Nullable error);
 NSString * _Nullable normalizedApplyWriteAction(NSDictionary * _Nonnull write);
 NSError * _Nonnull repoPackValidationError(PDSRepoPackValidationErrorCode code, NSString * _Nullable message);

@@ -17,8 +17,8 @@
 
 #import <Foundation/Foundation.h>
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class RelayUpstreamManager;
 @class RelayMetrics;
 
@@ -51,7 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return YES if path starts with "/api/relay", NO otherwise.
  */
-- (BOOL)canHandleRequest:(HttpRequest *)request;
+- (BOOL)canHandleRequest:(ATProtoHttpRequest *)request;
 
 /*!
  @method handleRequest:response:
@@ -61,7 +61,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request HTTP request.
  @param response HTTP response to populate.
  */
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @method setMetrics:

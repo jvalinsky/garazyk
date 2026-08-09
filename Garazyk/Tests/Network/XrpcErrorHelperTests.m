@@ -8,7 +8,7 @@
 
 @implementation XrpcErrorHelperTests
 
-- (NSDictionary *)jsonBodyFromResponse:(HttpResponse *)response {
+- (NSDictionary *)jsonBodyFromResponse:(ATProtoHttpResponse *)response {
     XCTAssertNotNil(response.body);
     NSError *error = nil;
     id obj = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:&error];
@@ -18,7 +18,7 @@
 }
 
 - (void)testAuthenticationErrorUsesDefaultMessageWhenNil {
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     [XrpcErrorHelper setAuthenticationError:response message:nil];
 
     NSDictionary *body = [self jsonBodyFromResponse:response];
@@ -28,14 +28,14 @@
 }
 
 - (void)testAuthorizationAndValidationUseProvidedMessages {
-    HttpResponse *authz = [HttpResponse response];
+    ATProtoHttpResponse *authz = [ATProtoHttpResponse response];
     [XrpcErrorHelper setAuthorizationError:authz message:@"nope"];
     NSDictionary *authzBody = [self jsonBodyFromResponse:authz];
     XCTAssertEqual(authz.statusCode, HttpStatusForbidden);
     XCTAssertEqualObjects(authzBody[@"error"], @"Forbidden");
     XCTAssertEqualObjects(authzBody[@"message"], @"nope");
 
-    HttpResponse *validation = [HttpResponse response];
+    ATProtoHttpResponse *validation = [ATProtoHttpResponse response];
     [XrpcErrorHelper setValidationError:validation message:@"bad input"];
     NSDictionary *validationBody = [self jsonBodyFromResponse:validation];
     XCTAssertEqual(validation.statusCode, HttpStatusBadRequest);
@@ -44,14 +44,14 @@
 }
 
 - (void)testNotFoundAndInternalServerErrorDefaults {
-    HttpResponse *notFound = [HttpResponse response];
+    ATProtoHttpResponse *notFound = [ATProtoHttpResponse response];
     [XrpcErrorHelper setNotFoundError:notFound message:nil];
     NSDictionary *notFoundBody = [self jsonBodyFromResponse:notFound];
     XCTAssertEqual(notFound.statusCode, HttpStatusNotFound);
     XCTAssertEqualObjects(notFoundBody[@"error"], @"NotFound");
     XCTAssertEqualObjects(notFoundBody[@"message"], @"Not found");
 
-    HttpResponse *internal = [HttpResponse response];
+    ATProtoHttpResponse *internal = [ATProtoHttpResponse response];
     [XrpcErrorHelper setInternalServerError:internal message:nil];
     NSDictionary *internalBody = [self jsonBodyFromResponse:internal];
     XCTAssertEqual(internal.statusCode, HttpStatusInternalServerError);
@@ -60,7 +60,7 @@
 }
 
 - (void)testMethodNotAllowedSetsAllowHeaderAndDefaultMessage {
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     [XrpcErrorHelper setMethodNotAllowedError:response allowedMethod:@"POST" message:nil];
 
     NSDictionary *body = [self jsonBodyFromResponse:response];
@@ -71,7 +71,7 @@
 }
 
 - (void)testMethodNotAllowedSkipsAllowHeaderWhenEmptyAndUsesCustomMessage {
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     [XrpcErrorHelper setMethodNotAllowedError:response allowedMethod:@"" message:@"custom"];
 
     NSDictionary *body = [self jsonBodyFromResponse:response];
@@ -80,26 +80,26 @@
 }
 
 - (void)testSetErrorAndConvenienceMethods {
-    HttpResponse *custom = [HttpResponse response];
+    ATProtoHttpResponse *custom = [ATProtoHttpResponse response];
     [XrpcErrorHelper setError:custom statusCode:HttpStatusConflict errorCode:@"Conflict" message:@"already exists"];
     NSDictionary *customBody = [self jsonBodyFromResponse:custom];
     XCTAssertEqual(custom.statusCode, HttpStatusConflict);
     XCTAssertEqualObjects(customBody[@"error"], @"Conflict");
     XCTAssertEqualObjects(customBody[@"message"], @"already exists");
 
-    HttpResponse *invalid = [HttpResponse response];
+    ATProtoHttpResponse *invalid = [ATProtoHttpResponse response];
     [XrpcErrorHelper setInvalidRequestError:invalid message:@"bad"];
     NSDictionary *invalidBody = [self jsonBodyFromResponse:invalid];
     XCTAssertEqualObjects(invalidBody[@"error"], @"InvalidRequest");
     XCTAssertEqualObjects(invalidBody[@"message"], @"bad");
 
-    HttpResponse *account = [HttpResponse response];
+    ATProtoHttpResponse *account = [ATProtoHttpResponse response];
     [XrpcErrorHelper setAccountNotFoundError:account identifier:@"did:plc:abc"];
     NSDictionary *accountBody = [self jsonBodyFromResponse:account];
     XCTAssertEqualObjects(accountBody[@"error"], @"AccountNotFound");
     XCTAssertEqualObjects(accountBody[@"message"], @"Account not found: did:plc:abc");
 
-    HttpResponse *lexicon = [HttpResponse response];
+    ATProtoHttpResponse *lexicon = [ATProtoHttpResponse response];
     [XrpcErrorHelper setLexiconNotFoundError:lexicon nsid:@"com.atproto.server.createSession"];
     NSDictionary *lexiconBody = [self jsonBodyFromResponse:lexicon];
     XCTAssertEqualObjects(lexiconBody[@"error"], @"LexiconNotFound");

@@ -98,7 +98,7 @@
 
   id<XrpcRoutePackServices> resolvedServices = services;
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getPreferences handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getPreferences handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request
                                            response:response
@@ -119,7 +119,7 @@
     [response setJsonBody:preferences ?: @{@"preferences": @{}}];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_putPreferences handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_putPreferences handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request
                                            response:response
@@ -159,7 +159,7 @@
 
   id<XrpcRoutePackServices> resolvedServices = services;
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getProfile handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getProfile handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *actor = [request queryParamForKey:@"actor"];
     if (!actor) {
       [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
@@ -177,7 +177,7 @@
     [response setJsonBody:profile];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getProfiles handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getProfiles handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     id actorsParam = request.queryParams[@"actors"];
     NSArray<NSString *> *actors = nil;
 
@@ -206,7 +206,7 @@
     [response setJsonBody:@{@"profiles" : profiles ?: @[]}];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_searchActors handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_searchActors handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *term = [request queryParamForKey:@"q"];
     if (!term || term.length == 0) {
       [XrpcErrorHelper setValidationError:response message:@"Missing search term (q parameter)"];
@@ -232,7 +232,7 @@
     [response setJsonBody:result];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_searchActorsTypeahead handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_searchActorsTypeahead handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *term = [request queryParamForKey:@"q"];
     if (!term || term.length == 0) {
       [XrpcErrorHelper setValidationError:response message:@"Missing search term (q parameter)"];
@@ -257,7 +257,7 @@
   }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getSuggestions
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response

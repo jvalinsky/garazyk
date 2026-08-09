@@ -22,10 +22,10 @@ static SecKeyRef xrpcCreateFixedP256PrivateKey(NSError **error) {
     return PDSTestCreateFixedP256PrivateKey(error);
 }
 
-static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
+static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                                          NSString *path,
                                          NSDictionary<NSString *, NSString *> *headers) {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                    methodString:@"GET"
                                                            path:path
                                                     queryString:@""
@@ -34,7 +34,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                                                         headers:headers ?: @{}
                                                            body:[NSData data]
                                                    remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     [dispatcher handleRequest:request response:response];
     return response;
 }
@@ -159,7 +159,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertNotNil(initialProof);
         XCTAssertNil(error);
 
-        HttpRequest *firstRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *firstRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                             methodString:@"GET"
                                                                     path:path
                                                              queryString:@""
@@ -172,7 +172,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                                                                  }
                                                                     body:[NSData data]
                                                             remoteAddress:@"127.0.0.1"];
-        HttpResponse *firstResponse = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *firstResponse = [[ATProtoHttpResponse alloc] init];
         [dispatcher handleRequest:firstRequest response:firstResponse];
         XCTAssertEqual(firstResponse.statusCode, HttpStatusUnauthorized);
         NSString *challengeNonce = [firstResponse headerForKey:@"DPoP-Nonce"];
@@ -194,7 +194,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertNotNil(retryProof);
         XCTAssertNil(error);
 
-        HttpRequest *secondRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *secondRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                              methodString:@"GET"
                                                                      path:path
                                                               queryString:@""
@@ -208,7 +208,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                                                                   }
                                                                      body:[NSData data]
                                                              remoteAddress:@"127.0.0.1"];
-        HttpResponse *secondResponse = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *secondResponse = [[ATProtoHttpResponse alloc] init];
         [dispatcher handleRequest:secondRequest response:secondResponse];
         XCTAssertEqual(secondResponse.statusCode, HttpStatusOK);
         XCTAssertEqualObjects(secondResponse.jsonBody[@"did"], did);
@@ -217,7 +217,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertNotEqualObjects(successNonce, challengeNonce);
 
         // Replay same DPoP proof (same jti) — should be rejected via JTI replay cache
-        HttpRequest *replayRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *replayRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                               methodString:@"GET"
                                                                       path:path
                                                                queryString:@""
@@ -231,7 +231,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
                                                                    }
                                                                       body:[NSData data]
                                                               remoteAddress:@"127.0.0.1"];
-        HttpResponse *replayResponse = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *replayResponse = [[ATProtoHttpResponse alloc] init];
         [dispatcher handleRequest:replayRequest response:replayResponse];
         XCTAssertEqual(replayResponse.statusCode, HttpStatusUnauthorized,
                       @"Replayed DPoP proof (same jti) must be rejected");
@@ -313,7 +313,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         ];
 
         for (NSString *path in paths) {
-            HttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": kPDSTestPDSHostHeader});
+            ATProtoHttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": kPDSTestPDSHostHeader});
             XCTAssertNotEqual(response.statusCode, HttpStatusNotFound, @"Expected registered route for %@", path);
             XCTAssertNotEqual(response.statusCode, HttpStatusMethodNotAllowed, @"Expected callable route for %@", path);
         }
@@ -334,7 +334,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
         [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
-        HttpResponse *response = xrpcDispatchRequest(dispatcher,
+        ATProtoHttpResponse *response = xrpcDispatchRequest(dispatcher,
                                                      @"/xrpc/com.atproto.thisEndpointDoesNotExist",
                                                      @{@"host": kPDSTestPDSHostHeader});
         XCTAssertEqual(response.statusCode, HttpStatusNotFound);
@@ -358,7 +358,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
                                                controller:app.legacyController];
 
-        HttpResponse *response = xrpcDispatchRequest(dispatcher,
+        ATProtoHttpResponse *response = xrpcDispatchRequest(dispatcher,
                                                      @"/xrpc/com.atproto.server.describeServer",
                                                      @{@"host": kPDSTestPDSHostHeader});
         XCTAssertEqual(response.statusCode, HttpStatusOK);

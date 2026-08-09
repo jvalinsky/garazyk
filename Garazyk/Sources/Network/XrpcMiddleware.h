@@ -11,8 +11,8 @@
 
 #import <Foundation/Foundation.h>
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class PDSController;
 @class ATProtoJWTMinter;
 /**
@@ -39,8 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param error On return, contains error describing why request was rejected
  * @return YES to continue to next middleware/handler, NO to stop and return response
  */
-- (BOOL)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (BOOL)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
                 error:(NSError **)error;
 
 @optional

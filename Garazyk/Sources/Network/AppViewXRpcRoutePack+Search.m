@@ -8,7 +8,7 @@
 
 @implementation AppViewXRpcRoutePack (Search)
 
-- (void)handleSearchActorsSkeleton:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleSearchActorsSkeleton:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *query = [request queryParamForKey:@"q"];
     if (!query) {
@@ -30,7 +30,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleSearchPostsSkeleton:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleSearchPostsSkeleton:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *query = [request queryParamForKey:@"q"];
     if (!query) {
@@ -52,7 +52,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleSearchStarterPacksSkeleton:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleSearchStarterPacksSkeleton:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *query = [request queryParamForKey:@"q"];
     if (!query) {

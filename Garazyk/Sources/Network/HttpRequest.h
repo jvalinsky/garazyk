@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpRequest.h
+ @file ATProtoHttpRequest.h
 
  @abstract HTTP request parsing and representation.
 
@@ -44,14 +44,14 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
 };
 
 /*!
- @class HttpRequest
+ @class ATProtoHttpRequest
 
  @abstract Represents a parsed HTTP request.
 
  @discussion Provides access to all request components including method,
  path, query parameters, headers, and body. Supports JSON and multipart parsing.
  */
-@interface HttpRequest : NSObject
+@interface ATProtoHttpRequest : NSObject
 
 /*! The parsed HTTP method enum. */
 @property (nonatomic, readonly) HttpMethod method;

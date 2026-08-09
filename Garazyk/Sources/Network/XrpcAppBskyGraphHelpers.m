@@ -42,7 +42,7 @@ BOOL XrpcParseAtURI(NSString *uri, NSString **outDid, NSString **outCollection, 
 
 #pragma mark - Limit Parsing
 
-BOOL XrpcParseLimit(NSString *limitParam, NSInteger *outValue, NSInteger min, NSInteger max, HttpResponse *response) {
+BOOL XrpcParseLimit(NSString *limitParam, NSInteger *outValue, NSInteger min, NSInteger max, ATProtoHttpResponse *response) {
     if (!limitParam || limitParam.length == 0) {
         return YES; // Use default
     }

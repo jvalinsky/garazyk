@@ -57,7 +57,7 @@
     }
 
     NSString *accessJwt = session[@"accessJwt"];
-    HttpRequest *uploadRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *uploadRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                          methodString:@"POST"
                                                                  path:@"/xrpc/com.atproto.repo.uploadBlob"
                                                           queryString:@""
@@ -69,7 +69,7 @@
                                                               }
                                                                  body:blobData
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *uploadResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *uploadResponse = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:uploadRequest response:uploadResponse];
     if (uploadResponse.statusCode != 200) {
         return nil;
@@ -102,7 +102,7 @@
     NSData *bodyData = [NSJSONSerialization dataWithJSONObject:body options:0 error:error];
     if (!bodyData) return NO;
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                    methodString:@"POST"
                                                            path:@"/xrpc/com.atproto.repo.createRecord"
                                                     queryString:@""
@@ -114,7 +114,7 @@
     }
                                                            body:bodyData
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     if (response.statusCode == HttpStatusOK) return YES;
 
@@ -138,7 +138,7 @@
     // DEBUG: Verify token manually
     XCTAssertNotNil(accessJwt, @"Access JWT should not be nil");
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/xrpc/com.atproto.repo.uploadBlob"
                                                    queryString:@""
@@ -150,7 +150,7 @@
     
 
     
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertEqual(response.statusCode, 200, @"Should return 200 OK");
@@ -170,7 +170,7 @@
     NSString *blobContent = @"Unauthorized Blob";
     NSData *blobData = [blobContent dataUsingEncoding:NSUTF8StringEncoding];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/xrpc/com.atproto.repo.uploadBlob"
                                                    queryString:@""
@@ -180,7 +180,7 @@
                                                           body:blobData
                                                     remoteAddress:@"127.0.0.1"];
     
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertEqual(response.statusCode, 401, @"Should return 401 Unauthorized");
@@ -192,7 +192,7 @@
     XCTAssertNil(error);
     NSString *accessJwt = session[@"accessJwt"];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/xrpc/com.atproto.repo.uploadBlob"
                                                    queryString:@""
@@ -202,7 +202,7 @@
                                                           body:[@"fake-exe" dataUsingEncoding:NSUTF8StringEncoding]
                                                     remoteAddress:@"127.0.0.1"];
     
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertEqual(response.statusCode, 415, @"Should return 415 (Unsupported Media Type) for invalid mime type");
@@ -217,7 +217,7 @@
     // Create large data exceeding the MIME category limit (5MB for application/octet-stream)
     NSMutableData *largeData = [NSMutableData dataWithLength:6 * 1024 * 1024];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/xrpc/com.atproto.repo.uploadBlob"
                                                    queryString:@""
@@ -227,7 +227,7 @@
                                                           body:largeData
                                                     remoteAddress:@"127.0.0.1"];
     
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     
     XCTAssertEqual(response.statusCode, 400, @"Should return 400 (or 413) for blob too large");
@@ -241,7 +241,7 @@
 
     NSMutableData *videoData = [NSMutableData dataWithLength:2 * 1024 * 1024];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/xrpc/com.atproto.repo.uploadBlob"
                                                    queryString:@""
@@ -251,7 +251,7 @@
                                                           body:videoData
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
 
     XCTAssertEqual(response.statusCode, 200, @"Video blobs up to app.bsky.embed.video maxSize should upload");
@@ -267,7 +267,7 @@
     XCTAssertNil(error);
     NSString *accessJwt = session[@"accessJwt"];
     
-    HttpRequest *uploadRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *uploadRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                        methodString:@"POST"
                                                                path:@"/xrpc/com.atproto.repo.uploadBlob"
                                                         queryString:@""
@@ -277,7 +277,7 @@
                                                                body:blobData
                                                          remoteAddress:@"127.0.0.1"];
     
-    HttpResponse *uploadResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *uploadResponse = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:uploadRequest response:uploadResponse];
     XCTAssertEqual(uploadResponse.statusCode, 200);
     
@@ -290,7 +290,7 @@
     // Query params: did, cid
     NSDictionary *queryParams = @{@"did": self.did, @"cid": cid};
     
-    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *getRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"
                                                              path:@"/xrpc/com.atproto.sync.getBlob"
                                                       queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
@@ -300,7 +300,7 @@
                                                              body:[NSData data]
                                                        remoteAddress:@"127.0.0.1"];
     
-    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *getResponse = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:getRequest response:getResponse];
     
     XCTAssertEqual(getResponse.statusCode, 200, @"Should return 200 OK for getBlob");
@@ -316,7 +316,7 @@
     XCTAssertNil(error);
     XCTAssertNotNil(cid);
 
-    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *getRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"
                                                              path:@"/xrpc/com.atproto.sync.getBlob"
                                                       queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
@@ -325,7 +325,7 @@
                                                           headers:@{}
                                                              body:[NSData data]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *getResponse = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:getRequest response:getResponse];
 
     XCTAssertEqual(getResponse.statusCode, HttpStatusNotFound);
@@ -337,7 +337,7 @@
     XCTAssertNotNil(missingCID);
     NSDictionary *queryParams = @{@"did": self.did, @"cid": missingCID.stringValue};
     
-    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *getRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"
                                                              path:@"/xrpc/com.atproto.sync.getBlob"
                                                       queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, queryParams[@"cid"]]
@@ -347,7 +347,7 @@
                                                              body:[NSData data]
                                                        remoteAddress:@"127.0.0.1"];
     
-    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *getResponse = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:getRequest response:getResponse];
     
     XCTAssertEqual(getResponse.statusCode, 404, @"Should return 404 for non-existent blob");
@@ -364,7 +364,7 @@
     }
     XCTAssertTrue([self referenceBlobWithCID:cid error:&error], @"%@", error);
 
-    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *getRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"
                                                              path:@"/xrpc/com.atproto.sync.getBlob"
                                                       queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
@@ -373,7 +373,7 @@
                                                           headers:@{@"range": @"bytes=0-4"}
                                                              body:[NSData data]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *getResponse = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:getRequest response:getResponse];
 
     XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)206);
@@ -397,7 +397,7 @@
     }
     XCTAssertTrue([self referenceBlobWithCID:cid error:&error], @"%@", error);
 
-    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *getRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"
                                                              path:@"/xrpc/com.atproto.sync.getBlob"
                                                       queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
@@ -406,7 +406,7 @@
                                                           headers:@{@"range": @"bytes=999-1000"}
                                                              body:[NSData data]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *getResponse = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:getRequest response:getResponse];
 
     XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)416);
@@ -434,7 +434,7 @@
     NSString *accessJwt = session[@"accessJwt"];
 
     // Test Range request on repo.getBlob
-    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *getRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"
                                                              path:@"/xrpc/com.atproto.repo.getBlob"
                                                       queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
@@ -446,7 +446,7 @@
     }
                                                              body:[NSData data]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *getResponse = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:getRequest response:getResponse];
 
     XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)206);
@@ -476,7 +476,7 @@
     NSString *accessJwt = session[@"accessJwt"];
 
     // Test unsatisfiable Range request on repo.getBlob
-    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *getRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                      methodString:@"GET"
                                                              path:@"/xrpc/com.atproto.repo.getBlob"
                                                       queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
@@ -488,7 +488,7 @@
     }
                                                              body:[NSData data]
                                                        remoteAddress:@"127.0.0.1"];
-    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *getResponse = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:getRequest response:getResponse];
 
     XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)416);

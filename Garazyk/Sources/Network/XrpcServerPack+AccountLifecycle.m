@@ -36,7 +36,7 @@
     id<PDSAccountService> accountService = services.accountService;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 #pragma mark - com.atproto.server.accountLifecycle.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getAccount handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
@@ -58,7 +58,7 @@
         [response setJsonBody:account];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteAccount handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *authenticatedDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!authenticatedDid) {
@@ -150,7 +150,7 @@
         [response setJsonBody:@{}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_checkAccountStatus handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_checkAccountStatus handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
@@ -178,7 +178,7 @@
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_activateAccount handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_activateAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
@@ -207,7 +207,7 @@
                         userInfo:@{PDSAccountEventDidKey: did}];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deactivateAccount handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deactivateAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 

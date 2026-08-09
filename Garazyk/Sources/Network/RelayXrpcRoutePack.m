@@ -117,59 +117,59 @@ static NSURL *didWebDocumentURL(NSString *did) {
     return self;
 }
 
-- (void)registerRoutesWithServer:(HttpServer *)server
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server
 {
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.listRepos"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleListRepos:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getHead"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetHead:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getLatestCommit"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetLatestCommit:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getRepoStatus"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetRepoStatus:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getHostStatus"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetHostStatus:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.listHosts"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleListHosts:request response:response];
              }];
 
     [server addRoute:@"POST"
                 path:@"/xrpc/com.atproto.sync.requestCrawl"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleRequestCrawl:request response:response];
              }];
 
     [server addRoute:@"POST"
                 path:@"/admin/pds/requestCrawl"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleAdminRequestCrawl:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getRepo"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetRepo:request response:response];
              }];
 
@@ -177,14 +177,14 @@ static NSURL *didWebDocumentURL(NSString *did) {
     {
         [server addRoute:@"OPTIONS"
                     path:@"/xrpc/com.atproto.sync.subscribeRepos"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
                      [response setHeader:@"GET, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
                      response.statusCode = HttpStatusOK;
                  }];
 
         [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
-                          handler:^(HttpRequest *request, HttpResponse *response,
+                          handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                     id<ATProtoNetworkConnection> connection) {
                               [_subscribeReposHandler acceptUpgradedConnection:connection
                                                                          request:request];
@@ -194,7 +194,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
 #pragma mark - listRepos
 
-- (void)handleListRepos:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleListRepos:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *limitParam = [request queryParamForKey:@"limit"];
     NSInteger limit = 500;
@@ -262,7 +262,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
 #pragma mark - getHead (deprecated)
 
-- (void)handleGetHead:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetHead:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     // DEPRECATED endpoint - use getLatestCommit instead
     // Output format: { "root": "<cid>" }
@@ -298,7 +298,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
 #pragma mark - getLatestCommit
 
-- (void)handleGetLatestCommit:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetLatestCommit:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     // Current endpoint - returns cid and rev
     // Lexicon: com.atproto.sync.getLatestCommit
@@ -340,7 +340,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
 #pragma mark - getRepoStatus
 
-- (void)handleGetRepoStatus:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetRepoStatus:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     // Lexicon: com.atproto.sync.getRepoStatus
     // Output: { "did": "...", "active": bool, "status": "...", "rev": "..." }
@@ -426,7 +426,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
 #pragma mark - getHostStatus
 
-- (void)handleGetHostStatus:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetHostStatus:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     // Lexicon: com.atproto.sync.getHostStatus
     // Output: { "hostname": "...", "seq": 123, "status": "...", "accountCount": 456 }
@@ -547,7 +547,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
 #pragma mark - listHosts
 
-- (void)handleListHosts:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleListHosts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     // Lexicon: com.atproto.sync.listHosts
     // Description: Enumerates upstream hosts (eg, PDS or relay instances) that this service consumes from.
@@ -666,7 +666,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
 #pragma mark - requestCrawl
 
-- (void)handleRequestCrawl:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleRequestCrawl:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     // Lexicon: com.atproto.sync.requestCrawl
     // Input: { "hostname": "..." }
@@ -795,7 +795,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
 #pragma mark - Admin requestCrawl
 
-- (void)handleAdminRequestCrawl:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleAdminRequestCrawl:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     // Admin endpoint for requesting relay to crawl a PDS
     // Bypasses host validation (for trusted admin operations)
@@ -893,7 +893,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
 #pragma mark - getRepo
 
-- (void)handleGetRepo:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetRepo:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     // Per ATProto spec and indigo reference: relay getRepo returns HTTP 302 redirect
     // to the source PDS's getRepo endpoint, not the CAR data itself.

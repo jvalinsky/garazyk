@@ -5,13 +5,13 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSController;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 /*!
  @header MSTViewerHandler.h
 
- @abstract HTTP request handler for MST visualization interface.
+ @abstract HTTP request handler for ATProtoMST visualization interface.
 
  @discussion This handler provides a web-based GUI for exploring Merkle
  Search Tree structures in PDS repositories. Serves static assets (HTML/CSS/JS)
@@ -23,9 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @class MSTViewerHandler
 
- @abstract Singleton handler for MST viewer HTTP requests.
+ @abstract Singleton handler for ATProtoMST viewer HTTP requests.
 
- @discussion The MST viewer provides:
+ @discussion The ATProtoMST viewer provides:
  - Interactive D3.js tree visualization
  - Hierarchical list view
  - Tree statistics (node count, depth, balance)
@@ -63,7 +63,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The HTTP request.
  @return YES if this handler should process the request, NO otherwise.
  */
-- (BOOL)canHandleRequest:(HttpRequest *)request;
+- (BOOL)canHandleRequest:(ATProtoHttpRequest *)request;
 
 /*!
  @method handleRequest:response:
@@ -80,7 +80,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the handleRequest operation.
  */
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end
 

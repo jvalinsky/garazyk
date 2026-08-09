@@ -60,7 +60,7 @@
   }
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_ageassurance_begin
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -118,7 +118,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_ageassurance_getConfig
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        (void)request;
                        if (ageAssuranceService) {
                          NSError *error = nil;
@@ -146,7 +146,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_ageassurance_getState
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response

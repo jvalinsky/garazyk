@@ -8,7 +8,7 @@
 // (workstream 08 M4, PLC -> Sync inversion) — putting this registration in
 // PLC itself would just invert the leak instead of removing it, and
 // campagnola (the only binary that runs a PLCServer) already links
-// ATProtoRuntime. Mirrors the RateLimiter storage-factory self-registration
+// ATProtoRuntime. Mirrors the ATProtoRateLimiter storage-factory self-registration
 // pattern from the Transport -> Storage fix.
 #import "PLC/PLCServer.h"
 #import "Sync/WebSocket/PDSWebSocketNetworkAdapter.h"

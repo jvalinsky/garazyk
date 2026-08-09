@@ -11,8 +11,8 @@
 
 #import <Foundation/Foundation.h>
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class ATProtoJWTMinter;
 @class PDSController;
 @class PDSServiceDatabases;
@@ -52,7 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                        jwtMinter:(ATProtoJWTMinter *)jwtMinter
                                  adminController:(id<PDSAdminController>)adminController
-                                         request:(HttpRequest *)request;
+                                         request:(ATProtoHttpRequest *)request;
 
 /**
  * @abstract Extracts and validates a DID with optional response for DPoP nonce handling.
@@ -66,8 +66,8 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                        jwtMinter:(ATProtoJWTMinter *)jwtMinter
                                  adminController:(nullable id<PDSAdminController>)adminController
-                                         request:(HttpRequest *)request
-                                        response:(nullable HttpResponse *)response;
+                                         request:(ATProtoHttpRequest *)request
+                                        response:(nullable ATProtoHttpResponse *)response;
 
 /**
  * Extract and validate DID from Authorization header with response object and session repository.
@@ -76,16 +76,16 @@ NS_ASSUME_NONNULL_BEGIN
                                       jwtMinter:(ATProtoJWTMinter *)jwtMinter
                                 adminController:(nullable id<PDSAdminController>)adminController
                               sessionRepository:(nullable id<PDSSessionRepository>)sessionRepository
-                                        request:(HttpRequest *)request
-                                       response:(nullable HttpResponse *)response;
+                                        request:(ATProtoHttpRequest *)request
+                                       response:(nullable ATProtoHttpResponse *)response;
 
 /**
  * Extract and validate DID from Authorization header using XrpcRoutePackServices.
  */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                        services:(id<XrpcRoutePackServices>)services
-                                        request:(HttpRequest *)request
-                                       response:(nullable HttpResponse *)response;
+                                        request:(ATProtoHttpRequest *)request
+                                       response:(nullable ATProtoHttpResponse *)response;
 
 /**
  * Extract and validate DID from Authorization header using PDSController.
@@ -95,14 +95,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                      controller:(PDSController *)controller
-                                        request:(HttpRequest *)request
-                                       response:(nullable HttpResponse *)response;
+                                        request:(ATProtoHttpRequest *)request
+                                       response:(nullable ATProtoHttpResponse *)response;
 
 /**
  * Authorize admin request by validating authentication and admin privileges.
  */
-+ (BOOL)authorizeAdminRequest:(HttpRequest *)request
-                      response:(HttpResponse *)response
++ (BOOL)authorizeAdminRequest:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController;

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpBufferPool.m
+ @file ATProtoHttpBufferPool.m
 
  @abstract Implements reusable buffer pooling for HTTP I/O efficiency and allocation control.
 
@@ -16,23 +16,23 @@
 static const NSUInteger kDefaultMaxPoolSize = 64;
 static const NSUInteger kDefaultBufferSize = 4096;
 
-@interface HttpBufferPool ()
+@interface ATProtoHttpBufferPool ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<NSMutableData *> *> *bufferPools;
-@property (nonatomic, strong) NSMutableArray<HttpRequest *> *requestPool;
-@property (nonatomic, strong) NSMutableArray<HttpResponse *> *responsePool;
+@property (nonatomic, strong) NSMutableArray<ATProtoHttpRequest *> *requestPool;
+@property (nonatomic, strong) NSMutableArray<ATProtoHttpResponse *> *responsePool;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t poolQueue;
 @property (nonatomic, strong) NSArray<NSNumber *> *sizeClasses;
 
 @end
 
-@implementation HttpBufferPool
+@implementation ATProtoHttpBufferPool
 
 + (instancetype)sharedPool {
-    static HttpBufferPool *shared = nil;
+    static ATProtoHttpBufferPool *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[HttpBufferPool alloc] init];
+        shared = [[ATProtoHttpBufferPool alloc] init];
     });
     return shared;
 }
@@ -64,7 +64,7 @@ static const NSUInteger kDefaultBufferSize = 4096;
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(300 * NSEC_PER_SEC)), 
                    dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
-        HttpBufferPool *strongSelf = weakSelf;
+        ATProtoHttpBufferPool *strongSelf = weakSelf;
         if (strongSelf) {
             [strongSelf autoPrune];
             [strongSelf setupAutoPrune];
@@ -152,8 +152,8 @@ static const NSUInteger kDefaultBufferSize = 4096;
     });
 }
 
-- (nullable HttpRequest *)acquireRequest {
-    __block HttpRequest *request = nil;
+- (nullable ATProtoHttpRequest *)acquireRequest {
+    __block ATProtoHttpRequest *request = nil;
 
     dispatch_sync(self.poolQueue, ^{
         if (self.requestPool.count > 0) {
@@ -165,7 +165,7 @@ static const NSUInteger kDefaultBufferSize = 4096;
     return request;
 }
 
-- (void)releaseRequest:(HttpRequest *)request {
+- (void)releaseRequest:(ATProtoHttpRequest *)request {
     if (!request) return;
 
     dispatch_sync(self.poolQueue, ^{
@@ -175,8 +175,8 @@ static const NSUInteger kDefaultBufferSize = 4096;
     });
 }
 
-- (nullable HttpResponse *)acquireResponse {
-    __block HttpResponse *response = nil;
+- (nullable ATProtoHttpResponse *)acquireResponse {
+    __block ATProtoHttpResponse *response = nil;
 
     dispatch_sync(self.poolQueue, ^{
         if (self.responsePool.count > 0) {
@@ -188,7 +188,7 @@ static const NSUInteger kDefaultBufferSize = 4096;
     return response;
 }
 
-- (void)releaseResponse:(HttpResponse *)response {
+- (void)releaseResponse:(ATProtoHttpResponse *)response {
     if (!response) return;
 
     dispatch_sync(self.poolQueue, ^{

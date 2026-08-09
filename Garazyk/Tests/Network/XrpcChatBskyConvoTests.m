@@ -35,7 +35,7 @@
     PDSServiceDatabases *sdb = self.application.serviceDatabases;
     [sdb createInviteCode:inviteCode forAccount:self.userDid maxUses:1 error:nil];
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAccount"
                                                       body:@{
                                                           @"handle": uniqueHandle,
                                                           @"password": @"password123",
@@ -57,7 +57,7 @@
 // Helper: create a conversation via GET query (getConvoForMembers is a query endpoint)
 - (NSString *)createConvoWithAuth:(NSString *)authHeader {
     NSString *queryString = [NSString stringWithFormat:@"members=%@&members=%@", self.userDid, self.secondUserDid];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
                                              queryString:queryString
                                              queryParams:@{}
                                                  headers:@{@"authorization": authHeader}];
@@ -71,7 +71,7 @@
 
 - (void)testGetConvoForMembersRequiresAuth {
     NSString *queryString = [NSString stringWithFormat:@"members=%@&members=%@", self.userDid, self.secondUserDid];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
                                              queryString:queryString
                                              queryParams:@{}
                                                  headers:@{}];
@@ -82,7 +82,7 @@
 - (void)testGetConvoForMembersCreatesConversation {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     NSString *queryString = [NSString stringWithFormat:@"members=%@&members=%@", self.userDid, self.secondUserDid];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
                                              queryString:queryString
                                              queryParams:@{}
                                                  headers:@{@"authorization": authHeader}];
@@ -94,7 +94,7 @@
 - (void)testGetConvoForMembersRequiresTwoMembers {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     NSString *queryString = [NSString stringWithFormat:@"members=%@", self.userDid];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
                                              queryString:queryString
                                              queryParams:@{}
                                                  headers:@{@"authorization": authHeader}];
@@ -107,7 +107,7 @@
     NSString *queryString = [NSString stringWithFormat:@"members=%@&members=%@", self.userDid, self.secondUserDid];
 
     // First call
-    HttpResponse *response1 = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+    ATProtoHttpResponse *response1 = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
                                               queryString:queryString
                                               queryParams:@{}
                                                   headers:@{@"authorization": authHeader}];
@@ -115,7 +115,7 @@
     NSString *convoId1 = response1.jsonBody[@"convo"][@"id"];
 
     // Second call with same members
-    HttpResponse *response2 = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+    ATProtoHttpResponse *response2 = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
                                               queryString:queryString
                                               queryParams:@{}
                                                   headers:@{@"authorization": authHeader}];
@@ -128,7 +128,7 @@
 #pragma mark - acceptConvo Tests
 
 - (void)testAcceptConvoRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.acceptConvo"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.acceptConvo"
                                                       body:@{@"convoId": @"convo/test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -144,7 +144,7 @@
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Accept conversation as user1 — already a member so should be 409 Conflict.
-    HttpResponse *acceptResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.acceptConvo"
+    ATProtoHttpResponse *acceptResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.acceptConvo"
                                                              body:@{@"convoId": convoId}
                                                           headers:@{@"authorization": authHeader}];
     XCTAssertEqual(acceptResponse.statusCode, 409);
@@ -159,7 +159,7 @@
 
     // user2 accepts the conversation (user2 is NOT a member — should get 200).
     NSString *user2Auth = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
-    HttpResponse *acceptResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.acceptConvo"
+    ATProtoHttpResponse *acceptResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.acceptConvo"
                                                              body:@{@"convoId": convoId}
                                                           headers:@{@"authorization": user2Auth}];
     XCTAssertEqual(acceptResponse.statusCode, 200, @"Non-member should be able to accept: %@", acceptResponse.jsonBody[@"error"]);
@@ -169,7 +169,7 @@
 #pragma mark - leaveConvo Tests
 
 - (void)testLeaveConvoRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.leaveConvo"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.leaveConvo"
                                                       body:@{@"convoId": @"convo/test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -183,7 +183,7 @@
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Leave conversation
-    HttpResponse *leaveResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.leaveConvo"
+    ATProtoHttpResponse *leaveResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.leaveConvo"
                                                            body:@{@"convoId": convoId}
                                                         headers:@{@"authorization": authHeader}];
     XCTAssertEqual(leaveResponse.statusCode, 200);
@@ -192,7 +192,7 @@
 #pragma mark - listConvoRequests Tests
 
 - (void)testListConvoRequestsRequiresAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.listConvoRequests"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.listConvoRequests"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -201,7 +201,7 @@
 
 - (void)testListConvoRequestsReturnsEmpty {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.listConvoRequests"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.listConvoRequests"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{@"authorization": authHeader}];
@@ -213,7 +213,7 @@
 #pragma mark - getConvoAvailability Tests
 
 - (void)testGetConvoAvailabilityRequiresDid {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoAvailability"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoAvailability"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -221,7 +221,7 @@
 }
 
 - (void)testGetConvoAvailabilityForValidActor {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoAvailability"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoAvailability"
                                              queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                              queryParams:@{@"did": self.userDid}
                                                  headers:@{}];
@@ -234,7 +234,7 @@
     // Current handler returns available=YES for any DID string
     // (does not validate DID existence). TODO: align with lexicon
     // which uses 'members' array, not 'did' param.
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoAvailability"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoAvailability"
                                              queryString:@"did=did:plc:invalid"
                                              queryParams:@{@"did": @"did:plc:invalid"}
                                                  headers:@{}];
@@ -245,7 +245,7 @@
 #pragma mark - Reaction Tests
 
 - (void)testAddReactionRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
                                                       body:@{@"messageId": @"msg/test", @"emoji": @"❤️"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -258,7 +258,7 @@
     NSString *convoId = [self createConvoWithAuth:authHeader];
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
-    HttpResponse *sendResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessage"
+    ATProtoHttpResponse *sendResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessage"
                                                            body:@{
                                                                @"convoId": convoId,
                                                                @"message": @{@"text": @"test message for reaction"}
@@ -269,7 +269,7 @@
     XCTAssertNotNil(messageId);
 
     // Add reaction to the real message.
-    HttpResponse *reactionResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
+    ATProtoHttpResponse *reactionResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
                                                                body:@{@"messageId": messageId, @"emoji": @"❤️"}
                                                             headers:@{@"authorization": authHeader}];
     XCTAssertEqual(reactionResponse.statusCode, 200);
@@ -283,7 +283,7 @@
     NSString *convoId = [self createConvoWithAuth:authHeader];
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
-    HttpResponse *sendResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessage"
+    ATProtoHttpResponse *sendResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessage"
                                                            body:@{
                                                                @"convoId": convoId,
                                                                @"message": @{@"text": @"test message for un-reaction"}
@@ -294,7 +294,7 @@
     XCTAssertNotNil(messageId);
 
     // Remove reaction from the real message.
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.removeReaction"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.removeReaction"
                                                       body:@{@"messageId": messageId, @"emoji": @"❤️"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -303,7 +303,7 @@
 #pragma mark - Read Status Tests
 
 - (void)testUpdateReadRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateRead"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateRead"
                                                       body:@{@"convoId": @"convo/test", @"messageId": @"msg/test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -317,7 +317,7 @@
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Update read
-    HttpResponse *readResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateRead"
+    ATProtoHttpResponse *readResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateRead"
                                                           body:@{@"convoId": convoId, @"messageId": @"msg/test123"}
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(readResponse.statusCode, 200);
@@ -331,7 +331,7 @@
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Mark all as read
-    HttpResponse *allReadResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateAllRead"
+    ATProtoHttpResponse *allReadResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateAllRead"
                                                               body:@{@"convoId": convoId}
                                                            headers:@{@"authorization": authHeader}];
     XCTAssertEqual(allReadResponse.statusCode, 200);
@@ -347,7 +347,7 @@
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Mute conversation
-    HttpResponse *muteResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.muteConvo"
+    ATProtoHttpResponse *muteResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.muteConvo"
                                                           body:@{@"convoId": convoId}
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(muteResponse.statusCode, 200);
@@ -361,7 +361,7 @@
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Unmute conversation
-    HttpResponse *unmuteResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unmuteConvo"
+    ATProtoHttpResponse *unmuteResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unmuteConvo"
                                                              body:@{@"convoId": convoId}
                                                           headers:@{@"authorization": authHeader}];
     XCTAssertEqual(unmuteResponse.statusCode, 200);
@@ -375,7 +375,7 @@
     NSString *convoId = [self createConvoWithAuth:authHeader];
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
-    HttpResponse *sendResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessage"
+    ATProtoHttpResponse *sendResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessage"
                                                            body:@{
                                                                @"convoId": convoId,
                                                                @"message": @{@"text": @"hello"}
@@ -387,7 +387,7 @@
 }
 
 - (void)testSendMessageBatchRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessageBatch"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessageBatch"
                                                       body:@{@"convoId": @"convo/test", @"messages": @[@{@"text": @"hello"}]}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -401,7 +401,7 @@
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Send batch
-    HttpResponse *batchResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessageBatch"
+    ATProtoHttpResponse *batchResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessageBatch"
                                                            body:@{
                                                                @"convoId": convoId,
                                                                @"messages": @[
@@ -425,7 +425,7 @@
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Lock conversation
-    HttpResponse *lockResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.lockConvo"
+    ATProtoHttpResponse *lockResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.lockConvo"
                                                           body:@{@"convoId": convoId}
                                                        headers:@{@"authorization": authHeader}];
     XCTAssertEqual(lockResponse.statusCode, 200);
@@ -439,14 +439,14 @@
     XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Unlock conversation
-    HttpResponse *unlockResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unlockConvo"
+    ATProtoHttpResponse *unlockResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unlockConvo"
                                                              body:@{@"convoId": convoId}
                                                           headers:@{@"authorization": authHeader}];
     XCTAssertEqual(unlockResponse.statusCode, 200);
 }
 
 - (void)testDeleteMessageForSelfRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.deleteMessageForSelf"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.deleteMessageForSelf"
                                                       body:@{@"messageId": @"msg/test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -458,7 +458,7 @@
     // Create some activity
     [self createConvoWithAuth:authHeader];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getLog"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getLog"
                                               queryString:@""
                                               queryParams:@{}
                                                   headers:@{@"authorization": authHeader}];
@@ -472,7 +472,7 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Send muteConvo with a numeric convoId (not a string).
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.muteConvo"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.muteConvo"
                                                       body:@{@"convoId": @12345}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400);
@@ -482,7 +482,7 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Send addReaction with an array messageId (not a string).
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
                                                       body:@{@"messageId": @[@"not-a-string"], @"emoji": @"❤️"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400);
@@ -492,7 +492,7 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Send addReaction with a dict emoji (not a string).
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
                                                       body:@{@"messageId": @"msg/test", @"emoji": @{@":)": @"smile"}}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400);
@@ -504,7 +504,7 @@
 - (NSString *)createConvoBetween:(NSString *)didA and:(NSString *)didB {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     NSString *queryString = [NSString stringWithFormat:@"members=%@&members=%@", didA, didB];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
                                              queryString:queryString
                                              queryParams:@{}
                                                  headers:@{@"authorization": authHeader}];
@@ -521,7 +521,7 @@
 
     // user2 (not a member) tries to mute the conversation.
     NSString *user2Auth = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.muteConvo"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.muteConvo"
                                                       body:@{@"convoId": convoId}
                                                    headers:@{@"authorization": user2Auth}];
     XCTAssertEqual(response.statusCode, 403);
@@ -534,7 +534,7 @@
 
     // user2 (not a member) tries to leave the conversation.
     NSString *user2Auth = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.leaveConvo"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.leaveConvo"
                                                       body:@{@"convoId": convoId}
                                                    headers:@{@"authorization": user2Auth}];
     XCTAssertEqual(response.statusCode, 403);
@@ -547,7 +547,7 @@
 
     // user2 (not a member) tries to lock the conversation.
     NSString *user2Auth = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.lockConvo"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.lockConvo"
                                                       body:@{@"convoId": convoId}
                                                    headers:@{@"authorization": user2Auth}];
     XCTAssertEqual(response.statusCode, 403);
@@ -560,7 +560,7 @@
 
     // user2 (not a member) tries to unlock the conversation.
     NSString *user2Auth = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unlockConvo"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unlockConvo"
                                                       body:@{@"convoId": convoId}
                                                    headers:@{@"authorization": user2Auth}];
     XCTAssertEqual(response.statusCode, 403);
@@ -573,7 +573,7 @@
 
     // user2 (not a member) tries to unmute the conversation.
     NSString *user2Auth = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unmuteConvo"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unmuteConvo"
                                                       body:@{@"convoId": convoId}
                                                    headers:@{@"authorization": user2Auth}];
     XCTAssertEqual(response.statusCode, 403);
@@ -593,7 +593,7 @@
         @"$type": @"chat.bsky.actor.declaration",
         @"allowIncoming": @"none"
     };
-    HttpResponse *putResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.putRecord"
+    ATProtoHttpResponse *putResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.putRecord"
                                                           body:@{
                                                               @"repo": self.thirdUserDid,
                                                               @"collection": collection,
@@ -604,7 +604,7 @@
     XCTAssertEqual(putResponse.statusCode, 200, @"putRecord should succeed: %@", putResponse.jsonBody[@"error"]);
 
     // Now query getConvoAvailability for user3 — should return available: NO.
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoAvailability"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoAvailability"
                                              queryString:[NSString stringWithFormat:@"did=%@", self.thirdUserDid]
                                              queryParams:@{@"did": self.thirdUserDid}
                                                  headers:@{}];

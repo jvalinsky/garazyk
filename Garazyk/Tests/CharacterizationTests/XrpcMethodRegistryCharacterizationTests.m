@@ -21,9 +21,9 @@
 
 @end
 
-static HttpResponse *XrpcCharacterizationDispatchRequest(XrpcDispatcher *dispatcher,
+static ATProtoHttpResponse *XrpcCharacterizationDispatchRequest(XrpcDispatcher *dispatcher,
                                                           NSString *methodId) {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                    methodString:@"GET"
                                                            path:[@"/xrpc/" stringByAppendingString:methodId]
                                                     queryString:@""
@@ -32,21 +32,21 @@ static HttpResponse *XrpcCharacterizationDispatchRequest(XrpcDispatcher *dispatc
                                                        headers:@{}
                                                           body:[NSData data]
                                                   remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     [dispatcher handleRequest:request response:response];
     return response;
 }
 
 static void XrpcCharacterizationRegisterFirstFixturePack(XrpcDispatcher *dispatcher) {
     [dispatcher registerMethod:@"test.xrpc.fixture.crossPack"
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = HttpStatusOK;
                        }];
 }
 
 static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispatcher) {
     [dispatcher registerMethod:@"test.xrpc.fixture.crossPack"
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = HttpStatusNoContent;
                        }];
 }
@@ -88,7 +88,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
         [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.server.describeServer"
                                                    queryString:@""
@@ -97,7 +97,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
                                                        headers:@{}
                                                           body:[NSData data]
                                                   remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     [dispatcher handleRequest:request response:response];
 
     XCTAssertEqual(response.statusCode, HttpStatusOK);
@@ -134,14 +134,14 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
 - (void)testCharacterization_DuplicateRegistrationWithinOnePackIsRejected {
     XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
     [dispatcher registerMethod:@"test.xrpc.fixture.samePack"
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = HttpStatusOK;
                        }];
 
     NSException *exception = nil;
     @try {
         [dispatcher registerMethod:@"test.xrpc.fixture.samePack"
-                           handler:^(HttpRequest *request, HttpResponse *response) {
+                           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                              response.statusCode = HttpStatusNoContent;
                            }];
     } @catch (NSException *caught) {
@@ -184,7 +184,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
              @"app.bsky.graph.getListMutes",
              @"app.bsky.graph.getListBlocks"
          ]) {
-        HttpResponse *response = XrpcCharacterizationDispatchRequest(dispatcher, methodId);
+        ATProtoHttpResponse *response = XrpcCharacterizationDispatchRequest(dispatcher, methodId);
         XCTAssertEqual(response.statusCode, HttpStatusUnauthorized,
                        @"%@ must remain a locally registered authenticated route", methodId);
     }
@@ -221,7 +221,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
                                                  rateLimiter:nil];
     [XrpcAppBskyPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
 
-    HttpResponse *response =
+    ATProtoHttpResponse *response =
         XrpcCharacterizationDispatchRequest(dispatcher, @"app.bsky.labeler.getServices");
     XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
@@ -246,22 +246,22 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
         PDSApplication *firstApplication = [[PDSApplication alloc] initWithDataDirectory:firstDataURL.path];
         PDSApplication *secondApplication = [[PDSApplication alloc] initWithDataDirectory:secondDataURL.path];
 
-        [ATProtoHttpXrpcRoutePack registerRoutesWithServer:[HttpServer serverWithPort:0]
+        [ATProtoHttpXrpcRoutePack registerRoutesWithServer:[ATProtoHttpServer serverWithPort:0]
                                                 dispatcher:dispatcher
                                                application:firstApplication
                                                 controller:nil
                                      subscribeReposHandler:nil
-                                            setCorsHeaders:^(HttpResponse *response, HttpRequest *request) {
+                                            setCorsHeaders:^(ATProtoHttpResponse *response, ATProtoHttpRequest *request) {
                                             }];
 
         NSException *exception = nil;
         @try {
-            [ATProtoHttpXrpcRoutePack registerRoutesWithServer:[HttpServer serverWithPort:0]
+            [ATProtoHttpXrpcRoutePack registerRoutesWithServer:[ATProtoHttpServer serverWithPort:0]
                                                     dispatcher:dispatcher
                                                    application:secondApplication
                                                     controller:nil
                                          subscribeReposHandler:nil
-                                                setCorsHeaders:^(HttpResponse *response, HttpRequest *request) {
+                                                setCorsHeaders:^(ATProtoHttpResponse *response, ATProtoHttpRequest *request) {
                                                 }];
         } @catch (NSException *caught) {
             exception = caught;

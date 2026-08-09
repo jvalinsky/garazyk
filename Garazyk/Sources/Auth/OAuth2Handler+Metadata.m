@@ -9,8 +9,8 @@
 
 @implementation OAuth2Handler (Metadata)
 
-- (void)handleAuthorizationServerMetadata:(HttpRequest *)request
-                                 response:(HttpResponse *)response {
+- (void)handleAuthorizationServerMetadata:(ATProtoHttpRequest *)request
+                                 response:(ATProtoHttpResponse *)response {
   GZ_LOG_AUTH_DEBUG(@"authorization-server-metadata request: path=%@", request.path);
   NSString *issuer = [self requestOriginForRequest:request];
   if (!issuer.length) {
@@ -42,8 +42,8 @@
   response.statusCode = 200;
 }
 
-- (void)handleProtectedResourceMetadata:(HttpRequest *)request
-                               response:(HttpResponse *)response {
+- (void)handleProtectedResourceMetadata:(ATProtoHttpRequest *)request
+                               response:(ATProtoHttpResponse *)response {
   GZ_LOG_AUTH_DEBUG(@"protected-resource-metadata request: path=%@", request.path);
   NSString *resource = [self requestOriginForRequest:request];
   if (!resource.length) {
@@ -78,7 +78,7 @@
   response.statusCode = 200;
 }
 
-- (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleJWKS:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
   // Access JWKS via the minter
   NSDictionary *jwks = [self.minter toJWKS];
   if (!jwks) {

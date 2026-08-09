@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file RepoCommit.h
+ * @file ATProtoRepoCommit.h
  * @abstract ATProto repository commit structure.
- * @discussion RepoCommit represents an atomic commit to a user's ATProto repository.
+ * @discussion ATProtoRepoCommit represents an atomic commit to a user's ATProto repository.
  * Commits form a cryptographically-signed chain where each commit references the
  * previous commit's ATProtoCID (content identifier), creating an immutable history.
  */
@@ -17,12 +17,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Represents an atomic commit to an ATProto repository.
- * @discussion RepoCommit models the commit structure in ATProto repositories. Each commit
+ * @discussion ATProtoRepoCommit models the commit structure in ATProto repositories. Each commit
  * is identified by a revision string (ATProtoTID) and contains a reference to the
  * repository data (Merkle Search Tree root ATProtoCID) and the previous commit's ATProtoCID.
  * Commits are immutable and cryptographically signed.
  */
-@interface RepoCommit : NSObject <NSSecureCoding>
+@interface ATProtoRepoCommit : NSObject <NSSecureCoding>
 
 /** @abstract Decentralized identifier of the repository owner. */
 @property (nonatomic, copy) NSString *did;
@@ -30,7 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Commit format version (currently 3). */
 @property (nonatomic, assign) NSInteger version;
 
-/** @abstract ATProtoCID of the repository data (MST root), or nil for empty repo. */
+/** @abstract ATProtoCID of the repository data (ATProtoMST root), or nil for empty repo. */
 @property (nonatomic, strong, nullable) ATProtoCID *dataCID;
 
 /** @abstract Revision identifier (ATProtoTID). */
@@ -48,7 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param dataCID ATProtoCID of repository data.
  * @param rev Revision identifier (ATProtoTID), or nil to auto-generate.
  * @param prevCID Previous commit's ATProtoCID.
- * @return Unsigned RepoCommit instance.
+ * @return Unsigned ATProtoRepoCommit instance.
  */
 + (instancetype)createCommitWithDid:(NSString *)did
                               data:(nullable ATProtoCID *)dataCID
@@ -105,7 +105,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Deserializes commit from CAR v1 data.
  * @param carData CAR v1 encoded data.
  * @param error Receives failure details.
- * @return RepoCommit instance or nil.
+ * @return ATProtoRepoCommit instance or nil.
  */
 + (nullable instancetype)fromCARData:(NSData *)carData error:(NSError **)error;
 
@@ -113,7 +113,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Deserializes a signed commit block from DAG-CBOR bytes.
  * @param blockData Signed repository commit block bytes.
  * @param error Receives failure details.
- * @return RepoCommit instance or nil.
+ * @return ATProtoRepoCommit instance or nil.
  */
 + (nullable instancetype)fromSignedBlockData:(NSData *)blockData
                                        error:(NSError **)error;

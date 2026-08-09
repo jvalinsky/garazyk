@@ -54,7 +54,7 @@
 }
 
 #pragma mark - CORS
-- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
+- (void)setCorsHeaders:(ATProtoHttpResponse *)response forRequest:(ATProtoHttpRequest *)request {
   ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSArray<NSString *> *allowedOrigins =
       [config arrayForKey:@"cors.allowed_origins"];

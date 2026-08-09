@@ -26,13 +26,13 @@
 - (void)testMethodRegistrationAndDispatchReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"Method handler called"];
     
-    [self.dispatcher registerMethod:@"test.method" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.method" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"result": @"success"}];
         [expectation fulfill];
     }];
     
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/test.method"
                                                    queryString:@""
@@ -41,7 +41,7 @@
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     
     [self.dispatcher handleRequest:request response:response];
     
@@ -52,7 +52,7 @@
 #endif
 
 - (void)testUnrecognizedMethodReturns404 {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/unknown.method"
                                                    queryString:@""
@@ -61,7 +61,7 @@
                                                        headers:@{}
                                                           body:nil
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     
     [self.dispatcher handleRequest:request response:response];
     
@@ -72,13 +72,13 @@
 - (void)testPathParametersOverrideMethodParsing {
     XCTestExpectation *expectation = [self expectationWithDescription:@"Path parameter handler called"];
 
-    [self.dispatcher registerMethod:@"test.method" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:@"test.method" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"result": @"path-params"}];
         [expectation fulfill];
     }];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/ignored.method"
                                                    queryString:@""
@@ -88,7 +88,7 @@
                                                           body:[NSData data]
                                                 remoteAddress:@"127.0.0.1"];
     request.pathParameters = @{@"method": @"test.method"};
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     [self.dispatcher handleRequest:request response:response];
 
@@ -102,13 +102,13 @@
 - (void)testRegisterComAtprotoSyncSubscribeReposMapsToMethodAndReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"subscribeRepos handler called"];
 
-    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_subscribeRepos handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_subscribeRepos handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"ok": @YES}];
         [expectation fulfill];
     }];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                                    queryString:@""
@@ -117,7 +117,7 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     [self.dispatcher handleRequest:request response:response];
 
@@ -131,13 +131,13 @@
 - (void)testRegisterComAtprotoServerDeleteSessionMapsToMethodAndReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"deleteSession handler called"];
 
-    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteSession handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteSession handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"ok": @YES}];
         [expectation fulfill];
     }];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/xrpc/com.atproto.server.deleteSession"
                                                    queryString:@""
@@ -146,7 +146,7 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     [self.dispatcher handleRequest:request response:response];
 
@@ -160,13 +160,13 @@
 - (void)testRegisterComAtprotoSyncGetRecordMapsToMethodAndReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"getRecord handler called"];
 
-    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRecord handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_sync_getRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"ok": @YES}];
         [expectation fulfill];
     }];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.getRecord"
                                                    queryString:@""
@@ -175,7 +175,7 @@
                                                        headers:@{}
                                                           body:nil
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     [self.dispatcher handleRequest:request response:response];
 

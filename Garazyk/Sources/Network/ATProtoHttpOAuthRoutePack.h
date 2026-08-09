@@ -12,7 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpServer;
+@class ATProtoHttpServer;
 @class ATProtoJWTMinter;
 @class PDSApplication;
 @class PDSController;
@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the registerRoutesWithServer operation.
  */
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
                        jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
                    dataDirectory:(nullable NSString *)dataDirectory

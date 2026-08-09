@@ -23,7 +23,7 @@
 #pragma mark - CAR Export
 
 - (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSString *)sinceRev error:(NSError **)error {
-    CARWriter *writer = [self buildRepoWriterForDid:did since:sinceRev error:error];
+    ATProtoCARWriter *writer = [self buildRepoWriterForDid:did since:sinceRev error:error];
     if (!writer) {
         return nil;
     }
@@ -32,7 +32,7 @@
 
 - (BOOL)writeRepoContents:(NSString *)did since:(nullable NSString *)sinceRev toPath:(NSString *)path error:(NSError **)error {
     PDSActorStore *store = nil;
-    MST *mst = nil;
+    ATProtoMST *mst = nil;
     ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
@@ -77,7 +77,7 @@
     }
 
     @try {
-        if (![CARWriter writeHeaderWithRootCID:commitCID toFileHandle:fileHandle error:error]) {
+        if (![ATProtoCARWriter writeHeaderWithRootCID:commitCID toFileHandle:fileHandle error:error]) {
             [fileHandle closeFile];
             return NO;
         }
@@ -87,7 +87,7 @@
             return YES;
         }
 
-        if (![CARWriter writeBlock:[CARBlock blockWithCID:commitCID data:commitBlock]
+        if (![ATProtoCARWriter writeBlock:[ATProtoCARBlock blockWithCID:commitCID data:commitBlock]
                       toFileHandle:fileHandle
                              error:error]) {
             [fileHandle closeFile];
@@ -99,7 +99,7 @@
         MSTBlockProvider exportRecordProvider = [self recordProviderForDid:did
                                                           materializedBlocks:materializedBlocks
                                                                 recordByCID:recordByCID];
-        NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
+        NSArray<ATProtoCARBlock *> *mstBlocks = [self mstBlocksForExport:mst
                                                     includeAllMST:includeFullMST
                                                         proofKeys:changedMSTKeys ?: @[]
                                                  recordProvider:exportRecordProvider
@@ -108,13 +108,13 @@
             [fileHandle closeFile];
             return NO;
         }
-        for (CARBlock *block in mstBlocks) {
+        for (ATProtoCARBlock *block in mstBlocks) {
             NSString *cidString = block.cid.stringValue ?: @"";
             if (cidString.length == 0 || [addedBlockCIDs containsObject:cidString]) {
                 continue;
             }
             [addedBlockCIDs addObject:cidString];
-            if (![CARWriter writeBlock:block toFileHandle:fileHandle error:error]) {
+            if (![ATProtoCARWriter writeBlock:block toFileHandle:fileHandle error:error]) {
                 [fileHandle closeFile];
                 return NO;
             }
@@ -145,7 +145,7 @@
             }
 
             [addedBlockCIDs addObject:cidString];
-            if (![CARWriter writeBlock:[CARBlock blockWithCID:cid data:data]
+            if (![ATProtoCARWriter writeBlock:[ATProtoCARBlock blockWithCID:cid data:data]
                           toFileHandle:fileHandle
                                  error:error]) {
                 [fileHandle closeFile];
@@ -189,7 +189,7 @@
         return nil;
     }
 
-    MST *mst = [self mstFromRecords:allRecords ?: @[]];
+    ATProtoMST *mst = [self mstFromRecords:allRecords ?: @[]];
     ATProtoCID *mstRootCID = mst.rootCID;
     if (!mstRootCID) {
         if (error) {
@@ -255,12 +255,12 @@
         }
     }
 
-    NSData *headerChunk = [CARWriter encodedHeaderWithRootCID:storedCommitCID error:error];
+    NSData *headerChunk = [ATProtoCARWriter encodedHeaderWithRootCID:storedCommitCID error:error];
     if (!headerChunk) {
         return nil;
     }
 
-    NSData *commitChunk = [CARWriter encodedBlock:[CARBlock blockWithCID:storedCommitCID data:storedCommitBlock]
+    NSData *commitChunk = [ATProtoCARWriter encodedBlock:[ATProtoCARBlock blockWithCID:storedCommitCID data:storedCommitBlock]
                                             error:error];
     if (!commitChunk) {
         return nil;
@@ -272,9 +272,9 @@
     }
 
     NSMutableArray<NSData *> *mstChunks = [NSMutableArray array];
-    // Proof-only MST nodes; sparse proofs intentionally exclude records
-    // (the relay/AKA flow consumes the MST proof, not the records themselves).
-    NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
+    // Proof-only ATProtoMST nodes; sparse proofs intentionally exclude records
+    // (the relay/AKA flow consumes the ATProtoMST proof, not the records themselves).
+    NSArray<ATProtoCARBlock *> *mstBlocks = [self mstBlocksForExport:mst
                                                 includeAllMST:NO
                                                     proofKeys:proofKeys
                                              recordProvider:nil
@@ -283,12 +283,12 @@
         return nil;
     }
 
-    for (CARBlock *block in mstBlocks) {
+    for (ATProtoCARBlock *block in mstBlocks) {
         NSString *cidString = block.cid.stringValue ?: @"";
         if (cidString.length == 0 || [seenCIDs containsObject:cidString]) {
             continue;
         }
-        NSData *encoded = [CARWriter encodedBlock:block error:error];
+        NSData *encoded = [ATProtoCARWriter encodedBlock:block error:error];
         if (!encoded) {
             return nil;
         }
@@ -298,8 +298,8 @@
 
     // Defensive against walker provider-missed records: the new pre-order
     // walker (gated by streamableCARBlockOrderingEnabled) emits records
-    // interleaved with MST nodes; missing records here did not get into the
-    // MST and need to be appended. With proof-only `includeAllMST=NO`,
+    // interleaved with ATProtoMST nodes; missing records here did not get into the
+    // ATProtoMST and need to be appended. With proof-only `includeAllMST=NO`,
     // remainingRecordCIDs generally contains every changed record.
     NSMutableArray<NSString *> *remainingRecordCIDs = [NSMutableArray array];
     for (NSString *cidString in filteredRecordCIDs) {
@@ -314,7 +314,7 @@
     NSArray<NSString *> *capturedRecordCIDs = [remainingRecordCIDs copy];
     NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
     __weak typeof(self) weakSelf = self;
-    __block NSUInteger phase = 0; // 0=header, 1=commit, 2=MST, 3=records, 4=done
+    __block NSUInteger phase = 0; // 0=header, 1=commit, 2=ATProtoMST, 3=records, 4=done
     __block NSUInteger mstIndex = 0;
     __block NSUInteger recordIndex = 0;
 
@@ -375,7 +375,7 @@
                     continue;
                 }
 
-                return [CARWriter encodedBlock:[CARBlock blockWithCID:cid data:data] error:producerError];
+                return [ATProtoCARWriter encodedBlock:[ATProtoCARBlock blockWithCID:cid data:data] error:producerError];
             }
             phase = 4;
         }
@@ -388,7 +388,7 @@
                                                     since:(nullable NSString *)sinceRev
                                                     error:(NSError **)error {
     PDSActorStore *store = nil;
-    MST *mst = nil;
+    ATProtoMST *mst = nil;
     ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
@@ -413,7 +413,7 @@
         return nil;
     }
 
-    NSData *headerChunk = [CARWriter encodedHeaderWithRootCID:commitCID error:error];
+    NSData *headerChunk = [ATProtoCARWriter encodedHeaderWithRootCID:commitCID error:error];
     if (!headerChunk) {
         return nil;
     }
@@ -430,7 +430,7 @@
         };
     }
 
-    NSData *commitChunk = [CARWriter encodedBlock:[CARBlock blockWithCID:commitCID data:commitBlock] error:error];
+    NSData *commitChunk = [ATProtoCARWriter encodedBlock:[ATProtoCARBlock blockWithCID:commitCID data:commitBlock] error:error];
     if (!commitChunk) {
         return nil;
     }
@@ -445,7 +445,7 @@
     MSTBlockProvider exportRecordProvider = [self recordProviderForDid:did
                                                       materializedBlocks:materializedBlocks
                                                             recordByCID:recordByCID];
-    NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
+    NSArray<ATProtoCARBlock *> *mstBlocks = [self mstBlocksForExport:mst
                                                 includeAllMST:includeFullMST
                                                     proofKeys:changedMSTKeys ?: @[]
                                              recordProvider:exportRecordProvider
@@ -453,13 +453,13 @@
     if (!mstBlocks) {
         return nil;
     }
-    for (CARBlock *block in mstBlocks) {
+    for (ATProtoCARBlock *block in mstBlocks) {
         NSString *cidString = block.cid.stringValue ?: @"";
         if (cidString.length == 0 || [seenCIDs containsObject:cidString]) {
             continue;
         }
 
-        NSData *encoded = [CARWriter encodedBlock:block error:error];
+        NSData *encoded = [ATProtoCARWriter encodedBlock:block error:error];
         if (!encoded) {
             return nil;
         }
@@ -469,7 +469,7 @@
 
     // Defensive against walker provider-missed records: under Sync 1.1 the
     // pre-order walker (gated by streamableCARBlockOrderingEnabled) emits
-    // every record interleaved with its MST node in the MST phase; here we
+    // every record interleaved with its ATProtoMST node in the ATProtoMST phase; here we
     // only retain records the walker dropped (i.e. records whose ATProtoCID the
     // recordProvider could not resolve). In full-export mode this list is
     // typically empty; under proof-only / delta sync it carries the changes.
@@ -487,7 +487,7 @@
     NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
     NSDictionary<NSString *, NSData *> *capturedMaterializedBlocks = [materializedBlocks copy];
     __weak typeof(self) weakSelf = self;
-    __block NSUInteger phase = 0; // 0=header, 1=commit, 2=MST, 3=records, 4=done
+    __block NSUInteger phase = 0; // 0=header, 1=commit, 2=ATProtoMST, 3=records, 4=done
     __block NSUInteger mstIndex = 0;
     __block NSUInteger recordIndex = 0;
 
@@ -557,7 +557,7 @@
                     continue;
                 }
 
-                return [CARWriter encodedBlock:[CARBlock blockWithCID:cid data:data] error:producerError];
+                return [ATProtoCARWriter encodedBlock:[ATProtoCARBlock blockWithCID:cid data:data] error:producerError];
             }
             phase = 4;
         }
@@ -572,7 +572,7 @@
                                      since:(nullable NSString *)sinceRev
                                      error:(NSError **)error {
     PDSActorStore *store = nil;
-    MST *mst = nil;
+    ATProtoMST *mst = nil;
     ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
@@ -599,17 +599,17 @@
 
     if (noChangesSince) {
         // Empty tree: just the header with data: null
-        STARCommit *commit = [self starCommitFromExport:did
+        ATProtoSTARCommit *commit = [self starCommitFromExport:did
                                              commitCID:commitCID
                                            commitBlock:commitBlock];
-        STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+        ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
         return [writer serialize];
     }
 
-    STARCommit *commit = [self starCommitFromExport:did
+    ATProtoSTARCommit *commit = [self starCommitFromExport:did
                                          commitCID:commitCID
                                        commitBlock:commitBlock];
-    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
 
     __weak typeof(self) weakSelf = self;
     __block NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
@@ -652,7 +652,7 @@
                                        since:(nullable NSString *)sinceRev
                                        error:(NSError **)error {
     PDSActorStore *store = nil;
-    MST *mst = nil;
+    ATProtoMST *mst = nil;
     ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
@@ -677,10 +677,10 @@
         return nil;
     }
 
-    STARCommit *commit = [self starCommitFromExport:did
+    ATProtoSTARCommit *commit = [self starCommitFromExport:did
                                          commitCID:commitCID
                                        commitBlock:commitBlock];
-    STARLiteWriter *writer = [[STARLiteWriter alloc] initWithCommit:commit];
+    ATProtoSTARLiteWriter *writer = [[ATProtoSTARLiteWriter alloc] initWithCommit:commit];
 
     if (noChangesSince) {
         return [writer serialize];
@@ -726,7 +726,7 @@
                                                              since:(nullable NSString *)sinceRev
                                                              error:(NSError **)error {
     PDSActorStore *store = nil;
-    MST *mst = nil;
+    ATProtoMST *mst = nil;
     ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
@@ -752,7 +752,7 @@
         return nil;
     }
 
-    STARCommit *commit = [self starCommitFromExport:did
+    ATProtoSTARCommit *commit = [self starCommitFromExport:did
                                          commitCID:commitCID
                                        commitBlock:commitBlock];
 
@@ -765,7 +765,7 @@
     // This is still better than one giant NSData because we've already split it.
     // In a future version, we'd use a thread-safe queue.
 
-    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit outputBlock:^(NSData *chunk) {
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit outputBlock:^(NSData *chunk) {
         if (chunk.length > 0) {
             [chunks addObject:chunk];
         }
@@ -831,7 +831,7 @@
     };
 }
 
-- (STARCommit *)starCommitFromExport:(NSString *)did
+- (ATProtoSTARCommit *)starCommitFromExport:(NSString *)did
                            commitCID:(ATProtoCID *)commitCID
                          commitBlock:(NSData *)commitBlock {
     // Parse the commit block to extract rev, prev, sig, data
@@ -869,7 +869,7 @@
         }
     }
 
-    return [STARCommit commitWithDid:did
+    return [ATProtoSTARCommit commitWithDid:did
                              version:3
                                data:dataCID
                                 rev:rev
@@ -882,7 +882,7 @@
 - (BOOL)prepareRepoExportForDid:(NSString *)did
                           since:(nullable NSString *)sinceRev
                           store:(PDSActorStore * _Nullable * _Nonnull)storeOut
-                            mst:(MST * _Nullable * _Nonnull)mstOut
+                            mst:(ATProtoMST * _Nullable * _Nonnull)mstOut
                       commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCIDOut
                     commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
                  noChangesSince:(BOOL *)noChangesSinceOut
@@ -896,7 +896,7 @@
     if (!store) return NO;
 
     NSArray<PDSDatabaseRecord *> *records = nil;
-    MST *mst = [self loadMSTForDid:did store:store error:error];
+    ATProtoMST *mst = [self loadMSTForDid:did store:store error:error];
     if (!mst && error && *error) {
         return NO;
     }
@@ -1181,16 +1181,16 @@
 
     // Try to load existing commit from repo_root
     // We expect repo_root to be the head Commit ATProtoCID.
-    RepoCommit *commit = nil;
+    ATProtoRepoCommit *commit = nil;
     NSData *commitBlock = nil;
     ATProtoCID *commitCID = nil;
 
-    // If we have a signed stored commit and it matches the computed MST root, reuse it.
+    // If we have a signed stored commit and it matches the computed ATProtoMST root, reuse it.
     if (storedCommitCID && storedCommitBlock.length > 0 && storedCommitIsSigned && storedDataCID && [storedDataCID isEqual:mstRootCID]) {
         commitCID = storedCommitCID;
         commitBlock = storedCommitBlock;
     } else {
-        // Create and persist a signed commit that points at the computed MST root.
+        // Create and persist a signed commit that points at the computed ATProtoMST root.
         // If the stored root was a valid signed commit, use it as "prev"; otherwise, start a new chain.
         ATProtoCID *prevCommitCID = (storedCommitCID && storedCommitBlock.length > 0 && storedCommitIsSigned) ? storedCommitCID : nil;
 
@@ -1207,7 +1207,7 @@
             revCandidate = latestMutationRev;
         }
 
-        commit = [RepoCommit createCommitWithDid:did data:mstRootCID rev:revCandidate prev:prevCommitCID];
+        commit = [ATProtoRepoCommit createCommitWithDid:did data:mstRootCID rev:revCandidate prev:prevCommitCID];
 
         NSError *signError = nil;
         NSData *signature = [store signData:[commit serialize] error:&signError];
@@ -1381,11 +1381,11 @@
 
 #pragma mark - CAR Assembly Helpers
 
-- (nullable CARWriter *)buildRepoWriterForDid:(NSString *)did
+- (nullable ATProtoCARWriter *)buildRepoWriterForDid:(NSString *)did
                                          since:(nullable NSString *)sinceRev
                                          error:(NSError **)error {
     PDSActorStore *store = nil;
-    MST *mst = nil;
+    ATProtoMST *mst = nil;
     ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;
@@ -1410,18 +1410,18 @@
         return nil;
     }
 
-    CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:commitCID];
     if (noChangesSince) {
         return writer;
     }
 
-    [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlock]];
+    [writer addBlock:[ATProtoCARBlock blockWithCID:commitCID data:commitBlock]];
 
     NSMutableSet<NSString *> *addedBlockCIDs = [NSMutableSet setWithObject:commitCID.stringValue];
     MSTBlockProvider exportRecordProvider = [self recordProviderForDid:did
                                                       materializedBlocks:materializedBlocks
                                                             recordByCID:recordByCID];
-    NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
+    NSArray<ATProtoCARBlock *> *mstBlocks = [self mstBlocksForExport:mst
                                                 includeAllMST:includeFullMST
                                                     proofKeys:changedMSTKeys ?: @[]
                                              recordProvider:exportRecordProvider
@@ -1429,7 +1429,7 @@
     if (!mstBlocks) {
         return nil;
     }
-    for (CARBlock *block in mstBlocks) {
+    for (ATProtoCARBlock *block in mstBlocks) {
         NSString *cidString = block.cid.stringValue ?: @"";
         if (cidString.length == 0 || [addedBlockCIDs containsObject:cidString]) {
             continue;
@@ -1468,13 +1468,13 @@
         }
 
         [addedBlockCIDs addObject:cidString];
-        [writer addBlock:[CARBlock blockWithCID:cid data:data]];
+        [writer addBlock:[ATProtoCARBlock blockWithCID:cid data:data]];
     }
 
     return writer;
 }
 
-- (nullable NSArray<CARBlock *> *)mstBlocksForExport:(MST *)mst
+- (nullable NSArray<ATProtoCARBlock *> *)mstBlocksForExport:(ATProtoMST *)mst
                                        includeAllMST:(BOOL)includeAllMST
                                            proofKeys:(NSArray<NSString *> *)proofKeys
                                       recordProvider:(nullable MSTBlockProvider)recordProvider
@@ -1483,7 +1483,7 @@
         return @[];
     }
 
-    NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
+    NSMutableArray<ATProtoCARBlock *> *blocks = [NSMutableArray array];
     NSMutableSet<NSString *> *addedCIDs = [NSMutableSet set];
 
     BOOL (^appendNode)(ATProtoCID *, NSData *) = ^BOOL(ATProtoCID *cid, NSData *data) {
@@ -1492,13 +1492,13 @@
             return YES;
         }
         [addedCIDs addObject:cidString];
-        [blocks addObject:[CARBlock blockWithCID:cid data:data]];
+        [blocks addObject:[ATProtoCARBlock blockWithCID:cid data:data]];
         return YES;
     };
 
     if (includeAllMST) {
         // Sync 1.1 streamable CAR block ordering: pre-order DFS with records
-        // interleaved at each entry. The BFS + post-MST-record-layout emit is
+        // interleaved at each entry. The BFS + post-ATProtoMST-record-layout emit is
         // deliberately replaced here so consumers receive the spec-required
         // stream layout. The downstream recordCIDStrings loop remains as a
         // defensive fallback: any ATProtoCID the walker silently skipped (record
@@ -1536,11 +1536,11 @@
         if (key.length == 0) {
             continue;
         }
-        NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:key];
+        NSArray<ATProtoMSTNode *> *proofNodes = [mst getProofNodesForKey:key];
         if (!proofNodes) {
             continue;
         }
-        for (MSTNode *node in proofNodes) {
+        for (ATProtoMSTNode *node in proofNodes) {
             NSData *nodeData = [mst serializeNode:node];
             if (!nodeData) {
                 continue;

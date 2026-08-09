@@ -641,7 +641,7 @@ static BOOL PDSLexiconResolverRunningTests(void) {
 + (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
                                    configuration:(ATProtoServiceConfiguration *)configuration {
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_lexicon_resolveLexicon handler:^(
-                  HttpRequest *request, HttpResponse *response) {
+                  ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     if (request.method != HttpMethodGET) {
       response.statusCode = HttpStatusMethodNotAllowed;
       [response setHeader:@"GET" forKey:@"Allow"];

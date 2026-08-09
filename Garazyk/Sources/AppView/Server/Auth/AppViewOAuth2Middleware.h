@@ -18,7 +18,7 @@
 #import <Foundation/Foundation.h>
 
 @class AppViewDatabase;
-@class HttpRequest;
+@class ATProtoHttpRequest;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -66,7 +66,7 @@ typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
 
  @return YES if the request is authenticated, NO otherwise.
  */
-- (BOOL)validateRequest:(HttpRequest *)request
+- (BOOL)validateRequest:(ATProtoHttpRequest *)request
               callerDID:(NSString *_Nullable *_Nullable)callerDID
                    error:(NSError **)error;
 
@@ -79,7 +79,7 @@ typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
 
  @return The Bearer token string, or nil if not present.
  */
-- (nullable NSString *)extractBearerToken:(HttpRequest *)request;
+- (nullable NSString *)extractBearerToken:(ATProtoHttpRequest *)request;
 
 /*!
  @method validateDPoPProof:token:tokenJkt:outThumbprint:error:
@@ -99,7 +99,7 @@ typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
 
  @return YES if the DPoP proof is valid and binding matches, NO otherwise.
  */
-- (BOOL)validateDPoPProof:(HttpRequest *)request
+- (BOOL)validateDPoPProof:(ATProtoHttpRequest *)request
                     token:(NSString *)token
                 tokenJkt:(nullable NSString *)tokenJkt
            outThumbprint:(NSString *_Nullable *_Nullable)outThumbprint

@@ -15,8 +15,8 @@
 
 @implementation OAuth2Handler (Authorization)
 
-- (void)handleAuthorizeRequest:(HttpRequest *)request
-                      response:(HttpResponse *)response {
+- (void)handleAuthorizeRequest:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response {
   GZ_LOG_AUTH_INFO(@"Starting authorize request for path: %@", request.path);
   // Use request.queryParams if available, otherwise parse manually
   NSMutableDictionary *params =
@@ -176,7 +176,7 @@
   [self serveAuthorizePage:response params:params client:client];
 }
 
-- (void)serveAuthorizePage:(HttpResponse *)response
+- (void)serveAuthorizePage:(ATProtoHttpResponse *)response
                     params:(NSDictionary *)params
                     client:(NSDictionary *)client {
   NSString *assetsPath = [self assetsPath];
@@ -253,8 +253,8 @@
   [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
-- (void)handleAuthorizeConfirm:(HttpRequest *)request
-                      response:(HttpResponse *)response {
+- (void)handleAuthorizeConfirm:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response {
   NSString *body = [[NSString alloc] initWithData:request.body
                                          encoding:NSUTF8StringEncoding];
   NSDictionary *params = [self parseFormUrlEncodedString:body];
@@ -459,8 +459,8 @@
                       }];
 }
 
-- (void)handleAuthorizeSignIn:(HttpRequest *)request
-                     response:(HttpResponse *)response {
+- (void)handleAuthorizeSignIn:(ATProtoHttpRequest *)request
+                     response:(ATProtoHttpResponse *)response {
   NSString *body = [[NSString alloc] initWithData:request.body
                                          encoding:NSUTF8StringEncoding];
   NSDictionary *params = [self parseFormUrlEncodedString:body];

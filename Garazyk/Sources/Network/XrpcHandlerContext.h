@@ -10,8 +10,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @protocol XrpcRoutePackServices;
 
 /*!
@@ -21,16 +21,16 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface XrpcHandlerContext : NSObject
 
-@property (nonatomic, readonly) HttpRequest *request;
-@property (nonatomic, readonly) HttpResponse *response;
+@property (nonatomic, readonly) ATProtoHttpRequest *request;
+@property (nonatomic, readonly) ATProtoHttpResponse *response;
 @property (nonatomic, readonly) id<XrpcRoutePackServices> services;
 @property (nonatomic, readonly, nullable) NSString *authenticatedDID;
 
 /**
  * @abstract Performs the initWithRequest operation.
  */
-- (instancetype)initWithRequest:(HttpRequest *)request
-                       response:(HttpResponse *)response
+- (instancetype)initWithRequest:(ATProtoHttpRequest *)request
+                       response:(ATProtoHttpResponse *)response
                        services:(id<XrpcRoutePackServices>)services
     NS_DESIGNATED_INITIALIZER;
 

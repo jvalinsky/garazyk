@@ -30,8 +30,8 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol AuthCryptoDPoPReplayChecker;
 @protocol PDSKeyManager;
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class ATProtoJWT;
 
 extern NSString * const AuthVerifierErrorDomain;
@@ -168,8 +168,8 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  @param error Set on failure.
  @return Authenticated principal, or nil if verification failed.
  */
-- (nullable ATProtoAuthVerifierPrincipal *)verifyRequest:(HttpRequest *)request
-                                         response:(nullable HttpResponse *)response
+- (nullable ATProtoAuthVerifierPrincipal *)verifyRequest:(ATProtoHttpRequest *)request
+                                         response:(nullable ATProtoHttpResponse *)response
                                             error:(NSError **)error;
 
  /*!
@@ -192,8 +192,8 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  */
 - (nullable ATProtoAuthVerifierPrincipal *)verifyAuthHeader:(nullable NSString *)authHeader
                                             dpopHeader:(nullable NSString *)dpopHeader
-                                              request:(nullable HttpRequest *)request
-                                             response:(nullable HttpResponse *)response
+                                              request:(nullable ATProtoHttpRequest *)request
+                                             response:(nullable ATProtoHttpResponse *)response
                                                 error:(NSError **)error;
 
 /*!
@@ -201,7 +201,7 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  @param request The HTTP request.
  @return The canonical URL for DPoP verification.
  */
-- (nullable NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request;
+- (nullable NSURL *)expectedDPoPURLForRequest:(ATProtoHttpRequest *)request;
 
 /*!
  @brief Set the ATProtoJWT verification key for local issuer.

@@ -54,9 +54,9 @@ NS_ASSUME_NONNULL_BEGIN
 /** Records that an event was dropped. */
 - (void)recordEventDropped;
 
-/** Records a successful MST validation. */
+/** Records a successful ATProtoMST validation. */
 - (void)recordMSTValidationSuccess;
-/** Records a failed MST validation. */
+/** Records a failed ATProtoMST validation. */
 - (void)recordMSTValidationFailure;
 /** Records a successful repository signature validation. */
 - (void)recordSignatureValidationSuccess;
@@ -123,9 +123,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) int64_t eventsForwarded;
 /** Total events dropped before forwarding. */
 @property (nonatomic, readonly) int64_t eventsDropped;
-/** Total successful MST validations. */
+/** Total successful ATProtoMST validations. */
 @property (nonatomic, readonly) int64_t mstValidationSuccess;
-/** Total failed MST validations. */
+/** Total failed ATProtoMST validations. */
 @property (nonatomic, readonly) int64_t mstValidationFailure;
 /** Total successful signature validations. */
 @property (nonatomic, readonly) int64_t signatureValidationSuccess;
