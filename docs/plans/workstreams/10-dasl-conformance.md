@@ -152,6 +152,32 @@ fixture wait without a summary. See workstream 08's dated evidence for the
 exact commands, logs, and failure classifications. This does not change the
 three recorded CI-policy options; no CI policy or product code was changed.
 
+### GNUstep RASL/BDASL TLS and SSRF evidence (2026-08-08)
+
+The current `codex/dasl-network` source was mounted into the existing
+from-source GNUstep proof image `garazyk-gnustep-proof:2026-08-08`. A GNUstep
+CMake configure with `BUILD_TESTS=ON`, followed by
+`cmake --build ... --target AllTests --parallel 4`, compiled the current Core,
+Transport, RASL, BDASL, and SSRF sources but could not link `AllTests`: the
+unrelated Admin UI `UIAuthManager.m` compilation failed at five `HttpRequest`
+forward-declaration uses. Admin UI was not changed.
+
+The bounded GNUstep harness then compiled the current
+`ATProtoRASLClientTests`, `ATProtoBDASLVerifierTests`, and
+`SSRFValidatorTests` objects and ran all registered methods: **43 tests, 0
+failures**. This includes the RASL range fixture, per-chunk BLAKE3 checks,
+wrong-response rejection, and SSRF validator coverage under GNUstep.
+
+For live TLS evidence, a temporary local HTTPS fixture served 25 bytes through
+GNUstep's `ATProtoSafeHTTPClient` libcurl path. The fixture CA was installed
+only in the ephemeral container trust path and private-host access was enabled
+only for that local fixture. A second request using the default policy to
+`https://127.0.0.1/` was rejected before connection with
+`ATProtoSafeHTTPClientErrorSSRFBlocked` (code 3). This proves the GNUstep HTTPS
+transport path and the default RASL SSRF boundary without weakening product
+policy. The full `AllTests` GNUstep gate remains blocked only by the unrelated
+Admin UI compile failure above.
+
 ## Phases 5–11 — the remaining specs
 
 Each phase below needs its own evidence/gate/rollback slice added here before implementation
@@ -172,8 +198,8 @@ and client verification boundary and remains Phase 6 work, rather than being ser
   parsing, no-hint and unsupported-hash failures, block/blob lookup, scan bounds, and fail-closed
   BLAKE3 behavior. The live route fixture starts an ephemeral loopback server and exercises exact
   CID-verified GET and bodyless HEAD responses, then corrupts a repository block while retaining
-  its original CID key and confirms both methods fail closed. GNUstep SSRF/HTTPS integration remains follow-up evidence
-  because the current test harness has no local TLS fixture.
+  its original CID key and confirms both methods fail closed. GNUstep
+  SSRF/HTTPS evidence is recorded in the dated section above.
 - Rollback: route and client are additive; delete the route registration and the client class.
 
 **Phase 6 — BDASL — IMPLEMENTED (bounded sidecar and HTTP range integration).** The CID half was already done
