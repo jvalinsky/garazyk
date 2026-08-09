@@ -203,6 +203,31 @@ static NSError *BDASLError(ATProtoBDASLVerifierErrorCode code, NSString *message
     return YES;
 }
 
++ (BOOL)verifyChunkData:(NSData *)data
+         expectedDigest:(NSData *)expectedDigest
+                  error:(NSError **)error {
+    if (![data isKindOfClass:[NSData class]] ||
+        ![expectedDigest isKindOfClass:[NSData class]] ||
+        expectedDigest.length != kBDASLDigestLength) {
+        if (error) *error = BDASLError(ATProtoBDASLVerifierErrorInvalidSidecar,
+                                        @"A chunk and its expected digest are required");
+        return NO;
+    }
+
+    blake3_hasher hasher;
+    blake3_hasher_init(&hasher);
+    blake3_hasher_update(&hasher, data.bytes, data.length);
+    uint8_t digest[kBDASLDigestLength];
+    blake3_hasher_finalize(&hasher, digest, sizeof(digest));
+    NSData *actualDigest = [NSData dataWithBytes:digest length:sizeof(digest)];
+    if (![actualDigest isEqualToData:expectedDigest]) {
+        if (error) *error = BDASLError(ATProtoBDASLVerifierErrorChunkMismatch,
+                                        @"BDASL range response failed chunk verification");
+        return NO;
+    }
+    return YES;
+}
+
 + (BOOL)chunkRangeForStart:(NSUInteger)start
                   hasStart:(BOOL)hasStart
                        end:(NSUInteger)end
