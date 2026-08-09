@@ -10,7 +10,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class BeskidDatabase;
-@class HttpServer;
+@class ATProtoHttpServer;
 
 /**
  * @abstract Registry and handler for Beskid XRPC endpoints.
@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Registers Beskid-specific routes with the provided server.
  * @param server The HTTP server to register routes with.
  */
-- (void)registerRoutesWithServer:(HttpServer *)server;
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server;
 
 @end
 

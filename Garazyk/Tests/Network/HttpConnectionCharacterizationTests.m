@@ -88,7 +88,7 @@
 }
 @end
 
-@interface HttpServer (Testing)
+@interface ATProtoHttpServer (Testing)
 - (void)handleNewConnection:(id<ATProtoNetworkConnection>)connection;
 #if defined(GNUSTEP)
 @property (nonatomic, assign) dispatch_queue_t serverQueue;
@@ -101,7 +101,7 @@
 @end
 
 @interface HttpConnectionCharacterizationTests : XCTestCase
-@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong) ATProtoHttpServer *server;
 @property (nonatomic, strong) MockHttpConnection *connection;
 @end
 
@@ -109,16 +109,16 @@
 
 - (void)setUp {
     [super setUp];
-    self.server = [HttpServer serverWithPort:0];
+    self.server = [ATProtoHttpServer serverWithPort:0];
     
     // Add a simple handler
-    [self.server addRoute:@"GET" path:@"/test" handler:^(HttpRequest *req, HttpResponse *res) {
+    [self.server addRoute:@"GET" path:@"/test" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         [res setBodyString:@"OK"];
         res.statusCode = 200;
     }];
     
     // Add a chunked echo handler
-    [self.server addRoute:@"POST" path:@"/echo" handler:^(HttpRequest *req, HttpResponse *res) {
+    [self.server addRoute:@"POST" path:@"/echo" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         res.bodyData = req.body;
         res.statusCode = 200;
     }];

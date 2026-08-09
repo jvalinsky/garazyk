@@ -21,7 +21,7 @@ static const uint16_t kGermDefaultPort = 8082;
 @property (nonatomic, strong) GermMailboxService *mailboxService;
 @property (nonatomic, strong) GermIdentityService *identityService;
 @property (nonatomic, strong) ChatAuthManager *authManager;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) XrpcDispatcher *dispatcher;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
@@ -98,12 +98,12 @@ static const uint16_t kGermDefaultPort = 8082;
 
     // 5. Start HTTP server (bind to all interfaces so it works in Docker)
     if (port == 0) port = kGermDefaultPort;
-    self.httpServer = [HttpServer serverWithHost:@"0.0.0.0" port:port];
+    self.httpServer = [ATProtoHttpServer serverWithHost:@"0.0.0.0" port:port];
 
     // Health endpoint
     [self.httpServer addRoute:@"GET"
                         path:@"/_health"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = 200;
         [response setBodyString:@"ok"];
     }];
@@ -111,7 +111,7 @@ static const uint16_t kGermDefaultPort = 8082;
     // Root endpoint - display ASCII art
     [self.httpServer addRoute:@"GET"
                         path:@"/"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = 200;
         response.contentType = @"text/plain; charset=utf-8";
         [response setBodyString:@",--,   ,---.  ,---.            \n"
@@ -127,7 +127,7 @@ static const uint16_t kGermDefaultPort = 8082;
     __weak typeof(self) weakSelf = self;
     [self.httpServer addRoute:@"*"
                         path:@"/xrpc/*"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [weakSelf.dispatcher handleRequest:request response:response];
     }];
 

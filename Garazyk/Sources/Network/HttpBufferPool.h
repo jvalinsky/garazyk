@@ -4,21 +4,21 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 /*!
- @class HttpBufferPool
+ @class ATProtoHttpBufferPool
 
  @abstract Slab allocator for HTTP request/response objects and buffers.
 
- @discussion HttpBufferPool reduces allocation overhead by reusing HttpRequest,
- HttpResponse, and data buffers. Uses size classes (256, 1024, 4096, 16384 bytes)
+ @discussion ATProtoHttpBufferPool reduces allocation overhead by reusing ATProtoHttpRequest,
+ ATProtoHttpResponse, and data buffers. Uses size classes (256, 1024, 4096, 16384 bytes)
  with separate pools for each size to minimize internal fragmentation.
 
  Thread Safety: All methods are thread-safe using serial dispatch queues.
  */
-@interface HttpBufferPool : NSObject
+@interface ATProtoHttpBufferPool : NSObject
 
 /*!
  @method sharedPool
@@ -63,38 +63,38 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method acquireRequest
 
- @abstract Returns a recycled HttpRequest object.
+ @abstract Returns a recycled ATProtoHttpRequest object.
 
- @return An HttpRequest instance, or nil if pool is exhausted.
+ @return An ATProtoHttpRequest instance, or nil if pool is exhausted.
  */
-- (nullable HttpRequest *)acquireRequest;
+- (nullable ATProtoHttpRequest *)acquireRequest;
 
 /*!
  @method releaseRequest:
 
- @abstract Returns an HttpRequest to the pool for reuse.
+ @abstract Returns an ATProtoHttpRequest to the pool for reuse.
 
  @param request The request to recycle.
  */
-- (void)releaseRequest:(HttpRequest *)request;
+- (void)releaseRequest:(ATProtoHttpRequest *)request;
 
 /*!
  @method acquireResponse
 
- @abstract Returns a recycled HttpResponse object.
+ @abstract Returns a recycled ATProtoHttpResponse object.
 
- @return An HttpResponse instance, or nil if pool is exhausted.
+ @return An ATProtoHttpResponse instance, or nil if pool is exhausted.
  */
-- (nullable HttpResponse *)acquireResponse;
+- (nullable ATProtoHttpResponse *)acquireResponse;
 
 /*!
  @method releaseResponse:
 
- @abstract Returns an HttpResponse to the pool for reuse.
+ @abstract Returns an ATProtoHttpResponse to the pool for reuse.
 
  @param response The response to recycle.
  */
-- (void)releaseResponse:(HttpResponse *)response;
+- (void)releaseResponse:(ATProtoHttpResponse *)response;
 
 /*!
  @property maxPoolSize

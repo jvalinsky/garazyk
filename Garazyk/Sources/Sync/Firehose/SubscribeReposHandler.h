@@ -22,9 +22,9 @@
 @class WebSocketConnection;
 @class PDSServiceDatabases;
 @class EventFormatter;
-@class RepoCommit;
+@class ATProtoRepoCommit;
 @class ATProtoCID;
-@class HttpRequest;
+@class ATProtoHttpRequest;
 /**
  * @abstract Defines the ATProtoNetworkConnection protocol contract.
  */
@@ -110,7 +110,7 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (BOOL)waitForIdleWithTimeout:(NSTimeInterval)timeout;
 
 /*! Accepts a WebSocket-upgraded connection from the main HTTP server. */
-- (void)acceptUpgradedConnection:(id<ATProtoNetworkConnection>)connection request:(HttpRequest *)request;
+- (void)acceptUpgradedConnection:(id<ATProtoNetworkConnection>)connection request:(ATProtoHttpRequest *)request;
 
 /*! Broadcasts a repository commit event object. */
 - (void)broadcastCommitEvent:(FirehoseCommitEvent *)event;
@@ -119,7 +119,7 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (void)broadcastSyncEvent:(FirehoseSyncEvent *)event;
 
 /*! Broadcasts a repository commit event. */
-- (void)broadcastRepositoryCommit:(RepoCommit *)commit 
+- (void)broadcastRepositoryCommit:(ATProtoRepoCommit *)commit
                           forRepo:(NSString *)repoDid 
                               ops:(NSArray<NSDictionary *> *)ops 
                             blobs:(NSArray<ATProtoCID *> *)blobs;

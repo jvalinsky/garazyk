@@ -195,7 +195,7 @@
         XCTAssertEqualObjects(httpResp.allHeaderFields[@"Content-Type"], @"application/vnd.ipld.car");
         
         // Basic check: data should at least contain "block1" and "block2" string/bytes
-        // Parsing CAR in test is complex without CARReader.
+        // Parsing CAR in test is complex without ATProtoCARReader.
         // We just check size > 0 and success.
         XCTAssertGreaterThan(data.length, 0);
         

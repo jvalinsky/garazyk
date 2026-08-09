@@ -12,22 +12,22 @@
 @interface AppViewXRpcRoutePack (Feed)
 
 /** @abstract Returns the authenticated actor's timeline, paginated by optional cursor. */
-- (void)handleGetTimeline:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetTimeline:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns an actor feed after validating `actor`, with cursor and optional filter. */
-- (void)handleGetAuthorFeed:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetAuthorFeed:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns a post thread for `uri`, clamping optional depth to 0...100; absent threads return 404. */
-- (void)handleGetPostThread:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetPostThread:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns feed-generator output for `feed`, with cursor pagination. */
-- (void)handleGetFeed:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetFeed:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns likes made by `actor`, with cursor pagination. */
-- (void)handleGetActorLikes:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetActorLikes:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns posts for a required comma-separated `uris` query value. */
-- (void)handleGetPosts:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetPosts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns feed generators for a required comma-separated `uris` query value. */
-- (void)handleGetFeedGenerators:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetFeedGenerators:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns likes for a required post `uri`, with cursor pagination. */
-- (void)handleGetLikes:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetLikes:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns reposters for a required post `uri`, with cursor pagination. */
-- (void)handleGetRepostedBy:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetRepostedBy:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end

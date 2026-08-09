@@ -12,7 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpServer;
+@class ATProtoHttpServer;
 @class ATProtoMediaWorker;
 @protocol PDSBlobProvider;
 
@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) id<ATProtoMediaProcessor> processor;
 
 /// The running HTTP server (nil before start).
-@property (nonatomic, readonly, nullable) HttpServer *httpServer;
+@property (nonatomic, readonly, nullable) ATProtoHttpServer *httpServer;
 
 /// The background job worker (nil before start).
 @property (nonatomic, readonly, nullable) ATProtoMediaWorker *worker;

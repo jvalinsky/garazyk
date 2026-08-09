@@ -9,7 +9,7 @@
 
 @implementation AppViewXRpcRoutePack (DraftsAndBookmarks)
 
-- (void)handleGetDrafts:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetDrafts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -25,7 +25,7 @@
     [response setJsonBody:@{ @"drafts": drafts ?: @[] }];
 }
 
-- (void)handleGetBookmarks:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetBookmarks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;

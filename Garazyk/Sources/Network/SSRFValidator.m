@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file SSRFValidator.m
+ @file ATProtoSSRFValidator.m
 
  @abstract Implements SSRF protection checks for host resolution and address classification.
 
@@ -30,7 +30,7 @@ NSTimeInterval const SSRFValidatorDefaultResolutionTimeout = 5.0;
 @implementation ATProtoSSRFResolutionResult
 @end
 
-@implementation SSRFValidator
+@implementation ATProtoSSRFValidator
 
 + (BOOL)isPrivateIPv4Address:(uint32_t)ip {
     if ((ip & 0xFF000000) == 0x0A000000) return YES;      // 10.0.0.0/8

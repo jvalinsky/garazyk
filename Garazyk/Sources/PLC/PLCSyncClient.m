@@ -11,7 +11,7 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 @interface PLCSyncClient ()
 
 @property (nonatomic, copy) NSString *upstreamURL;
-@property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
+@property (nonatomic, strong) ATProtoHttpRetryPolicy *retryPolicy;
 
 @end
 
@@ -102,7 +102,7 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
         _timeout = 30.0;
         _maxRetries = 3;
 
-        _retryPolicy = [[HttpRetryPolicy alloc] init];
+        _retryPolicy = [[ATProtoHttpRetryPolicy alloc] init];
         _syncQueue = dispatch_queue_create("com.atproto.plc.syncclient", DISPATCH_QUEUE_SERIAL);
     }
     return self;

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpResponseSender.m
+ @file ATProtoHttpResponseSender.m
 
  @abstract Implements response emission behavior for HTTP connection write paths.
 
@@ -10,7 +10,7 @@
 
 #import "Network/HttpResponseSender.h"
 
-@implementation HttpResponseSender
+@implementation ATProtoHttpResponseSender
 
 - (instancetype)init {
     self = [super init];

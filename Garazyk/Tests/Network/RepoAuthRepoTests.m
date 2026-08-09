@@ -29,7 +29,7 @@
     NSString *token = [self scopedAccessTokenWithScopes:@[
         @"atproto", @"repo:app.bsky.graph.follow?action=create",
     ]];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                       body:@{
                                                           @"repo": self.did1,
                                                           @"collection": @"app.bsky.feed.post",
@@ -48,7 +48,7 @@
     NSString *token = [self scopedAccessTokenWithScopes:@[
         @"atproto", @"repo:app.bsky.feed.post?action=create",
     ]];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                       body:@{
                                                           @"repo": self.did1,
                                                           @"collection": @"app.bsky.feed.post",
@@ -66,7 +66,7 @@
     NSString *token = [self scopedAccessTokenWithScopes:@[
         @"atproto", @"blob:image/png",
     ]];
-    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.uploadBlob"
+    ATProtoHttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.uploadBlob"
                                                      bodyData:[@"plain text" dataUsingEncoding:NSUTF8StringEncoding]
                                                       headers:@{
                                                           @"authorization": [@"Bearer " stringByAppendingString:token],
@@ -91,7 +91,7 @@
     NSString *uri = created[@"uri"];
     NSString *rkey = [[uri componentsSeparatedByString:@"/"] lastObject];
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.deleteRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.deleteRecord"
                                                       body:@{@"repo": self.did1,
                                                              @"collection": @"app.bsky.feed.post",
                                                              @"rkey": rkey}
@@ -105,7 +105,7 @@
         @"text": @"put auth test",
         @"createdAt": [self iso8601String]
     };
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.putRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.putRecord"
                                                       body:@{@"repo": self.did1,
                                                              @"collection": @"app.bsky.feed.post",
                                                              @"rkey": @"auth-test",
@@ -120,7 +120,7 @@
         @"text": @"update auth test",
         @"createdAt": [self iso8601String]
     };
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.updateRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.updateRecord"
                                                       body:@{@"repo": self.did1,
                                                              @"collection": @"app.bsky.feed.post",
                                                              @"rkey": @"auth-update-test",
@@ -135,7 +135,7 @@
         @"text": @"apply auth test",
         @"createdAt": [self iso8601String]
     };
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
                                                       body:@{@"repo": self.did1,
                                                              @"writes": @[@{@"action": @"create",
                                                                             @"collection": @"app.bsky.feed.post",
@@ -148,7 +148,7 @@
     NSString *token = [self scopedAccessTokenWithScopes:@[
         @"atproto", @"repo:app.bsky.feed.post?action=create",
     ]];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
                                                       body:@{
                                                           @"repo": self.did1,
                                                           @"writes": @[
@@ -202,7 +202,7 @@
 
     NSString *authHeader =
         [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self
+    ATProtoHttpResponse *response = [self
         sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
                           body:@{
                               @"repo": self.did1,
@@ -229,7 +229,7 @@
 
 - (void)testApplyWritesRejectsUnknownUnionType {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
                                                       body:@{
                                                           @"repo": self.did1,
                                                           @"writes": @[
@@ -248,7 +248,7 @@
 
 - (void)testApplyWritesRequiresRepo {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
                                                       body:@{
                                                           @"writes": @[
                                                               @{
@@ -270,7 +270,7 @@
         @"createdAt": [self iso8601String]
     };
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.putRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.putRecord"
                                                       body:@{@"repo": self.did2,
                                                              @"collection": @"app.bsky.feed.post",
                                                              @"rkey": @"auth-mismatch",
@@ -301,7 +301,7 @@
         @"createdAt": [self iso8601String]
     };
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.updateRecord"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.updateRecord"
                                                       body:@{@"repo": self.did1,
                                                              @"collection": @"app.bsky.feed.post",
                                                              @"rkey": rkey,
@@ -320,7 +320,7 @@
 }
 
 - (void)testGetBlobReturns401WithoutAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.getBlob"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.getBlob"
                                                queryParams:@{@"cid": @"bafkqaaa"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -363,7 +363,7 @@
 
     // getBlob only serves blobs in the referenced state; an upload that no
     // record points at stays temporary and is a 404 by design.
-    HttpResponse *reference = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *reference = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                        body:@{
                                                            @"repo": self.did1,
                                                            @"collection": @"app.bsky.feed.post",
@@ -382,7 +382,7 @@
                                                     headers:@{@"authorization": authHeader}];
     XCTAssertEqual(reference.statusCode, HttpStatusOK);
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.getBlob"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.getBlob"
                                                queryParams:@{@"cid": cid, @"did": self.did1}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -403,14 +403,14 @@
     XCTAssertTrue(cid.length > 0);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.getBlob"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.getBlob"
                                                queryParams:@{@"cid": cid, @"did": self.did2}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 403);
 }
 
 - (void)testUploadBlobReturns429WhenBlobQuotaExceeded {
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *limiter = [ATProtoRateLimiter sharedLimiter];
     BOOL oldEnabled = limiter.enabled;
     NSInteger oldBlobLimit = limiter.blobLimit;
     NSTimeInterval oldBlobWindow = limiter.blobWindowSeconds;
@@ -425,7 +425,7 @@
     @try {
         NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
         NSData *firstBlob = [@"first blob" dataUsingEncoding:NSUTF8StringEncoding];
-        HttpResponse *firstResponse = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.uploadBlob"
+        ATProtoHttpResponse *firstResponse = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.uploadBlob"
                                                                bodyData:firstBlob
                                                                 headers:@{
                                                                     @"authorization": authHeader,
@@ -434,7 +434,7 @@
         XCTAssertEqual(firstResponse.statusCode, 200);
 
         NSData *secondBlob = [@"second blob" dataUsingEncoding:NSUTF8StringEncoding];
-        HttpResponse *secondResponse = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.uploadBlob"
+        ATProtoHttpResponse *secondResponse = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.uploadBlob"
                                                                 bodyData:secondBlob
                                                                  headers:@{
                                                                      @"authorization": authHeader,
@@ -460,7 +460,7 @@
     NSString *auth1 = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     NSString *auth2 = [NSString stringWithFormat:@"Bearer %@", session2[@"accessJwt"]];
 
-    HttpResponse *postResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *postResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                           body:@{@"repo": self.did1,
                                                                  @"collection": @"app.bsky.feed.post",
                                                                  @"rkey": @"closed-root",
@@ -473,7 +473,7 @@
     NSString *rootCID = postResponse.jsonBody[@"cid"];
     XCTAssertTrue(rootURI.length > 0);
 
-    HttpResponse *gateResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *gateResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                           body:@{@"repo": self.did1,
                                                                  @"collection": @"app.bsky.feed.threadgate",
                                                                  @"rkey": @"closed-gate",
@@ -489,7 +489,7 @@
                             @"createdAt": [self iso8601String],
                             @"reply": @{@"root": @{@"uri": rootURI, @"cid": rootCID ?: @""},
                                         @"parent": @{@"uri": rootURI, @"cid": rootCID ?: @""}}};
-    HttpResponse *replyResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *replyResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                            body:@{@"repo": self.did2,
                                                                   @"collection": @"app.bsky.feed.post",
                                                                   @"rkey": @"denied-reply",
@@ -506,7 +506,7 @@
     NSString *auth1 = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     NSString *auth2 = [NSString stringWithFormat:@"Bearer %@", session2[@"accessJwt"]];
 
-    HttpResponse *followResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *followResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                             body:@{@"repo": self.did2,
                                                                    @"collection": @"app.bsky.graph.follow",
                                                                    @"rkey": @"follow-root-author",
@@ -516,7 +516,7 @@
                                                          headers:@{@"authorization": auth2}];
     XCTAssertEqual(followResponse.statusCode, 200);
 
-    HttpResponse *postResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *postResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                           body:@{@"repo": self.did1,
                                                                  @"collection": @"app.bsky.feed.post",
                                                                  @"rkey": @"followers-root",
@@ -528,7 +528,7 @@
     NSString *rootURI = postResponse.jsonBody[@"uri"];
     NSString *rootCID = postResponse.jsonBody[@"cid"];
 
-    HttpResponse *gateResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *gateResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                           body:@{@"repo": self.did1,
                                                                  @"collection": @"app.bsky.feed.threadgate",
                                                                  @"rkey": @"followers-gate",
@@ -544,7 +544,7 @@
                             @"createdAt": [self iso8601String],
                             @"reply": @{@"root": @{@"uri": rootURI, @"cid": rootCID ?: @""},
                                         @"parent": @{@"uri": rootURI, @"cid": rootCID ?: @""}}};
-    HttpResponse *replyResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
+    ATProtoHttpResponse *replyResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                                            body:@{@"repo": self.did2,
                                                                   @"collection": @"app.bsky.feed.post",
                                                                   @"rkey": @"allowed-follower-reply",
@@ -554,7 +554,7 @@
 }
 
 - (void)testRepoListMissingBlobsReturns401WithoutAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.listMissingBlobs"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.listMissingBlobs"
                                                queryParams:@{}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -562,7 +562,7 @@
 
 - (void)testRepoListMissingBlobsReturnsEmptyList {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.listMissingBlobs"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.listMissingBlobs"
                                                queryParams:@{@"limit": @"10"}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -572,7 +572,7 @@
 
 - (void)testRepoImportRepoReturns401WithoutAuth {
     NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
-    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
+    ATProtoHttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
                                                      bodyData:carData
                                                       headers:@{
                                                           @"content-type": @"application/vnd.ipld.car",
@@ -584,7 +584,7 @@
 - (void)testRepoImportRepoReturnsBadRequestWithoutContentLengthHeader {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
-    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
+    ATProtoHttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
                                                      bodyData:carData
                                                       headers:@{
                                                           @"authorization": authHeader,
@@ -596,7 +596,7 @@
 - (void)testRepoImportRepoReturnsBadRequestForInvalidCAR {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
-    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
+    ATProtoHttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
                                                      bodyData:carData
                                                       headers:@{
                                                           @"authorization": authHeader,
@@ -631,7 +631,7 @@
     XCTAssertNil(exportError);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
+    ATProtoHttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
                                                      bodyData:carData
                                                       headers:@{
                                                           @"authorization": authHeader,

@@ -9,8 +9,8 @@
 
 @implementation OAuth2Handler (TokenRevocation)
 
-- (void)handleRevokeRequest:(HttpRequest *)request
-                   response:(HttpResponse *)response {
+- (void)handleRevokeRequest:(ATProtoHttpRequest *)request
+                   response:(ATProtoHttpResponse *)response {
   NSString *body = [[NSString alloc] initWithData:request.body
                                          encoding:NSUTF8StringEncoding];
   if (!body) {
@@ -77,8 +77,8 @@
   [response setJsonBody:@{}];
 }
 
-- (void)handleIntrospectRequest:(HttpRequest *)request
-                       response:(HttpResponse *)response {
+- (void)handleIntrospectRequest:(ATProtoHttpRequest *)request
+                       response:(ATProtoHttpResponse *)response {
   NSString *body = [[NSString alloc] initWithData:request.body
                                          encoding:NSUTF8StringEncoding];
   if (!body) {

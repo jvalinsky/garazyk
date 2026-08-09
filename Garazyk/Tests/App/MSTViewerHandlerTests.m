@@ -74,19 +74,19 @@
 }
 
 - (void)testCanHandleRequest {
-    HttpRequest *req1 = [[HttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/mst-viewer" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
+    ATProtoHttpRequest *req1 = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/mst-viewer" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
     XCTAssertTrue([self.handler canHandleRequest:req1]);
 
-    HttpRequest *req2 = [[HttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/api/mst/tree" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
+    ATProtoHttpRequest *req2 = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/api/mst/tree" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
     XCTAssertTrue([self.handler canHandleRequest:req2]);
 
-    HttpRequest *req3 = [[HttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/other" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
+    ATProtoHttpRequest *req3 = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/other" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
     XCTAssertFalse([self.handler canHandleRequest:req3]);
 }
 
 - (void)testHandleRequestRejectsUnauthenticated {
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/mst-viewer" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/mst-viewer" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     [self.handler handleRequest:req response:res];
 
@@ -95,8 +95,8 @@
 
 - (void)testHandleRequestIndexReturns200HtmlContentWithAuth {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/mst-viewer" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{@"authorization": authHeader} body:nil remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/mst-viewer" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{@"authorization": authHeader} body:nil remoteAddress:nil];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     [self.handler handleRequest:req response:res];
 
@@ -105,8 +105,8 @@
 }
 
 - (void)testApiMstAccountsRejectsUnauthenticated {
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/api/mst/accounts" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/api/mst/accounts" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     [self.handler handleRequest:req response:res];
 

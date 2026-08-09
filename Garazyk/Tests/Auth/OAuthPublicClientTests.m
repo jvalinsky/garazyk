@@ -103,7 +103,7 @@
   return [formatter stringFromDate:date];
 }
 
-- (HttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
+- (ATProtoHttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
                                        clientID:(NSString *)clientID {
   NSError *error = nil;
   BOOL created = [self.database executeParameterizedUpdate:
@@ -137,7 +137,7 @@
                                                            error:&error];
   XCTAssertTrue(inserted, @"Failed to insert PAR row: %@", error);
 
-  HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+  ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                 methodString:@"GET"
                                                         path:@"/oauth/authorize"
                                                  queryString:@""
@@ -149,7 +149,7 @@
                                                      headers:@{}
                                                         body:[NSData data]
                                                remoteAddress:@"127.0.0.1"];
-  HttpResponse *response = [[HttpResponse alloc] init];
+  ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
   [self.handler handleAuthorizeRequest:request response:response];
   return response;
 }
@@ -183,7 +183,7 @@
     @"login_hint" : @"user.test"
   };
 
-  HttpResponse *authResp =
+  ATProtoHttpResponse *authResp =
       [self authorizeViaPARWithParameters:authParams clientID:@"public-client"];
 
   // The authorize endpoint serves a consent page (200) rather than
@@ -205,7 +205,7 @@
     @"login_hint" : @"user.test"
   };
 
-  HttpResponse *authResp =
+  ATProtoHttpResponse *authResp =
       [self authorizeViaPARWithParameters:authParams clientID:@"public-client"];
 
   // RFC 7636: Authorization Server MUST return error if code_challenge is
@@ -224,7 +224,7 @@
     @"login_hint" : @"user.test"
   };
 
-  HttpResponse *authResp =
+  ATProtoHttpResponse *authResp =
       [self authorizeViaPARWithParameters:authParams clientID:@"public-client"];
 
   // RFC 7636: Authorization Server MUST return error if code_challenge is
@@ -243,7 +243,7 @@
   stringWithFormat:@"grant_type=authorization_code&code=%@&client_id=public-client&redirect_uri=https://client.example.com/cb",
   code];
 
-  HttpRequest *tokenReq = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+  ATProtoHttpRequest *tokenReq = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                       methodString:@"POST"
                                                               path:@"/oauth/token"
                                                        queryString:@""
@@ -254,7 +254,7 @@
   verification body:[tokenBody dataUsingEncoding:NSUTF8StringEncoding]
                                                      remoteAddress:@"127.0.0.1"];
 
-  HttpResponse *tokenResp = [[HttpResponse alloc] init];
+  ATProtoHttpResponse *tokenResp = [[ATProtoHttpResponse alloc] init];
   // We don't need to run token request if authorize failed
 
   // Just placeholder to compile

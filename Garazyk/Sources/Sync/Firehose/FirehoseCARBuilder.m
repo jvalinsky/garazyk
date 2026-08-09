@@ -8,7 +8,7 @@
 
 @implementation FirehoseCARBuilder
 
-+ (NSData *)buildCARForCommit:(RepoCommit *)commit
++ (NSData *)buildCARForCommit:(ATProtoRepoCommit *)commit
                           ops:(NSArray<NSDictionary *> *)ops
                 blockProvider:(PDSBlockProvider)blockProvider
           revBlockListProvider:(nullable PDSRevisionBlockListProvider)revBlockListProvider {
@@ -17,13 +17,13 @@
     return [NSData data];
   }
 
-  CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+  ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:commitCID];
   NSMutableSet<NSString *> *seenCIDs = [NSMutableSet set];
   [seenCIDs addObject:commitCID.stringValue];
 
   NSData *commitBlockData = [commit serializeSigned];
   if (commitBlockData.length > 0) {
-    [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlockData]];
+    [writer addBlock:[ATProtoCARBlock blockWithCID:commitCID data:commitBlockData]];
   }
 
   for (NSDictionary *op in ops) {
@@ -43,7 +43,7 @@
     
     if (recordCID && ![seenCIDs containsObject:recordCID.stringValue]) {
       [seenCIDs addObject:recordCID.stringValue];
-      [writer addBlock:[CARBlock blockWithCID:recordCID data:recordCBOR]];
+      [writer addBlock:[ATProtoCARBlock blockWithCID:recordCID data:recordCBOR]];
     }
   }
 
@@ -57,7 +57,7 @@
       NSData *blockData = blockProvider(cidBytes);
       if (blockData.length > 0) {
         [seenCIDs addObject:cid.stringValue];
-        [writer addBlock:[CARBlock blockWithCID:cid data:blockData]];
+        [writer addBlock:[ATProtoCARBlock blockWithCID:cid data:blockData]];
         revisionBlockCount++;
       }
     }
@@ -74,7 +74,7 @@
 
 + (void)addMSTNodeBlocksForRootCID:(ATProtoCID *)rootCID
                     blockProvider:(PDSBlockProvider)blockProvider
-                         toWriter:(CARWriter *)writer {
+                         toWriter:(ATProtoCARWriter *)writer {
   NSMutableArray<NSData *> *queue = [NSMutableArray arrayWithObject:[rootCID bytes]];
   NSMutableSet<NSString *> *visited = [NSMutableSet set];
 
@@ -89,7 +89,7 @@
     NSData *blockData = blockProvider(cidBytes);
     if (!blockData) continue;
 
-    [writer addBlock:[CARBlock blockWithCID:nodeCID data:blockData]];
+    [writer addBlock:[ATProtoCARBlock blockWithCID:nodeCID data:blockData]];
 
     ATProtoCBORValue *nodeMap = [ATProtoCBORValue decode:blockData];
     if (!nodeMap || nodeMap.type != CBORTypeMap) continue;
@@ -126,14 +126,14 @@
   }
 }
 
-+ (NSData *)buildCARForSyncCommitOnly:(RepoCommit *)commit {
++ (NSData *)buildCARForSyncCommitOnly:(ATProtoRepoCommit *)commit {
   ATProtoCID *commitCID = commit.computeCID;
   if (!commitCID) return [NSData data];
 
-  CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+  ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:commitCID];
   NSData *commitBlockData = [commit serializeSigned];
   if (commitBlockData.length > 0) {
-    [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlockData]];
+    [writer addBlock:[ATProtoCARBlock blockWithCID:commitCID data:commitBlockData]];
   }
   return [writer serialize];
 }

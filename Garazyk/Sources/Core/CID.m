@@ -335,7 +335,7 @@ static const NSUInteger kMaxVarintSize = 9;
     // ceil(length * 8 / 5) output characters; build into a C buffer and
     // construct the NSString once instead of parsing a format string per
     // character via -appendFormat: (ATProtoCID.stringValue runs for every block
-    // touched by MST, CAR, and block storage).
+    // touched by ATProtoMST, CAR, and block storage).
     NSUInteger capacity = ((length * 8) + 4) / 5;
     char *buf = malloc(capacity);
     if (!buf) {

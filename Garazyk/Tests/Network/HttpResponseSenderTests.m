@@ -4,14 +4,14 @@
 #import "Network/HttpResponseSender.h"
 
 @interface HttpResponseSenderTests : XCTestCase
-@property (nonatomic, strong) HttpResponseSender *sender;
+@property (nonatomic, strong) ATProtoHttpResponseSender *sender;
 @end
 
 @implementation HttpResponseSenderTests
 
 - (void)setUp {
     [super setUp];
-    self.sender = [[HttpResponseSender alloc] init];
+    self.sender = [[ATProtoHttpResponseSender alloc] init];
 }
 
 - (void)tearDown {
@@ -66,7 +66,7 @@
 }
 
 - (void)testDefaultHighWaterMarkIs10MB {
-    HttpResponseSender *sender = [[HttpResponseSender alloc] init];
+    ATProtoHttpResponseSender *sender = [[ATProtoHttpResponseSender alloc] init];
 
     XCTAssertEqual(sender.highWaterMark, 10 * 1024 * 1024);
 }

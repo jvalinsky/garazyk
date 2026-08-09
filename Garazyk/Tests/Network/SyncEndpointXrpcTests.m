@@ -67,7 +67,7 @@
     [super tearDown];
 }
 
-- (HttpResponse *)sendGetRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendGetRequestWithPath:(NSString *)path
                                queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
                                    headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSMutableString *queryString = [NSMutableString string];
@@ -78,7 +78,7 @@
         [queryString appendFormat:@"%@=%@", key, queryParams[key]];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:path
                                                    queryString:queryString ?: @""
@@ -87,12 +87,12 @@
                                                        headers:headers ?: @{}
                                                           body:[NSData data]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
 
-- (HttpResponse *)sendJsonRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendJsonRequestWithPath:(NSString *)path
                                      body:(NSDictionary *)body
                                   headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSData *bodyData = body ? [NSJSONSerialization dataWithJSONObject:body options:0 error:nil] : [NSData data];
@@ -101,7 +101,7 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:path
                                                    queryString:@""
@@ -110,7 +110,7 @@
                                                        headers:allHeaders
                                                           body:bodyData
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
@@ -118,7 +118,7 @@
 #pragma mark - listRepos
 
 - (void)testListReposReturnsRepos {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listRepos"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listRepos"
                                               queryParams:@{}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -133,7 +133,7 @@
 #pragma mark - listBlobs
 
 - (void)testListBlobsReturnsBlobsForDID {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, HttpStatusOK);
@@ -142,7 +142,7 @@
 }
 
 - (void)testListBlobsRequiresDID {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
                                               queryParams:@{}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
@@ -150,13 +150,13 @@
 }
 
 - (void)testListBlobsRejectsMalformedPagination {
-    HttpResponse *limitResponse =
+    ATProtoHttpResponse *limitResponse =
         [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
                          queryParams:@{@"did": self.userDid, @"limit": @"10junk"}
                              headers:@{}];
     XCTAssertEqual(limitResponse.statusCode, HttpStatusBadRequest);
 
-    HttpResponse *cursorResponse =
+    ATProtoHttpResponse *cursorResponse =
         [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listBlobs"
                          queryParams:@{@"did": self.userDid, @"cursor": @"-1"}
                              headers:@{}];
@@ -166,7 +166,7 @@
 #pragma mark - getCheckout
 
 - (void)testGetCheckoutReturnsDataForDID {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getCheckout"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getCheckout"
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{}];
     // May return 200 with CAR data or 404 if no repo
@@ -177,7 +177,7 @@
 #pragma mark - getHostStatus
 
 - (void)testGetHostStatusReturnsStatus {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getHostStatus"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getHostStatus"
                                               queryParams:@{@"did": self.userDid}
                                                   headers:@{}];
     // May return 200 or 404
@@ -188,7 +188,7 @@
 #pragma mark - notifyOfUpdate
 
 - (void)testNotifyOfUpdateRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.sync.notifyOfUpdate"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.sync.notifyOfUpdate"
                                                        body:@{@"did": self.userDid}
                                                     headers:@{}];
     // Should require authentication
@@ -199,7 +199,7 @@
 #pragma mark - listReposByCollection
 
 - (void)testListReposByCollectionReturnsResults {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
                                               queryParams:@{@"collection": @"app.bsky.actor.profile"}
                                                   headers:@{}];
     // May return 200 or 400
@@ -248,7 +248,7 @@
                   @"Index should contain DID %@ for collection %@", self.userDid, collectionA);
 
     // --- Query listReposByCollection for collection A and verify DID is present ---
-    HttpResponse *respA = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+    ATProtoHttpResponse *respA = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
                                             queryParams:@{@"collection": collectionA, @"limit": @"100"}
                                                 headers:@{}];
     XCTAssertEqual(respA.statusCode, 200, @"listReposByCollection for %@ should return 200, got %ld",
@@ -266,7 +266,7 @@
                   self.userDid, collectionA);
 
     // --- Query listReposByCollection for collection B and verify DID is present ---
-    HttpResponse *respB = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+    ATProtoHttpResponse *respB = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
                                             queryParams:@{@"collection": collectionB, @"limit": @"100"}
                                                 headers:@{}];
     XCTAssertEqual(respB.statusCode, 200, @"listReposByCollection for %@ should return 200, got %ld",
@@ -290,7 +290,7 @@
     XCTAssertTrue(deleted, @"Failed to delete record in %@: %@", collectionA, error.localizedDescription);
     XCTAssertNil(error);
 
-    HttpResponse *respAAfter = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+    ATProtoHttpResponse *respAAfter = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
                                                 queryParams:@{@"collection": collectionA, @"limit": @"100"}
                                                     headers:@{}];
     XCTAssertEqual(respAAfter.statusCode, 200);
@@ -306,7 +306,7 @@
                    self.userDid, collectionA);
 
     // --- Collection B should still show the DID ---
-    HttpResponse *respBAfter = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+    ATProtoHttpResponse *respBAfter = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
                                                 queryParams:@{@"collection": collectionB, @"limit": @"100"}
                                                     headers:@{}];
     XCTAssertEqual(respBAfter.statusCode, 200);
@@ -322,7 +322,7 @@
                   self.userDid, collectionB);
 
     // --- A collection with no records anywhere should return empty ---
-    HttpResponse *respNone = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+    ATProtoHttpResponse *respNone = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
                                               queryParams:@{@"collection": @"com.example.nonexistent", @"limit": @"100"}
                                                   headers:@{}];
     XCTAssertEqual(respNone.statusCode, 200);
@@ -388,7 +388,7 @@
     XCTAssertEqual(allDIDs.count, 4, @"Should have 4 DIDs total");
 
     // --- Page 1: limit=2, no cursor ---
-    HttpResponse *page1 = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+    ATProtoHttpResponse *page1 = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
                                            queryParams:@{@"collection": collection, @"limit": @"2"}
                                                headers:@{}];
     XCTAssertEqual(page1.statusCode, 200, @"Page 1 should return 200, got %ld", (long)page1.statusCode);
@@ -401,7 +401,7 @@
     XCTAssertEqualObjects(cursor1, allDIDs[1], @"Cursor should be the last DID in page 1");
 
     // --- Page 2: limit=2, cursor from page 1 ---
-    HttpResponse *page2 = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+    ATProtoHttpResponse *page2 = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
                                            queryParams:@{@"collection": collection, @"limit": @"2", @"cursor": cursor1}
                                                headers:@{}];
     XCTAssertEqual(page2.statusCode, 200, @"Page 2 should return 200, got %ld", (long)page2.statusCode);
@@ -413,7 +413,7 @@
     XCTAssertEqualObjects(cursor2, allDIDs[3], @"Page 2 cursor should be the last DID (page is full, consumer checks next)");
 
     // --- Page 3 (empty): cursor from page 2 should return no results ---
-    HttpResponse *page3 = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
+    ATProtoHttpResponse *page3 = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.listReposByCollection"
                                            queryParams:@{@"collection": collection, @"limit": @"2", @"cursor": cursor2}
                                                headers:@{}];
     XCTAssertEqual(page3.statusCode, 200, @"Page 3 should return 200, got %ld", (long)page3.statusCode);

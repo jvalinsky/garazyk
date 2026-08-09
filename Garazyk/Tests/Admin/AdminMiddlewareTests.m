@@ -31,12 +31,12 @@ NS_ASSUME_NONNULL_BEGIN
     [super tearDown];
 }
 
-- (HttpRequest *)requestWithAuthorization:(nullable NSString *)token {
+- (ATProtoHttpRequest *)requestWithAuthorization:(nullable NSString *)token {
     NSMutableDictionary *headers = [NSMutableDictionary dictionary];
     if (token) {
         headers[@"authorization"] = [NSString stringWithFormat:@"Bearer %@", token];
     }
-    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                    methodString:@"GET"
                                            path:@"/xrpc/com.atproto.admin.getAccountInfo"
                                     queryString:@""
@@ -48,8 +48,8 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testMissingAuthorizationHeader {
-    HttpRequest *request = [self requestWithAuthorization:nil];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpRequest *request = [self requestWithAuthorization:nil];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     NSError *error = nil;
 
     BOOL allowed = [self.middleware verifyAdminAccessForRequest:request response:response error:&error];
@@ -59,8 +59,8 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testInvalidToken {
-    HttpRequest *request = [self requestWithAuthorization:@"invalid-token"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpRequest *request = [self requestWithAuthorization:@"invalid-token"];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     NSError *error = nil;
 
     BOOL allowed = [self.middleware verifyAdminAccessForRequest:request response:response error:&error];
@@ -75,8 +75,8 @@ NS_ASSUME_NONNULL_BEGIN
                                                         scope:@"atproto"
                                                       dpopJWK:nil
                                                         error:nil];
-    HttpRequest *request = [self requestWithAuthorization:session.accessToken];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpRequest *request = [self requestWithAuthorization:session.accessToken];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     NSError *error = nil;
 
     BOOL allowed = [self.middleware verifyAdminAccessForRequest:request response:response error:&error];
@@ -93,8 +93,8 @@ NS_ASSUME_NONNULL_BEGIN
                                                         error:nil];
     self.middleware.adminDids = @[session.did];
 
-    HttpRequest *request = [self requestWithAuthorization:session.accessToken];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpRequest *request = [self requestWithAuthorization:session.accessToken];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     NSError *error = nil;
 
     BOOL allowed = [self.middleware verifyAdminAccessForRequest:request response:response error:&error];
@@ -113,8 +113,8 @@ NS_ASSUME_NONNULL_BEGIN
         return [sessionToCheck.did isEqualToString:@"did:plc:custom123"];
     };
 
-    HttpRequest *request = [self requestWithAuthorization:session.accessToken];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpRequest *request = [self requestWithAuthorization:session.accessToken];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     NSError *error = nil;
 
     BOOL allowed = [self.middleware verifyAdminAccessForRequest:request response:response error:&error];

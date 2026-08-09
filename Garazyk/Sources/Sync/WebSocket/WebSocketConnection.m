@@ -70,7 +70,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     NSRange queryRange = [path rangeOfString:@"?"];
     if (queryRange.location != NSNotFound) {
       _queryString = [path substringFromIndex:queryRange.location + 1];
-      _queryParams = [HttpParsing parseQueryString:_queryString];
+      _queryParams = [ATProtoHttpParsing parseQueryString:_queryString];
       _path = [path substringToIndex:queryRange.location];
     } else {
       _queryString = @"";

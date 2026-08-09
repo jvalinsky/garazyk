@@ -23,8 +23,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoLexiconRegistry;
 @class AppViewDatabase;
 @class AppViewCustomQueryRegistry;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 extern NSErrorDomain const AppViewGenericQueryHandlerErrorDomain;
 
@@ -57,8 +57,8 @@ extern NSErrorDomain const AppViewGenericQueryHandlerErrorDomain;
  @param response The HTTP response to populate.
  @param nsid     The NSID of the query endpoint.
  */
-- (void)handleQuery:(HttpRequest *)request
-            response:(HttpResponse *)response
+- (void)handleQuery:(ATProtoHttpRequest *)request
+            response:(ATProtoHttpResponse *)response
                nsid:(NSString *)nsid;
 
 /*!
@@ -70,8 +70,8 @@ extern NSErrorDomain const AppViewGenericQueryHandlerErrorDomain;
  @param response The HTTP response to populate.
  @param nsid     The NSID of the procedure endpoint.
  */
-- (void)handleProcedure:(HttpRequest *)request
-                response:(HttpResponse *)response
+- (void)handleProcedure:(ATProtoHttpRequest *)request
+                response:(ATProtoHttpResponse *)response
                    nsid:(NSString *)nsid;
 
 @end

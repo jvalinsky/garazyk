@@ -55,7 +55,7 @@ typedef NSError * _Nonnull (^ATProtoDatabaseQueryRunnerErrorFactory)(sqlite3 * _
 
 /**
  * @abstract The public surface of @c ATProtoDatabaseQueryRunner, extracted as a protocol
- * so callers outside Storage (e.g. Transport's @c RateLimiter) can depend on the
+ * so callers outside Storage (e.g. Transport's @c ATProtoRateLimiter) can depend on the
  * capability without linking the concrete class.
  */
 @protocol ATProtoQueryRunning <NSObject>

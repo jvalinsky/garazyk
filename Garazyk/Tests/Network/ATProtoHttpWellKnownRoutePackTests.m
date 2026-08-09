@@ -138,7 +138,7 @@ static NSDictionary *LiveRASLRawResponse(NSString *method, NSString *path,
 
 @interface ATProtoHttpWellKnownRoutePackTests : XCTestCase
 @property(nonatomic, strong) PDSController *controller;
-@property(nonatomic, strong) HttpServer *server;
+@property(nonatomic, strong) ATProtoHttpServer *server;
 @property(nonatomic, copy) NSString *testDirectory;
 @end
 

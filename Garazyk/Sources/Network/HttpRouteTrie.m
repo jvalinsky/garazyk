@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpRouteTrie.m
+ @file ATProtoHttpRouteTrie.m
 
  @abstract Implements trie-based route matching structures for HTTP path resolution.
 
@@ -15,8 +15,8 @@
 @interface ATProtoHttpRouteNode : NSObject
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoHttpRouteNode *> *children;
-@property (nonatomic, strong, nullable) NSMutableDictionary<NSString *, HttpRoute *> *methodRoutes;
-@property (nonatomic, strong, nullable) HttpRoute *wildcardRoute;
+@property (nonatomic, strong, nullable) NSMutableDictionary<NSString *, ATProtoHttpRoute *> *methodRoutes;
+@property (nonatomic, strong, nullable) ATProtoHttpRoute *wildcardRoute;
 @property (nonatomic, copy, nullable) NSString *paramName;
 
 @end
@@ -36,15 +36,15 @@
 
 @end
 
-@interface HttpRouteTrie ()
+@interface ATProtoHttpRouteTrie ()
 
 @property (nonatomic, strong) ATProtoHttpRouteNode *root;
-@property (nonatomic, strong) NSMutableArray<HttpRoute *> *allRoutes;
+@property (nonatomic, strong) NSMutableArray<ATProtoHttpRoute *> *allRoutes;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t trieQueue;
 
 @end
 
-@implementation HttpRouteTrie
+@implementation ATProtoHttpRouteTrie
 
 - (instancetype)init {
     self = [super init];
@@ -60,7 +60,7 @@
             pattern:(NSString *)pattern
             handler:(HttpRouteHandler)handler
            priority:(NSUInteger)priority {
-    HttpRoute *route = [[HttpRoute alloc] initWithMethod:method
+    ATProtoHttpRoute *route = [[ATProtoHttpRoute alloc] initWithMethod:method
                                                 pattern:pattern
                                                 handler:handler
                                                priority:priority];
@@ -71,7 +71,7 @@
     });
 }
 
-- (void)insertRouteIntoTrie:(HttpRoute *)route atNode:(ATProtoHttpRouteNode *)node {
+- (void)insertRouteIntoTrie:(ATProtoHttpRoute *)route atNode:(ATProtoHttpRouteNode *)node {
     NSArray<NSString *> *components = [self splitPattern:route.pattern];
 
     ATProtoHttpRouteNode *current = node;
@@ -153,7 +153,7 @@
         }
 
         if (current.methodRoutes) {
-            HttpRoute *route = current.methodRoutes[method];
+            ATProtoHttpRoute *route = current.methodRoutes[method];
             if (route) {
                 foundHandler = route.handler;
                 foundParams = [params copy];

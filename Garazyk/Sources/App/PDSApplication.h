@@ -10,7 +10,7 @@
 @class PDSBlobService;
 @class PDSRelayService;
 @class PDSController;
-@class RateLimiter;
+@class ATProtoRateLimiter;
 @class ATProtoJWTMinter;
 @class ATProtoAuthVerifier;
 @class SubscribeReposHandler;
@@ -18,7 +18,7 @@
 @class PDSBlobAuditManager;
 @class PDSSpaceStore;
 @class PDSSpaceReconciler;
-@class HttpServer;
+@class ATProtoHttpServer;
 /**
  * @abstract Defines the PDSAccountService protocol contract.
  */
@@ -135,7 +135,7 @@ extern NSString * const PDSApplicationErrorDomain;
 @property (nonatomic, strong, readonly, nullable) id<PDSEmailProvider> emailProvider;
 
 /*! The rate limiter for throttling requests. */
-@property (nonatomic, strong, readonly) RateLimiter *rateLimiter;
+@property (nonatomic, strong, readonly) ATProtoRateLimiter *rateLimiter;
 
 /*! ATProtoJWT minting for access tokens. */
 @property (nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
@@ -147,7 +147,7 @@ extern NSString * const PDSApplicationErrorDomain;
 @property (nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;
 
 /*! The HTTP server instance. */
-@property (nonatomic, strong, readonly) HttpServer *httpServer;
+@property (nonatomic, strong, readonly) ATProtoHttpServer *httpServer;
 
 /*! Port for the HTTP XRPC server (default 2583). */
 @property (nonatomic, assign) NSUInteger httpPort;

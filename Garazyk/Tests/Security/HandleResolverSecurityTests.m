@@ -63,13 +63,13 @@
     struct in_addr addr;
     inet_pton(AF_INET, ipStr, &addr);
     uint32_t ip = ntohl(addr.s_addr);
-    return [SSRFValidator isPrivateIPv4Address:ip];
+    return [ATProtoSSRFValidator isPrivateIPv4Address:ip];
 }
 
 - (BOOL)checkIPv6:(const char *)ipStr {
     struct in6_addr addr;
     inet_pton(AF_INET6, ipStr, &addr);
-    return [SSRFValidator isPrivateIPv6Address:addr];
+    return [ATProtoSSRFValidator isPrivateIPv6Address:addr];
 }
 
 @end

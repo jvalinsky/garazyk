@@ -14,12 +14,12 @@ typedef NSArray<NSData *> * _Nullable (^PDSRevisionBlockListProvider)(NSString *
  */
 @interface FirehoseCARBuilder : NSObject
 
-+ (NSData *)buildCARForCommit:(RepoCommit *)commit
++ (NSData *)buildCARForCommit:(ATProtoRepoCommit *)commit
                           ops:(NSArray<NSDictionary *> *)ops
                 blockProvider:(PDSBlockProvider)blockProvider
           revBlockListProvider:(nullable PDSRevisionBlockListProvider)revBlockListProvider;
 
-+ (NSData *)buildCARForSyncCommitOnly:(RepoCommit *)commit;
++ (NSData *)buildCARForSyncCommitOnly:(ATProtoRepoCommit *)commit;
 
 @end
 

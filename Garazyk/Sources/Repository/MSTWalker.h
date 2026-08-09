@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file MSTWalker.h
- * @abstract Traverses an MST in key order.
- * @discussion Implements a depth-first traversal of the MST that walks entries
+ * @file ATProtoMSTWalker.h
+ * @abstract Traverses an ATProtoMST in key order.
+ * @discussion Implements a depth-first traversal of the ATProtoMST that walks entries
  * in lexicographic key order. Used by the diff algorithm to compare two trees in
  * parallel. Based on the reference atproto implementation:
  * https://github.com/bluesky-social/atproto/blob/main/packages/repo/src/mst/walker.ts
@@ -11,8 +11,8 @@
 
 #import <Foundation/Foundation.h>
 
-@class MSTNode;
-@class MSTNodeEntry;
+@class ATProtoMSTNode;
+@class ATProtoMSTNodeEntry;
 @class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -36,8 +36,8 @@ typedef struct MSTWalkerStatusDone {
  */
 typedef struct MSTWalkerStatusProgress {
     BOOL done;
-    __unsafe_unretained MSTNodeEntry * _Nullable curr;
-    __unsafe_unretained MSTNode * _Nullable walking;
+    __unsafe_unretained ATProtoMSTNodeEntry * _Nullable curr;
+    __unsafe_unretained ATProtoMSTNode * _Nullable walking;
     NSUInteger index;
     BOOL isTreeNode;
 } MSTWalkerStatusProgress;
@@ -51,7 +51,7 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
 };
 
 /**
- * @abstract Represents the current state of an MST walker.
+ * @abstract Represents the current state of an ATProtoMST walker.
  * @discussion Walker can be either "done" (finished traversing) or "in progress"
  * (at a specific node/entry in the tree). This mirrors the reference implementation's 
  * WalkerStatus union type.
@@ -68,17 +68,17 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
 /** @abstract Creates a done status instance. */
 + (instancetype)doneStatus;
 /** @abstract Creates a progress status instance. */
-+ (instancetype)progressWithEntry:(nullable MSTNodeEntry *)entry
-                          walking:(nullable MSTNode *)walking
++ (instancetype)progressWithEntry:(nullable ATProtoMSTNodeEntry *)entry
+                          walking:(nullable ATProtoMSTNode *)walking
                             index:(NSUInteger)index
                        isTreeNode:(BOOL)isTreeNode;
 
 /** @abstract Whether the traversal is complete. */
 - (BOOL)isDone;
 /** @abstract Current entry, or nil if none. */
-- (nullable MSTNodeEntry *)currentEntry;
+- (nullable ATProtoMSTNodeEntry *)currentEntry;
 /** @abstract Current node, or nil if at root. */
-- (nullable MSTNode *)walkingNode;
+- (nullable ATProtoMSTNode *)walkingNode;
 /** @abstract Current index. */
 - (NSUInteger)index;
 /** @abstract Whether the current entry is a subtree node. */
@@ -86,40 +86,40 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
 
 @end
 
-#pragma mark - MSTWalker
+#pragma mark - ATProtoMSTWalker
 
 /**
- * @abstract Traverses an MST in key order.
- * @discussion Implements a depth-first traversal of the MST that walks entries
+ * @abstract Traverses an ATProtoMST in key order.
+ * @discussion Implements a depth-first traversal of the ATProtoMST that walks entries
  * in lexicographic key order. Used by the diff algorithm to compare two trees in
  * parallel.
  *
  * Usage:
  * @code
- * MSTWalker *walker = [[MSTWalker alloc] initWithRootNode:root];
+ * ATProtoMSTWalker *walker = [[ATProtoMSTWalker alloc] initWithRootNode:root];
  * while (!walker.status.isDone) {
- *     MSTNodeEntry *entry = walker.status.currentEntry;
+ *     ATProtoMSTNodeEntry *entry = walker.status.currentEntry;
  *     // process entry...
  *     [walker advance];
  * }
  * @endcode
  */
 /**
- * @abstract Declares the MSTWalker public API.
+ * @abstract Declares the ATProtoMSTWalker public API.
  */
-@interface MSTWalker : NSObject
+@interface ATProtoMSTWalker : NSObject
 
 /** @abstract The tree root node. */
-@property (nonatomic, strong, readonly) MSTNode *root;
+@property (nonatomic, strong, readonly) ATProtoMSTNode *root;
 /** @abstract Current status. */
 @property (nonatomic, strong) ATProtoMSTWalkerStatus *status;
 
 /**
- * @abstract Initializes a walker starting at the given MST root node.
+ * @abstract Initializes a walker starting at the given ATProtoMST root node.
  * @param root The root node (may be nil for empty tree).
  * @return Initialized walker.
  */
-- (instancetype)initWithRootNode:(nullable MSTNode *)root;
+- (instancetype)initWithRootNode:(nullable ATProtoMSTNode *)root;
 
 /**
  * @abstract Returns the current layer (depth) of the walker.

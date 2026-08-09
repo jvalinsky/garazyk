@@ -12,8 +12,8 @@
 @interface AppViewXRpcRoutePack (DraftsAndBookmarks)
 
 /** @abstract Returns drafts owned by the authenticated actor. */
-- (void)handleGetDrafts:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetDrafts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns bookmarks owned by the authenticated actor with optional cursor pagination. */
-- (void)handleGetBookmarks:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetBookmarks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end

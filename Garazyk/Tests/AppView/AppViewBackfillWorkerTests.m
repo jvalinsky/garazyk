@@ -75,7 +75,7 @@
 }
 
 - (void)testParseCARAndIndex {
-    // Create a proper CAR with commit → MST → record structure
+    // Create a proper CAR with commit → ATProtoMST → record structure
     // This matches the real AT Protocol repo CAR format
 
     // 1. Create the record block
@@ -87,14 +87,14 @@
     NSData *recordDigest = [ATProtoCID sha256Digest:recordData];
     ATProtoCID *recordCID = [ATProtoCID cidWithDigest:recordDigest codec:0x71];
 
-    // 2. Create an MST with one entry pointing to the record
-    MST *mst = [[MST alloc] init];
+    // 2. Create an ATProtoMST with one entry pointing to the record
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     [mst put:@"app.bsky.feed.post/3jzf7test" valueCID:recordCID];
     NSData *mstData = [mst serializeToCBOR];
     NSData *mstDigest = [ATProtoCID sha256Digest:mstData];
     ATProtoCID *mstCID = [ATProtoCID cidWithDigest:mstDigest codec:0x71];
 
-    // 3. Create the commit block pointing to the MST
+    // 3. Create the commit block pointing to the ATProtoMST
     NSDictionary *commit = @{
         @"version": @3,
         @"did": @"did:plc:test",
@@ -107,10 +107,10 @@
     ATProtoCID *commitCID = [ATProtoCID cidWithDigest:commitDigest codec:0x71];
 
     // 4. Build the CAR with all three blocks
-    CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
-    [writer addBlock:[CARBlock blockWithCID:commitCID data:commitData]];
-    [writer addBlock:[CARBlock blockWithCID:mstCID data:mstData]];
-    [writer addBlock:[CARBlock blockWithCID:recordCID data:recordData]];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:commitCID];
+    [writer addBlock:[ATProtoCARBlock blockWithCID:commitCID data:commitData]];
+    [writer addBlock:[ATProtoCARBlock blockWithCID:mstCID data:mstData]];
+    [writer addBlock:[ATProtoCARBlock blockWithCID:recordCID data:recordData]];
     NSData *carData = [writer serialize];
 
     NSError *error = nil;
@@ -154,18 +154,18 @@
     ATProtoCID *recordCID =
         [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:recordData] codec:0x71];
 
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     [mst put:@"app.bsky.feed.post/3jzf7star" valueCID:recordCID];
 
-    STARCommit *commit =
-        [STARCommit commitWithDid:@"did:plc:test"
+    ATProtoSTARCommit *commit =
+        [ATProtoSTARCommit commitWithDid:@"did:plc:test"
                           version:3
                              data:mst.rootCID
                               rev:@"3jzf7starrev"
                              prev:nil
                               sig:[@"test-signature"
                                   dataUsingEncoding:NSUTF8StringEncoding]];
-    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
     NSError *writeError = nil;
     BOOL wrote = [writer writeFromMST:mst
                         blockProvider:^NSData * _Nullable(ATProtoCID *cid) {

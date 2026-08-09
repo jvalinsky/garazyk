@@ -19,11 +19,11 @@
   };
 }
 
-- (HttpRequest *)requestWithAuthorization:(nullable NSString *)authorization
+- (ATProtoHttpRequest *)requestWithAuthorization:(nullable NSString *)authorization
                              remoteAddress:(NSString *)remoteAddress {
   NSMutableDictionary *headers = [NSMutableDictionary dictionary];
   if (authorization) headers[@"Authorization"] = authorization;
-  return [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+  return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                 methodString:@"POST"
                                        path:@"/xrpc/tools.garazyk.test.spaceRecovery"
                                 queryString:@""

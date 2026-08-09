@@ -245,7 +245,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Schema for blocks table (cid, data).
 
- @return CREATE TABLE SQL for MST and CBOR blocks.
+ @return CREATE TABLE SQL for ATProtoMST and CBOR blocks.
  */
 - (NSString *)actorStoreBlocksTableSchema;
 

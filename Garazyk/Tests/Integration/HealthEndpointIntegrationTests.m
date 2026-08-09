@@ -8,7 +8,7 @@
 #import "Database/Monitoring/PDSHealthCheck.h"
 
 @interface HealthEndpointIntegrationTests : XCTestCase
-@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong) ATProtoHttpServer *server;
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, copy) NSString *tempDir;
 @property (nonatomic, assign) BOOL serverStarted;
@@ -27,15 +27,15 @@
                                                serviceMaxSize:10
                                              userDatabaseSize:1000];
     
-    self.server = [HttpServer serverWithPort:0]; // Random port
+    self.server = [ATProtoHttpServer serverWithPort:0]; // Random port
     XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
     [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:self.controller];
     
-    [self.server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.server addHandlerForPath:@"/xrpc" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [dispatcher handleRequest:request response:response];
     }];
     
-    [self.server addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.server addRoute:@"GET" path:@"/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
         response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
         [response setJsonBody:health];

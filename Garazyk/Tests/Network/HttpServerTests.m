@@ -58,10 +58,10 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
 
 @end
 
-@interface HttpServer (Testing)
-- (void)sendResponse:(HttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection;
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
-- (void)dispatchRequest:(HttpRequest *)request
+@interface ATProtoHttpServer (Testing)
+- (void)sendResponse:(ATProtoHttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection;
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
+- (void)dispatchRequest:(ATProtoHttpRequest *)request
            onConnection:(id<ATProtoNetworkConnection>)connection;
 @end
 
@@ -158,7 +158,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
 
 - (void)testStartFailsWhenListenerFactoryReturnsNil {
     sListenerFactory = nil;
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
 
     NSError *error = nil;
     BOOL started = [server startWithError:&error];
@@ -173,7 +173,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
         NSError *listenerError = [NSError errorWithDomain:@"test.listener" code:42 userInfo:nil];
         return [[PDSFakeListener alloc] initWithPort:port state:ATProtoNetworkListenerStateFailed error:listenerError];
     };
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
 
     NSError *error = nil;
     BOOL started = [server startWithError:&error];
@@ -187,7 +187,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     sListenerFactory = ^id<ATProtoNetworkListener>(NSUInteger port) {
         return [[PDSFakeListener alloc] initWithPort:12345 state:ATProtoNetworkListenerStateReady error:nil];
     };
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
 
     NSError *error = nil;
     BOOL started = [server startWithError:&error];
@@ -198,10 +198,10 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
 }
 
 - (void)testSendResponseStreamsChunkedProducerFrames {
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
 
-    HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse responseWithStatusCode:HttpStatusOK];
     response.contentType = @"application/vnd.ipld.car";
     __block NSUInteger chunkIndex = 0;
     NSArray<NSData *> *chunks = @[
@@ -232,16 +232,16 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     XCTAssertEqualObjects(connection.sentData[2], [@"3\r\ndef\r\n" dataUsingEncoding:NSUTF8StringEncoding]);
     XCTAssertEqualObjects(connection.sentData[3], [@"0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]);
     // Note: After Phase C refactoring, read scheduling is handled by
-    // HttpConnectionIOCoordinator. Since this test bypasses the full
+    // ATProtoHttpConnectionIOCoordinator. Since this test bypasses the full
     // connection lifecycle (no coordinator), receiveCallCount/cancelCalled
     // are no longer triggered by sendResponse alone.
 }
 
 - (void)testSendResponseCancelsConnectionWhenChunkProducerFails {
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
 
-    HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse responseWithStatusCode:HttpStatusOK];
     response.contentType = @"application/vnd.ipld.car";
     __block NSUInteger invocation = 0;
     [response setBodyChunkProducer:^NSData * _Nullable(NSError **error) {
@@ -270,13 +270,13 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
 }
 
 - (void)testSendResponseSplitsOversizedProducerChunkByPolicy {
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
 
     NSMutableData *largePayload = [NSMutableData dataWithLength:(kGeneratedChunkCap * 2) + 137];
     memset(largePayload.mutableBytes, 'x', largePayload.length);
 
-    HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse responseWithStatusCode:HttpStatusOK];
     response.contentType = @"application/vnd.ipld.car";
     __block BOOL emitted = NO;
     [response setBodyChunkProducer:^NSData * _Nullable(NSError **error) {
@@ -324,13 +324,13 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     XCTAssertTrue(chunkFrameCount >= 3, @"Large payload should be split into multiple wire chunks");
     XCTAssertEqual(totalChunkPayloadBytes, largePayload.length);
     // Note: After Phase C refactoring, read scheduling is handled by
-    // HttpConnectionIOCoordinator. Since this test bypasses the full
+    // ATProtoHttpConnectionIOCoordinator. Since this test bypasses the full
     // connection lifecycle (no coordinator), receiveCallCount/cancelCalled
     // are no longer triggered by sendResponse alone.
 }
 
 - (void)testRejectsAmbiguousTransferEncodingAndContentLength {
-    HttpProtocolDriver *driver = [[HttpProtocolDriver alloc] init];
+    ATProtoHttpProtocolDriver *driver = [[ATProtoHttpProtocolDriver alloc] init];
 
     NSString *rawRequest = @"POST /xrpc/com.atproto.server.getSession HTTP/1.1\r\n"
                            "Host: localhost\r\n"
@@ -369,13 +369,13 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     memset(fileData.mutableBytes, 'a', 1000);
     [fileData writeToFile:tempPath atomically:YES];
 
-    HttpServer *server = [HttpServer serverWithPort:0];
-    [server addRoute:@"GET" path:@"/test_range" handler:^(HttpRequest *req, HttpResponse *resp) {
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
+    [server addRoute:@"GET" path:@"/test_range" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         resp.statusCode = 200;
         [resp setBodyFileAtPath:tempPath deleteAfterSend:NO];
     }];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/test_range"
                                                    queryString:@""
@@ -385,7 +385,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
                                                           body:nil
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [server dispatchRequest:request];
+    ATProtoHttpResponse *response = [server dispatchRequest:request];
 
     XCTAssertEqual(response.statusCode, 206);
     XCTAssertTrue(response.isRangeRequest);
@@ -402,13 +402,13 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     memset(fileData.mutableBytes, 'b', 1000);
     [fileData writeToFile:tempPath atomically:YES];
 
-    HttpServer *server = [HttpServer serverWithPort:0];
-    [server addRoute:@"GET" path:@"/test_range_suffix" handler:^(HttpRequest *req, HttpResponse *resp) {
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
+    [server addRoute:@"GET" path:@"/test_range_suffix" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         resp.statusCode = 200;
         [resp setBodyFileAtPath:tempPath deleteAfterSend:NO];
     }];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/test_range_suffix"
                                                    queryString:@""
@@ -418,7 +418,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
                                                           body:nil
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [server dispatchRequest:request];
+    ATProtoHttpResponse *response = [server dispatchRequest:request];
 
     XCTAssertEqual(response.statusCode, 206);
     XCTAssertTrue(response.isRangeRequest);
@@ -432,20 +432,20 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
 #pragma mark - Concurrency limit
 
 - (void)testDefaultConcurrencyLimitIsApplied {
-    HttpServer *server = [HttpServer serverWithPort:0];
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     XCTAssertEqual(server.maxConcurrentRequests,
                    kHttpServerDefaultMaxConcurrentRequests);
 }
 
 - (void)testExplicitConcurrencyLimitIsApplied {
-    HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1"
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithHost:@"127.0.0.1"
                                                port:0
                               maxConcurrentRequests:8];
     XCTAssertEqual(server.maxConcurrentRequests, (NSUInteger)8);
 }
 
 - (void)testZeroConcurrencyLimitSelectsDefault {
-    HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1"
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithHost:@"127.0.0.1"
                                                port:0
                               maxConcurrentRequests:0];
     XCTAssertEqual(server.maxConcurrentRequests,
@@ -464,7 +464,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     const NSUInteger limit = 4;
     const NSUInteger requestCount = 12;
 
-    HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1"
+    ATProtoHttpServer *server = [ATProtoHttpServer serverWithHost:@"127.0.0.1"
                                                port:0
                               maxConcurrentRequests:limit];
 
@@ -476,7 +476,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     XCTestExpectation *finished = [self expectationWithDescription:@"handlers finished"];
     finished.expectedFulfillmentCount = requestCount;
 
-    [server addRoute:@"GET" path:@"/blocking" handler:^(HttpRequest *req, HttpResponse *res) {
+    [server addRoute:@"GET" path:@"/blocking" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         dispatch_sync(counterQueue, ^{
             active++;
             if (active > peak) {
@@ -496,7 +496,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     NSMutableArray<PDSFakeConnection *> *connections =
         [NSMutableArray arrayWithCapacity:requestCount];
     for (NSUInteger i = 0; i < requestCount; i++) {
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                       methodString:@"GET"
                                                               path:@"/blocking"
                                                        queryString:nil

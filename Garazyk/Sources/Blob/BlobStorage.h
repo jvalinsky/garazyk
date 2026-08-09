@@ -16,8 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabasePool;
 @class PDSDatabaseBlob;
 @class ATProtoCID;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 /**
  * @abstract Defines the PDSBlobProvider protocol contract.
  */
@@ -148,8 +148,8 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
 - (BOOL)respondWithBlobData:(nullable NSData *)blobData
                    filePath:(nullable NSString *)filePath
                 totalLength:(unsigned long long)totalLength
-                 forRequest:(HttpRequest *)request
-                   response:(HttpResponse *)response
+                 forRequest:(ATProtoHttpRequest *)request
+                   response:(ATProtoHttpResponse *)response
                       error:(NSError **)outError;
 
 @end

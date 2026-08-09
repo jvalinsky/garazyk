@@ -7,7 +7,7 @@
 
  @discussion This file implements CAR v1 format for ATProto repository
  serialization. CAR archives contain content-addressable blocks with
- ATProtoCID references, used for MST export and import operations.
+ ATProtoCID references, used for ATProtoMST export and import operations.
 
  @copyright Copyright (c) 2024 Jack Valinsky
  */
@@ -18,9 +18,9 @@
 #import "Core/CID+DASL.h"
 #import <Security/Security.h>
 
-#pragma mark - CARBlock Implementation
+#pragma mark - ATProtoCARBlock Implementation
 
-@implementation CARBlock
+@implementation ATProtoCARBlock
 
 + (instancetype)blockWithCID:(ATProtoCID *)cid data:(NSData *)data {
     return [[self alloc] initWithCID:cid data:data];
@@ -37,20 +37,20 @@
 
 @end
 
-#pragma mark - CARReader Implementation
+#pragma mark - ATProtoCARReader Implementation
 
-@interface CARReader ()
+@interface ATProtoCARReader ()
 
 @property (nonatomic, copy, readwrite) NSArray<ATProtoCID *> *roots;
-@property (nonatomic, strong, readwrite) NSArray<CARBlock *> *blocks;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, CARBlock *> *blockIndex;
+@property (nonatomic, strong, readwrite) NSArray<ATProtoCARBlock *> *blocks;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoCARBlock *> *blockIndex;
 
 - (BOOL)parseCarV1Data:(NSData *)data strict:(BOOL)strict error:(NSError **)error;
 - (BOOL)parseLegacyData:(NSData *)data error:(NSError **)error;
 
 @end
 
-@implementation CARReader
+@implementation ATProtoCARReader
 
 static NSUInteger ReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint64_t *value) {
     if (maxLength == 0) {
@@ -99,7 +99,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
 }
 
 + (instancetype)readFromData:(NSData *)data strict:(BOOL)strict error:(NSError **)error {
-    CARReader *reader = [[CARReader alloc] init];
+    ATProtoCARReader *reader = [[ATProtoCARReader alloc] init];
     if (![reader parseData:data strict:strict error:error]) {
         return nil;
     }
@@ -235,8 +235,8 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
         return NO;
     }
 
-    NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
-    NSMutableDictionary<NSString *, CARBlock *> *index = [NSMutableDictionary dictionary];
+    NSMutableArray<ATProtoCARBlock *> *blocks = [NSMutableArray array];
+    NSMutableDictionary<NSString *, ATProtoCARBlock *> *index = [NSMutableDictionary dictionary];
 
     while (offset < data.length) {
         uint64_t blockLen = 0;
@@ -299,7 +299,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
             }
         }
 
-        CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
+        ATProtoCARBlock *block = [ATProtoCARBlock blockWithCID:blockCID data:blockData];
         [blocks addObject:block];
         index[blockCID.stringValue] = block;
     }
@@ -381,8 +381,8 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
     }
     _roots = @[rootCID];
 
-    NSMutableArray<CARBlock *> *blocks = [NSMutableArray array];
-    NSMutableDictionary<NSString *, CARBlock *> *index = [NSMutableDictionary dictionary];
+    NSMutableArray<ATProtoCARBlock *> *blocks = [NSMutableArray array];
+    NSMutableDictionary<NSString *, ATProtoCARBlock *> *index = [NSMutableDictionary dictionary];
 
     while (offset < data.length) {
         if (offset + 4 > data.length) {
@@ -408,7 +408,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
 
         ATProtoCID *blockCID = [self computeBlockCID:blockData];
         if (blockCID) {
-            CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
+            ATProtoCARBlock *block = [ATProtoCARBlock blockWithCID:blockCID data:blockData];
             [blocks addObject:block];
             index[blockCID.stringValue] = block;
         }
@@ -425,22 +425,22 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
     return [ATProtoCID cidWithDigest:digest codec:0x71];
 }
 
-- (CARBlock *)blockWithCID:(ATProtoCID *)cid {
+- (ATProtoCARBlock *)blockWithCID:(ATProtoCID *)cid {
     return self.blockIndex[cid.stringValue];
 }
 
 @end
 
-#pragma mark - CARWriter Implementation
+#pragma mark - ATProtoCARWriter Implementation
 
-@interface CARWriter ()
+@interface ATProtoCARWriter ()
 
 @property (nonatomic, strong, readwrite) ATProtoCID *rootCID;
-@property (nonatomic, strong, readwrite) NSMutableArray<CARBlock *> *blocks;
+@property (nonatomic, strong, readwrite) NSMutableArray<ATProtoCARBlock *> *blocks;
 
 @end
 
-@implementation CARWriter
+@implementation ATProtoCARWriter
 
 + (instancetype)writerWithRootCID:(ATProtoCID *)rootCID {
     return [[self alloc] initWithRootCID:rootCID];
@@ -455,7 +455,7 @@ static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, ATProtoC
     return self;
 }
 
-- (void)addBlock:(CARBlock *)block {
+- (void)addBlock:(ATProtoCARBlock *)block {
     [self.blocks addObject:block];
 }
 
@@ -498,7 +498,7 @@ static NSData *CARHeaderDataForRootCID(ATProtoCID *rootCID) {
     return [encodedHeader copy];
 }
 
-static NSData *CARBlockEntryData(CARBlock *block) {
+static NSData *CARBlockEntryData(ATProtoCARBlock *block) {
     if (!block || !block.cid || !block.data) {
         return nil;
     }
@@ -525,7 +525,7 @@ static NSData *CARBlockEntryData(CARBlock *block) {
     }
     [data appendData:headerData];
 
-    for (CARBlock *block in self.blocks) {
+    for (ATProtoCARBlock *block in self.blocks) {
         NSData *entry = CARBlockEntryData(block);
         if (!entry) {
             continue;
@@ -549,7 +549,7 @@ static NSData *CARBlockEntryData(CARBlock *block) {
     return headerData;
 }
 
-+ (nullable NSData *)encodedBlock:(CARBlock *)block error:(NSError **)error {
++ (nullable NSData *)encodedBlock:(ATProtoCARBlock *)block error:(NSError **)error {
     NSData *entryData = CARBlockEntryData(block);
     if (!entryData) {
         if (error) {
@@ -588,7 +588,7 @@ static NSData *CARBlockEntryData(CARBlock *block) {
     }
 }
 
-+ (BOOL)writeBlock:(CARBlock *)block
++ (BOOL)writeBlock:(ATProtoCARBlock *)block
       toFileHandle:(NSFileHandle *)fileHandle
              error:(NSError **)error {
     NSData *entryData = [[self class] encodedBlock:block error:error];
@@ -642,7 +642,7 @@ static NSData *CARBlockEntryData(CARBlock *block) {
             return NO;
         }
 
-        for (CARBlock *block in self.blocks) {
+        for (ATProtoCARBlock *block in self.blocks) {
             if (![[self class] writeBlock:block toFileHandle:fileHandle error:&writeError]) {
                 if (error) *error = writeError;
                 [fileHandle closeFile];

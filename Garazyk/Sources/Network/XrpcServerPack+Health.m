@@ -29,7 +29,7 @@
 @implementation XrpcServerPack (Health)
 
 + (void)registerHealthEndpointWithDispatcher:(XrpcDispatcher *)dispatcher {
-    [dispatcher registerMethod:@"_health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:@"_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
         NSString *status = health[@"status"];
         

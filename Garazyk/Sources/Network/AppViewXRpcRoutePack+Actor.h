@@ -13,18 +13,18 @@
 @interface AppViewXRpcRoutePack (Actor)
 
 /** @abstract Returns the profile for required `actor`, or 404 when the actor is absent. */
-- (void)handleGetProfile:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetProfile:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns profiles for required comma-separated `actors`. */
-- (void)handleGetProfiles:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetProfiles:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Searches actors using optional `q` or `term`, with cursor pagination. */
-- (void)handleSearchActors:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleSearchActors:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns typeahead actors for optional `q` or `term`, without cursor pagination. */
-- (void)handleSearchActorsTypeahead:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleSearchActorsTypeahead:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns preferences belonging to the authenticated actor. */
-- (void)handleGetPreferences:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetPreferences:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Validates a JSON `preferences` array and replaces the authenticated actor's preferences. */
-- (void)handlePutPreferences:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handlePutPreferences:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns an empty suggestions response; no service state is read or changed. */
-- (void)handleGetSuggestions:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetSuggestions:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end

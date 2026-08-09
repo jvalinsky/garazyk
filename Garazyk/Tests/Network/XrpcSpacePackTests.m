@@ -52,10 +52,10 @@
   ]) {
     XCTAssertTrue([dispatcher hasRegisteredMethod:method], @"%@ should be registered", method);
   }
-  HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET"
+  ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET"
       path:@"/xrpc/com.atproto.space.getSpace" queryString:@"" queryParams:@{ @"space" : [self space] }
       version:@"HTTP/1.1" headers:@{} body:[NSData data] remoteAddress:@"127.0.0.1"];
-  HttpResponse *response = [HttpResponse response];
+  ATProtoHttpResponse *response = [ATProtoHttpResponse response];
   [dispatcher handleRequest:request response:response];
   XCTAssertEqual(response.statusCode, HttpStatusUnauthorized);
   XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");

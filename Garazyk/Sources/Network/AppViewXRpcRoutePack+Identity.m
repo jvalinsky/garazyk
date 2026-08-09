@@ -10,7 +10,7 @@
 
 @implementation AppViewXRpcRoutePack (Identity)
 
-- (void)handleResolveHandle:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleResolveHandle:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *handle = [request queryParamForKey:@"handle"];
     if (!handle || handle.length == 0)
@@ -35,7 +35,7 @@
     [response setJsonBody:@{ @"did": did }];
 }
 
-- (void)handleGetRecord:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetRecord:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *uri = [request queryParamForKey:@"uri"];
     if (!uri || uri.length == 0)
@@ -102,7 +102,7 @@
     }];
 }
 
-- (void)handleQueryLabels:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleQueryLabels:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *urisParam = [request queryParamForKey:@"uris"];
     if (!urisParam || urisParam.length == 0)
@@ -139,7 +139,7 @@
     [response setJsonBody:@{ @"labels": labels }];
 }
 
-- (void)handleGetAccountInfos:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetAccountInfos:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -178,7 +178,7 @@
     [response setJsonBody:@{ @"infos": accounts }];
 }
 
-- (void)handleGetSubjectStatus:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetSubjectStatus:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -201,7 +201,7 @@
     }];
 }
 
-- (void)handleProxyWrite:(HttpRequest *)request response:(HttpResponse *)response nsid:(NSString *)nsid
+- (void)handleProxyWrite:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response nsid:(NSString *)nsid
 {
     NSString *callerDID = [self requireAuth:request response:response];
     if (!callerDID) return;

@@ -3,8 +3,8 @@
 
 #import "Network/AppViewXRpcRoutePack.h"
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 @class FeedService;
 @class ActorService;
@@ -55,11 +55,11 @@
 @property (nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 
 /** @abstract Authenticates the request and returns its actor DID, or writes an auth error and returns nil. */
-- (NSString *)requireAuth:(HttpRequest *)request response:(HttpResponse *)response;
+- (NSString *)requireAuth:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Extracts and verifies the DID represented by an Authorization header for this request. */
-- (NSString *)extractDIDFromAuth:(NSString *)authHeader request:(HttpRequest *)request;
+- (NSString *)extractDIDFromAuth:(NSString *)authHeader request:(ATProtoHttpRequest *)request;
 
 @end
 
 /** @abstract Parses `limit`, defaulting it when absent and clamping it to the inclusive range 1...maxLimit. */
-NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSInteger maxLimit);
+NSInteger parseLimitParam(ATProtoHttpRequest *request, NSInteger defaultLimit, NSInteger maxLimit);

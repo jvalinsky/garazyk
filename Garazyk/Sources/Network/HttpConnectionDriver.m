@@ -14,7 +14,7 @@
 
 @implementation ATProtoHttpConnectionDriver
 
-- (BOOL)shouldBeginReadForSession:(HttpProtocolSession *)session
+- (BOOL)shouldBeginReadForSession:(ATProtoHttpProtocolSession *)session
                   outputQueueSize:(NSUInteger)outputQueueSize
                      headerOpened:(NSTimeInterval)headerOpened
                               now:(NSTimeInterval)now
@@ -31,7 +31,7 @@
   return YES;
 }
 
-- (BOOL)shouldResumeReadForSession:(HttpProtocolSession *)session
+- (BOOL)shouldResumeReadForSession:(ATProtoHttpProtocolSession *)session
                    outputQueueSize:(NSUInteger)outputQueueSize {
   return outputQueueSize == 0 && [session shouldReadMoreData];
 }

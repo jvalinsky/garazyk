@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpProtocolSession.h
+ @file ATProtoHttpProtocolSession.h
 
  @abstract Defines protocol-session state and operations for HTTP request handling.
 
@@ -17,7 +17,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Events returned by the HttpProtocolSession state machine.
+ * @abstract Events returned by the ATProtoHttpProtocolSession state machine.
  */
 typedef NS_ENUM(NSInteger, HttpSessionEvent) {
   /** A full HTTP request has been parsed and is ready for dispatch. */
@@ -31,18 +31,18 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
 };
 
 /**
- * @class HttpProtocolSession
+ * @class ATProtoHttpProtocolSession
  * @abstract A pure Sans-I/O state machine for HTTP/1.1 session management.
  * @discussion This class coordinates the parser and pipeline policy, returning
  * events for the driver to act upon. It does not perform any I/O.
  */
-@interface HttpProtocolSession : NSObject
+@interface ATProtoHttpProtocolSession : NSObject
 
 /**
  * @abstract Exposes the parser value.
  */
-@property(nonatomic, readonly) Http1Parser *parser;
-@property(nonatomic, readonly) Http1PipelinePolicy *pipelinePolicy;
+@property(nonatomic, readonly) ATProtoHttp1Parser *parser;
+@property(nonatomic, readonly) ATProtoHttp1PipelinePolicy *pipelinePolicy;
 @property(nonatomic, assign) BOOL upgradedToWebSocket;
 
 /**
@@ -59,19 +59,19 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
  * policy.
  * @return The request to dispatch, or nil if none are ready or allowed.
  */
-- (nullable HttpRequest *)nextRequestToDispatch;
+- (nullable ATProtoHttpRequest *)nextRequestToDispatch;
 
 /**
  * @method currentUpgradeRequest
  * @abstract Returns the request that triggered an upgrade event.
  */
-- (nullable HttpRequest *)currentUpgradeRequest;
+- (nullable ATProtoHttpRequest *)currentUpgradeRequest;
 
 /**
  * @method currentParseError
  * @abstract Returns the most recent parser error, if any.
  */
-- (nullable Http1ParserError *)currentParseError;
+- (nullable ATProtoHttp1ParserError *)currentParseError;
 
 /**
  * @method setRemoteAddressIfNeeded:
@@ -96,7 +96,7 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
  * @abstract Queues a response to be sent for the oldest in-flight request.
  * @param response The HTTP response to send.
  */
-- (void)queueResponse:(HttpResponse *)response;
+- (void)queueResponse:(ATProtoHttpResponse *)response;
 
 /**
  * @method responseDidFinishSending

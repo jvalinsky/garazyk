@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file SSRFValidator.h
+ @file ATProtoSSRFValidator.h
 
  @abstract Defines SSRF validation interfaces for host and address safety checks.
 
@@ -41,9 +41,9 @@ typedef BOOL (^SSRFResolver)(NSString *hostname,
                               NSError * _Nullable * _Nullable error);
 
 /**
- * @abstract Declares the SSRFValidator public API.
+ * @abstract Declares the ATProtoSSRFValidator public API.
  */
-@interface SSRFValidator : NSObject
+@interface ATProtoSSRFValidator : NSObject
 
 /**
  * @abstract Performs the isPrivateIPv4Address operation.

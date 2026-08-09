@@ -12,14 +12,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpServer;
+@class ATProtoHttpServer;
 
 @interface ATProtoHttpMetricsRoutePack : NSObject
 
 /**
  * @abstract Performs the registerRoutesWithServer operation.
  */
-+ (void)registerRoutesWithServer:(HttpServer *)server;
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server;
 
 @end
 

@@ -68,8 +68,8 @@
     return [ATProtoCID cidFromBytes:cidBytes];
 }
 
-- (ATProtoCID *)mstRootCIDForReader:(CARReader *)reader {
-    CARBlock *rootBlock = [reader blockWithCID:reader.rootCID];
+- (ATProtoCID *)mstRootCIDForReader:(ATProtoCARReader *)reader {
+    ATProtoCARBlock *rootBlock = [reader blockWithCID:reader.rootCID];
     if (!rootBlock) {
         return reader.rootCID;
     }
@@ -124,7 +124,7 @@
 - (void)testLoadMSTForDidReconstructsFromCAR {
     // Use deterministic keys with proper ATProtoTID-format rkeys
     // TIDs are base32-sortable timestamp identifiers (13 chars, lowercase alphanumeric)
-    MST *seedTree = [[MST alloc] init];
+    ATProtoMST *seedTree = [[ATProtoMST alloc] init];
     NSArray *tidRkeys = @[
         @"3jzfcijpj2z2a", @"3jzfcijpj2z2b", @"3jzfcijpj2z2c", @"3jzfcijpj2z2d",
         @"3jzfcijpj2z2e", @"3jzfcijpj2z2f", @"3jzfcijpj2z2g", @"3jzfcijpj2z2h",
@@ -147,7 +147,7 @@
     XCTAssertNotNil(rootCID, "Root CID must be available");
 
     NSError *carError = nil;
-    CARReader *reader = [CARReader readFromData:carData error:&carError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData error:&carError];
     XCTAssertNotNil(reader, "CAR reader should parse data: %@", carError);
     XCTAssertGreaterThan(reader.blocks.count, 0, "CAR should contain blocks");
 
@@ -161,7 +161,7 @@
     NSError *dbError = nil;
     XCTAssertTrue([self.database createRepo:repo error:&dbError], "Failed to seed repo: %@", dbError);
 
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         PDSDatabaseBlock *dbBlock = [[PDSDatabaseBlock alloc] init];
         dbBlock.cid = [block.cid bytes];
         dbBlock.repoDid = repo.ownerDid;
@@ -172,17 +172,17 @@
     }
 
     NSError *loadError = nil;
-    MST *loaded = [self.persistence loadMSTForDid:repo.ownerDid error:&loadError];
+    ATProtoMST *loaded = [self.persistence loadMSTForDid:repo.ownerDid error:&loadError];
     XCTAssertNotNil(loaded, "Loader should return MST: %@", loadError);
     XCTAssertEqualObjects(loaded.rootCID.stringValue, rootCID.stringValue);
 
-    NSArray<MSTEntry *> *seedEntries = [seedTree allEntries];
-    NSArray<MSTEntry *> *loadedEntries = [loaded allEntries];
+    NSArray<ATProtoMSTEntry *> *seedEntries = [seedTree allEntries];
+    NSArray<ATProtoMSTEntry *> *loadedEntries = [loaded allEntries];
     XCTAssertEqual(seedEntries.count, loadedEntries.count);
 
     for (NSUInteger idx = 0; idx < seedEntries.count; idx++) {
-        MSTEntry *seedEntry = seedEntries[idx];
-        MSTEntry *persistedEntry = loadedEntries[idx];
+        ATProtoMSTEntry *seedEntry = seedEntries[idx];
+        ATProtoMSTEntry *persistedEntry = loadedEntries[idx];
         XCTAssertEqualObjects(seedEntry.key, persistedEntry.key);
         XCTAssertEqualObjects(seedEntry.valueCID.stringValue, persistedEntry.valueCID.stringValue);
     }
@@ -193,7 +193,7 @@
     XCTAssertNotNil(carPath, @"Fixture CAR file should exist");
 
     NSError *carError = nil;
-    CARReader *reader = [CARReader readFromPath:carPath error:&carError];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromPath:carPath error:&carError];
     XCTAssertNotNil(reader, @"CAR reader should parse fixture: %@", carError);
     XCTAssertNotNil(reader.rootCID, @"Fixture CAR should contain root CID");
     XCTAssertGreaterThan(reader.blocks.count, 0, @"Fixture CAR should have blocks");
@@ -210,7 +210,7 @@
     NSError *dbError = nil;
     XCTAssertTrue([self.database createRepo:repo error:&dbError], @"Failed to seed fixture repo: %@", dbError);
 
-    for (CARBlock *block in reader.blocks) {
+    for (ATProtoCARBlock *block in reader.blocks) {
         PDSDatabaseBlock *dbBlock = [[PDSDatabaseBlock alloc] init];
         dbBlock.cid = [block.cid bytes];
         dbBlock.repoDid = repo.ownerDid;
@@ -221,14 +221,14 @@
     }
 
     NSError *loadError = nil;
-    MST *loaded = [self.persistence loadMSTForDid:repo.ownerDid error:&loadError];
+    ATProtoMST *loaded = [self.persistence loadMSTForDid:repo.ownerDid error:&loadError];
     XCTAssertNotNil(loaded, @"Loader should return MST for fixture CAR: %@", loadError);
     XCTAssertEqualObjects(loaded.rootCID.stringValue, mstRootCID.stringValue);
 
-    NSArray<MSTEntry *> *entries = [loaded allEntries];
+    NSArray<ATProtoMSTEntry *> *entries = [loaded allEntries];
     XCTAssertGreaterThan(entries.count, 0, @"Fixture CAR should yield MST entries");
 
-    for (MSTEntry *entry in entries) {
+    for (ATProtoMSTEntry *entry in entries) {
         XCTAssertGreaterThan(entry.key.length, 0, @"Fixture entries must have keys");
         XCTAssertNotNil(entry.valueCID, @"Fixture entries must have value CIDs");
     }

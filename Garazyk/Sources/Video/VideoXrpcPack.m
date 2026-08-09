@@ -27,7 +27,7 @@
   id<PDSBlobProvider> blobProvider = services.blobProvider;
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_video_getJobStatus
-                      handler:^(HttpRequest *request, HttpResponse *response) {
+                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *jobId = [request queryParamForKey:@"jobId"];
     if (!jobId) {
       [XrpcErrorHelper setValidationError:response message:@"Missing jobId parameter"];
@@ -46,7 +46,7 @@
   }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_video_uploadVideo
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *did = [authProvider authenticateRequest:request response:response];
     if (!did) {
       if (response.statusCode == HttpStatusOK) {
@@ -141,7 +141,7 @@
   }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_video_getUploadLimits
-                      handler:^(HttpRequest *request, HttpResponse *response) {
+                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *did = [authProvider authenticateRequest:request response:response];
     if (!did) {
       // Unauthenticated users get default limits

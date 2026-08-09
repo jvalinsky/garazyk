@@ -23,7 +23,7 @@
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 
 #pragma mark - com.atproto.repo.describeRepo
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_describeRepo handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_describeRepo handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         // Per lexicon: does not require auth.
         NSString *identifier = [request queryParamForKey:@"repo"] ?: @"";
         if (identifier.length == 0) {

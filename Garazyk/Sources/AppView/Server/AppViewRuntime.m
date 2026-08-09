@@ -57,7 +57,7 @@
 @property (nonatomic, strong) AppViewAdminRoutePack *adminRoutePack;
 @property (nonatomic, strong) AppViewRelevanceSet *relevanceSet;
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) FeedService *feedService;
 @property (nonatomic, strong) ActorService *actorService;
 @property (nonatomic, strong) GraphService *graphService;
@@ -275,17 +275,17 @@ static AppViewRuntime *_sharedRuntime = nil;
     }
 
     // Build HTTP server for query API + admin
-    _httpServer = [HttpServer serverWithPort:(uint16_t)config.httpPort];
-    [HttpResponse setDefaultServerHeader:@"garazyk-appview/1.0.0"];
+    _httpServer = [ATProtoHttpServer serverWithPort:(uint16_t)config.httpPort];
+    [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-appview/1.0.0"];
 
     // Root serves ASCII service banner
-    [_httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *res) {
+    [_httpServer addRoute:@"GET" path:@"/" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         res.statusCode = 200;
         res.contentType = @"text/plain; charset=utf-8";
         [res setBodyString:@"_____                            \n/  ___|                           \n\\ `--. _   _ _ __ ___ _ __   __ _ \n `--. \\ | | | '__/ _ \\ '_ \\ / _` |\n/\\__/ / |_| | | |  __/ | | | (_| |\n\\____/ \\__, |_|  \\___|_| |_|\\__,_|\n        __/ |                     \n       |___/  \n"];
     }];
 
-    [_httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(HttpRequest *req, HttpResponse *res) {
+    [_httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         res.statusCode = HttpStatusNoContent;
         res.contentType = @"image/x-icon";
         [res setBodyData:[NSData data]];

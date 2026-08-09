@@ -21,11 +21,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSString *)iso8601String;
 
-- (HttpResponse *)sendJsonRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendJsonRequestWithPath:(NSString *)path
                                      body:(NSDictionary *)body
                                   headers:(NSDictionary<NSString *, NSString *> *)headers;
 
-- (HttpResponse *)sendGetRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendGetRequestWithPath:(NSString *)path
                              queryString:(NSString *)queryString
                              queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
                                  headers:(NSDictionary<NSString *, NSString *> *)headers;

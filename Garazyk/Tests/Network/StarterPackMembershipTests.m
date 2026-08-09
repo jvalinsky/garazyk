@@ -113,7 +113,7 @@ static ATProtoCID *makeTestCID(NSUInteger idx) {
 #pragma mark - getStarterPacksWithMembership
 
 - (void)testGetStarterPacksWithMembershipRequiresAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
                                            queryParams:@{@"actor": self.did2}
                                                 headers:@{}];
     XCTAssertEqual(response.statusCode, 401,
@@ -123,7 +123,7 @@ static ATProtoCID *makeTestCID(NSUInteger idx) {
 
 - (void)testGetStarterPacksWithMembershipMissingActor {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
                                                headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400,
         @"Missing actor param should return 400, got %ld: %@",
@@ -135,7 +135,7 @@ static ATProtoCID *makeTestCID(NSUInteger idx) {
 
 - (void)testGetStarterPacksWithMembershipEmpty {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
                                           queryParams:@{@"actor": self.did2}
                                                headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200,
@@ -161,7 +161,7 @@ static ATProtoCID *makeTestCID(NSUInteger idx) {
                            listURI:listURI
                           listRkey:listRkey];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
                                           queryParams:@{
                                               @"actor": self.did2,
                                               @"limit": @"50"
@@ -218,7 +218,7 @@ static ATProtoCID *makeTestCID(NSUInteger idx) {
                        listURI:listURI
                     subjectDid:self.did2];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.graph.getStarterPacksWithMembership"
                                           queryParams:@{
                                               @"actor": self.did2,
                                               @"limit": @"50"

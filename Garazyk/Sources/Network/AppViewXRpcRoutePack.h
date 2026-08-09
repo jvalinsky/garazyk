@@ -19,7 +19,7 @@
 @class ContactService;
 @class SearchIndexService;
 @class ATProtoJWTMinter;
-@class HttpServer;
+@class ATProtoHttpServer;
 @class AppViewWriteProxy;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -46,7 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the registerRoutesWithServer operation.
  */
-- (void)registerRoutesWithServer:(HttpServer *)server;
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server;
 
 @end
 

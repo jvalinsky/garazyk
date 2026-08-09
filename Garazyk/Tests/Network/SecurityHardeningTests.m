@@ -65,10 +65,10 @@
     [super tearDown];
 }
 
-- (HttpResponse *)sendJsonRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendJsonRequestWithPath:(NSString *)path
                                 body:(NSDictionary *)body
                                headers:(NSDictionary<NSString *, NSString *> *)headers {
-    // HttpRequest's initializer marks the body parameter nonnull, so we must supply a real
+    // ATProtoHttpRequest's initializer marks the body parameter nonnull, so we must supply a real
     // (non-nil) NSData even when the test caller means "no payload". [NSData data]'s return
     // type isn't inferred as nonnull by the analyzer, so we cast explicitly to satisfy
     // -Wnonnull. refreshSession is the only existing caller that passes body:nil and it
@@ -82,7 +82,7 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                    methodString:@"POST"
                                                            path:path
                                                     queryString:@""
@@ -91,12 +91,12 @@
                                                         headers:allHeaders
                                                            body:bodyData
                                                      remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
 
-- (HttpResponse *)sendRawRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendRawRequestWithPath:(NSString *)path
                                 bodyData:(NSData *)bodyData
                                  headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSMutableDictionary *allHeaders = [NSMutableDictionary dictionary];
@@ -104,7 +104,7 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                    methodString:@"POST"
                                                            path:path
                                                     queryString:@""
@@ -113,12 +113,12 @@
                                                         headers:allHeaders
                                                            body:bodyData
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
 
-- (HttpResponse *)sendGetRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendGetRequestWithPath:(NSString *)path
                               queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
                                   headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSMutableDictionary *allHeaders = [NSMutableDictionary dictionary];
@@ -126,11 +126,11 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    // HttpRequest's body: parameter is nonnull (NS_ASSUME_NONNULL_BEGIN in HttpRequest.h), so
+    // ATProtoHttpRequest's body: parameter is nonnull (NS_ASSUME_NONNULL_BEGIN in ATProtoHttpRequest.h), so
     // a bare `body:nil` literal now trips -Wnonnull since the rest of the file was tightened.
     // Match the JSON helper: hand the GET request an explicit nonnull empty payload.
     NSData * _Nonnull emptyBody = [@"" dataUsingEncoding:NSASCIIStringEncoding];
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                    methodString:@"GET"
                                                            path:path
                                                     queryString:@""
@@ -139,7 +139,7 @@
                                                         headers:allHeaders
                                                            body:emptyBody
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
@@ -147,7 +147,7 @@
 - (void)testRefreshTokenRotation {
     // 1. Refresh session
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.refreshJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                       body:nil
                                                    headers:@{@"authorization": authHeader}];
 
@@ -163,7 +163,7 @@
     // Protocol PDS), not family-wide tombstoning: a client racing a dropped
     // response can still replay the old token and land on the same
     // successor, rather than being logged out.
-    HttpResponse *retryOldResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+    ATProtoHttpResponse *retryOldResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                              body:nil
                                                           headers:@{@"authorization": authHeader}];
     XCTAssertEqual(retryOldResponse.statusCode, 200, @"Old refresh token should be honored idempotently within the grace period");
@@ -172,7 +172,7 @@
 
     // 3. Use NEW refresh token
     NSString *newAuthHeader = [NSString stringWithFormat:@"Bearer %@", newRefreshJwt];
-    HttpResponse *useNewResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+    ATProtoHttpResponse *useNewResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                             body:nil
                                                          headers:@{@"authorization": newAuthHeader}];
     XCTAssertEqual(useNewResponse.statusCode, 200, @"New refresh token should work");
@@ -183,7 +183,7 @@
     // simply gone — no different from any other expired token — rather than
     // tombstoning every other session for the account.
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.refreshJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                       body:nil
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -199,14 +199,14 @@
                                                       error:&dbError];
     XCTAssertTrue(backdated, @"Failed to backdate old token's grace expiry: %@", dbError);
 
-    HttpResponse *retryAfterGrace = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+    ATProtoHttpResponse *retryAfterGrace = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                              body:nil
                                                           headers:@{@"authorization": authHeader}];
     XCTAssertEqual(retryAfterGrace.statusCode, 401, @"Old refresh token should be rejected once its grace period has elapsed");
 
     // The other, still-current session is unaffected.
     NSString *newAuthHeader = [NSString stringWithFormat:@"Bearer %@", newRefreshJwt];
-    HttpResponse *useNewResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+    ATProtoHttpResponse *useNewResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                             body:nil
                                                          headers:@{@"authorization": newAuthHeader}];
     XCTAssertEqual(useNewResponse.statusCode, 200, @"Current refresh token should remain valid after an unrelated stale-token rejection");
@@ -248,7 +248,7 @@
 
     // Backdating done; an unmutated refreshSession invocation must now return 401.
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.refreshJwt];
-    HttpResponse *expiredResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
+    ATProtoHttpResponse *expiredResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.refreshSession"
                                                               body:nil
                                                            headers:@{@"authorization": authHeader}];
     XCTAssertEqual(expiredResponse.statusCode, 401,
@@ -368,11 +368,11 @@
         XCTAssertNil(error);
 
         NSString *authorization = [NSString stringWithFormat:@"DPoP %@", [accessToken encodedToken]];
-        // HttpRequest's `body:` parameter is nonnull, so the analyzer insists on a real
+        // ATProtoHttpRequest's `body:` parameter is nonnull, so the analyzer insists on a real
         // NSData even for routes that don't read a payload.
         NSData * _Nonnull emptyBody = [@"" dataUsingEncoding:NSASCIIStringEncoding];
 
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                         methodString:@"GET"
                                                                 path:path
                                                          queryString:@""
@@ -385,7 +385,7 @@
                                                              }
                                                                 body:emptyBody
                                                        remoteAddress:@"127.0.0.1"];
-        HttpResponse *response = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
         [dispatcher handleRequest:request response:response];
 
         XCTAssertEqual(response.statusCode, HttpStatusUnauthorized,
@@ -517,7 +517,7 @@
         XCTAssertNil(error);
 
         // (1) Nonce-less request — expect 401 + DPoP-Nonce challenge.
-        HttpRequest *firstRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *firstRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                             methodString:@"GET"
                                                                     path:path
                                                              queryString:@""
@@ -530,7 +530,7 @@
                                                                  }
                                                                     body:emptyBody
                                                             remoteAddress:@"127.0.0.1"];
-        HttpResponse *firstResponse = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *firstResponse = [[ATProtoHttpResponse alloc] init];
         [dispatcher handleRequest:firstRequest response:firstResponse];
 
         XCTAssertEqual(firstResponse.statusCode, HttpStatusUnauthorized,
@@ -558,7 +558,7 @@
         XCTAssertNotNil(retryProof);
         XCTAssertNil(error);
 
-        HttpRequest *secondRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *secondRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                              methodString:@"GET"
                                                                      path:path
                                                               queryString:@""
@@ -572,7 +572,7 @@
                                                                   }
                                                                      body:emptyBody
                                                              remoteAddress:@"127.0.0.1"];
-        HttpResponse *secondResponse = [[HttpResponse alloc] init];
+        ATProtoHttpResponse *secondResponse = [[ATProtoHttpResponse alloc] init];
         [dispatcher handleRequest:secondRequest response:secondResponse];
 
         XCTAssertEqual(secondResponse.statusCode, HttpStatusOK,
@@ -597,12 +597,12 @@
 - (void)testImportTamperRejection {
     // importRepo must reject a structurally corrupted CAR payload at the parser, not just an
     // empty body. Send real (non-empty) bytes that are not a valid CAR: the leading byte is
-    // read as a CAR varint header length that runs past the buffer, so CARReader rejects it.
+    // read as a CAR varint header length that runs past the buffer, so ATProtoCARReader rejects it.
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt];
     NSData *tamperedCar = [@"tampered-car-not-a-valid-archive" dataUsingEncoding:NSUTF8StringEncoding];
     NSString *contentLength = [NSString stringWithFormat:@"%lu", (unsigned long)tamperedCar.length];
 
-    HttpResponse *response = [self sendRawRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
+    ATProtoHttpResponse *response = [self sendRawRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
                                                  bodyData:tamperedCar
                                                   headers:@{
                                                       @"authorization": authHeader,
@@ -646,7 +646,7 @@
         ]
     };
 
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.applyWrites"
                                                       body:body
                                                    headers:@{@"authorization": authHeader}];
 
@@ -667,7 +667,7 @@
     // a small fixture.)
     NSString *unknownDid = @"did:plc:zzzzzzzzzzzzzzzzzzzzzzzz"; // valid 24-char base32, never created
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                                               queryParams:@{@"did": unknownDid}
                                                   headers:@{}];
 
@@ -704,12 +704,12 @@
                                                           error:nil];
     XCTAssertNotNil(created);
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getBlob"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getBlob"
                                               queryParams:@{@"did": self.did, @"cid": cid}
                                                   headers:@{}];
 
     XCTAssertEqual(response.statusCode, 200, @"Stored blob should be served");
-    // contentType is an HttpResponse property populated by the handler, not a setHeader entry.
+    // contentType is an ATProtoHttpResponse property populated by the handler, not a setHeader entry.
     NSString *contentType = response.contentType;
     XCTAssertNotNil(contentType);
     XCTAssertTrue([contentType.lowercaseString containsString:@"text/plain"],
@@ -737,7 +737,7 @@
 
     // The same guard must be wired into the XRPC layer: a sync export carrying a SQL-injection
     // DID must be rejected with 400 InvalidRequest and never reach the database.
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.sync.getRepo"
                                               queryParams:@{@"did": @"did:plc:abc' OR '1'='1"}
                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 400);

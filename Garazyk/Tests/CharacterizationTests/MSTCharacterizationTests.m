@@ -6,7 +6,7 @@
 
 @interface MSTCharacterizationTests : CharacterizationTestBase
 
-@property (nonatomic, strong) MST *subject;
+@property (nonatomic, strong) ATProtoMST *subject;
 
 @end
 
@@ -14,7 +14,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.subject = [[MST alloc] init];
+    self.subject = [[ATProtoMST alloc] init];
 }
 
 - (void)tearDown {
@@ -23,7 +23,7 @@
 }
 
 /*
- * Characterization Tests for MST
+ * Characterization Tests for ATProtoMST
  * Generated automatically. Please implement specific scenarios.
  */
 
@@ -32,22 +32,22 @@
      - (instancetype)initWithRootCID:(nullable ATProtoCID *)rootCID;
     */
     
-    MST *tree = [[MST alloc] initWithRootCID:nil];
+    ATProtoMST *tree = [[ATProtoMST alloc] initWithRootCID:nil];
     XCTAssertNotNil(tree);
     XCTAssertNotNil(tree.emptyTreeHash);
-    XCTAssertTrue([tree isKindOfClass:[MST class]]);
+    XCTAssertTrue([tree isKindOfClass:[ATProtoMST class]]);
 }
 
 - (void)testCharacterization_initWithRootNodeMatchesRootCID {
     /* Target Method:
-     - (instancetype)initWithRootNode:(nullable MSTNode *)rootNode;
+     - (instancetype)initWithRootNode:(nullable ATProtoMSTNode *)rootNode;
     */
 
-    MSTNode *rootNode = [MSTNode leafNodeWithEntries:@[]];
-    MST *tree = [[MST alloc] initWithRootNode:rootNode];
+    ATProtoMSTNode *rootNode = [ATProtoMSTNode leafNodeWithEntries:@[]];
+    ATProtoMST *tree = [[ATProtoMST alloc] initWithRootNode:rootNode];
     XCTAssertNotNil(tree);
     XCTAssertNotNil(tree.rootCID);
-    XCTAssertTrue([tree isKindOfClass:[MST class]]);
+    XCTAssertTrue([tree isKindOfClass:[ATProtoMST class]]);
 }
 
 - (void)testCharacterization_getMatchesValueCID {
@@ -128,13 +128,13 @@
 
 - (void)testCharacterization_allEntries {
     /* Target Method:
-     - (NSArray<MSTEntry *> *)allEntries;
+     - (NSArray<ATProtoMSTEntry *> *)allEntries;
     */
     
     [self.subject put:@"a" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
     [self.subject put:@"b" valueCID:[ATProtoCID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
 
-    NSArray<MSTEntry *> *entries = [self.subject allEntries];
+    NSArray<ATProtoMSTEntry *> *entries = [self.subject allEntries];
     XCTAssertEqual(entries.count, 2);
     NSSet<NSString *> *keys = [NSSet setWithArray:[entries valueForKey:@"key"]];
     XCTAssertTrue([keys containsObject:@"a"]);
@@ -143,14 +143,14 @@
 
 - (void)testCharacterization_entriesWithPrefixMatchesEntries {
     /* Target Method:
-     - (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
+     - (NSArray<ATProtoMSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
     */
     
     [self.subject put:@"app.bsky.feed.post/1" valueCID:[ATProtoCID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
     [self.subject put:@"app.bsky.feed.post/2" valueCID:[ATProtoCID sha256:[@"2" dataUsingEncoding:NSUTF8StringEncoding]]];
     [self.subject put:@"app.bsky.actor.profile/self" valueCID:[ATProtoCID sha256:[@"3" dataUsingEncoding:NSUTF8StringEncoding]]];
 
-    NSArray<MSTEntry *> *feedEntries = [self.subject entriesWithPrefix:@"app.bsky.feed."];
+    NSArray<ATProtoMSTEntry *> *feedEntries = [self.subject entriesWithPrefix:@"app.bsky.feed."];
     XCTAssertEqual(feedEntries.count, 2);
 }
 
@@ -189,17 +189,17 @@
     [self.subject put:@"key" valueCID:cid];
 
     NSData *cbor = [self.subject serializeToCBOR];
-    MST *roundTrip = [MST deserializeFromCBOR:cbor];
+    ATProtoMST *roundTrip = [ATProtoMST deserializeFromCBOR:cbor];
     XCTAssertNotNil(roundTrip);
     XCTAssertEqualObjects([roundTrip get:@"key"].stringValue, cid.stringValue);
 }
 
 - (void)testCharacterization_diffFrom {
     /* Target Method:
-     - (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree;
+     - (NSArray<ATProtoMSTDiffOperation *> *)diffFrom:(nullable ATProtoMST *)oldTree;
     */
     
-    MST *oldTree = [[MST alloc] init];
+    ATProtoMST *oldTree = [[ATProtoMST alloc] init];
     ATProtoCID *oldCID = [ATProtoCID sha256:[@"old" dataUsingEncoding:NSUTF8StringEncoding]];
     [oldTree put:@"k1" valueCID:oldCID];
 
@@ -207,7 +207,7 @@
     [self.subject put:@"k1" valueCID:newCID];
     [self.subject put:@"k2" valueCID:[ATProtoCID sha256:[@"add" dataUsingEncoding:NSUTF8StringEncoding]]];
 
-    NSArray<MSTDiffOperation *> *ops = [self.subject diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *ops = [self.subject diffFrom:oldTree];
     XCTAssertEqual(ops.count, 2);
     XCTAssertEqualObjects(ops[0].key, @"k1");
     XCTAssertEqual(ops[0].type, MSTDiffOperationTypeUpdate);
@@ -221,8 +221,8 @@
     */
     
     NSString *key = @"app.bsky.feed.post/1";
-    NSUInteger depthA = [MST keyDepthString:key];
-    NSUInteger depthB = [MST keyDepthBytes:[key dataUsingEncoding:NSUTF8StringEncoding]];
+    NSUInteger depthA = [ATProtoMST keyDepthString:key];
+    NSUInteger depthB = [ATProtoMST keyDepthBytes:[key dataUsingEncoding:NSUTF8StringEncoding]];
     XCTAssertEqual(depthA, depthB);
 }
 
@@ -232,8 +232,8 @@
     */
 
     NSData *keyBytes = [@"key" dataUsingEncoding:NSUTF8StringEncoding];
-    NSUInteger depthA = [MST keyDepthBytes:keyBytes];
-    NSUInteger depthB = [MST keyDepthString:@"key"];
+    NSUInteger depthA = [ATProtoMST keyDepthBytes:keyBytes];
+    NSUInteger depthB = [ATProtoMST keyDepthString:@"key"];
     XCTAssertEqual(depthA, depthB);
 }
 
@@ -243,29 +243,29 @@
     */
 
     NSString *key = @"key";
-    uint32_t depthA = [MST keyDepth:key];
-    NSUInteger depthB = [MST keyDepthString:key];
+    uint32_t depthA = [ATProtoMST keyDepth:key];
+    NSUInteger depthB = [ATProtoMST keyDepthString:key];
     XCTAssertEqual((NSUInteger)depthA, depthB);
 }
 
 - (void)testCharacterization_getProofNodesForKey {
     /* Target Method:
-     - (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key;
+     - (nullable NSArray<ATProtoMSTNode *> *)getProofNodesForKey:(NSString *)key;
     */
     
     [self.subject put:@"proofKey" valueCID:[ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]]];
-    NSArray<MSTNode *> *nodes = [self.subject getProofNodesForKey:@"proofKey"];
+    NSArray<ATProtoMSTNode *> *nodes = [self.subject getProofNodesForKey:@"proofKey"];
     XCTAssertNotNil(nodes);
     XCTAssertGreaterThan(nodes.count, 0U);
 }
 
 - (void)testCharacterization_serializeNode {
     /* Target Method:
-     - (nullable NSData *)serializeNode:(MSTNode *)node;
+     - (nullable NSData *)serializeNode:(ATProtoMSTNode *)node;
     */
 
     [self.subject put:@"proofKey" valueCID:[ATProtoCID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]]];
-    NSArray<MSTNode *> *nodes = [self.subject getProofNodesForKey:@"proofKey"];
+    NSArray<ATProtoMSTNode *> *nodes = [self.subject getProofNodesForKey:@"proofKey"];
     XCTAssertNotNil(nodes);
     XCTAssertGreaterThan(nodes.count, 0U);
 

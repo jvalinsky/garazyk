@@ -29,49 +29,49 @@
     return self;
 }
 
-- (void)registerRoutesWithServer:(HttpServer *)server {
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server {
     // com.atproto.* queries
-    [server addRoute:@"GET" path:@"/xrpc/com.atproto.repo.getRecord" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/com.atproto.repo.getRecord" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetRecord:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/com.atproto.identity.resolveHandle" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/com.atproto.identity.resolveHandle" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleResolveHandle:request response:response];
     }];
 
     // slingshot-specific queries (custom / microcosms namespaces)
-    [server addRoute:@"GET" path:@"/xrpc/com.bad-example.repo.getUriRecord" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/com.bad-example.repo.getUriRecord" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetRecordByUri:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.repo.getRecordByUri" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.repo.getRecordByUri" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleGetRecordByUri:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/com.bad-example.identity.resolveMiniDoc" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/com.bad-example.identity.resolveMiniDoc" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleResolveMiniDoc:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.identity.resolveMiniDoc" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/blue.microcosm.identity.resolveMiniDoc" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleResolveMiniDoc:request response:response];
     }];
-    [server addRoute:@"GET" path:@"/xrpc/com.bad-example.identity.resolveService" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"GET" path:@"/xrpc/com.bad-example.identity.resolveService" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleResolveService:request response:response];
     }];
-    [server addRoute:@"POST" path:@"/xrpc/com.bad-example.proxy.hydrateQueryResponse" handler:^(HttpRequest *request, HttpResponse *response) {
+    [server addRoute:@"POST" path:@"/xrpc/com.bad-example.proxy.hydrateQueryResponse" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [self handleHydrateResponse:request response:response];
     }];
 }
 
 #pragma mark - Helper Validation & Rate Limiting
 
-- (BOOL)checkRateLimitForRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (BOOL)checkRateLimitForRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     return [GZXrpcRouteSupport checkIPRateLimitForRequest:request response:response];
 }
 
-- (nullable NSString *)requiredParam:(NSString *)name request:(HttpRequest *)request response:(HttpResponse *)response {
+- (nullable NSString *)requiredParam:(NSString *)name request:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     return [GZXrpcRouteSupport requiredQueryParam:name request:request response:response];
 }
 
 #pragma mark - Route Handlers
 
-- (void)handleGetRecord:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleGetRecord:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
 
     NSString *repo = [self requiredParam:@"repo" request:request response:response];
@@ -112,7 +112,7 @@
     [response setJsonBody:record];
 }
 
-- (void)handleGetRecordByUri:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleGetRecordByUri:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
 
     NSString *atURI = [self requiredParam:@"at_uri" request:request response:response];
@@ -154,7 +154,7 @@
     [response setJsonBody:record];
 }
 
-- (void)handleResolveHandle:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleResolveHandle:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
 
     NSString *handle = [self requiredParam:@"handle" request:request response:response];
@@ -172,7 +172,7 @@
     [response setJsonBody:@{@"did": did}];
 }
 
-- (void)handleResolveMiniDoc:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleResolveMiniDoc:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
 
     NSString *identifier = [self requiredParam:@"identifier" request:request response:response];
@@ -223,7 +223,7 @@
     }];
 }
 
-- (void)handleResolveService:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleResolveService:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
 
     NSString *did = [self requiredParam:@"did" request:request response:response];
@@ -259,7 +259,7 @@
     [response setJsonBody:@{@"endpoint": endpoint}];
 }
 
-- (void)handleHydrateResponse:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleHydrateResponse:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
 
     NSData *bodyData = request.body;
@@ -647,7 +647,7 @@
     return json;
 }
 
-- (void)writeInvalidRequest:(NSString *)message response:(HttpResponse *)response {
+- (void)writeInvalidRequest:(NSString *)message response:(ATProtoHttpResponse *)response {
     [XrpcErrorHelper setInvalidRequestError:response message:message ?: @"Invalid request"];
 }
 

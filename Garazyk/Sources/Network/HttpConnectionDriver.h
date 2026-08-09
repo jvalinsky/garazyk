@@ -12,14 +12,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpProtocolSession;
+@class ATProtoHttpProtocolSession;
 
 @interface ATProtoHttpConnectionDriver : NSObject
 
 /**
  * @abstract Performs the shouldBeginReadForSession operation.
  */
-- (BOOL)shouldBeginReadForSession:(HttpProtocolSession *)session
+- (BOOL)shouldBeginReadForSession:(ATProtoHttpProtocolSession *)session
                   outputQueueSize:(NSUInteger)outputQueueSize
                      headerOpened:(NSTimeInterval)headerOpened
                               now:(NSTimeInterval)now
@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the shouldResumeReadForSession operation.
  */
-- (BOOL)shouldResumeReadForSession:(HttpProtocolSession *)session
+- (BOOL)shouldResumeReadForSession:(ATProtoHttpProtocolSession *)session
                    outputQueueSize:(NSUInteger)outputQueueSize;
 
 @end

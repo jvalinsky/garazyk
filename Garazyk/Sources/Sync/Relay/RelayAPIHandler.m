@@ -42,14 +42,14 @@
     _upstreamManager = manager;
 }
 
-- (BOOL)canHandleRequest:(HttpRequest *)request {
+- (BOOL)canHandleRequest:(ATProtoHttpRequest *)request {
     if (!request) return NO;
     NSString *path = request.path;
     if (!path) return NO;
     return [path hasPrefix:@"/api/relay"];
 }
 
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *path = request.path ?: @"";
 
     // Route to appropriate handler - specific routes first, then pattern matching
@@ -92,7 +92,7 @@
 
 #pragma mark - Endpoint Handlers
 
-- (void)handleMetricsRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleMetricsRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     // Only allow GET
     if (request.method != HttpMethodGET) {
         response.statusCode = HttpStatusMethodNotAllowed;
@@ -118,7 +118,7 @@
     [response setHeader:@"application/json" forKey:@"Content-Type"];
 }
 
-- (void)handleCapabilitiesRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleCapabilitiesRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (request.method != HttpMethodGET) {
         response.statusCode = HttpStatusMethodNotAllowed;
         response.jsonBody = @{@"error": @"MethodNotAllowed", @"message": @"Only GET is allowed"};
@@ -145,7 +145,7 @@
     [response setHeader:@"application/json" forKey:@"Content-Type"];
 }
 
-- (void)handleUpstreamsRoute:(NSString *)path method:(HttpMethod)method body:(NSDictionary *)body response:(HttpResponse *)response {
+- (void)handleUpstreamsRoute:(NSString *)path method:(HttpMethod)method body:(NSDictionary *)body response:(ATProtoHttpResponse *)response {
     if ([path isEqualToString:@"/api/relay/upstreams"] || [path isEqualToString:@"/api/relay/upstreams/"]) {
         if (method == HttpMethodGET) {
             [self handleUpstreamsList:response];
@@ -213,7 +213,7 @@
     return decoded;
 }
 
-- (void)handleUpstreamsList:(HttpResponse *)response {
+- (void)handleUpstreamsList:(ATProtoHttpResponse *)response {
     NSMutableArray *upstreamsData = [NSMutableArray array];
 
     if (self.upstreamManager) {
@@ -238,7 +238,7 @@
     [self setCORS:response];
 }
 
-- (void)handleUpstreamsCreate:(NSDictionary *)body response:(HttpResponse *)response {
+- (void)handleUpstreamsCreate:(NSDictionary *)body response:(ATProtoHttpResponse *)response {
     NSString *url = body[@"url"];
     if (!url || ![url isKindOfClass:[NSString class]] || url.length == 0) {
         response.statusCode = HttpStatusBadRequest;
@@ -264,7 +264,7 @@
     GZ_LOG_SYNC_INFO(@"Relay: Added upstream %@", url);
 }
 
-- (void)handleUpstreamDetail:(NSString *)url response:(HttpResponse *)response {
+- (void)handleUpstreamDetail:(NSString *)url response:(ATProtoHttpResponse *)response {
     BOOL isActive = NO, isConnected = NO;
     NSString *status = @"unknown";
 
@@ -285,7 +285,7 @@
     [self setCORS:response];
 }
 
-- (void)handleUpstreamConnect:(NSString *)url response:(HttpResponse *)response {
+- (void)handleUpstreamConnect:(NSString *)url response:(ATProtoHttpResponse *)response {
     if (!self.upstreamManager) {
         response.statusCode = HttpStatusServiceUnavailable;
         response.jsonBody = @{@"error": @"ServiceUnavailable", @"message": @"Relay not configured"};
@@ -300,7 +300,7 @@
     GZ_LOG_SYNC_INFO(@"Relay: Connecting to upstream %@", url);
 }
 
-- (void)handleUpstreamDisconnect:(NSString *)url response:(HttpResponse *)response {
+- (void)handleUpstreamDisconnect:(NSString *)url response:(ATProtoHttpResponse *)response {
     if (!self.upstreamManager) {
         response.statusCode = HttpStatusServiceUnavailable;
         response.jsonBody = @{@"error": @"ServiceUnavailable", @"message": @"Relay not configured"};
@@ -315,7 +315,7 @@
     GZ_LOG_SYNC_INFO(@"Relay: Disconnected from upstream %@", url);
 }
 
-- (void)handleUpstreamRemove:(NSString *)url response:(HttpResponse *)response {
+- (void)handleUpstreamRemove:(NSString *)url response:(ATProtoHttpResponse *)response {
     if (!self.upstreamManager) {
         response.statusCode = HttpStatusServiceUnavailable;
         response.jsonBody = @{@"error": @"ServiceUnavailable", @"message": @"Relay not configured"};
@@ -334,7 +334,7 @@
     GZ_LOG_SYNC_INFO(@"Relay: Removed upstream %@", url);
 }
 
-- (void)handleReconnectAll:(HttpResponse *)response {
+- (void)handleReconnectAll:(ATProtoHttpResponse *)response {
     if (!self.upstreamManager) {
         response.statusCode = HttpStatusServiceUnavailable;
         response.jsonBody = @{@"error": @"ServiceUnavailable", @"message": @"Relay not configured"};
@@ -349,7 +349,7 @@
     GZ_LOG_SYNC_INFO(@"Relay: Reconnecting all upstreams");
 }
 
-- (void)handleDisconnectAll:(HttpResponse *)response {
+- (void)handleDisconnectAll:(ATProtoHttpResponse *)response {
     if (!self.upstreamManager) {
         response.statusCode = HttpStatusServiceUnavailable;
         response.jsonBody = @{@"error": @"ServiceUnavailable", @"message": @"Relay not configured"};
@@ -364,18 +364,18 @@
     GZ_LOG_SYNC_INFO(@"Relay: Disconnected all upstreams");
 }
 
-- (void)methodNotAllowed:(HttpResponse *)response {
+- (void)methodNotAllowed:(ATProtoHttpResponse *)response {
     response.statusCode = HttpStatusMethodNotAllowed;
     response.jsonBody = @{@"error": @"MethodNotAllowed", @"message": @"Method not allowed for this endpoint"};
     [self setCORS:response];
 }
 
-- (void)setCORS:(HttpResponse *)response {
+- (void)setCORS:(ATProtoHttpResponse *)response {
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
     [response setHeader:@"application/json" forKey:@"Content-Type"];
 }
 
-- (void)handleHealthRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleHealthRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     // Simple health check
     BOOL isHealthy = YES;
     RelayMetrics *metricsSource = self.metrics ?: [RelayMetrics sharedMetrics];
@@ -401,7 +401,7 @@
     [response setHeader:@"application/json" forKey:@"Content-Type"];
 }
 
-- (void)handleRequestCrawl:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRequestCrawl:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (request.method != HttpMethodPOST) {
         response.statusCode = HttpStatusMethodNotAllowed;
         response.jsonBody = @{@"error": @"MethodNotAllowed", @"message": @"Only POST is allowed for this endpoint"};
