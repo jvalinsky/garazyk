@@ -21,8 +21,8 @@
 @class OAuth2Server;
 @class HttpServer;
 @class PDSDatabase;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class ATProtoJWTMinter;
 
 /**
@@ -137,7 +137,7 @@ NS_ASSUME_NONNULL_BEGIN
     - client_credentials
  */
 /** Handles OAuth token endpoint requests. */
-- (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleTokenRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @method handleAuthorizeRequest:response:
@@ -148,7 +148,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param response The HTTP response to populate with the authorization form.
  */
 /** Handles authorization form requests. */
-- (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizeRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @method handleAuthorizeSignIn:response:
@@ -161,12 +161,12 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Validates user credentials and advances the authorization flow.
  */
 /** Handles username and password sign-in during authorization. */
-- (void)handleAuthorizeSignIn:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizeSignIn:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /** Issues a WebAuthn passkey challenge during authorization. */
-- (void)handlePasskeyChallenge:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handlePasskeyChallenge:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** Verifies a WebAuthn passkey assertion during authorization. */
-- (void)handlePasskeySignIn:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handlePasskeySignIn:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @method handleAuthorizeConfirm:response:
@@ -179,7 +179,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Processes user consent and issues authorization code.
  */
 /** Handles user consent confirmation and redirects with an authorization code. */
-- (void)handleAuthorizeConfirm:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizeConfirm:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @method handleRevokeRequest:response:
@@ -190,7 +190,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param response The HTTP response to populate.
  */
 /** Handles OAuth token revocation requests. */
-- (void)handleRevokeRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRevokeRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @method handlePARRequest:response:
@@ -204,7 +204,7 @@ NS_ASSUME_NONNULL_BEGIN
  for use in the authorization request.
  */
 /** Handles pushed authorization request storage. */
-- (void)handlePARRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handlePARRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /*!
  @method handleIntrospectRequest:response:
@@ -219,7 +219,7 @@ NS_ASSUME_NONNULL_BEGIN
  Invalid tokens return {"active": false} without error.
  */
 /** Handles OAuth token introspection requests. */
-- (void)handleIntrospectRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleIntrospectRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end
 

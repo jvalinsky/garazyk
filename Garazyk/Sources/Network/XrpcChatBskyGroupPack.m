@@ -15,8 +15,8 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
-                                                   HttpResponse *response,
+static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
+                                                   ATProtoHttpResponse *response,
                                                    id<XrpcRoutePackServices> services) {
   XrpcHandlerContext *context =
       [[XrpcHandlerContext alloc] initWithRequest:request
@@ -65,7 +65,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.createGroup - Create new group
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_createGroup
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -103,7 +103,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.deleteGroup - Delete group (Admin only)
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_deleteGroup
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -132,7 +132,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.editGroup - Edit group metadata
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_editGroup
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -178,7 +178,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.getGroupPublicInfo - Get group information
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_getGroupPublicInfo
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *groupUri = [request queryParamForKey:@"groupUri"];
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
@@ -202,7 +202,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.addMembers - Add members to group
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_addMembers
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -243,7 +243,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.removeMembers - Remove members from group
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_removeMembers
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -283,7 +283,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.listMembers - List group members
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_listMembers
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *groupUri = [request queryParamForKey:@"groupUri"];
         NSString *limitStr = [request queryParamForKey:@"limit"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
@@ -310,7 +310,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.listGroups - List all groups (Admin only)
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_listGroups
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -337,7 +337,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.listInviteLinks - List all invite links (Admin only)
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_listInviteLinks
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -364,7 +364,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.createJoinLink - Create invite link
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_createJoinLink
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -412,7 +412,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.editJoinLink - Edit invite link
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_editJoinLink
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -453,7 +453,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.disableJoinLink - Disable invite link
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_disableJoinLink
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -478,7 +478,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.requestJoin - Request to join group
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_requestJoin
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -505,7 +505,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.approveJoinRequest - Approve join request
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_approveJoinRequest
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -532,7 +532,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.rejectJoinRequest - Reject join request
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_rejectJoinRequest
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -559,7 +559,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.listJoinRequests - List pending join requests
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_listJoinRequests
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -590,7 +590,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.leaveGroup - Leave a group
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_leaveGroup
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -619,7 +619,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.sendMessage - Send message to group
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_sendMessage
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -663,7 +663,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.getMessages - Get messages from group
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_getMessages
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *groupUri = [request queryParamForKey:@"groupUri"];
         NSString *limitStr = [request queryParamForKey:@"limit"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
@@ -690,7 +690,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.addReaction - Add reaction to group message
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_addReaction
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -723,7 +723,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.removeReaction - Remove reaction from group message
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_removeReaction
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -756,7 +756,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.deleteMessageForSelf - Delete message for self
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_deleteMessageForSelf
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
@@ -781,7 +781,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
 
     // chat.bsky.group.enableJoinLink - Re-enable a disabled join link
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_enableJoinLink
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 

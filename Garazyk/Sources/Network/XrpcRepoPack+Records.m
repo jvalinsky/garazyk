@@ -19,7 +19,7 @@
 
 @implementation XrpcRepoPack (Records)
 
-static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *response,
+static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                      NSString *collection, NSString *action) {
     if ([ATProtoPermissionScopeEvaluator evaluateRepoScopes:request.permissionScopes ?: @[]
                                                forCollection:collection
@@ -41,7 +41,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 
 #pragma mark - com.atproto.repo.listRecords
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_listRecords handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_listRecords handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *repo = [request queryParamForKey:@"repo"];
         NSString *collection = [request queryParamForKey:@"collection"];
         NSString *limitStr = [request queryParamForKey:@"limit"];
@@ -106,7 +106,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
     }];
 
 #pragma mark - com.atproto.repo.getRecord
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_getRecord handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_getRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *repo = [request queryParamForKey:@"repo"];
         NSString *collection = [request queryParamForKey:@"collection"];
         NSString *rkey = [request queryParamForKey:@"rkey"];
@@ -173,7 +173,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
     }];
 
 #pragma mark - com.atproto.repo.createRecord
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_createRecord handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_createRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -246,7 +246,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
     }];
 
 #pragma mark - com.atproto.repo.deleteRecord
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_deleteRecord handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_deleteRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -307,7 +307,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
     }];
 
 #pragma mark - com.atproto.repo.putRecord / updateRecord (shared upsert handler)
-    XrpcMethodHandler upsertRecordHandler = ^(HttpRequest *request, HttpResponse *response) {
+    XrpcMethodHandler upsertRecordHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -422,7 +422,7 @@ static BOOL authorizeRepositoryWrite(HttpRequest *request, HttpResponse *respons
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_updateRecord handler:upsertRecordHandler];
 
 #pragma mark - com.atproto.repo.applyWrites
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_applyWrites handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_applyWrites handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (!request.jsonBody) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];

@@ -7,8 +7,8 @@ NS_ASSUME_NONNULL_BEGIN
 @interface OAuth2Handler (Assets)
 - (NSString *)assetsPath;
 - (NSString *)sharedCSSPath;
-- (void)handleCSSRequest:(HttpRequest *)request
-                response:(HttpResponse *)response;
+- (void)handleCSSRequest:(ATProtoHttpRequest *)request
+                response:(ATProtoHttpResponse *)response;
 - (NSString *)escapeHtml:(NSString *)input;
 @end
 

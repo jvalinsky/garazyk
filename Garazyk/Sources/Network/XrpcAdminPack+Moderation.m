@@ -40,7 +40,7 @@
 
     // Register com.atproto.admin.moderateAccount
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_moderateAccount handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_moderateAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -50,7 +50,7 @@
 
     // Register com.atproto.admin.moderateRecord
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_moderateRecord handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_moderateRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -60,7 +60,7 @@
 
     // Register com.atproto.admin.takeDownAccount
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_takeDownAccount handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_takeDownAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -70,7 +70,7 @@
 
     // Register com.atproto.admin.getModerationReports
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getModerationReports handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getModerationReports handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -80,7 +80,7 @@
 
     // Register com.atproto.admin.resolveReport
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_resolveReport handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_resolveReport handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",

@@ -92,17 +92,17 @@
 
     __weak typeof(self) weakSelf = self;
 
-    [httpServer addRoute:@"GET" path:@"/.well-known/nodeinfo" handler:^(HttpRequest *request, HttpResponse *response) {
+    [httpServer addRoute:@"GET" path:@"/.well-known/nodeinfo" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         [strongSelf handleDiscoveryRequest:request response:response];
     }];
 
-    [httpServer addRoute:@"GET" path:@"/nodeinfo/2.0" handler:^(HttpRequest *request, HttpResponse *response) {
+    [httpServer addRoute:@"GET" path:@"/nodeinfo/2.0" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         [strongSelf handleNodeInfo20Request:request response:response];
     }];
 
-    [httpServer addRoute:@"GET" path:@"/nodeinfo/2.1" handler:^(HttpRequest *request, HttpResponse *response) {
+    [httpServer addRoute:@"GET" path:@"/nodeinfo/2.1" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         [strongSelf handleNodeInfo21Request:request response:response];
     }];
@@ -110,8 +110,8 @@
     GZ_LOG_CORE_INFO(@"NodeInfo routes registered");
 }
 
-- (void)setCorsHeaders:(HttpResponse *)response
-           forRequest:(HttpRequest *)request {
+- (void)setCorsHeaders:(ATProtoHttpResponse *)response
+           forRequest:(ATProtoHttpRequest *)request {
   ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSArray<NSString *> *allowedOrigins =
       [config arrayForKey:@"cors.allowed_origins"];
@@ -133,8 +133,8 @@
   [response setHeader:@"Origin" forKey:@"Vary"];
 }
 
-- (void)handleDiscoveryRequest:(HttpRequest *)request
-                      response:(HttpResponse *)response {
+- (void)handleDiscoveryRequest:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response {
   if (!response) {
     return;
   }
@@ -154,8 +154,8 @@
   response.statusCode = 200;
 }
 
-- (void)handleNodeInfo20Request:(HttpRequest *)request
-                       response:(HttpResponse *)response {
+- (void)handleNodeInfo20Request:(ATProtoHttpRequest *)request
+                       response:(ATProtoHttpResponse *)response {
   if (!response) {
     return;
   }
@@ -177,8 +177,8 @@
   response.statusCode = 200;
 }
 
-- (void)handleNodeInfo21Request:(HttpRequest *)request
-                       response:(HttpResponse *)response {
+- (void)handleNodeInfo21Request:(ATProtoHttpRequest *)request
+                       response:(ATProtoHttpResponse *)response {
   if (!response) {
     return;
   }

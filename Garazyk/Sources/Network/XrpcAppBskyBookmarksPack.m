@@ -45,8 +45,8 @@
 
   id<XrpcRoutePackServices> resolvedServices = services;
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_getBookmarks handler:^(HttpRequest *request,
-                                                    HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_getBookmarks handler:^(ATProtoHttpRequest *request,
+                                                    ATProtoHttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request
                                            response:response
@@ -76,8 +76,8 @@
     [response setJsonBody:result];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_createBookmark handler:^(HttpRequest *request,
-                                                      HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_createBookmark handler:^(ATProtoHttpRequest *request,
+                                                      ATProtoHttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request
                                            response:response
@@ -116,8 +116,8 @@
     [response setJsonBody:@{}];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_deleteBookmark handler:^(HttpRequest *request,
-                                                      HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_deleteBookmark handler:^(ATProtoHttpRequest *request,
+                                                      ATProtoHttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request
                                            response:response

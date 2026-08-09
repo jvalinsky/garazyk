@@ -47,7 +47,7 @@
 @property (nonatomic, assign) NSUInteger headerEndOffset;
 @property (nonatomic, assign) BOOL isChunkedEncoding;
 @property (nonatomic, strong, nullable) HttpChunkedBodyParser *chunkedBodyParser;
-@property (nonatomic, strong, nullable) HttpRequest *parsedRequest;
+@property (nonatomic, strong, nullable) ATProtoHttpRequest *parsedRequest;
 @property (nonatomic, strong, nullable) Http1ParserError *currentError;
 @property (nonatomic, assign) NSUInteger consumedOffset;
 
@@ -263,7 +263,7 @@
         }
 
         NSString *method = (__bridge_transfer NSString *)CFHTTPMessageCopyRequestMethod(self.message);
-        HttpMethod methodEnum = [HttpParsing methodFromString:method ?: @""];
+        HttpMethod methodEnum = [ATProtoHttpParsing methodFromString:method ?: @""];
         BOOL expectsBody = (methodEnum == HttpMethodPOST || methodEnum == HttpMethodPUT || methodEnum == HttpMethodPATCH);
 
         if (expectsBody && !self.isChunkedEncoding && contentLengthHeader.length == 0) {
@@ -324,10 +324,10 @@
 
     NSString *path = url.path ?: @"/";
     NSString *queryString = url.query ?: @"";
-    NSDictionary<NSString *, id> *queryParams = [HttpParsing parseQueryString:queryString];
-    HttpMethod methodEnum = [HttpParsing methodFromString:method ?: @""];
+    NSDictionary<NSString *, id> *queryParams = [ATProtoHttpParsing parseQueryString:queryString];
+    HttpMethod methodEnum = [ATProtoHttpParsing methodFromString:method ?: @""];
 
-    self.parsedRequest = [[HttpRequest alloc] initWithMethod:methodEnum
+    self.parsedRequest = [[ATProtoHttpRequest alloc] initWithMethod:methodEnum
                                                 methodString:method ?: @""
                                                         path:path
                                                  queryString:queryString
@@ -346,7 +346,7 @@
     return YES;
 }
 
-- (nullable HttpRequest *)completedRequest {
+- (nullable ATProtoHttpRequest *)completedRequest {
     return self.parsedRequest;
 }
 
@@ -377,7 +377,7 @@
 @property (nonatomic, assign) NSUInteger headerEndOffset;
 @property (nonatomic, assign) BOOL isChunkedEncoding;
 @property (nonatomic, strong, nullable) HttpChunkedBodyParser *chunkedBodyParser;
-@property (nonatomic, strong, nullable) HttpRequest *parsedRequest;
+@property (nonatomic, strong, nullable) ATProtoHttpRequest *parsedRequest;
 @property (nonatomic, strong, nullable) Http1ParserError *currentError;
 @property (nonatomic, assign) NSUInteger consumedOffset;
 
@@ -671,7 +671,7 @@
             self.state = Http1ParserStateReadingBody;
         }
 
-        HttpMethod methodEnum = [HttpParsing methodFromString:self.requestMethod ?: @""];
+        HttpMethod methodEnum = [ATProtoHttpParsing methodFromString:self.requestMethod ?: @""];
         BOOL expectsBody = (methodEnum == HttpMethodPOST || methodEnum == HttpMethodPUT || methodEnum == HttpMethodPATCH);
 
         if (expectsBody && !self.isChunkedEncoding && contentLengthHeader.length == 0) {
@@ -747,10 +747,10 @@
         pathOnly = @"/";
     }
     
-    NSDictionary<NSString *, id> *queryParams = [HttpParsing parseQueryString:queryString];
-    HttpMethod methodEnum = [HttpParsing methodFromString:self.requestMethod ?: @""];
+    NSDictionary<NSString *, id> *queryParams = [ATProtoHttpParsing parseQueryString:queryString];
+    HttpMethod methodEnum = [ATProtoHttpParsing methodFromString:self.requestMethod ?: @""];
 
-    self.parsedRequest = [[HttpRequest alloc] initWithMethod:methodEnum
+    self.parsedRequest = [[ATProtoHttpRequest alloc] initWithMethod:methodEnum
                                                 methodString:self.requestMethod ?: @""
                                                         path:pathOnly
                                                  queryString:queryString
@@ -769,7 +769,7 @@
     return YES;
 }
 
-- (nullable HttpRequest *)completedRequest {
+- (nullable ATProtoHttpRequest *)completedRequest {
     return self.parsedRequest;
 }
 

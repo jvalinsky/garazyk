@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpResponse.h
+ @file ATProtoHttpResponse.h
 
  @abstract HTTP response building and serialization.
 
@@ -49,14 +49,14 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 
 
 /*!
- @class HttpResponse
+ @class ATProtoHttpResponse
 
  @abstract Builds HTTP responses for sending to clients.
 
  @discussion Provides factory methods and builders for common response types.
  Automatically applies security headers.
  */
-@interface HttpResponse : NSObject
+@interface ATProtoHttpResponse : NSObject
 
 /*! The HTTP status code. */
 @property (nonatomic, assign) HttpStatusCode statusCode;

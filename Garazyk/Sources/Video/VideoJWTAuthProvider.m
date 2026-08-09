@@ -47,8 +47,8 @@ static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
     return self;
 }
 
-- (nullable NSString *)authenticateRequest:(HttpRequest *)request
-                                   response:(HttpResponse *)response {
+- (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
+                                   response:(ATProtoHttpResponse *)response {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (!authHeader || authHeader.length == 0) {
         response.statusCode = HttpStatusUnauthorized;

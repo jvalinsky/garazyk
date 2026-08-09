@@ -103,7 +103,7 @@ static const uint16_t kGermDefaultPort = 8082;
     // Health endpoint
     [self.httpServer addRoute:@"GET"
                         path:@"/_health"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = 200;
         [response setBodyString:@"ok"];
     }];
@@ -111,7 +111,7 @@ static const uint16_t kGermDefaultPort = 8082;
     // Root endpoint - display ASCII art
     [self.httpServer addRoute:@"GET"
                         path:@"/"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = 200;
         response.contentType = @"text/plain; charset=utf-8";
         [response setBodyString:@",--,   ,---.  ,---.            \n"
@@ -127,7 +127,7 @@ static const uint16_t kGermDefaultPort = 8082;
     __weak typeof(self) weakSelf = self;
     [self.httpServer addRoute:@"*"
                         path:@"/xrpc/*"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [weakSelf.dispatcher handleRequest:request response:response];
     }];
 

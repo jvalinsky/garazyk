@@ -32,7 +32,7 @@
 
 static const NSTimeInterval PDSSpaceNotificationRegistrationLifetime = 24 * 60 * 60;
 
-static void SpaceError(HttpResponse *response, HttpStatusCode status, NSString *code,
+static void SpaceError(ATProtoHttpResponse *response, HttpStatusCode status, NSString *code,
                        NSString *message) {
   response.statusCode = status;
   [response setJsonBody:@{ @"error" : code, @"message" : message }];
@@ -49,7 +49,7 @@ static BOOL SpaceIsValidAppClientID(NSString *clientID) {
   return url != nil && [url.scheme.lowercaseString isEqualToString:@"https"] && url.host.length > 0;
 }
 
-static NSString *SpaceAuthorizationToken(HttpRequest *request) {
+static NSString *SpaceAuthorizationToken(ATProtoHttpRequest *request) {
   NSString *header = [request headerForKey:@"Authorization"];
   if ([header hasPrefix:@"Bearer "]) return [header substringFromIndex:7];
   if ([header hasPrefix:@"DPoP "]) return [header substringFromIndex:5];
@@ -58,7 +58,7 @@ static NSString *SpaceAuthorizationToken(HttpRequest *request) {
 
 /* Authenticates using the normal PDS OAuth access-token verifier, then parses
  * only the structured `space:` resources from its already verified scope. */
-static NSDictionary *SpaceOAuthAuthentication(HttpRequest *request, HttpResponse *response,
+static NSDictionary *SpaceOAuthAuthentication(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                               id<XrpcRoutePackServices> services) {
   NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:[request headerForKey:@"Authorization"]
                                                   services:services request:request response:response];
@@ -95,7 +95,7 @@ static BOOL SpaceAllowsManage(NSDictionary *auth, PDSSpaceURI *space, NSString *
   return NO;
 }
 
-static PDSSpaceURI *SpaceURIFromString(id value, HttpResponse *response) {
+static PDSSpaceURI *SpaceURIFromString(id value, ATProtoHttpResponse *response) {
   PDSSpaceURI *space = [PDSSpaceURI URIWithString:value error:nil];
   if (!space || space.recordURI) {
     SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"space must be a valid space URI");
@@ -108,8 +108,8 @@ static NSString *SpaceString(id value) {
   return [value isKindOfClass:[NSString class]] && [(NSString *)value length] > 0 ? value : nil;
 }
 
-static NSUInteger SpaceLimit(HttpRequest *request, NSUInteger fallback, NSUInteger maximum,
-                             HttpResponse *response) {
+static NSUInteger SpaceLimit(ATProtoHttpRequest *request, NSUInteger fallback, NSUInteger maximum,
+                             ATProtoHttpResponse *response) {
   NSString *value = [request queryParamForKey:@"limit"];
   if (value.length == 0) return fallback;
   NSScanner *scanner = [NSScanner scannerWithString:value];
@@ -151,7 +151,7 @@ static NSDictionary *SpaceRecordView(PDSSpaceURI *space, NSString *repo, NSDicti
 }
 
 static PDSSpaceWrite *SpaceWriteFromDictionary(NSDictionary *item, BOOL createDefaultRkey,
-                                                HttpResponse *response) {
+                                                ATProtoHttpResponse *response) {
   NSString *action = SpaceString(item[@"$type"]);
   NSRange typeSeparator = [action rangeOfString:@"#" options:NSBackwardsSearch];
   if (typeSeparator.location != NSNotFound) action = [action substringFromIndex:NSMaxRange(typeSeparator)];
@@ -187,7 +187,7 @@ static PDSSpaceWrite *SpaceWriteFromDictionary(NSDictionary *item, BOOL createDe
 }
 
 static BOOL SpaceCanWrite(NSDictionary *auth, PDSSpaceURI *space, NSString *repo,
-                          NSArray<PDSSpaceWrite *> *writes, HttpResponse *response) {
+                          NSArray<PDSSpaceWrite *> *writes, ATProtoHttpResponse *response) {
   if (![repo isEqualToString:auth[@"did"]]) {
     SpaceError(response, HttpStatusForbidden, @"Forbidden", @"A user may write only their own space repo");
     return NO;
@@ -213,7 +213,7 @@ static NSData *SpacePublicKeyFromDIDKey(NSString *value) {
   return [decoded subdataWithRange:NSMakeRange(2, 33)];
 }
 
-static ATProtoDIDDocument *SpaceResolveDID(NSString *did, BOOL refresh, HttpResponse *response) {
+static ATProtoDIDDocument *SpaceResolveDID(NSString *did, BOOL refresh, ATProtoHttpResponse *response) {
   NSError *error = nil;
   ATProtoDIDDocument *document = [[ATProtoDIDResolver sharedResolver] resolveDIDSync:did forceRefresh:refresh error:&error];
   if (!document) SpaceError(response, HttpStatusUnauthorized, @"InvalidToken", @"Unable to resolve signing DID");
@@ -239,7 +239,7 @@ static id<PDSActorKeyManager> SpaceCredentialSignerForAuthorityDocument(PDSActor
   return authority.keyManager;
 }
 
-static NSDictionary *SpaceCredentialAuthentication(HttpRequest *request, HttpResponse *response,
+static NSDictionary *SpaceCredentialAuthentication(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                                     PDSSpaceURI *space) {
   NSString *token = SpaceAuthorizationToken(request);
   ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:token error:nil];
@@ -266,10 +266,10 @@ static NSDictionary *SpaceCredentialAuthentication(HttpRequest *request, HttpRes
   return claims;
 }
 
-static NSString *SpaceServiceAuthentication(HttpRequest *request, HttpResponse *response,
+static NSString *SpaceServiceAuthentication(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                             NSString *expectedAudience, NSString *expectedMethod);
 
-static NSDictionary *SpaceReadAuthentication(HttpRequest *request, HttpResponse *response,
+static NSDictionary *SpaceReadAuthentication(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                              id<XrpcRoutePackServices> services, PDSSpaceURI *space,
                                              NSString *repo, NSString *collection) {
   ATProtoJWT *unverified = [ATProtoJWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
@@ -298,7 +298,7 @@ static NSDictionary *SpaceReadAuthentication(HttpRequest *request, HttpResponse 
   return auth;
 }
 
-static void SpaceApplyPrivateBlobResponseHeaders(HttpResponse *response) {
+static void SpaceApplyPrivateBlobResponseHeaders(ATProtoHttpResponse *response) {
   [response setHeader:@"no-store, private" forKey:@"Cache-Control"];
   [response setHeader:@"nosniff" forKey:@"X-Content-Type-Options"];
   [response setHeader:@"attachment; filename=space-blob" forKey:@"Content-Disposition"];
@@ -356,7 +356,7 @@ static NSData *SpaceRepoCAR(PDSSpaceStore *store, PDSDatabasePool *pool, PDSSpac
   return output;
 }
 
-static NSString *SpaceServiceAuthentication(HttpRequest *request, HttpResponse *response,
+static NSString *SpaceServiceAuthentication(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                             NSString *expectedAudience, NSString *expectedMethod) {
   ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
   NSString *issuer = jwt.payload.iss;
@@ -471,7 +471,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
   PDSSpaceAppAttestationVerifier *appAttestationVerifier =
       [[PDSSpaceAppAttestationVerifier alloc] initWithSpaceStore:store];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getSpace handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getSpace handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
     NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:[request headerForKey:@"Authorization"]
                                                      services:resolvedServices request:request response:response];
@@ -486,7 +486,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:@{ @"uri" : space.spaceURI, @"config" : SpaceConfig(info) }];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getRecord handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
     NSString *repo = SpaceString([request queryParamForKey:@"repo"]), *collection = SpaceString([request queryParamForKey:@"collection"]), *rkey = SpaceString([request queryParamForKey:@"rkey"]);
     if (![ATProtoValidator validateDID:repo error:nil] || ![ATProtoValidator validateNSID:collection error:nil] || rkey.length == 0) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo, collection, and rkey are required"); return; }
@@ -496,7 +496,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:SpaceRecordView(space, repo, record, YES)];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_listRecords handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_listRecords handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
     NSString *repo = SpaceString([request queryParamForKey:@"repo"]), *collection = SpaceString([request queryParamForKey:@"collection"]);
     if (![ATProtoValidator validateDID:repo error:nil] || (collection && ![ATProtoValidator validateNSID:collection error:nil])) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo and collection are invalid"); return; }
@@ -510,7 +510,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:result];
   }];
 
-  void (^applyWrites)(HttpRequest *, HttpResponse *) = ^(HttpRequest *request, HttpResponse *response) {
+  void (^applyWrites)(ATProtoHttpRequest *, ATProtoHttpResponse *) = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSString *repo = SpaceString(body[@"repo"]); NSArray *items = [body[@"writes"] isKindOfClass:[NSArray class]] ? body[@"writes"] : nil;
     if (!repo || !items || items.count == 0 || items.count > 200) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo and 1-200 writes are required"); return; }
@@ -525,9 +525,9 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     NSMutableArray *results = [NSMutableArray array]; for (PDSSpaceWrite *write in writes) { NSMutableDictionary *result = [@{ @"$type" : [NSString stringWithFormat:@"com.atproto.space.applyWrites#%@Result", write.action == PDSSpaceWriteActionCreate ? @"create" : write.action == PDSSpaceWriteActionUpdate ? @"update" : @"delete"], @"uri" : SpaceRecordURI(space, repo, write.collection, write.rkey) } mutableCopy]; if (write.cid) result[@"cid"] = write.cid; [results addObject:result]; }
     response.statusCode = HttpStatusOK; [response setJsonBody:@{ @"results" : results }];
   };
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_applyWrites handler:^(HttpRequest *request, HttpResponse *response) { applyWrites(request, response); }];
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_applyWrites handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) { applyWrites(request, response); }];
 
-  void (^singleWrite)(HttpRequest *, HttpResponse *, PDSSpaceWriteAction) = ^(HttpRequest *request, HttpResponse *response, PDSSpaceWriteAction action) {
+  void (^singleWrite)(ATProtoHttpRequest *, ATProtoHttpResponse *, PDSSpaceWriteAction) = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response, PDSSpaceWriteAction action) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSString *repo = SpaceString(body[@"repo"]); NSMutableDictionary *item = [body mutableCopy] ?: [NSMutableDictionary dictionary]; item[@"action"] = action == PDSSpaceWriteActionCreate ? @"create" : action == PDSSpaceWriteActionUpdate ? @"update" : @"delete"; item[@"value"] = body[@"record"];
     PDSSpaceWrite *write = SpaceWriteFromDictionary(item, action == PDSSpaceWriteActionCreate, response); if (!repo || !write) { if (!write && response.statusCode == HttpStatusOK) SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo is required"); return; }
@@ -540,11 +540,11 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     SpaceNotifyAuthority(resolvedServices, space, repo, writeState);
     response.statusCode = HttpStatusOK; if (action == PDSSpaceWriteActionDelete) [response setJsonBody:@{}]; else [response setJsonBody:@{ @"uri" : SpaceRecordURI(space, repo, write.collection, write.rkey), @"cid" : write.cid, @"validationStatus" : @"unknown" }];
   };
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_createRecord handler:^(HttpRequest *r, HttpResponse *p) { singleWrite(r, p, PDSSpaceWriteActionCreate); }];
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_putRecord handler:^(HttpRequest *r, HttpResponse *p) { singleWrite(r, p, PDSSpaceWriteActionUpdate); }];
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_deleteRecord handler:^(HttpRequest *r, HttpResponse *p) { singleWrite(r, p, PDSSpaceWriteActionDelete); }];
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_createRecord handler:^(ATProtoHttpRequest *r, ATProtoHttpResponse *p) { singleWrite(r, p, PDSSpaceWriteActionCreate); }];
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_putRecord handler:^(ATProtoHttpRequest *r, ATProtoHttpResponse *p) { singleWrite(r, p, PDSSpaceWriteActionUpdate); }];
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_deleteRecord handler:^(ATProtoHttpRequest *r, ATProtoHttpResponse *p) { singleWrite(r, p, PDSSpaceWriteActionDelete); }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_createSpace handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_createSpace handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody; NSString *did = SpaceString(body[@"did"]), *type = SpaceString(body[@"type"]), *skey = SpaceString(body[@"skey"] ?: ATProtoTID.tid.stringValue);
     if (![ATProtoValidator validateDID:did error:nil] || ![ATProtoValidator validateNSID:type error:nil]) { SpaceError(response, HttpStatusBadRequest, @"InvalidType", @"did and type must be valid"); return; }
     PDSSpaceURI *space = [PDSSpaceURI URIWithString:[NSString stringWithFormat:@"at://%@/space/%@/%@", did, type, skey] error:nil]; if (!space) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"Invalid space key"); return; }
@@ -564,16 +564,16 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     if (isOwner) [store addMember:did toSpace:space.spaceURI error:nil]; response.statusCode = HttpStatusOK; [response setJsonBody:@{ @"uri" : space.spaceURI }];
   }];
 
-  void (^members)(HttpRequest *, HttpResponse *, BOOL) = ^(HttpRequest *request, HttpResponse *response, BOOL add) {
+  void (^members)(ATProtoHttpRequest *, ATProtoHttpResponse *, BOOL) = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response, BOOL add) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return; NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return;
     if (![auth[@"did"] isEqualToString:space.authorityDID] || !SpaceAllowsManage(auth, space, @"update")) { SpaceError(response, HttpStatusForbidden, @"NotSpaceOwner", @"Owner manage=update scope is required"); return; }
     NSString *member = SpaceString(body[@"did"]); if (![ATProtoValidator validateDID:member error:nil]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"did is required"); return; }
     BOOL ok = add ? [store addMember:member toSpace:space.spaceURI error:nil] : [store removeMember:member fromSpace:space.spaceURI error:nil]; if (!ok) { SpaceError(response, HttpStatusNotFound, @"SpaceNotFound", @"Space not found"); return; } response.statusCode = HttpStatusOK; [response setJsonBody:@{}];
   };
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_addMember handler:^(HttpRequest *r, HttpResponse *p) { members(r, p, YES); }];
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_removeMember handler:^(HttpRequest *r, HttpResponse *p) { members(r, p, NO); }];
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_addMember handler:^(ATProtoHttpRequest *r, ATProtoHttpResponse *p) { members(r, p, YES); }];
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_removeMember handler:^(ATProtoHttpRequest *r, ATProtoHttpResponse *p) { members(r, p, NO); }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_deleteSpace handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_deleteSpace handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return;
     if (![auth[@"did"] isEqualToString:space.authorityDID] || !SpaceAllowsManage(auth, space, @"delete")) { SpaceError(response, HttpStatusForbidden, @"NotSpaceOwner", @"Owner manage=delete scope is required"); return; }
@@ -582,7 +582,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:@{}];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getDelegationToken handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getDelegationToken handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
     NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return;
     if (!SpaceAllows(auth, space, PDSSpaceActionRead, nil)) { SpaceError(response, HttpStatusForbidden, @"InsufficientScope", @"Delegation requires whole-space read access"); return; }
@@ -592,7 +592,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:@{ @"token" : token }];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getSpaceCredential handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getSpaceCredential handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSString *attestedAppClientID = nil;
     if (body[@"clientAttestation"]) {
@@ -642,7 +642,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:@{ @"credential" : credential }];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getLatestCommit handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getLatestCommit handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
     NSString *repo = SpaceString([request queryParamForKey:@"repo"]); if (!repo) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo is required"); return; }
     if (!SpaceReadAuthentication(request, response, resolvedServices, space, repo, nil)) return;
@@ -650,7 +650,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:commit ? @{ @"commit" : commit } : @{}];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getRepo handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getRepo handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
     NSString *repo = SpaceString([request queryParamForKey:@"repo"]); if (!repo) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo is required"); return; }
     if (!SpaceReadAuthentication(request, response, resolvedServices, space, repo, nil)) return;
@@ -659,7 +659,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; response.contentType = @"application/vnd.ipld.car"; [response setBodyData:car];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getBlob handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getBlob handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
     NSString *repo = SpaceString([request queryParamForKey:@"repo"]), *cid = SpaceString([request queryParamForKey:@"cid"]);
     if (![ATProtoValidator validateDID:repo error:nil] || ![ATProtoCID cidFromString:cid]) {
@@ -678,7 +678,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     [response setBodyData:blob[@"data"]];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_listRepoOps handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_listRepoOps handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return; NSString *repo = SpaceString([request queryParamForKey:@"repo"]); if (!repo) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"repo is required"); return; }
     if (!SpaceReadAuthentication(request, response, resolvedServices, space, repo, nil)) return; NSUInteger limit = SpaceLimit(request, 100, 1000, response); if (!limit) return;
     NSArray *ops = [store repoOperationsForSpace:space.spaceURI author:repo since:[request queryParamForKey:@"since"] limit:limit error:nil]; NSMutableArray *views = [NSMutableArray array]; BOOL excluded = [[request queryParamForKey:@"excludeValues"] boolValue];
@@ -688,7 +688,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:result];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_listRepos handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_listRepos handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return; NSDictionary *credential = SpaceCredentialAuthentication(request, response, space); if (!credential || credential.count == 0) { if (response.statusCode == HttpStatusOK) SpaceError(response, HttpStatusUnauthorized, @"InvalidCredential", @"A valid space credential is required"); return; }
     NSDictionary *info = [store spaceInfoForURI:space.spaceURI error:nil]; if (!info || ![info[@"isOwner"] boolValue] || info[@"deletedAt"] != [NSNull null]) { SpaceError(response, HttpStatusNotFound, @"SpaceNotFound", @"Space not found"); return; }
     NSUInteger limit = SpaceLimit(request, 100, 1000, response); if (!limit) return; NSArray *writers = [store writersForSpace:space.spaceURI limit:limit cursor:[request queryParamForKey:@"cursor"] error:nil];
@@ -696,13 +696,13 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:@{ @"repos" : repos }];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_listMembers handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_listMembers handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return; NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return;
     if (![auth[@"did"] isEqualToString:space.authorityDID] || !SpaceAllowsManage(auth, space, @"update")) { SpaceError(response, HttpStatusForbidden, @"NotSpaceOwner", @"Owner manage=update scope is required"); return; }
     NSUInteger limit = SpaceLimit(request, 100, 1000, response); if (!limit) return; NSArray *membersList = [store listMembersForSpace:space.spaceURI limit:limit cursor:[request queryParamForKey:@"cursor"] error:nil]; NSMutableArray *membersViews = [NSMutableArray array]; for (NSString *did in membersList) [membersViews addObject:@{ @"did" : did }]; response.statusCode = HttpStatusOK; [response setJsonBody:@{ @"members" : membersViews }];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_updateSpace handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_updateSpace handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return;
     if (![auth[@"did"] isEqualToString:space.authorityDID] || !SpaceAllowsManage(auth, space, @"update")) { SpaceError(response, HttpStatusForbidden, @"NotSpaceOwner", @"Owner manage=update scope is required"); return; }
@@ -728,7 +728,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:@{}];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_listSpaces handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_listSpaces handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSDictionary *auth = SpaceOAuthAuthentication(request, response, resolvedServices); if (!auth) return;
     NSString *type = SpaceString([request queryParamForKey:@"type"]), *owner = SpaceString([request queryParamForKey:@"did"]);
     if (type && ![ATProtoValidator validateNSID:type error:nil]) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"type must be an NSID"); return; }
@@ -739,7 +739,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     NSMutableDictionary *result = [@{ @"spaces" : spaces } mutableCopy]; if (spaces.count == limit) result[@"cursor"] = spaces.lastObject[@"uri"]; response.statusCode = HttpStatusOK; [response setJsonBody:result];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_notifyWrite handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_notifyWrite handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSDictionary *info = [store spaceInfoForURI:space.spaceURI error:nil]; BOOL isAuthority = [info[@"isOwner"] boolValue];
     NSString *repo = SpaceString(body[@"repo"]), *rev = SpaceString(body[@"rev"]), *issuer = SpaceServiceAuthentication(request, response, isAuthority ? space.authorityDID : nil, @"com.atproto.space.notifyWrite"); if (!issuer) return;
@@ -758,14 +758,14 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:@{}];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_notifySpaceDeleted handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_notifySpaceDeleted handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSString *issuer = SpaceServiceAuthentication(request, response, nil, @"com.atproto.space.notifySpaceDeleted"); if (!issuer) return;
     if (![issuer isEqualToString:space.authorityDID]) { SpaceError(response, HttpStatusForbidden, @"UntrustedIss", @"Only the authority may delete a space replica"); return; }
     [store markReplicatedSpaceDeleted:space.spaceURI error:nil]; response.statusCode = HttpStatusOK; [response setJsonBody:@{}];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_registerNotify handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_registerNotify handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSDictionary *body = request.jsonBody; PDSSpaceURI *space = SpaceURIFromString(body[@"space"], response); if (!space) return;
     NSString *endpointString = SpaceString(body[@"endpoint"]); NSURLComponents *endpoint = [NSURLComponents componentsWithString:endpointString];
     if (!endpoint || !([endpoint.scheme isEqualToString:@"https"] || [endpoint.scheme isEqualToString:@"http"]) || endpoint.host.length == 0 || endpoint.user.length || endpoint.password.length) { SpaceError(response, HttpStatusBadRequest, @"InvalidRequest", @"endpoint must be an HTTP(S) URI"); return; }
@@ -777,7 +777,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
     response.statusCode = HttpStatusOK; [response setJsonBody:@{ @"expiresAt" : [NSDateFormatter atproto_stringFromDate:expiresAt] }];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_checkUserAccess handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_simplespace_checkUserAccess handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     /* Generic PDS instances are not managing apps. A verified service request
      * receives the baseline deny decision; applications override this NSID. */
     NSString *spaceString = [request queryParamForKey:@"space"]; PDSSpaceURI *space = SpaceURIFromString(spaceString, response); if (!space) return;

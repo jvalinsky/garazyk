@@ -17,8 +17,8 @@
     return self;
 }
 
-- (nullable NSString *)authenticateRequest:(HttpRequest *)request
-                                   response:(HttpResponse *)response {
+- (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
+                                   response:(ATProtoHttpResponse *)response {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                            jwtMinter:self.jwtMinter

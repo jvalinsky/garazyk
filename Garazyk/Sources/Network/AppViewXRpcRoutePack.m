@@ -28,7 +28,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/DID.h"
 
-NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSInteger maxLimit) {
+NSInteger parseLimitParam(ATProtoHttpRequest *request, NSInteger defaultLimit, NSInteger maxLimit) {
     NSString *limitParam = [request queryParamForKey:@"limit"];
     NSInteger limit = defaultLimit;
     if (limitParam.length > 0) {
@@ -90,126 +90,126 @@ NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSIntege
     // --- app.bsky.actor ---
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.actor.getProfile"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetProfile:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.actor.getProfiles"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetProfiles:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.actor.searchActors"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleSearchActors:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.actor.searchActorsTypeahead"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleSearchActorsTypeahead:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.actor.getPreferences"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetPreferences:request response:response];
              }];
 
     [server addRoute:@"POST"
                 path:@"/xrpc/app.bsky.actor.putPreferences"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handlePutPreferences:request response:response];
              }];
 
     // --- app.bsky.draft ---
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.draft.getDrafts"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetDrafts:request response:response];
              }];
 
     // --- app.bsky.bookmark ---
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.bookmark.getBookmarks"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetBookmarks:request response:response];
              }];
 
     // --- app.bsky.graph (additional) ---
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.graph.getStarterPacks"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetStarterPacksBulk:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.actor.getSuggestions"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetSuggestions:request response:response];
              }];
 
     // --- app.bsky.feed ---
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.feed.getTimeline"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetTimeline:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.feed.getAuthorFeed"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetAuthorFeed:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.feed.getPostThread"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetPostThread:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.feed.getFeed"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetFeed:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.feed.getActorLikes"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetActorLikes:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.feed.getPosts"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetPosts:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.feed.getFeedGenerators"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetFeedGenerators:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.feed.getLikes"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetLikes:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.feed.getRepostedBy"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetRepostedBy:request response:response];
              }];
 
     // --- app.bsky.labeler ---
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.labeler.getServices"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  id didsParam = request.queryParams[@"dids"];
                  NSArray *dids = nil;
                  if ([didsParam isKindOfClass:[NSArray class]]) {
@@ -233,110 +233,110 @@ NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSIntege
     if (_graphService) {
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.graph.getFollows"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetFollows:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.graph.getFollowers"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetFollowers:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.graph.getBlocks"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetBlocks:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.graph.getMutes"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetMutes:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.graph.getRelationships"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetRelationships:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.graph.getStarterPack"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetStarterPack:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.graph.getActorStarterPacks"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetStarterPacks:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.graph.getLists"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetLists:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.graph.getList"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetList:request response:response];
                  }];
 
         [server addRoute:@"POST"
                     path:@"/xrpc/app.bsky.graph.muteActor"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleMuteActor:request response:response];
                  }];
 
         [server addRoute:@"POST"
                     path:@"/xrpc/app.bsky.graph.unmuteActor"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleUnmuteActor:request response:response];
                  }];
 
         // --- app.bsky.contact ---
         [server addRoute:@"POST"
                     path:@"/xrpc/app.bsky.contact.startPhoneVerification"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleStartPhoneVerification:request response:response];
                  }];
 
         [server addRoute:@"POST"
                     path:@"/xrpc/app.bsky.contact.verifyPhone"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleVerifyPhone:request response:response];
                  }];
 
         [server addRoute:@"POST"
                     path:@"/xrpc/app.bsky.contact.importContacts"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleImportContacts:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.contact.getMatches"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetContactMatches:request response:response];
                  }];
 
         [server addRoute:@"POST"
                     path:@"/xrpc/app.bsky.contact.dismissMatch"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleDismissContactMatch:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/xrpc/app.bsky.contact.getSyncStatus"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleGetContactSyncStatus:request response:response];
                  }];
 
         [server addRoute:@"POST"
                     path:@"/xrpc/app.bsky.contact.removeData"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleRemoveContactData:request response:response];
                  }];
 
@@ -345,17 +345,17 @@ NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSIntege
     if (_writeProxy) {
         [server addRoute:@"POST"
                     path:@"/xrpc/com.atproto.repo.createRecord"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleProxyWrite:request response:response nsid:@"com.atproto.repo.createRecord"];
                  }];
         [server addRoute:@"POST"
                     path:@"/xrpc/com.atproto.repo.putRecord"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleProxyWrite:request response:response nsid:@"com.atproto.repo.putRecord"];
                  }];
         [server addRoute:@"POST"
                     path:@"/xrpc/com.atproto.repo.deleteRecord"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [self handleProxyWrite:request response:response nsid:@"com.atproto.repo.deleteRecord"];
                  }];
     }
@@ -363,124 +363,124 @@ NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSIntege
     // --- app.bsky.notification ---
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.notification.listNotifications"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleListNotifications:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.notification.getUnreadCount"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetUnreadCount:request response:response];
              }];
 
     [server addRoute:@"POST"
                 path:@"/xrpc/app.bsky.notification.updateSeen"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleUpdateSeen:request response:response];
              }];
 
     [server addRoute:@"POST"
                 path:@"/xrpc/app.bsky.notification.registerPush"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleRegisterPush:request response:response];
              }];
 
     [server addRoute:@"POST"
                 path:@"/xrpc/app.bsky.notification.unregisterPush"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleUnregisterPush:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.notification.listActivitySubscriptions"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleListActivitySubscriptions:request response:response];
              }];
 
     [server addRoute:@"POST"
                 path:@"/xrpc/app.bsky.notification.putActivitySubscription"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handlePutActivitySubscription:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.notification.getPreferences"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetNotificationPreferences:request response:response];
              }];
 
     [server addRoute:@"POST"
                 path:@"/xrpc/app.bsky.notification.putPreferences"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handlePutNotificationPreferences:request response:response];
              }];
 
     // --- app.bsky.unspecced search ---
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.unspecced.searchActorsSkeleton"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleSearchActorsSkeleton:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.unspecced.searchPostsSkeleton"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleSearchPostsSkeleton:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.unspecced.searchStarterPacksSkeleton"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleSearchStarterPacksSkeleton:request response:response];
              }];
 
     // --- com.atproto.* (proxied convenience endpoints) ---
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.identity.resolveHandle"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleResolveHandle:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.repo.getRecord"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetRecord:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.label.queryLabels"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleQueryLabels:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.admin.getAccountInfos"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetAccountInfos:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.admin.getSubjectStatus"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleGetSubjectStatus:request response:response];
              }];
 
     // --- app.bsky.ageassurance ---
     [server addRoute:@"POST"
                 path:@"/xrpc/app.bsky.ageassurance.begin"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleAgeAssuranceBegin:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.ageassurance.getConfig"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleAgeAssuranceGetConfig:request response:response];
              }];
 
     [server addRoute:@"GET"
                 path:@"/xrpc/app.bsky.ageassurance.getState"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handleAgeAssuranceGetState:request response:response];
              }];
 
@@ -488,7 +488,7 @@ NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSIntege
 
 #pragma mark - Auth Helpers
 
-- (NSString *)extractDIDFromAuth:(NSString *)authHeader request:(HttpRequest *)request
+- (NSString *)extractDIDFromAuth:(NSString *)authHeader request:(ATProtoHttpRequest *)request
 {
     if (![authHeader hasPrefix:@"Bearer "])
         return nil;
@@ -512,7 +512,7 @@ NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, NSIntege
     return nil;
 }
 
-- (NSString *)requireAuth:(HttpRequest *)request response:(HttpResponse *)response
+- (NSString *)requireAuth:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (!authHeader)

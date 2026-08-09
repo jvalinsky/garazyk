@@ -39,7 +39,7 @@
     ATProtoServiceConfiguration *config = services.configuration;
     BOOL enforceDidWebServiceAuth = NO; // Default to NO as per registry
 #pragma mark - com.atproto.server.session.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createAccount handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *email = [request stringBodyForKey:@"email"];
         NSString *handle = [request stringBodyForKey:@"handle"];
         NSString *password = [request stringBodyForKey:@"password"];
@@ -147,7 +147,7 @@
         [response setJsonBody:result];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createSession handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createSession handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *identifier = [request stringBodyForKey:@"identifier"];
         NSString *password = [request stringBodyForKey:@"password"];
         NSString *authFactorToken = [request stringBodyForKey:@"authFactorToken"];
@@ -196,7 +196,7 @@
         [response setJsonBody:lexiconSession];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getSession handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getSession handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
@@ -236,7 +236,7 @@
         [response setJsonBody:lexiconSession];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_refreshSession handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_refreshSession handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *refreshToken = nil;
         
@@ -265,7 +265,7 @@
         [response setJsonBody:session];
     }];
 
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteSession handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteSession handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {

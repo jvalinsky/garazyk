@@ -57,7 +57,7 @@ static BOOL AuthVerifierIsTrustedProxyRemoteAddress(NSString *remoteAddress) {
     return NO;
 }
 
-static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
+static BOOL AuthVerifierShouldTrustForwardedHeaders(ATProtoHttpRequest *request) {
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
     if (!AuthVerifierEnvBool(env[@"PDS_TRUST_PROXY_HEADERS"])) {
         return NO;
@@ -141,8 +141,8 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
 
 #pragma mark - Public API
 
-- (nullable ATProtoAuthVerifierPrincipal *)verifyRequest:(HttpRequest *)request
-                                        response:(nullable HttpResponse *)response
+- (nullable ATProtoAuthVerifierPrincipal *)verifyRequest:(ATProtoHttpRequest *)request
+                                        response:(nullable ATProtoHttpResponse *)response
                                            error:(NSError **)error {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     NSString *dpopHeader = [request headerForKey:@"DPoP"];
@@ -174,8 +174,8 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
 
 - (nullable ATProtoAuthVerifierPrincipal *)verifyAuthHeader:(nullable NSString *)authHeader
                                             dpopHeader:(nullable NSString *)dpopHeader
-                                              request:(nullable HttpRequest *)request
-                                             response:(nullable HttpResponse *)response
+                                              request:(nullable ATProtoHttpRequest *)request
+                                             response:(nullable ATProtoHttpResponse *)response
                                                 error:(NSError **)error {
     if (!authHeader) {
         if (error) {
@@ -518,7 +518,7 @@ static BOOL AuthVerifierShouldTrustForwardedHeaders(HttpRequest *request) {
                                                 isAdmin:isAdmin];
 }
 
-- (nullable NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request {
+- (nullable NSURL *)expectedDPoPURLForRequest:(ATProtoHttpRequest *)request {
     NSString *path = request.path ?: @"/";
     if (![path hasPrefix:@"/"]) {
         path = [@"/" stringByAppendingString:path];

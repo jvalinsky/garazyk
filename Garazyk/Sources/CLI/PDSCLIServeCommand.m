@@ -244,7 +244,7 @@
   }
 
   // Set the Server header for all PDS responses
-  [HttpResponse setDefaultServerHeader:@"kaszlak/1.0.0 (garazyk)"];
+  [ATProtoHttpResponse setDefaultServerHeader:@"kaszlak/1.0.0 (garazyk)"];
 
   // Calculate canonical issuer with the actual port
   NSString *canonicalIssuer = [[ATProtoServiceConfiguration sharedConfiguration] canonicalIssuerWithPortHint:port];
@@ -266,7 +266,7 @@
   // Register Health Check
   [httpServer addRoute:@"GET"
                     path:@"/health"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                    NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
                    response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
                    [response setJsonBody:health];
@@ -274,7 +274,7 @@
 
     [httpServer addRoute:@"GET"
                     path:@"/_health"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                    NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
                    response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
                    [response setJsonBody:health];
@@ -283,7 +283,7 @@
   // Admin Login: accepts admin password, returns admin-scoped ATProtoJWT
   [httpServer addRoute:@"POST"
                   path:@"/admin/login"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  NSDictionary *body = request.jsonBody;
                  if (![body isKindOfClass:[NSDictionary class]]) {
                    response.statusCode = 400;
@@ -313,7 +313,7 @@
 
   [httpServer addRoute:@"GET"
                   path:@"/robots.txt"
-               handler:^(HttpRequest *request, HttpResponse *response) {
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  response.statusCode = 200;
                  response.contentType = @"text/plain";
                  [response setBodyString:@"User-agent: *\nDisallow: /"];
@@ -323,7 +323,7 @@
   [httpServer
       addRoute:@"GET"
           path:@"/.well-known/did.json"
-       handler:^(HttpRequest *request, HttpResponse *response) {
+       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
          ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
 
          // Use issuer URL for did:web hostname (not serverHost which is bind

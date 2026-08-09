@@ -29,8 +29,8 @@
     [super tearDown];
 }
 
-- (HttpRequest *)requestWithPath:(NSString *)path {
-    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+- (ATProtoHttpRequest *)requestWithPath:(NSString *)path {
+    return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                    methodString:@"GET"
                                            path:path
                                     queryString:@""
@@ -41,8 +41,8 @@
                                    remoteAddress:@"127.0.0.1"];
 }
 
-- (HttpResponse *)response {
-    return [[HttpResponse alloc] init];
+- (ATProtoHttpResponse *)response {
+    return [[ATProtoHttpResponse alloc] init];
 }
 
 - (void)testSharedHandlerSingleton {
@@ -55,7 +55,7 @@
 - (void)testCanHandleRequestRelayMetrics {
     [self.handler setMetrics:self.metrics];
     
-    HttpRequest *request = [self requestWithPath:@"/api/relay/metrics"];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/metrics"];
     
     XCTAssertTrue([self.handler canHandleRequest:request], @"Should handle /api/relay/metrics");
 }
@@ -63,19 +63,19 @@
 - (void)testCanHandleRequestRelayUpstreams {
     [self.handler setUpstreamManager:self.upstreamManager];
     
-    HttpRequest *request = [self requestWithPath:@"/api/relay/upstreams"];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/upstreams"];
     
     XCTAssertTrue([self.handler canHandleRequest:request], @"Should handle /api/relay/upstreams");
 }
 
 - (void)testCanHandleRequestRelayHealth {
-    HttpRequest *request = [self requestWithPath:@"/api/relay/health"];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/health"];
     
     XCTAssertTrue([self.handler canHandleRequest:request], @"Should handle /api/relay/health");
 }
 
 - (void)testCannotHandleOtherPaths {
-    HttpRequest *request = [self requestWithPath:@"/xrpc/com.atproto.sync.subscribeRepos"];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/xrpc/com.atproto.sync.subscribeRepos"];
     
     XCTAssertFalse([self.handler canHandleRequest:request], @"Should not handle non-relay paths");
 }
@@ -83,8 +83,8 @@
 - (void)testHandleMetricsRequest {
     [self.handler setMetrics:self.metrics];
     
-    HttpRequest *request = [self requestWithPath:@"/api/relay/metrics"];
-    HttpResponse *response = [self response];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/metrics"];
+    ATProtoHttpResponse *response = [self response];
     
     XCTAssertNoThrow([self.handler handleRequest:request response:response], @"Should handle metrics request without crash");
     XCTAssertEqual(response.statusCode, 200, @"Should return 200 OK");
@@ -94,8 +94,8 @@
 - (void)testHandleUpstreamsRequest {
     [self.handler setUpstreamManager:self.upstreamManager];
     
-    HttpRequest *request = [self requestWithPath:@"/api/relay/upstreams"];
-    HttpResponse *response = [self response];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/upstreams"];
+    ATProtoHttpResponse *response = [self response];
     
     XCTAssertNoThrow([self.handler handleRequest:request response:response], @"Should handle upstreams request without crash");
     XCTAssertEqual(response.statusCode, 200, @"Should return 200 OK");
@@ -103,8 +103,8 @@
 }
 
 - (void)testHandleHealthRequest {
-    HttpRequest *request = [self requestWithPath:@"/api/relay/health"];
-    HttpResponse *response = [self response];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/health"];
+    ATProtoHttpResponse *response = [self response];
     
     XCTAssertNoThrow([self.handler handleRequest:request response:response], @"Should handle health request without crash");
     XCTAssertEqual(response.statusCode, 200, @"Should return 200 OK");
@@ -114,8 +114,8 @@
 - (void)testHandleMetricsWithNilMetrics {
     [self.handler setMetrics:nil];
     
-    HttpRequest *request = [self requestWithPath:@"/api/relay/metrics"];
-    HttpResponse *response = [self response];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/metrics"];
+    ATProtoHttpResponse *response = [self response];
     
     // Should handle gracefully without crash
     XCTAssertNoThrow([self.handler handleRequest:request response:response], @"Should handle nil metrics gracefully");
@@ -125,8 +125,8 @@
 - (void)testHandleUpstreamsWithNilManager {
     [self.handler setUpstreamManager:nil];
     
-    HttpRequest *request = [self requestWithPath:@"/api/relay/upstreams"];
-    HttpResponse *response = [self response];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/upstreams"];
+    ATProtoHttpResponse *response = [self response];
     
     // Should handle gracefully without crash
     XCTAssertNoThrow([self.handler handleRequest:request response:response], @"Should handle nil upstreamManager gracefully");
@@ -134,8 +134,8 @@
 }
 
 - (void)testHandleUnknownRelayPath {
-    HttpRequest *request = [self requestWithPath:@"/api/relay/unknown"];
-    HttpResponse *response = [self response];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/unknown"];
+    ATProtoHttpResponse *response = [self response];
     
     XCTAssertNoThrow([self.handler handleRequest:request response:response], @"Should handle unknown path without crash");
     XCTAssertEqual(response.statusCode, 404, @"Should return 404 for unknown path");

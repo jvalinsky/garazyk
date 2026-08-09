@@ -18,7 +18,7 @@
 // Forward declarations for shared helper functions (used by category files)
 BOOL parseStrictIntegerString(NSString *str, NSInteger *outValue);
 NSDictionary *adminAccountViewFromAccount(PDSDatabaseAccount *account);
-NSArray<NSString *> *queryArrayValues(HttpRequest *request, NSString *key);
+NSArray<NSString *> *queryArrayValues(ATProtoHttpRequest *request, NSString *key);
 NSArray<NSDictionary *> *loadAdminInviteCodeViews(PDSServiceDatabases *serviceDatabases,
                                                    NSString *sort, NSInteger limit,
                                                    NSInteger offset, NSError **error);

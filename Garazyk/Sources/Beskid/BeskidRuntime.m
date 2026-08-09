@@ -70,15 +70,15 @@
     if (![self.database runMigrations:error]) return NO;
 
     self.httpServer = [HttpServer serverWithPort:config.httpPort];
-    [HttpResponse setDefaultServerHeader:@"garazyk-beskid/1.0.0"];
+    [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-beskid/1.0.0"];
 
-    [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         response.contentType = @"text/plain; charset=utf-8";
         [response setBodyString:@"garazyk beskid edge cache\n"];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{
             @"status": @"ok",

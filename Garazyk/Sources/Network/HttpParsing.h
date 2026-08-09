@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpParsing.h
+ @file ATProtoHttpParsing.h
 
  @abstract Provides shared HTTP parsing types and helpers for protocol components.
 
@@ -13,7 +13,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface HttpParsing : NSObject
+@interface ATProtoHttpParsing : NSObject
 
 /**
  * @abstract Performs the parseQueryString operation.

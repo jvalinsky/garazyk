@@ -39,8 +39,8 @@
     [super tearDown];
 }
 
-- (HttpRequest *)requestWithPath:(NSString *)path {
-    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+- (ATProtoHttpRequest *)requestWithPath:(NSString *)path {
+    return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:path
                                    queryString:@""
@@ -51,7 +51,7 @@
                                    remoteAddress:@"127.0.0.1"];
 }
 
-- (NSDictionary *)jsonBodyFromResponse:(HttpResponse *)response {
+- (NSDictionary *)jsonBodyFromResponse:(ATProtoHttpResponse *)response {
     NSError *error = nil;
     id obj = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:&error];
     XCTAssertNil(error);
@@ -88,13 +88,13 @@
     TestableOAuthDemoHandler *handler = [[TestableOAuthDemoHandler alloc] init];
     handler.forcedAssetsPath = self.tempDir;
 
-    HttpResponse *rootResponse = [HttpResponse response];
+    ATProtoHttpResponse *rootResponse = [ATProtoHttpResponse response];
     [handler handleRequest:[self requestWithPath:@"/oauth-demo"] response:rootResponse];
     XCTAssertEqual(rootResponse.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(rootResponse.contentType, @"text/html; charset=utf-8");
     XCTAssertEqualObjects(rootResponse.body, indexData);
 
-    HttpResponse *callbackResponse = [HttpResponse response];
+    ATProtoHttpResponse *callbackResponse = [ATProtoHttpResponse response];
     [handler handleRequest:[self requestWithPath:@"/oauth-demo/callback"] response:callbackResponse];
     XCTAssertEqual(callbackResponse.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(callbackResponse.contentType, @"text/html; charset=utf-8");
@@ -112,17 +112,17 @@
     TestableOAuthDemoHandler *handler = [[TestableOAuthDemoHandler alloc] init];
     handler.forcedAssetsPath = self.tempDir;
 
-    HttpResponse *jsResponse = [HttpResponse response];
+    ATProtoHttpResponse *jsResponse = [ATProtoHttpResponse response];
     [handler handleRequest:[self requestWithPath:@"/oauth-demo/app.js"] response:jsResponse];
     XCTAssertEqualObjects(jsResponse.contentType, @"application/javascript; charset=utf-8");
     XCTAssertEqualObjects(jsResponse.body, jsData);
 
-    HttpResponse *cssResponse = [HttpResponse response];
+    ATProtoHttpResponse *cssResponse = [ATProtoHttpResponse response];
     [handler handleRequest:[self requestWithPath:@"/oauth-demo/app.css"] response:cssResponse];
     XCTAssertEqualObjects(cssResponse.contentType, @"text/css; charset=utf-8");
     XCTAssertEqualObjects(cssResponse.body, cssData);
 
-    HttpResponse *binResponse = [HttpResponse response];
+    ATProtoHttpResponse *binResponse = [ATProtoHttpResponse response];
     [handler handleRequest:[self requestWithPath:@"/oauth-demo/file.bin"] response:binResponse];
     XCTAssertEqualObjects(binResponse.contentType, @"application/octet-stream");
     XCTAssertEqualObjects(binResponse.body, binData);
@@ -132,7 +132,7 @@
     TestableOAuthDemoHandler *handler = [[TestableOAuthDemoHandler alloc] init];
     handler.forcedAssetsPath = nil;
 
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     [handler handleRequest:[self requestWithPath:@"/oauth-demo/index.html"] response:response];
 
     NSDictionary *body = [self jsonBodyFromResponse:response];
@@ -144,7 +144,7 @@
     TestableOAuthDemoHandler *handler = [[TestableOAuthDemoHandler alloc] init];
     handler.forcedAssetsPath = self.tempDir;
 
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     [handler handleRequest:[self requestWithPath:@"/oauth-demo/missing.js"] response:response];
 
     NSDictionary *body = [self jsonBodyFromResponse:response];
@@ -164,7 +164,7 @@
     TestableOAuthDemoHandler *handler = [[TestableOAuthDemoHandler alloc] init];
     handler.forcedAssetsPath = self.tempDir;
 
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
     [handler handleRequest:[self requestWithPath:@"/oauth-demo"] response:response];
 
     NSDictionary *body = [self jsonBodyFromResponse:response];

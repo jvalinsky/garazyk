@@ -5,11 +5,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface OAuth2Handler (Metadata)
-- (void)handleAuthorizationServerMetadata:(HttpRequest *)request
-                                 response:(HttpResponse *)response;
-- (void)handleProtectedResourceMetadata:(HttpRequest *)request
-                               response:(HttpResponse *)response;
-- (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAuthorizationServerMetadata:(ATProtoHttpRequest *)request
+                                 response:(ATProtoHttpResponse *)response;
+- (void)handleProtectedResourceMetadata:(ATProtoHttpRequest *)request
+                               response:(ATProtoHttpResponse *)response;
+- (void)handleJWKS:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 @end
 
 NS_ASSUME_NONNULL_END

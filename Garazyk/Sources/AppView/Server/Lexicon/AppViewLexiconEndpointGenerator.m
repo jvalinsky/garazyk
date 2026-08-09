@@ -166,7 +166,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
 
     [self.httpServer addRoute:@"GET"
                         path:path
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AppViewLexiconEndpointGenerator *strongSelf = weakSelf;
         if (!strongSelf) {
             response.statusCode = 500;
@@ -191,7 +191,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
 
     [self.httpServer addRoute:@"POST"
                         path:path
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AppViewLexiconEndpointGenerator *strongSelf = weakSelf;
         if (!strongSelf) {
             response.statusCode = 500;

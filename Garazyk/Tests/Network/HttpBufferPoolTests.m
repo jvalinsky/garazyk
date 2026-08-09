@@ -64,10 +64,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testAcquireReleaseRequest {
     HttpBufferPool *pool = [[HttpBufferPool alloc] init];
 
-    HttpRequest *request1 = [pool acquireRequest];
+    ATProtoHttpRequest *request1 = [pool acquireRequest];
     XCTAssertNil(request1);
 
-    HttpRequest *createdRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *createdRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                         methodString:@"GET"
                                                                 path:@"/test"
                                                          queryString:@""
@@ -79,7 +79,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [pool releaseRequest:createdRequest];
 
-    HttpRequest *request2 = [pool acquireRequest];
+    ATProtoHttpRequest *request2 = [pool acquireRequest];
     XCTAssertNotNil(request2);
 
     [pool releaseRequest:request2];
@@ -88,14 +88,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testAcquireReleaseResponse {
     HttpBufferPool *pool = [[HttpBufferPool alloc] init];
 
-    HttpResponse *response1 = [pool acquireResponse];
+    ATProtoHttpResponse *response1 = [pool acquireResponse];
     XCTAssertNil(response1);
 
-    HttpResponse *createdResponse = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    ATProtoHttpResponse *createdResponse = [ATProtoHttpResponse responseWithStatusCode:HttpStatusOK];
 
     [pool releaseResponse:createdResponse];
 
-    HttpResponse *response2 = [pool acquireResponse];
+    ATProtoHttpResponse *response2 = [pool acquireResponse];
     XCTAssertNotNil(response2);
     XCTAssertEqual(response2.statusCode, HttpStatusOK);
 

@@ -60,16 +60,10 @@ Http1PipelinePolicy
 HttpBufferPool
 HttpChunkedBodyParser
 HttpConnectionIOCoordinator
-HttpParsing
 HttpProtocolDriver
 HttpProtocolSession
-HttpRequest
 HttpRequestDispatcher
-HttpResponse
 HttpResponseSender
-HttpRetryPolicy
-HttpRetryResult
-HttpRoute
 HttpRouteTrie
 HttpServer
 JelczConfiguration

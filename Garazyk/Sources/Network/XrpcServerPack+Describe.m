@@ -32,7 +32,7 @@
                                configuration:(ATProtoServiceConfiguration *)config
                             registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
 #pragma mark - com.atproto.server.describeServer
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_describeServer handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_describeServer handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *issuer = [config canonicalIssuerWithPortHint:0];
         NSString *hostname = [config canonicalHostname];
         NSString *serverDid = XrpcDidWebIdentifierFromIssuer(issuer, hostname);

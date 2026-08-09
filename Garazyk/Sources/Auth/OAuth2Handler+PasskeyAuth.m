@@ -12,8 +12,8 @@
 
 @implementation OAuth2Handler (PasskeyAuth)
 
-- (void)handlePasskeyChallenge:(HttpRequest *)request
-                      response:(HttpResponse *)response {
+- (void)handlePasskeyChallenge:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response {
   NSDictionary *body = [self parseJSONBody:request.body];
   if (!body) {
     response.statusCode = 400;
@@ -72,8 +72,8 @@
   }];
 }
 
-- (void)handlePasskeySignIn:(HttpRequest *)request
-                     response:(HttpResponse *)response {
+- (void)handlePasskeySignIn:(ATProtoHttpRequest *)request
+                     response:(ATProtoHttpResponse *)response {
   NSDictionary *body = [self parseJSONBody:request.body];
   if (!body) {
     response.statusCode = 400;

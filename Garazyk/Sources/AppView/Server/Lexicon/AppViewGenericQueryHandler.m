@@ -47,8 +47,8 @@ static NSInteger const kMaxLimit = 100;
 
 #pragma mark - Query Handler (GET)
 
-- (void)handleQuery:(HttpRequest *)request
-            response:(HttpResponse *)response
+- (void)handleQuery:(ATProtoHttpRequest *)request
+            response:(ATProtoHttpResponse *)response
                nsid:(NSString *)nsid {
     // 1. Check custom handler registry
     id<AppViewLexiconQueryHandler> customHandler =
@@ -121,8 +121,8 @@ static NSInteger const kMaxLimit = 100;
 
 #pragma mark - Procedure Handler (POST)
 
-- (void)handleProcedure:(HttpRequest *)request
-                response:(HttpResponse *)response
+- (void)handleProcedure:(ATProtoHttpRequest *)request
+                response:(ATProtoHttpResponse *)response
                    nsid:(NSString *)nsid {
     // 1. Check custom handler registry
     id<AppViewLexiconQueryHandler> customHandler =
@@ -207,8 +207,8 @@ static NSInteger const kMaxLimit = 100;
 #pragma mark - Custom Handler Dispatch
 
 - (void)dispatchToCustomHandler:(id<AppViewLexiconQueryHandler>)handler
-                        request:(HttpRequest *)request
-                       response:(HttpResponse *)response
+                        request:(ATProtoHttpRequest *)request
+                       response:(ATProtoHttpResponse *)response
                            nsid:(NSString *)nsid
                          isPost:(BOOL)isPost {
     NSDictionary<NSString *, NSString *> *params =
@@ -283,7 +283,7 @@ static NSInteger const kMaxLimit = 100;
 #pragma mark - Single Record Query
 
 - (void)handleSingleRecordQuery:(NSString *)uri
-                        response:(HttpResponse *)response {
+                        response:(ATProtoHttpResponse *)response {
     // Parse AT URI: at://<did>/<collection>/<rkey>
     NSArray *components = [uri componentsSeparatedByString:@"/"];
     if (components.count < 5) {
@@ -324,7 +324,7 @@ static NSInteger const kMaxLimit = 100;
                          did:(nullable NSString *)did
                        limit:(NSInteger)limit
                       cursor:(nullable NSString *)cursor
-                    response:(HttpResponse *)response {
+                    response:(ATProtoHttpResponse *)response {
     NSError *error = nil;
     NSDictionary *result = [self.database listRecordsForCollection:collection
                                                               did:did
@@ -346,7 +346,7 @@ static NSInteger const kMaxLimit = 100;
 
 #pragma mark - Helpers
 
-- (NSDictionary<NSString *, NSString *> *)parseQueryParamsFromRequest:(HttpRequest *)request {
+- (NSDictionary<NSString *, NSString *> *)parseQueryParamsFromRequest:(ATProtoHttpRequest *)request {
     NSMutableDictionary<NSString *, NSString *> *params = [NSMutableDictionary dictionary];
 
     // Extract common query parameters
@@ -376,7 +376,7 @@ static NSInteger const kMaxLimit = 100;
     return MIN(limit, kMaxLimit);
 }
 
-- (nullable NSString *)extractCallerDIDFromRequest:(HttpRequest *)request {
+- (nullable NSString *)extractCallerDIDFromRequest:(ATProtoHttpRequest *)request {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (![authHeader hasPrefix:@"Bearer "]) return nil;
 

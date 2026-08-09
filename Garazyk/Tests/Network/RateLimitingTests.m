@@ -28,7 +28,7 @@
     
     __block BOOL handlerCalled = NO;
     
-    [self.server addRoute:@"GET" path:@"/oauth/authorize" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.server addRoute:@"GET" path:@"/oauth/authorize" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         handlerCalled = YES;
         response.statusCode = 200;
     }];

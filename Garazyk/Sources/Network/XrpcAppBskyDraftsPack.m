@@ -45,7 +45,7 @@
   id<XrpcRoutePackServices> resolvedServices = services;
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_createDraft
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -78,7 +78,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_updateDraft
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -118,7 +118,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_getDrafts
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -141,7 +141,7 @@
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_deleteDraft
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response

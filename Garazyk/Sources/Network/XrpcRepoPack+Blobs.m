@@ -46,7 +46,7 @@ static BOOL repoBlobMimeTypeShouldAttach(NSString *mimeType) {
     return NO;
 }
 
-void applyRepoBlobDownloadHeaders(NSString *mimeType, HttpResponse *response) {
+void applyRepoBlobDownloadHeaders(NSString *mimeType, ATProtoHttpResponse *response) {
     [response setHeader:@"nosniff" forKey:@"X-Content-Type-Options"];
     [response setHeader:@"default-src 'none'; sandbox" forKey:@"Content-Security-Policy"];
     if (repoBlobMimeTypeShouldAttach(mimeType)) {
@@ -86,7 +86,7 @@ static BOOL parseStrictIntegerString(NSString *value, NSInteger *result) {
  * experimental binding headers.  The space lexicon has no upload procedure,
  * so require the target collection and action here and prove the caller holds
  * the same OAuth capability that will be required to reference the blob. */
-static BOOL authorizeSpaceBlobUpload(HttpRequest *request, HttpResponse *response,
+static BOOL authorizeSpaceBlobUpload(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                      NSString *did, PDSSpaceURI *space,
                                      NSString *collection, NSString *action) {
     NSString *authorization = [request headerForKey:@"Authorization"];
@@ -110,7 +110,7 @@ static BOOL authorizeSpaceBlobUpload(HttpRequest *request, HttpResponse *respons
     return NO;
 }
 
-static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *response,
+static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                           NSString *mimeType) {
     if ([ATProtoPermissionScopeEvaluator evaluateBlobScopes:request.permissionScopes ?: @[]
                                                      forMIME:mimeType]) {
@@ -134,7 +134,7 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
     RateLimiter *rateLimiter = services.rateLimiter;
 
 #pragma mark - com.atproto.repo.uploadBlob
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_uploadBlob handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_uploadBlob handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -246,7 +246,7 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
     }];
 
 #pragma mark - com.atproto.repo.listMissingBlobs
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_listMissingBlobs handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_listMissingBlobs handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -277,7 +277,7 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
     }];
 
 #pragma mark - com.atproto.repo.getBlob
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_getBlob handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_getBlob handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -371,7 +371,7 @@ static BOOL authorizeRepositoryBlobUpload(HttpRequest *request, HttpResponse *re
     }];
 
 #pragma mark - com.atproto.repo.deleteBlob
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_deleteBlob handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_deleteBlob handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {

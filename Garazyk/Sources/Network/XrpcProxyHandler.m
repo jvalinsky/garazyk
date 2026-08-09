@@ -32,12 +32,12 @@
     return self;
 }
 
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     [self handleRequest:request response:response baseURL:self.proxyURL upstreamDID:self.upstreamDID];
 }
 
-- (void)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (void)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
               baseURL:(NSURL *)baseURL
           upstreamDID:(NSString *)upstreamDID {
 

@@ -17,7 +17,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class HttpRequest;
+@class ATProtoHttpRequest;
 @class HttpProtocolSession;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -80,7 +80,7 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
  @discussion The caller should call this after receiving HttpProtocolEventRequestReady.
  Requests are held in the session's pending queue until pipelining policy allows.
  */
-- (nullable HttpRequest *)nextDispatchableRequest;
+- (nullable ATProtoHttpRequest *)nextDispatchableRequest;
 
 /*!
  @method currentUpgradeRequest
@@ -89,7 +89,7 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
 
  @return The request with the Upgrade header, or nil if no upgrade.
  */
-- (nullable HttpRequest *)currentUpgradeRequest;
+- (nullable ATProtoHttpRequest *)currentUpgradeRequest;
 
 /*!
  @method currentParseError

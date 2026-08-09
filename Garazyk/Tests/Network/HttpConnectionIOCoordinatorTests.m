@@ -128,7 +128,7 @@
 - (void)testRequestReadyHandlerFiredOnCompleteRequest {
     XCTestExpectation *handlerExpectation = [self expectationWithDescription:@"Request handler called"];
 
-    self.coordinator.requestReadyHandler = ^(HttpRequest * _Nonnull request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest * _Nonnull request) {
         XCTAssertEqualObjects(request.path, @"/x");
         [handlerExpectation fulfill];
     };
@@ -145,7 +145,7 @@
 - (void)testUpgradeHandlerFiredOnUpgradeRequest {
     XCTestExpectation *handlerExpectation = [self expectationWithDescription:@"Upgrade handler called"];
 
-    self.coordinator.upgradeHandler = ^(HttpRequest * _Nonnull request) {
+    self.coordinator.upgradeHandler = ^(ATProtoHttpRequest * _Nonnull request) {
         XCTAssertNotNil(request);
         [handlerExpectation fulfill];
     };
@@ -179,7 +179,7 @@
     XCTestExpectation *noHandlerExp = [self expectationWithDescription:@"handler not called"];
     noHandlerExp.inverted = YES;
 
-    self.coordinator.requestReadyHandler = ^(HttpRequest * _Nonnull request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest * _Nonnull request) {
         [noHandlerExp fulfill];
     };
 
@@ -193,7 +193,7 @@
 - (void)testResumeAfterPauseResumesReads {
     XCTestExpectation *handlerExpectation = [self expectationWithDescription:@"Request handler called"];
 
-    self.coordinator.requestReadyHandler = ^(HttpRequest * _Nonnull request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest * _Nonnull request) {
         [handlerExpectation fulfill];
     };
 
@@ -284,7 +284,7 @@
     XCTestExpectation *requestExpectation = [self expectationWithDescription:@"request accepted"];
     XCTestExpectation *timeoutExpectation = [self expectationWithDescription:@"no timeout"];
     timeoutExpectation.inverted = YES;
-    self.coordinator.requestReadyHandler = ^(HttpRequest *request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest *request) {
         XCTAssertEqualObjects(request.path, @"/within-limits");
         [requestExpectation fulfill];
     };
@@ -311,7 +311,7 @@
     XCTestExpectation *requestExpectation = [self expectationWithDescription:@"body request accepted"];
     XCTestExpectation *timeoutExpectation = [self expectationWithDescription:@"no header timeout after terminator"];
     timeoutExpectation.inverted = YES;
-    self.coordinator.requestReadyHandler = ^(HttpRequest *request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest *request) {
         XCTAssertEqualObjects(request.path, @"/body");
         XCTAssertEqualObjects(request.body, [@"body" dataUsingEncoding:NSUTF8StringEncoding]);
         [requestExpectation fulfill];
@@ -356,7 +356,7 @@
     XCTestExpectation *noHandlerExp = [self expectationWithDescription:@"handler not called after closeForUpgrade"];
     noHandlerExp.inverted = YES;
 
-    self.coordinator.requestReadyHandler = ^(HttpRequest *request) {
+    self.coordinator.requestReadyHandler = ^(ATProtoHttpRequest *request) {
         [noHandlerExp fulfill];
     };
 

@@ -218,7 +218,7 @@ static NSString * const kTestJWKD = @"GE8ea5wxqv-uyg35MjN4QwaINAa6wl4uSXJtZbDzNg
   HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1" port:0];
   NSDictionary *jwks = [self testJWKSWithKid:nil];
   __block NSString *clientID = nil;
-  [server addRoute:@"GET" path:@"/client-metadata.json" handler:^(HttpRequest *request, HttpResponse *response) {
+  [server addRoute:@"GET" path:@"/client-metadata.json" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     response.statusCode = HttpStatusOK;
     [response setJsonBody:@{ @"client_id" : clientID, @"jwks" : jwks }];
   }];
@@ -240,7 +240,7 @@ static NSString * const kTestJWKD = @"GE8ea5wxqv-uyg35MjN4QwaINAa6wl4uSXJtZbDzNg
   setenv("GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS", "1", 1);
   HttpServer *server = [HttpServer serverWithHost:@"127.0.0.1" port:0];
   NSDictionary *jwks = [self testJWKSWithKid:nil];
-  [server addRoute:@"GET" path:@"/client-metadata.json" handler:^(HttpRequest *request, HttpResponse *response) {
+  [server addRoute:@"GET" path:@"/client-metadata.json" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     response.statusCode = HttpStatusOK;
     [response setJsonBody:@{ @"client_id" : @"https://not-the-real-url.example.com", @"jwks" : jwks }];
   }];

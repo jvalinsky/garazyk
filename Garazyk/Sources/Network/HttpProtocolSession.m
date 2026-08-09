@@ -14,8 +14,8 @@
 @interface HttpProtocolSession ()
 @property(nonatomic, strong, readwrite) Http1Parser *parser;
 @property(nonatomic, strong, readwrite) Http1PipelinePolicy *pipelinePolicy;
-@property(nonatomic, strong) NSMutableArray<HttpRequest *> *pendingRequests;
-@property(nonatomic, strong, nullable) HttpRequest *upgradeRequest;
+@property(nonatomic, strong) NSMutableArray<ATProtoHttpRequest *> *pendingRequests;
+@property(nonatomic, strong, nullable) ATProtoHttpRequest *upgradeRequest;
 @end
 
 @implementation HttpProtocolSession
@@ -50,7 +50,7 @@
     return events;
   }
 
-  HttpRequest *request = [self.parser completedRequest];
+  ATProtoHttpRequest *request = [self.parser completedRequest];
   if (!request) {
     return events;
   }
@@ -79,9 +79,9 @@
   return events;
 }
 
-- (nullable HttpRequest *)nextRequestToDispatch {
+- (nullable ATProtoHttpRequest *)nextRequestToDispatch {
   if (self.pendingRequests.count > 0 && [self shouldReadMoreData]) {
-    HttpRequest *request = self.pendingRequests[0];
+    ATProtoHttpRequest *request = self.pendingRequests[0];
     [self.pendingRequests removeObjectAtIndex:0];
     [self.pipelinePolicy requestDispatched];
     return request;
@@ -89,7 +89,7 @@
   return nil;
 }
 
-- (void)queueResponse:(HttpResponse *)response {
+- (void)queueResponse:(ATProtoHttpResponse *)response {
   (void)response;
   [self responseDidFinishSending];
 }
@@ -104,7 +104,7 @@
   [self.parser reset];
 }
 
-- (nullable HttpRequest *)currentUpgradeRequest {
+- (nullable ATProtoHttpRequest *)currentUpgradeRequest {
   return self.upgradeRequest;
 }
 

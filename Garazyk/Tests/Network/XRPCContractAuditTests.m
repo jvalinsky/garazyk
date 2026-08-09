@@ -52,11 +52,11 @@ static NSDictionary<NSString *, NSString *> *XRPCKnownLexiconTypes(void) {
     };
 }
 
-// Build a minimal HttpRequest for dispatching to the XRPC dispatcher in tests.
-static HttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
+// Build a minimal ATProtoHttpRequest for dispatching to the XRPC dispatcher in tests.
+static ATProtoHttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
     HttpMethod httpMethod = [method isEqualToString:@"GET"] ? HttpMethodGET : HttpMethodPOST;
     NSString *path = [NSString stringWithFormat:@"/xrpc/%@", nsid];
-    return [[HttpRequest alloc] initWithMethod:httpMethod
+    return [[ATProtoHttpRequest alloc] initWithMethod:httpMethod
                                   methodString:method
                                           path:path
                                    queryString:@""
@@ -107,8 +107,8 @@ static HttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
     NSUInteger failCount = 0;
     for (NSString *nsid in lexicon) {
         if (![lexicon[nsid] isEqualToString:@"query"]) continue;
-        HttpRequest *req = xrpcAuditRequest(@"POST", nsid);
-        HttpResponse *resp = [HttpResponse response];
+        ATProtoHttpRequest *req = xrpcAuditRequest(@"POST", nsid);
+        ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
         [self.dispatcher handleRequest:req response:resp];
         if (resp.statusCode != 405) {
             NSLog(@"[contract] POST to query NSID '%@' returned %ld (expected 405)",
@@ -130,8 +130,8 @@ static HttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
     NSUInteger failCount = 0;
     for (NSString *nsid in lexicon) {
         if (![lexicon[nsid] isEqualToString:@"procedure"]) continue;
-        HttpRequest *req = xrpcAuditRequest(@"GET", nsid);
-        HttpResponse *resp = [HttpResponse response];
+        ATProtoHttpRequest *req = xrpcAuditRequest(@"GET", nsid);
+        ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
         [self.dispatcher handleRequest:req response:resp];
         if (resp.statusCode != 405) {
             NSLog(@"[contract] GET to procedure NSID '%@' returned %ld (expected 405)",
@@ -160,8 +160,8 @@ static HttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
     NSUInteger failCount = 0;
     for (NSString *nsid in authRequired) {
         NSString *verb = [lexicon[nsid] isEqualToString:@"query"] ? @"GET" : @"POST";
-        HttpRequest *req = xrpcAuditRequest(verb, nsid);
-        HttpResponse *resp = [HttpResponse response];
+        ATProtoHttpRequest *req = xrpcAuditRequest(verb, nsid);
+        ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
         [self.dispatcher handleRequest:req response:resp];
         if (resp.statusCode != 401) {
             NSLog(@"[contract] %@ %@ returned %ld without auth (expected 401)",
@@ -213,8 +213,8 @@ static HttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
     NSUInteger missingCount = 0;
     for (NSString *nsid in lexicon) {
         NSString *verb = [lexicon[nsid] isEqualToString:@"query"] ? @"GET" : @"POST";
-        HttpRequest *req = xrpcAuditRequest(verb, nsid);
-        HttpResponse *resp = [HttpResponse response];
+        ATProtoHttpRequest *req = xrpcAuditRequest(verb, nsid);
+        ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
         [self.dispatcher handleRequest:req response:resp];
         if (resp.statusCode == 404 || resp.statusCode == 501) {
             NSLog(@"[contract] NSID not registered: %@ %@ → %ld",

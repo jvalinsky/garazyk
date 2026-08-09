@@ -21,7 +21,7 @@
 + (void)registerRoutesWithServer:(HttpServer *)server {
   [server addRoute:@"GET"
               path:@"/metrics"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              response.statusCode = HttpStatusOK;
              [response setHeader:@"text/plain; version=0.0.4; charset=utf-8"
                           forKey:@"Content-Type"];

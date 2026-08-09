@@ -132,7 +132,7 @@
     return [formatter stringFromDate:date];
 }
 
-- (HttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
+- (ATProtoHttpResponse *)authorizeViaPARWithParameters:(NSDictionary *)authorizeParams
                                        clientID:(NSString *)clientID {
     NSError *error = nil;
     BOOL created = [self.database executeParameterizedUpdate:
@@ -153,7 +153,7 @@
                                                            error:&error];
     XCTAssertTrue(inserted, @"Failed to insert PAR row: %@", error);
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/oauth/authorize"
                                                    queryString:@""
@@ -165,7 +165,7 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.handler handleAuthorizeRequest:request response:response];
     return response;
 }
@@ -215,7 +215,7 @@
                     @"code_challenge_method": @"S256",
                     @"scope": scope
                 } mutableCopy];
-                HttpResponse *response =
+                ATProtoHttpResponse *response =
                     [self authorizeViaPARWithParameters:queryParams
                                                 clientID:clientID];
                 
@@ -250,7 +250,7 @@
         @"scope": @"atproto"
         // Note: Missing code_challenge
     } mutableCopy];
-    HttpResponse *response =
+    ATProtoHttpResponse *response =
         [self authorizeViaPARWithParameters:queryParams
                                     clientID:@"test-public-client"];
     
@@ -311,7 +311,7 @@
         @"scope": @"atproto"
         // Note: Missing state parameter
     } mutableCopy];
-    HttpResponse *response =
+    ATProtoHttpResponse *response =
         [self authorizeViaPARWithParameters:queryParams
                                     clientID:@"test-public-client"];
     
@@ -369,7 +369,7 @@
             @"code_challenge_method": @"S256",
             @"scope": @"atproto"
         } mutableCopy];
-        HttpResponse *response =
+        ATProtoHttpResponse *response =
             [self authorizeViaPARWithParameters:queryParams
                                         clientID:@"test-public-client"];
         
@@ -387,7 +387,7 @@
         @"code_challenge_method": @"S256",
         @"scope": @"atproto"
     } mutableCopy];
-    HttpResponse *response =
+    ATProtoHttpResponse *response =
         [self authorizeViaPARWithParameters:queryParams
                                     clientID:@"test-public-client"];
     
@@ -422,7 +422,7 @@
         @"code_challenge_method": @"S256",
         @"scope": @"atproto"
     } mutableCopy];
-    HttpResponse *response =
+    ATProtoHttpResponse *response =
         [self authorizeViaPARWithParameters:queryParams
                                     clientID:@"test-confidential-client"];
     
@@ -494,7 +494,7 @@
             @"code_challenge_method": @"S256",
             @"scope": @"atproto"
         } mutableCopy];
-        HttpResponse *response =
+        ATProtoHttpResponse *response =
             [self authorizeViaPARWithParameters:queryParams
                                         clientID:clientInfo[@"client_id"]];
         

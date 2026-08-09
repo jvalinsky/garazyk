@@ -12,11 +12,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
-typedef void (^ATProtoHttpSetCorsHeadersBlock)(HttpResponse *response,
-                                           HttpRequest *request);
+typedef void (^ATProtoHttpSetCorsHeadersBlock)(ATProtoHttpResponse *response,
+                                           ATProtoHttpRequest *request);
 
 NS_ASSUME_NONNULL_END
 

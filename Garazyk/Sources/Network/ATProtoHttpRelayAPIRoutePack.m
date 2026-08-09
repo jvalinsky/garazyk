@@ -17,8 +17,8 @@
 #import "Network/HttpServer.h"
 #import "Sync/Relay/RelayAPIHandler.h"
 
-static BOOL RelayAPIAuthorizeMutation(HttpRequest *request,
-                                      HttpResponse *response) {
+static BOOL RelayAPIAuthorizeMutation(ATProtoHttpRequest *request,
+                                      ATProtoHttpResponse *response) {
   NSError *authError = nil;
   if ([[PDSAdminAuth sharedAuth] authenticateHeaders:request.headers
                                                error:&authError]) {
@@ -44,59 +44,59 @@ static BOOL RelayAPIAuthorizeMutation(HttpRequest *request,
 
   [server addRoute:@"GET"
               path:@"/api/relay/metrics"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"GET"
               path:@"/api/relay/capabilities"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"GET"
               path:@"/api/relay/upstreams"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"POST"
               path:@"/api/relay/upstreams"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
               if (!RelayAPIAuthorizeMutation(request, response)) return;
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"POST"
               path:@"/api/relay/upstreams/reconnect-all"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
               if (!RelayAPIAuthorizeMutation(request, response)) return;
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"POST"
               path:@"/api/relay/upstreams/disconnect-all"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
               if (!RelayAPIAuthorizeMutation(request, response)) return;
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"GET"
               path:@"/api/relay/health"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"POST"
               path:@"/api/relay/requestCrawl"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
               if (!RelayAPIAuthorizeMutation(request, response)) return;
               [relayAPIHandler handleRequest:request response:response];
             }];
 
   [server addRoute:@"*"
               path:@"/api/relay/upstreams/*"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
               if (request.method != HttpMethodGET &&
                   !RelayAPIAuthorizeMutation(request, response)) return;
               [relayAPIHandler handleRequest:request response:response];

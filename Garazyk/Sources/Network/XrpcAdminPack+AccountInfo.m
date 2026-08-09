@@ -41,7 +41,7 @@
 
     // Register com.atproto.admin.getAccountUsage
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountUsage
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -132,7 +132,7 @@
     }];
 
     // Register com.atproto.admin.getAccountInfo
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountInfo handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountInfo handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -174,7 +174,7 @@
     }];
 
     // Register com.atproto.admin.getAccountInfos
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountInfos handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountInfos handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -216,7 +216,7 @@
     }];
 
     // Register com.atproto.admin.getInviteCodes
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getInviteCodes handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getInviteCodes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -272,7 +272,7 @@
     }];
 
     // Register com.atproto.admin.disableAccountInvites
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_disableAccountInvites handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_disableAccountInvites handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -319,7 +319,7 @@
     }];
 
     // Register com.atproto.admin.enableAccountInvites
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_enableAccountInvites handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_enableAccountInvites handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases

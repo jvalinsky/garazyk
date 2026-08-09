@@ -17,7 +17,7 @@ static NSString * const kWebSocketGUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 @implementation WebSocketUpgradeHandler
 
-- (BOOL)handleUpgradeRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (BOOL)handleUpgradeRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *upgrade = [[request headerForKey:@"Upgrade"] lowercaseString];
     NSString *connection = [[request headerForKey:@"Connection"] lowercaseString];
     NSString *wsVersion = [request headerForKey:@"Sec-WebSocket-Version"];
@@ -104,7 +104,7 @@ static NSString * const kWebSocketGUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     return [data base64EncodedStringWithOptions:0];
 }
 
-- (BOOL)isWebSocketUpgradeRequest:(HttpRequest *)request {
+- (BOOL)isWebSocketUpgradeRequest:(ATProtoHttpRequest *)request {
     NSString *upgrade = [[request headerForKey:@"Upgrade"] lowercaseString];
     NSString *connection = [[request headerForKey:@"Connection"] lowercaseString];
 

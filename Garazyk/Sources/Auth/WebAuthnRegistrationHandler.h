@@ -17,8 +17,8 @@
 
 @class PDSDatabase;
 @class HttpServer;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class Session;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -43,11 +43,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)registerRoutesWithServer:(HttpServer *)httpServer;
 
 /** Starts credential registration and returns challenge parameters. */
-- (void)handleRegisterBegin:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRegisterBegin:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** Completes credential registration from an attestation response. */
-- (void)handleRegisterComplete:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRegisterComplete:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** Verifies an assertion response for login or second-factor authentication. */
-- (void)handleAssert:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAssert:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end
 

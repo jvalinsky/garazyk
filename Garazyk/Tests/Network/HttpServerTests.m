@@ -59,9 +59,9 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
 @end
 
 @interface HttpServer (Testing)
-- (void)sendResponse:(HttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection;
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
-- (void)dispatchRequest:(HttpRequest *)request
+- (void)sendResponse:(ATProtoHttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection;
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
+- (void)dispatchRequest:(ATProtoHttpRequest *)request
            onConnection:(id<ATProtoNetworkConnection>)connection;
 @end
 
@@ -201,7 +201,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     HttpServer *server = [HttpServer serverWithPort:0];
     PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
 
-    HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse responseWithStatusCode:HttpStatusOK];
     response.contentType = @"application/vnd.ipld.car";
     __block NSUInteger chunkIndex = 0;
     NSArray<NSData *> *chunks = @[
@@ -241,7 +241,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     HttpServer *server = [HttpServer serverWithPort:0];
     PDSFakeConnection *connection = [[PDSFakeConnection alloc] init];
 
-    HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse responseWithStatusCode:HttpStatusOK];
     response.contentType = @"application/vnd.ipld.car";
     __block NSUInteger invocation = 0;
     [response setBodyChunkProducer:^NSData * _Nullable(NSError **error) {
@@ -276,7 +276,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     NSMutableData *largePayload = [NSMutableData dataWithLength:(kGeneratedChunkCap * 2) + 137];
     memset(largePayload.mutableBytes, 'x', largePayload.length);
 
-    HttpResponse *response = [HttpResponse responseWithStatusCode:HttpStatusOK];
+    ATProtoHttpResponse *response = [ATProtoHttpResponse responseWithStatusCode:HttpStatusOK];
     response.contentType = @"application/vnd.ipld.car";
     __block BOOL emitted = NO;
     [response setBodyChunkProducer:^NSData * _Nullable(NSError **error) {
@@ -370,12 +370,12 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     [fileData writeToFile:tempPath atomically:YES];
 
     HttpServer *server = [HttpServer serverWithPort:0];
-    [server addRoute:@"GET" path:@"/test_range" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [server addRoute:@"GET" path:@"/test_range" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         resp.statusCode = 200;
         [resp setBodyFileAtPath:tempPath deleteAfterSend:NO];
     }];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/test_range"
                                                    queryString:@""
@@ -385,7 +385,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
                                                           body:nil
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [server dispatchRequest:request];
+    ATProtoHttpResponse *response = [server dispatchRequest:request];
 
     XCTAssertEqual(response.statusCode, 206);
     XCTAssertTrue(response.isRangeRequest);
@@ -403,12 +403,12 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     [fileData writeToFile:tempPath atomically:YES];
 
     HttpServer *server = [HttpServer serverWithPort:0];
-    [server addRoute:@"GET" path:@"/test_range_suffix" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [server addRoute:@"GET" path:@"/test_range_suffix" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         resp.statusCode = 200;
         [resp setBodyFileAtPath:tempPath deleteAfterSend:NO];
     }];
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/test_range_suffix"
                                                    queryString:@""
@@ -418,7 +418,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
                                                           body:nil
                                                  remoteAddress:@"127.0.0.1"];
 
-    HttpResponse *response = [server dispatchRequest:request];
+    ATProtoHttpResponse *response = [server dispatchRequest:request];
 
     XCTAssertEqual(response.statusCode, 206);
     XCTAssertTrue(response.isRangeRequest);
@@ -476,7 +476,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     XCTestExpectation *finished = [self expectationWithDescription:@"handlers finished"];
     finished.expectedFulfillmentCount = requestCount;
 
-    [server addRoute:@"GET" path:@"/blocking" handler:^(HttpRequest *req, HttpResponse *res) {
+    [server addRoute:@"GET" path:@"/blocking" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         dispatch_sync(counterQueue, ^{
             active++;
             if (active > peak) {
@@ -496,7 +496,7 @@ static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteg
     NSMutableArray<PDSFakeConnection *> *connections =
         [NSMutableArray arrayWithCapacity:requestCount];
     for (NSUInteger i = 0; i < requestCount; i++) {
-        HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+        ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                       methodString:@"GET"
                                                               path:@"/blocking"
                                                        queryString:nil

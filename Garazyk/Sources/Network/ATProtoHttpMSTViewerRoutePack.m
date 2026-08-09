@@ -31,12 +31,12 @@
   [mstViewerHandler setController:controller];
 
   [server addHandlerForPath:@"/mst-viewer"
-                    handler:^(HttpRequest *request, HttpResponse *response) {
+                    handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                       [mstViewerHandler handleRequest:request response:response];
                     }];
 
   [server addHandlerForPath:@"/api/mst"
-                    handler:^(HttpRequest *request, HttpResponse *response) {
+                    handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                       [mstViewerHandler handleRequest:request response:response];
                     }];
 

@@ -16,7 +16,7 @@
   };
   NSString *authHeader =
       [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-  HttpResponse *createResponse =
+  ATProtoHttpResponse *createResponse =
       [self sendJsonRequestWithPath:@"/xrpc/com.atproto.repo.createRecord"
                                body:@{
                                  @"repo" : self.did1,
@@ -27,7 +27,7 @@
   XCTAssertEqual(createResponse.statusCode, 200, @"Record creation failed");
 
   // 2. Call describeRepo (no auth required)
-  HttpResponse *response =
+  ATProtoHttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.describeRepo"
                        queryParams:@{@"repo" : self.did1}
                            headers:@{}];
@@ -55,7 +55,7 @@
 }
 
 - (void)testDescribeRepoNotFoundMatchesStatusCode {
-  HttpResponse *response =
+  ATProtoHttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.describeRepo"
                        queryParams:@{@"repo" : @"did:plc:notfound1234567890"}
                            headers:@{}];
@@ -63,7 +63,7 @@
 }
 
 - (void)testDescribeRepoMissingParamMatchesStatusCode {
-  HttpResponse *response =
+  ATProtoHttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.describeRepo"
                        queryParams:@{}
                            headers:@{}];

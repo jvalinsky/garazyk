@@ -16,7 +16,7 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
 @interface FederationClient ()
-@property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
+@property (nonatomic, strong) ATProtoHttpRetryPolicy *retryPolicy;
 @end
 
 @implementation FederationClient
@@ -39,7 +39,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _retryPolicy = [[HttpRetryPolicy alloc] init];
+        _retryPolicy = [[ATProtoHttpRetryPolicy alloc] init];
         if (PDSFederationRunningTests()) {
             _retryPolicy.initialDelay = 0.01;
         }
@@ -65,7 +65,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
                                                    options:safeOptions
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         NSInteger statusCode = response ? response.statusCode : 0;
-        HttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
+        ATProtoHttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
                                                                 networkError:error
                                                                attemptNumber:attempt];
 

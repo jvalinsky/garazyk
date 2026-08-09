@@ -16,7 +16,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-static NSString *PDSAdminPathParameter(HttpRequest *request, NSString *key) {
+static NSString *PDSAdminPathParameter(ATProtoHttpRequest *request, NSString *key) {
     NSString *value = request.pathParameters[key];
     if (![value isKindOfClass:[NSString class]]) {
         return @"";
@@ -25,7 +25,7 @@ static NSString *PDSAdminPathParameter(HttpRequest *request, NSString *key) {
     return decoded.length > 0 ? decoded : value;
 }
 
-static BOOL PDSAdminAuthorize(HttpRequest *request, HttpResponse *response) {
+static BOOL PDSAdminAuthorize(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSError *authError = nil;
     if ([[PDSAdminAuth sharedAuth] authenticateHeaders:request.headers error:&authError]) {
         return YES;
@@ -44,7 +44,7 @@ static BOOL PDSAdminAuthorize(HttpRequest *request, HttpResponse *response) {
 }
 
 static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
-                                     HttpResponse *response) {
+                                     ATProtoHttpResponse *response) {
     if (serviceDatabases) {
         return YES;
     }
@@ -64,7 +64,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
 
     [server addRoute:@"GET"
                 path:@"/admin/api/accounts/:did/sessions"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (!PDSAdminAuthorize(request, response)) return;
         PDSServiceDatabases *databases = capturedServiceDatabases;
         if (!PDSAdminRequireDatabases(databases, response)) return;
@@ -90,7 +90,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
 
     [server addRoute:@"POST"
                 path:@"/admin/api/accounts/:did/sessions/revoke"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (!PDSAdminAuthorize(request, response)) return;
         PDSServiceDatabases *databases = capturedServiceDatabases;
         if (!PDSAdminRequireDatabases(databases, response)) return;
@@ -122,7 +122,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
 
     [server addRoute:@"GET"
                 path:@"/admin/api/accounts/:did/app-passwords"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (!PDSAdminAuthorize(request, response)) return;
         PDSServiceDatabases *databases = capturedServiceDatabases;
         if (!PDSAdminRequireDatabases(databases, response)) return;
@@ -155,7 +155,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
 
     [server addRoute:@"POST"
                 path:@"/admin/api/accounts/:did/app-passwords"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (!PDSAdminAuthorize(request, response)) return;
         PDSServiceDatabases *databases = capturedServiceDatabases;
         if (!PDSAdminRequireDatabases(databases, response)) return;
@@ -188,7 +188,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
 
     [server addRoute:@"POST"
                 path:@"/admin/api/accounts/:did/app-passwords/revoke"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (!PDSAdminAuthorize(request, response)) return;
         PDSServiceDatabases *databases = capturedServiceDatabases;
         if (!PDSAdminRequireDatabases(databases, response)) return;
@@ -220,7 +220,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
 
     [server addRoute:@"GET"
                 path:@"/admin/api/video/jobs"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (!PDSAdminAuthorize(request, response)) return;
         PDSServiceDatabases *databases = capturedServiceDatabases;
         if (!PDSAdminRequireDatabases(databases, response)) return;
@@ -264,7 +264,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
 
     [server addRoute:@"POST"
                 path:@"/admin/api/video/jobs/:jobId/retry"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (!PDSAdminAuthorize(request, response)) return;
         PDSServiceDatabases *databases = capturedServiceDatabases;
         if (!PDSAdminRequireDatabases(databases, response)) return;

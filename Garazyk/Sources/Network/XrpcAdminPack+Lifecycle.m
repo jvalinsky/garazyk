@@ -40,7 +40,7 @@
     #pragma mark - com.atproto.admin.* Account Lifecycle, Records & Takedown
 
     // Register com.atproto.admin.updateSubjectStatus
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateSubjectStatus handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateSubjectStatus handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -100,7 +100,7 @@
     // adds new required fields, this handler must be updated to provide them. Custom
     // extensions (e.g., additional output fields) should use the tools.garazyk.* namespace
     // rather than extending this endpoint.
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getRecord handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -144,7 +144,7 @@
     }];
 
     // Register com.atproto.admin.getSubjectStatus
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getSubjectStatus handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getSubjectStatus handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -184,7 +184,7 @@
 
     // Register com.atproto.admin.getAccountTakedown
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountTakedown handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountTakedown handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = HttpStatusGone;
         [response setJsonBody:@{
             @"error": @"MethodNotSupported",
@@ -193,7 +193,7 @@
     }];
 
     // Register com.atproto.admin.deleteAccount
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_deleteAccount handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_deleteAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -240,7 +240,7 @@
     }];
 
     // Register com.atproto.admin.disableInviteCodes
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_disableInviteCodes handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_disableInviteCodes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -287,7 +287,7 @@
     }];
 
     // Register com.atproto.admin.updateAccountSigningKey
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountSigningKey handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountSigningKey handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases

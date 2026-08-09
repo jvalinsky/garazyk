@@ -112,13 +112,13 @@
     self.server = [HttpServer serverWithPort:0];
     
     // Add a simple handler
-    [self.server addRoute:@"GET" path:@"/test" handler:^(HttpRequest *req, HttpResponse *res) {
+    [self.server addRoute:@"GET" path:@"/test" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         [res setBodyString:@"OK"];
         res.statusCode = 200;
     }];
     
     // Add a chunked echo handler
-    [self.server addRoute:@"POST" path:@"/echo" handler:^(HttpRequest *req, HttpResponse *res) {
+    [self.server addRoute:@"POST" path:@"/echo" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         res.bodyData = req.body;
         res.statusCode = 200;
     }];

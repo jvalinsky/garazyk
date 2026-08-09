@@ -43,11 +43,11 @@
     _controller = controller;
 }
 
-- (BOOL)canHandleRequest:(HttpRequest *)request {
+- (BOOL)canHandleRequest:(ATProtoHttpRequest *)request {
     return [request.path hasPrefix:@"/mst-viewer"] || [request.path hasPrefix:@"/api/mst"];
 }
 
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     // Require admin auth for all ATProtoMST viewer requests, including static assets.
     if (![[PDSAdminAuth sharedAuth] authenticateHeaders:request.headers
                                                   error:nil]) {
@@ -83,7 +83,7 @@
 
 #pragma mark - Static File Serving
 
-- (void)serveIndex:(HttpResponse *)response {
+- (void)serveIndex:(ATProtoHttpResponse *)response {
     NSString *html = [self loadAsset:@"index.html"];
     if (html) {
         response.statusCode = HttpStatusOK;
@@ -96,7 +96,7 @@
     }
 }
 
-- (void)serveCss:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)serveCss:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *prefix = @"/mst-viewer/css/";
     NSString *relativePath = [request.path hasPrefix:prefix]
         ? [request.path substringFromIndex:prefix.length]
@@ -112,7 +112,7 @@
     }
 }
 
-- (void)serveJs:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)serveJs:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *prefix = @"/mst-viewer/js/";
     NSString *relativePath = [request.path hasPrefix:prefix]
         ? [request.path substringFromIndex:prefix.length]
@@ -176,7 +176,7 @@
 
 #pragma mark - API Request Handling
 
-- (void)handleApiRequest:(HttpRequest *)request response:(HttpResponse *)response endpoint:(NSString *)endpoint {
+- (void)handleApiRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response endpoint:(NSString *)endpoint {
     GZ_LOG_DEBUG(@"MST API: %@", endpoint);
 
     if ([endpoint isEqualToString:@"accounts"]) {
@@ -204,7 +204,7 @@
 
 #pragma mark - API Endpoint Implementations
 
-- (void)handleAccountsRequest:(HttpResponse *)response {
+- (void)handleAccountsRequest:(ATProtoHttpResponse *)response {
     // Check cache
     NSArray *cached = [self.cache objectForKey:@"accounts"];
     if (cached) {
@@ -256,7 +256,7 @@
     [response setJsonBody:@{@"accounts": accounts}];
 }
 
-- (void)handleTreeRequest:(NSString *)did response:(HttpResponse *)response {
+- (void)handleTreeRequest:(NSString *)did response:(ATProtoHttpResponse *)response {
     // Check cache
     NSString *cacheKey = [NSString stringWithFormat:@"tree:%@", did];
     NSDictionary *cached = [self.cache objectForKey:cacheKey];
@@ -289,7 +289,7 @@
     [response setJsonBody:treeJSON];
 }
 
-- (void)handleStatsRequest:(NSString *)did response:(HttpResponse *)response {
+- (void)handleStatsRequest:(NSString *)did response:(ATProtoHttpResponse *)response {
     // Check cache
     NSString *cacheKey = [NSString stringWithFormat:@"stats:%@", did];
     NSDictionary *cached = [self.cache objectForKey:cacheKey];
@@ -317,7 +317,7 @@
     [response setJsonBody:stats];
 }
 
-- (void)handleExportRequest:(NSString *)did format:(NSString *)format response:(HttpResponse *)response {
+- (void)handleExportRequest:(NSString *)did format:(NSString *)format response:(ATProtoHttpResponse *)response {
     // Load ATProtoMST
     ATProtoMST *mst = [self loadMSTForDid:did];
     if (!mst) {

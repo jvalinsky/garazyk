@@ -138,7 +138,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
   id<XrpcRoutePackServices> resolvedServices = services;
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putNotificationPreferences
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -212,7 +212,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
   id<XrpcRoutePackServices> resolvedServices = services;
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_getPreferences
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -251,7 +251,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putPreferences
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -311,7 +311,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_listNotifications
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -342,7 +342,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_getUnreadCount
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -363,7 +363,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_updateSeen
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -380,7 +380,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        [response setJsonBody:@{}];
                      }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_registerPush handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_registerPush handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request response:response services:resolvedServices];
     NSString *actorDID = nil;
@@ -438,7 +438,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
     [response setJsonBody:@{}];
   }];
 
-  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_unregisterPush handler:^(HttpRequest *request, HttpResponse *response) {
+  [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_unregisterPush handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     XrpcHandlerContext *context =
         [[XrpcHandlerContext alloc] initWithRequest:request response:response services:resolvedServices];
     NSString *actorDID = nil;
@@ -493,7 +493,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
   }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_listActivitySubscriptions
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -525,7 +525,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putPreferencesV2
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
@@ -591,7 +591,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putActivitySubscription
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        XrpcHandlerContext *context =
                            [[XrpcHandlerContext alloc] initWithRequest:request
                                                              response:response

@@ -26,7 +26,7 @@
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                methodString:@"GET"
                                                        path:@"/"
                                                 queryString:@""
@@ -35,7 +35,7 @@
                                                     headers:@{@"Authorization": token}
                                                        body:nil
                                               remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     NSString *did = [provider authenticateRequest:req response:res];
 
@@ -55,7 +55,7 @@
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                methodString:@"GET"
                                                        path:@"/"
                                                 queryString:@""
@@ -64,7 +64,7 @@
                                                     headers:@{@"Authorization": token}
                                                        body:nil
                                               remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     NSString *did = [provider authenticateRequest:req response:res];
 
@@ -85,7 +85,7 @@
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                methodString:@"GET"
                                                        path:@"/"
                                                 queryString:@""
@@ -94,7 +94,7 @@
                                                     headers:@{@"Authorization": token}
                                                        body:nil
                                               remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     NSString *did = [provider authenticateRequest:req response:res];
 
@@ -117,7 +117,7 @@
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                methodString:@"GET"
                                                        path:@"/"
                                                 queryString:@""
@@ -126,7 +126,7 @@
                                                     headers:@{@"Authorization": token}
                                                        body:nil
                                               remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     NSString *did = [provider authenticateRequest:req response:res];
 
@@ -148,7 +148,7 @@
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                methodString:@"GET"
                                                        path:@"/"
                                                 queryString:@""
@@ -157,7 +157,7 @@
                                                     headers:@{@"Authorization": token}
                                                        body:nil
                                               remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     NSString *did = [provider authenticateRequest:req response:res];
 
@@ -178,7 +178,7 @@
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                methodString:@"GET"
                                                        path:@"/"
                                                 queryString:@""
@@ -187,7 +187,7 @@
                                                     headers:@{@"Authorization": token}
                                                        body:nil
                                               remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     NSString *did = [provider authenticateRequest:req response:res];
 
@@ -211,7 +211,7 @@
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
-    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                methodString:@"GET"
                                                        path:@"/"
                                                 queryString:@""
@@ -220,7 +220,7 @@
                                                     headers:@{@"Authorization": token}
                                                        body:nil
                                               remoteAddress:nil];
-    HttpResponse *res = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *res = [[ATProtoHttpResponse alloc] init];
 
     // Should not crash — scope guard returns nil, scope check is skipped,
     // token proceeds to signature verification (which fails, returning 401).

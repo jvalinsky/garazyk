@@ -55,7 +55,7 @@
       continue;
     }
     [dispatcher registerMethod:methodId
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          [self proxyOrNotSupported:request
                                           response:response
                                           methodId:methodId
@@ -64,7 +64,7 @@
   }
 }
 
-+ (void)setUnsupportedError:(HttpResponse *)response methodId:(NSString *)methodId {
++ (void)setUnsupportedError:(ATProtoHttpResponse *)response methodId:(NSString *)methodId {
   response.statusCode = 501;
   [response setJsonBody:@{
     @"error" : @"NotSupported",
@@ -73,8 +73,8 @@
   }];
 }
 
-+ (void)proxyOrNotSupported:(HttpRequest *)request
-                   response:(HttpResponse *)response
++ (void)proxyOrNotSupported:(ATProtoHttpRequest *)request
+                   response:(ATProtoHttpResponse *)response
                    methodId:(NSString *)methodId
                  dispatcher:(XrpcDispatcher *)dispatcher {
   if (dispatcher.proxyURL) {
