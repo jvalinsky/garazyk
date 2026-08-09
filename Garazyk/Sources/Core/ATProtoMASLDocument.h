@@ -59,6 +59,14 @@ typedef NS_ENUM(NSInteger, ATProtoMASLErrorCode) {
 - (nullable NSData *)DRISLDataWithError:(NSError **)error;
 
 /**
+ Returns the resource CID for an exact bundle path.
+
+ Query strings and fragments are ignored when resolving a bundle path, as
+ required by MASL. Single-mode documents do not expose a bundle resource map.
+ */
+- (nullable ATProtoCID *)resourceCIDForPath:(NSString *)path error:(NSError **)error;
+
+/**
  Validates the optional CAR compatibility fields.
 
  A MASL document used as CAR header metadata must contain `version` equal to
