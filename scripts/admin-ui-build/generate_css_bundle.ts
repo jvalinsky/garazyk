@@ -1,6 +1,6 @@
 /**
  * Regenerates the `tokens.css` and `reset.css` sections of
- * `Garazyk/Sources/AdminUIServer/Assets/css/system.css` from the standalone
+ * `Garazyk/Sources/AdminUIServer/Assets/library/css/system.css` from the standalone
  * modular files in the same directory, which are the source of truth for
  * those two modules (system.css inlines them for single-file serving; see
  * its header comment).
@@ -17,7 +17,7 @@
  */
 
 const ROOT = new URL("../../", import.meta.url);
-const CSS_DIR = new URL("Garazyk/Sources/AdminUIServer/Assets/css/", ROOT);
+const CSS_DIR = new URL("Garazyk/Sources/AdminUIServer/Assets/library/css/", ROOT);
 export const SYSTEM_CSS_PATH = new URL("system.css", CSS_DIR);
 
 const SPDX_RE = /^(?:\/\/ SPDX-[^\n]*\n)+/;
