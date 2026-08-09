@@ -1,5 +1,5 @@
 // FuzzXrpcDispatcher.m - XRPC dispatch fuzzer harness
-// Target: HttpRequest parsing for XRPC
+// Target: ATProtoHttpRequest parsing for XRPC
 
 #import <Foundation/Foundation.h>
 #import "Network/HttpRequest.h"
@@ -7,7 +7,7 @@
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     @autoreleasepool {
         NSData *input = [NSData dataWithBytes:data length:size];
-        HttpRequest *request = [HttpRequest requestWithData:input remoteAddress:@"127.0.0.1"];
+        ATProtoHttpRequest *request = [ATProtoHttpRequest requestWithData:input remoteAddress:@"127.0.0.1"];
         if (request) {
             // Touch all parsed fields to ensure full parsing coverage
             (void)request.path;

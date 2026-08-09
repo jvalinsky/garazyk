@@ -376,7 +376,7 @@ int main(int argc, const char * argv[]) {
         // Root ASCII service banner
         [server addRoute:@"GET"
                     path:@"/"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      response.statusCode = 200;
                      response.contentType = @"text/plain; charset=utf-8";
                      [response setBodyString:@"________  ___  ___  ___  __       \n|\\_____  \\|\\  \\|\\  \\|\\  \\|\\  \\     \n \\|___/  /\\ \\  \\\\  \\ \\  \\/  /|_   \n     /  / /\\ \\  \\\\  \\ \\   ___  \\  \n    /  /_/__\\ \\  \\\\  \\ \\  \\\\ \\  \\ \n   |\\________\\ \\_______\\ \\__\\\\ \\___\\\n    \\|_______|\\|_______|\\|__| \\|__| \n"];
@@ -384,7 +384,7 @@ int main(int argc, const char * argv[]) {
 
         [server addRoute:@"GET"
                     path:@"/favicon.ico"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      response.statusCode = HttpStatusNoContent;
                      response.contentType = @"image/x-icon";
                      [response setBodyData:[NSData data]];
@@ -393,56 +393,56 @@ int main(int argc, const char * argv[]) {
         // Register relay API endpoints
         [server addRoute:@"GET"
                     path:@"/api/relay/metrics"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/api/relay/upstreams"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/api/relay/health"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
         // POST routes for relay API
         [server addRoute:@"POST"
                     path:@"/api/relay/upstreams"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
         [server addRoute:@"POST"
                     path:@"/api/relay/requestCrawl"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
         [server addRoute:@"POST"
                     path:@"/api/relay/upstreams/reconnect-all"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
         [server addRoute:@"POST"
                     path:@"/api/relay/upstreams/disconnect-all"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
         [server addRoute:@"GET"
                     path:@"/api/relay/capabilities"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
         // Catch-all for upstream sub-paths (connect/disconnect individual URLs)
         [server addHandlerForPath:@"/api/relay/upstreams/"
-                          handler:^(HttpRequest *request, HttpResponse *response) {
+                          handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                               [relayAPIHandler handleRequest:request response:response];
                           }];
 
@@ -450,7 +450,7 @@ int main(int argc, const char * argv[]) {
         // OPTIONS preflight for WebSocket upgrade (CORS)
         [server addRoute:@"OPTIONS"
                     path:@"/xrpc/com.atproto.sync.subscribeRepos"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
+                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
                      [response setHeader:@"GET, OPTIONS" forKey:@"Access-Control-Allow-Methods"];
                      response.statusCode = HttpStatusOK;
@@ -459,7 +459,7 @@ int main(int argc, const char * argv[]) {
         // WebSocket upgrade path for downstream subscribers
         __weak SubscribeReposHandler *weakSubscribeReposHandler = subscribeReposHandler;
         [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
-                           handler:^(HttpRequest *request, HttpResponse *response,
+                           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                      id<ATProtoNetworkConnection> connection) {
             SubscribeReposHandler *strongHandler = weakSubscribeReposHandler;
             if (!strongHandler) {
