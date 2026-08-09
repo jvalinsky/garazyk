@@ -91,6 +91,14 @@ FOUNDATION_EXPORT const NSUInteger ATProtoBDASLChunkSize;
 - (BOOL)finalizeWithError:(NSError **)error;
 
 /**
+ Checks one transport response against a caller-supplied sidecar digest.
+ This does not infer a chunk index, length, or digest from HTTP metadata.
+ */
++ (BOOL)verifyChunkData:(NSData *)data
+         expectedDigest:(NSData *)expectedDigest
+                  error:(NSError **)error;
+
+/**
  Maps an inclusive HTTP byte range to the inclusive chunk indices it touches.
  Missing start/end values mean the beginning/end of the payload. An end beyond
  the payload is clamped, matching HTTP range semantics. This helper expects
