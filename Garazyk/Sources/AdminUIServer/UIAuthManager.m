@@ -60,29 +60,29 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
     return token;
 }
 
-@interface UIAuthSessionEntry : NSObject
+@interface GZAdminUIAuthSessionEntry : NSObject
 @property (nonatomic, copy) NSString *tokenHash;   // SHA-256 of the plaintext token
 @property (nonatomic, assign) NSTimeInterval expiryTime; // timeIntervalSince1970
 @end
 
-@implementation UIAuthSessionEntry
+@implementation GZAdminUIAuthSessionEntry
 @end
 
-@interface UIAuthManager ()
+@interface GZAdminUIAuthManager ()
 
 /// PBKDF2 salt (random, generated at init)
 @property (nonatomic, strong) NSData *passwordSalt;
 /// PBKDF2-derived hash of the password (stored instead of plaintext)
 @property (nonatomic, copy) NSString *passwordHash;
 /// Active sessions: keyed by token hash, value is session entry with expiry
-@property (nonatomic, strong) NSMutableDictionary<NSString *, UIAuthSessionEntry *> *activeSessions;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, GZAdminUIAuthSessionEntry *> *activeSessions;
 /// CSRF nonces: keyed by nonce hash, value is expiry time (wrapped in NSNumber)
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *csrfNonces;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t stateQueue;
 
 @end
 
-@implementation UIAuthManager
+@implementation GZAdminUIAuthManager
 
 - (instancetype)initWithPassword:(NSString *)password {
     return [self initWithPassword:password serviceIdentifier:nil];
@@ -160,7 +160,7 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
     NSString *tokenHash = sha256Hex(token);
     NSTimeInterval expiry = [[NSDate date] timeIntervalSince1970] + self.sessionTTL;
 
-    UIAuthSessionEntry *entry = [[UIAuthSessionEntry alloc] init];
+    GZAdminUIAuthSessionEntry *entry = [[GZAdminUIAuthSessionEntry alloc] init];
     entry.tokenHash = tokenHash;
     entry.expiryTime = expiry;
 
@@ -178,14 +178,14 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
     });
 }
 
-- (BOOL)isAuthorizedRequest:(HttpRequest *)request {
+- (BOOL)isAuthorizedRequest:(ATProtoHttpRequest *)request {
     NSString *token = [self extractTokenFromRequest:request];
     if (token.length == 0) return NO;
 
     NSString *tokenHash = sha256Hex(token);
     __block BOOL authorized = NO;
     dispatch_sync(self.stateQueue, ^{
-        UIAuthSessionEntry *entry = self.activeSessions[tokenHash];
+        GZAdminUIAuthSessionEntry *entry = self.activeSessions[tokenHash];
         if (entry) {
             NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
             if (now < entry.expiryTime) {
@@ -199,7 +199,7 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
     return authorized;
 }
 
-- (NSString *)extractTokenFromRequest:(HttpRequest *)request {
+- (NSString *)extractTokenFromRequest:(ATProtoHttpRequest *)request {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if ([authHeader.lowercaseString hasPrefix:@"bearer "]) {
         NSString *token = [authHeader substringFromIndex:7];
@@ -237,7 +237,7 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
 
 #pragma mark - CSRF Protection
 
-- (BOOL)validateCSRFForRequest:(HttpRequest *)request {
+- (BOOL)validateCSRFForRequest:(ATProtoHttpRequest *)request {
     // Only check CSRF for state-changing methods (POST, PUT, DELETE)
     NSString *method = request.methodString;
     if ([method isEqualToString:@"GET"] || [method isEqualToString:@"HEAD"] || [method isEqualToString:@"OPTIONS"]) {

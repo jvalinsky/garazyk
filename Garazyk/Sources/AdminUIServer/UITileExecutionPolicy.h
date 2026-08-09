@@ -19,9 +19,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /** Returns the normative Content-Security-Policy for a Web Tile execution context. */
-FOUNDATION_EXPORT NSString *UITileExecutionContentSecurityPolicy(void);
+FOUNDATION_EXPORT NSString *GZAdminUITileExecutionContentSecurityPolicy(void);
 
 /** Returns the complete non-CSP security header set required for a Web Tile. */
-FOUNDATION_EXPORT NSDictionary<NSString *, NSString *> *UITileExecutionSecurityHeaders(void);
+FOUNDATION_EXPORT NSDictionary<NSString *, NSString *> *GZAdminUITileExecutionSecurityHeaders(void);
 
 NS_ASSUME_NONNULL_END

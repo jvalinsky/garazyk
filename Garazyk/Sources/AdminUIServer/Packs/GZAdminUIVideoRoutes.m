@@ -15,7 +15,7 @@
     __weak typeof(self) weakSelf = self;
 
     // Video: Health
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchVideoHealth];
         response.statusCode = 200;
@@ -24,7 +24,7 @@
     }];
 
     // Video: Job list
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-jobs" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-jobs" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *state = [request queryParamForKey:@"state"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
@@ -36,7 +36,7 @@
     }];
 
     // Video: Job detail
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-job-detail" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-job-detail" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *jobId = [request queryParamForKey:@"jobId"];
         NSDictionary *result = [weakSelf.backendClient fetchVideoJobById:jobId];
@@ -46,7 +46,7 @@
     }];
 
     // Video: Upload quotas
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-quotas" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-quotas" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchVideoUploadLimits];
         response.statusCode = 200;
@@ -55,7 +55,7 @@
     }];
 
     // Video: Retry job
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/video-retry-job" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/video-retry-job" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *jobId = [request.jsonBody[@"jobId"] isKindOfClass:[NSString class]] ? request.jsonBody[@"jobId"] : @"";
         // Retry via PDS admin: incrementVideoJobRetry
@@ -64,7 +64,7 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Job queued for retry.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 }
 

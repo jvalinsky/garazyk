@@ -27,9 +27,9 @@
     if (!result[@"error"] && !result[@"message"]) {
         NSMutableDictionary *ctx = [result mutableCopy];
         if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-        return [UITemplateEngine renderTemplate:@"ozone-statuses" context:ctx];
+        return [GZAdminUITemplateEngine renderTemplate:@"ozone-statuses" context:ctx];
     }
-    return [UITemplateEngine renderTemplate:@"ozone-statuses" context:result];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-statuses" context:result];
 }
 
 + (NSString *)renderOzoneEventsPartial:(NSDictionary *)result {
@@ -45,25 +45,25 @@
         ctx[@"events"] = mappedEvents;
     }
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"ozone-events" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-events" context:ctx];
 }
 
 + (NSString *)renderOzoneSubjectPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"ozone-subject" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-subject" context:ctx];
 }
 
 + (NSString *)renderOzoneTeamPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"ozone-team" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-team" context:ctx];
 }
 
 + (NSString *)renderOzoneSetsPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"ozone-sets" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-sets" context:ctx];
 }
 
 + (NSString *)renderOzoneTemplatesPartial:(NSDictionary *)result {
@@ -80,7 +80,7 @@
         }
         ctx[@"templates"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"ozone-templates" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-templates" context:ctx];
 }
 
 + (NSString *)renderOzoneConfigPartial:(NSDictionary *)result {
@@ -95,7 +95,7 @@
         [pairs addObject:@{@"key": key, @"value": [value description]}];
     }];
     ctx[@"configPairs"] = pairs;
-    return [UITemplateEngine renderTemplate:@"ozone-config" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-config" context:ctx];
 }
 
 + (NSString *)renderOzoneModerationReportsPartial:(NSDictionary *)result {
@@ -110,7 +110,7 @@
         }
         ctx[@"reports"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"ozone-reports" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-reports" context:ctx];
 }
 
 + (NSString *)renderOzoneScheduledPartial:(NSDictionary *)result {
@@ -125,13 +125,13 @@
         }
         ctx[@"actions"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"ozone-scheduled" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-scheduled" context:ctx];
 }
 
 + (NSString *)renderOzoneVerificationPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"ozone-verification" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-verification" context:ctx];
 }
 
 + (NSString *)renderOzoneSafelinksPartial:(NSDictionary *)result {
@@ -148,17 +148,17 @@
         }
         ctx[@"rules"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"ozone-safelinks" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-safelinks" context:ctx];
 }
 
 + (NSString *)renderOzoneSettingsPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"ozone-settings" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-settings" context:ctx];
 }
 
 + (NSString *)renderOzoneSignaturesPartial:(NSDictionary *)result {
-    return [UITemplateEngine renderTemplate:@"ozone-signatures" context:result ?: @{}];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-signatures" context:result ?: @{}];
 }
 
 + (NSString *)renderOzoneSignatureResultsPartial:(NSDictionary *)result {
@@ -171,14 +171,14 @@
         }
         ctx[@"related"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"ozone-signature-results" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-signature-results" context:ctx];
 }
 
 + (NSString *)renderOzoneHostingPartial:(NSDictionary *)result did:(nullable NSString *)did {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (did) ctx[@"did"] = did;
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"ozone-hosting" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"ozone-hosting" context:ctx];
 }
 
 @end

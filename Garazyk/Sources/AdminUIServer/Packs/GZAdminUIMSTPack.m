@@ -26,7 +26,7 @@
 + (NSString *)renderMSTAccountsPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"mst-accounts" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"mst-accounts" context:ctx];
 }
 
 + (NSString *)renderMSTTreePartial:(NSDictionary *)result {
@@ -49,7 +49,7 @@
         }
         ctx[@"nodes"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"mst-tree" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"mst-tree" context:ctx];
 }
 
 + (NSString *)renderMSTStatsPartial:(NSDictionary *)result {
@@ -60,7 +60,7 @@
         [pairs addObject:@{@"key": key, @"value": [value description]}];
     }];
     ctx[@"statsPairs"] = pairs;
-    return [UITemplateEngine renderTemplate:@"mst-stats" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"mst-stats" context:ctx];
 }
 
 @end
