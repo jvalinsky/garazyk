@@ -360,6 +360,17 @@ keep that gate green.
   acceptance checks are not green, Phase 30 remains `in-progress` and is not
   marked complete.
 
+### 2026-08-08 — Wave integration
+
+- M2.5/M2.6 changes are integrated on `main` (`bc427a13` and `8b45c6d9`), and
+  WS08 M4.5 is integrated as `313bc2b3`. A fresh configure and native
+  `AllTests` build passed after the manifest migration.
+- Post-merge bounded UI suites passed 143/143; `AdminUIAssetsSync`, module,
+  namespace, safety, metadata, and documentation gates passed.
+- The full gated suite remains incomplete; stale `/explore` static/page-load
+  checks and the missing pinned Playwright dependency remain named acceptance
+  blockers. Phase 30 remains `in-progress`; M3 was not started.
+
 ## On completion
 
 When the named blockers are resolved, record the commit hashes and measured
