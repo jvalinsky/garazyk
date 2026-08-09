@@ -13,7 +13,7 @@
 
 #pragma mark - Standard Error Responses
 
-+ (void)setAuthenticationError:(HttpResponse *)response
++ (void)setAuthenticationError:(ATProtoHttpResponse *)response
                        message:(NSString *)message {
     [self setError:response
         statusCode:HttpStatusUnauthorized
@@ -21,7 +21,7 @@
            message:message ?: @"Authentication required"];
 }
 
-+ (void)setAuthorizationError:(HttpResponse *)response
++ (void)setAuthorizationError:(ATProtoHttpResponse *)response
                       message:(NSString *)message {
     [self setError:response
         statusCode:HttpStatusForbidden
@@ -29,7 +29,7 @@
            message:message ?: @"Forbidden"];
 }
 
-+ (void)setValidationError:(HttpResponse *)response
++ (void)setValidationError:(ATProtoHttpResponse *)response
                    message:(NSString *)message {
     [self setError:response
         statusCode:HttpStatusBadRequest
@@ -37,7 +37,7 @@
            message:message ?: @"Invalid request"];
 }
 
-+ (void)setNotFoundError:(HttpResponse *)response
++ (void)setNotFoundError:(ATProtoHttpResponse *)response
                  message:(NSString *)message {
     [self setError:response
         statusCode:HttpStatusNotFound
@@ -45,7 +45,7 @@
            message:message ?: @"Not found"];
 }
 
-+ (void)setInternalServerError:(HttpResponse *)response
++ (void)setInternalServerError:(ATProtoHttpResponse *)response
                        message:(NSString *)message {
     [self setError:response
         statusCode:HttpStatusInternalServerError
@@ -53,7 +53,7 @@
            message:message ?: @"Internal server error"];
 }
 
-+ (void)setMethodNotAllowedError:(HttpResponse *)response
++ (void)setMethodNotAllowedError:(ATProtoHttpResponse *)response
                    allowedMethod:(NSString *)allowedMethod
                          message:(NSString *)message {
     response.statusCode = HttpStatusMethodNotAllowed;
@@ -68,7 +68,7 @@
 
 #pragma mark - Custom Error Response
 
-+ (void)setError:(HttpResponse *)response
++ (void)setError:(ATProtoHttpResponse *)response
       statusCode:(HttpStatusCode)statusCode
        errorCode:(NSString *)errorCode
          message:(NSString *)message {
@@ -81,7 +81,7 @@
 
 #pragma mark - Convenience Methods
 
-+ (void)setInvalidRequestError:(HttpResponse *)response
++ (void)setInvalidRequestError:(ATProtoHttpResponse *)response
                        message:(NSString *)message {
     [self setError:response
         statusCode:HttpStatusBadRequest
@@ -89,7 +89,7 @@
            message:message];
 }
 
-+ (void)setAccountNotFoundError:(HttpResponse *)response
++ (void)setAccountNotFoundError:(ATProtoHttpResponse *)response
                      identifier:(NSString *)identifier {
     [self setError:response
         statusCode:HttpStatusNotFound
@@ -97,7 +97,7 @@
            message:[NSString stringWithFormat:@"Account not found: %@", identifier]];
 }
 
-+ (void)setLexiconNotFoundError:(HttpResponse *)response
++ (void)setLexiconNotFoundError:(ATProtoHttpResponse *)response
                            nsid:(NSString *)nsid {
     [self setError:response
         statusCode:HttpStatusNotFound

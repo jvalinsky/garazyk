@@ -27,7 +27,7 @@
 #pragma mark - getFeedSkeleton
 
 - (void)testGetFeedSkeletonMissingFeedParam {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
                                                headers:@{}];
     XCTAssertEqual(response.statusCode, 400,
         @"Missing feed param should return 400, got %ld: %@",
@@ -38,7 +38,7 @@
 }
 
 - (void)testGetFeedSkeletonInvalidCollection {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
                                          queryParams:@{
                                              @"feed": @"at://did:plc:example/app.bsky.feed.post/somepost"
                                          }
@@ -51,7 +51,7 @@
 }
 
 - (void)testGetFeedSkeletonEmptySkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
                                          queryParams:@{
                                              @"feed": @"at://did:plc:nonexistent/app.bsky.feed.generator/unknownrkey",
                                              @"limit": @"10"
@@ -73,7 +73,7 @@
     [self insertTestPostRecord:self.did1 rkey:@"post002" cid:@"bafyreifake2"];
 
     NSString *feedURI = [NSString stringWithFormat:@"at://%@/app.bsky.feed.generator/myfeed", self.did1];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
                                          queryParams:@{
                                              @"feed": feedURI,
                                              @"limit": @"10"

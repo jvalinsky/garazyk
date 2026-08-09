@@ -5,8 +5,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSController;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 /*!
  @header MSTViewerHandler.h
@@ -63,7 +63,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The HTTP request.
  @return YES if this handler should process the request, NO otherwise.
  */
-- (BOOL)canHandleRequest:(HttpRequest *)request;
+- (BOOL)canHandleRequest:(ATProtoHttpRequest *)request;
 
 /*!
  @method handleRequest:response:
@@ -80,7 +80,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the handleRequest operation.
  */
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end
 

@@ -133,7 +133,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     self.verifier.replayChecker = [PDSReplayCache sharedCache];
 }
 
-- (HttpRequest *)requestWithAuthorization:(NSString *)authorization dpop:(NSString *)dpop {
+- (ATProtoHttpRequest *)requestWithAuthorization:(NSString *)authorization dpop:(NSString *)dpop {
     NSMutableDictionary *headers = [@{
         @"Authorization": authorization,
         @"Host": @"pds.example.com"
@@ -141,7 +141,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     if (dpop) {
         headers[@"DPoP"] = dpop;
     }
-    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                         path:@"/xrpc/com.atproto.server.getSession"
                                  queryString:@""
@@ -152,27 +152,27 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
                                remoteAddress:@"127.0.0.1"];
 }
 
-- (NSString *)legacyDIDForAuthorization:(NSString *)authorization request:(HttpRequest *)request {
+- (NSString *)legacyDIDForAuthorization:(NSString *)authorization request:(ATProtoHttpRequest *)request {
     return [XrpcAuthHelper extractDIDFromAuthHeader:authorization
                                           jwtMinter:self.minter
                                     adminController:(id)self.adminController
                                   sessionRepository:(id)self.sessionRepository
                                             request:request
-                                           response:[[HttpResponse alloc] init]];
+                                           response:[[ATProtoHttpResponse alloc] init]];
 }
 
-- (ATProtoAuthVerifierPrincipal *)newPrincipalForAuthorization:(NSString *)authorization request:(HttpRequest *)request {
+- (ATProtoAuthVerifierPrincipal *)newPrincipalForAuthorization:(NSString *)authorization request:(ATProtoHttpRequest *)request {
     NSError *error = nil;
     return [self.verifier verifyAuthHeader:authorization
                                 dpopHeader:[request headerForKey:@"DPoP"]
                                    request:request
-                                  response:[[HttpResponse alloc] init]
+                                  response:[[ATProtoHttpResponse alloc] init]
                                      error:&error];
 }
 
 - (void)assertParityForToken:(NSString *)token expectedDID:(nullable NSString *)expectedDID {
     NSString *authorization = [@"Bearer " stringByAppendingString:token];
-    HttpRequest *request = [self requestWithAuthorization:authorization dpop:nil];
+    ATProtoHttpRequest *request = [self requestWithAuthorization:authorization dpop:nil];
     NSString *legacyDID = [self legacyDIDForAuthorization:authorization request:request];
     ATProtoAuthVerifierPrincipal *principal = [self newPrincipalForAuthorization:authorization request:request];
     XCTAssertEqualObjects(legacyDID, expectedDID);
@@ -319,7 +319,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
                                             key:key
                                           error:&error];
     XCTAssertNotNil(legacyProof, @"DPoP proof creation failed: %@", error);
-    HttpRequest *legacyRequest = [self requestWithAuthorization:authorization dpop:legacyProof.jwt];
+    ATProtoHttpRequest *legacyRequest = [self requestWithAuthorization:authorization dpop:legacyProof.jwt];
     XCTAssertEqualObjects([self legacyDIDForAuthorization:authorization request:legacyRequest], @"did:plc:alice");
 
     // The new verifier enforces ath (access token hash) per RFC 9449 §4.3.
@@ -368,7 +368,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     NSString *proofWithAth = [NSString stringWithFormat:@"%@.%@.%@", headerEnc, payloadEnc,
                                                           [ATProtoAuthCryptoBase64URL encode:rawSignature]];
 
-    HttpRequest *newRequest = [self requestWithAuthorization:authorization dpop:proofWithAth];
+    ATProtoHttpRequest *newRequest = [self requestWithAuthorization:authorization dpop:proofWithAth];
     XCTAssertEqualObjects([self newPrincipalForAuthorization:authorization request:newRequest].did, @"did:plc:alice");
     CFRelease(key);
 }
@@ -387,7 +387,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
                                   dpopKeyThumbprint:@"wrong-thumbprint"
                                                error:&error];
     NSString *authorization = [@"DPoP " stringByAppendingString:token.encodedToken];
-    HttpRequest *request = [self requestWithAuthorization:authorization dpop:proof.jwt];
+    ATProtoHttpRequest *request = [self requestWithAuthorization:authorization dpop:proof.jwt];
     XCTAssertNil([self legacyDIDForAuthorization:authorization request:request]);
     XCTAssertNil([self newPrincipalForAuthorization:authorization request:request]);
     CFRelease(key);

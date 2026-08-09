@@ -37,8 +37,8 @@
   }
 
   __weak SubscribeReposHandler *weakSubscribeReposHandler = subscribeReposHandler;
-  RequestHandler xrpcDispatchHandler = ^(HttpRequest *request,
-                                         HttpResponse *response) {
+  RequestHandler xrpcDispatchHandler = ^(ATProtoHttpRequest *request,
+                                         ATProtoHttpResponse *response) {
     if ([request.methodString isEqualToString:@"OPTIONS"]) {
       setCorsHeaders(response, request);
       response.statusCode = HttpStatusOK;
@@ -54,7 +54,7 @@
   // OPTIONS preflight for XRPC prefix
   [server addRoute:@"OPTIONS"
               path:@"/xrpc"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              setCorsHeaders(response, request);
              response.statusCode = HttpStatusOK;
            }];
@@ -72,7 +72,7 @@
   // OPTIONS preflight for XRPC methods
   [server addRoute:@"OPTIONS"
               path:@"/xrpc/:method"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              setCorsHeaders(response, request);
              response.statusCode = HttpStatusOK;
            }];
@@ -80,14 +80,14 @@
   // Handler for /xrpc/:method
   [server addRoute:@"*"
               path:@"/xrpc/:method"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              [resolvedDispatcher handleRequest:request response:response];
            }];
 
   for (NSString *method in @[ @"GET", @"HEAD" ]) {
     [server addRoute:method
                 path:@"/xrpc/:method"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                [resolvedDispatcher handleRequest:request response:response];
              }];
   }
@@ -97,13 +97,13 @@
     // OPTIONS preflight for WebSocket upgrade
     [server addRoute:@"OPTIONS"
                 path:@"/xrpc/com.atproto.sync.subscribeRepos"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                setCorsHeaders(response, request);
                response.statusCode = HttpStatusOK;
              }];
 
     [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
-                      handler:^(HttpRequest *request, HttpResponse *response,
+                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                 id<ATProtoNetworkConnection> connection) {
                         SubscribeReposHandler *strongSubscribeReposHandler =
                             weakSubscribeReposHandler;

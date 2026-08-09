@@ -37,7 +37,7 @@
     self.server = [HttpServer serverWithPort:self.port];
     __weak typeof(self) weakSelf = self;
 
-    [self.server addHandlerForPath:@"/*" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.server addHandlerForPath:@"/*" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         NSDictionary *mockResponse = strongSelf.mockResponses[request.path];
         if (mockResponse) {
@@ -185,7 +185,7 @@
 }
 
 - (void)setupMockHandlers {
-    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveDid handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveDid handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
 
         if (!did) {
@@ -230,7 +230,7 @@
         }
     }];
 
-    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveIdentity handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveIdentity handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *identifier = [request queryParamForKey:@"identifier"];
 
         if (!identifier) {
@@ -280,7 +280,7 @@
         }
     }];
 
-    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveHandle handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveHandle handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *handle = [request queryParamForKey:@"handle"];
 
         if (!handle) {
@@ -298,7 +298,7 @@
         }
     }];
 
-    [self.testServer setValue:^(HttpRequest *request, HttpResponse *response) {
+    [self.testServer setValue:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if ([request.path hasPrefix:@"/xrpc/"]) {
             [self.dispatcher handleRequest:request response:response];
         } else if ([request.path isEqualToString:@"/health"]) {

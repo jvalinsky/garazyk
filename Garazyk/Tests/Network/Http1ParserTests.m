@@ -27,7 +27,7 @@
     BOOL complete = [self.parser feedData:reqData];
     XCTAssertTrue(complete);
     
-    HttpRequest *req = [self.parser completedRequest];
+    ATProtoHttpRequest *req = [self.parser completedRequest];
     XCTAssertNotNil(req);
     XCTAssertNil([self.parser parseError]);
     
@@ -50,7 +50,7 @@
     XCTAssertTrue(complete2);
     XCTAssertEqual(self.parser.state, Http1ParserStateComplete);
     
-    HttpRequest *req = [self.parser completedRequest];
+    ATProtoHttpRequest *req = [self.parser completedRequest];
     XCTAssertEqualObjects(req.methodString, @"GET");
 }
 
@@ -62,7 +62,7 @@
     BOOL complete = [self.parser feedData:reqData];
     XCTAssertTrue(complete);
     
-    HttpRequest *req = [self.parser completedRequest];
+    ATProtoHttpRequest *req = [self.parser completedRequest];
     XCTAssertNotNil(req);
     XCTAssertEqualObjects(req.methodString, @"POST");
     
@@ -83,7 +83,7 @@
     XCTAssertTrue(complete2);
     XCTAssertEqual(self.parser.state, Http1ParserStateComplete);
     
-    HttpRequest *req = [self.parser completedRequest];
+    ATProtoHttpRequest *req = [self.parser completedRequest];
     NSString *parsedBody = [[NSString alloc] initWithData:req.body encoding:NSUTF8StringEncoding];
     XCTAssertEqualObjects(parsedBody, @"Hello World");
 }
@@ -184,7 +184,7 @@
     BOOL complete = [self.parser feedData:[combined dataUsingEncoding:NSUTF8StringEncoding]];
     XCTAssertTrue(complete);
     
-    HttpRequest *req = [self.parser completedRequest];
+    ATProtoHttpRequest *req = [self.parser completedRequest];
     XCTAssertEqualObjects(req.path, @"/1");
     
     NSData *unconsumed = [self.parser unconsumedData];

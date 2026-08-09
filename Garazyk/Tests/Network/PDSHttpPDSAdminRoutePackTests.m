@@ -12,7 +12,7 @@
 #import "Network/ATProtoHttpServerBuilder.h"
 
 @interface HttpServer (PDSHttpPDSAdminRoutePackTesting)
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
 - (nullable RequestHandler)handlerForRoute:(NSString *)path
                                     method:(NSString *)method
                                 parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters;
@@ -85,7 +85,7 @@
     [super tearDown];
 }
 
-- (HttpRequest *)requestWithMethod:(HttpMethod)method
+- (ATProtoHttpRequest *)requestWithMethod:(HttpMethod)method
                        methodString:(NSString *)methodString
                                path:(NSString *)path
                             headers:(NSDictionary<NSString *, NSString *> *)headers
@@ -96,7 +96,7 @@
         body = [NSJSONSerialization dataWithJSONObject:jsonBody options:0 error:nil];
         allHeaders[@"Content-Type"] = @"application/json";
     }
-    return [[HttpRequest alloc] initWithMethod:method
+    return [[ATProtoHttpRequest alloc] initWithMethod:method
                                   methodString:methodString
                                           path:path
                                    queryString:@""
@@ -111,7 +111,7 @@
     return @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", self.adminToken]};
 }
 
-- (NSDictionary *)jsonFromResponse:(HttpResponse *)response {
+- (NSDictionary *)jsonFromResponse:(ATProtoHttpResponse *)response {
     XCTAssertGreaterThan(response.body.length, 0);
     NSError *error = nil;
     id json = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:&error];
@@ -146,12 +146,12 @@
 }
 
 - (void)testSessionsRequireAdminAuthentication {
-    HttpRequest *request = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [self requestWithMethod:HttpMethodGET
                                       methodString:@"GET"
                                               path:@"/admin/api/accounts/did%3Aplc%3Aalice/sessions"
                                            headers:@{}
                                           jsonBody:nil];
-    HttpResponse *response = [self.server dispatchRequest:request];
+    ATProtoHttpResponse *response = [self.server dispatchRequest:request];
 
     XCTAssertEqual(response.statusCode, HttpStatusUnauthorized);
 }
@@ -163,12 +163,12 @@
     XCTAssertTrue([self.databases storeRefreshToken:@"raw-refresh-token-other" forAccountDid:otherDID error:nil]);
 
     NSString *path = [NSString stringWithFormat:@"/admin/api/accounts/%@/sessions", [self encodedDID:targetDID]];
-    HttpRequest *request = [self requestWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [self requestWithMethod:HttpMethodGET
                                       methodString:@"GET"
                                               path:path
                                            headers:[self authorizedHeaders]
                                           jsonBody:nil];
-    HttpResponse *response = [self.server dispatchRequest:request];
+    ATProtoHttpResponse *response = [self.server dispatchRequest:request];
     NSDictionary *json = [self jsonFromResponse:response];
     NSArray *sessions = json[@"sessions"];
 
@@ -187,7 +187,7 @@
     XCTAssertTrue([self.databases storeRefreshToken:@"raw-refresh-token-revoke" forAccountDid:targetDID error:nil]);
 
     NSString *path = [NSString stringWithFormat:@"/admin/api/accounts/%@/sessions", [self encodedDID:targetDID]];
-    HttpResponse *listResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodGET
+    ATProtoHttpResponse *listResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodGET
                                                                          methodString:@"GET"
                                                                                  path:path
                                                                               headers:[self authorizedHeaders]
@@ -196,14 +196,14 @@
     XCTAssertEqual(sessionID.length, 64U);
 
     NSString *revokePath = [NSString stringWithFormat:@"/admin/api/accounts/%@/sessions/revoke", [self encodedDID:targetDID]];
-    HttpResponse *revokeResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodPOST
+    ATProtoHttpResponse *revokeResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodPOST
                                                                            methodString:@"POST"
                                                                                    path:revokePath
                                                                                 headers:[self authorizedHeaders]
                                                                                jsonBody:@{@"id": sessionID}]];
     XCTAssertEqual(revokeResponse.statusCode, HttpStatusOK);
 
-    HttpResponse *afterResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodGET
+    ATProtoHttpResponse *afterResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodGET
                                                                           methodString:@"GET"
                                                                                   path:path
                                                                                headers:[self authorizedHeaders]
@@ -216,7 +216,7 @@
     NSString *targetDID = @"did:plc:passwords";
     NSString *basePath = [NSString stringWithFormat:@"/admin/api/accounts/%@/app-passwords", [self encodedDID:targetDID]];
 
-    HttpResponse *createResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodPOST
+    ATProtoHttpResponse *createResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodPOST
                                                                            methodString:@"POST"
                                                                                    path:basePath
                                                                                 headers:[self authorizedHeaders]
@@ -227,7 +227,7 @@
     XCTAssertEqualObjects(created[@"name"], @"ops");
     XCTAssertTrue([(NSString *)created[@"password"] length] > 0);
 
-    HttpResponse *listResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodGET
+    ATProtoHttpResponse *listResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodGET
                                                                          methodString:@"GET"
                                                                                  path:basePath
                                                                               headers:[self authorizedHeaders]
@@ -239,14 +239,14 @@
     XCTAssertNil(passwords.firstObject[@"password"]);
 
     NSString *revokePath = [basePath stringByAppendingString:@"/revoke"];
-    HttpResponse *revokeResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodPOST
+    ATProtoHttpResponse *revokeResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodPOST
                                                                            methodString:@"POST"
                                                                                    path:revokePath
                                                                                 headers:[self authorizedHeaders]
                                                                                jsonBody:@{@"name": @"ops"}]];
     XCTAssertEqual(revokeResponse.statusCode, HttpStatusOK);
 
-    HttpResponse *afterResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodGET
+    ATProtoHttpResponse *afterResponse = [self.server dispatchRequest:[self requestWithMethod:HttpMethodGET
                                                                           methodString:@"GET"
                                                                                   path:basePath
                                                                                headers:[self authorizedHeaders]

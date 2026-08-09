@@ -34,8 +34,8 @@ typedef NS_ENUM(NSInteger, AdminMiddlewareError) {
     AdminMiddlewareErrorSessionExpired
 };
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class Session;
 
 /*! Block type for custom admin authorization checks. */
@@ -58,12 +58,12 @@ typedef BOOL (^AdminAuthCheckBlock)(Session *session);
 + (instancetype)sharedMiddleware;
 
 /*! Verifies admin access for a request. */
-- (BOOL)verifyAdminAccessForRequest:(HttpRequest *)request
-                           response:(HttpResponse *)response
+- (BOOL)verifyAdminAccessForRequest:(ATProtoHttpRequest *)request
+                           response:(ATProtoHttpResponse *)response
                               error:(NSError **)error;
 
 /*! Extracts session from request authorization header. */
-- (nullable Session *)extractSessionFromRequest:(HttpRequest *)request
+- (nullable Session *)extractSessionFromRequest:(ATProtoHttpRequest *)request
                                          error:(NSError **)error;
 
 /*! Sets the list of admin DIDs. */

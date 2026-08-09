@@ -117,7 +117,7 @@
     // Add health endpoint
     [self.httpServer addRoute:@"GET"
                         path:@"/_health"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = 200;
                          [response setBodyString:@"ok"];
                      }];
@@ -125,7 +125,7 @@
     // Root endpoint - display ASCII art
     [self.httpServer addRoute:@"GET"
                         path:@"/"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = 200;
                          response.contentType = @"text/plain; charset=utf-8";
                          [response setBodyString:@".|'''.|                                            '         '||                .   \n"
@@ -140,7 +140,7 @@
     // DID document endpoint (did:web support)
     [self.httpServer addRoute:@"GET"
                         path:@"/.well-known/did.json"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          ChatConfiguration *c = self.configuration;
                          NSString *did = c.serviceDID;
                          NSString *scheme = [c.serviceDomain containsString:@":"] ? @"http" : @"https";
@@ -162,7 +162,7 @@
 
     // Add XRPC Route
     __weak typeof(self) weakSelf = self;
-    [self.httpServer addRoute:@"*" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"*" path:@"/xrpc/:method" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [weakSelf.dispatcher handleRequest:request response:response];
     }];
     

@@ -16,7 +16,7 @@
 #pragma mark - Labeler Tests
 
 - (void)testLabelerGetServices {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.labeler.getServices"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.labeler.getServices"
                                              queryString:@"dids=did:plc:test123"
                                              queryParams:@{@"dids": @[@"did:plc:test123"]}
                                                  headers:@{}];
@@ -26,7 +26,7 @@
 }
 
 - (void)testLabelerGetServicesRequiresDids {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.labeler.getServices"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.labeler.getServices"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -37,7 +37,7 @@
 #pragma mark - Config Tests
 
 - (void)testGetConfig {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getConfig"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getConfig"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -51,7 +51,7 @@
 #pragma mark - Suggestions & Discovery Tests
 
 - (void)testGetTaggedSuggestions {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getTaggedSuggestions"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getTaggedSuggestions"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -61,7 +61,7 @@
 }
 
 - (void)testGetPopularFeedGenerators {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPopularFeedGenerators"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPopularFeedGenerators"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -71,7 +71,7 @@
 }
 
 - (void)testGetSuggestedFeeds {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedFeeds"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedFeeds"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -81,7 +81,7 @@
 }
 
 - (void)testGetSuggestedUsers {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsers"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsers"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -91,7 +91,7 @@
 }
 
 - (void)testGetTrendingTopics {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getTrendingTopics"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getTrendingTopics"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -103,7 +103,7 @@
 #pragma mark - Skeleton Endpoint Tests
 
 - (void)testGetSuggestedFeedsSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedFeedsSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedFeedsSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -112,7 +112,7 @@
 }
 
 - (void)testGetSuggestedUsersSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -121,7 +121,7 @@
 }
 
 - (void)testGetSuggestionsSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestionsSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestionsSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -130,7 +130,7 @@
 }
 
 - (void)testGetTrendsSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getTrendsSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getTrendsSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -142,7 +142,7 @@
 #pragma mark - Starter Pack Tests
 
 - (void)testGetOnboardingSuggestedStarterPacks {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getOnboardingSuggestedStarterPacks"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getOnboardingSuggestedStarterPacks"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -151,7 +151,7 @@
 }
 
 - (void)testGetOnboardingSuggestedStarterPacksSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -160,7 +160,7 @@
 }
 
 - (void)testGetSuggestedStarterPacks {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedStarterPacks"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedStarterPacks"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -169,7 +169,7 @@
 }
 
 - (void)testGetSuggestedStarterPacksSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedStarterPacksSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedStarterPacksSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -180,7 +180,7 @@
 #pragma mark - Search Skeleton Tests
 
 - (void)testSearchActorsSkeletonRequiresQuery {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchActorsSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchActorsSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -189,7 +189,7 @@
 }
 
 - (void)testSearchActorsSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchActorsSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchActorsSkeleton"
                                              queryString:@"q=alice&limit=10"
                                              queryParams:@{@"q": @"alice", @"limit": @"10"}
                                                  headers:@{}];
@@ -199,7 +199,7 @@
 }
 
 - (void)testSearchPostsSkeletonRequiresQuery {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchPostsSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchPostsSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -207,7 +207,7 @@
 }
 
 - (void)testSearchPostsSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchPostsSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchPostsSkeleton"
                                              queryString:@"q=hello&limit=10"
                                              queryParams:@{@"q": @"hello", @"limit": @"10"}
                                                  headers:@{}];
@@ -217,7 +217,7 @@
 }
 
 - (void)testSearchStarterPacksSkeletonRequiresQuery {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchStarterPacksSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchStarterPacksSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -225,7 +225,7 @@
 }
 
 - (void)testSearchStarterPacksSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchStarterPacksSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.searchStarterPacksSkeleton"
                                              queryString:@"q=starter&limit=10"
                                              queryParams:@{@"q": @"starter", @"limit": @"10"}
                                                  headers:@{}];
@@ -237,7 +237,7 @@
 #pragma mark - Thread Tests
 
 - (void)testGetPostThreadV2RequiresUri {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadV2"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadV2"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -246,7 +246,7 @@
 }
 
 - (void)testGetPostThreadV2 {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadV2"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadV2"
                                              queryString:@"anchor=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fabc123"
                                              queryParams:@{@"anchor": @"at://did:plc:test/app.bsky.feed.post/abc123"}
                                                  headers:@{}];
@@ -256,7 +256,7 @@
 }
 
 - (void)testGetPostThreadOtherV2RequiresUri {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadOtherV2"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadOtherV2"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -264,7 +264,7 @@
 }
 
 - (void)testGetPostThreadOtherV2 {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadOtherV2"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadOtherV2"
                                              queryString:@"anchor=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fabc123"
                                              queryParams:@{@"anchor": @"at://did:plc:test/app.bsky.feed.post/abc123"}
                                                  headers:@{}];
@@ -276,7 +276,7 @@
 #pragma mark - Age Assurance Tests
 
 - (void)testInitAgeAssuranceRequiresAssurance {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
                                                       body:@{}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 400);
@@ -284,7 +284,7 @@
 }
 
 - (void)testInitAgeAssuranceWithNoVerification {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
                                                       body:@{@"assurance": @"no_verification"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -293,7 +293,7 @@
 }
 
 - (void)testInitAgeAssuranceWithVerifiedByAdult {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
                                                       body:@{@"assurance": @"verified_by_adult"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -302,7 +302,7 @@
 }
 
 - (void)testInitAgeAssuranceWithVerifiedByMethod {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
                                                       body:@{
                                                           @"assurance": @"verified_by_method",
                                                           @"methods": @[@"id_check"]
@@ -313,7 +313,7 @@
 }
 
 - (void)testInitAgeAssuranceInvalidValue {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.initAgeAssurance"
                                                       body:@{@"assurance": @"invalid_assurance"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 400);
@@ -321,7 +321,7 @@
 }
 
 - (void)testGetAgeAssuranceState {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getAgeAssuranceState"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getAgeAssuranceState"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -333,7 +333,7 @@
 #pragma mark - User Discovery Tests (Onboarding & Discovery Pages)
 
 - (void)testGetOnboardingSuggestedUsersSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -343,7 +343,7 @@
 }
 
 - (void)testGetSuggestedOnboardingUsers {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedOnboardingUsers"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedOnboardingUsers"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -353,7 +353,7 @@
 }
 
 - (void)testGetSuggestedUsersForDiscover {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForDiscover"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForDiscover"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -363,7 +363,7 @@
 }
 
 - (void)testGetSuggestedUsersForDiscoverSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -373,7 +373,7 @@
 }
 
 - (void)testGetSuggestedUsersForExplore {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForExplore"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForExplore"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -383,7 +383,7 @@
 }
 
 - (void)testGetSuggestedUsersForExploreSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForExploreSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForExploreSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -393,7 +393,7 @@
 }
 
 - (void)testGetSuggestedUsersForSeeMore {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForSeeMore"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForSeeMore"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -403,7 +403,7 @@
 }
 
 - (void)testGetSuggestedUsersForSeeMoreSkeleton {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];

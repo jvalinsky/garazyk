@@ -4,10 +4,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
-typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
+typedef void (^HttpRouteHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
 
 /*!
  @class HttpRouteTrie

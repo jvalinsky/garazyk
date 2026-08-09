@@ -45,7 +45,7 @@ static BOOL AppViewOAuthIsTrustedProxyRemoteAddress(NSString *remoteAddress) {
     return NO;
 }
 
-static BOOL AppViewOAuthShouldTrustForwardedHeaders(HttpRequest *request) {
+static BOOL AppViewOAuthShouldTrustForwardedHeaders(ATProtoHttpRequest *request) {
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
     if (!AppViewOAuthEnvBool(env[@"PDS_TRUST_PROXY_HEADERS"])) return NO;
     return AppViewOAuthIsTrustedProxyRemoteAddress(request.remoteAddress);
@@ -53,7 +53,7 @@ static BOOL AppViewOAuthShouldTrustForwardedHeaders(HttpRequest *request) {
 
 /// §4.6: build expected DPoP htu from issuer authority; Host / X-Forwarded-*
 /// only when local or trusted-proxy.
-static NSURL *AppViewOAuthExpectedDPoPURL(HttpRequest *request) {
+static NSURL *AppViewOAuthExpectedDPoPURL(ATProtoHttpRequest *request) {
     NSString *path = request.path ?: @"/";
     if (![path hasPrefix:@"/"]) {
         path = [@"/" stringByAppendingString:path];
@@ -143,7 +143,7 @@ static NSURL *AppViewOAuthExpectedDPoPURL(HttpRequest *request) {
     return self;
 }
 
-- (BOOL)validateRequest:(HttpRequest *)request
+- (BOOL)validateRequest:(ATProtoHttpRequest *)request
               callerDID:(NSString *_Nullable *_Nullable)callerDID
                    error:(NSError **)error {
     NSString *token = [self extractBearerToken:request];
@@ -228,7 +228,7 @@ static NSURL *AppViewOAuthExpectedDPoPURL(HttpRequest *request) {
     return YES;
 }
 
-- (nullable NSString *)extractBearerToken:(HttpRequest *)request {
+- (nullable NSString *)extractBearerToken:(ATProtoHttpRequest *)request {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (![authHeader hasPrefix:@"Bearer "]) return nil;
 
@@ -236,7 +236,7 @@ static NSURL *AppViewOAuthExpectedDPoPURL(HttpRequest *request) {
     return token.length > 0 ? token : nil;
 }
 
-- (BOOL)validateDPoPProof:(HttpRequest *)request
+- (BOOL)validateDPoPProof:(ATProtoHttpRequest *)request
                     token:(NSString *)token
                 tokenJkt:(nullable NSString *)tokenJkt
            outThumbprint:(NSString *_Nullable *_Nullable)outThumbprint

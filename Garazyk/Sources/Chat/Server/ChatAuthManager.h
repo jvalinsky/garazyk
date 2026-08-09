@@ -4,8 +4,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 /*!
  @class ChatAuthManager
@@ -60,8 +60,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response The HTTP response for setting error details.
  * @return The authenticated user DID (from the iss claim), or nil on failure.
  */
-- (nullable NSString *)authenticateRequest:(HttpRequest *)request
-                                  response:(nullable HttpResponse *)response;
+- (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
+                                  response:(nullable ATProtoHttpResponse *)response;
 
 /**
  * Validates a service auth ATProtoJWT with method binding.
@@ -71,8 +71,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param expectedLxm The expected lexicon method NSID (e.g., "chat.bsky.convo.listConvos").
  * @return The authenticated user DID, or nil on failure.
  */
-- (nullable NSString *)authenticateRequest:(HttpRequest *)request
-                                  response:(nullable HttpResponse *)response
+- (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
+                                  response:(nullable ATProtoHttpResponse *)response
                              expectedMethod:(nullable NSString *)expectedLxm;
 
 @end

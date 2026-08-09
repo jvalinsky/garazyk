@@ -47,7 +47,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
            plcUrl.length == 0;
 }
 
-static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
+static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                NSString *attribute) {
     if ([ATProtoPermissionScopeEvaluator evaluateIdentityScopes:request.permissionScopes ?: @[]
                                                     forAttribute:attribute]) {
@@ -77,7 +77,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     SubscribeReposHandler *subscribeReposHandler = services.subscribeReposHandler;
     
     // com.atproto.identity.refreshIdentity
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_refreshIdentity handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_refreshIdentity handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSDictionary *body = request.jsonBody ?: @{};
         BOOL typeMismatch = NO;
         NSString *identifier = AuthTypedValue(body, @"identifier", [NSString class], &typeMismatch) ?: [request queryParamForKey:@"identifier"];
@@ -112,7 +112,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     }];
 
     // com.atproto.identity.resolveHandle
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveHandle handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveHandle handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *handle = [request queryParamForKey:@"handle"];
         if (handle.length == 0) {
             response.statusCode = HttpStatusBadRequest;
@@ -200,7 +200,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     }];
 
     // com.atproto.identity.resolveIdentity
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveIdentity handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveIdentity handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *identifier = [request queryParamForKey:@"identifier"];
         if (identifier.length == 0) {
             response.statusCode = HttpStatusBadRequest;
@@ -228,7 +228,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     }];
 
     // com.atproto.identity.resolveDid
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveDid handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_resolveDid handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
         if (did.length == 0) {
             response.statusCode = HttpStatusBadRequest;
@@ -255,7 +255,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     }];
 
     // com.atproto.identity.getRecommendedDidCredentials
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_getRecommendedDidCredentials handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_getRecommendedDidCredentials handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *issuer = [configuration canonicalIssuerWithPortHint:0];
         
         NSMutableDictionary *result = [NSMutableDictionary dictionary];
@@ -274,7 +274,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     }];
 
     // com.atproto.identity.requestPlcOperationSignature
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_requestPlcOperationSignature handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_requestPlcOperationSignature handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -322,7 +322,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     }];
 
     // com.atproto.identity.signPlcOperation
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_signPlcOperation handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_signPlcOperation handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -527,7 +527,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     }];
 
     // com.atproto.identity.submitPlcOperation
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_submitPlcOperation handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_submitPlcOperation handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -733,7 +733,7 @@ static BOOL XrpcIdentityAllows(HttpRequest *request, HttpResponse *response,
     }];
 
     // com.atproto.identity.updateHandle
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_updateHandle handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_updateHandle handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {

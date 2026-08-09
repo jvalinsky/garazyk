@@ -9,7 +9,7 @@
 
 @implementation GZXrpcRouteSupport
 
-+ (BOOL)checkIPRateLimitForRequest:(HttpRequest *)request response:(HttpResponse *)response {
++ (BOOL)checkIPRateLimitForRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     RateLimiter *limiter = [RateLimiter sharedLimiter];
     RateLimitResult *rateLimit = [limiter checkRateLimitForIP:request.remoteAddress];
     if (rateLimit.allowed) return YES;
@@ -24,7 +24,7 @@
     return NO;
 }
 
-+ (nullable NSString *)requiredQueryParam:(NSString *)name request:(HttpRequest *)request response:(HttpResponse *)response {
++ (nullable NSString *)requiredQueryParam:(NSString *)name request:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *value = [request queryParamForKey:name];
     if (value.length == 0) {
         [XrpcErrorHelper setInvalidRequestError:response
@@ -34,12 +34,12 @@
     return value;
 }
 
-+ (BOOL)parseLimitForRequest:(HttpRequest *)request
++ (BOOL)parseLimitForRequest:(ATProtoHttpRequest *)request
                 defaultLimit:(NSInteger)defaultLimit
                          min:(NSInteger)min
                          max:(NSInteger)max
                       output:(NSInteger *)output
-                    response:(HttpResponse *)response {
+                    response:(ATProtoHttpResponse *)response {
     NSInteger limit = defaultLimit;
     NSString *limitParam = [request queryParamForKey:@"limit"];
     if (limitParam.length > 0) {

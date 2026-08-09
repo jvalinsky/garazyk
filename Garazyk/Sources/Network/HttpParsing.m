@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpParsing.m
+ @file ATProtoHttpParsing.m
 
  @abstract Implements shared HTTP parsing helpers used by parser/session layers.
 
@@ -10,7 +10,7 @@
 
 #import "Network/HttpParsing.h"
 
-@implementation HttpParsing
+@implementation ATProtoHttpParsing
 
 + (NSDictionary<NSString *, id> *)parseQueryString:(NSString *)queryString {
   if (queryString.length == 0) {

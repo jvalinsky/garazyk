@@ -51,7 +51,7 @@
     // GET /admin/backfill/status
     [server addRoute:@"GET"
                 path:@"/admin/backfill/status"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -61,7 +61,7 @@
     // GET /admin/backfill/queue
     [server addRoute:@"GET"
                 path:@"/admin/backfill/queue"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -71,7 +71,7 @@
     // POST /admin/backfill/repos
     [server addRoute:@"POST"
                 path:@"/admin/backfill/repos"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -81,7 +81,7 @@
     // POST /admin/backfill/repos/:did/retry
     [server addRoute:@"POST"
                 path:@"/admin/backfill/repos/:did/retry"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -91,7 +91,7 @@
     // POST /admin/backfill/repos/:did/cancel
     [server addRoute:@"POST"
                 path:@"/admin/backfill/repos/:did/cancel"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -101,7 +101,7 @@
     // POST /admin/backfill/scope/rebuild
     [server addRoute:@"POST"
                 path:@"/admin/backfill/scope/rebuild"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -111,7 +111,7 @@
     // GET /admin/ingest/health
     [server addRoute:@"GET"
                 path:@"/admin/ingest/health"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -121,7 +121,7 @@
     // GET /admin/appview/metrics/stats
     [server addRoute:@"GET"
                 path:@"/admin/appview/metrics/stats"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -133,7 +133,7 @@
     // GET /admin/lexicons
     [server addRoute:@"GET"
                 path:@"/admin/lexicons"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -143,7 +143,7 @@
     // GET /admin/lexicons/collections
     [server addRoute:@"GET"
                 path:@"/admin/lexicons/collections"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -155,7 +155,7 @@
     // GET /admin/hooks
     [server addRoute:@"GET"
                 path:@"/admin/hooks"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -165,7 +165,7 @@
     // GET /admin/hooks/dead-letter
     [server addRoute:@"GET"
                 path:@"/admin/hooks/dead-letter"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -177,7 +177,7 @@
     // GET /admin/records
     [server addRoute:@"GET"
                 path:@"/admin/records"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -189,7 +189,7 @@
     // GET /admin/handlers
     [server addRoute:@"GET"
                 path:@"/admin/handlers"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -199,7 +199,7 @@
     // GET /admin/endpoints
     [server addRoute:@"GET"
                 path:@"/admin/endpoints"
-             handler:^(HttpRequest *request, HttpResponse *response) {
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  AppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
@@ -209,7 +209,7 @@
 
 #pragma mark - Auth
 
-- (BOOL)validateAuth:(HttpRequest *)request response:(HttpResponse *)response {
+- (BOOL)validateAuth:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     // If no admin secret is configured, allow all access
     if (!self.adminSecret || self.adminSecret.length == 0) {
         return YES;
@@ -238,7 +238,7 @@
 
 #pragma mark - Handlers
 
-- (void)handleBackfillStatus:(HttpResponse *)response {
+- (void)handleBackfillStatus:(ATProtoHttpResponse *)response {
     if (!self.orchestrator) {
         response.statusCode = 200;
         [response setJsonBody:@{@"enabled": @(NO)}];
@@ -249,7 +249,7 @@
     [response setJsonBody:report ?: @{}];
 }
 
-- (void)handleBackfillQueue:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleBackfillQueue:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (!self.orchestrator) {
         response.statusCode = 200;
         [response setJsonBody:@{@"entries": @[], @"total": @(0)}];
@@ -270,7 +270,7 @@
     [response setJsonBody:result ?: @{@"entries": @[], @"total": @(0)}];
 }
 
-- (void)handleBackfillEnqueue:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleBackfillEnqueue:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (!self.orchestrator) {
         response.statusCode = 503;
         [response setJsonBody:@{@"error": @"BackfillDisabled", @"message": @"Backfill orchestrator is not running"}];
@@ -298,7 +298,7 @@
     [response setJsonBody:@{@"success": @(YES), @"enqueued": @(dids.count)}];
 }
 
-- (void)handleBackfillRetry:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleBackfillRetry:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (!self.orchestrator) {
         response.statusCode = 503;
         [response setJsonBody:@{@"error": @"BackfillDisabled", @"message": @"Backfill orchestrator is not running"}];
@@ -322,7 +322,7 @@
     }
 }
 
-- (void)handleBackfillCancel:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleBackfillCancel:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (!self.orchestrator) {
         response.statusCode = 503;
         [response setJsonBody:@{@"error": @"BackfillDisabled", @"message": @"Backfill orchestrator is not running"}];
@@ -346,7 +346,7 @@
     }
 }
 
-- (void)handleBackfillRebuild:(HttpResponse *)response {
+- (void)handleBackfillRebuild:(ATProtoHttpResponse *)response {
     if (!self.orchestrator) {
         response.statusCode = 503;
         [response setJsonBody:@{@"error": @"BackfillDisabled", @"message": @"Backfill orchestrator is not running"}];
@@ -360,7 +360,7 @@
     [response setJsonBody:@{@"success": @(YES), @"message": @"Backfill scope rebuild triggered"}];
 }
 
-- (void)handleIngestHealth:(HttpResponse *)response {
+- (void)handleIngestHealth:(ATProtoHttpResponse *)response {
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     result[@"running"] = @(self.ingestEngine.isRunning);
     result[@"relayHealth"] = self.ingestEngine.relayHealth ?: @{};
@@ -370,7 +370,7 @@
     [response setJsonBody:[result copy]];
 }
 
-- (void)handleMetricsStats:(HttpResponse *)response {
+- (void)handleMetricsStats:(ATProtoHttpResponse *)response {
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
 
     // Repo sync state counts
@@ -416,7 +416,7 @@
 
 #pragma mark - Lexicon Admin Handlers
 
-- (void)handleLexiconList:(HttpResponse *)response {
+- (void)handleLexiconList:(ATProtoHttpResponse *)response {
     if (!self.lexiconRegistry) {
         response.statusCode = 200;
         [response setJsonBody:@{@"nsids": @[], @"count": @(0)}];
@@ -431,7 +431,7 @@
     }];
 }
 
-- (void)handleIndexedCollections:(HttpResponse *)response {
+- (void)handleIndexedCollections:(ATProtoHttpResponse *)response {
     NSError *error = nil;
     NSArray<NSString *> *collections = [self.database indexedCollectionsWithError:&error];
     if (error) {
@@ -456,7 +456,7 @@
 
 #pragma mark - Hooks Admin Handlers
 
-- (void)handleHookList:(HttpResponse *)response {
+- (void)handleHookList:(ATProtoHttpResponse *)response {
     if (!self.hookRegistry) {
         response.statusCode = 200;
         [response setJsonBody:@{@"hooks": @[], @"count": @(0)}];
@@ -469,7 +469,7 @@
     }];
 }
 
-- (void)handleDeadLetterHooks:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleDeadLetterHooks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *limitStr = [request queryParamForKey:@"limit"] ?: @"25";
     NSInteger limit = [limitStr integerValue];
     if (limit <= 0) limit = 25;
@@ -492,7 +492,7 @@
 
 #pragma mark - Records Admin Handlers
 
-- (void)handleRecordBrowse:(HttpRequest *)request response:(HttpResponse *)response {
+- (void)handleRecordBrowse:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *collection = [request queryParamForKey:@"collection"];
     NSString *did = [request queryParamForKey:@"did"];
     NSString *limitStr = [request queryParamForKey:@"limit"] ?: @"25";
@@ -528,7 +528,7 @@
 
 #pragma mark - Custom Handlers Admin Handlers
 
-- (void)handleCustomHandlerList:(HttpResponse *)response {
+- (void)handleCustomHandlerList:(ATProtoHttpResponse *)response {
     if (!self.customQueryRegistry) {
         response.statusCode = 200;
         [response setJsonBody:@{@"handlers": @[], @"count": @(0)}];
@@ -543,7 +543,7 @@
     }];
 }
 
-- (void)handleEndpointList:(HttpResponse *)response {
+- (void)handleEndpointList:(ATProtoHttpResponse *)response {
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
 
     if (self.lexiconEndpointGenerator) {

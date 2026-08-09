@@ -34,7 +34,7 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
     PDSRecordService *recordService = services.recordService;
 
 #pragma mark - com.atproto.repo.importRepo
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_importRepo handler:^(HttpRequest *request, HttpResponse *response) {
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_importRepo handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {

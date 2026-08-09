@@ -50,7 +50,7 @@
 #pragma mark - getJobStatus Tests
 
 - (void)testGetJobStatusRequiresJobId {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getJobStatus"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getJobStatus"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -58,7 +58,7 @@
 }
 
 - (void)testGetJobStatusNotFound {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getJobStatus"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getJobStatus"
                                              queryString:@""
                                              queryParams:@{@"jobId": @"nonexistent-job-id"}
                                                  headers:@{}];
@@ -66,7 +66,7 @@
 }
 
 - (void)testVideoXrpcOptionsPreflightIncludesDirectUploadHeaders {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodOPTIONS
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodOPTIONS
                                                   methodString:@"OPTIONS"
                                                           path:@"/xrpc/app.bsky.video.uploadVideo"
                                                    queryString:@""
@@ -78,7 +78,7 @@
                                                        }
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertEqualObjects([response headerForKey:@"Access-Control-Allow-Origin"], @"http://127.0.0.1:2591");
@@ -100,7 +100,7 @@
                                         error:&dbError];
     XCTAssertTrue(created, @"video job should be created: %@", dbError.localizedDescription);
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getJobStatus"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getJobStatus"
                                              queryString:@""
                                              queryParams:@{@"jobId": @"test-job-status"}
                                                  headers:@{}];
@@ -116,7 +116,7 @@
 #pragma mark - uploadVideo Tests
 
 - (void)testUploadVideoRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
                                                       body:@{}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -124,7 +124,7 @@
 
 - (void)testUploadVideoEmptyBody {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendRawRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
+    ATProtoHttpResponse *response = [self sendRawRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
                                                      body:[NSData data]
                                                   headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400);
@@ -136,7 +136,7 @@
                                                         pdsURL:@"http://localhost:2583"
                                                         plcURL:@"http://localhost:2582"];
     NSString *token = [self unsignedServiceAuthTokenWithAudience:@"did:web:localhost#bsky_video"];
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:@"/xrpc/app.bsky.video.uploadVideo"
                                                    queryString:@""
@@ -145,7 +145,7 @@
                                                        headers:@{@"authorization": [NSString stringWithFormat:@"Bearer %@", token]}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
 
     NSString *did = [provider authenticateRequest:request response:response];
 
@@ -157,7 +157,7 @@
 #pragma mark - getUploadLimits Tests
 
 - (void)testGetUploadLimitsSuccess {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getUploadLimits"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getUploadLimits"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -169,7 +169,7 @@
 
 - (void)testGetUploadLimitsWithAuth {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getUploadLimits"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getUploadLimits"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{@"authorization": authHeader}];
@@ -180,7 +180,7 @@
 }
 
 - (void)testGetUploadLimitsReturnsCorrectShape {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getUploadLimits"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getUploadLimits"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{}];
@@ -257,7 +257,7 @@
 
 #pragma mark - Helper
 
-- (HttpResponse *)sendRawRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendRawRequestWithPath:(NSString *)path
                                      body:(NSData *)body
                                   headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSMutableDictionary *allHeaders = [@{@"content-type": @"application/octet-stream"} mutableCopy];
@@ -265,7 +265,7 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:path
                                                    queryString:@""
@@ -274,7 +274,7 @@
                                                        headers:allHeaders
                                                           body:body ?: [NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }

@@ -50,8 +50,8 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     [self.middlewares addObjectsFromArray:middlewares];
 }
 
-- (BOOL)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (BOOL)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
                 error:(NSError **)error {
     for (id<XrpcMiddleware> middleware in self.middlewares) {
         NSError *middlewareError = nil;
@@ -113,8 +113,8 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     return middleware;
 }
 
-- (BOOL)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (BOOL)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
                 error:(NSError **)error {
     // Get auth components
     ATProtoJWTMinter *jwtMinter = self.jwtMinter ?: self.controller.jwtMinter;
@@ -221,8 +221,8 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     return middleware;
 }
 
-- (BOOL)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (BOOL)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
                 error:(NSError **)error {
     NSString *key = nil;
     NSString *identifier = nil;
@@ -301,8 +301,8 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     return middleware;
 }
 
-- (BOOL)handleRequest:(HttpRequest *)request
-             response:(HttpResponse *)response
+- (BOOL)handleRequest:(ATProtoHttpRequest *)request
+             response:(ATProtoHttpResponse *)response
                 error:(NSError **)error {
     // Get authenticated DID from middleware context
     NSString *authDID = request.authenticatedDid;

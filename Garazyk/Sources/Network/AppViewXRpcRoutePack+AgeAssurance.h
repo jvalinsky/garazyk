@@ -12,10 +12,10 @@
 @interface AppViewXRpcRoutePack (AgeAssurance)
 
 /** @abstract Starts age assurance for the caller when email, language, and country code are present. */
-- (void)handleAgeAssuranceBegin:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAgeAssuranceBegin:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns age-assurance configuration without requiring actor authentication. */
-- (void)handleAgeAssuranceGetConfig:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAgeAssuranceGetConfig:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns the caller's state for required `countryCode` and optional `regionCode`. */
-- (void)handleAgeAssuranceGetState:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleAgeAssuranceGetState:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end

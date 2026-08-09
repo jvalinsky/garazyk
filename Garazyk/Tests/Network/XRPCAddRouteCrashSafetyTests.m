@@ -91,7 +91,7 @@
     [super tearDown];
 }
 
-- (HttpResponse *)sendJsonRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendJsonRequestWithPath:(NSString *)path
                                      body:(NSDictionary *)body
                                   headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSData *bodyData = body ? [NSJSONSerialization dataWithJSONObject:body options:0 error:nil] : [NSData data];
@@ -100,7 +100,7 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:path
                                                    queryString:@""
@@ -109,7 +109,7 @@
                                                        headers:allHeaders
                                                           body:bodyData
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
@@ -172,7 +172,7 @@
             body[testCase.field] = wrongValue;
 
             NSDictionary *headers = testCase.requiresAuth ? @{@"authorization": self.authHeader} : @{};
-            HttpResponse *response = [self sendJsonRequestWithPath:testCase.path body:body headers:headers];
+            ATProtoHttpResponse *response = [self sendJsonRequestWithPath:testCase.path body:body headers:headers];
 
             // The process is still alive to observe this at all — the crash
             // this sub-task guards against is an uncaught

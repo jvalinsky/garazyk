@@ -10,8 +10,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class MikrusDatabase;
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class HttpServer;
 
 /**
@@ -40,37 +40,37 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Handles the getBacklinks XRPC endpoint.
  */
-- (void)handleGetBacklinks:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetBacklinks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getBacklinkDids XRPC endpoint.
  */
-- (void)handleGetBacklinkDids:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetBacklinkDids:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getBacklinksCount XRPC endpoint.
  */
-- (void)handleGetBacklinksCount:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetBacklinksCount:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getManyToMany XRPC endpoint.
  */
-- (void)handleGetManyToMany:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetManyToMany:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getManyToManyCounts XRPC endpoint.
  */
-- (void)handleGetManyToManyCounts:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetManyToManyCounts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the resolveMiniDoc XRPC endpoint.
  */
-- (void)handleResolveMiniDoc:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleResolveMiniDoc:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /**
  * @abstract Handles the getRecordByUri XRPC endpoint.
  */
-- (void)handleGetRecordByUri:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetRecordByUri:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end
 

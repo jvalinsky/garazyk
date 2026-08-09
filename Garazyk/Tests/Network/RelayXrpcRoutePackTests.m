@@ -9,7 +9,7 @@
 #import "Sync/Relay/RelayUpstreamManager.h"
 
 @interface HttpServer (RelayXrpcRoutePackTesting)
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
 - (nullable RequestHandler)handlerForRoute:(NSString *)path
                                     method:(NSString *)method
                                 parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters;
@@ -103,7 +103,7 @@
 }
 
 - (void)testGetHeadReturnsBadRequestWithoutDID {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.getHead"
                                                    queryString:@""
@@ -112,12 +112,12 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [self.server dispatchRequest:request];
+    ATProtoHttpResponse *response = [self.server dispatchRequest:request];
     XCTAssertEqual(response.statusCode, 400);
 }
 
 - (void)testGetLatestCommitReturnsBadRequestWithoutDID {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.getLatestCommit"
                                                    queryString:@""
@@ -126,12 +126,12 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [self.server dispatchRequest:request];
+    ATProtoHttpResponse *response = [self.server dispatchRequest:request];
     XCTAssertEqual(response.statusCode, 400);
 }
 
 - (void)testListReposReturnsOKWithEmptyState {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.listRepos"
                                                    queryString:@""
@@ -140,12 +140,12 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [self.server dispatchRequest:request];
+    ATProtoHttpResponse *response = [self.server dispatchRequest:request];
     XCTAssertEqual(response.statusCode, 200);
 }
 
 - (void)testListReposRejectsLimitWithTrailingCharacters {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.listRepos"
                                                    queryString:@"limit=10junk"
@@ -154,13 +154,13 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [self.server dispatchRequest:request];
+    ATProtoHttpResponse *response = [self.server dispatchRequest:request];
     XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
 - (void)testListReposRejectsCursorWithTrailingCharacters {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.listRepos"
                                                    queryString:@"cursor=1junk"
@@ -169,13 +169,13 @@
                                                        headers:@{}
                                                           body:[NSData data]
                                                  remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [self.server dispatchRequest:request];
+    ATProtoHttpResponse *response = [self.server dispatchRequest:request];
     XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
-- (HttpResponse *)getRepoStatusForDID:(NSString *)did {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+- (ATProtoHttpResponse *)getRepoStatusForDID:(NSString *)did {
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.sync.getRepoStatus"
                                                    queryString:@""
@@ -196,7 +196,7 @@
 
 - (void)testGetRepoStatusReturnsInactiveForUnknownRepo {
     NSString *did = @"did:plc:unknown";
-    HttpResponse *response = [self getRepoStatusForDID:did];
+    ATProtoHttpResponse *response = [self getRepoStatusForDID:did];
 
     XCTAssertEqual(response.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(response.jsonBody, (@{
@@ -210,7 +210,7 @@
     NSString *did = @"did:plc:active";
     [self recordActiveRepo:did rev:@"3jzfcijpj2z2a"];
 
-    HttpResponse *response = [self getRepoStatusForDID:did];
+    ATProtoHttpResponse *response = [self getRepoStatusForDID:did];
 
     XCTAssertEqual(response.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(response.jsonBody, (@{
@@ -232,7 +232,7 @@
     for (NSDictionary<NSString *, id> *state in states) {
         [self.repoStateManager handleAccountEventForRepo:did
                                                    status:[state[@"state"] integerValue]];
-        HttpResponse *response = [self getRepoStatusForDID:did];
+        ATProtoHttpResponse *response = [self getRepoStatusForDID:did];
 
         XCTAssertEqual(response.statusCode, HttpStatusOK);
         XCTAssertEqualObjects(response.jsonBody, (@{
@@ -249,7 +249,7 @@
     [self.repoStateManager handleAccountEventForRepo:did
                                                status:RelayRepoStatusInProgress];
 
-    HttpResponse *response = [self getRepoStatusForDID:did];
+    ATProtoHttpResponse *response = [self getRepoStatusForDID:did];
 
     XCTAssertEqual(response.statusCode, HttpStatusOK);
     XCTAssertEqualObjects(response.jsonBody, (@{

@@ -8,7 +8,7 @@
 
 @implementation AppViewXRpcRoutePack (Contact)
 
-- (void)handleStartPhoneVerification:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleStartPhoneVerification:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -31,7 +31,7 @@
     [response setJsonBody:@{ @"id": vId ?: @"" }];
 }
 
-- (void)handleVerifyPhone:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleVerifyPhone:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -55,7 +55,7 @@
     [response setJsonBody:@{ @"token": token ?: @"" }];
 }
 
-- (void)handleImportContacts:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleImportContacts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -79,7 +79,7 @@
     [response setJsonBody:result ?: @{}];
 }
 
-- (void)handleGetContactMatches:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetContactMatches:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -95,7 +95,7 @@
     [response setJsonBody:@{ @"matches": matches ?: @[] }];
 }
 
-- (void)handleDismissContactMatch:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleDismissContactMatch:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -118,7 +118,7 @@
     [response setJsonBody:@{}];
 }
 
-- (void)handleGetContactSyncStatus:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleGetContactSyncStatus:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
@@ -134,7 +134,7 @@
     [response setJsonBody:status ?: @{}];
 }
 
-- (void)handleRemoveContactData:(HttpRequest *)request response:(HttpResponse *)response
+- (void)handleRemoveContactData:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;

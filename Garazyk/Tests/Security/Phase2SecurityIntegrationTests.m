@@ -310,7 +310,7 @@
     XCTAssertNotNil(token);
 
     // Token should be valid immediately
-    // (We can't easily test this without a mock HttpRequest, but the
+    // (We can't easily test this without a mock ATProtoHttpRequest, but the
     // createSessionToken + isAuthorizedRequest flow is tested in integration)
 }
 

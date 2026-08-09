@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpRetryPolicy.h
+ @file ATProtoHttpRetryPolicy.h
 
  @abstract Defines retry-decision policy interfaces for network requests and transient failures.
 
@@ -19,9 +19,9 @@ typedef NS_ENUM(NSInteger, HttpRetryDecision) {
 };
 
 /**
- * @abstract Declares the HttpRetryResult public API.
+ * @abstract Declares the ATProtoHttpRetryResult public API.
  */
-@interface HttpRetryResult : NSObject
+@interface ATProtoHttpRetryResult : NSObject
 /**
  * @abstract Exposes the decision value.
  */
@@ -35,9 +35,9 @@ typedef NS_ENUM(NSInteger, HttpRetryDecision) {
 @end
 
 /**
- * @abstract Declares the HttpRetryPolicy public API.
+ * @abstract Declares the ATProtoHttpRetryPolicy public API.
  */
-@interface HttpRetryPolicy : NSObject
+@interface ATProtoHttpRetryPolicy : NSObject
 
 /**
  * @abstract Exposes the max retries value.
@@ -50,7 +50,7 @@ typedef NS_ENUM(NSInteger, HttpRetryDecision) {
 /**
  * @abstract Performs the evaluateStatusCode operation.
  */
-- (HttpRetryResult *)evaluateStatusCode:(NSInteger)statusCode
+- (ATProtoHttpRetryResult *)evaluateStatusCode:(NSInteger)statusCode
                            networkError:(nullable NSError *)error
                           attemptNumber:(NSInteger)attempt;
 

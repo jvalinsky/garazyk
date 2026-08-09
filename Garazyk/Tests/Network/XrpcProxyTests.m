@@ -88,7 +88,7 @@
     self.upstreamServer = [HttpServer serverWithPort:0];
 
     __weak typeof(self) weakSelf = self;
-    [self.upstreamServer setValue:^(HttpRequest *request, HttpResponse *response) {
+    [self.upstreamServer setValue:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) {
             response.statusCode = HttpStatusInternalServerError;
@@ -110,14 +110,14 @@
     return [self.upstreamServer startWithError:error];
 }
 
-- (HttpResponse *)dispatchRequestWithMethod:(HttpMethod)method
+- (ATProtoHttpResponse *)dispatchRequestWithMethod:(HttpMethod)method
                                 methodString:(NSString *)methodString
                                         path:(NSString *)path
                                  queryString:(NSString *)queryString
                                  queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
                                      headers:(NSDictionary<NSString *, NSString *> *)headers
                                         body:(NSData *)body {
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:method
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:method
                                                    methodString:methodString
                                                            path:path
                                                     queryString:queryString ?: @""
@@ -126,7 +126,7 @@
                                                         headers:headers ?: @{}
                                                            body:body ?: [NSData data]
                                                   remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
@@ -147,7 +147,7 @@
     };
 
     NSString *methodId = @"app.bsky.actor.getProfile";
-    HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
+    ATProtoHttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
                                              methodString:@"GET"
                                                      path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
                                               queryString:@"actor=proxytest.test"
@@ -178,7 +178,7 @@
     NSString *methodId = @"app.bsky.unspecced.getThing";
     NSString *query = @"limit=5";
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
-    HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
+    ATProtoHttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
                                              methodString:@"GET"
                                                      path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
                                               queryString:query
@@ -204,7 +204,7 @@
         return;
     }
 
-    HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
+    ATProtoHttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
                                              methodString:@"GET"
                                                      path:@"/xrpc/app.bsky.actor.getProfile"
                                               queryString:@""
@@ -229,7 +229,7 @@
 
     for (NSString *methodId in methods) {
         NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
-        HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
+        ATProtoHttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
                                                  methodString:@"GET"
                                                          path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
                                                   queryString:@"countryCode=US"
@@ -256,7 +256,7 @@
 
     NSData *bodyData = [NSJSONSerialization dataWithJSONObject:@{} options:0 error:nil];
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
-    HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodPOST
+    ATProtoHttpResponse *response = [self dispatchRequestWithMethod:HttpMethodPOST
                                              methodString:@"POST"
                                                      path:@"/xrpc/app.bsky.unspecced.someProxyTest"
                                               queryString:@""
@@ -282,7 +282,7 @@
 - (void)testProxyTimeoutReturns504 {
     self.upstreamServer = [HttpServer serverWithPort:0];
 
-    [self.upstreamServer setValue:^(HttpRequest *request, HttpResponse *response) {
+    [self.upstreamServer setValue:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [NSThread sleepForTimeInterval:3.0];
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"delayed": @YES}];
@@ -298,7 +298,7 @@
 
     NSData *bodyData = [NSJSONSerialization dataWithJSONObject:@{} options:0 error:nil];
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
-    HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodPOST
+    ATProtoHttpResponse *response = [self dispatchRequestWithMethod:HttpMethodPOST
                                              methodString:@"POST"
                                                      path:@"/xrpc/app.bsky.unspecced.someProxyTest"
                                               queryString:@""
@@ -339,7 +339,7 @@
     NSString *methodId = @"tools.ozone.moderation.nonExistentMethod";
     NSString *query = @"did=did:plc:example";
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
-    HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
+    ATProtoHttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
                                              methodString:@"GET"
                                                      path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
                                               queryString:query
@@ -365,7 +365,7 @@
     self.dispatcher.ozoneURL = nil;
     self.dispatcher.ozoneDID = nil;
 
-    HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
+    ATProtoHttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
                                              methodString:@"GET"
                                                      path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
                                               queryString:@""

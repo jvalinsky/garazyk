@@ -8,7 +8,7 @@
 @implementation XrpcChatBskyActorTests
 
 - (void)testDeleteAccountRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.actor.deleteAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.actor.deleteAccount"
                                                       body:@{}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -16,7 +16,7 @@
 
 - (void)testDeleteAccountSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.actor.deleteAccount"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.actor.deleteAccount"
                                                       body:@{}
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -24,7 +24,7 @@
 
 - (void)testExportAccountDataSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.actor.exportAccountData"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.actor.exportAccountData"
                                               queryString:@""
                                               queryParams:@{}
                                                   headers:@{@"authorization": authHeader}];
@@ -36,7 +36,7 @@
 
 - (void)testGetActorMetadataSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.moderation.getActorMetadata"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.moderation.getActorMetadata"
                                               queryString:[NSString stringWithFormat:@"actor=%@", self.userDid]
                                               queryParams:@{@"actor": self.userDid}
                                                   headers:@{@"authorization": authHeader}];
@@ -46,7 +46,7 @@
 
 - (void)testUpdateActorAccessSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.moderation.updateActorAccess"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.moderation.updateActorAccess"
                                                       body:@{
                                                           @"actor": self.userDid,
                                                           @"access": @{

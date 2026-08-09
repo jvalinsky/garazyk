@@ -65,7 +65,7 @@
     [super tearDown];
 }
 
-- (HttpResponse *)sendJsonRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendJsonRequestWithPath:(NSString *)path
                                      body:(NSDictionary *)body
                                   headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSData *bodyData = body ? [NSJSONSerialization dataWithJSONObject:body options:0 error:nil] : [NSData data];
@@ -74,7 +74,7 @@
         [allHeaders addEntriesFromDictionary:headers];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"
                                                           path:path
                                                    queryString:@""
@@ -83,12 +83,12 @@
                                                        headers:allHeaders
                                                           body:bodyData
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
 
-- (HttpResponse *)sendGetRequestWithPath:(NSString *)path
+- (ATProtoHttpResponse *)sendGetRequestWithPath:(NSString *)path
                                queryParams:(NSDictionary<NSString *, NSString *> *)queryParams
                                    headers:(NSDictionary<NSString *, NSString *> *)headers {
     NSMutableString *queryString = [NSMutableString string];
@@ -99,7 +99,7 @@
         [queryString appendFormat:@"%@=%@", key, queryParams[key]];
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:path
                                                    queryString:queryString ?: @""
@@ -108,7 +108,7 @@
                                                        headers:headers ?: @{}
                                                           body:[NSData data]
                                                     remoteAddress:@"127.0.0.1"];
-    HttpResponse *response = [[HttpResponse alloc] init];
+    ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
     return response;
 }
@@ -116,7 +116,7 @@
 #pragma mark - createReport
 
 - (void)testCreateReportRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.moderation.createReport"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.moderation.createReport"
                                                        body:@{@"reasonType": @"com.atproto.moderation.defs#reasonSpam"}
                                                     headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -124,7 +124,7 @@
 
 - (void)testCreateReportRequiresReasonType {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.moderation.createReport"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.moderation.createReport"
                                                        body:@{@"subject": @{@"did": self.userDid}}
                                                     headers:@{@"authorization": authHeader}];
     // Should reject missing reasonType
@@ -136,7 +136,7 @@
 
 - (void)testGetRecommendedDidCredentialsReturnsCredentials {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.identity.getRecommendedDidCredentials"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.identity.getRecommendedDidCredentials"
                                                queryParams:@{}
                                                    headers:@{@"authorization": authHeader}];
     // May return 200 or 401 depending on auth handling
@@ -147,7 +147,7 @@
 #pragma mark - listRecords
 
 - (void)testListRecordsReturnsRecordsForCollection {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.listRecords"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.listRecords"
                                                queryParams:@{@"repo": self.userDid, @"collection": @"app.bsky.actor.profile"}
                                                    headers:@{}];
     // May return 200 with records or 404 if no repo

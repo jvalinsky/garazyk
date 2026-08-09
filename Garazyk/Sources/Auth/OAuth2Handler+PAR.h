@@ -5,8 +5,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface OAuth2Handler (PAR)
-- (void)handlePARRequest:(HttpRequest *)request
-                response:(HttpResponse *)response;
+- (void)handlePARRequest:(ATProtoHttpRequest *)request
+                response:(ATProtoHttpResponse *)response;
 - (NSDictionary *)consumePARRequestForURI:(NSString *)requestURI
                                  clientID:(NSString *)clientID
                                     error:(NSError **)error;

@@ -21,7 +21,7 @@
  *
  * Thread-safe through SQLite serialization.
  *
- * @see HttpServer, HttpRequest
+ * @see HttpServer, ATProtoHttpRequest
  */
 
 #import <Foundation/Foundation.h>
@@ -30,8 +30,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 /*!
  @class ATProtoRateLimiterStorageHandle
@@ -284,7 +284,7 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
 /**
  * @abstract Performs the applyRateLimitHeadersToResponse operation.
  */
-- (void)applyRateLimitHeadersToResponse:(HttpResponse *)response
+- (void)applyRateLimitHeadersToResponse:(ATProtoHttpResponse *)response
                                   forDid:(nullable NSString *)did
                                     ip:(nullable NSString *)ip;
 

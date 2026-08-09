@@ -20,7 +20,7 @@
 @protocol ATProtoNetworkConnection;
 @class HttpProtocolDriver;
 @class HttpResponseSender;
-@class HttpRequest;
+@class ATProtoHttpRequest;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -30,7 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param request The parsed HTTP request.
  */
-typedef void (^HttpIORequestReadyHandler)(HttpRequest *request);
+typedef void (^HttpIORequestReadyHandler)(ATProtoHttpRequest *request);
 
 /*!
 
@@ -38,7 +38,7 @@ typedef void (^HttpIORequestReadyHandler)(HttpRequest *request);
 
  @param request The upgrade request.
  */
-typedef void (^HttpIOUpgradeHandler)(HttpRequest *request);
+typedef void (^HttpIOUpgradeHandler)(ATProtoHttpRequest *request);
 
 /*!
 

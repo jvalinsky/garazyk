@@ -55,8 +55,8 @@ static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.creat
 #endif
 
 // Forward declarations for helper functions
-BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
-                                                        HttpResponse *response,
+BOOL validateDidWebServiceAuthForAccountCreation(ATProtoHttpRequest *request,
+                                                        ATProtoHttpResponse *response,
                                                         NSString *did,
                                                         ATProtoServiceConfiguration *config);
 BOOL createInviteCodeInDatabase(PDSServiceDatabases *serviceDatabases,
@@ -231,8 +231,8 @@ NSDictionary *payloadDictionaryFromJWT(ATProtoJWT *jwt, NSError **error) {
     return payload;
 }
 
-BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
-                                                        HttpResponse *response,
+BOOL validateDidWebServiceAuthForAccountCreation(ATProtoHttpRequest *request,
+                                                        ATProtoHttpResponse *response,
                                                         NSString *did,
                                                         ATProtoServiceConfiguration *config) {
     ATProtoServiceConfiguration *effectiveConfig = config ?: [ATProtoServiceConfiguration sharedConfiguration];

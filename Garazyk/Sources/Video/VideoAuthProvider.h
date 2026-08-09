@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -15,8 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the authenticateRequest operation.
  */
-- (nullable NSString *)authenticateRequest:(HttpRequest *)request
-                                   response:(HttpResponse *)response;
+- (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
+                                   response:(ATProtoHttpResponse *)response;
 
 @end
 

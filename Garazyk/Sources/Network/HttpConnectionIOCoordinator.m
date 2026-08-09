@@ -322,7 +322,7 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
 
         switch (event) {
             case HttpProtocolEventRequestReady: {
-                HttpRequest *request = [self.driver nextDispatchableRequest];
+                ATProtoHttpRequest *request = [self.driver nextDispatchableRequest];
                 if (request && self.requestReadyHandler) {
                     self.requestReadyHandler(request);
                 }
@@ -331,7 +331,7 @@ static const NSInteger kHttpConnectionIOCoordinatorHeaderTimeoutError = 1;
             }
 
             case HttpProtocolEventUpgradeRequested: {
-                HttpRequest *upgradeRequest = [self.driver currentUpgradeRequest];
+                ATProtoHttpRequest *upgradeRequest = [self.driver currentUpgradeRequest];
                 if (upgradeRequest && self.upgradeHandler) {
                     self.upgradeHandler(upgradeRequest);
                 }

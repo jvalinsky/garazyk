@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpResponse.m
+ @file ATProtoHttpResponse.m
 
  @abstract Implements HTTP response model behavior and response metadata handling.
 
@@ -33,27 +33,27 @@ static NSDateFormatter *HttpResponseDateFormatter(void) {
 
 NS_ASSUME_NONNULL_END
 
-@implementation HttpResponse
+@implementation ATProtoHttpResponse
 
 + (instancetype)response {
     return [[self alloc] init];
 }
 
 + (instancetype)responseWithStatusCode:(HttpStatusCode)statusCode {
-    HttpResponse *response = [self response];
+    ATProtoHttpResponse *response = [self response];
     response.statusCode = statusCode;
     response.statusMessage = [self defaultMessageForCode:statusCode];
     return response;
 }
 
 + (instancetype)jsonResponse:(id)json statusCode:(HttpStatusCode)statusCode {
-    HttpResponse *response = [self responseWithStatusCode:statusCode];
+    ATProtoHttpResponse *response = [self responseWithStatusCode:statusCode];
     [response setJsonBody:json];
     return response;
 }
 
 + (instancetype)textResponse:(NSString *)text statusCode:(HttpStatusCode)statusCode {
-    HttpResponse *response = [self responseWithStatusCode:statusCode];
+    ATProtoHttpResponse *response = [self responseWithStatusCode:statusCode];
     response.contentType = @"text/plain; charset=utf-8";
     [response setBodyString:text];
     return response;
@@ -272,7 +272,7 @@ NS_ASSUME_NONNULL_END
     [self setHeader:[HttpResponseDateFormatter() stringFromDate:[NSDate date]] forKey:@"Date"];
 
     /*! Add Server header if configured */
-    NSString *serverHeader = [HttpResponse defaultServerHeader];
+    NSString *serverHeader = [ATProtoHttpResponse defaultServerHeader];
     if (serverHeader.length > 0 && ![self headerForKey:@"Server"]) {
         [self setHeader:serverHeader forKey:@"Server"];
     }

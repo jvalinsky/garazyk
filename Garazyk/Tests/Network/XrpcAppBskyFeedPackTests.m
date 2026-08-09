@@ -201,7 +201,7 @@
 }
 
 - (void)testGetAuthorFeedRequiresActor {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getAuthorFeed"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getAuthorFeed"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -211,7 +211,7 @@
 - (void)testGetAuthorFeedReturnsAuthorPosts {
     NSDictionary *created = [self createPostForDid:self.userDid text:@"author feed post"];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getAuthorFeed"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getAuthorFeed"
                                              queryString:[NSString stringWithFormat:@"actor=%@&limit=10", self.userDid]
                                               queryParams:@{@"actor" : self.userDid, @"limit" : @"10"}
                                                   headers:@{}];
@@ -228,7 +228,7 @@
 }
 
 - (void)testGetTimelineRequiresAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getTimeline"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getTimeline"
                                              queryString:@"limit=10"
                                               queryParams:@{@"limit" : @"10"}
                                                   headers:@{}];
@@ -239,7 +239,7 @@
     NSDictionary *created = [self createPostForDid:self.userDid text:@"timeline post"];
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getTimeline"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getTimeline"
                                              queryString:@"limit=10"
                                               queryParams:@{@"limit" : @"10"}
                                                   headers:@{@"authorization" : authHeader}];
@@ -252,7 +252,7 @@
 }
 
 - (void)testGetActorLikesRequiresActor {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getActorLikes"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getActorLikes"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -265,7 +265,7 @@
     (void)like;
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getActorLikes"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getActorLikes"
                                              queryString:[NSString stringWithFormat:@"actor=%@&limit=10", self.userDid]
                                               queryParams:@{@"actor" : self.userDid, @"limit" : @"10"}
                                                   headers:@{@"authorization" : authHeader}];
@@ -282,7 +282,7 @@
 }
 
 - (void)testGetPostThreadRequiresUri {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getPostThread"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getPostThread"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -294,7 +294,7 @@
     NSDictionary *reply = [self createReplyForDid:self.userDid parentURI:parent[@"uri"] text:@"thread reply"];
     (void)reply;
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getPostThread"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getPostThread"
                                              queryString:[NSString stringWithFormat:@"uri=%@&depth=3", parent[@"uri"]]
                                               queryParams:@{@"uri" : parent[@"uri"], @"depth" : @"3"}
                                                   headers:@{}];
@@ -311,7 +311,7 @@
 }
 
 - (void)testGetFeedRequiresFeed {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeed"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeed"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -325,7 +325,7 @@
                                                         items:@[@{@"post" : itemPost[@"uri"]}]];
     NSString *feedURI = generator[@"uri"];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeed"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeed"
                                              queryString:[NSString stringWithFormat:@"feed=%@&limit=10", feedURI]
                                               queryParams:@{@"feed" : feedURI, @"limit" : @"10"}
                                                   headers:@{}];
@@ -338,7 +338,7 @@
 }
 
 - (void)testGetPostsRequiresUris {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getPosts"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getPosts"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -348,7 +348,7 @@
 - (void)testGetPostsReturnsRequestedPosts {
     NSDictionary *post = [self createPostForDid:self.userDid text:@"multi post"];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getPosts"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getPosts"
                                              queryString:[NSString stringWithFormat:@"uris=%@", post[@"uri"]]
                                               queryParams:@{@"uris" : post[@"uri"]}
                                                   headers:@{}];
@@ -365,7 +365,7 @@
                                                    displayName:@"Featured feed"
                                                         items:@[]];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedGenerators"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedGenerators"
                                              queryString:[NSString stringWithFormat:@"feeds=%@", generator[@"uri"]]
                                               queryParams:@{@"feeds" : generator[@"uri"]}
                                                   headers:@{}];
@@ -378,7 +378,7 @@
 }
 
 - (void)testGetSuggestedFeedsReturnsArray {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getSuggestedFeeds"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getSuggestedFeeds"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -390,7 +390,7 @@
 }
 
 - (void)testGetLikesRequiresUri {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getLikes"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getLikes"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -401,7 +401,7 @@
     NSDictionary *target = [self createPostForDid:self.userDid text:@"liked by query"];
     [self createLikeForDid:self.userDid subjectURI:target[@"uri"]];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getLikes"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getLikes"
                                              queryString:[NSString stringWithFormat:@"uri=%@&limit=10", target[@"uri"]]
                                               queryParams:@{@"uri" : target[@"uri"], @"limit" : @"10"}
                                                   headers:@{}];
@@ -416,7 +416,7 @@
 }
 
 - (void)testGetRepostedByRequiresUri {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getRepostedBy"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getRepostedBy"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -427,7 +427,7 @@
     NSDictionary *target = [self createPostForDid:self.userDid text:@"reposted by query"];
     [self createRepostForDid:self.userDid subjectURI:target[@"uri"]];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getRepostedBy"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getRepostedBy"
                                              queryString:[NSString stringWithFormat:@"uri=%@&limit=10", target[@"uri"]]
                                               queryParams:@{@"uri" : target[@"uri"], @"limit" : @"10"}
                                                   headers:@{}];
@@ -442,7 +442,7 @@
 }
 
 - (void)testGetActorFeedsRequiresActor {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getActorFeeds"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getActorFeeds"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -454,7 +454,7 @@
                                                    displayName:@"Creator feed"
                                                         items:@[]];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getActorFeeds"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getActorFeeds"
                                              queryString:[NSString stringWithFormat:@"actor=%@&limit=10", self.userDid]
                                               queryParams:@{@"actor" : self.userDid, @"limit" : @"10"}
                                                   headers:@{}];
@@ -468,7 +468,7 @@
 }
 
 - (void)testGetFeedGeneratorRequiresFeed {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedGenerator"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedGenerator"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -480,7 +480,7 @@
                                                    displayName:@"Generator view"
                                                         items:@[]];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedGenerator"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedGenerator"
                                              queryString:[NSString stringWithFormat:@"feed=%@", generator[@"uri"]]
                                               queryParams:@{@"feed" : generator[@"uri"]}
                                                   headers:@{}];
@@ -495,7 +495,7 @@
 }
 
 - (void)testSearchPostsRequiresQuery {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.searchPosts"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.searchPosts"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -505,7 +505,7 @@
 - (void)testSearchPostsReturnsMatchingPosts {
     NSDictionary *post = [self createPostForDid:self.userDid text:@"needle in haystack"];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.searchPosts"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.searchPosts"
                                              queryString:@"q=needle&limit=10"
                                               queryParams:@{@"q" : @"needle", @"limit" : @"10"}
                                                   headers:@{}];
@@ -519,7 +519,7 @@
 }
 
 - (void)testGetQuotesRequiresUri {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getQuotes"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getQuotes"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -531,7 +531,7 @@
     NSDictionary *quote = [self createQuoteForDid:self.userDid subjectURI:target[@"uri"] text:@"quoting target"];
     (void)quote;
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getQuotes"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getQuotes"
                                              queryString:[NSString stringWithFormat:@"uri=%@&limit=10", target[@"uri"]]
                                               queryParams:@{@"uri" : target[@"uri"], @"limit" : @"10"}
                                                   headers:@{}];
@@ -544,7 +544,7 @@
 }
 
 - (void)testDescribeFeedGeneratorReturnsMetadata {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.describeFeedGenerator"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.describeFeedGenerator"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -555,7 +555,7 @@
 }
 
 - (void)testGetFeedSkeletonRequiresFeed {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -566,7 +566,7 @@
     NSDictionary *post = [self createPostForDid:self.userDid text:@"skeleton feed post"];
     NSString *feedURI = [NSString stringWithFormat:@"at://%@/app.bsky.feed.generator/%@", self.userDid, @"skeleton-feed"];
 
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getFeedSkeleton"
                                              queryString:[NSString stringWithFormat:@"feed=%@&limit=10", feedURI]
                                               queryParams:@{@"feed" : feedURI, @"limit" : @"10"}
                                                   headers:@{}];
@@ -579,7 +579,7 @@
 }
 
 - (void)testSendInteractionsReturnsEmptyBody {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.feed.sendInteractions"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.feed.sendInteractions"
                                                       body:@{@"interactions" : @[]}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 200);
@@ -587,7 +587,7 @@
 }
 
 - (void)testGetListFeedRequiresList {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getListFeed"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getListFeed"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -600,7 +600,7 @@
     [self seedListItemForListURI:listURI subjectDid:self.userDid];
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getListFeed"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getListFeed"
                                              queryString:[NSString stringWithFormat:@"list=%@&limit=10", listURI]
                                               queryParams:@{@"list" : listURI, @"limit" : @"10"}
                                                   headers:@{@"authorization" : authHeader}];

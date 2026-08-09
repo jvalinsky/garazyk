@@ -483,7 +483,7 @@ void RateLimiterSetStorageFactory(RateLimiterStorageFactory _Nullable factory) {
     return [headers copy];
 }
 
-- (void)applyRateLimitHeadersToResponse:(HttpResponse *)response
+- (void)applyRateLimitHeadersToResponse:(ATProtoHttpResponse *)response
                                   forDid:(nullable NSString *)did
                                     ip:(nullable NSString *)ip {
     if (did) {

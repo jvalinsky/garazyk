@@ -30,8 +30,8 @@ static BeskidDatabase *BeskidOpenTestDB(XCTestCase *testCase) {
     return db;
 }
 
-static HttpRequest *BeskidRequest(NSString *path, NSDictionary *queryParams) {
-    return [[HttpRequest alloc] initWithMethod:HttpMethodGET
+static ATProtoHttpRequest *BeskidRequest(NSString *path, NSDictionary *queryParams) {
+    return [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                  methodString:@"GET"
                                          path:path
                                   queryString:@""
@@ -222,8 +222,8 @@ static HttpRequest *BeskidRequest(NSString *path, NSDictionary *queryParams) {
 }
 
 - (void)testGetRecordByUriRejectsInvalidRequest {
-    HttpRequest *request = BeskidRequest(@"/xrpc/com.bad-example.repo.getUriRecord", @{});
-    HttpResponse *response = [HttpResponse response];
+    ATProtoHttpRequest *request = BeskidRequest(@"/xrpc/com.bad-example.repo.getUriRecord", @{});
+    ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     [self.routes registerRoutesWithServer:[HttpServer serverWithPort:0]]; // Route registration smoke test
     

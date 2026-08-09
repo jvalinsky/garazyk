@@ -42,15 +42,15 @@ int main(int argc, const char * argv[]) {
 
         [XrpcMethodRegistry registerMethodsWithDispatcher:xrpcDispatcher controller:controller];
 
-        [server addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+        [server addHandlerForPath:@"/xrpc" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             [xrpcDispatcher handleRequest:request response:response];
         }];
 
-        [server addHandlerForPath:@"/xrpc/" handler:^(HttpRequest *request, HttpResponse *response) {
+        [server addHandlerForPath:@"/xrpc/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             [xrpcDispatcher handleRequest:request response:response];
         }];
 
-        [server addHandlerForPath:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+        [server addHandlerForPath:@"/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
             response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
             [response setJsonBody:health];
@@ -59,19 +59,19 @@ int main(int argc, const char * argv[]) {
         // /xrpc/_health is handled by xrpcDispatcher via XrpcServerPack
         // We can keep a direct handler for better performance or just let it fall through.
         // Let's make it consistent.
-        [server addHandlerForPath:@"/xrpc/_health" handler:^(HttpRequest *request, HttpResponse *response) {
+        [server addHandlerForPath:@"/xrpc/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
             response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
             [response setJsonBody:health];
         }];
 
-        [server addHandlerForPath:@"/robots.txt" handler:^(HttpRequest *request, HttpResponse *response) {
+        [server addHandlerForPath:@"/robots.txt" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             response.statusCode = HttpStatusOK;
             response.contentType = @"text/plain";
             [response setBodyString:@"User-agent: *\nDisallow: /"];
         }];
 
-        [server addHandlerForPath:@"/account/" handler:^(HttpRequest *request, HttpResponse *response) {
+        [server addHandlerForPath:@"/account/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             response.statusCode = HttpStatusOK;
             response.contentType = @"text/html";
             NSString *html = @"<!DOCTYPE html><html><head><title>ATProto Account</title></head><body><h1>Account Management</h1><p>Account web UI coming soon.</p></body></html>";

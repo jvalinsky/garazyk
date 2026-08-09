@@ -36,13 +36,13 @@
   }
 
   [server addHandlerForPath:@"/oauth-demo"
-                    handler:^(HttpRequest *request, HttpResponse *response) {
+                    handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                       [oauthDemoHandler handleRequest:request response:response];
                     }];
 
   [server addRoute:@"GET"
               path:@"/oauth-demo/*"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              [oauthDemoHandler handleRequest:request response:response];
            }];
 

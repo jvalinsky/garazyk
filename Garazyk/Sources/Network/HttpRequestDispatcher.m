@@ -23,8 +23,8 @@
  -Wimplicit-function-declaration. Parity with XrpcHandler.m:372-402.
  */
 static void HttpRequestDispatcherHandleException(NSException *exception,
-                                                  HttpRequest *request,
-                                                  HttpResponse *response,
+                                                  ATProtoHttpRequest *request,
+                                                  ATProtoHttpResponse *response,
                                                   NSString *context);
 
 @implementation HttpRequestDispatcher
@@ -37,7 +37,7 @@ static void HttpRequestDispatcherHandleException(NSException *exception,
   return self;
 }
 
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request {
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request {
   NSString *logPath = request.queryString.length > 0
                           ? [NSString stringWithFormat:@"%@?%@", request.path,
                                                        request.queryString]
@@ -45,7 +45,7 @@ static void HttpRequestDispatcherHandleException(NSException *exception,
   GZ_LOG_HTTP_INFO(@"[%@] %@ %@", request.remoteAddress, request.methodString,
                     logPath);
 
-  HttpResponse *response = [HttpResponse response];
+  ATProtoHttpResponse *response = [ATProtoHttpResponse response];
   if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
       [RateLimiter sharedLimiter].isEnabled) {
     RateLimitResult *result =
@@ -92,8 +92,8 @@ static void HttpRequestDispatcherHandleException(NSException *exception,
 }
 
 static void HttpRequestDispatcherHandleException(NSException *exception,
-                                                  HttpRequest *request,
-                                                  HttpResponse *response,
+                                                  ATProtoHttpRequest *request,
+                                                  ATProtoHttpResponse *response,
                                                   NSString *context) {
   NSString *name = exception.name ?: @"(null)";
   NSString *reason = exception.reason ?: @"(null)";

@@ -42,7 +42,7 @@
 // Forward declarations of helper functions — static helpers are local; non-static are shared with categories
 NSDictionary *adminAccountViewFromAccount(PDSDatabaseAccount *account);
 static NSString *iso8601StringFromUnixTimestamp(NSTimeInterval timestamp);
-NSArray<NSString *> *queryArrayValues(HttpRequest *request, NSString *key);
+NSArray<NSString *> *queryArrayValues(ATProtoHttpRequest *request, NSString *key);
 static NSDictionary *adminInviteCodeViewFromRow(NSDictionary *row);
 NSArray<NSDictionary *> *loadAdminInviteCodeViews(PDSServiceDatabases *serviceDatabases,
                                                          NSString *sort,
@@ -203,7 +203,7 @@ NSDictionary *adminAccountViewFromAccount(PDSDatabaseAccount *account) {
     return view;
 }
 
-NSArray<NSString *> *queryArrayValues(HttpRequest *request, NSString *key) {
+NSArray<NSString *> *queryArrayValues(ATProtoHttpRequest *request, NSString *key) {
     NSMutableArray<NSString *> *values = [NSMutableArray array];
     NSArray<NSString *> *pairs = [request.queryString componentsSeparatedByString:@"&"];
     for (NSString *pair in pairs) {

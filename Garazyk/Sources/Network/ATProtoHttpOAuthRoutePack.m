@@ -69,7 +69,7 @@
 
   [server addRoute:@"POST"
               path:@"/auth/2fa/webauthn/begin"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              NSString *identifier = [request stringBodyForKey:@"identifier"];
              NSString *password = [request stringBodyForKey:@"password"];
              if (identifier.length == 0 || password.length == 0) {
@@ -111,7 +111,7 @@
 
   [server addRoute:@"POST"
               path:@"/auth/2fa/webauthn/complete"
-           handler:^(HttpRequest *request, HttpResponse *response) {
+           handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
              NSString *identifier = [request stringBodyForKey:@"identifier"];
              NSString *sessionID = [request stringBodyForKey:@"sessionId"];
              NSDictionary *assertion = request.jsonBody[@"assertion"];

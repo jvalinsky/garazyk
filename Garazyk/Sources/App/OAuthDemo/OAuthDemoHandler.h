@@ -9,8 +9,8 @@
 #import <Foundation/Foundation.h>
 #import "Compat/PDSTypes.h"
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSController;
@@ -59,7 +59,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request Incoming HTTP request.
  @result YES when the path starts with `/oauth-demo`, otherwise NO.
  */
-- (BOOL)canHandleRequest:(HttpRequest *)request;
+- (BOOL)canHandleRequest:(ATProtoHttpRequest *)request;
 
 /*!
  @method handleRequest:response:
@@ -69,7 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request Incoming HTTP request.
  @param response Response object to populate.
  */
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end
 

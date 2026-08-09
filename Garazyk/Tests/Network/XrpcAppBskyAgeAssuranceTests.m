@@ -10,7 +10,7 @@
 @implementation XrpcAppBskyAgeAssuranceTests
 
 - (void)testBeginAgeAssuranceRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.ageassurance.begin"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.ageassurance.begin"
                                                       body:@{
                                                           @"email": @"test@example.com",
                                                           @"language": @"en",
@@ -22,7 +22,7 @@
 
 - (void)testBeginAgeAssuranceValidatesInput {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.ageassurance.begin"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.ageassurance.begin"
                                                       body:@{
                                                           @"email": @"test@example.com"
                                                       }
@@ -32,7 +32,7 @@
 
 - (void)testBeginAgeAssuranceSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.ageassurance.begin"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.ageassurance.begin"
                                                       body:@{
                                                           @"email": @"test@example.com",
                                                           @"language": @"en",
@@ -45,7 +45,7 @@
 }
 
 - (void)testGetAgeAssuranceConfig {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.ageassurance.getConfig"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.ageassurance.getConfig"
                                               queryString:@""
                                               queryParams:@{}
                                                   headers:@{}];
@@ -54,7 +54,7 @@
 }
 
 - (void)testGetAgeAssuranceStateRequiresAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.ageassurance.getState"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.ageassurance.getState"
                                               queryString:@"countryCode=US"
                                               queryParams:@{@"countryCode": @"US"}
                                                   headers:@{}];
@@ -73,7 +73,7 @@
                              }
                           headers:@{@"authorization": authHeader}];
     
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.ageassurance.getState"
+    ATProtoHttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.ageassurance.getState"
                                               queryString:@"countryCode=US"
                                               queryParams:@{@"countryCode": @"US"}
                                                   headers:@{@"authorization": authHeader}];
@@ -86,7 +86,7 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     
     // 1. Begin
-    HttpResponse *beginResponse = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.ageassurance.begin"
+    ATProtoHttpResponse *beginResponse = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.ageassurance.begin"
                                                            body:@{
                                                                @"email": @"test@example.com",
                                                                @"language": @"en",
@@ -108,13 +108,13 @@
     XCTAssertNotNil(token);
     
     // 2. Confirm
-    HttpResponse *confirmResponse = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.confirmAgeAssurance"
+    ATProtoHttpResponse *confirmResponse = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.confirmAgeAssurance"
                                                              body:@{@"token": token}
                                                           headers:@{}];
     XCTAssertEqual(confirmResponse.statusCode, 200);
     
     // 3. Check State
-    HttpResponse *stateResponse = [self sendGetRequestWithPath:@"/xrpc/app.bsky.ageassurance.getState"
+    ATProtoHttpResponse *stateResponse = [self sendGetRequestWithPath:@"/xrpc/app.bsky.ageassurance.getState"
                                                    queryString:@"countryCode=US"
                                                    queryParams:@{@"countryCode": @"US"}
                                                        headers:@{@"authorization": authHeader}];
@@ -123,7 +123,7 @@
 }
 
 - (void)testConfirmAgeAssuranceInvalidToken {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.confirmAgeAssurance"
+    ATProtoHttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.unspecced.confirmAgeAssurance"
                                                       body:@{@"token": @"invalid-token"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 400);

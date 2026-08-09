@@ -12,18 +12,18 @@
 @interface AppViewXRpcRoutePack (Contact)
 
 /** @abstract Starts phone verification for required `phoneNumber` and returns its verification ID. */
-- (void)handleStartPhoneVerification:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleStartPhoneVerification:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Verifies required `phoneNumber` and `code`, returning a contact-import token or 401. */
-- (void)handleVerifyPhone:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleVerifyPhone:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Imports required `contacts` using a required verification token for the caller. */
-- (void)handleImportContacts:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleImportContacts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns the authenticated caller's current contact matches. */
-- (void)handleGetContactMatches:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetContactMatches:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Validates a match DID and suppresses that match for the authenticated caller. */
-- (void)handleDismissContactMatch:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleDismissContactMatch:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Returns the authenticated caller's contact-sync status. */
-- (void)handleGetContactSyncStatus:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleGetContactSyncStatus:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 /** @abstract Deletes all contact data owned by the authenticated caller. */
-- (void)handleRemoveContactData:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRemoveContactData:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 @end

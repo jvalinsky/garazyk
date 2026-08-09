@@ -43,7 +43,7 @@
 
     // com.atproto.admin.getServerStats
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getServerStats
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -66,7 +66,7 @@
     
     // com.atproto.admin.queryAuditLog
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_queryAuditLog
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -98,7 +98,7 @@
 
     // com.atproto.admin.repairRepo
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_repairRepo
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -150,7 +150,7 @@
 
     // com.atproto.admin.runBlobAudit
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_runBlobAudit
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
@@ -189,7 +189,7 @@
 
     // com.atproto.admin.getBlobAuditStatus
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getBlobAuditStatus
-                       handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases

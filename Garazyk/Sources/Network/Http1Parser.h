@@ -60,7 +60,7 @@ typedef NS_ENUM(NSInteger, Http1ParserState) {
 /** Maximum accepted request body size in bytes. Defaults to 50 MB. */
 @property (nonatomic, assign) NSUInteger maxBodyBytes;    // default 50MB
 
-/** Client IP address copied into the completed HttpRequest. */
+/** Client IP address copied into the completed ATProtoHttpRequest. */
 @property (nonatomic, copy, nullable) NSString *remoteAddress;
 
 /**
@@ -70,7 +70,7 @@ typedef NS_ENUM(NSInteger, Http1ParserState) {
 - (BOOL)feedData:(NSData *)data;
 
 /** Completed request after feedData: returns YES, or nil when parsing failed. */
-- (nullable HttpRequest *)completedRequest;
+- (nullable ATProtoHttpRequest *)completedRequest;
 /** Parser error after feedData: returns YES, or nil when a request completed successfully. */
 - (nullable Http1ParserError *)parseError;
 

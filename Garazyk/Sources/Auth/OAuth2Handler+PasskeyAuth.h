@@ -19,8 +19,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request The JSON request containing the DID to bind to the challenge.
  * @param response The JSON challenge or failure response.
  */
-- (void)handlePasskeyChallenge:(HttpRequest *)request
-                      response:(HttpResponse *)response;
+- (void)handlePasskeyChallenge:(ATProtoHttpRequest *)request
+                      response:(ATProtoHttpResponse *)response;
 /**
  * @abstract Verifies a WebAuthn assertion and creates a pending-consent session.
  * @discussion Requires a matching CSRF header and cookie, then atomically consumes the supplied
@@ -30,8 +30,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request The JSON assertion submission with the challenge session identifier and DID.
  * @param response The JSON success or failure response.
  */
-- (void)handlePasskeySignIn:(HttpRequest *)request
-                     response:(HttpResponse *)response;
+- (void)handlePasskeySignIn:(ATProtoHttpRequest *)request
+                     response:(ATProtoHttpResponse *)response;
 /**
  * @abstract Removes expired or malformed passkey challenge sessions.
  * @warning The caller must already be executing on sPasskeyChallengeQueue.

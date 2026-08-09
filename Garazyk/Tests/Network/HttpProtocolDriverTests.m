@@ -43,7 +43,7 @@
     NSData *reqData = [reqStr dataUsingEncoding:NSUTF8StringEncoding];
 
     [self.driver feedData:reqData];
-    HttpRequest *req = [self.driver nextDispatchableRequest];
+    ATProtoHttpRequest *req = [self.driver nextDispatchableRequest];
 
     XCTAssertNotNil(req);
     XCTAssertEqualObjects(req.path, @"/ping");
@@ -87,7 +87,7 @@
     }
     XCTAssertTrue(foundUpgrade);
 
-    HttpRequest *upgradeReq2 = [self.driver currentUpgradeRequest];
+    ATProtoHttpRequest *upgradeReq2 = [self.driver currentUpgradeRequest];
     XCTAssertNotNil(upgradeReq2);
 }
 
@@ -132,7 +132,7 @@
 
     // Dispatch one request — pendingRequestCount tracks in-flight
     // (dispatched but not yet responded to) requests, not queued ones.
-    HttpRequest *req = [self.driver nextDispatchableRequest];
+    ATProtoHttpRequest *req = [self.driver nextDispatchableRequest];
     XCTAssertNotNil(req);
 
     NSUInteger count = [self.driver pendingRequestCount];

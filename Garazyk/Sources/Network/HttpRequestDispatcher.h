@@ -12,10 +12,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
-typedef void (^HttpServerRequestHandler)(HttpRequest *request, HttpResponse *response);
+typedef void (^HttpServerRequestHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
 typedef HttpServerRequestHandler _Nullable (^HttpRouteLookupHandler)(
     NSString *path,
     NSString *method,
@@ -36,7 +36,7 @@ typedef HttpServerRequestHandler _Nullable (^HttpRouteLookupHandler)(
 /**
  * @abstract Performs the dispatchRequest operation.
  */
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
 
 @end
 

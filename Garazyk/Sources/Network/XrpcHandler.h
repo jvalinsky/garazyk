@@ -4,8 +4,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class HttpRequest;
-@class HttpResponse;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 @class ATProtoJWTMinter;
 @class PDSDatabasePool;
 /**
@@ -32,7 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The incoming HTTP request containing the XRPC call.
  @param response The response object to populate with results.
  */
-typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
+typedef void (^XrpcMethodHandler)(ATProtoHttpRequest *request, ATProtoHttpResponse *response);
 
 /*!
 
@@ -42,8 +42,8 @@ typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
  normal dispatch/default handling. Return YES to indicate the interceptor
  handled the request and no further dispatch should occur.
  */
-typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
-                                       HttpResponse *response,
+typedef BOOL (^XrpcRequestInterceptor)(ATProtoHttpRequest *request,
+                                       ATProtoHttpResponse *response,
                                        NSString *methodId,
                                        BOOL hasLocalHandler);
 
@@ -59,7 +59,7 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
  @code
  XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
  
- [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createSession handler:^(HttpRequest *req, HttpResponse *resp) {
+ [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createSession handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
      // Handle createSession call
  }];
  
@@ -69,7 +69,7 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 @interface XrpcDispatcher : NSObject
 
 /*! Default handler for unrecognized methods. */
-@property (nonatomic, copy) void (^defaultHandler)(HttpRequest *, HttpResponse *);
+@property (nonatomic, copy) void (^defaultHandler)(ATProtoHttpRequest *, ATProtoHttpResponse *);
 
 /*! Optional pre-dispatch interceptor for proxying/fallback behavior. */
 @property (nonatomic, copy, nullable) XrpcRequestInterceptor requestInterceptor;
@@ -142,7 +142,7 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
  @param request The incoming request.
  @param response The response object to populate.
  */
-- (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handleRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 // MARK: - Middleware Support
 

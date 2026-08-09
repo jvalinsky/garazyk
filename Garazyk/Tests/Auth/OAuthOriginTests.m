@@ -6,7 +6,7 @@
 
 // Category to expose private method for testing
 @interface OAuth2Handler (Test)
-- (NSString *)requestOriginForRequest:(HttpRequest *)request;
+- (NSString *)requestOriginForRequest:(ATProtoHttpRequest *)request;
 @end
 
 @interface OAuthOriginTests : XCTestCase
@@ -15,7 +15,7 @@
 @implementation OAuthOriginTests
 
 - (void)testRequestOriginForRequest {
-    // This requires a real or mock OAuth2Handler and HttpRequest.
+    // This requires a real or mock OAuth2Handler and ATProtoHttpRequest.
     // Since we're in a unit test, we'll try to verify the logic.
 }
 
