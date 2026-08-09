@@ -14,7 +14,7 @@
 - (void)registerPDSRoutes {
     __weak typeof(self) weakSelf = self;
 
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/overview" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/overview" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *overview = [weakSelf.backendClient fetchServiceOverview];
         response.statusCode = 200;
@@ -22,14 +22,14 @@
         [response setBodyString:[GZAdminUIPDSPack renderOverviewPartial:overview]];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/connections" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/connections" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[GZAdminUIPDSPack renderConnectionsPartialWithConfiguration:weakSelf.configuration]];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/accounts" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/accounts" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *query = [request queryParamForKey:@"q"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient searchAccountsWithQuery:query];
@@ -38,7 +38,7 @@
         [response setBodyString:[GZAdminUIPDSPack renderAccountsPartial:result]];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/invites" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/invites" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchInviteCodes];
         response.statusCode = 200;
@@ -46,7 +46,7 @@
         [response setBodyString:[GZAdminUIPDSPack renderInvitesPartial:result]];
     }];
 
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/disable-invites" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/disable-invites" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *account = [request.jsonBody[@"account"] isKindOfClass:[NSString class]] ? request.jsonBody[@"account"] : [request queryParamForKey:@"account"];
         NSDictionary *result = [weakSelf.backendClient disableInvitesForAccount:account ?: @""];
@@ -57,12 +57,12 @@
         }
         response.contentType = @"text/html; charset=utf-8";
         NSString *message = result[@"error"]
-            ? [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])]
+            ? [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])]
             : @"<div class=\"alert alert-success\">Invites disabled for account.</div>";
         [response setBodyString:message];
     }];
 
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/bulk-takedown" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/bulk-takedown" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSArray *dids = [request.jsonBody[@"dids"] isKindOfClass:[NSArray class]] ? request.jsonBody[@"dids"] : @[];
         NSDictionary *result = [weakSelf.backendClient bulkTakedownAccounts:dids];
@@ -71,7 +71,7 @@
         [response setJsonBody:result];
     }];
 
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/bulk-delete" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/bulk-delete" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSArray *dids = [request.jsonBody[@"dids"] isKindOfClass:[NSArray class]] ? request.jsonBody[@"dids"] : @[];
         NSDictionary *result = [weakSelf.backendClient bulkDeleteAccounts:dids];
@@ -81,7 +81,7 @@
     }];
 
     // PDS: Account detail
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/account-detail" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/account-detail" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient fetchAccountInfoForDID:did];
@@ -91,7 +91,7 @@
     }];
 
     // PDS: Server stats
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/pds-stats" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/pds-stats" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchServerStats];
         response.statusCode = 200;
@@ -100,7 +100,7 @@
     }];
 
     // PDS: Audit log
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/audit-log" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/audit-log" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchAuditLogWithCursor:cursor limit:25];
@@ -109,7 +109,7 @@
         [response setBodyString:[GZAdminUIPDSPack renderAuditLogPartial:result]];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/blobs" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/blobs" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
@@ -119,7 +119,7 @@
         [response setBodyString:[GZAdminUIPDSPack renderBlobsPartial:result did:did]];
     }];
 
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/enable-invites" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/enable-invites" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *account = [request.jsonBody[@"account"] isKindOfClass:[NSString class]] ? request.jsonBody[@"account"] : [request queryParamForKey:@"account"];
         NSDictionary *result = [weakSelf.backendClient enableInvitesForAccount:account ?: @""];
@@ -127,11 +127,11 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Invites enabled for account.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 
     // PDS: Update handle action
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-handle" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-handle" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
         NSString *handle = [request.jsonBody[@"handle"] isKindOfClass:[NSString class]] ? request.jsonBody[@"handle"] : @"";
@@ -140,11 +140,11 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Handle updated.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 
     // PDS: Delete account
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-account" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-account" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request.jsonBody[@"did"] isKindOfClass:[NSString class]] ? request.jsonBody[@"did"] : @"";
         NSDictionary *result = [weakSelf.backendClient deleteAccount:did];
@@ -152,11 +152,11 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Account deleted.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 
     // PDS: Fetch reports
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/pds-reports" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/pds-reports" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchReportsWithCursor:cursor limit:25];
@@ -166,7 +166,7 @@
     }];
 
     // PDS: Resolve report
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/resolve-pds-report" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/resolve-pds-report" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *reportID = [request.jsonBody[@"reportID"] isKindOfClass:[NSString class]] ? request.jsonBody[@"reportID"] : @"";
         NSString *action = [request.jsonBody[@"action"] isKindOfClass:[NSString class]] ? request.jsonBody[@"action"] : @"";
@@ -175,11 +175,11 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Report resolved.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 
     // Connections: Update service URLs and tokens
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-connections" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-connections" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *body = request.jsonBody;
         if (![body isKindOfClass:[NSDictionary class]]) {

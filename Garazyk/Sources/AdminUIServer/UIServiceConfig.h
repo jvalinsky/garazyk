@@ -7,7 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Stores endpoint and credential settings for the Admin UI service.
  */
-@interface UIServiceConfig : NSObject
+@interface GZAdminUIServiceConfig : NSObject
 
 @property(nonatomic, copy) NSString *host;
 @property(nonatomic, assign) NSUInteger port;

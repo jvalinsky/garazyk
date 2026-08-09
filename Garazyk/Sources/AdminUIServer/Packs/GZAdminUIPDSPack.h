@@ -3,7 +3,7 @@
 #import <Foundation/Foundation.h>
 #import "AdminUIServer/GZAdminUIPack.h"
 
-@class UIServiceConfig;
+@class GZAdminUIServiceConfig;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Renders PDS moderation reports. */
 + (NSString *)renderPDSReportsPartial:(NSDictionary *)result;
 /** @abstract Renders configured backend connection status. */
-+ (NSString *)renderConnectionsPartialWithConfiguration:(UIServiceConfig *)configuration;
++ (NSString *)renderConnectionsPartialWithConfiguration:(GZAdminUIServiceConfig *)configuration;
 /** @abstract Renders the server overview result. */
 + (NSString *)renderOverviewPartial:(NSDictionary *)result;
 

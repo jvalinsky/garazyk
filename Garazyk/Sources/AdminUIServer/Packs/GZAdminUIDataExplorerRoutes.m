@@ -15,7 +15,7 @@
     __weak typeof(self) weakSelf = self;
 
     // Explorer: Describe repo
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/describe-repo" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/describe-repo" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient describeRepo:did];
@@ -25,7 +25,7 @@
     }];
 
     // Explorer: List records
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/list-records" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/list-records" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSString *collection = [request queryParamForKey:@"collection"];
@@ -37,7 +37,7 @@
     }];
 
     // Explorer: Get record
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/get-record" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/get-record" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSString *collection = [request queryParamForKey:@"collection"] ?: @"";

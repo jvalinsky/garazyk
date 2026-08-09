@@ -3,9 +3,9 @@
 #import <Foundation/Foundation.h>
 #import "Runtime/GZServiceLifecycle.h"
 
-@class UIServiceConfig;
-@class HttpRequest;
-@class HttpResponse;
+@class GZAdminUIServiceConfig;
+@class ATProtoHttpRequest;
+@class ATProtoHttpResponse;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface GZAdminUIHost : NSObject <GZServiceRuntimeProtocol>
 
-@property(nonatomic, strong, readonly) UIServiceConfig *configuration;
+@property(nonatomic, strong, readonly) GZAdminUIServiceConfig *configuration;
 @property(nonatomic, copy, readonly) NSArray<Class> *packs;
 @property(nonatomic, assign, readonly, getter=isRunning) BOOL running;
 
@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Composes a host from configuration and the packs it should serve.
  * @param packs Classes conforming to @c GZAdminUIPack, registered in the order given.
  */
-- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration
+- (instancetype)initWithConfiguration:(GZAdminUIServiceConfig *)configuration
                                  packs:(NSArray<Class> *)packs NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 - (BOOL)startWithError:(NSError **)error;
@@ -34,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request HTTP request to authenticate or dispatch.
  * @return Result produced by the operation.
  */
-- (HttpResponse *)dispatchRequestForTesting:(HttpRequest *)request;
+- (ATProtoHttpResponse *)dispatchRequestForTesting:(ATProtoHttpRequest *)request;
 
 @end
 

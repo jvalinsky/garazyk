@@ -34,12 +34,12 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     return url;
 }
 
-@implementation UIServiceConfig
+@implementation GZAdminUIServiceConfig
 
 + (instancetype)configurationFromEnvironment {
     NSDictionary<NSString *, NSString *> *env = [[NSProcessInfo processInfo] environment];
 
-    UIServiceConfig *config = [[UIServiceConfig alloc] init];
+    GZAdminUIServiceConfig *config = [[GZAdminUIServiceConfig alloc] init];
     config.host = UIEnvString(env, @"GARAZYK_UI_HOST", @"127.0.0.1");
     config.port = UIEnvUnsigned(env, @"GARAZYK_UI_PORT", 2590);
     config.adminPassword = UIEnvString(env, @"GARAZYK_UI_ADMIN_PASSWORD", @"changeme");

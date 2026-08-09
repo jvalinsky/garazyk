@@ -36,7 +36,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 @end
 
 @interface UILabIntegrationTests : XCTestCase
-@property (nonatomic, strong) UIServiceConfig *config;
+@property (nonatomic, strong) GZAdminUIServiceConfig *config;
 @property (nonatomic, strong) GZAdminUIHost *runtime;
 @end
 
@@ -45,7 +45,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 - (void)setUp {
     [super setUp];
 
-    self.config = [[UIServiceConfig alloc] init];
+    self.config = [[GZAdminUIServiceConfig alloc] init];
     self.config.host = UILabIntegrationTestHost;
     self.config.port = UILabIntegrationTestPort;
     self.config.adminPassword = @"test-admin-password";
@@ -123,7 +123,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 /*!
  @abstract GETs `path` and returns headers carrying the CSRF nonce it issues.
 
- @discussion validateCSRFForRequest: (UIAuthManager) requires the same
+ @discussion validateCSRFForRequest: (GZAdminUIAuthManager) requires the same
  one-time nonce in both the `ui_admin_nonce` cookie and the
  `X-UI-Admin-Nonce` header on the next state-changing request. Any
  unauthenticated GET to /admin/login, or an authenticated GET to /admin,
@@ -166,7 +166,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
         queryParams[item.name] = item.value ?: @"";
     }
 
-    HttpRequest *request = [[HttpRequest alloc] initWithMethod:[self httpMethodFromString:method]
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:[self httpMethodFromString:method]
                                                   methodString:method
                                                           path:components.path ?: path
                                                    queryString:components.percentEncodedQuery ?: @""
@@ -175,7 +175,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
                                                         headers:headers ?: @{}
                                                            body:body ?: [NSData data]
                                                   remoteAddress:@"127.0.0.1"];
-    HttpResponse *runtimeResponse = [self.runtime dispatchRequestForTesting:request];
+    ATProtoHttpResponse *runtimeResponse = [self.runtime dispatchRequestForTesting:request];
 
     NSMutableDictionary *responseHeaders = [runtimeResponse.headers mutableCopy] ?: [NSMutableDictionary dictionary];
     if (runtimeResponse.contentType.length > 0) {
