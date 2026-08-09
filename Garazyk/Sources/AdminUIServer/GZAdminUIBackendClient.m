@@ -27,11 +27,11 @@ static NSString *UIBackendSafeBearerHeader(NSString *token) {
 
 @implementation GZAdminUIBackendClient
 
-- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
+- (instancetype)initWithConfiguration:(GZAdminUIServiceConfig *)configuration {
     return [self initWithConfiguration:configuration httpClient:nil];
 }
 
-- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration
+- (instancetype)initWithConfiguration:(GZAdminUIServiceConfig *)configuration
                            httpClient:(nullable ATProtoSafeHTTPClient *)httpClient {
     self = [super init];
     if (self) {

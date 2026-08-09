@@ -111,6 +111,7 @@ allowed_links_for_module() {
   case "$1" in
     ATProtoCore) echo "" ;;
     ATProtoStorage|ATProtoTransport) echo "ATProtoCore" ;;
+    ATProtoAdminUI) echo "ATProtoTransport ATProtoCore" ;;
     ATProtoServices) echo "ATProtoStorage ATProtoCore" ;;
     ATProtoSync) echo "ATProtoStorage ATProtoTransport ATProtoCore" ;;
     ATProtoXRPC) echo "ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoPLC ATProtoCore" ;;
@@ -128,7 +129,7 @@ module_rank_for() {
   case "$1" in
     ATProtoCore) echo 1 ;;
     ATProtoStorage|ATProtoTransport) echo 2 ;;
-    ATProtoServices|ATProtoSync|ATProtoPLC|ATProtoMediaCore) echo 3 ;;
+    ATProtoServices|ATProtoSync|ATProtoPLC|ATProtoMediaCore|ATProtoAdminUI) echo 3 ;;
     ATProtoXRPC|ATProtoVideoService) echo 4 ;;
     ATProtoRuntime) echo 5 ;;
     *) echo 0 ;;
@@ -140,6 +141,7 @@ modules=(
   ATProtoStorage
   ATProtoServices
   ATProtoTransport
+  ATProtoAdminUI
   ATProtoSync
   ATProtoXRPC
   ATProtoPLC

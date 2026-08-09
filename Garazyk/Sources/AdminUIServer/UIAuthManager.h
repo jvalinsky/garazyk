@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
-@class HttpRequest;
+@class ATProtoHttpRequest;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -14,7 +14,7 @@ extern const NSTimeInterval kUIAuthDefaultSessionTTL;
 /**
  * @abstract Manages Admin UI authentication tokens and session state.
  */
-@interface UIAuthManager : NSObject
+@interface GZAdminUIAuthManager : NSObject
 
 /**
  * @abstract Session TTL in seconds. Default is 8 hours (28800).
@@ -77,14 +77,14 @@ extern const NSTimeInterval kUIAuthDefaultSessionTTL;
  * @param request The HTTP request to check.
  * @return YES if authorized; otherwise NO.
  */
-- (BOOL)isAuthorizedRequest:(HttpRequest *)request;
+- (BOOL)isAuthorizedRequest:(ATProtoHttpRequest *)request;
 
 /**
  * @abstract Extract token from Authorization header or ui_admin_token cookie.
  * @param request The HTTP request.
  * @return The extracted token, or nil.
  */
-- (nullable NSString *)extractTokenFromRequest:(HttpRequest *)request;
+- (nullable NSString *)extractTokenFromRequest:(ATProtoHttpRequest *)request;
 
 /**
  * @abstract Build a Set-Cookie header value for the session token with security attributes.
@@ -100,7 +100,7 @@ extern const NSTimeInterval kUIAuthDefaultSessionTTL;
  * @param request The HTTP request.
  * @return YES if valid or absent; otherwise NO.
  */
-- (BOOL)validateCSRFForRequest:(HttpRequest *)request;
+- (BOOL)validateCSRFForRequest:(ATProtoHttpRequest *)request;
 
 /**
  * @abstract Generate a new CSRF nonce and return the Set-Cookie header value.

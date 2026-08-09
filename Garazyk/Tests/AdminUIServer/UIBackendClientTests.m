@@ -36,7 +36,7 @@
 
 @implementation GZAdminUIBackendClientStub
 
-- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
+- (instancetype)initWithConfiguration:(GZAdminUIServiceConfig *)configuration {
     self = [super initWithConfiguration:configuration];
     if (self) {
         _capturedRequests = [NSMutableArray array];
@@ -109,7 +109,7 @@
 @interface GZAdminUIBackendClientTests : XCTestCase
 @property (nonatomic, strong) GZAdminUIBackendClient *client;
 @property (nonatomic, strong) MockSafeHTTPClient *mockHTTP;
-@property (nonatomic, strong) UIServiceConfig *config;
+@property (nonatomic, strong) GZAdminUIServiceConfig *config;
 @end
 
 @implementation GZAdminUIBackendClientTests
@@ -117,7 +117,7 @@
 - (void)setUp {
     [super setUp];
 
-    self.config = [[UIServiceConfig alloc] init];
+    self.config = [[GZAdminUIServiceConfig alloc] init];
     self.config.host = @"127.0.0.1";
     self.config.port = 3000;
     self.config.pdsBaseURL = [NSURL URLWithString:@"http://localhost:3001"];

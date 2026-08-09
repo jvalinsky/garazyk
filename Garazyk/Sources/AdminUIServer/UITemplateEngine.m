@@ -3,7 +3,7 @@
 #import "AdminUIServer/UITemplateEngine.h"
 #import "Debug/GZLogger.h"
 
-@implementation UITemplateEngine
+@implementation GZAdminUITemplateEngine
 
 static NSString *EscapeHTML(NSString *str) {
     if (!str) return @"";

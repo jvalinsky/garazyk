@@ -10,7 +10,7 @@
 @implementation UITileExecutionPolicyTests
 
 - (void)testTileCSPMatchesNormativeRestrictedPolicy {
-    NSString *csp = UITileExecutionContentSecurityPolicy();
+    NSString *csp = GZAdminUITileExecutionContentSecurityPolicy();
     XCTAssertTrue([csp containsString:@"default-src 'self' blob: data:"]);
     XCTAssertTrue([csp containsString:@"script-src 'self' blob: data: 'unsafe-inline' 'wasm-unsafe-eval'"]);
     XCTAssertTrue([csp containsString:@"script-src-attr 'none'"]);
@@ -23,7 +23,7 @@
 }
 
 - (void)testTileSecurityHeadersIncludeIsolationAndNoReferrer {
-    NSDictionary *headers = UITileExecutionSecurityHeaders();
+    NSDictionary *headers = GZAdminUITileExecutionSecurityHeaders();
     XCTAssertEqualObjects(headers[@"cross-origin-opener-policy"], @"same-origin");
     XCTAssertEqualObjects(headers[@"cross-origin-resource-policy"], @"cross-origin");
     XCTAssertEqualObjects(headers[@"origin-agent-cluster"], @"?1");
@@ -33,41 +33,41 @@
 }
 
 - (void)testDataProtocolModuleExportsNormativeFunctions {
-    NSString *module = UITileDataProtocolJavaScript();
+    NSString *module = GZAdminUITileDataProtocolJavaScript();
     XCTAssertTrue([module containsString:@"export function addDataHandler"]);
     XCTAssertTrue([module containsString:@"export function removeDataHandler"]);
     XCTAssertTrue([module containsString:@"export function listen"]);
     XCTAssertTrue([module containsString:@"export function sendData"]);
-    XCTAssertTrue([module containsString:UITileDataProtocolReadyAction]);
-    XCTAssertTrue([module containsString:UITileDataProtocolDownPayloadAction]);
-    XCTAssertTrue([module containsString:UITileDataProtocolUpPayloadAction]);
+    XCTAssertTrue([module containsString:GZAdminUITileDataProtocolReadyAction]);
+    XCTAssertTrue([module containsString:GZAdminUITileDataProtocolDownPayloadAction]);
+    XCTAssertTrue([module containsString:GZAdminUITileDataProtocolUpPayloadAction]);
     XCTAssertTrue([module containsString:@"event.source !== window.parent"]);
 }
 
 - (void)testDataProtocolAcceptsReadyAndPayloadMessages {
     NSError *error = nil;
-    XCTAssertTrue(UITileDataProtocolIsValidMessage(@{@"action": UITileDataProtocolReadyAction}, NO, &error));
+    XCTAssertTrue(GZAdminUITileDataProtocolIsValidMessage(@{@"action": GZAdminUITileDataProtocolReadyAction}, NO, &error));
     XCTAssertNil(error);
-    XCTAssertTrue(UITileDataProtocolIsValidMessage(@{@"action": UITileDataProtocolUpPayloadAction,
+    XCTAssertTrue(GZAdminUITileDataProtocolIsValidMessage(@{@"action": GZAdminUITileDataProtocolUpPayloadAction,
                                                       @"payload": @{@"answer": @YES}}, NO, &error));
     XCTAssertNil(error);
-    XCTAssertTrue(UITileDataProtocolIsValidMessage(@{@"action": UITileDataProtocolDownPayloadAction,
+    XCTAssertTrue(GZAdminUITileDataProtocolIsValidMessage(@{@"action": GZAdminUITileDataProtocolDownPayloadAction,
                                                       @"payload": @[@1, @2]}, YES, &error));
     XCTAssertNil(error);
 }
 
 - (void)testDataProtocolRejectsWrongDirectionAndMalformedMessages {
     NSError *error = nil;
-    XCTAssertFalse(UITileDataProtocolIsValidMessage(@{@"action": UITileDataProtocolReadyAction}, YES, &error));
+    XCTAssertFalse(GZAdminUITileDataProtocolIsValidMessage(@{@"action": GZAdminUITileDataProtocolReadyAction}, YES, &error));
     XCTAssertNotNil(error);
     error = nil;
-    XCTAssertFalse(UITileDataProtocolIsValidMessage(@{@"action": UITileDataProtocolUpPayloadAction}, NO, &error));
+    XCTAssertFalse(GZAdminUITileDataProtocolIsValidMessage(@{@"action": GZAdminUITileDataProtocolUpPayloadAction}, NO, &error));
     XCTAssertNotNil(error);
     error = nil;
-    XCTAssertFalse(UITileDataProtocolIsValidMessage(@{@"action": UITileDataProtocolReadyAction, @"payload": @1}, NO, &error));
+    XCTAssertFalse(GZAdminUITileDataProtocolIsValidMessage(@{@"action": GZAdminUITileDataProtocolReadyAction, @"payload": @1}, NO, &error));
     XCTAssertNotNil(error);
     error = nil;
-    XCTAssertFalse(UITileDataProtocolIsValidMessage(@{@"action": UITileDataProtocolDownPayloadAction}, YES, &error));
+    XCTAssertFalse(GZAdminUITileDataProtocolIsValidMessage(@{@"action": GZAdminUITileDataProtocolDownPayloadAction}, YES, &error));
     XCTAssertNotNil(error);
 }
 

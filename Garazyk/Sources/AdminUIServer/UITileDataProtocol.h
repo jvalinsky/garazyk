@@ -17,15 +17,15 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-FOUNDATION_EXPORT NSString * const UITileDataProtocolReadyAction;
-FOUNDATION_EXPORT NSString * const UITileDataProtocolDownPayloadAction;
-FOUNDATION_EXPORT NSString * const UITileDataProtocolUpPayloadAction;
+FOUNDATION_EXPORT NSString * const GZAdminUITileDataProtocolReadyAction;
+FOUNDATION_EXPORT NSString * const GZAdminUITileDataProtocolDownPayloadAction;
+FOUNDATION_EXPORT NSString * const GZAdminUITileDataProtocolUpPayloadAction;
 
 /** Returns the deterministic JavaScript module served at the reserved route. */
-FOUNDATION_EXPORT NSString *UITileDataProtocolJavaScript(void);
+FOUNDATION_EXPORT NSString *GZAdminUITileDataProtocolJavaScript(void);
 
 /** Returns YES only for a protocol action with the expected direction and payload shape. */
-FOUNDATION_EXPORT BOOL UITileDataProtocolIsValidMessage(NSDictionary *message,
+FOUNDATION_EXPORT BOOL GZAdminUITileDataProtocolIsValidMessage(NSDictionary *message,
                                                         BOOL fromHost,
                                                         NSError **error);
 

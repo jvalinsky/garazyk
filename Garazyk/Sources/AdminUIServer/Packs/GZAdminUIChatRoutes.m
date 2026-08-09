@@ -15,7 +15,7 @@
     __weak typeof(self) weakSelf = self;
 
     // Chat: Get conversations
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat-convos" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat-convos" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchChatConvosWithLimit:25 cursor:cursor];
@@ -25,7 +25,7 @@
     }];
 
     // Chat: Get messages for conversation
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat-messages" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat-messages" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *convoID = [request queryParamForKey:@"convoID"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
@@ -36,7 +36,7 @@
     }];
 
     // Chat: Lock conversation
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/lock-chat-convo" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/lock-chat-convo" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *convoID = [request.jsonBody[@"convoID"] isKindOfClass:[NSString class]] ? request.jsonBody[@"convoID"] : @"";
         NSDictionary *result = [weakSelf.backendClient lockChatConvo:convoID];
@@ -44,7 +44,7 @@
         response.contentType = @"text/html; charset=utf-8";
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Conversation locked.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
     }];
 }
 

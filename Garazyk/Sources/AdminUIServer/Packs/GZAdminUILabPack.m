@@ -24,7 +24,7 @@
     [host registerLabRoutes];
 }
 
-+ (NSString *)labShellHTMLWithNonce:(NSString *)nonce configuration:(UIServiceConfig *)configuration {
++ (NSString *)labShellHTMLWithNonce:(NSString *)nonce configuration:(GZAdminUIServiceConfig *)configuration {
     NSString *pdsBaseURL = [configuration.pdsBaseURL absoluteString];
     NSString *clientId = [NSString stringWithFormat:@"http://%@:%lu/lab/client-metadata.json",
                          configuration.host, (unsigned long)configuration.port];
@@ -106,10 +106,10 @@
     @"</main>"
     @"<script src=\"/js/lab.js\"></script>"
     @"</body></html>",
-    UIEscaped(pdsBaseURL), UIEscaped(clientId), UIEscaped(redirectUri), nonce];
+    GZAdminUIEscaped(pdsBaseURL), GZAdminUIEscaped(clientId), GZAdminUIEscaped(redirectUri), nonce];
 }
 
-+ (NSString *)labClientMetadataJSONWithConfiguration:(UIServiceConfig *)configuration {
++ (NSString *)labClientMetadataJSONWithConfiguration:(GZAdminUIServiceConfig *)configuration {
     NSString *clientId = [NSString stringWithFormat:@"http://%@:%lu/lab/client-metadata.json",
                          configuration.host, (unsigned long)configuration.port];
     NSString *redirectUri = [NSString stringWithFormat:@"http://%@:%lu/lab/callback",

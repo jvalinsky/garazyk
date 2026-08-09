@@ -133,7 +133,7 @@ int main(int argc, const char *argv[]) {
             [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
         }
 
-        UIServiceConfig *config = [UIServiceConfig configurationFromEnvironment];
+        GZAdminUIServiceConfig *config = [GZAdminUIServiceConfig configurationFromEnvironment];
         NSString *hostOverride = parsedArgs[@"host"];
         if (hostOverride.length > 0) {
             config.host = hostOverride;
