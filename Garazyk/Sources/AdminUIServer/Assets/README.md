@@ -1,10 +1,11 @@
 # Admin UI — Web Assets
 
-Static CSS and JS served by `UIServerRuntime`. Contains the design tokens,
-component classes, layout primitives, and two HTMX-flavored JavaScript
-bundles (`lab.js`, `mst-viewer/`) that the server renders the admin
-HTML against. `UIServerRuntime` runs HTMX for partial-page interactions,
-per the project root README.
+Static CSS and JS served by `GZAdminUIHost`. Shared library assets contain
+the design tokens, component classes, layout primitives, shell, login page,
+and progressive-enhancement scripts. Pack-owned directories contain service
+partials and service-specific JavaScript. CMake overlays both ownership
+trees into one build-time `Assets/` directory, preserving the `/css/`,
+`/js/`, and template paths used by the host.
 
 The design system is documented in full at
 [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md) and
@@ -15,19 +16,31 @@ files and the entry points you need to use them.
 
 ```
 AdminUIServer/Assets/
-├── css/
-│   ├── reset.css           Browser reset.
-│   ├── system.css          Base styles, font stack.
-│   ├── tokens.css          CSS custom properties (light + dark).
-│   ├── layout.css          Toolbar, sidebar, inspector, responsive.
-│   ├── components.css      Component classes (btn, form, table, card, …).
-│   ├── utilities.css       Spacing, display, text helpers.
-│   └── mst-viewer.css      Legacy MST visualization (kept as-is).
-├── html/
-│   └── demo.html           Interactive showcase mounted at /admin/demo.
-├── js/
-│   ├── lab.js              OAuth /lab client scripts.
-│   └── mst-viewer/         MST tree inspector and viewer bundles.
+├── library/
+│   ├── css/
+│   │   ├── reset.css       Browser reset.
+│   │   ├── system.css      Base styles, font stack.
+│   │   ├── tokens.css      CSS custom properties (light + dark).
+│   │   ├── layout.css      Toolbar, sidebar, inspector, responsive.
+│   │   ├── components.css  Component classes (btn, form, table, card, …).
+│   │   ├── utilities.css   Spacing, display, text helpers.
+│   │   └── mst-viewer.css  Legacy MST visualization (kept as-is).
+│   ├── html/
+│   │   └── demo.html       Interactive showcase mounted at /admin/demo.
+│   └── js/
+│       ├── admin-ui.js     Shared shell progressive enhancement.
+│       └── demo.js         Design-system showcase behavior.
+├── packs/
+│   ├── pds/html/           Overview and connections partials.
+│   ├── plc/html/           PLC partials.
+│   ├── relay/html/         Relay partials.
+│   ├── ozone/html/         Ozone partials.
+│   ├── security/html/      Security partials.
+│   ├── chat/html/          Chat partials.
+│   ├── video/html/         Video partials.
+│   ├── mst/html/            MST partials.
+│   ├── mst/js/mst-viewer/  MST tree inspector and viewer bundles.
+│   └── lab/js/lab.js       OAuth /lab client scripts.
 ├── DESIGN_SYSTEM.md        Full design philosophy, tokens, patterns.
 ├── QUICK_REFERENCE.md      Copy-paste component cheat sheet.
 └── README.md               This file.
