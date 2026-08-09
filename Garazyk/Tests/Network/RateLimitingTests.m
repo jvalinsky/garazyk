@@ -7,14 +7,14 @@
 #import "Network/RateLimiter.h"
 
 @interface RateLimitingTests : XCTestCase
-@property (nonatomic, strong) HttpServer *server;
+@property (nonatomic, strong) ATProtoHttpServer *server;
 @end
 
 @implementation RateLimitingTests
 
 - (void)setUp {
     [super setUp];
-    self.server = [HttpServer serverWithPort:0]; // Use port 0 for test (ephemeral port)
+    self.server = [ATProtoHttpServer serverWithPort:0]; // Use port 0 for test (ephemeral port)
 }
 
 - (void)tearDown {
@@ -23,7 +23,7 @@
     [super tearDown];}
 
 - (void)testOAuthEndpointRateLimitingSetupValidatesServerIsRunning {
-    // Basic test to verify HttpServer can be configured with routes
+    // Basic test to verify ATProtoHttpServer can be configured with routes
     // Full rate limiting integration testing needs running server with actual HTTP requests
     
     __block BOOL handlerCalled = NO;
@@ -49,10 +49,10 @@
 }
 
 - (void)testRateLimiterBasicConfiguration {
-    // Test RateLimiter configuration directly rather than through HTTP requests
-    RateLimiter *limiter = [[RateLimiter alloc] init];
+    // Test ATProtoRateLimiter configuration directly rather than through HTTP requests
+    ATProtoRateLimiter *limiter = [[ATProtoRateLimiter alloc] init];
     XCTAssertNotNil(limiter, @"RateLimiter should initialize");
-    XCTAssertTrue([limiter isKindOfClass:[RateLimiter class]]);
+    XCTAssertTrue([limiter isKindOfClass:[ATProtoRateLimiter class]]);
 }
 
 @end

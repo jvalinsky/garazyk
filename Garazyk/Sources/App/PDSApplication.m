@@ -78,7 +78,7 @@ NSString * const PDSApplicationErrorDomain = @"PDSApplicationErrorDomain";
 @property (nonatomic, strong, readwrite, nullable) PDSPasswordResetTokenPruner *passwordResetTokenPruner;
 @property (nonatomic, strong, readwrite) ATProtoJWTMinter *jwtMinter;
 @property (nonatomic, strong, readwrite, nullable) ATProtoAuthVerifier *authVerifier;
-@property (nonatomic, strong, readwrite) HttpServer *httpServer;
+@property (nonatomic, strong, readwrite) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong, readwrite) PDSRelayService *relayService;
 @property (nonatomic, strong, readwrite) id<PDSAccountService> accountService;
 @property (nonatomic, strong, readwrite) PDSRecordService *recordService;
@@ -196,7 +196,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
             _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
         }
         
-        _rateLimiter = [RateLimiter sharedLimiter];
+        _rateLimiter = [ATProtoRateLimiter sharedLimiter];
         _running = NO;
 
         // M2: Catch unhandled ObjC exceptions
@@ -277,7 +277,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 - (void)configureRateLimiter {
     if (!_configuration) return;
     
-    RateLimiter *limiter = self.rateLimiter;
+    ATProtoRateLimiter *limiter = self.rateLimiter;
     NSString *rateLimitPath = [[_dataDirectory stringByAppendingPathComponent:@"service"]
                                stringByAppendingPathComponent:@"ratelimits.db"];
     [limiter reconfigureDatabasePath:rateLimitPath];

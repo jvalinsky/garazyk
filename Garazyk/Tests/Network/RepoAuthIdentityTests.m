@@ -173,7 +173,7 @@
 - (void)testIdentityUpdateHandleRateLimiting {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
 
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *limiter = [ATProtoRateLimiter sharedLimiter];
     BOOL oldGlobalDisabled = RateLimiterIsDisabledGlobally();
     BOOL oldEnabled = limiter.isEnabled;
     NSString *dbPath = [self.tempURL.path stringByAppendingPathComponent:@"identity-rate-limits.sqlite"];
@@ -187,7 +187,7 @@
         // Seed the endpoint's limiter directly so the request exercises the
         // rejected XRPC path without performing ten full identity updates.
         for (int i = 0; i < 10; i++) {
-            RateLimitResult *seedResult = [limiter checkRateLimitForKey:shortKey
+            ATProtoRateLimitResult *seedResult = [limiter checkRateLimitForKey:shortKey
                                                                   limit:10
                                                           windowSeconds:300];
             XCTAssertTrue(seedResult.allowed, @"Seed request %d should be allowed", i);

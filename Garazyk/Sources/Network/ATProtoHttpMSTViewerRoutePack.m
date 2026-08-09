@@ -19,7 +19,7 @@
 
 @implementation ATProtoHttpMSTViewerRoutePack
 
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                       controller:(nullable PDSController *)controller {
   if (!controller) {
     GZ_LOG_WARN(@"ATProtoHttpMSTViewerRoutePack: MST Viewer routes not registered - "

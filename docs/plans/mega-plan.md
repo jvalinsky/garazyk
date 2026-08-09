@@ -499,7 +499,8 @@ remaining program does not depend on items 1-2.
     `92395144`) is complete. Batch 3b's Storage slice (17 higher-consumer
     classes) is also complete, ratcheting the namespace baseline
     283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228 → 214 → 197
-    → 191. The remaining batch-3b Transport slice and batches 4-6
+    → 191 → 175. Batch 3b (the remaining higher-consumer Storage/Transport
+    classes) is complete; batches 4-6
     (PLC/Sync/Services/MediaCore, XRPC/VideoService,
     Runtime) remain open.
     **M7 is now

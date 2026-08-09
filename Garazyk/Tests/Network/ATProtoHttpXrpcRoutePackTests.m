@@ -7,7 +7,7 @@
 #import "Network/ATProtoHttpXrpcRoutePack.h"
 #import "Network/XrpcHandler.h"
 
-@interface HttpServer (ATProtoHttpXrpcRoutePackTesting)
+@interface ATProtoHttpServer (ATProtoHttpXrpcRoutePackTesting)
 - (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
 - (nullable RequestHandler)handlerForRoute:(NSString *)path
                                     method:(NSString *)method
@@ -15,14 +15,14 @@
 @end
 
 @interface ATProtoHttpXrpcRoutePackTests : XCTestCase
-@property(nonatomic, strong) HttpServer *server;
+@property(nonatomic, strong) ATProtoHttpServer *server;
 @end
 
 @implementation ATProtoHttpXrpcRoutePackTests
 
 - (void)setUp {
     [super setUp];
-    self.server = [HttpServer serverWithPort:0];
+    self.server = [ATProtoHttpServer serverWithPort:0];
     [ATProtoHttpXrpcRoutePack registerRoutesWithServer:self.server
                                         dispatcher:[[XrpcDispatcher alloc] init]
                                        application:nil

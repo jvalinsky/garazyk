@@ -5,14 +5,14 @@
 #import "Network/HttpProtocolSession.h"
 
 @interface HttpProtocolSessionTests : XCTestCase
-@property(nonatomic, strong) HttpProtocolSession *session;
+@property(nonatomic, strong) ATProtoHttpProtocolSession *session;
 @end
 
 @implementation HttpProtocolSessionTests
 
 - (void)setUp {
   [super setUp];
-  self.session = [[HttpProtocolSession alloc] init];
+  self.session = [[ATProtoHttpProtocolSession alloc] init];
 }
 
 - (void)tearDown {

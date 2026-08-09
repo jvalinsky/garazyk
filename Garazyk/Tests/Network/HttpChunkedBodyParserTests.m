@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 @implementation HttpChunkedBodyParserTests
 
 - (void)testSimpleChunk {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSData *chunk1 = [@"5\r\nHello\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testCompleteSingleChunk {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSData *data = [@"5\r\nHello\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testMultipleChunks {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSData *data = [@"5\r\nHello\r\n6\r\n World\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -50,7 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testIncrementalParsing {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSError *error = nil;
 
@@ -71,7 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testEmptyBody {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSData *data = [@"0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -84,7 +84,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testHexDigitsUpperCase {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSData *data = [@"A\r\nABCDEFGHIJ\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -97,7 +97,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testMalformedChunkSize {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSData *data = [@"GG\r\nHello\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -109,7 +109,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testMissingCRLF {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSData *data = [@"5\r\nHello world" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -121,7 +121,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testMaxSizeExceeded {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] initWithMaxSize:10];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] initWithMaxSize:10];
 
     NSData *data = [@"20\r\n0123456789ABCDEF\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
@@ -135,14 +135,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testParseChunkSizeClassMethod {
     NSData *data = [@"1A\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSUInteger size = 0;
-    NSUInteger offset = [HttpChunkedBodyParser parseChunkSizeFromData:data offset:0 size:&size];
+    NSUInteger offset = [ATProtoHttpChunkedBodyParser parseChunkSizeFromData:data offset:0 size:&size];
 
     XCTAssertEqual(offset, (NSUInteger)4);
     XCTAssertEqual(size, (NSUInteger)26);
 }
 
 - (void)testResetParserIsCompleteAndEqual {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSData *data1 = [@"5\r\nHello\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     [parser appendData:data1 error:nil];
@@ -157,7 +157,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testChunkExtension {
-    HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
+    ATProtoHttpChunkedBodyParser *parser = [[ATProtoHttpChunkedBodyParser alloc] init];
 
     NSData *data = [@"5;name=value\r\nHello\r\n0\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;

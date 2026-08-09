@@ -6,7 +6,7 @@
 #import <sqlite3.h>
 
 @interface PDSRateLimitAdminHandler ()
-@property (nonatomic, strong) RateLimiter *rateLimiter;
+@property (nonatomic, strong) ATProtoRateLimiter *rateLimiter;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @end
 
@@ -23,7 +23,7 @@
 
 - (instancetype)init {
     if ((self = [super init])) {
-        _rateLimiter = [RateLimiter sharedLimiter];
+        _rateLimiter = [ATProtoRateLimiter sharedLimiter];
     }
     return self;
 }
@@ -71,8 +71,8 @@
         return @"{\"error\": \"Missing identifier or type\"}";
     }
 
-    // Query current rate limit status using RateLimiter API
-    RateLimitResult *rateLimitResult = nil;
+    // Query current rate limit status using ATProtoRateLimiter API
+    ATProtoRateLimitResult *rateLimitResult = nil;
     if ([type isEqualToString:@"did"]) {
         rateLimitResult = [self.rateLimiter checkRateLimitForDid:identifier];
     } else if ([type isEqualToString:@"ip"]) {
@@ -128,7 +128,7 @@
         }
     }
 
-    // Query top rate-limited identifiers from RateLimiter
+    // Query top rate-limited identifiers from ATProtoRateLimiter
     NSArray *topUsers = [self.rateLimiter getTopLimitedIdentifiers:limit];
     NSDictionary *response = @{
         @"users": topUsers,
@@ -169,7 +169,7 @@
         return @"{\"error\": \"Missing identifier, type, or reason\"}";
     }
 
-    // Clear rate limit entries from RateLimiter
+    // Clear rate limit entries from ATProtoRateLimiter
     NSInteger clearedCount = [self.rateLimiter clearRateLimitForIdentifier:identifier type:type];
     NSDictionary *response = @{
         @"success": @YES,
@@ -229,7 +229,7 @@
         return NO;
     }
 
-    // RateLimiter doesn't have clearLimitForIdentifier, so we just succeed
+    // ATProtoRateLimiter doesn't have clearLimitForIdentifier, so we just succeed
     // In a real implementation, this would clear the rate limit from the store
 
     return YES;

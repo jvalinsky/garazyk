@@ -361,7 +361,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
 @interface PLCServer ()
 @property (nonatomic, strong) id<PLCStore> store;
 @property (nonatomic, strong) PLCAuditor *auditor;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, copy, nullable) NSString *adminSecret;
 @end
 
@@ -385,7 +385,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
         _store = store;
         _auditor = auditor;
         _adminSecret = [adminSecret copy];
-        _httpServer = [HttpServer serverWithHost:host port:port];
+        _httpServer = [ATProtoHttpServer serverWithHost:host port:port];
         [ATProtoHttpResponse setDefaultServerHeader:@"campagnola/1.0.0 (garazyk)"];
         [self setupRoutes];
     }

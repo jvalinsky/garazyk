@@ -115,7 +115,7 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
 }
 
 #pragma mark - Route Registration
-- (void)registerRoutesWithServer:(HttpServer *)httpServer {
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)httpServer {
   // Serve shared design system CSS files (tokens, reset, components, etc.)
   [httpServer addHandlerForPath:@"/css/"
                         handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {

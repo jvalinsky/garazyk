@@ -8,17 +8,17 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoHttpResponse;
 
 /*!
- @class HttpBufferPool
+ @class ATProtoHttpBufferPool
 
  @abstract Slab allocator for HTTP request/response objects and buffers.
 
- @discussion HttpBufferPool reduces allocation overhead by reusing ATProtoHttpRequest,
+ @discussion ATProtoHttpBufferPool reduces allocation overhead by reusing ATProtoHttpRequest,
  ATProtoHttpResponse, and data buffers. Uses size classes (256, 1024, 4096, 16384 bytes)
  with separate pools for each size to minimize internal fragmentation.
 
  Thread Safety: All methods are thread-safe using serial dispatch queues.
  */
-@interface HttpBufferPool : NSObject
+@interface ATProtoHttpBufferPool : NSObject
 
 /*!
  @method sharedPool

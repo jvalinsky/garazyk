@@ -25,7 +25,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
 
 @property (nonatomic, strong) ATProtoLexiconRegistry *registry;
 @property (nonatomic, strong) AppViewDatabase *database;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) AppViewCustomQueryRegistry *customHandlers;
 @property (nonatomic, strong) AppViewGenericQueryHandler *queryHandler;
 @property (nonatomic, assign) NSUInteger registeredCount;
@@ -36,7 +36,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
 
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
                          database:(AppViewDatabase *)database
-                      httpServer:(HttpServer *)httpServer
+                      httpServer:(ATProtoHttpServer *)httpServer
                  customHandlers:(AppViewCustomQueryRegistry *)customHandlers {
     self = [super init];
     if (self) {

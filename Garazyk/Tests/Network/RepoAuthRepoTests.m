@@ -410,7 +410,7 @@
 }
 
 - (void)testUploadBlobReturns429WhenBlobQuotaExceeded {
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
+    ATProtoRateLimiter *limiter = [ATProtoRateLimiter sharedLimiter];
     BOOL oldEnabled = limiter.enabled;
     NSInteger oldBlobLimit = limiter.blobLimit;
     NSTimeInterval oldBlobWindow = limiter.blobWindowSeconds;

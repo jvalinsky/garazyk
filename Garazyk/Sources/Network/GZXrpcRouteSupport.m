@@ -10,8 +10,8 @@
 @implementation GZXrpcRouteSupport
 
 + (BOOL)checkIPRateLimitForRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
-    RateLimitResult *rateLimit = [limiter checkRateLimitForIP:request.remoteAddress];
+    ATProtoRateLimiter *limiter = [ATProtoRateLimiter sharedLimiter];
+    ATProtoRateLimitResult *rateLimit = [limiter checkRateLimitForIP:request.remoteAddress];
     if (rateLimit.allowed) return YES;
 
     response.statusCode = HttpStatusTooManyRequests;

@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class MikrusDatabase;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
-@class HttpServer;
+@class ATProtoHttpServer;
 
 /**
  * @abstract Registry and handler for Mikrus XRPC endpoints.
@@ -35,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Registers Mikrus-specific routes with the provided server.
  * @param server The HTTP server to register routes with.
  */
-- (void)registerRoutesWithServer:(HttpServer *)server;
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server;
 
 /**
  * @abstract Handles the getBacklinks XRPC endpoint.

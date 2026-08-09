@@ -58,7 +58,7 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
 
 @implementation PDSHttpPDSAdminRoutePack
 
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases {
     PDSServiceDatabases *capturedServiceDatabases = serviceDatabases;
 

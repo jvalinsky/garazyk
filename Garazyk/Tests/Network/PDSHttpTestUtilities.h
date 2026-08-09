@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  Starts a local HTTP server for testing that delegates requests to the provided XRPC dispatcher.
  */
-+ (nullable HttpServer *)startSocketServerWithDispatcher:(XrpcDispatcher *)dispatcher error:(NSError **)error;
++ (nullable ATProtoHttpServer *)startSocketServerWithDispatcher:(XrpcDispatcher *)dispatcher error:(NSError **)error;
 
 /**
  Sends a raw HTTP GET request to the specified local port and returns the raw response data.

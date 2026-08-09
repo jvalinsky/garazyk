@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HttpProtocolSession.m
+ @file ATProtoHttpProtocolSession.m
 
  @abstract Implements HTTP protocol session state management and progression.
 
@@ -11,20 +11,20 @@
 #import "Network/HttpProtocolSession.h"
 #import "Debug/GZLogger.h"
 
-@interface HttpProtocolSession ()
-@property(nonatomic, strong, readwrite) Http1Parser *parser;
-@property(nonatomic, strong, readwrite) Http1PipelinePolicy *pipelinePolicy;
+@interface ATProtoHttpProtocolSession ()
+@property(nonatomic, strong, readwrite) ATProtoHttp1Parser *parser;
+@property(nonatomic, strong, readwrite) ATProtoHttp1PipelinePolicy *pipelinePolicy;
 @property(nonatomic, strong) NSMutableArray<ATProtoHttpRequest *> *pendingRequests;
 @property(nonatomic, strong, nullable) ATProtoHttpRequest *upgradeRequest;
 @end
 
-@implementation HttpProtocolSession
+@implementation ATProtoHttpProtocolSession
 
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _parser = [[Http1Parser alloc] init];
-    _pipelinePolicy = [[Http1PipelinePolicy alloc] init];
+    _parser = [[ATProtoHttp1Parser alloc] init];
+    _pipelinePolicy = [[ATProtoHttp1PipelinePolicy alloc] init];
     _pendingRequests = [NSMutableArray array];
     _upgradedToWebSocket = NO;
   }
@@ -44,7 +44,7 @@
     return events;
   }
 
-  Http1ParserError *parseError = [self.parser parseError];
+  ATProtoHttp1ParserError *parseError = [self.parser parseError];
   if (parseError) {
     [events addObject:@(HttpSessionEventError)];
     return events;
@@ -108,7 +108,7 @@
   return self.upgradeRequest;
 }
 
-- (nullable Http1ParserError *)currentParseError {
+- (nullable ATProtoHttp1ParserError *)currentParseError {
   return self.parser.parseError;
 }
 

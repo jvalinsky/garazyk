@@ -57,7 +57,7 @@
 @property (nonatomic, strong) AppViewAdminRoutePack *adminRoutePack;
 @property (nonatomic, strong) AppViewRelevanceSet *relevanceSet;
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
-@property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) FeedService *feedService;
 @property (nonatomic, strong) ActorService *actorService;
 @property (nonatomic, strong) GraphService *graphService;
@@ -275,7 +275,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     }
 
     // Build HTTP server for query API + admin
-    _httpServer = [HttpServer serverWithPort:(uint16_t)config.httpPort];
+    _httpServer = [ATProtoHttpServer serverWithPort:(uint16_t)config.httpPort];
     [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-appview/1.0.0"];
 
     // Root serves ASCII service banner

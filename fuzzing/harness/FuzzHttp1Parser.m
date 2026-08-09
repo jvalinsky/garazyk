@@ -1,5 +1,5 @@
 // FuzzHttp1Parser.m - HTTP/1.1 parsing fuzzer harness
-// Target: Http1Parser feedData: (both success and error paths)
+// Target: ATProtoHttp1Parser feedData: (both success and error paths)
 
 #import <Foundation/Foundation.h>
 #import "Network/Http1Parser.h"
@@ -7,7 +7,7 @@
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     @autoreleasepool {
         NSData *input = [NSData dataWithBytes:data length:size];
-        Http1Parser *parser = [[Http1Parser alloc] init];
+        ATProtoHttp1Parser *parser = [[ATProtoHttp1Parser alloc] init];
         parser.remoteAddress = @"127.0.0.1";
 
         BOOL didFeed = [parser feedData:input];
@@ -21,7 +21,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
                 (void)req.headers;
             } else {
                 // Success=YES but no request means it's an error
-                Http1ParserError *parseErr = [parser parseError];
+                ATProtoHttp1ParserError *parseErr = [parser parseError];
                 if (parseErr) {
                     (void)parseErr.statusCode;
                     (void)parseErr.errorCode;
@@ -39,7 +39,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
             // If parser reached error state, the error method should be non-nil
             if (parser.state == Http1ParserStateError) {
-                Http1ParserError *err = [parser parseError];
+                ATProtoHttp1ParserError *err = [parser parseError];
                 (void)err;
             }
         }

@@ -84,7 +84,7 @@
     [_provider refreshUsageStatistics];
 }
 
-- (void)registerRoutesWithServer:(HttpServer *)httpServer {
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)httpServer {
     if (!httpServer) {
         GZ_LOG_CORE_ERROR(@"Cannot register routes with nil server");
         return;

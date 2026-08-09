@@ -8,7 +8,7 @@
 #import "Sync/Relay/RelayRepoStateManager.h"
 #import "Sync/Relay/RelayUpstreamManager.h"
 
-@interface HttpServer (RelayXrpcRoutePackTesting)
+@interface ATProtoHttpServer (RelayXrpcRoutePackTesting)
 - (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
 - (nullable RequestHandler)handlerForRoute:(NSString *)path
                                     method:(NSString *)method
@@ -16,7 +16,7 @@
 @end
 
 @interface RelayXrpcRoutePackTests : XCTestCase
-@property(nonatomic, strong) HttpServer *server;
+@property(nonatomic, strong) ATProtoHttpServer *server;
 @property(nonatomic, strong) RelayRepoStateManager *repoStateManager;
 @property(nonatomic, strong) RelayXrpcRoutePack *routePack;
 @end
@@ -25,7 +25,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.server = [HttpServer serverWithPort:0];
+    self.server = [ATProtoHttpServer serverWithPort:0];
     self.repoStateManager = [[RelayRepoStateManager alloc] init];
     self.routePack = [[RelayXrpcRoutePack alloc] initWithRepoStateManager:self.repoStateManager
                                                    subscribeReposHandler:nil];

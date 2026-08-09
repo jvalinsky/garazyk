@@ -13,7 +13,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class HttpServer;
+@class ATProtoHttpServer;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
 /**
@@ -65,7 +65,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param httpServer The HTTP server to register routes with.
  */
-- (void)registerRoutesWithServer:(HttpServer *)httpServer;
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)httpServer;
 
 /*!
  @brief Handle NodeInfo discovery request.

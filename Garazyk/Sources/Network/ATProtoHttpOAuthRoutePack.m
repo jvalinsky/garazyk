@@ -28,7 +28,7 @@
 
 @implementation ATProtoHttpOAuthRoutePack
 
-+ (void)registerRoutesWithServer:(HttpServer *)server
++ (void)registerRoutesWithServer:(ATProtoHttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
                        jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
                    dataDirectory:(nullable NSString *)dataDirectory

@@ -9,7 +9,7 @@
 @class AppViewIndexHookRegistry;
 @class AppViewCustomQueryRegistry;
 @class AppViewLexiconEndpointGenerator;
-@class HttpServer;
+@class ATProtoHttpServer;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -20,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
                             database:(AppViewDatabase *)database
                          adminSecret:(nullable NSString *)adminSecret;
 
-- (void)registerRoutesWithServer:(HttpServer *)server;
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server;
 
 /*!
  @method setLexiconRegistry:

@@ -117,7 +117,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
     return self;
 }
 
-- (void)registerRoutesWithServer:(HttpServer *)server
+- (void)registerRoutesWithServer:(ATProtoHttpServer *)server
 {
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.listRepos"
