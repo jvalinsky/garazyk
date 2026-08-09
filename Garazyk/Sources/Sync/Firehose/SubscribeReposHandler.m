@@ -480,7 +480,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       op[@"recordCBOR"] = recordCBOR;
     }
 
-    RepoCommit *commit = nil;
+    ATProtoRepoCommit *commit = nil;
 
     // Try to load the stored, signed commit block
     if (strongSelf.userDatabasePool && commitCID) {
@@ -492,7 +492,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
             [store getBlockForCID:[commitCID bytes] forDid:did error:&dbError];
         if (blockData) {
           NSError *decodeError = nil;
-          commit = [RepoCommit fromSignedBlockData:blockData error:&decodeError];
+          commit = [ATProtoRepoCommit fromSignedBlockData:blockData error:&decodeError];
           if (commit && ![commit.did isEqualToString:did]) {
             GZ_LOG_SYNC_ERROR(@"Stored commit DID %@ does not match notification DID %@",
                               commit.did, did);
@@ -601,7 +601,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   });
 }
 
-- (void)broadcastRepositoryCommit:(RepoCommit *)commit
+- (void)broadcastRepositoryCommit:(ATProtoRepoCommit *)commit
                            forRepo:(NSString *)repoDid
                                ops:(NSArray<NSDictionary *> *)ops
                              blobs:(NSArray<ATProtoCID *> *)blobs {
@@ -624,7 +624,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     event.rev = commit.rev;
 
     BOOL requiresSyncFallback = NO;
-    RepoCommit *previousCommit = nil;
+    ATProtoRepoCommit *previousCommit = nil;
     if (commit.prevCID) {
       NSError *previousError = nil;
       PDSActorStore *store =
@@ -635,7 +635,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                           error:&previousError];
       if (previousBlock.length > 0) {
         previousCommit =
-            [RepoCommit fromSignedBlockData:previousBlock error:&previousError];
+            [ATProtoRepoCommit fromSignedBlockData:previousBlock error:&previousError];
       }
       BOOL previousCommitMatches =
           previousCommit &&

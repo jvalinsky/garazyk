@@ -22,7 +22,7 @@
 @class WebSocketConnection;
 @class PDSServiceDatabases;
 @class EventFormatter;
-@class RepoCommit;
+@class ATProtoRepoCommit;
 @class ATProtoCID;
 @class HttpRequest;
 /**
@@ -119,7 +119,7 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (void)broadcastSyncEvent:(FirehoseSyncEvent *)event;
 
 /*! Broadcasts a repository commit event. */
-- (void)broadcastRepositoryCommit:(RepoCommit *)commit 
+- (void)broadcastRepositoryCommit:(ATProtoRepoCommit *)commit
                           forRepo:(NSString *)repoDid 
                               ops:(NSArray<NSDictionary *> *)ops 
                             blobs:(NSArray<ATProtoCID *> *)blobs;

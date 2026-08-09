@@ -116,8 +116,8 @@
     }
 
     NSError *carError = nil;
-    CARReader *reader = [CARReader readFromData:commitEvent.blocks error:&carError];
-    CARBlock *commitBlock = [reader blockWithCID:commitEvent.commit];
+    ATProtoCARReader *reader = [ATProtoCARReader readFromData:commitEvent.blocks error:&carError];
+    ATProtoCARBlock *commitBlock = [reader blockWithCID:commitEvent.commit];
     ATProtoCID *computedCID = commitBlock
         ? [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:commitBlock.data] codec:commitEvent.commit.codec]
         : nil;
@@ -128,7 +128,7 @@
     }
 
     NSError *commitError = nil;
-    RepoCommit *commit = [RepoCommit fromSignedBlockData:commitBlock.data error:&commitError];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit fromSignedBlockData:commitBlock.data error:&commitError];
     if (!commit || ![commit.did isEqualToString:commitEvent.repo]) {
         return [RelayValidationOutcome invalidSignatureOutcome:@"signed commit does not match the repository"];
     }

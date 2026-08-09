@@ -23,18 +23,18 @@
 
 - (void)testDiffNilOldTree {
     // When old tree is nil, all entries should be adds
-    MST *newTree = [[MST alloc] init];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     
     [newTree put:@"com.example.record/aaa" valueCID:cid1];
     [newTree put:@"com.example.record/bbb" valueCID:cid1];
     [newTree put:@"com.example.record/ccc" valueCID:cid1];
     
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:nil];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:nil];
     
     XCTAssertEqual(diff.count, 3, @"Should have 3 add operations");
     
-    for (MSTDiffOperation *op in diff) {
+    for (ATProtoMSTDiffOperation *op in diff) {
         XCTAssertEqual(op.type, MSTDiffOperationTypeAdd, @"All operations should be adds");
         XCTAssertNotNil(op.currentCID, @"Add should have currentCID");
         XCTAssertNil(op.previousCID, @"Add should not have previousCID");
@@ -43,19 +43,19 @@
 
 - (void)testDiffNilNewTree {
     // When new tree is nil, all entries should be deletes
-    MST *oldTree = [[MST alloc] init];
+    ATProtoMST *oldTree = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     
     [oldTree put:@"com.example.record/aaa" valueCID:cid1];
     [oldTree put:@"com.example.record/bbb" valueCID:cid1];
     [oldTree put:@"com.example.record/ccc" valueCID:cid1];
     
-    MST *newTree = [[MST alloc] init];
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
     
     XCTAssertEqual(diff.count, 3, @"Should have 3 delete operations");
     
-    for (MSTDiffOperation *op in diff) {
+    for (ATProtoMSTDiffOperation *op in diff) {
         XCTAssertEqual(op.type, MSTDiffOperationTypeDelete, @"All operations should be deletes");
         XCTAssertNotNil(op.previousCID, @"Delete should have previousCID");
         XCTAssertNil(op.currentCID, @"Delete should not have currentCID");
@@ -64,8 +64,8 @@
 
 - (void)testDiffIdenticalTrees {
     // Identical trees should have no diff
-    MST *tree1 = [[MST alloc] init];
-    MST *tree2 = [[MST alloc] init];
+    ATProtoMST *tree1 = [[ATProtoMST alloc] init];
+    ATProtoMST *tree2 = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     
     [tree1 put:@"com.example.record/aaa" valueCID:cid1];
@@ -73,15 +73,15 @@
     [tree2 put:@"com.example.record/aaa" valueCID:cid1];
     [tree2 put:@"com.example.record/bbb" valueCID:cid1];
     
-    NSArray<MSTDiffOperation *> *diff = [tree2 diffFrom:tree1];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [tree2 diffFrom:tree1];
     
     XCTAssertEqual(diff.count, 0, @"Identical trees should have empty diff");
 }
 
 - (void)testDiffAdditions {
     // Test adding entries
-    MST *oldTree = [[MST alloc] init];
-    MST *newTree = [[MST alloc] init];
+    ATProtoMST *oldTree = [[ATProtoMST alloc] init];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     ATProtoCID *cid2 = [self testCID:@"2"];
     
@@ -91,12 +91,12 @@
     [newTree put:@"com.example.record/bbb" valueCID:cid2];
     [newTree put:@"com.example.record/ccc" valueCID:cid2];
     
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
     
     XCTAssertEqual(diff.count, 2, @"Should have 2 add operations");
     
     NSUInteger addCount = 0;
-    for (MSTDiffOperation *op in diff) {
+    for (ATProtoMSTDiffOperation *op in diff) {
         if (op.type == MSTDiffOperationTypeAdd) {
             addCount++;
         }
@@ -106,8 +106,8 @@
 
 - (void)testDiffDeletions {
     // Test deleting entries
-    MST *oldTree = [[MST alloc] init];
-    MST *newTree = [[MST alloc] init];
+    ATProtoMST *oldTree = [[ATProtoMST alloc] init];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     ATProtoCID *cid2 = [self testCID:@"2"];
     
@@ -117,12 +117,12 @@
     
     [newTree put:@"com.example.record/aaa" valueCID:cid1];
     
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
     
     XCTAssertEqual(diff.count, 2, @"Should have 2 delete operations");
     
     NSUInteger deleteCount = 0;
-    for (MSTDiffOperation *op in diff) {
+    for (ATProtoMSTDiffOperation *op in diff) {
         if (op.type == MSTDiffOperationTypeDelete) {
             deleteCount++;
         }
@@ -132,8 +132,8 @@
 
 - (void)testDiffUpdates {
     // Test updating entries
-    MST *oldTree = [[MST alloc] init];
-    MST *newTree = [[MST alloc] init];
+    ATProtoMST *oldTree = [[ATProtoMST alloc] init];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     ATProtoCID *cid2 = [self testCID:@"2"];
     
@@ -143,11 +143,11 @@
     [newTree put:@"com.example.record/aaa" valueCID:cid2]; // Updated
     [newTree put:@"com.example.record/bbb" valueCID:cid1]; // Same
     
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
     
     XCTAssertEqual(diff.count, 1, @"Should have 1 update operation");
     
-    MSTDiffOperation *op = diff.firstObject;
+    ATProtoMSTDiffOperation *op = diff.firstObject;
     XCTAssertEqual(op.type, MSTDiffOperationTypeUpdate, @"Should be an update");
     XCTAssertEqualObjects(op.key, @"com.example.record/aaa", @"Key should match");
     XCTAssertNotNil(op.previousCID, @"Update should have previousCID");
@@ -156,8 +156,8 @@
 
 - (void)testDiffMixedOperations {
     // Test mixed add/update/delete
-    MST *oldTree = [[MST alloc] init];
-    MST *newTree = [[MST alloc] init];
+    ATProtoMST *oldTree = [[ATProtoMST alloc] init];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     ATProtoCID *cid2 = [self testCID:@"2"];
     ATProtoCID *cid3 = [self testCID:@"3"];
@@ -172,13 +172,13 @@
     [newTree put:@"com.example.record/bbb" valueCID:cid1]; // Same
     [newTree put:@"com.example.record/ddd" valueCID:cid3]; // New
     
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
     
     // Expected: 1 update (aaa), 1 delete (ccc), 1 add (ddd)
     XCTAssertEqual(diff.count, 3, @"Should have 3 operations");
     
     NSUInteger addCount = 0, updateCount = 0, deleteCount = 0;
-    for (MSTDiffOperation *op in diff) {
+    for (ATProtoMSTDiffOperation *op in diff) {
         switch (op.type) {
             case MSTDiffOperationTypeAdd: addCount++; break;
             case MSTDiffOperationTypeUpdate: updateCount++; break;
@@ -195,20 +195,20 @@
 
 - (void)testWalkerEmptyTree {
     // Empty tree walker should be done immediately
-    MST *mst = [[MST alloc] init];
-    MSTWalker *walker = [[MSTWalker alloc] initWithRootNode:mst.root];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
+    ATProtoMSTWalker *walker = [[ATProtoMSTWalker alloc] initWithRootNode:mst.root];
     
     XCTAssertTrue(walker.status.isDone, @"Empty tree walker should be done");
 }
 
 - (void)testWalkerSingleEntry {
     // Single entry tree
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     
     [mst put:@"com.example.record/aaa" valueCID:cid1];
     
-    MSTWalker *walker = [[MSTWalker alloc] initWithRootNode:mst.root];
+    ATProtoMSTWalker *walker = [[ATProtoMSTWalker alloc] initWithRootNode:mst.root];
     
     XCTAssertFalse(walker.status.isDone, @"Should not be done initially");
     
@@ -225,7 +225,7 @@
 
 - (void)testWalkerMultipleEntries {
     // Multiple entry tree
-    MST *mst = [[MST alloc] init];
+    ATProtoMST *mst = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     
     [mst put:@"com.example.record/aaa" valueCID:cid1];
@@ -234,12 +234,12 @@
     [mst put:@"com.example.record/ddd" valueCID:cid1];
     [mst put:@"com.example.record/eee" valueCID:cid1];
     
-    MSTWalker *walker = [[MSTWalker alloc] initWithRootNode:mst.root];
+    ATProtoMSTWalker *walker = [[ATProtoMSTWalker alloc] initWithRootNode:mst.root];
     
     NSMutableArray<NSString *> *visitedKeys = [NSMutableArray array];
     
     while (!walker.status.isDone) {
-        MSTNodeEntry *entry = walker.status.currentEntry;
+        ATProtoMSTNodeEntry *entry = walker.status.currentEntry;
         if (entry != nil && !walker.status.isTreeNode) {
             [visitedKeys addObject:entry.fullKey];
         }
@@ -259,8 +259,8 @@
 
 - (void)testDiffKeyOrdering {
     // Verify diff returns operations in key order
-    MST *oldTree = [[MST alloc] init];
-    MST *newTree = [[MST alloc] init];
+    ATProtoMST *oldTree = [[ATProtoMST alloc] init];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     
     // Add entries in non-sorted order
@@ -268,7 +268,7 @@
     [newTree put:@"com.example.record/aaa" valueCID:cid1];
     [newTree put:@"com.example.record/mmm" valueCID:cid1];
     
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
     
     // Verify sorted order
     for (NSUInteger i = 1; i < diff.count; i++) {
@@ -279,8 +279,8 @@
 
 - (void)testDiffLargeTree {
     // Test with larger tree to ensure no infinite loops
-    MST *oldTree = [[MST alloc] init];
-    MST *newTree = [[MST alloc] init];
+    ATProtoMST *oldTree = [[ATProtoMST alloc] init];
+    ATProtoMST *newTree = [[ATProtoMST alloc] init];
     ATProtoCID *cid1 = [self defaultTestCID];
     ATProtoCID *cid2 = [self testCID:@"2"];
     
@@ -308,7 +308,7 @@
         [newTree put:key valueCID:cid1];
     }
     
-    NSArray<MSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
+    NSArray<ATProtoMSTDiffOperation *> *diff = [newTree diffFrom:oldTree];
     
     // Expected: 10 updates, 10 deletes (40-49), 10 adds (50-59)
     XCTAssertEqual(diff.count, 30, @"Should have 30 total operations");

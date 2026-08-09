@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @header MSTViewerHandler.h
 
- @abstract HTTP request handler for MST visualization interface.
+ @abstract HTTP request handler for ATProtoMST visualization interface.
 
  @discussion This handler provides a web-based GUI for exploring Merkle
  Search Tree structures in PDS repositories. Serves static assets (HTML/CSS/JS)
@@ -23,9 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @class MSTViewerHandler
 
- @abstract Singleton handler for MST viewer HTTP requests.
+ @abstract Singleton handler for ATProtoMST viewer HTTP requests.
 
- @discussion The MST viewer provides:
+ @discussion The ATProtoMST viewer provides:
  - Interactive D3.js tree visualization
  - Hierarchical list view
  - Tree statistics (node count, depth, balance)

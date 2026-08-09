@@ -19,7 +19,7 @@
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
     XCTAssertNotNil(commit, @"Commit should be created");
     XCTAssertEqualObjects(commit.did, did, @"DID should match");
@@ -36,7 +36,7 @@
     NSString *rev = @"3l66k7pp33p";
     ATProtoCID *prevCID = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     
     XCTAssertNotNil(commit, @"Commit should be created");
     XCTAssertEqualObjects(commit.prevCID, prevCID, @"Prev CID should match");
@@ -47,7 +47,7 @@
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     NSData *serialized = [commit serialize];
     
     XCTAssertNotNil(serialized, @"Serialized commit should not be nil");
@@ -82,7 +82,7 @@
     NSString *rev = @"3l66k7pp33p";
     ATProtoCID *prevCID = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     NSData *serialized = [commit serialize];
     
     ATProtoCBORValue *decoded = [ATProtoCBORDecoder decode:serialized];
@@ -98,7 +98,7 @@
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
     ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
@@ -120,7 +120,7 @@
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
     ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
@@ -140,7 +140,7 @@
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
     ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
@@ -158,7 +158,7 @@
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
     ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
@@ -177,7 +177,7 @@
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
     ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
@@ -194,7 +194,7 @@
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
     ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
     NSError *error = nil;
@@ -213,8 +213,8 @@
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit1 = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
-    RepoCommit *commit2 = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit1 = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
+    ATProtoRepoCommit *commit2 = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:nil];
     
     NSData *hash1 = [commit1 computeHash];
     NSData *hash2 = [commit2 computeHash];
@@ -228,8 +228,8 @@
     ATProtoCID *dataCID2 = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     NSString *rev = @"3l66k7pp33p";
     
-    RepoCommit *commit1 = [RepoCommit createCommitWithDid:did data:dataCID1 rev:rev prev:nil];
-    RepoCommit *commit2 = [RepoCommit createCommitWithDid:did data:dataCID2 rev:rev prev:nil];
+    ATProtoRepoCommit *commit1 = [ATProtoRepoCommit createCommitWithDid:did data:dataCID1 rev:rev prev:nil];
+    ATProtoRepoCommit *commit2 = [ATProtoRepoCommit createCommitWithDid:did data:dataCID2 rev:rev prev:nil];
     
     NSData *hash1 = [commit1 computeHash];
     NSData *hash2 = [commit2 computeHash];
@@ -243,7 +243,7 @@
     NSString *rev = @"3l66k7pp33p";
     ATProtoCID *prevCID = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
     
-    RepoCommit *originalCommit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
+    ATProtoRepoCommit *originalCommit = [ATProtoRepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     
     // Sign the commit
     ATProtoSecp256k1 *secp = [ATProtoSecp256k1 shared];
@@ -256,7 +256,7 @@
     XCTAssertNotNil(carData, @"CAR data should be generated");
     
     // Parse back
-    RepoCommit *parsedCommit = [RepoCommit fromCARData:carData error:&error];
+    ATProtoRepoCommit *parsedCommit = [ATProtoRepoCommit fromCARData:carData error:&error];
     
     XCTAssertNotNil(parsedCommit, @"Should parse commit from CAR data");
     XCTAssertNil(error, @"Should parse without error: %@", error.localizedDescription);
@@ -278,7 +278,7 @@
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
     ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     ATProtoCID *prevCID = [ATProtoCID cidFromString:@"bafyreifnqrwbk6ffmyaz5qtujqrzf5qmxf7cbxvgzktl4e3gabuxbtatv4"];
-    RepoCommit *original = [RepoCommit createCommitWithDid:did
+    ATProtoRepoCommit *original = [ATProtoRepoCommit createCommitWithDid:did
                                                      data:dataCID
                                                       rev:@"3l66k7pp33p"
                                                      prev:prevCID];
@@ -288,7 +288,7 @@
     XCTAssertNotNil(keyPair);
     XCTAssertTrue([original signWithPrivateKey:keyPair.privateKey error:&error]);
 
-    RepoCommit *parsed = [RepoCommit fromSignedBlockData:original.serializeSigned
+    ATProtoRepoCommit *parsed = [ATProtoRepoCommit fromSignedBlockData:original.serializeSigned
                                                    error:&error];
     XCTAssertNotNil(parsed, @"Signed block should parse: %@", error);
     XCTAssertEqualObjects(parsed.did, did);

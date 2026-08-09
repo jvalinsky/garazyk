@@ -40,7 +40,7 @@
     }
 
     // Serialize per-DID repo writes to prevent concurrent SQLite access
-    // and MST mutation races that cause segfaults under load.
+    // and ATProtoMST mutation races that cause segfaults under load.
     // The per-DID dispatcher allows writes for different DIDs to proceed
     // concurrently while serializing writes for the same DID.
     __block NSDictionary *response = nil;

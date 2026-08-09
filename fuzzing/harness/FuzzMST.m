@@ -1,5 +1,5 @@
 // FuzzMST.m - Merkle Search Tree fuzzer harness
-// Target: MST/CAR parsing and CBOR deserialization
+// Target: ATProtoMST/CAR parsing and CBOR deserialization
 
 #import <Foundation/Foundation.h>
 #import "Repository/CAR.h"
@@ -10,13 +10,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         NSData *input = [NSData dataWithBytes:data length:size];
         NSError *error = nil;
 
-        CARReader *reader = [CARReader readFromData:input error:&error];
+        ATProtoCARReader *reader = [ATProtoCARReader readFromData:input error:&error];
         if (reader) {
             (void)reader.rootCID;
             (void)reader.blocks;
         }
 
-        MST *mst = [MST deserializeFromCBOR:input];
+        ATProtoMST *mst = [ATProtoMST deserializeFromCBOR:input];
         if (mst) {
             (void)mst.root;
             (void)mst.rootCID;

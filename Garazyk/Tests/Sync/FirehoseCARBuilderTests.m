@@ -13,7 +13,7 @@
 #pragma mark - buildCARForSyncCommitOnly:
 
 - (void)testBuildCARForSyncCommitOnly_ValidCommit_ReturnsCARData {
-  RepoCommit *commit = [[RepoCommit alloc] init];
+  ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   commit.rev = @"3jzfcijpj2z2a";
   commit.did = @"did:plc:test";
 
@@ -23,27 +23,27 @@
 }
 
 - (void)testBuildCARForSyncCommitOnly_EmptyCommit_ReturnsNonNil {
-  RepoCommit *commit = [[RepoCommit alloc] init];
+  ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   NSData *result = [FirehoseCARBuilder buildCARForSyncCommitOnly:commit];
-  // A bare RepoCommit may have a valid computeCID; verify no crash and non-nil
+  // A bare ATProtoRepoCommit may have a valid computeCID; verify no crash and non-nil
   XCTAssertNotNil(result);
 }
 
 #pragma mark - buildCARForCommit:ops:blockProvider:revBlockListProvider:
 
 - (void)testBuildCARForCommit_EmptyCommit_ReturnsNonNil {
-  RepoCommit *commit = [[RepoCommit alloc] init];
+  ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   PDSBlockProvider provider = ^NSData * _Nullable(NSData *cidBytes) { return nil; };
   NSData *result = [FirehoseCARBuilder buildCARForCommit:commit
                                                      ops:@[]
                                            blockProvider:provider
                                      revBlockListProvider:nil];
-  // A bare RepoCommit may have a valid computeCID; verify no crash and non-nil
+  // A bare ATProtoRepoCommit may have a valid computeCID; verify no crash and non-nil
   XCTAssertNotNil(result);
 }
 
 - (void)testBuildCARForCommit_WithCreateOps_DoesNotCrash {
-  RepoCommit *commit = [[RepoCommit alloc] init];
+  ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   commit.rev = @"3jzfcijpj2z2a";
   commit.did = @"did:plc:test";
 
@@ -67,7 +67,7 @@
 }
 
 - (void)testBuildCARForCommit_DeleteOps_AreSkipped {
-  RepoCommit *commit = [[RepoCommit alloc] init];
+  ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   commit.rev = @"3jzfcijpj2z2a";
   commit.did = @"did:plc:test";
 
@@ -86,7 +86,7 @@
 }
 
 - (void)testBuildCARForCommit_EmptyRecordCBOR_IsSkipped {
-  RepoCommit *commit = [[RepoCommit alloc] init];
+  ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   commit.rev = @"3jzfcijpj2z2a";
   commit.did = @"did:plc:test";
 
@@ -105,7 +105,7 @@
 }
 
 - (void)testBuildCARForCommit_NilOps_DoesNotCrash {
-  RepoCommit *commit = [[RepoCommit alloc] init];
+  ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   commit.rev = @"3jzfcijpj2z2a";
   commit.did = @"did:plc:test";
 
@@ -120,7 +120,7 @@
 #pragma mark - Block provider edge cases
 
 - (void)testBuildCARForCommit_BlockProviderReturnsNil_DoesNotCrash {
-  RepoCommit *commit = [[RepoCommit alloc] init];
+  ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   commit.rev = @"3jzfcijpj2z2a";
   commit.did = @"did:plc:test";
 
@@ -141,7 +141,7 @@
 }
 
 - (void)testBuildCARForCommit_RevisionBlockListProvider_DoesNotCrash {
-  RepoCommit *commit = [[RepoCommit alloc] init];
+  ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   commit.rev = @"3jzfcijpj2z2a";
   commit.did = @"did:plc:test";
 

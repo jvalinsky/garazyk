@@ -15,11 +15,11 @@
     [super setUp];
     // Reset the class-level flag to the documented default so test ordering does
     // not leak state across the suite (global BOOLEAN).
-    [MST setStreamableCARBlockOrderingEnabled:NO];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:NO];
 }
 
 - (void)tearDown {
-    [MST setStreamableCARBlockOrderingEnabled:NO];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:NO];
     [super tearDown];
 }
 
@@ -31,7 +31,7 @@
 }
 
 - (NSData *)testRecordDataForCID:(ATProtoCID *)cid {
-    // Deterministic record data distinct from any MST-node CBOR.
+    // Deterministic record data distinct from any ATProtoMST-node CBOR.
     NSMutableData *out = [NSMutableData data];
     uint8_t marker = 0xA1;
     [out appendBytes:&marker length:1];
@@ -50,13 +50,13 @@
     return tid;
 }
 
-- (MST *)buildMultiLevelTree {
+- (ATProtoMST *)buildMultiLevelTree {
     // Use a deterministic, force-multi-level seed by including keys with known
     // depths combined with deterministic TIDs. We add keys until the pre-order
-    // traversal of MST nodes differs from BFS traversal, guaranteeing that the
+    // traversal of ATProtoMST nodes differs from BFS traversal, guaranteeing that the
     // resulting tree has multi-branch subtree depth and ensuring exact tree
     // shape reproducibility across every test run.
-    MST *tree = [[MST alloc] init];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
 
     NSArray<NSString *> *seedKeys = @[
         @"app.bsky.feed.post/3jzfcijpj2z2a",
@@ -101,23 +101,23 @@
 
 - (void)testDefaultFlagIsOff {
     // Arriving fresh into a test, the flag must be its documented default.
-    XCTAssertFalse(MST.streamableCARBlockOrderingEnabled);
+    XCTAssertFalse(ATProtoMST.streamableCARBlockOrderingEnabled);
 }
 
 - (void)testFlagTogglePreservesState {
-    [MST setStreamableCARBlockOrderingEnabled:YES];
-    XCTAssertTrue(MST.streamableCARBlockOrderingEnabled);
-    [MST setStreamableCARBlockOrderingEnabled:NO];
-    XCTAssertFalse(MST.streamableCARBlockOrderingEnabled);
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+    XCTAssertTrue(ATProtoMST.streamableCARBlockOrderingEnabled);
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:NO];
+    XCTAssertFalse(ATProtoMST.streamableCARBlockOrderingEnabled);
 }
 
 - (void)testRefusesWhenFlagOff {
     // buildMultiLevelTree's stopping condition calls capturePreorderMSTOnly:,
     // which itself requires the flag on - so the tree must be constructed
     // with the flag enabled before this test disables it to exercise refusal.
-    [MST setStreamableCARBlockOrderingEnabled:YES];
-    MST *tree = [self buildMultiLevelTree];
-    [MST setStreamableCARBlockOrderingEnabled:NO];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+    ATProtoMST *tree = [self buildMultiLevelTree];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:NO];
     NSError *err = nil;
     __block NSUInteger emitted = 0;
     BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **e) {
@@ -136,8 +136,8 @@
 #pragma mark - Structural invariants
 
 - (void)testPreorderEmitsRootFirst {
-    [MST setStreamableCARBlockOrderingEnabled:YES];
-    MST *tree = [self buildMultiLevelTree];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+    ATProtoMST *tree = [self buildMultiLevelTree];
     NSArray<NSString *> *order = [self capturePreorderStream:tree];
     XCTAssertGreaterThan(order.count, (NSUInteger)0);
     XCTAssertEqualObjects(order.firstObject, tree.rootCID.stringValue,
@@ -145,8 +145,8 @@
 }
 
 - (void)testPreorderHasNoDuplicatesIncludingRecords {
-    [MST setStreamableCARBlockOrderingEnabled:YES];
-    MST *tree = [self buildMultiLevelTree];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+    ATProtoMST *tree = [self buildMultiLevelTree];
     NSArray<NSString *> *order = [self capturePreorderStream:tree];
     NSCountedSet<NSString *> *uniq = [NSCountedSet setWithArray:order];
     XCTAssertEqual(order.count, uniq.count,
@@ -154,8 +154,8 @@
 }
 
 - (void)testPreorderMSTSubsetEqualsBFSSubset {
-    [MST setStreamableCARBlockOrderingEnabled:YES];
-    MST *tree = [self buildMultiLevelTree];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+    ATProtoMST *tree = [self buildMultiLevelTree];
     NSSet<NSString *> *mstNodeSet = [self mstNodeCIDSetForTree:tree];
 
     NSArray<NSString *> *preorderMST = [self capturePreorderMSTOnly:tree];
@@ -170,8 +170,8 @@
 }
 
 - (void)testPreorderMSTOrderDiffersFromBFSForMultiLevelTree {
-    [MST setStreamableCARBlockOrderingEnabled:YES];
-    MST *tree = [self buildMultiLevelTree];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+    ATProtoMST *tree = [self buildMultiLevelTree];
     NSSet<NSString *> *mstNodeSet = [self mstNodeCIDSetForTree:tree];
     if (mstNodeSet.count < 2) {
         // Skip explicitly so the bail-out is visible in test summary output
@@ -185,14 +185,14 @@
 }
 
 - (void)testPreorderEmptyTreeEmitsSameBlockAsBFS {
-    [MST setStreamableCARBlockOrderingEnabled:YES];
-    MST *tree = [[MST alloc] init];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+    ATProtoMST *tree = [[ATProtoMST alloc] init];
     NSArray<NSString *> *preorder = [self capturePreorderStream:tree];
     NSArray<NSString *> *bfs = [self captureBFS:tree];
-    // An empty repo still has a singleton empty-MST node with a defined ATProtoCID,
+    // An empty repo still has a singleton empty-ATProtoMST node with a defined ATProtoCID,
     // and emitting that block is spec-correct: consumers need it together with
     // the commit block to verify the empty-repo state. Both walkers emit
-    // exactly one block (the same empty-MST node) for an empty tree.
+    // exactly one block (the same empty-ATProtoMST node) for an empty tree.
     XCTAssertEqual(preorder.count, (NSUInteger)1,
                    @"Empty tree must emit exactly the empty-MST node block under pre-order ordering");
     XCTAssertEqualObjects(preorder, bfs,
@@ -200,8 +200,8 @@
 }
 
 - (void)testPreorderNilRecordProviderSkipsRecords {
-    [MST setStreamableCARBlockOrderingEnabled:YES];
-    MST *tree = [self buildMultiLevelTree];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+    ATProtoMST *tree = [self buildMultiLevelTree];
     NSArray<NSString *> *orderNoRecords = [self capturePreorderMSTOnly:tree];
     NSArray<NSString *> *bfsOrder = [self captureBFS:tree];
     XCTAssertEqualObjects([NSSet setWithArray:orderNoRecords],
@@ -214,8 +214,8 @@
 #pragma mark - Fixture capture
 
 - (void)testEmitsPreorderFixture {
-    [MST setStreamableCARBlockOrderingEnabled:YES];
-    MST *tree = [self buildMultiLevelTree];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+    ATProtoMST *tree = [self buildMultiLevelTree];
     NSArray<NSString *> *preorder = [self capturePreorderStream:tree];
     NSArray<NSString *> *bfsOrder = [self captureBFS:tree];
     NSSet<NSString *> *mstNodeSet = [self mstNodeCIDSetForTree:tree];
@@ -264,7 +264,7 @@
 
 #pragma mark - Walk helpers
 
-- (NSArray<NSString *> *)capturePreorderStream:(MST *)tree {
+- (NSArray<NSString *> *)capturePreorderStream:(ATProtoMST *)tree {
     __block NSMutableArray<NSString *> *order = [NSMutableArray array];
     NSError *err = nil;
     BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
@@ -278,7 +278,7 @@
     return order;
 }
 
-- (NSArray<NSString *> *)capturePreorderMSTOnly:(MST *)tree {
+- (NSArray<NSString *> *)capturePreorderMSTOnly:(ATProtoMST *)tree {
     __block NSMutableArray<NSString *> *order = [NSMutableArray array];
     NSError *err = nil;
     BOOL ok = [tree enumerateStreamableCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
@@ -290,7 +290,7 @@
     return order;
 }
 
-- (NSArray<NSString *> *)captureBFS:(MST *)tree {
+- (NSArray<NSString *> *)captureBFS:(ATProtoMST *)tree {
     __block NSMutableArray<NSString *> *order = [NSMutableArray array];
     NSError *err = nil;
     BOOL ok = [tree enumerateNodeCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
@@ -302,7 +302,7 @@
     return order;
 }
 
-- (NSSet<NSString *> *)mstNodeCIDSetForTree:(MST *)tree {
+- (NSSet<NSString *> *)mstNodeCIDSetForTree:(ATProtoMST *)tree {
     NSMutableSet<NSString *> *set = [NSMutableSet set];
     [tree enumerateNodeCARBlocksUsingBlock:^BOOL(ATProtoCID *cid, NSData *data, NSError **error) {
         (void)error;

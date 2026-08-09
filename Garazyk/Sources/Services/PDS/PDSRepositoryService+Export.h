@@ -20,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)writeRepoContents:(NSString *)did since:(nullable NSString *)sinceRev toPath:(NSString *)path error:(NSError **)error;
 /**
  * @abstract Returns a single-consumer CAR chunk producer filtered to one or more collections.
- * @discussion The current filtered export produces proof-path MST blocks and matching records;
+ * @discussion The current filtered export produces proof-path ATProtoMST blocks and matching records;
  * sinceRev is accepted for interface compatibility but is not applied.
  */
 - (nullable PDSRepoChunkProducer)filteredRepoContentsChunkProducer:(NSString *)did
@@ -48,18 +48,18 @@ NS_ASSUME_NONNULL_BEGIN
                                                                since:(nullable NSString *)sinceRev
                                                                error:(NSError **)error;
 /** @abstract Decodes the repository head commit into the STAR archive representation. */
-- (STARCommit *)starCommitFromExport:(NSString *)did
+- (ATProtoSTARCommit *)starCommitFromExport:(NSString *)did
                            commitCID:(ATProtoCID *)commitCID
                          commitBlock:(NSData *)commitBlock;
 /**
  * @abstract Loads and derives all state required for a CAR export.
- * @discussion On success, output pointers describe one repository head and whether a full MST or
+ * @discussion On success, output pointers describe one repository head and whether a full ATProtoMST or
  * changed proof paths are required. The method reads state only and does not authorize access.
  */
 - (BOOL)prepareRepoExportForDid:(NSString *)did
                           since:(nullable NSString *)sinceRev
                           store:(PDSActorStore * _Nullable * _Nonnull)storeOut
-                            mst:(MST * _Nullable * _Nonnull)mstOut
+                            mst:(ATProtoMST * _Nullable * _Nonnull)mstOut
                       commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCIDOut
                     commitBlock:(NSData * _Nullable * _Nonnull)commitBlockOut
                  noChangesSince:(BOOL *)noChangesSinceOut
@@ -78,11 +78,11 @@ NS_ASSUME_NONNULL_BEGIN
                                 rev:(NSString * _Nullable * _Nonnull)revOut
                            isSigned:(BOOL *)isSignedOut;
 /** @abstract Builds a CAR writer rooted at did's stored head commit. */
-- (nullable CARWriter *)buildRepoWriterForDid:(NSString *)did
+- (nullable ATProtoCARWriter *)buildRepoWriterForDid:(NSString *)did
                                          since:(nullable NSString *)sinceRev
                                          error:(NSError **)error;
-/** @abstract Produces full-MST or proof-path blocks and optional record blocks for an export. */
-- (nullable NSArray<CARBlock *> *)mstBlocksForExport:(MST *)mst
+/** @abstract Produces full-ATProtoMST or proof-path blocks and optional record blocks for an export. */
+- (nullable NSArray<ATProtoCARBlock *> *)mstBlocksForExport:(ATProtoMST *)mst
                                        includeAllMST:(BOOL)includeAllMST
                                            proofKeys:(NSArray<NSString *> *)proofKeys
                                       recordProvider:(nullable MSTBlockProvider)recordProvider

@@ -6,10 +6,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class CARBlock;
-@class MST;
-@class MSTNode;
-@class MSTNodeEntry;
+@class ATProtoCARBlock;
+@class ATProtoMST;
+@class ATProtoMSTNode;
+@class ATProtoMSTNodeEntry;
 
 /*!
  @header STAR.h
@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
  - No garbage blocks allowed (unlike CAR)
 
  Two variants are supported:
- - STAR-L0: preserves MST structure, best for streaming verification
+ - STAR-L0: preserves ATProtoMST structure, best for streaming verification
  - STAR-lite: flat key-record encoding, best compression
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
@@ -39,7 +39,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Specifies the STAR format variant.
 
- @constant STARVariantL0  STAR-L0: MST-structured, streaming verification
+ @constant STARVariantL0  STAR-L0: ATProtoMST-structured, streaming verification
  @constant STARVariantLite STAR-lite: flat key-record, best compression
  */
 typedef NS_ENUM(NSUInteger, STARVariant) {
@@ -60,11 +60,11 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 #pragma mark - STAR Commit
 
 /*!
- @class STARCommit
+ @class ATProtoSTARCommit
 
  @abstract Represents a STAR commit object (the archive header).
  */
-@interface STARCommit : NSObject
+@interface ATProtoSTARCommit : NSObject
 
 @property (nonatomic, copy) NSString *did;
 @property (nonatomic, assign) NSInteger version;
@@ -90,12 +90,12 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @end
 
-#pragma mark - STAR MST Entry (wire format)
+#pragma mark - STAR ATProtoMST Entry (wire format)
 
 /*!
  @class ATProtoSTARMstEntry
 
- @abstract A single entry in a STAR MST node (wire format).
+ @abstract A single entry in a STAR ATProtoMST node (wire format).
 
  @discussion In the STAR wire format, layer-0 entries may omit `v` (record ATProtoCID)
  when the record is included in the archive. The `V` flag indicates that the
@@ -126,14 +126,14 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @end
 
-#pragma mark - STAR MST Node (wire format)
+#pragma mark - STAR ATProtoMST Node (wire format)
 
 /*!
  @class ATProtoSTARMstNode
 
- @abstract A MST node in STAR wire format.
+ @abstract A ATProtoMST node in STAR wire format.
 
- @discussion STAR MST nodes differ from repo-spec MST nodes:
+ @discussion STAR ATProtoMST nodes differ from repo-spec ATProtoMST nodes:
  - `l` is the left pointer ATProtoCID (optional)
  - `L` is a bool flag indicating the left subtree is in the archive
  - `e` is the array of entries (ATProtoSTARMstEntry)
@@ -162,37 +162,37 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @end
 
-#pragma mark - STARL0Writer
+#pragma mark - ATProtoSTARL0Writer
 
 /*!
- @class STARL0Writer
+ @class ATProtoSTARL0Writer
 
  @abstract Writes STAR-L0 format archives.
 
- @discussion STAR-L0 preserves the MST structure and enables streaming
- verification. The writer walks the MST depth-first, emitting nodes and
+ @discussion STAR-L0 preserves the ATProtoMST structure and enables streaming
+ verification. The writer walks the ATProtoMST depth-first, emitting nodes and
  records in strict traversal order. Layer-0 nodes omit record CIDs when
  the records follow in the archive.
 
  Usage:
-     STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+     ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
      [writer writeFromMST:mst blockProvider:provider error:&err];
      NSData *starData = [writer serialize];
  */
 /**
- * @abstract Declares the STARL0Writer public API.
+ * @abstract Declares the ATProtoSTARL0Writer public API.
  */
-@interface STARL0Writer : NSObject
+@interface ATProtoSTARL0Writer : NSObject
 
 /**
  * @abstract Exposes the commit value.
  */
-@property (nonatomic, strong, readonly) STARCommit *commit;
+@property (nonatomic, strong, readonly) ATProtoSTARCommit *commit;
 
 /**
  * @abstract Performs the initWithCommit operation.
  */
-- (instancetype)initWithCommit:(STARCommit *)commit;
+- (instancetype)initWithCommit:(ATProtoSTARCommit *)commit;
 
 /*!
  @method initWithCommit:outputBlock:
@@ -201,21 +201,21 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
  @param commit The commit header.
  @param outputBlock Block called whenever a new chunk of data is ready.
- @return A new STARL0Writer instance.
+ @return A new ATProtoSTARL0Writer instance.
  */
-- (instancetype)initWithCommit:(STARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock;
+- (instancetype)initWithCommit:(ATProtoSTARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock;
 
 /*!
  @method writeFromMST:blockProvider:error:
 
- @abstract Walk the MST depth-first and serialize as STAR-L0.
+ @abstract Walk the ATProtoMST depth-first and serialize as STAR-L0.
 
- @param mst The MST to serialize.
+ @param mst The ATProtoMST to serialize.
  @param blockProvider Block that returns record data for a given ATProtoCID.
  @param error Error pointer for serialization failures.
  @return YES on success, NO on failure.
  */
-- (BOOL)writeFromMST:(MST *)mst
+- (BOOL)writeFromMST:(ATProtoMST *)mst
        blockProvider:(nullable NSData * _Nullable (^)(ATProtoCID *cid))blockProvider
                error:(NSError **)error;
 
@@ -241,48 +241,48 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @end
 
-#pragma mark - STARLiteWriter
+#pragma mark - ATProtoSTARLiteWriter
 
 /*!
- @class STARLiteWriter
+ @class ATProtoSTARLiteWriter
 
  @abstract Writes STAR-lite format archives.
 
- @discussion STAR-lite is a flat key-record encoding with no MST structure.
+ @discussion STAR-lite is a flat key-record encoding with no ATProtoMST structure.
  It provides the best compression ratio but requires disk spilling or two
- passes for MST recovery. Records are emitted in sorted key order.
+ passes for ATProtoMST recovery. Records are emitted in sorted key order.
 
  Usage:
-     STARLiteWriter *writer = [[STARLiteWriter alloc] initWithCommit:commit];
+     ATProtoSTARLiteWriter *writer = [[ATProtoSTARLiteWriter alloc] initWithCommit:commit];
      [writer writeFromMST:mst blockProvider:provider error:&err];
      NSData *starData = [writer serialize];
  */
 /**
- * @abstract Declares the STARLiteWriter public API.
+ * @abstract Declares the ATProtoSTARLiteWriter public API.
  */
-@interface STARLiteWriter : NSObject
+@interface ATProtoSTARLiteWriter : NSObject
 
 /**
  * @abstract Exposes the commit value.
  */
-@property (nonatomic, strong, readonly) STARCommit *commit;
+@property (nonatomic, strong, readonly) ATProtoSTARCommit *commit;
 
 /**
  * @abstract Performs the initWithCommit operation.
  */
-- (instancetype)initWithCommit:(STARCommit *)commit;
+- (instancetype)initWithCommit:(ATProtoSTARCommit *)commit;
 
 /*!
  @method writeFromMST:blockProvider:error:
 
- @abstract Walk the MST and serialize as STAR-lite (flat key-record).
+ @abstract Walk the ATProtoMST and serialize as STAR-lite (flat key-record).
 
- @param mst The MST to serialize.
+ @param mst The ATProtoMST to serialize.
  @param blockProvider Block that returns record data for a given ATProtoCID.
  @param error Error pointer for serialization failures.
  @return YES on success, NO on failure.
  */
-- (BOOL)writeFromMST:(MST *)mst
+- (BOOL)writeFromMST:(ATProtoMST *)mst
        blockProvider:(nullable NSData * _Nullable (^)(ATProtoCID *cid))blockProvider
                error:(NSError **)error;
 
@@ -318,30 +318,30 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @end
 
-#pragma mark - STARReader
+#pragma mark - ATProtoSTARReader
 
 /*!
- @class STARReader
+ @class ATProtoSTARReader
 
  @abstract Reads and parses STAR archives (both L0 and lite).
 
  @discussion Detects the variant from the header and parses the archive,
- reconstituting blocks as CARBlock objects for compatibility with existing
+ reconstituting blocks as ATProtoCARBlock objects for compatibility with existing
  code that expects CAR-format blocks.
 
  Usage:
-     STARReader *reader = [STARReader readFromData:data error:&err];
-     for (CARBlock *block in reader.blocks) { ... }
+     ATProtoSTARReader *reader = [ATProtoSTARReader readFromData:data error:&err];
+     for (ATProtoCARBlock *block in reader.blocks) { ... }
  */
-@interface STARReader : NSObject
+@interface ATProtoSTARReader : NSObject
 
 /**
  * @abstract Exposes the root cid value.
  */
 @property (nonatomic, strong, readonly, nullable) ATProtoCID *rootCID;
-@property (nonatomic, copy, readonly) NSArray<CARBlock *> *blocks;
+@property (nonatomic, copy, readonly) NSArray<ATProtoCARBlock *> *blocks;
 @property (nonatomic, assign, readonly) STARVariant variant;
-@property (nonatomic, strong, readonly, nullable) STARCommit *commit;
+@property (nonatomic, strong, readonly, nullable) ATProtoSTARCommit *commit;
 
 /**
  * @abstract Performs the readFromData operation.
@@ -360,24 +360,24 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  @param cid The ATProtoCID to look up.
  @return The block with the given ATProtoCID, or nil if not found.
  */
-- (nullable CARBlock *)blockWithCID:(ATProtoCID *)cid;
+- (nullable ATProtoCARBlock *)blockWithCID:(ATProtoCID *)cid;
 
 @end
 
 #pragma mark - STAR Converter
 
 /*!
- @class STARConverter
+ @class ATProtoSTARConverter
 
  @abstract Conversion from STAR to CAR format.
 
  @discussion Provides verifying STAR-to-CAR conversion. The reader
- validates every MST node ATProtoCID against the commit's data ATProtoCID chain,
+ validates every ATProtoMST node ATProtoCID against the commit's data ATProtoCID chain,
  rehydrates layer-0 record links, and strips wire-format flags. CAR-to-STAR
- conversion is not supported; use the live-MST writer (STARL0Writer)
+ conversion is not supported; use the live-ATProtoMST writer (ATProtoSTARL0Writer)
  for export.
  */
-@interface STARConverter : NSObject
+@interface ATProtoSTARConverter : NSObject
 
 /*!
  @method carDataFromSTARData:error:
@@ -385,7 +385,7 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  @abstract Convert STAR data (L0 or lite) to CAR format.
 
  @discussion STAR-to-CAR conversion is verifying: the reader validates
- every MST node ATProtoCID against the commit's data ATProtoCID chain, rehydrates
+ every ATProtoMST node ATProtoCID against the commit's data ATProtoCID chain, rehydrates
  layer-0 record links, and strips wire-format flags before
  re-serializing to repo-spec form. Sig-less STAR archives are rejected
  because they cannot produce a compliant CAR.

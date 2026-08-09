@@ -161,7 +161,7 @@
 }
 
 - (void)testBroadcastCommitWithOpsValidatesMaxSeqIsGreater {
-    RepoCommit *commit = [RepoCommit createCommitWithDid:@"did:plc:test" 
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:@"did:plc:test"
                                                    data:[ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] 
                                                     rev:@"3l66k7pp33p" 
                                                    prev:nil];
@@ -194,8 +194,8 @@
 
 - (void)testBroadcastCommitEmitsPreviousRevisionAndDataRoot {
     NSString *did = @"did:plc:ar7c4by46qjdydhdevvrndac";
-    RepoCommit *previous =
-        [RepoCommit createCommitWithDid:did
+    ATProtoRepoCommit *previous =
+        [ATProtoRepoCommit createCommitWithDid:did
                                    data:[ATProtoCID sha256:[@"previous-data"
                                        dataUsingEncoding:NSUTF8StringEncoding]]
                                     rev:@"3mrogbz3mwr2t"
@@ -219,8 +219,8 @@
                   error:&storeError];
     XCTAssertNil(storeError);
 
-    RepoCommit *current =
-        [RepoCommit createCommitWithDid:did
+    ATProtoRepoCommit *current =
+        [ATProtoRepoCommit createCommitWithDid:did
                                    data:[ATProtoCID sha256:[@"current-data"
                                        dataUsingEncoding:NSUTF8StringEncoding]]
                                     rev:@"3mrogbz3mwr2u"
@@ -264,8 +264,8 @@
     ATProtoCID *missingPrevious =
         [ATProtoCID sha256:[@"missing-previous"
             dataUsingEncoding:NSUTF8StringEncoding]];
-    RepoCommit *current =
-        [RepoCommit createCommitWithDid:did
+    ATProtoRepoCommit *current =
+        [ATProtoRepoCommit createCommitWithDid:did
                                    data:[ATProtoCID sha256:[@"current-data"
                                        dataUsingEncoding:NSUTF8StringEncoding]]
                                     rev:@"3mrogbz3mwr2v"
@@ -303,7 +303,7 @@
 
 #ifndef GNUSTEP
 - (void)testBackpressureEnforcement {
-    RepoCommit *commit = [RepoCommit createCommitWithDid:@"did:plc:test" 
+    ATProtoRepoCommit *commit = [ATProtoRepoCommit createCommitWithDid:@"did:plc:test"
                                                    data:[ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] 
                                                     rev:@"3l66k7pp33p" 
                                                    prev:nil];

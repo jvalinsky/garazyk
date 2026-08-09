@@ -83,7 +83,7 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
         NSData *carData = repoData;
         if (isSTAR || STARDetectFormatFromData(repoData)) {
             NSError *starErr = nil;
-            carData = [STARConverter carDataFromSTARData:repoData error:&starErr];
+            carData = [ATProtoSTARConverter carDataFromSTARData:repoData error:&starErr];
             if (!carData) {
                 response.statusCode = HttpStatusBadRequest;
                 [response setJsonBody:@{
@@ -97,7 +97,7 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
         // Caller-supplied archive: verify every block hashes to its stated ATProtoCID
         // before any of it reaches the repository.
         NSError *carError = nil;
-        CARReader *reader = [CARReader readFromData:carData strict:YES error:&carError];
+        ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData strict:YES error:&carError];
         if (!reader || !reader.rootCID) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
@@ -108,7 +108,7 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
         }
 
         NSError *commitError = nil;
-        RepoCommit *commit = [RepoCommit fromCARData:carData error:&commitError];
+        ATProtoRepoCommit *commit = [ATProtoRepoCommit fromCARData:carData error:&commitError];
         if (!commit) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{

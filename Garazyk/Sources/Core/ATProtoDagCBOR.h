@@ -35,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 typedef NS_ENUM(NSInteger, ATProtoDRISLProfile) {
     /**
-     ATProto records, commits, MST nodes and firehose frames. Floats are
+     ATProto records, commits, ATProtoMST nodes and firehose frames. Floats are
      rejected on both encode and decode. This is the default for every
      profile-less API and is what all repository code uses.
      */

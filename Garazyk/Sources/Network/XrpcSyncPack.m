@@ -632,7 +632,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
         nextCursor = account.did;
         if (account.did.length > 0) {
           // Use lightweight headInfoForDid (reads stored head commit metadata
-          // without loading all records and rebuilding the MST) instead of
+          // without loading all records and rebuilding the ATProtoMST) instead of
           // the expensive getLatestCommitForDid which does full export prep.
           NSDictionary *headInfo =
               [repositoryService headInfoForDid:account.did error:nil];
@@ -1041,7 +1041,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     // a narrow slice of the repo containing only the requested record.
     //
     // Open the actor store once and reuse it for the commit ATProtoCID lookup,
-    // commit block fetch, record block fetch, and MST proof path — avoiding
+    // commit block fetch, record block fetch, and ATProtoMST proof path — avoiding
     // redundant store opens that would each hit the pool lock and open the
     // SQLite database file again.
     PDSActorStore *store = [userDatabasePool storeForDid:did error:nil];
@@ -1076,16 +1076,16 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
-    CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
+    ATProtoCARWriter *writer = [ATProtoCARWriter writerWithRootCID:commitCID];
 
     // Add the commit block (reuses the already-open store).
     NSData *commitBlock =
         [store getBlockForCID:[commitCID bytes] forDid:did error:nil];
     if (commitBlock) {
-      [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlock]];
+      [writer addBlock:[ATProtoCARBlock blockWithCID:commitCID data:commitBlock]];
     }
 
-    // Add the record block and MST proof path
+    // Add the record block and ATProtoMST proof path
     NSString *recordCIDStr = record[@"cid"];
     if (recordCIDStr) {
       ATProtoCID *recordCID = [ATProtoCID cidFromString:recordCIDStr];
@@ -1112,11 +1112,11 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
           }
         }
         if (blockData) {
-          [writer addBlock:[CARBlock blockWithCID:recordCID data:blockData]];
+          [writer addBlock:[ATProtoCARBlock blockWithCID:recordCID data:blockData]];
         }
 
-        // Add MST proof path (reuses the already-open store)
-        MST *mst = [repositoryService loadMSTForDid:did store:store error:nil];
+        // Add ATProtoMST proof path (reuses the already-open store)
+        ATProtoMST *mst = [repositoryService loadMSTForDid:did store:store error:nil];
         if (mst && store) {
           NSString *mstKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
           
@@ -1125,10 +1125,10 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
               return [store getBlockForCID:targetCid.bytes forDid:did error:nil];
           };
           
-          NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:mstKey blockProvider:blockProvider];
+          NSArray<ATProtoMSTNode *> *proofNodes = [mst getProofNodesForKey:mstKey blockProvider:blockProvider];
 
-          NSMapTable<MSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
-          for (MSTNode *node in proofNodes) {
+          NSMapTable<ATProtoMSTNode *, ATProtoCID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
+          for (ATProtoMSTNode *node in proofNodes) {
             ATProtoCID *nodeCID = [node getCID:cache];
             if (nodeCID) {
               // Fetch original block from DB to ensure ATProtoCID consistency
@@ -1139,7 +1139,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
               }
               
               if (nodeData) {
-                [writer addBlock:[CARBlock blockWithCID:nodeCID data:nodeData]];
+                [writer addBlock:[ATProtoCARBlock blockWithCID:nodeCID data:nodeData]];
               }
             }
           }

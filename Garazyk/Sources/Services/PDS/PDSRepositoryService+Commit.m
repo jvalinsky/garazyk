@@ -44,7 +44,7 @@
 
     // Read the stored signed head commit ATProtoCID and rev from repo_root.
     // This is the fast path from getLatestCommitForDid, without the
-    // self-healing fallback that loads all records and rebuilds the MST.
+    // self-healing fallback that loads all records and rebuilds the ATProtoMST.
     ATProtoCID *storedCommitCID = nil;
     NSData *unusedCommitBlock = nil;
     ATProtoCID *unusedDataCID = nil;
@@ -104,7 +104,7 @@
     }
 
     // Slow path: rebuild export state, self-heal head commit if needed.
-    MST *mst = nil;
+    ATProtoMST *mst = nil;
     ATProtoCID *commitCID = nil;
     NSData *commitBlock = nil;
     BOOL noChangesSince = NO;

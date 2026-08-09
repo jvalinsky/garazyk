@@ -1,10 +1,10 @@
 ---
 title: Module Boundaries and Library Consumption
 status: active
-last_verified: 2026-08-05
+last_verified: 2026-08-08
 ---
 
-## Verified status (2026-08-04)
+## Verified status (2026-08-08)
 
 The earlier execution summary and the proposed Option A plan overstated the
 workstream's completion, and M4 subsequently closed for real: a current run
@@ -33,9 +33,10 @@ a configure-time disjoint-source assertion); item 2 (glob-to-manifest
 conversion) remains open. M5 has started: the namespace gate landed, and
 **M5.3 batch 1 (internal migration classes, the low-risk pilot) is complete**,
 **batch 2 is complete in full** (all ~25 classes renamed), and **batch 3a (the
-low-consumer half of Storage/Transport, 14 classes) is complete** — namespace
-baseline ratcheted
-283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228 → 214. Batch 3b and
+low-consumer half of Storage/Transport, 14 classes) is complete**. Batch 3b's
+Storage slice is now landed: 17 higher-consumer Storage classes are prefixed;
+the namespace baseline is 283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 →
+229 → 228 → 214 → 197. The remaining batch-3b Transport/Core HTTP slice and
 batches 4-6 remain open. M6 has not started.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
@@ -1686,6 +1687,18 @@ pass; full `AllTests --gated=run`: 4,975 tests, 0 failures, 583s.
 **Batch 3b (the remaining higher-consumer Storage/Transport classes) and
 batches 4-6** (PLC/Sync/Services/MediaCore, XRPC/VideoService, Runtime)
 remain open for future sessions.
+
+**Batch 3b Storage slice (2026-08-08):** Renamed the remaining higher-consumer
+Storage classes to the `ATProto` prefix: `MST`, `MSTAtomicReference`,
+`MSTCacheManager`, `MSTDiffOperation`, `MSTEntry`, `MSTNode`, `MSTNodeEntry`,
+`MSTWalker`, `CARBlock`, `CARReader`, `CARWriter`, `RepoCommit`, `STARCommit`,
+`STARConverter`, `STARL0Writer`, `STARLiteWriter`, and `STARReader`. File names
+and import paths remain unchanged. The mechanical pass was restricted to
+tracked `.m`/`.h` consumers, excluded `Tests/fixtures/` and Admin UI sources,
+skipped import/include lines, and preserved quoted literals. `RepoCommit`'s
+`NSSecureCoding` methods remain intact; no keyed-archive call site or hard-coded
+runtime class lookup for these names exists in the repository. Baseline ratchets
+214 → 197. Native and global gates remain pending the complete batch-3b slice.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
