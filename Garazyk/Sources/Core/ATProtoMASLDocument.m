@@ -62,6 +62,13 @@ static BOOL MASLPathExists(NSDictionary<NSString *, NSDictionary *> *resources,
     return MASLIsAbsoluteResourcePath(path) && resources[path] != nil;
 }
 
+static NSString *MASLResolvedBundlePath(NSString *path) {
+    if (![path isKindOfClass:[NSString class]]) return nil;
+    NSRange suffix = [path rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"?#"]];
+    NSString *pathname = suffix.location == NSNotFound ? path : [path substringToIndex:suffix.location];
+    return MASLIsAbsoluteResourcePath(pathname) ? pathname : nil;
+}
+
 static void MASLSetError(NSError **error, ATProtoMASLErrorCode code, NSString *message) {
     if (error) *error = MASLError(code, message);
 }
@@ -195,6 +202,30 @@ static BOOL MASLValidateManifestReferences(NSDictionary *map,
                                   error:error];
 }
 
+- (nullable ATProtoCID *)resourceCIDForPath:(NSString *)path error:(NSError **)error {
+    if (!self.bundle) {
+        MASLSetError(error, ATProtoMASLErrorInvalidResourcePath,
+                     @"MASL resource lookup requires bundle mode");
+        return nil;
+    }
+
+    NSString *pathname = MASLResolvedBundlePath(path);
+    NSDictionary *resource = pathname ? self.resources[pathname] : nil;
+    if (!resource) {
+        MASLSetError(error, ATProtoMASLErrorInvalidResourcePath,
+                     [NSString stringWithFormat:@"MASL bundle has no resource at path %@", path ?: @"(null)"]);
+        return nil;
+    }
+
+    ATProtoCID *cid = resource[@"src"];
+    if (!MASLIsCID(cid)) {
+        MASLSetError(error, ATProtoMASLErrorInvalidResource,
+                     [NSString stringWithFormat:@"MASL bundle resource %@ has no valid src CID", pathname]);
+        return nil;
+    }
+    return cid;
+}
+
 - (BOOL)validateForCARWithError:(NSError **)error {
     id version = self.object[@"version"];
     id roots = self.object[@"roots"];
@@ -221,7 +252,8 @@ static BOOL MASLValidateManifestReferences(NSDictionary *map,
 
 - (nullable NSDictionary<NSString *, NSString *> *)httpHeadersForPath:(nullable NSString *)path
                                                                   error:(NSError **)error {
-    NSDictionary *source = self.bundle ? self.resources[path ?: @""] : self.object;
+    NSString *pathname = self.bundle ? MASLResolvedBundlePath(path) : nil;
+    NSDictionary *source = self.bundle ? self.resources[pathname ?: @""] : self.object;
     if (self.bundle && !source) {
         MASLSetError(error, ATProtoMASLErrorInvalidResourcePath,
                      [NSString stringWithFormat:@"MASL bundle has no resource at path %@", path ?: @"(null)"]);

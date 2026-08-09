@@ -241,23 +241,36 @@ not an invented full BDASL hash-tree wire format.
 - Rollback: remove the additive verifier, range method, HTTP seam, and test updates; existing blob
   upload and download behavior is unchanged.
 
-**Phase 7 — MASL — PARTIAL (validated Core document model).** `Core/ATProtoMASLDocument` now
-validates DRISL metadata documents in single mode (`src`) and bundle mode (`resources` with an
-exact `/` entry), preserves arbitrary namespaced metadata, validates `$type`, `prev`, and bundle
-resource CIDs, and exposes the lower-case HTTP-header allow-list without reflecting unknown or
-incorrectly-cased fields. `sourcemap`, `speculation-rules`, and Web App Manifest icon/screenshot
-references must name exact bundle paths. CAR compatibility is an explicit validation gate for
-integer `version: 1` and CID-only `roots`; the existing CAR reader is not changed until a header
-metadata integration contract is selected.
+**Phase 7 — MASL — IMPLEMENTED (validated Core document model + CAR/bundle integration).**
+`Core/ATProtoMASLDocument` validates DRISL metadata documents in single mode (`src`) and bundle
+mode (`resources` with an exact `/` entry), preserves arbitrary namespaced metadata, validates
+`$type`, `prev`, and bundle resource CIDs, and exposes the lower-case HTTP-header allow-list
+without reflecting unknown or incorrectly-cased fields. `sourcemap`, `speculation-rules`, and Web
+App Manifest icon/screenshot references must name exact bundle paths. Bundle CID lookup strips
+query strings and fragments before exact pathname matching.
 
-- Owner boundary: `Garazyk/Sources/Core` only for the document model; future CAR integration touches
-  `Repository/CAR.m` read path.
-- Evidence: `ATProtoMASLDocumentTests` covers single/bundle DRISL round-trip, required root and
-  resource `src` fields, `prev`/`$type`, allow-listed header projection, manifest path references,
-  and CAR compatibility validation. The model is registered in `Tests/test_main.m`.
-- Explicit remainder: CAR header read/write integration and bundle resource lookup are not wired;
-  this bounded slice does not invent a new CAR metadata transport or web runtime.
-- Rollback: additive document type and test registration; no existing CAR consumer depends on MASL fields being present.
+`Repository/CAR` now retains the complete decoded DRISL header metadata, exposes a validated MASL
+document when the header conforms, writes validated MASL metadata without dropping application
+fields, permits the CAR-specified empty `roots` array, and resolves bundle paths to body blocks
+through the resource `src` CIDs. Existing root-only CAR APIs remain compatible; no blob-upload
+CID assignment or existing blob path was changed.
+
+- Owner boundary: `Garazyk/Sources/Core` owns MASL validation and path resolution; `Repository/CAR`
+  owns header retention/encoding and bounded body lookup. No web runtime or new metadata transport
+  was invented.
+- Evidence (2026-08-08): `cmake --build build --target AllTests --parallel 4` passed on macOS.
+  Focused `./build/tests/AllTests --filter 'ATProtoMASLDocumentTests' --gated=run` passed
+  12/12; `./build/tests/AllTests --filter 'CARInteropTests' --gated=run` passed 24/24
+  executions (the existing test registry lists `CARInteropTests` twice), including strict MASL
+  metadata round-trip, empty roots, query/fragment pathname resolution, missing-resource
+  rejection, and CID-verified body lookup. The first fresh-worktree configure attempt was
+  blocked by the local `secp256k1` symlink not resolving in that invocation; an independent
+  dependency configure passed and the repository configure then completed successfully.
+  A full `./build/tests/AllTests --gated=run` was started at 23:35:15 -0400 but interrupted at
+  23:45:15 -0400 before its suite summary; it is incomplete and is not claimed as pass or fail.
+- Explicit remainder: no web runtime, RASL fetching, or arbitrary tile execution is wired here.
+- Rollback: remove the additive MASL path/CAR metadata APIs and focused tests; existing root-only
+  CAR serialization and blob upload behavior remain unchanged.
 
 **Phase 8 — PFP — PARTIAL (strict identifier format).** `Core/ATProtoPFP` implements the
 registered PDQ (`0x01`, 32-byte inline hash) and TMK+PDQF (`0x02`, 36-byte strict base-DASL CID)
