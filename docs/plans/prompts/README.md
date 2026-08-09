@@ -80,7 +80,7 @@ that records its outcome.
 | # | File | Focus | Status | Depends on |
 | - | ---- | ----- | ------ | ---------- |
 | 5 | [phase-05](phase-05-repo-boundaries.md) | Deno repo extraction and package publication | `blocked` — maintainer must lift the publication deferral | — |
-| 30 | [phase-30](phase-30-admin-ui-library-extraction.md) | Extract `ATProtoAdminUI`, invert route registration (workstream 11 M2) | `in-progress` — M2.1–M2.4 complete; M2.5–M2.6 remain | — |
+| 30 | [phase-30](phase-30-admin-ui-library-extraction.md) | Extract `ATProtoAdminUI`, invert route registration (workstream 11 M2) | `in-progress` — M2.1–M2.6 implemented; closeout checks blocked | — |
 
 Phase 30 is the only actionable phase prompt. Phase 5 cannot start until a
 future maintainer message explicitly reopens JSR publication (see its
