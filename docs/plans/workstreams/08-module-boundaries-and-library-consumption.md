@@ -1733,7 +1733,10 @@ excluded Admin UI source/test files, which still forward-declare old
 `HttpRequest`/`HttpResponse`; those files are reserved for the Admin UI phase.
 Deno check/test stop before execution because this worktree lacks npm cache
 entries for `cborg` and `zod`; repository-doc validation is blocked by its
-missing generated registry. Batch 3b is complete; batches 4–6 remain open.
+missing generated registry. The applicable GNUstep Docker builder was also
+attempted, but OrbStack ran out of storage while copying the source context
+(`no space left on device`) before configure or compilation. Batch 3b is
+complete; batches 4–6 remain open.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
