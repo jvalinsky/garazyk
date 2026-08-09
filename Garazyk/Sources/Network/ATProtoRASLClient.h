@@ -24,8 +24,17 @@
 #import <Foundation/Foundation.h>
 
 @class ATProtoRASLURL;
+@class ATProtoSafeHTTPClientOptions;
 
 NS_ASSUME_NONNULL_BEGIN
+
+/** The synchronous HTTP surface required by RASL and BDASL retrieval. */
+@protocol ATProtoRASLHTTPFetching <NSObject>
+- (nullable NSData *)sendSynchronousRequest:(NSURLRequest *)request
+                                    options:(nullable ATProtoSafeHTTPClientOptions *)options
+                                    response:(NSHTTPURLResponse * _Nullable * _Nullable)response
+                                      error:(NSError * _Nullable * _Nullable)error;
+@end
 
 extern NSErrorDomain const ATProtoRASLClientErrorDomain;
 
@@ -35,14 +44,17 @@ typedef NS_ENUM(NSInteger, ATProtoRASLClientErrorCode) {
     /** Every hint failed (network error, non-200 response, or ATProtoCID mismatch). */
     ATProtoRASLClientErrorAllHintsFailed = 2,
     /**
-     The ATProtoCID uses a hash algorithm this client cannot verify yet. Only
-     SHA-256 (base DASL) CIDs are verified today; BLAKE3 (Big DASL)
-     verification lands with the Phase 6 streaming verifier. Data is never
-     returned unverified, so this fails closed instead of skipping the check.
+     The plain RASL fetch method uses a hash algorithm this method cannot
+     verify. It supports SHA-256 (base DASL); BLAKE3 retrieval must use the
+     BDASL sidecar/range method below. Data is never returned unverified.
      */
     ATProtoRASLClientErrorUnsupportedHashAlgorithm = 3,
     /** One hint's own attempt failed (network error, bad status, ATProtoCID mismatch, or unbuildable URL). Only ever appears nested under `ATProtoRASLHintFailures` on the aggregate error. */
     ATProtoRASLClientErrorHintFailed = 4,
+    /** The caller-supplied BDASL sidecar is invalid or cannot be used. */
+    ATProtoRASLClientErrorInvalidBDASLSidecar = 5,
+    /** Every requested BDASL range failed transport or chunk verification. */
+    ATProtoRASLClientErrorBDASLRangeFailed = 6,
 };
 
 /**
@@ -52,6 +64,10 @@ typedef NS_ENUM(NSInteger, ATProtoRASLClientErrorCode) {
 
 /** Shared client instance. */
 + (instancetype)sharedClient;
+
+/** Creates a client with an injectable synchronous HTTP boundary. */
+- (instancetype)initWithHTTPClient:(id<ATProtoRASLHTTPFetching>)httpClient NS_DESIGNATED_INITIALIZER;
+- (instancetype)init NS_UNAVAILABLE;
 
 /**
  Fetches and ATProtoCID-verifies the content a `rasl://` URL points to.
@@ -67,6 +83,23 @@ typedef NS_ENUM(NSInteger, ATProtoRASLClientErrorCode) {
             maxResponseBytes:(NSUInteger)maxResponseBytes
                       timeout:(NSTimeInterval)timeout
                    completion:(void (^)(NSData * _Nullable data, NSError * _Nullable error))completion;
+
+/**
+ Fetches every 1 KiB BDASL chunk with an exact single-byte HTTP range,
+ verifies each response against the caller-supplied sidecar, and verifies the
+ assembled payload against the URL's BLAKE3 CID before returning it.
+
+ The sidecar is not fetched from the server. A response must be HTTP 206 and
+ have exactly the requested body length. Response metadata is not used to
+ choose ranges or verification inputs.
+ */
+- (void)fetchBDASLDataForRASLURL:(ATProtoRASLURL *)url
+                    chunkDigests:(NSArray<NSData *> *)chunkDigests
+                     totalLength:(NSUInteger)totalLength
+                 maxResponseBytes:(NSUInteger)maxResponseBytes
+                           timeout:(NSTimeInterval)timeout
+                        completion:(void (^)(NSData * _Nullable data,
+                                             NSError * _Nullable error))completion;
 
 @end
 

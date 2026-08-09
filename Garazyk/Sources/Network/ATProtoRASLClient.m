@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/ATProtoRASLClient.h"
+#import "Core/ATProtoBDASLVerifier.h"
 #import "Core/ATProtoRASLURL.h"
 #import "Core/CID.h"
 #import "Core/CID+DASL.h"
@@ -11,15 +12,41 @@ NSErrorDomain const ATProtoRASLClientErrorDomain = @"com.atproto.rasl.client";
 /** Multihash code for SHA-256 — the only algorithm this client verifies today. */
 static const uint8_t kATProtoRASLMultihashSHA256 = 0x12;
 
+static NSError *ATProtoRASLBDASLError(ATProtoRASLClientErrorCode code,
+                                      NSString *message,
+                                      NSError *underlyingError) {
+    NSMutableDictionary *userInfo = [@{NSLocalizedDescriptionKey: message} mutableCopy];
+    if (underlyingError) {
+        userInfo[NSUnderlyingErrorKey] = underlyingError;
+    }
+    return [NSError errorWithDomain:ATProtoRASLClientErrorDomain
+                                code:code
+                            userInfo:userInfo];
+}
+
+@interface ATProtoRASLClient ()
+@property (nonatomic, strong) id<ATProtoRASLHTTPFetching> httpClient;
+@end
+
 @implementation ATProtoRASLClient
 
 + (instancetype)sharedClient {
     static ATProtoRASLClient *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[ATProtoRASLClient alloc] init];
+        shared = [[ATProtoRASLClient alloc]
+            initWithHTTPClient:(id<ATProtoRASLHTTPFetching>)[ATProtoSafeHTTPClient sharedClient]];
     });
     return shared;
+}
+
+- (instancetype)initWithHTTPClient:(id<ATProtoRASLHTTPFetching>)httpClient {
+    NSParameterAssert(httpClient != nil);
+    self = [super init];
+    if (self) {
+        _httpClient = httpClient;
+    }
+    return self;
 }
 
 - (void)fetchDataForRASLURL:(ATProtoRASLURL *)url
@@ -118,7 +145,7 @@ static const uint8_t kATProtoRASLMultihashSHA256 = 0x12;
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL];
         request.HTTPMethod = @"GET";
 
-        [[ATProtoSafeHTTPClient sharedClient]
+            [[ATProtoSafeHTTPClient sharedClient]
             performSafeDataTaskWithRequest:request
                                     options:options
                                  completion:^(NSData * _Nullable data,
@@ -159,6 +186,178 @@ static const uint8_t kATProtoRASLMultihashSHA256 = 0x12;
             finishOnce(data, nil);
         }];
     }
+}
+
+- (void)fetchBDASLDataForRASLURL:(ATProtoRASLURL *)url
+                    chunkDigests:(NSArray<NSData *> *)chunkDigests
+                     totalLength:(NSUInteger)totalLength
+                 maxResponseBytes:(NSUInteger)maxResponseBytes
+                           timeout:(NSTimeInterval)timeout
+                        completion:(void (^)(NSData * _Nullable, NSError * _Nullable))completion {
+    if (url.hints.count == 0) {
+        completion(nil, [NSError errorWithDomain:ATProtoRASLClientErrorDomain
+                                             code:ATProtoRASLClientErrorNoHints
+                                         userInfo:@{NSLocalizedDescriptionKey: @"rasl:// URL has no usable hints"}]);
+        return;
+    }
+    if (totalLength == 0) {
+        completion(nil, ATProtoRASLBDASLError(ATProtoRASLClientErrorInvalidBDASLSidecar,
+                                              @"BDASL HTTP range retrieval requires a non-empty payload",
+                                              nil));
+        return;
+    }
+
+    NSError *verifierError = nil;
+    ATProtoBDASLVerifier *verifier = [[ATProtoBDASLVerifier alloc]
+        initWithCID:url.cid
+        chunkDigests:chunkDigests
+        totalLength:totalLength
+        error:&verifierError];
+    if (!verifier) {
+        completion(nil, ATProtoRASLBDASLError(ATProtoRASLClientErrorInvalidBDASLSidecar,
+                                              @"The caller-supplied BDASL sidecar is invalid",
+                                              verifierError));
+        return;
+    }
+
+    NSUInteger firstChunk = 0;
+    NSUInteger lastChunk = 0;
+    NSError *rangeError = nil;
+    if (![ATProtoBDASLVerifier chunkRangeForStart:0
+                                          hasStart:YES
+                                               end:totalLength - 1
+                                            hasEnd:YES
+                                       totalLength:totalLength
+                                        firstChunk:&firstChunk
+                                         lastChunk:&lastChunk
+                                             error:&rangeError]) {
+        completion(nil, ATProtoRASLBDASLError(ATProtoRASLClientErrorInvalidBDASLSidecar,
+                                              @"The BDASL payload length cannot be mapped to chunks",
+                                              rangeError));
+        return;
+    }
+
+    NSUInteger largestChunkLength = ATProtoBDASLChunkSize;
+    if (maxResponseBytes > 0 && maxResponseBytes < largestChunkLength &&
+        (lastChunk > firstChunk || totalLength >= largestChunkLength)) {
+        completion(nil, ATProtoRASLBDASLError(ATProtoRASLClientErrorInvalidBDASLSidecar,
+                                              @"The response limit is smaller than a required BDASL chunk",
+                                              nil));
+        return;
+    }
+
+    ATProtoSafeHTTPClientOptions *options = [[ATProtoSafeHTTPClientOptions alloc] init];
+    options.timeout = timeout;
+    options.maxResponseBytes = maxResponseBytes;
+    options.allowHTTP = NO;
+    options.allowPrivateHosts = NO;
+    options.followRedirects = YES;
+
+    __weak ATProtoRASLClient *weakSelf = self;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        ATProtoRASLClient *strongSelf = weakSelf;
+        if (!strongSelf) {
+            return;
+        }
+
+        NSMutableData *assembled = [NSMutableData dataWithCapacity:totalLength];
+        NSString *path = [url wellKnownPath];
+        for (NSUInteger chunkIndex = firstChunk; chunkIndex <= lastChunk; chunkIndex++) {
+            NSUInteger chunkStart = chunkIndex * ATProtoBDASLChunkSize;
+            NSUInteger chunkLength = MIN(ATProtoBDASLChunkSize, totalLength - chunkStart);
+            NSUInteger chunkEnd = chunkStart + chunkLength - 1;
+            NSData *verifiedChunk = nil;
+            NSMutableArray<NSError *> *hintFailures = [NSMutableArray array];
+
+            for (NSString *hint in url.hints) {
+                NSString *urlString = [NSString stringWithFormat:@"https://%@%@", hint, path];
+                NSURL *requestURL = [NSURL URLWithString:urlString];
+                if (!requestURL) {
+                    [hintFailures addObject:ATProtoRASLBDASLError(
+                        ATProtoRASLClientErrorHintFailed,
+                        [NSString stringWithFormat:@"Could not build a URL for hint %@", hint],
+                        nil)];
+                    continue;
+                }
+
+                NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL];
+                request.HTTPMethod = @"GET";
+                [request setValue:[NSString stringWithFormat:@"bytes=%llu-%llu",
+                                   (unsigned long long)chunkStart,
+                                   (unsigned long long)chunkEnd]
+                    forHTTPHeaderField:@"Range"];
+
+                NSError *requestError = nil;
+                NSHTTPURLResponse *response = nil;
+                NSData *data = [strongSelf.httpClient sendSynchronousRequest:request
+                                                                      options:options
+                                                                     response:&response
+                                                                        error:&requestError];
+                if (requestError) {
+                    [hintFailures addObject:ATProtoRASLBDASLError(
+                        ATProtoRASLClientErrorHintFailed,
+                        [NSString stringWithFormat:@"Hint %@ failed for BDASL chunk %lu",
+                         hint, (unsigned long)chunkIndex],
+                        requestError)];
+                    continue;
+                }
+                if (response.statusCode != 206) {
+                    [hintFailures addObject:ATProtoRASLBDASLError(
+                        ATProtoRASLClientErrorHintFailed,
+                        [NSString stringWithFormat:@"Hint %@ returned HTTP %ld for BDASL chunk %lu",
+                         hint, (long)response.statusCode, (unsigned long)chunkIndex],
+                        nil)];
+                    continue;
+                }
+                if (data.length != chunkLength) {
+                    [hintFailures addObject:ATProtoRASLBDASLError(
+                        ATProtoRASLClientErrorHintFailed,
+                        [NSString stringWithFormat:@"Hint %@ returned %lu bytes for a %lu-byte BDASL chunk",
+                         hint, (unsigned long)data.length, (unsigned long)chunkLength],
+                        nil)];
+                    continue;
+                }
+
+                NSError *chunkError = nil;
+                if (![ATProtoBDASLVerifier verifyChunkData:data
+                                            expectedDigest:chunkDigests[chunkIndex]
+                                                     error:&chunkError]) {
+                    [hintFailures addObject:ATProtoRASLBDASLError(
+                        ATProtoRASLClientErrorHintFailed,
+                        [NSString stringWithFormat:@"Hint %@ returned an invalid BDASL chunk %lu",
+                         hint, (unsigned long)chunkIndex],
+                        chunkError)];
+                    continue;
+                }
+                verifiedChunk = data;
+                break;
+            }
+
+            if (!verifiedChunk) {
+                NSError *failure = [NSError errorWithDomain:ATProtoRASLClientErrorDomain
+                                                        code:ATProtoRASLClientErrorBDASLRangeFailed
+                                                    userInfo:@{
+                    NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                        @"All RASL hints failed for BDASL chunk %lu", (unsigned long)chunkIndex],
+                    @"ATProtoBDASLChunkIndex": @(chunkIndex),
+                    @"ATProtoRASLHintFailures": [hintFailures copy]
+                }];
+                completion(nil, failure);
+                return;
+            }
+            [assembled appendData:verifiedChunk];
+        }
+
+        NSError *verificationError = nil;
+        if (![verifier appendData:assembled error:&verificationError] ||
+            ![verifier finalizeWithError:&verificationError]) {
+            completion(nil, ATProtoRASLBDASLError(ATProtoRASLClientErrorBDASLRangeFailed,
+                                                  @"The assembled BDASL payload failed CID verification",
+                                                  verificationError));
+            return;
+        }
+        completion(assembled, nil);
+    });
 }
 
 @end
