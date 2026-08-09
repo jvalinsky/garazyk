@@ -10,17 +10,17 @@
 
 #import "AdminUIServer/UITileDataProtocol.h"
 
-NSString * const UITileDataProtocolReadyAction = @"tiles-protocol-up-data-ready";
-NSString * const UITileDataProtocolDownPayloadAction = @"tiles-protocol-down-data-payload";
-NSString * const UITileDataProtocolUpPayloadAction = @"tiles-protocol-up-data-payload";
+NSString * const GZAdminUITileDataProtocolReadyAction = @"tiles-protocol-up-data-ready";
+NSString * const GZAdminUITileDataProtocolDownPayloadAction = @"tiles-protocol-down-data-payload";
+NSString * const GZAdminUITileDataProtocolUpPayloadAction = @"tiles-protocol-up-data-payload";
 
-static NSError *UITileProtocolError(NSString *message) {
+static NSError *GZAdminUITileProtocolError(NSString *message) {
     return [NSError errorWithDomain:@"com.atproto.ui.tiles.data"
                                 code:1
                             userInfo:@{NSLocalizedDescriptionKey: message}];
 }
 
-NSString *UITileDataProtocolJavaScript(void) {
+NSString *GZAdminUITileDataProtocolJavaScript(void) {
     // The module is intentionally limited to the protocol's structured-clone
     // boundary. Host-side origin and capability policy remains outside this
     // module and is not widened by the reserved route.
@@ -43,41 +43,41 @@ NSString *UITileDataProtocolJavaScript(void) {
            @"});\n";
 }
 
-BOOL UITileDataProtocolIsValidMessage(NSDictionary *message,
+BOOL GZAdminUITileDataProtocolIsValidMessage(NSDictionary *message,
                                       BOOL fromHost,
                                       NSError **error) {
     if (![message isKindOfClass:[NSDictionary class]]) {
-        if (error) *error = UITileProtocolError(@"Tiles protocol message must be an object");
+        if (error) *error = GZAdminUITileProtocolError(@"Tiles protocol message must be an object");
         return NO;
     }
     NSString *action = message[@"action"];
     if (![action isKindOfClass:[NSString class]]) {
-        if (error) *error = UITileProtocolError(@"Tiles protocol message requires a string action");
+        if (error) *error = GZAdminUITileProtocolError(@"Tiles protocol message requires a string action");
         return NO;
     }
 
     NSString *expected = nil;
     BOOL payloadRequired = NO;
     if (fromHost) {
-        expected = UITileDataProtocolDownPayloadAction;
+        expected = GZAdminUITileDataProtocolDownPayloadAction;
         payloadRequired = YES;
-    } else if ([action isEqualToString:UITileDataProtocolReadyAction]) {
-        expected = UITileDataProtocolReadyAction;
-    } else if ([action isEqualToString:UITileDataProtocolUpPayloadAction]) {
-        expected = UITileDataProtocolUpPayloadAction;
+    } else if ([action isEqualToString:GZAdminUITileDataProtocolReadyAction]) {
+        expected = GZAdminUITileDataProtocolReadyAction;
+    } else if ([action isEqualToString:GZAdminUITileDataProtocolUpPayloadAction]) {
+        expected = GZAdminUITileDataProtocolUpPayloadAction;
         payloadRequired = YES;
     }
 
     if (![action isEqualToString:expected]) {
-        if (error) *error = UITileProtocolError(@"Unexpected Tiles data-protocol action");
+        if (error) *error = GZAdminUITileProtocolError(@"Unexpected Tiles data-protocol action");
         return NO;
     }
     if (payloadRequired && !message[@"payload"]) {
-        if (error) *error = UITileProtocolError(@"Payload action requires a payload member");
+        if (error) *error = GZAdminUITileProtocolError(@"Payload action requires a payload member");
         return NO;
     }
     if (!payloadRequired && message[@"payload"] != nil) {
-        if (error) *error = UITileProtocolError(@"Ready action must not include a payload");
+        if (error) *error = GZAdminUITileProtocolError(@"Ready action must not include a payload");
         return NO;
     }
     return YES;

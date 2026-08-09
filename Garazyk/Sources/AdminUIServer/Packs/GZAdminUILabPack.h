@@ -3,7 +3,7 @@
 #import <Foundation/Foundation.h>
 #import "AdminUIServer/GZAdminUIPack.h"
 
-@class UIServiceConfig;
+@class GZAdminUIServiceConfig;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -11,9 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 @interface GZAdminUILabPack : NSObject <GZAdminUIPack>
 
 /** @abstract Renders the lab shell with the response CSP nonce. */
-+ (NSString *)labShellHTMLWithNonce:(nullable NSString *)nonce configuration:(UIServiceConfig *)configuration;
++ (NSString *)labShellHTMLWithNonce:(nullable NSString *)nonce configuration:(GZAdminUIServiceConfig *)configuration;
 /** @abstract Serializes safe client metadata for the lab shell. */
-+ (NSString *)labClientMetadataJSONWithConfiguration:(UIServiceConfig *)configuration;
++ (NSString *)labClientMetadataJSONWithConfiguration:(GZAdminUIServiceConfig *)configuration;
 
 @end
 

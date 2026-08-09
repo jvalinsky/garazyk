@@ -29,7 +29,7 @@
     NSString *status = result[@"status"] ?: @"unknown";
     ctx[@"status"] = status;
     ctx[@"statusBadge"] = [status isEqualToString:@"ok"] ? @"badge badge-success" : @"badge badge-destructive";
-    return [UITemplateEngine renderTemplate:@"video-health" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"video-health" context:ctx];
 }
 
 + (NSString *)renderVideoJobsPartial:(NSDictionary *)result {
@@ -48,7 +48,7 @@
         }
         ctx[@"jobs"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"video-jobs" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"video-jobs" context:ctx];
 }
 
 + (NSString *)renderVideoJobDetailPartial:(NSDictionary *)result {
@@ -61,13 +61,13 @@
         }];
         ctx[@"detailPairs"] = pairs;
     }
-    return [UITemplateEngine renderTemplate:@"video-job-detail" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"video-job-detail" context:ctx];
 }
 
 + (NSString *)renderVideoQuotasPartial:(NSDictionary *)result {
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
-    return [UITemplateEngine renderTemplate:@"video-quotas" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"video-quotas" context:ctx];
 }
 
 @end

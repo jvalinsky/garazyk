@@ -15,7 +15,7 @@
     __weak typeof(self) weakSelf = self;
 
     // PLC: DID lookup
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-did" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-did" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient lookupDID:did];
@@ -25,7 +25,7 @@
     }];
 
     // PLC: DID log
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-log" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-log" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient fetchPLCLogForDID:did];
@@ -35,7 +35,7 @@
     }];
 
     // PLC: Health check
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-health" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchPLCHealth];
         response.statusCode = 200;
@@ -44,7 +44,7 @@
     }];
 
     // PLC: Metrics
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-metrics" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-metrics" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchPLCMetrics];
         response.statusCode = 200;
@@ -53,7 +53,7 @@
     }];
 
     // PLC: List DIDs
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-list" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-list" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchPLCList];
@@ -63,7 +63,7 @@
     }];
 
     // PLC: Export action
-    [self.httpServer addRoute:@"GET" path:@"/admin/actions/plc-export" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin/actions/plc-export" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *after = [request queryParamForKey:@"after"];
         NSString *countStr = [request queryParamForKey:@"count"] ?: @"1000";
@@ -72,7 +72,7 @@
         if (result[@"error"]) {
             response.statusCode = 400;
             response.contentType = @"text/html; charset=utf-8";
-            [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])]];
+            [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])]];
         } else {
             response.statusCode = 200;
             response.contentType = @"text/plain; charset=utf-8";

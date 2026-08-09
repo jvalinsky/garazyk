@@ -46,15 +46,15 @@
                 } else {
                     lastMsg = ((NSDictionary *)lastMsgObj)[@"text"] ?: @"(none)";
                     if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
-                    lastMsg = UIEscaped(lastMsg);
+                    lastMsg = GZAdminUIEscaped(lastMsg);
                 }
             } else if ([lastMsgObj isKindOfClass:[NSString class]]) {
                 lastMsg = lastMsgObj;
                 if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
-                lastMsg = UIEscaped(lastMsg);
+                lastMsg = GZAdminUIEscaped(lastMsg);
             }
             // lastMsg is either one of the two literal HTML fragments above
-            // (encrypted placeholder) or UIEscaped user message text — the
+            // (encrypted placeholder) or GZAdminUIEscaped user message text — the
             // template renders this field raw ({{{lastMsg}}}), so anything
             // reaching here must already be safe HTML.
             mc[@"lastMsg"] = lastMsg;
@@ -62,7 +62,7 @@
         }
         ctx[@"convos"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"chat-convos" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"chat-convos" context:ctx];
 }
 
 + (NSString *)renderChatMessagesPartial:(NSDictionary *)result {
@@ -95,14 +95,14 @@
                 // The template renders this field raw ({{{text}}}); msg[@"text"]
                 // is user-controlled chat content, so it must be escaped here —
                 // the other branch above is a literal, already-safe HTML fragment.
-                mm[@"text"] = UIEscaped(msg[@"text"] ?: @"");
+                mm[@"text"] = GZAdminUIEscaped(msg[@"text"] ?: @"");
             }
             mm[@"time"] = msg[@"createdAt"] ?: msg[@"sentAt"] ?: @"";
             [mapped addObject:mm];
         }
         ctx[@"messages"] = mapped;
     }
-    return [UITemplateEngine renderTemplate:@"chat-messages" context:ctx];
+    return [GZAdminUITemplateEngine renderTemplate:@"chat-messages" context:ctx];
 }
 
 @end

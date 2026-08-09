@@ -9,14 +9,12 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
-#import "Network/XrpcHandler.h"
-#import "Network/Generated/GZXrpcNSID.h"
 #import "Auth/Crypto/CryptoUtils.h"
 #import "Debug/GZLogger.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/UITemplateEngine.h"
 
-NSString *UIEscaped(NSString *value) {
+NSString *GZAdminUIEscaped(NSString *value) {
     if (![value isKindOfClass:[NSString class]]) {
         return @"";
     }
@@ -28,7 +26,7 @@ NSString *UIEscaped(NSString *value) {
 }
 
 /// Safely extract a string from a dictionary, treating NSNull and non-string values as nil.
-NSString * _Nullable UIStringFromDict(NSDictionary *dict, NSString *key) {
+NSString * _Nullable GZAdminUIStringFromDict(NSDictionary *dict, NSString *key) {
     id value = dict[key];
     if ([value isKindOfClass:[NSString class]]) {
         return value;
@@ -37,7 +35,7 @@ NSString * _Nullable UIStringFromDict(NSDictionary *dict, NSString *key) {
 }
 
 /// Safely convert any value (including NSNull) to an NSString, returning fallback for non-strings.
-NSString *UISafe(id value, NSString *fallback) {
+NSString *GZAdminUISafe(id value, NSString *fallback) {
     if ([value isKindOfClass:[NSString class]]) {
         return value;
     }
@@ -45,7 +43,7 @@ NSString *UISafe(id value, NSString *fallback) {
 }
 
 /// Safely get .length from a value that might be NSNull.
-NSUInteger UISafeLength(id value) {
+NSUInteger GZAdminUISafeLength(id value) {
     if ([value isKindOfClass:[NSString class]]) {
         return [(NSString *)value length];
     }
@@ -53,12 +51,12 @@ NSUInteger UISafeLength(id value) {
 }
 
 
-NSString *UIGenerateNonce(void) {
+NSString *GZAdminUIGenerateNonce(void) {
     NSData *data = [ATProtoCryptoUtils randomBytes:16];
     return [ATProtoCryptoUtils base64URLEncode:data];
 }
 
-void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigin) {
+void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSString *pdsOrigin) {
     NSString *csp;
     if (pdsOrigin) {
         csp = [NSString stringWithFormat:
@@ -110,19 +108,19 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
 }
 
 
-@interface HttpServer (GZAdminUIHostTesting)
-- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+@interface ATProtoHttpServer (GZAdminUIHostTesting)
+- (ATProtoHttpResponse *)dispatchRequest:(ATProtoHttpRequest *)request;
 @end
 
 @implementation GZAdminUIHost
 
-- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration
+- (instancetype)initWithConfiguration:(GZAdminUIServiceConfig *)configuration
                                  packs:(NSArray<Class> *)packs {
     self = [super init];
     if (self) {
         _configuration = configuration;
         _packs = [packs copy];
-        _authManager = [[UIAuthManager alloc] initWithPassword:configuration.adminPassword ?: @""];
+        _authManager = [[GZAdminUIAuthManager alloc] initWithPassword:configuration.adminPassword ?: @""];
         _backendClient = [[GZAdminUIBackendClient alloc] initWithConfiguration:configuration];
         // Auto-obtain PDS admin ATProtoJWT if a password is configured but no token
         if (configuration.pdsAdminPassword.length > 0 && configuration.pdsAdminToken.length == 0) {
@@ -137,7 +135,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         return YES;
     }
 
-    self.httpServer = [HttpServer serverWithHost:self.configuration.host port:self.configuration.port];
+    self.httpServer = [ATProtoHttpServer serverWithHost:self.configuration.host port:self.configuration.port];
     if (!self.httpServer) {
         if (error) {
             *error = [NSError errorWithDomain:@"GZAdminUIHost"
@@ -147,16 +145,14 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         return NO;
     }
 
-    self.xrpcDispatcher = [[XrpcDispatcher alloc] init];
-
-    // Register standard health endpoint
-    [self.xrpcDispatcher registerMethod:@"_health" handler:^(HttpRequest *req, HttpResponse *res) {
+    // Keep the compatibility consumer's two local discovery responses without
+    // pulling the service XRPC dispatcher into the transport-only UI library.
+    [self.httpServer addRoute:@"GET" path:@"/xrpc/_health" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         res.statusCode = 200;
         [res setJsonBody:@{@"version": @"1.0.0"}];
     }];
 
-    // Register com.atproto.server.describeServer
-    [self.xrpcDispatcher registerMethod:kGZXrpcNSID_com_atproto_server_describeServer handler:^(HttpRequest *req, HttpResponse *res) {
+    [self.httpServer addRoute:@"GET" path:@"/xrpc/com.atproto.server.describeServer" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         res.statusCode = 200;
         [res setJsonBody:@{
             @"availableUserDomains": @[],
@@ -165,7 +161,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         }];
     }];
 
-    [HttpResponse setDefaultServerHeader:@"garazyk-ui/1.0.0"];
+    [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-ui/1.0.0"];
     [self registerRoutes];
 
     NSError *startError = nil;
@@ -186,9 +182,9 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     self.running = NO;
 }
 
-- (HttpResponse *)dispatchRequestForTesting:(HttpRequest *)request {
+- (ATProtoHttpResponse *)dispatchRequestForTesting:(ATProtoHttpRequest *)request {
     if (!self.httpServer) {
-        self.httpServer = [HttpServer serverWithHost:self.configuration.host port:self.configuration.port];
+        self.httpServer = [ATProtoHttpServer serverWithHost:self.configuration.host port:self.configuration.port];
         [self registerRoutes];
     }
     return [self.httpServer dispatchRequest:request];
@@ -197,46 +193,38 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
 - (void)registerRoutes {
     __weak typeof(self) weakSelf = self;
 
-    // XRPC API handler
-    [self.httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (strongSelf) {
-            [strongSelf.xrpcDispatcher handleRequest:request response:response];
-        }
-    }];
-
     // Static asset serving: /css/*, /js/*, /img/* (prefix routes via addHandlerForPath)
-    [self.httpServer addHandlerForPath:@"/css/" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addHandlerForPath:@"/css/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [weakSelf serveStaticAssetForPath:request.path response:response];
     }];
 
-    [self.httpServer addHandlerForPath:@"/js/" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addHandlerForPath:@"/js/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [weakSelf serveStaticAssetForPath:request.path response:response];
     }];
 
-    [self.httpServer addHandlerForPath:@"/img/" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addHandlerForPath:@"/img/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [weakSelf serveStaticAssetForPath:request.path response:response];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         response.statusCode = 302;
         [response setHeader:@"/admin" forKey:@"Location"];
         response.contentType = @"text/plain; charset=utf-8";
         [response setBodyString:@"Redirecting\n"];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/admin/login" handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *nonce = UIGenerateNonce();
+    [self.httpServer addRoute:@"GET" path:@"/admin/login" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        NSString *nonce = GZAdminUIGenerateNonce();
         NSString *csrfNonce, *csrfCookie;
         [weakSelf.authManager createCSRFNonce:&csrfNonce cookie:&csrfCookie secure:NO];
         [response setHeader:csrfCookie forKey:@"Set-Cookie"];
-        UIApplyNonceCSP(response, nonce, nil);
+        GZAdminUIApplyNonceCSP(response, nonce, nil);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf loginPageHTML:nonce csrfNonce:csrfNonce]];
     }];
 
-    [self.httpServer addRoute:@"POST" path:@"/admin/login" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/login" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (![weakSelf.authManager validateCSRFForRequest:request]) {
             response.statusCode = 403;
             [response setJsonBody:@{@"ok": @NO, @"error": @"invalid_csrf_token"}];
@@ -256,7 +244,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         [response setJsonBody:@{@"ok": @YES}];
     }];
 
-    [self.httpServer addRoute:@"POST" path:@"/admin/logout" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"POST" path:@"/admin/logout" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *token = [weakSelf.authManager extractTokenFromRequest:request];
         [weakSelf.authManager invalidateSessionToken:token];
@@ -268,13 +256,13 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         [response setJsonBody:@{@"ok": @YES}];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/admin" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"GET" path:@"/admin" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSString *nonce = UIGenerateNonce();
+        NSString *nonce = GZAdminUIGenerateNonce();
         NSString *csrfNonce, *csrfCookie;
         [weakSelf.authManager createCSRFNonce:&csrfNonce cookie:&csrfCookie secure:NO];
         [response setHeader:csrfCookie forKey:@"Set-Cookie"];
-        UIApplyNonceCSP(response, nonce, [weakSelf.configuration.pdsBaseURL absoluteString]);
+        GZAdminUIApplyNonceCSP(response, nonce, [weakSelf.configuration.pdsBaseURL absoluteString]);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf adminShellHTML:nonce csrfNonce:csrfNonce]];
@@ -284,7 +272,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     }
 }
 
-- (BOOL)ensureAuthorized:(HttpRequest *)request response:(HttpResponse *)response {
+- (BOOL)ensureAuthorized:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self.authManager isAuthorizedRequest:request]) {
         NSString *htmxRequest = [request headerForKey:@"HX-Request"];
         if ([htmxRequest isEqualToString:@"true"]) {
@@ -321,7 +309,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
 }
 
 - (NSString *)loginPageHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
-    return [UITemplateEngine renderTemplate:@"login" context:@{
+    return [GZAdminUITemplateEngine renderTemplate:@"login" context:@{
         @"nonce": nonce ?: @"",
         @"csrfNonce": csrfNonce ?: @""
     }];
@@ -356,7 +344,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     [panelContextKeys enumerateKeysAndObjectsUsingBlock:^(NSString *identifier, NSString *key, BOOL *stop) {
         context[key] = @([identifier isEqualToString:activeTabIdentifier]);
     }];
-    return [UITemplateEngine renderTemplate:@"shell" context:context];
+    return [GZAdminUITemplateEngine renderTemplate:@"shell" context:context];
 }
 
 @end
