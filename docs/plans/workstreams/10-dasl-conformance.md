@@ -258,7 +258,8 @@ CID assignment or existing blob path was changed.
 - Owner boundary: `Garazyk/Sources/Core` owns MASL validation and path resolution; `Repository/CAR`
   owns header retention/encoding and bounded body lookup. No web runtime or new metadata transport
   was invented.
-- Evidence (2026-08-08): `cmake --build build --target AllTests --parallel 4` passed on macOS.
+- Evidence (2026-08-08, merged to `main` as `4bfd6a8a`):
+  `cmake --build build --target AllTests --parallel 4` passed on macOS.
   Focused `./build/tests/AllTests --filter 'ATProtoMASLDocumentTests' --gated=run` passed
   12/12; `./build/tests/AllTests --filter 'CARInteropTests' --gated=run` passed 24/24
   executions (the existing test registry lists `CARInteropTests` twice), including strict MASL
@@ -266,8 +267,11 @@ CID assignment or existing blob path was changed.
   rejection, and CID-verified body lookup. The first fresh-worktree configure attempt was
   blocked by the local `secp256k1` symlink not resolving in that invocation; an independent
   dependency configure passed and the repository configure then completed successfully.
-  A full `./build/tests/AllTests --gated=run` was started at 23:34:08 -0400 but interrupted at
-  23:42:35 -0400 before its suite summary; it is incomplete and is not claimed as pass or fail.
+  A full `./build/tests/AllTests --gated=run` was started but interrupted before
+  its suite summary; it is incomplete and is not claimed as pass or fail.
+  After the later WS08 manifest merge, a fresh configure and native `AllTests`
+  build passed; focused MASL/CAR (12 + 24), RASL (4), and BDASL (7) suites
+  passed on the combined `main` branch.
 - Explicit remainder: no web runtime, RASL fetching, or arbitrary tile execution is wired here.
 - Rollback: remove the additive MASL path/CAR metadata APIs and focused tests; existing root-only
   CAR serialization and blob upload behavior remain unchanged.
