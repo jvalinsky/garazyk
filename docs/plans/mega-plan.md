@@ -500,7 +500,10 @@ remaining program does not depend on items 1-2.
     classes) is also complete, ratcheting the namespace baseline
     283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228 → 214 → 197
     → 191 → 175. Batch 3b (the remaining higher-consumer Storage/Transport
-    classes) is complete; batches 4-6
+    classes) is complete. Focused Core/Storage/Transport builds and all
+    namespace/module-boundary checks pass; the full native `AllTests` target
+    is currently blocked by the excluded Admin UI sources' stale HTTP forward
+    declarations. Batches 4-6
     (PLC/Sync/Services/MediaCore, XRPC/VideoService,
     Runtime) remain open.
     **M7 is now
