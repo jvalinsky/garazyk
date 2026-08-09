@@ -500,10 +500,11 @@ remaining program does not depend on items 1-2.
     classes) is also complete, ratcheting the namespace baseline
     283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228 → 214 → 197
     → 191 → 175. Batch 3b (the remaining higher-consumer Storage/Transport
-    classes) is complete. Focused Core/Storage/Transport builds and all
-    namespace/module-boundary checks pass; the full native `AllTests` target
-    is currently blocked by the excluded Admin UI sources' stale HTTP forward
-    declarations, and the GNUstep Docker builder stopped before compilation
+    classes) is complete. M4.5 is also complete: all thirteen module source
+    sets are explicit manifests with configure-time ownership checks. Focused
+    Core/Storage/Transport builds, the post-Admin-UI native `AllTests` build,
+    and all namespace/module-boundary checks pass; the full gated suite is
+    still incomplete. The GNUstep Docker builder stopped before compilation
     when OrbStack ran out of storage copying the source context. Batches 4-6
     (PLC/Sync/Services/MediaCore, XRPC/VideoService,
     Runtime) remain open.
@@ -515,8 +516,8 @@ remaining program does not depend on items 1-2.
     `GZMetrics` were found already injectable via `ATProtoServiceContainer`,
     and a new CI gate (`scripts/check_no_host_process_exit.sh`) rejects new
     `exit()`/`abort()` calls in package-target sources; see workstream 08's
-    "M7 residual cleanup complete" section. M4.5 (deterministic module
-    membership) and M6 (relocatable install/export) remain open. M0 is
+    "M7 residual cleanup complete" section. M6 (relocatable install/export)
+    remains open. M0 is
     answered yes for source-built static libraries on macOS and GNUstep/Linux;
     prebuilt binaries, Apple frameworks/XCFrameworks, iOS, and package
     registries remain out of scope.
@@ -576,19 +577,17 @@ for full traceability; mirrored in the
     workstream 01 §S19 row 10 (`Repository/CAR.m` was recorded importer-only;
     its header decoder has now actually migrated to `ATProtoDagCBOR`,
     closing that row for real). A macOS full regression run passes 4,955 tests;
-    module boundary and recursive-setter gates are clean. Bounded slices for
-    Phases 5–11 (RASL, BDASL, MASL, PFP, MUXL, S2PA, Web Tiles) are now recorded
-    with their own evidence/gate/rollback notes; their explicit production
-    integration remainders remain open. MUXL's complete deterministic MP4
+    module boundary and recursive-setter gates are clean. Bounded RASL/BDASL
+    and MASL slices are now implemented and merged to `main` (`da56aa18` and
+    `4bfd6a8a`) with focused verification; the remaining PFP
+    producer/comparator/Ozone, MUXL, S2PA, and Web Tiles integration remainders
+    remain open. MUXL's complete deterministic MP4
     muxer remains the largest single item in the workstream. GNUstep/Linux
     full-suite evidence remains open; the compile blocker (an XCTest
     object-pointer-boxing difference in `PDSAdminServiceTests.m` /
-    `PDSBlobAuditHandlerTests.m`) has a fix plus a new permanent UTF-8
-    regression test (`testInvalidUTF8TextStringIsRejected`) sitting
-    **uncommitted** in the working tree as of 2026-08-03 — land those three
-    files before re-attempting the GNUstep build. The GNUstep-side UTF-8
-    behavior itself (`0xC3 0x28` rejection) was independently confirmed
-    against a standalone GNUstep Foundation probe outside the full suite.
+    `PDSBlobAuditHandlerTests.m`). The GNUstep-side UTF-8 and shared-fixture
+    evidence remains governed by workstreams 08 and 10; no full GNUstep gate
+    is claimed by this execution.
 
 13. **Open (added 2026-08-04):** dissolve the single `garazyk-ui` process into
     an admin UI owned by each service binary. Complete
@@ -600,8 +599,11 @@ for full traceability; mirrored in the
     ten `ATProto*` archives). Decision and constraints:
     [ADR 0033](../adr/0033-per-service-embedded-admin-uis.md). M1 (per-instance
     `HttpServer` concurrency, service-scoped session cookies) unblocks
-    embedding; M2 extracts `ATProtoAdminUI` and is validated by rebuilding
-    `garazyk-ui` as its first consumer before any service is touched; M3 pilots
+    embedding; M2 has been implemented and merged to `main` as
+    `ATProtoAdminUI`, validated by rebuilding `garazyk-ui` as its first
+    consumer before any service is touched. Phase 30 closeout remains blocked
+    on its named static/page-load, browser, and full-suite acceptance evidence;
+    M3 pilots
     on `campagnola`, which has no admin credential today. Coordinate the Web
     Tiles files (`UITileDataProtocol`, `UITileExecutionPolicy`) with
     workstream 10, and the `UI*` → `GZAdminUI*` rename with workstream 08 M5.3.
