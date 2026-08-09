@@ -1,0 +1,28 @@
+# Explicit source manifest for ATProtoTransport.
+# Entries are repository-relative; CMake validates existence, ownership, and
+# build-host independence before resolving them into target source lists.
+set(ATPROTO_TRANSPORT_MANIFEST
+  "Garazyk/Sources/Network/ATProtoHttpMetricsRoutePack.m"
+  "Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m"
+  "Garazyk/Sources/Network/ATProtoNetworkTransportMac.m"
+  "Garazyk/Sources/Network/ATProtoRASLClient.m"
+  "Garazyk/Sources/Network/ATProtoSafeHTTPClient.m"
+  "Garazyk/Sources/Network/Http1Parser.m"
+  "Garazyk/Sources/Network/Http1PipelinePolicy.m"
+  "Garazyk/Sources/Network/HttpBufferPool.m"
+  "Garazyk/Sources/Network/HttpChunkedBodyParser.m"
+  "Garazyk/Sources/Network/HttpConnectionDriver.m"
+  "Garazyk/Sources/Network/HttpConnectionIOCoordinator.m"
+  "Garazyk/Sources/Network/HttpProtocolDriver.m"
+  "Garazyk/Sources/Network/HttpProtocolSession.m"
+  "Garazyk/Sources/Network/HttpRequestDispatcher.m"
+  "Garazyk/Sources/Network/HttpResponseSender.m"
+  "Garazyk/Sources/Network/HttpRouteTrie.m"
+  "Garazyk/Sources/Network/HttpServer.m"
+  "Garazyk/Sources/Network/HttpStreamingBody.m"
+  "Garazyk/Sources/Network/RateLimiter.m"
+  "Garazyk/Sources/Network/SSLPinningManager.m"
+  "Garazyk/Sources/Network/SSRFValidator.m"
+  "Garazyk/Sources/Network/WebSocketUpgradeHandler.m"
+  "Garazyk/Sources/Network/XRPCError.m"
+)
