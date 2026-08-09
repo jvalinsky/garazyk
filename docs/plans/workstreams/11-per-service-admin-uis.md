@@ -17,6 +17,13 @@ The decision and its constraints are recorded in
 
 ## Current evidence (2026-08-08)
 
+M2.6 is implemented on `codex/phase30-library-close`: `ATProtoAdminUI` is a
+static library with only `ATProtoTransport` and `ATProtoCore` dependencies,
+`garazyk-ui` is its compatibility consumer, and the three boundary/namespace
+gates include the new target. Phase 30 remains in progress because the legacy
+static/page-load checks and Playwright smoke prerequisites did not complete;
+the exact evidence is recorded in the M2.6 entry below.
+
 **The code is already cut along service seams.** Ten
 `UIBackendClient+<Service>` categories, eleven
 `UIServerRuntime+<Service>Routes` categories, and per-service HTML partials.
@@ -178,7 +185,14 @@ deleted in M5, not carried into the library.
 - **M2.3 complete and validated:** `UIBackendClient` became `GZAdminUIBackendClient`, and its ten service categories moved to `AdminUIServer/Packs/` in `b3bc45e6`. `garazyk-ui` and `AllTests` build; registration audit, `GZAdminUIBackendClientTests` (52), `UIServerRuntimeTests` (26), UI design-system, source/link module-boundary, namespace, and recursive-setter gates pass. After integration with current `main`, internal-strict repo-doc validation also passes.
 - **M2.4 complete and validated (2026-08-08):** pack metadata now generates the existing shell's twelve tabs in the pre-extraction visual order, with the original panels retained until M2.5 owns their asset relocation. One-section compositions use a sidebar tablist and service identity, plus a presentation-only empty peer-switcher; no discovery, polling, credentials, or health claims were added. `UIServerRuntimeTests` adds default-composition ARIA/order coverage and a relay-only sidebar/peer-empty-state test. After initializing the previously absent `vendor/secp256k1` submodule in this worktree, `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug`, `cmake --build build --target AllTests --parallel 4`, and `./build/tests/AllTests --filter UIServerRuntimeTests --gated=run` passed (28 tests, 0 failures). `node --check`, `git diff --check`, source/link module-boundary, recursive-setter, and host-process-exit gates passed. `check_ui_design_system.sh` could not run because `rg` is absent; `test_static_files.sh` remains a pre-existing unrelated failure because current `kaszlak` returns 404 for its stale `/explore` target.
 - **M2.5 complete and validated (2026-08-08):** library-owned CSS, shared templates/scripts, and pack-owned partials/scripts now live in separate `Assets/library/` and `Assets/packs/<pack>/` source trees. A reusable `add_admin_ui_assets()` CMake function overlays both trees into the single shared `${CMAKE_BINARY_DIR}/bin/Assets/` directory, with one generalized `ADMIN_UI_ASSET_STAMP` and pack-safe `AdminUIAssetsSync` inventory/hash checking. `UITemplateEngine` resolves library templates and searches pack partials in the source-tree fallback; the CSS bundle generator follows the relocated library CSS. Verified with `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug`, `cmake --build build --target AllTests --parallel 4`, `UIServerRuntimeTests` (28 tests, 0 failures), `GZAdminUIBackendClientTests` (52 tests, 0 failures), `AdminUIAssetsSync`, CSS bundle drift, JavaScript syntax, `check_ui_design_system.sh`, and `git diff --check`. The full-suite baseline required by Phase 30 was run before edits and returned exit 1; its redirected rerun was intentionally interrupted after 11m43s without a final summary. `test_static_files.sh` and `test_page_load.sh` remain unrelated stale `/explore`/legacy resource checks and fail against current `kaszlak` routes.
-- **Remaining:** M2.6 `ATProtoAdminUI` library/gate registration.
+- **M2.6 implementation complete, acceptance blocked (2026-08-08):** added `ATProtoAdminUI` as a static target with only `ATProtoTransport` and `ATProtoCore` library dependencies; registered it with source, link-time, and namespace gates; rebuilt `garazyk-ui` as the compatibility consumer; moved service route categories under `AdminUIServer/Packs/`; and completed the post-WS08 HTTP handoff using `ATProtoHttp*` symbols. Exposed UI symbols were renamed to `GZAdminUIAuthManager`, `GZAdminUIServiceConfig`, `GZAdminUITemplateEngine`, `GZAdminUITileDataProtocol*`, `GZAdminUITileExecution*`, `GZAdminUIBackendClient`, `GZAdminUIHost`, and `GZAdminUIHost` helpers. The shared `Assets/` output remains a single directory. Native configure and `cmake --build build --target AllTests --parallel 4` passed. The bounded UI/security suites passed: `UIAuthManagerTests` 21, `GZAdminUIBackendClientTests` 52, `UIServerRuntimeTests` 28, `UITileExecutionPolicyTests` 5, `GarazykUICommandTests` 7, `UILabAuthTests` 21, `UILabIntegrationTests` 16, and `Phase2SecurityIntegrationTests` 36 (186 total, 0 failures). Source boundaries, link-time boundaries, namespace, recursive-setter, host-process-exit, NSID, literal-registration, skill-index, design-system, and `AdminUIAssetsSync` gates passed; the namespace check remained at 175 baselined classes with no new leaks. The required global `AllTests --gated=run` was started but interrupted after reaching `RepoAuthRepoTests`, with no final summary; it is not a pass. `test_static_files.sh` failed because the legacy `/explore` route returned 404, and `test_page_load.sh` failed because the same legacy HTML/CSS/JS/API resources were 404/undersized. Browser and visual smokes were attempted but both stopped at missing `npm:playwright@1.52.0` installation. These are named blockers for Phase 30 closeout; no service rollout or M3 work was started.
+
+### M2.6 blocked on
+
+- A current replacement or retirement decision for the legacy `/explore`,
+  `/css/explore.css`, `/js/ui.js`, and `/api/pds/accounts` checks.
+- A worktree environment with the pinned Playwright npm dependency available
+  for the browser and visual smoke scripts.
 
 ### M2.4. Make the shell composable
 

@@ -333,8 +333,36 @@ keep that gate green.
   checks (404), unrelated to the asset relocation. M2.5 is complete; M2.6
   remains.
 
+### 2026-08-08 — Slice 6 library registration and closeout evidence
+
+- `ATProtoAdminUI` is now a static library with only `ATProtoTransport` and
+  `ATProtoCore` dependencies. `garazyk-ui` links that library with those two
+  targets and its small CLI parser source; it no longer links Runtime,
+  Storage, Services, Sync, or AppViewServer. The Transport rate limiter's
+  fallback database configuration is local so this narrowed consumer does not
+  pull a Storage symbol across the boundary.
+- All exposed Admin UI classes and helpers use the `GZAdminUI` prefix. Tile
+  protocol and execution-policy exports were renamed in coordination with
+  the existing WS10 tests, while the old header filenames and shared asset
+  directory remain for compatibility with the current source layout. Admin
+  route categories now compile from `AdminUIServer/Packs/`, and the
+  post-WS08 HTTP handoff uses `ATProtoHttp*` names without aliases.
+- Source boundary, link-time boundary, namespace, recursive-setter,
+  host-process-exit, NSID, literal-registration, skill-index, design-system,
+  asset-sync, native configure, and native `AllTests` build gates passed.
+  The eight bounded UI/security suites passed with 186 tests and 0 failures.
+- The full `./build/tests/AllTests --gated=run` run was started, reached
+  `RepoAuthRepoTests`, and was interrupted after no final summary was emitted;
+  its result is skipped/interrupted, not passing. `test_static_files.sh` and
+  `test_page_load.sh` failed on the stale `/explore` and legacy resource/API
+  checks. Browser and visual smoke attempts were blocked before execution by
+  the missing `npm:playwright@1.52.0` dependency. Because these required
+  acceptance checks are not green, Phase 30 remains `in-progress` and is not
+  marked complete.
+
 ## On completion
 
-Record commit hashes and the measured full-suite result in WS11 M2's
-acceptance section, set `status: complete` here, and add phase 30 to the index
-table in [`../README.md`](README.md).
+When the named blockers are resolved, record the commit hashes and measured
+full-suite result in WS11 M2's acceptance section, set `status: complete` here,
+and add phase 30 to the index table in [`../README.md`](README.md). This slice
+does not claim completion while the acceptance checks above remain blocked.
