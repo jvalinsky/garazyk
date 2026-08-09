@@ -16,16 +16,53 @@ static NSString *EscapeHTML(NSString *str) {
     return s;
 }
 
+static NSString *TemplateFilePath(NSString *assetRoot,
+                                  NSString *sourceRoot,
+                                  NSString *templateName) {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *filename = [NSString stringWithFormat:@"%@.html", templateName];
+    NSArray<NSString *> *sharedDirectories = @[
+        [assetRoot stringByAppendingPathComponent:@"html"],
+        [assetRoot stringByAppendingPathComponent:@"library/html"],
+        [sourceRoot stringByAppendingPathComponent:@"library/html"]
+    ];
+    for (NSString *directory in sharedDirectories) {
+        NSString *candidate = [directory stringByAppendingPathComponent:filename];
+        if ([fileManager isReadableFileAtPath:candidate]) {
+            return candidate;
+        }
+    }
+
+    NSString *packsDirectory = [sourceRoot stringByAppendingPathComponent:@"packs"];
+    NSDirectoryEnumerator<NSString *> *enumerator = [fileManager enumeratorAtPath:packsDirectory];
+    for (NSString *relativePath in enumerator) {
+        if (![relativePath.lastPathComponent isEqualToString:filename]) {
+            continue;
+        }
+        NSString *candidate = [packsDirectory stringByAppendingPathComponent:relativePath];
+        BOOL isDirectory = NO;
+        if ([fileManager fileExistsAtPath:candidate isDirectory:&isDirectory] && !isDirectory) {
+            return candidate;
+        }
+    }
+    return nil;
+}
+
 + (NSString *)renderTemplate:(NSString *)templateName context:(NSDictionary<NSString *, id> *)context {
     NSString *bundlePath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"AdminUIAssets"];
+    NSString *sourceRoot = bundlePath;
     if (![[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
-        // Fallback for unit tests running from repository root
-        bundlePath = @"Garazyk/Sources/AdminUIServer/Assets";
+        // Fallback for unit tests running from repository root. Shared assets
+        // are library-owned; pack templates live beside this directory.
+        bundlePath = @"Garazyk/Sources/AdminUIServer/Assets/library";
+        sourceRoot = [bundlePath stringByDeletingLastPathComponent];
     }
-    NSString *filePath = [bundlePath stringByAppendingPathComponent:[NSString stringWithFormat:@"html/%@.html", templateName]];
+    NSString *filePath = TemplateFilePath(bundlePath, sourceRoot, templateName);
     
     NSError *error = nil;
-    NSString *templateString = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:&error];
+    NSString *templateString = filePath
+        ? [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:&error]
+        : nil;
     
     if (!templateString) {
         GZ_LOG_ERROR(@"Failed to load template %@: %@", templateName, error);

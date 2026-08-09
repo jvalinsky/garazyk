@@ -308,6 +308,31 @@ keep that gate green.
 - `admin-ui.js` now uses one `.ui-tab` selector for both header and sidebar tabs, preserving tab/panel ARIA relations and roving `tabindex`. `system.css` adds only the shell/sidebar rules required for this layout; M2.5 still owns asset relocation and CMake pipeline changes.
 - Added `UIServerRuntimeTests` coverage for all twelve default tabs in their pre-extraction visual order and relay-only sidebar/empty-peer rendering. Initial test execution caught two test defects (an XCTest macro comma expansion and a missing concrete `UIAuthManager` import), then the default-composition assertion caught an actual navigation-order regression: the default pack array had MST after Chat and Video while the existing shell displayed it before them. Restored the prior visual order without adding host service knowledge. After initializing the absent `vendor/secp256k1` submodule in this worktree, `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug`, `cmake --build build --target AllTests --parallel 4`, and `./build/tests/AllTests --filter UIServerRuntimeTests --gated=run` passed (28 tests, 0 failures). `node --check Garazyk/Sources/AdminUIServer/Assets/js/admin-ui.js`, `git diff --check`, `scripts/dev/check_module_boundaries.sh .`, `scripts/check_module_boundaries.sh build` (0 current leaks, 0 baselined), `scripts/check-recursive-setters.sh`, and `scripts/check_no_host_process_exit.sh` passed. `scripts/test/check_ui_design_system.sh` is blocked by absent `rg`; `scripts/test/test_static_files.sh` continues to fail against the unrelated stale `/explore` endpoint (404) and left a server that was force-stopped. M2.4 is complete; M2.5–M2.6 remain.
 
+### 2026-08-08 — Slice 5 asset ownership and shared build output
+
+- Library-owned CSS, shell/login/demo templates, and shared JavaScript moved to
+  `Assets/library/`; pack-owned partials and `lab.js`/`mst-viewer/` moved to
+  `Assets/packs/<pack>/`. The source split is overlaid into one shared
+  `${CMAKE_BINARY_DIR}/bin/Assets/` directory, preserving existing `/css/`,
+  `/js/`, and template URLs.
+- `ADMIN_UI_ASSET_STAMP` is now produced by reusable
+  `add_admin_ui_assets(<target>)`; future service targets can depend on the
+  same `admin-ui-assets` target without creating per-service output trees.
+  `UITemplateEngine` searches library and pack template roots in its test
+  fallback, `AdminUIAssetsSync` verifies the flattened inventory and hashes,
+  and `generate_css_bundle.ts` follows `Assets/library/css/`.
+- Verification: `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug`,
+  `cmake --build build --target AllTests --parallel 4`,
+  `UIServerRuntimeTests` (28/28), `GZAdminUIBackendClientTests` (52/52),
+  `AdminUIAssetsSync`, CSS bundle drift, JavaScript syntax,
+  `check_ui_design_system.sh`, and `git diff --check` passed. The required
+  full-suite baseline before edits returned exit 1; its redirected rerun was
+  intentionally interrupted after 11m43s without a final summary.
+  `test_static_files.sh` and
+  `test_page_load.sh` fail on their stale `/explore` and legacy resource/API
+  checks (404), unrelated to the asset relocation. M2.5 is complete; M2.6
+  remains.
+
 ## On completion
 
 Record commit hashes and the measured full-suite result in WS11 M2's
