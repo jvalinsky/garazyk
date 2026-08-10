@@ -7,9 +7,10 @@ Auto-generated inbound link inventory for markdown discoverability.
 
 ## `AGENTS.md`
 
-Inbound links: **2**
+Inbound links: **3**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/root-entrypoints.md](root-entrypoints.md)
 
 ## `CLAUDE.md`
@@ -153,6 +154,15 @@ Inbound links: **6**
 - [README.md](../../README.md)
 - [docs/01-getting-started/setup.md](../01-getting-started/setup.md)
 - [docs/20-explanation/architecture/atproto_pds_architecture.md](../20-explanation/architecture/atproto_pds_architecture.md)
+- [docs/index.md](../index.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/20-explanation/guides/NIXOS.md`
+
+Inbound links: **4**
+
+- [AGENTS.md](../../AGENTS.md)
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -1086,7 +1096,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **346**
+Inbound links: **351**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -1418,6 +1428,13 @@ Inbound links: **2**
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/reports/2026-07-17-optimization-research.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/reports/docs/link-graph-report.md`
 
 Inbound links: **2**
 

@@ -190,8 +190,21 @@ deleted in M5, not carried into the library.
 
 ### M2.6 blocked on
 
-- A current replacement or retirement decision for the legacy `/explore`,
-  `/css/explore.css`, `/js/ui.js`, and `/api/pds/accounts` checks.
+- ~~A current replacement or retirement decision for the legacy `/explore`,
+  `/css/explore.css`, `/js/ui.js`, and `/api/pds/accounts` checks.~~
+  **Resolved (2026-08-09, maintainer chose retirement.)** All four endpoints
+  were verified absent from `Garazyk/Sources/` — the admin UI moved off
+  `kaszlak` to `garazyk-ui`/`AdminUIServer`, and nothing registers those
+  routes. The two scripts that tested them, `scripts/test/test_static_files.sh`
+  and `scripts/test/test_page_load.sh`, were deleted. They were wired into
+  nothing: not `ci.yml`, not CTest, not `scripts/test/run-tests.sh` (which
+  invoked only `check_ui_design_system.sh`). Their coverage is superseded by
+  `scripts/admin_ui_browser_smoke_test.ts` and
+  `scripts/admin_ui_visual_smoke_test.ts`, which drive the real `garazyk-ui`
+  binary in a real browser, and by the `AdminUIAssetsSync` CTest, which
+  compares asset inventories and SHA-256 hashes. `.agents/skills/garazyk-admin-ui`
+  was updated to point at the live tests and at the post-M2.5/M2.6 source
+  paths, several of which were still pre-extraction.
 - A worktree environment with the pinned Playwright npm dependency available
   for the browser and visual smoke scripts.
 
