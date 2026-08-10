@@ -1,30 +1,93 @@
 /**
- * Regenerates the `tokens.css` and `reset.css` sections of
- * `Garazyk/Sources/AdminUIServer/Assets/library/css/system.css` from the standalone
- * modular files in the same directory, which are the source of truth for
- * those two modules (system.css inlines them for single-file serving; see
- * its header comment).
+ * Keeps the two served copies of the Garazyk design system in sync from one
+ * canonical source.
  *
- * The `components.css`/`layout.css`/`utilities.css` sections are hand-curated
- * subsets (marked "(selected)" in system.css) and are intentionally left
- * untouched by this generator — see workstream 04 U6 for that scoping call.
+ * There are two independently served bundles:
+ *
+ *   1. `AdminUIServer/Assets/library/css/system.css` — served flat at
+ *      `/css/system.css` to the admin shell (`garazyk-ui`). It *inlines* its
+ *      modules for single-file serving.
+ *   2. `Shared/DesignSystem/css/system.css` — served at `/css/shared/system.css`
+ *      to the standalone pages (OAuth authorize, PLC index, MST viewer, OAuth
+ *      demo). It `@import`s its modules, so those siblings are served too.
+ *
+ * This generator does two things:
+ *
+ *   * inlines `tokens.css` and `reset.css` into the admin bundle's matching
+ *     sections; and
+ *   * copies those same two canonical modules into the shared tree.
+ *
+ * `tokens.css` and `reset.css` under `AdminUIServer/Assets/library/css/` are
+ * the canonical foundation for *both* surfaces. `components.css`,
+ * `layout.css`, and `utilities.css` are deliberately **not** unified: the
+ * standalone pages define 28 classes the admin shell has no use for
+ * (`auth-card`, `window`/`title-bar`, `scope-list`, …) and vice versa, so they
+ * remain separate per-product component layers. The `(selected)` sections in
+ * the admin bundle stay hand-curated for the same reason. See workstream 04 U6.
  *
  * Usage: deno run -A scripts/admin-ui-build/generate_css_bundle.ts [--check]
- *   --check: exit 1 if the regenerated bundle differs from the checked-in
- *   file, without writing (used as the drift test).
+ *   --check: exit 1 if any generated file differs from the checked-in copy,
+ *   without writing (used as the drift test).
  *
  * @module generate_css_bundle
  */
 
 const ROOT = new URL("../../", import.meta.url);
-const CSS_DIR = new URL("Garazyk/Sources/AdminUIServer/Assets/library/css/", ROOT);
+const CSS_DIR = new URL(
+  "Garazyk/Sources/AdminUIServer/Assets/library/css/",
+  ROOT,
+);
+const SHARED_CSS_DIR = new URL(
+  "Garazyk/Sources/Shared/DesignSystem/css/",
+  ROOT,
+);
 export const SYSTEM_CSS_PATH = new URL("system.css", CSS_DIR);
+
+/** Modules whose canonical copy lives in the Admin UI library tree. */
+export const SHARED_MODULES = ["tokens.css", "reset.css"] as const;
 
 const SPDX_RE = /^(?:\/\/ SPDX-[^\n]*\n)+/;
 
+/**
+ * The canonical files open with a "CANONICAL SOURCE" block telling a reader
+ * they are the edit point. That note is true where it sits and false once
+ * copied, so the generator swaps it for the generated-file banner.
+ */
+const CANONICAL_NOTE_RE = /^\/\* CANONICAL SOURCE[\s\S]*?\*\/\n/;
+
 async function moduleBody(name: string): Promise<string> {
   const raw = await Deno.readTextFile(new URL(name, CSS_DIR));
-  return raw.replace(SPDX_RE, "").replace(/\s+$/, "");
+  return raw
+    .replace(SPDX_RE, "")
+    .replace(CANONICAL_NOTE_RE, "")
+    .replace(/\s+$/, "");
+}
+
+/**
+ * The canonical module rendered for the shared tree: the file verbatim, with a
+ * generated-file banner so it is not hand-edited.
+ */
+export async function generateSharedModule(name: string): Promise<string> {
+  const raw = await Deno.readTextFile(new URL(name, CSS_DIR));
+  const spdx = raw.match(SPDX_RE)?.[0] ?? "";
+  const body = raw
+    .replace(SPDX_RE, "")
+    .replace(CANONICAL_NOTE_RE, "")
+    .replace(/\s+$/, "");
+  return (
+    spdx +
+    "/* GENERATED FILE — DO NOT EDIT.\n" +
+    ` * Copied from Garazyk/Sources/AdminUIServer/Assets/library/css/${name}\n` +
+    " * by scripts/admin-ui-build/generate_css_bundle.ts. Edit the canonical\n" +
+    " * file there and re-run the generator. See workstream 04 U6.\n" +
+    " */\n" +
+    body +
+    "\n"
+  );
+}
+
+export function sharedModulePath(name: string): URL {
+  return new URL(name, SHARED_CSS_DIR);
 }
 
 export async function generateBundle(): Promise<string> {
@@ -39,7 +102,9 @@ export async function generateBundle(): Promise<string> {
   const resetStart = current.indexOf(resetMarker);
   const restStart = current.indexOf(componentsMarker);
   if (headerEnd === -1 || resetStart === -1 || restStart === -1) {
-    throw new Error("system.css section markers not found — has the file structure changed?");
+    throw new Error(
+      "system.css section markers not found — has the file structure changed?",
+    );
   }
 
   const header = current.slice(0, headerEnd);
@@ -58,20 +123,44 @@ export async function generateBundle(): Promise<string> {
 
 if (import.meta.main) {
   const checkOnly = Deno.args.includes("--check");
-  const generated = await generateBundle();
+
+  const outputs: Array<{ path: URL; contents: string; label: string }> = [
+    {
+      path: SYSTEM_CSS_PATH,
+      contents: await generateBundle(),
+      label: "admin bundle system.css",
+    },
+  ];
+  for (const name of SHARED_MODULES) {
+    outputs.push({
+      path: sharedModulePath(name),
+      contents: await generateSharedModule(name),
+      label: `shared ${name}`,
+    });
+  }
 
   if (checkOnly) {
-    const current = await Deno.readTextFile(SYSTEM_CSS_PATH);
-    if (current !== generated) {
+    const drifted: string[] = [];
+    for (const { path, contents, label } of outputs) {
+      const current = await Deno.readTextFile(path).catch(() => null);
+      if (current !== contents) drifted.push(label);
+    }
+    if (drifted.length > 0) {
       console.error(
-        "❌ system.css has drifted from tokens.css/reset.css — run " +
+        `❌ CSS has drifted from its canonical source (${
+          drifted.join(", ")
+        }) — run ` +
           "`deno run -A scripts/admin-ui-build/generate_css_bundle.ts` to regenerate.",
       );
       Deno.exit(1);
     }
-    console.log("✅ system.css tokens/reset sections match their modular sources");
+    console.log(
+      "✅ admin bundle and shared design-system modules match their canonical sources",
+    );
   } else {
-    await Deno.writeTextFile(SYSTEM_CSS_PATH, generated);
-    console.log(`Regenerated ${SYSTEM_CSS_PATH.pathname}`);
+    for (const { path, contents } of outputs) {
+      await Deno.writeTextFile(path, contents);
+      console.log(`Regenerated ${path.pathname}`);
+    }
   }
 }

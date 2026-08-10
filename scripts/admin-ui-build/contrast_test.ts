@@ -1,4 +1,5 @@
-const TOKENS_PATH = "Garazyk/Sources/AdminUIServer/Assets/css/tokens.css";
+const TOKENS_PATH =
+  "Garazyk/Sources/AdminUIServer/Assets/library/css/tokens.css";
 const MIN_TEXT_CONTRAST = 4.5;
 
 type Color = readonly [number, number, number];
