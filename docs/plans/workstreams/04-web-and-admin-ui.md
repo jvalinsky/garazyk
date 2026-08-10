@@ -219,6 +219,63 @@ between legitimately different per-product designs, which is a design
 decision, not a mechanical fix; noted here as explicit remaining scope,
 not silently dropped.
 
+**Resolved (2026-08-09): foundation unified, component layers stay
+per-product.** The residual scope above is closed. Measuring the drift first
+showed it was bidirectional, not one tree lagging: the Admin UI copy carried
+the U5 accessibility work (`--color-foreground-*`, `--color-on-*`, the
+`input/textarea/select:focus-visible` outline), while the shared copy carried
+`--font-size-base`, `--toolbar-height`, `--status-bar-height`, the strawberry
+brand motif, `--font-display`, and the dark-mode action-fill overrides its own
+components reference 73 times. A class-usage audit settled the component
+question: the four standalone pages that load `/css/shared/system.css` (OAuth
+authorize, PLC index, MST viewer, OAuth demo) use 28 classes the admin shell
+never defines — `auth-card`, `window`/`title-bar`, `scope-list`, and more — so
+adopting the admin components wholesale would have unstyled them.
+
+The reconciliation therefore splits at the right seam:
+
+- `tokens.css` and `reset.css` under
+  `Garazyk/Sources/AdminUIServer/Assets/library/css/` are now the **canonical**
+  foundation for both surfaces, carrying the union of what either needs. The
+  standalone pages gain the U5 contrast tokens and the focus-visible outline;
+  the admin shell gains the chrome/brand tokens and a definition for
+  `--font-size-base`, which it referenced but never defined.
+- `Garazyk/Sources/Shared/DesignSystem/css/{tokens,reset}.css` are **generated**
+  from those canonical files by
+  `scripts/admin-ui-build/generate_css_bundle.ts` and carry a
+  do-not-edit banner. `--check` fails on drift.
+- `components.css`, `layout.css`, and `utilities.css` stay per-product and
+  hand-maintained in both trees, with headers explaining why, so the split is
+  not "fixed" later. The `(selected)` sections in the admin bundle stay
+  hand-curated for the same reason.
+
+One deliberate visual change: heading weight on the standalone pages moves
+from 700 to the admin shell's 600, unifying the two into one visual language.
+`--font-display` is now honoured in the canonical reset, which is a no-op today
+because Bricolage Grotesque is never loaded — there is no `@font-face` or
+webfont link anywhere in the tree — so it resolves to the system stack on both
+surfaces.
+
+Verification, all static (no browser needed, and Playwright is still
+unavailable): 76/76 classes used by the standalone pages remain styled, the one
+exception being `.apple-logo`, which had no rule in any stylesheet before this
+change either; every `var()` reference in both trees resolves to a definition
+in the same tree; contrast, reduced-motion, and drift gates pass.
+
+**Two gates were silently dead and now run.** `scripts/admin-ui-build/contrast_test.ts`
+and `reduced_motion_test.ts` both still pointed at `Assets/css/`, which M2.5
+moved to `Assets/library/css/`; both threw `NotFound` rather than asserting
+anything. Paths fixed, and because these live under `scripts/` they were never
+covered by `deno task test` (which only walks `packages/`) — which is why the
+rot went unnoticed. `deno test -A scripts/admin-ui-build/` is now a step in
+`ci.yml`'s Deno job and a line in `scripts/test/run-tests.sh`.
+
+**Found, not fixed:** `Garazyk/Sources/Shared/DesignSystem/css/` is never
+copied into any Docker image, so `/css/shared/*.css` 404s in container
+deployments and the OAuth consent page renders unstyled there. That is a
+packaging bug rather than CSS drift, and it needs a working Docker daemon to
+verify, so it is filed separately rather than guessed at.
+
 Also noted, not fixed: the `garazyk-ui` CMake target's `Assets/`
 POST_BUILD copy only re-runs when the target itself rebuilds (source
 `.m` changes), not on Assets-only edits — an incremental-build reliability

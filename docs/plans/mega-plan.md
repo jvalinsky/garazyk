@@ -540,12 +540,17 @@ remaining program does not depend on items 1-2.
     authenticateWithPassword:error:`), cascading into every inherited test
     method across 51 test classes regardless of what each test exercises —
     not root-caused further, but a single high-leverage next GNUstep lead.
-    Fixing `ci.yml` for real needs a maintainer decision among three options
-    recorded in workstream 08 (replace the job with a Docker-based one
-    binary-build-only, replace it and accept CI going red until the backlog
-    is triaged, or drop the job and rely on `linux-docker-build` alone) — not
-    changed unilaterally. Full detail, evidence, and per-class failure
-    breakdown: workstream 08's "GNUstep/Linux CI investigation" section.
+    **Resolved (2026-08-09, maintainer chose option 1).** The apt-based
+    `linux-gnustep-build-and-test` job is deleted and replaced by a comment
+    recording the incompatibility; `linux-docker-build` is renamed **Linux
+    GNUstep Build (Docker)** and is now the Linux gate, building
+    `docker/Dockerfile.gnustep` (from-source libobjc2 toolchain, whole tree,
+    every binary) plus the source-level module-boundary check. No coverage was
+    lost — the deleted job's only reachable step was that same check, which
+    `macos-build-and-test` also runs. Tests stay out of the Linux gate until
+    the 562-failure backlog is triaged; wiring `AllTests` in is the follow-up
+    (option 2). Full detail, evidence, and per-class failure breakdown:
+    workstream 08's "GNUstep/Linux CI investigation" section.
 
 11. **Open (added 2026-07-30):** cut `AllTests` wall clock and related CI /
     Deno cycle waste. Complete

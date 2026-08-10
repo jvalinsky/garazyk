@@ -994,19 +994,8 @@ one-off, not as evidence against `PDSAdminAuth`.
 
 Linux proof is therefore **focused-complete but shared-fixture-incomplete**.
 
-**Decision needed before `ci.yml` itself changes.** Fixing
-`linux-gnustep-build-and-test` "for real" means either (a) adding a
-from-source libobjc2/gnustep-make/gnustep-base build step to that job
-(significant CI time, mirroring Dockerfile stage 1), or (b) restructuring it
-to build/test inside a container derived from `docker/Dockerfile.gnustep`
-(architecturally different from today's native-runner job). Wiring
-`AllTests` execution into the already-working `linux-docker-build` job would
-immediately surface the failures above and turn that job red for every
-future PR — not something to do unilaterally without confirming that's the
-intended trade-off. Per this repo's stop conditions (a slice needing a new
-architectural decision), this is recorded here rather than guessed at:
-`ci.yml` is **not** changed further in this slice beyond what M7 needed. The
-options, for a maintainer to pick from:
+**Decision made (2026-08-09, maintainer): option 1 — replace the apt-based job
+with the Docker-based one, tests stay out of the gate.** The three options were:
 
 1. Replace the apt-based job with a Docker-based one, keep tests out of the
    gate for now (binary build only, matching today's confidence level minus
@@ -1017,6 +1006,28 @@ options, for a maintainer to pick from:
    root-cause finding above.
 3. Remove `linux-gnustep-build-and-test` entirely and rely solely on
    `linux-docker-build`'s existing binary-only build for Linux signal.
+
+**Implementation.** `linux-gnustep-build-and-test` is deleted from `ci.yml`
+and replaced by a comment recording the apt/libobjc2 incompatibility, so the
+finding is not rediscovered from scratch. `linux-docker-build` is renamed
+**Linux GNUstep Build (Docker)** and is now the Linux gate: it already builds
+`docker/Dockerfile.gnustep`, whose stage 1 compiles libobjc2, gnustep-make,
+and gnustep-base from source and whose stage 2 compiles the whole Objective-C
+tree and links every service binary. That is the compile signal the apt job
+only appeared to provide.
+
+No coverage was lost. The deleted job's only step that ever executed was the
+source-level `check_module_boundaries.sh`, because every step after
+`Configure (GNUstep CMake)` was unreachable; `macos-build-and-test` already
+runs that check plus the recursive-setter, host-process-exit, namespace,
+link-time boundary, DAG-CBOR strict, and `AllTests --gated=run` gates. The
+source-level check was nevertheless added to the Docker job so Linux keeps its
+own copy — it is pure shell and needs no toolchain, so it runs on the runner
+rather than in the image.
+
+Option 2 remains the intended end state: wiring `AllTests` into this job is
+the follow-up once the 562-failure GNUstep backlog above is triaged. Gating on
+it today would turn CI red on every PR.
 
 Cleanup: the stale `gnustep-ci-repro2` Docker container mentioned in the work
 queue was removed (no logs, empty `sleep infinity` shell). Exploratory

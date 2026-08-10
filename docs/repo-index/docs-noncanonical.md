@@ -5,13 +5,14 @@ title: Docs Noncanonical
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **180**
+Total documents in this view: **182**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
 | [docs/20-explanation/architecture/atproto_pds_architecture.md](../20-explanation/architecture/atproto_pds_architecture.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/architecture/media_core_framework.md](../20-explanation/architecture/media_core_framework.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/DEPLOYMENT.md](../20-explanation/guides/DEPLOYMENT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/20-explanation/guides/NIXOS.md](../20-explanation/guides/NIXOS.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/adr/0001-compat-shims-must-not-depend-on-database.md](../adr/0001-compat-shims-must-not-depend-on-database.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0002-defer-appview-database-queryrunner-migration.md](../adr/0002-defer-appview-database-queryrunner-migration.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0003-xrpc-registration-uses-plain-nsid-constants.md](../adr/0003-xrpc-registration-uses-plain-nsid-constants.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
@@ -175,6 +176,7 @@ Total documents in this view: **180**
 | [docs/repo-index/tooling.md](tooling.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-05-21-e2e-run.md](../reports/2026-05-21-e2e-run.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-07-17-optimization-research.md](../reports/2026-07-17-optimization-research.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/spec-conformance-matrix.md](../reports/spec-conformance-matrix.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/standard-site-appview-kickstart.md](../standard-site-appview-kickstart.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/standard-site-appview.md](../standard-site-appview.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |

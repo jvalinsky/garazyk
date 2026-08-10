@@ -25,6 +25,7 @@ title: Garazyk Documentation
 
 - [Architecture](20-explanation/architecture/atproto_pds_architecture.md)
 - [Deployment](20-explanation/guides/DEPLOYMENT.md)
+- [NixOS build and deployment](20-explanation/guides/NIXOS.md)
 - [Decision records](adr/)
 
 ## Project planning

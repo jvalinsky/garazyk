@@ -213,5 +213,7 @@ Workspace members under `packages/`: `gruszka` (XRPC clients, lexicon handling),
 
 `docs/index.md` is the entry point. Most useful: `docs/01-getting-started/codebase-map.md`,
 `docs/20-explanation/architecture/atproto_pds_architecture.md`,
-`docs/20-explanation/guides/DEPLOYMENT.md`, `docs/adr/`, and `docs/plans/` for in-flight work.
+`docs/20-explanation/guides/DEPLOYMENT.md`, `docs/20-explanation/guides/NIXOS.md` (flake
+build + NixOS service modules for Garazyk binaries), `docs/adr/`, and `docs/plans/` for in-flight
+work.
 `DESIGN.md` is the design system for the scenario dashboard UI specifically, not the services.
