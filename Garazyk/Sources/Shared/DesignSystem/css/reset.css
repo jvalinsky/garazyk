@@ -1,5 +1,10 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
+/* GENERATED FILE — DO NOT EDIT.
+ * Copied from Garazyk/Sources/AdminUIServer/Assets/library/css/reset.css
+ * by scripts/admin-ui-build/generate_css_bundle.ts. Edit the canonical
+ * file there and re-run the generator. See workstream 04 U6.
+ */
 /* Reset and base styles */
 * {
   margin: 0;
@@ -24,8 +29,7 @@ body {
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.015em;
+  font-weight: 600;
   line-height: var(--line-height-tight);
   margin: 0;
 }
@@ -51,7 +55,7 @@ p {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-foreground-accent);
   text-decoration: none;
   cursor: pointer;
   transition: color var(--transition-fast);
@@ -101,6 +105,13 @@ select:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 input:disabled,

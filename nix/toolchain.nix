@@ -104,18 +104,20 @@ let
     ];
   };
 
-  # Libraries the built binaries link directly. Their store paths land in the
-  # binaries' RUNPATH, so they must be present in the derivation closure and
-  # referenced so Nix keeps them alive.
+  # Libraries the built binaries link directly. Used as buildInputs, so the
+  # un-pinned packages are intended: the stdenv setup hook adds each package's
+  # dev output (headers) to the compile search path and its lib output to the
+  # link path and RUNPATH. Their store paths stay in the binaries' RUNPATH, so
+  # they must be referenced to keep them in the derivation closure.
   runtimeLibs = [
-    gnustepBase.lib
+    gnustepBase
     pkgs.gnustep-libobjc
     libdispatch
-    pkgs.openssl.out
-    pkgs.sqlite.out
-    pkgs.curl.out
-    pkgs.qrencode.out
-    pkgs.libxml2.out
+    pkgs.openssl
+    pkgs.sqlite
+    pkgs.curl
+    pkgs.qrencode
+    pkgs.libxml2
     pkgs.libffi
     pkgs.icu
     pkgs.zlib

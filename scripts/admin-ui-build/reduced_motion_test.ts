@@ -1,6 +1,6 @@
 const CSS_FILES = [
-  "Garazyk/Sources/AdminUIServer/Assets/css/system.css",
-  "Garazyk/Sources/AdminUIServer/Assets/css/utilities.css",
+  "Garazyk/Sources/AdminUIServer/Assets/library/css/system.css",
+  "Garazyk/Sources/AdminUIServer/Assets/library/css/utilities.css",
 ];
 
 const REQUIRED_DECLARATIONS = [
@@ -13,7 +13,9 @@ const REQUIRED_DECLARATIONS = [
 Deno.test("served Admin UI stylesheets respect reduced-motion preferences", async () => {
   for (const file of CSS_FILES) {
     const css = await Deno.readTextFile(file);
-    const rule = css.match(/@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/);
+    const rule = css.match(
+      /@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/,
+    );
     if (!rule) {
       throw new Error(`${file} is missing its prefers-reduced-motion rule`);
     }
@@ -22,7 +24,9 @@ Deno.test("served Admin UI stylesheets respect reduced-motion preferences", asyn
       !rule[1].includes(declaration)
     );
     if (missing.length > 0) {
-      throw new Error(`${file} reduced-motion rule is missing: ${missing.join(", ")}`);
+      throw new Error(
+        `${file} reduced-motion rule is missing: ${missing.join(", ")}`,
+      );
     }
   }
 });

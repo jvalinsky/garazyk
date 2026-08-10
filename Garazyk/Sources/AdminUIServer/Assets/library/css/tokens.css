@@ -1,8 +1,16 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
+/* CANONICAL SOURCE — Garazyk/Sources/Shared/DesignSystem/css/tokens.css is
+ * generated from this file by scripts/admin-ui-build/generate_css_bundle.ts.
+ * Edit here, then re-run the generator. See workstream 04 U6.
+ */
 /* Apple HIG-aligned color tokens and CSS variables
  * Migrated to OKLCH for perceptually uniform color manipulation
  * Brand hue: warm strawberry red (~15°) at low chroma for tinted neutrals
+ *
+ * Both the admin shell (garazyk-ui) and the standalone pages served from
+ * `/css/shared/` (OAuth authorize, PLC index, MST viewer, OAuth demo) resolve
+ * their tokens here, so this file carries the union of what either needs.
  */
 :root {
   /* Light mode semantic colors - OKLCH */
@@ -12,6 +20,14 @@
   --color-text-primary: oklch(13% 0.005 200);
   --color-text-secondary: oklch(45% 0.005 200);
   --color-text-tertiary: oklch(60% 0.003 200);
+
+  /* Chrome metrics, consumed by the standalone pages' window/toolbar chrome. */
+  --toolbar-height: 52px;
+  --status-bar-height: 44px;
+
+  /* Brand motif, used by the standalone pages' decorative marks. */
+  --color-strawberry: oklch(65% 0.22 25);
+  --color-strawberry-leaf: oklch(50% 0.15 150);
 
   /* Brand accent - Apple blue with OKLCH */
   --color-accent: oklch(52% 0.18 255);
@@ -49,6 +65,15 @@
   /* System font stack */
   --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text",
                  "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Display face for the standalone pages' headings; falls back to the
+   * system stack wherever the webfont is unavailable. */
+  --font-display: "Bricolage Grotesque", var(--font-system);
+
+  /* Base body size. Referenced by reset.css on both surfaces; it was defined
+   * only in the shared copy before this file became canonical, so the admin
+   * shell's `var(--font-size-base)` resolved to nothing. */
+  --font-size-base: 14px;
 
   /* Font sizes - 5-step scale with ~1.25 ratio for clear hierarchy */
   --font-size-xs: 11px;
@@ -107,6 +132,15 @@
     --color-text-primary: oklch(96% 0.003 200);
     --color-text-secondary: oklch(70% 0.005 200);
     --color-text-tertiary: oklch(55% 0.004 200);
+
+    /* Action fills are lifted in dark mode so they stay visible as fills.
+     * The light-mode definitions above remain the values the contrast gate
+     * pairs with --color-on-*; these overrides only apply under dark. */
+    --color-accent: oklch(65% 0.15 255);
+    --color-destructive: oklch(65% 0.20 25);
+    --color-success: oklch(68% 0.16 145);
+    --color-warning: oklch(80% 0.15 70);
+    --color-info: oklch(70% 0.13 210);
 
     /* Lighter foregrounds preserve contrast against dark primary and
      * tertiary surfaces without changing the action-fill palette above. */
