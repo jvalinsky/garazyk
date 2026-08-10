@@ -1,0 +1,364 @@
+--- libs-base-6930c840/Makefile.postamble
++++ libs-base-6930c840.patched/Makefile.postamble
+@@ -50,13 +50,13 @@
+ # Things to do after compiling
+ # after-all::
+ 
+-$(DESTDIR)$(GNUSTEP_MAKEFILES)/Additional:
+-	$(ECHO_CREATING)$(MKDIRS) $(DESTDIR)$(GNUSTEP_MAKEFILES)/Additional$(END_ECHO)
++$(DESTDIR_GNUSTEP_MAKEFILES)/Additional:
++	$(ECHO_CREATING)$(MKDIRS) $(DESTDIR_GNUSTEP_MAKEFILES)/Additional$(END_ECHO)
+ 
+ # Things to do before installing
+-before-install:: $(DESTDIR)$(GNUSTEP_MAKEFILES)/Additional
++before-install:: $(DESTDIR_GNUSTEP_MAKEFILES)/Additional
+ 	$(ECHO_NOTHING)$(INSTALL_DATA) base.make \
+-	    $(DESTDIR)$(GNUSTEP_MAKEFILES)/Additional/base.make$(END_ECHO)
++	    $(DESTDIR_GNUSTEP_MAKEFILES)/Additional/base.make$(END_ECHO)
+ 
+ # Things to do after installing
+ # after-install::
+@@ -66,7 +66,7 @@
+ 
+ # Things to do after uninstalling
+ after-uninstall::
+-	$(ECHO_NOTHING)rm -f $(DESTDIR)$(GNUSTEP_MAKEFILES)/Additional/base.make$(END_ECHO)
++	$(ECHO_NOTHING)rm -f $(DESTDIR_GNUSTEP_MAKEFILES)/Additional/base.make$(END_ECHO)
+ 
+ # Things to do before cleaning
+ # before-clean::
+--- libs-base-6930c840/Source/NSPathUtilities.m
++++ libs-base-6930c840.patched/Source/NSPathUtilities.m
+@@ -154,17 +154,28 @@
+ static NSString *gnustepLocalUsersDir = nil;
+ 
+ static NSString *gnustepSystemApps = nil;
++static NSArray *gnustepSystemAppsNix = nil;
+ static NSString *gnustepSystemAdminApps = nil;
++static NSArray *gnustepSystemAdminAppsNix = nil;
+ static NSString *gnustepSystemWebApps = nil;
++static NSArray *gnustepSystemWebAppsNix = nil;
+ static NSString *gnustepSystemTools = nil;
++static NSArray *gnustepSystemToolsNix = nil;
+ static NSString *gnustepSystemAdminTools = nil;
++static NSArray *gnustepSystemAdminToolsNix = nil;
+ static NSString *gnustepSystemLibrary = nil;
++static NSArray *gnustepSystemLibraryNix = nil;
+ static NSString *gnustepSystemLibraries = nil;
++static NSArray *gnustepSystemLibrariesNix = nil;
+ static NSString *gnustepSystemServices = nil;
+ static NSString *gnustepSystemHeaders = nil;
++static NSArray *gnustepSystemHeadersNix = nil;
+ static NSString *gnustepSystemDocumentation = nil;
++static NSArray *gnustepSystemDocumentationNix = nil;
+ static NSString *gnustepSystemDocumentationInfo = nil;
++static NSArray *gnustepSystemDocumentationInfoNix = nil;
+ static NSString *gnustepSystemDocumentationMan = nil;
++static NSArray *gnustepSystemDocumentationManNix = nil;
+ 
+ static NSString *gnustepNetworkApps = nil;
+ static NSString *gnustepNetworkAdminApps = nil;
+@@ -275,6 +286,18 @@
+     }\
+ })
+ 
++/* Like ASSIGN_PATH, but permits multiple components in a path
++ */
++#define ASSIGN_PATH_NIX(var, dictionary, key) ({\
++  id val = getPathConfigNix(dictionary, key);\
++  if (val != nil)\
++    {\
++      RELEASE(var);\
++      var = RETAIN(val);\
++      [dictionary removeObjectForKey: key];\
++    }\
++})
++
+ /* Like ASSIGN_PATH(), but permits the result to be a relative path as that
+  * is what we normally use (the path is within the user's home directory).
+  */
+@@ -385,7 +408,7 @@
+ /* Get a full path string */
+ static inline NSString *
+ getPath(NSString *path)
+-{
++{  
+   if ([path hasPrefix: @"./"] == YES)
+     {
+       path = [gnustepConfigPath stringByAppendingPathComponent:
+@@ -400,6 +423,33 @@
+   return path;
+ }
+ 
++static inline NSArray *
++getPathConfigNix(NSDictionary *dict, NSString *key)
++{
++  NSArray *res = nil;
++  NSMutableArray *paths = nil;
++  NSString *path;
++#if defined(__MINGW_)
++  NSString *sep = @";";
++#else
++  NSString *sep = @":";
++#endif
++
++  path = [dict objectForKey: key];
++  if (path != nil)
++    {
++      if ([path rangeOfString:sep].location != NSNotFound)
++	{
++	  res = [path componentsSeparatedByString:sep];
++	}
++      else
++	{
++	  res = [[NSArray alloc] initWithObjects:path, nil];
++	}
++    }
++  return res;
++}
++
+ /* Get a full path string from a dictionary */
+ static inline NSString *
+ getPathConfig(NSDictionary *dict, NSString *key)
+@@ -506,6 +556,29 @@
+   ASSIGN_PATH(gnustepSystemDocumentationInfo, c,
+     @"GNUSTEP_SYSTEM_DOC_INFO");
+ 
++  ASSIGN_PATH_NIX(gnustepSystemAppsNix, c,
++    @"NIX_GNUSTEP_SYSTEM_APPS");
++  ASSIGN_PATH_NIX(gnustepSystemAdminAppsNix, c,
++    @"NIX_GNUSTEP_SYSTEM_ADMIN_APPS");
++  ASSIGN_PATH_NIX(gnustepSystemWebAppsNix, c,
++    @"NIX_GNUSTEP_SYSTEM_WEB_APPS");
++  ASSIGN_PATH_NIX(gnustepSystemToolsNix, c,
++    @"NIX_GNUSTEP_SYSTEM_TOOLS");
++  ASSIGN_PATH_NIX(gnustepSystemAdminToolsNix, c,
++    @"NIX_GNUSTEP_SYSTEM_ADMIN_TOOLS");
++  ASSIGN_PATH_NIX(gnustepSystemLibraryNix, c,
++    @"NIX_GNUSTEP_SYSTEM_LIBRARY");
++  ASSIGN_PATH_NIX(gnustepSystemLibrariesNix, c,
++    @"NIX_GNUSTEP_SYSTEM_LIBRARIES");
++  ASSIGN_PATH_NIX(gnustepSystemHeadersNix, c,
++    @"NIX_GNUSTEP_SYSTEM_HEADERS");
++  ASSIGN_PATH_NIX(gnustepSystemDocumentationNix, c,
++    @"NIX_GNUSTEP_SYSTEM_DOC");
++  ASSIGN_PATH_NIX(gnustepSystemDocumentationManNix, c,
++    @"NIX_GNUSTEP_SYSTEM_DOC_MAN");
++  ASSIGN_PATH_NIX(gnustepSystemDocumentationInfoNix, c,
++    @"NIX_GNUSTEP_SYSTEM_DOC_INFO");
++
+   ASSIGN_PATH(gnustepNetworkApps, c,
+     @"GNUSTEP_NETWORK_APPS");
+   ASSIGN_PATH(gnustepNetworkAdminApps, c,
+@@ -1395,6 +1468,18 @@
+   DESTROY(gnustepSystemDocumentationMan);
+   DESTROY(gnustepSystemDocumentationInfo);
+ 
++  DESTROY(gnustepSystemAppsNix);
++  DESTROY(gnustepSystemAdminAppsNix);
++  DESTROY(gnustepSystemWebAppsNix);
++  DESTROY(gnustepSystemToolsNix);
++  DESTROY(gnustepSystemAdminToolsNix);
++  DESTROY(gnustepSystemLibraryNix);
++  DESTROY(gnustepSystemLibrariesNix);
++  DESTROY(gnustepSystemHeadersNix);
++  DESTROY(gnustepSystemDocumentationNix);
++  DESTROY(gnustepSystemDocumentationManNix);
++  DESTROY(gnustepSystemDocumentationInfoNix);
++
+   DESTROY(gnustepNetworkApps);
+   DESTROY(gnustepNetworkAdminApps);
+   DESTROY(gnustepNetworkWebApps);
+@@ -2515,6 +2600,27 @@
+   if ([add_dir length] > 0 && [paths containsObject: add_dir] == NO) \
+     [paths addObject: add_dir]; \
+ }
++#define ADD_PATH_NIX(mask, base_dirs, add_dir) \
++if ((domainMask & mask) && (base_dirs != nil)) \
++{ \
++  NSEnumerator *e = [base_dirs objectEnumerator]; \
++  NSString *dir = nil; \
++  while (dir = [e nextObject]) { \
++    path = [dir stringByAppendingPathComponent: add_dir]; \
++    if ([path length] > 0 && [paths containsObject: path] == NO) \
++      [paths addObject: path]; \
++  } \
++}
++#define ADD_PLATFORM_PATH_NIX(mask, add_dirs) \
++if ((domainMask & mask) && (add_dirs != nil)) \
++{ \
++  NSEnumerator *e = [add_dirs objectEnumerator]; \
++  NSString *dir = nil; \
++  while (dir = [e nextObject]) { \
++    if ([dir length] > 0 && [paths containsObject: dir] == NO) \
++      [paths addObject:dir]; \
++  } \
++}
+ 
+   switch (directoryKey)
+     {
+@@ -2523,11 +2629,13 @@
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserApps);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalApps);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkApps);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemAppsNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemApps);
+ 
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserAdminApps);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalAdminApps);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkAdminApps);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemAdminAppsNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemAdminApps);
+ 	}
+ 	break;
+@@ -2537,6 +2645,7 @@
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserApps);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalApps);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkApps);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemAppsNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemApps);
+ 	}
+ 	break;
+@@ -2546,6 +2655,7 @@
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserApps);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalApps);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkApps);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemAppsNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemApps);
+ 
+ 	  /* I imagine if ever wanted a separate Demo directory, the
+@@ -2583,6 +2693,7 @@
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserApps);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalApps);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkApps);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemAppsNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemApps);
+ 	}
+ 	break;
+@@ -2592,6 +2703,7 @@
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserAdminApps);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalAdminApps);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkAdminApps);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemAdminAppsNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemAdminApps);
+ 	}
+ 	break;
+@@ -2601,6 +2713,7 @@
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserLibrary);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalLibrary);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkLibrary);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemLibraryNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemLibrary);
+ 	}
+ 	break;
+@@ -2616,6 +2729,7 @@
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserLibrary);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalLibrary);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkLibrary);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemLibraryNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemLibrary);
+ 	}
+ 	break;
+@@ -2754,6 +2868,7 @@
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserDocumentation);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalDocumentation);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkDocumentation);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemDocumentationNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemDocumentation);
+ 	}
+ 	break;
+@@ -2846,6 +2961,7 @@
+ #endif
+ 	  ADD_PATH(NSLocalDomainMask, gnustepLocalLibrary, @"Caches");
+ 	  ADD_PATH(NSNetworkDomainMask, gnustepNetworkLibrary, @"Caches");
++	  ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemLibraryNix, @"Caches");
+ 	  ADD_PATH(NSSystemDomainMask, gnustepSystemLibrary, @"Caches");
+ 	}
+ 	break;
+@@ -2857,6 +2973,8 @@
+ 	    @"ApplicationSupport");
+ 	  ADD_PATH(NSNetworkDomainMask, gnustepNetworkLibrary,
+ 	    @"ApplicationSupport");
++	  ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemLibraryNix,
++            @"ApplicationSupport");
+ 	  ADD_PATH(NSSystemDomainMask, gnustepSystemLibrary,
+ 	    @"ApplicationSupport");
+ 	}
+@@ -2868,6 +2986,7 @@
+ 	  ADD_PATH(NSUserDomainMask, gnustepUserLibrary, @"Frameworks");
+ 	  ADD_PATH(NSLocalDomainMask, gnustepLocalLibrary, @"Frameworks");
+ 	  ADD_PATH(NSNetworkDomainMask, gnustepNetworkLibrary, @"Frameworks");
++	  ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemLibraryNix, @"Frameworks");
+ 	  ADD_PATH(NSSystemDomainMask, gnustepSystemLibrary, @"Frameworks");
+ 	}
+ 	break;
+@@ -2877,6 +2996,7 @@
+ 	  ADD_PATH(NSUserDomainMask, gnustepUserLibrary, @"Fonts");
+ 	  ADD_PATH(NSLocalDomainMask, gnustepLocalLibrary, @"Fonts");
+ 	  ADD_PATH(NSNetworkDomainMask, gnustepNetworkLibrary, @"Fonts");
++	  ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemLibraryNix, @"Fonts");
+ 	  ADD_PATH(NSSystemDomainMask, gnustepSystemLibrary, @"Fonts");
+ 	}
+ 	break;
+@@ -2915,6 +3035,12 @@
+ 	  if (part)
+ 	    ADD_PATH(NSNetworkDomainMask, gnustepNetworkLibraries, part);
+ 
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemLibrariesNix);
++	  if (full)
++	    ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemLibrariesNix, full);
++	  if (part)
++	    ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemLibrariesNix, part);	  
++
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemLibraries);
+ 	  if (full)
+ 	    ADD_PATH(NSSystemDomainMask, gnustepSystemLibraries, full);
+@@ -2957,6 +3083,12 @@
+ 	  if (part)
+ 	    ADD_PATH(NSNetworkDomainMask, gnustepNetworkTools, part);
+ 
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemToolsNix);
++	  if (full)
++	    ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemToolsNix, full);
++	  if (part)
++	    ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemToolsNix, part);
++
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemTools);
+ 	  if (full)
+ 	    ADD_PATH(NSSystemDomainMask, gnustepSystemTools, full);
+@@ -2999,6 +3131,18 @@
+ 	  if (part)
+ 	    ADD_PATH(NSNetworkDomainMask, gnustepNetworkAdminTools, part);
+ 
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemAdminToolsNix);
++	  if (full)
++	    ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemAdminToolsNix, full);
++	  if (part)
++	    ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemAdminToolsNix, part);
++
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemAdminToolsNix);
++	  if (full)
++	    ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemAdminToolsNix, full);
++	  if (part)
++	    ADD_PATH_NIX(NSSystemDomainMask, gnustepSystemAdminToolsNix, part);
++	  
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemAdminTools);
+ 	  if (full)
+ 	    ADD_PATH(NSSystemDomainMask, gnustepSystemAdminTools, full);
+@@ -3012,6 +3156,7 @@
+ 	  ADD_PLATFORM_PATH(NSUserDomainMask, gnustepUserWebApps);
+ 	  ADD_PLATFORM_PATH(NSLocalDomainMask, gnustepLocalWebApps);
+ 	  ADD_PLATFORM_PATH(NSNetworkDomainMask, gnustepNetworkWebApps);
++	  ADD_PLATFORM_PATH_NIX(NSSystemDomainMask, gnustepSystemWebAppsNix);
+ 	  ADD_PLATFORM_PATH(NSSystemDomainMask, gnustepSystemWebApps);
+ 	}
+ 	break;
+@@ -3019,6 +3164,8 @@
+ 
+ #undef ADD_PATH
+ #undef ADD_PLATFORM_PATH
++#undef ADD_PATH_NIX
++#undef ADD_PLATFORM_PATH_NIX
+ 
+   count = [paths count];
+   for (i = 0; i < count; i++)
