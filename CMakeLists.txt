@@ -482,8 +482,6 @@ else()
     ".*/Auth/PDSAppleKeyManager\\.m$")
   list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX
     ".*/Network/SSLPinningManager\\.m$")
-  list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX
-    ".*/Sync/WebSocket/WebSocketServer\\.m$")
 endif()
 
 if(APPLE)

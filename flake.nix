@@ -7,106 +7,176 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-        
-        isLinux = pkgs.stdenv.isLinux;
-        isDarwin = pkgs.stdenv.isDarwin;
+    flake-utils.lib.eachDefaultSystem
+      (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          lib = pkgs.lib;
 
-        gnustepPackages = pkgs.lib.optionals isLinux (with pkgs; [
-          gnustep-libobjc
-          gnustep-make
-          gnustep-base
-        ]);
+          isLinux = pkgs.stdenv.isLinux;
+          isDarwin = pkgs.stdenv.isDarwin;
 
-        buildTools = with pkgs; [
-          clang
-          pkg-config
-          gnumake
-          cmake
-          sqlite
-          shellcheck
-          shfmt
-          jq
-        ];
+          # Linux-only GNUstep toolchain: pinned libs-base master, patched
+          # nixpkgs build, standalone libdispatch. See nix/toolchain.nix.
+          toolchain = if isLinux then import ./nix/toolchain.nix { inherit pkgs; } else null;
+          gnustepPrefix = if isLinux then toolchain.gnustepPrefix else null;
+          runtimeLibs = if isLinux then toolchain.runtimeLibs else [ ];
 
-        devTools = with pkgs; [
-          clang-tools
-          lldb
-          bear
-        ];
+          buildTools = with pkgs; [
+            clang
+            pkg-config
+            gnumake
+            cmake
+            sqlite
+            shellcheck
+            shfmt
+            jq
+          ];
 
-        formatter = pkgs.nixpkgs-fmt;
+          devTools = with pkgs; [
+            clang-tools
+            lldb
+            bear
+          ];
 
-        darwinFrameworks = pkgs.lib.optionals isDarwin (with pkgs; [
-          xcbuild
-        ]);
+          formatter = pkgs.nixpkgs-fmt;
 
-        linuxFuzzingDeps = pkgs.lib.optionals isLinux (with pkgs; [
-          llvmPackages_17.clang
-          llvmPackages_17.llvm
-        ]);
+          darwinFrameworks = pkgs.lib.optionals isDarwin (with pkgs; [
+            xcbuild
+          ]);
 
-        linuxShellHook = ''
-          export GNUSTEP_MAKEFILES="${pkgs.gnustep-make}/Library/Makefiles"
-          export GNUSTEP_SYSTEM_ROOT="${pkgs.gnustep-base}"
-          export LIBRARY_PATH="${pkgs.gnustep-base}/lib:$LIBRARY_PATH"
-          export CPATH="${pkgs.gnustep-base}/include:$CPATH"
-          export PKG_CONFIG_PATH="${pkgs.gnustep-base}/lib/pkgconfig:$PKG_CONFIG_PATH"
-          export LD_LIBRARY_PATH="${pkgs.gnustep-base}/lib:$LD_LIBRARY_PATH"
-          echo "GNUstep Foundation development environment loaded"
-          echo "  GNUSTEP_MAKEFILES=$GNUSTEP_MAKEFILES"
-        '';
+          linuxFuzzingDeps = pkgs.lib.optionals isLinux (with pkgs; [
+            llvmPackages_18.clang
+            llvmPackages_18.llvm
+          ]);
 
-        darwinShellHook = ''
-          echo "Native Apple SDK development environment loaded"
-          echo "  Note: macOS clang lacks libFuzzer - use Linux for full fuzzing"
-        '';
+          gnustepPackages = pkgs.lib.optionals isLinux ([ gnustepPrefix ] ++ runtimeLibs);
 
-        fuzzerShellHook = pkgs.lib.optionalString isLinux ''
-          export FUZZER_CFLAGS="-g -O1 -fno-omit-frame-pointer -fsanitize=fuzzer,address,undefined"
-          export FUZZER_LDFLAGS="-fsanitize=fuzzer,address,undefined"
-          echo "Fuzzing environment: -fsanitize=fuzzer available on Linux"
-        '';
+          # zuk (AT Protocol relay) from this repository's source. Filters the
+          # flake source down to what the CMake build needs; scripts/scenarios
+          # alone is 2+ GB of scenario data.
+          zukSource = lib.cleanSourceWith {
+            src = self;
+            filter = path: type:
+              let
+                rel = lib.removePrefix (toString self + "/") (toString path);
+              in
+              rel != "scripts/scenarios"
+              && !(builtins.elem (builtins.head (builtins.split "/" rel)) [
+                "build"
+                "node_modules"
+                "coverage"
+              ]);
+          };
 
-      in {
-        inherit formatter;
+          zuk = pkgs.clangStdenv.mkDerivation {
+            pname = "zuk";
+            version = "1.0.0";
 
-        devShells.default = pkgs.mkShell {
-          buildInputs = gnustepPackages ++ darwinFrameworks;
-          nativeBuildInputs = buildTools ++ devTools;
-          
-          # Add script check target
-          shellHook = ''
-            echo "Objective-C development environment (${system})"
-            echo "  clang --version: $(clang --version | head -1)"
-            echo "  Script check enabled: run 'nix flake check'"
-            ${if isLinux then linuxShellHook else darwinShellHook}
+            src = zukSource;
+
+            nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+            buildInputs = [ gnustepPrefix ] ++ runtimeLibs;
+
+            preConfigure = ''
+              export GNUSTEP_PREFIX="${gnustepPrefix}"
+            '';
+
+            cmakeFlags = [
+              "-DCMAKE_BUILD_TYPE=Release"
+              "-DBUILD_TESTS=OFF"
+              "-DBUILD_FUZZERS=OFF"
+              "-DBUILD_SECP256K1=ON"
+            ];
+
+            buildPhase = ''
+              cmake --build build --target zuk --parallel 4
+            '';
+
+            installPhase = ''
+              install -Dm755 build/bin/zuk $out/bin/zuk
+            '';
+
+            meta = with lib; {
+              description = "Garazyk AT Protocol relay";
+              license = [ licenses.unlicense licenses.cc0 ];
+              platforms = platforms.linux;
+            };
+          };
+
+          linuxShellHook =
+            if isLinux then ''
+              export GNUSTEP_PREFIX="${gnustepPrefix}"
+              export GNUSTEP_MAKEFILES="${gnustepPrefix}/Library/Makefiles"
+              export LIBRARY_PATH="${gnustepPrefix}/lib:$LIBRARY_PATH"
+              export CPATH="${gnustepPrefix}/include:$CPATH"
+              export PKG_CONFIG_PATH="${gnustepPrefix}/lib/pkgconfig:$PKG_CONFIG_PATH"
+              export LD_LIBRARY_PATH="${gnustepPrefix}/lib:$LD_LIBRARY_PATH"
+              echo "GNUstep Foundation development environment loaded"
+              echo "  GNUSTEP_MAKEFILES=$GNUSTEP_MAKEFILES"
+            '' else "";
+
+          darwinShellHook = ''
+            echo "Native Apple SDK development environment loaded"
+            echo "  Note: macOS clang lacks libFuzzer - use Linux for full fuzzing"
           '';
-        };
 
-        checks = {
-          shell-check = pkgs.runCommand "shell-check" { buildInputs = [ pkgs.shellcheck ]; } ''
-            FILES=$(find . -name "*.sh" -not -path "./vendor/*" -not -path "./build/*" -print0)
-            if [ -n "$FILES" ]; then
-              echo "$FILES" | xargs -0 shellcheck
-            fi
-            touch $out
+          fuzzerShellHook = pkgs.lib.optionalString isLinux ''
+            export FUZZER_CFLAGS="-g -O1 -fno-omit-frame-pointer -fsanitize=fuzzer,address,undefined"
+            export FUZZER_LDFLAGS="-fsanitize=fuzzer,address,undefined"
+            echo "Fuzzing environment: -fsanitize=fuzzer available on Linux"
           '';
-        };
 
-        devShells.fuzzing = pkgs.mkShell {
-          buildInputs = gnustepPackages ++ darwinFrameworks ++ linuxFuzzingDeps;
-          nativeBuildInputs = buildTools ++ devTools;
+        in
+        {
+          packages = lib.optionalAttrs isLinux {
+            inherit zuk;
+          };
 
-          shellHook = ''
-            echo "Fuzzer development environment (${system})"
-            echo "  clang --version: $(clang --version | head -1)"
-            ${if isLinux then linuxShellHook else darwinShellHook}
-            ${fuzzerShellHook}
-          '';
-        };
-      }
-    );
+          inherit formatter;
+
+          devShells.default = pkgs.mkShell {
+            buildInputs = gnustepPackages ++ darwinFrameworks;
+            nativeBuildInputs = buildTools ++ devTools;
+
+            # Add script check target
+            shellHook = ''
+              echo "Objective-C development environment (${system})"
+              echo "  clang --version: $(clang --version | head -1)"
+              echo "  Script check enabled: run 'nix flake check'"
+              ${if isLinux then linuxShellHook else darwinShellHook}
+            '';
+          };
+
+          checks = {
+            shell-check = pkgs.runCommand "shell-check" { buildInputs = [ pkgs.shellcheck ]; } ''
+              FILES=$(find . -name "*.sh" -not -path "./vendor/*" -not -path "./build/*" -print0)
+              if [ -n "$FILES" ]; then
+                echo "$FILES" | xargs -0 shellcheck
+              fi
+              touch $out
+            '';
+          };
+
+          devShells.fuzzing = pkgs.mkShell {
+            buildInputs = gnustepPackages ++ darwinFrameworks ++ linuxFuzzingDeps;
+            nativeBuildInputs = buildTools ++ devTools;
+
+            shellHook = ''
+              echo "Fuzzer development environment (${system})"
+              echo "  clang --version: $(clang --version | head -1)"
+              ${if isLinux then linuxShellHook else darwinShellHook}
+              ${fuzzerShellHook}
+            '';
+          };
+        }
+      )
+    // {
+      # Reusable NixOS service modules. See nixos/examples/relay.nix for a
+      # working (dummy) composition.
+      nixosModules = {
+        zuk = import ./nixos/modules/zuk.nix;
+        cloudflaredTunnel = import ./nixos/modules/cloudflared-tunnel.nix;
+      };
+    };
 }
