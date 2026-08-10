@@ -12,5 +12,8 @@ fi
 
 echo "Running all tests..."
 "${script_dir}/check_ui_design_system.sh"
+# CSS bundle drift, token contrast, and reduced-motion gates. These live under
+# scripts/, which `deno task test` does not cover.
+deno test -A "${repo_root}/scripts/admin-ui-build/"
 "${test_binary}" --gated=run "$@"
 echo "Tests complete."

@@ -9,15 +9,17 @@ Use this skill for `Garazyk/Sources/AdminUIServer/`, Admin UI assets, HTMX-style
 
 ## Key files
 
-- Runtime/server: `Garazyk/Sources/AdminUIServer/UIServerRuntime.{h,m}`
+- Runtime/server: `Garazyk/Sources/AdminUIServer/GZAdminUIHost.{h,m}`
 - Auth/session: `Garazyk/Sources/AdminUIServer/UIAuthManager.{h,m}`
-- Backend calls: `Garazyk/Sources/AdminUIServer/UIBackendClient.{h,m}`
+- Backend calls: `Garazyk/Sources/AdminUIServer/GZAdminUIBackendClient.{h,m}`
 - Config: `Garazyk/Sources/AdminUIServer/UIServiceConfig.{h,m}`
+- Packs: `Garazyk/Sources/AdminUIServer/Packs/`
 - Assets: `Garazyk/Sources/AdminUIServer/Assets/`
 - Design docs: `Garazyk/Sources/AdminUIServer/Assets/DESIGN_SYSTEM.md`, `Garazyk/Sources/AdminUIServer/Assets/QUICK_REFERENCE.md`, `Garazyk/Sources/AdminUIServer/Assets/README.md`
-- CSS: `Garazyk/Sources/AdminUIServer/Assets/css/*.css`
-- JS: `Garazyk/Sources/AdminUIServer/Assets/js/`
-- Static tests: `scripts/test/check_ui_design_system.sh`, `scripts/test/test_static_files.sh`, `scripts/test/test_page_load.sh`
+- CSS: `Garazyk/Sources/AdminUIServer/Assets/library/css/*.css` (library-owned)
+- JS: `Garazyk/Sources/AdminUIServer/Assets/library/js/` (library-owned), `Assets/packs/<pack>/` (pack-owned)
+- Static tests: `scripts/test/check_ui_design_system.sh`
+- Live tests: `scripts/admin_ui_browser_smoke_test.ts`, `scripts/admin_ui_visual_smoke_test.ts`
 
 ## UI principles
 
@@ -103,9 +105,18 @@ Run targeted UI checks after changes:
 
 ```bash
 scripts/test/check_ui_design_system.sh
-scripts/test/test_static_files.sh
-scripts/test/test_page_load.sh
 ```
+
+The Admin UI is served by `garazyk-ui`, not `kaszlak`, so static serving and
+page load are covered against the real binary in a real browser:
+
+```bash
+deno run -A scripts/admin_ui_browser_smoke_test.ts
+deno run -A scripts/admin_ui_visual_smoke_test.ts
+```
+
+Asset inventory and SHA-256 drift are covered by the `AdminUIAssetsSync`
+CTest, which runs as part of `ctest --test-dir build`.
 
 For full validation, use:
 

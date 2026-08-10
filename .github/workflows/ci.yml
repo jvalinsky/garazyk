@@ -47,6 +47,15 @@ jobs:
       - name: Check Codex Agent Role Manifests
         run: deno run -A scripts/dev/check_codex_agent_roles.ts
 
+      - name: Check Admin UI CSS (drift, contrast, reduced motion)
+        run: |
+          # These live under scripts/, so `deno task test` (packages/ only)
+          # never ran them and both the contrast and reduced-motion gates
+          # silently rotted when M2.5 moved Assets/css -> Assets/library/css.
+          # Gated here so a stale path fails loudly instead of passing by
+          # never executing.
+          deno test -A scripts/admin-ui-build/
+
   macos-build-and-test:
     name: macOS Build & Test
     runs-on: macos-14
@@ -142,8 +151,44 @@ jobs:
           # unsharded AllTests entry so the suite is not run twice.
           ctest --test-dir build --output-on-failure -j4 -E '^AllTests$'
 
-  linux-gnustep-build-and-test:
-    name: Linux GNUstep Build & Test
+  # linux-gnustep-build-and-test removed (workstream 08, GNUstep CI
+  # truthfulness finding). The job installed `gnustep-make`,
+  # `libgnustep-base-dev`, and `libblocksruntime-dev` from apt and then tried
+  # to compile Objective-C. That combination cannot work and never has:
+  # Ubuntu's `libblocksruntime-dev` ships Mark Heily's unrelated
+  # libBlocksRuntime (`Block.h`), not libobjc2's `objc/blocks_runtime.h`,
+  # which GNUstep-base's `GSVersionMacros.h` requires once
+  # `-fobjc-runtime=gnustep-2.2` is set (CMakeLists.txt). The failure is
+  # deterministic and architecture-independent, on the very first `.m` file.
+  # Ubuntu's apt `gnustep-base` family links the legacy GCC runtime
+  # (`libobjc4`), which is incompatible with `gnustep-2.2`; apt does not
+  # package libobjc2 at all, so there is no apt-package fix.
+  #
+  # No signal is lost by removing it:
+  #   * its only step that ever executed was the source-level module-boundary
+  #     check, which macos-build-and-test already runs (`Check Module
+  #     Boundaries`), along with the recursive-setter, host-process-exit,
+  #     namespace, link-time boundary, DAG-CBOR strict, and AllTests gates;
+  #   * every step after `Configure (GNUstep CMake)` was unreachable.
+  #
+  # Real Linux/GNUstep compile coverage comes from linux-docker-build below,
+  # which builds docker/Dockerfile.gnustep -- the from-source
+  # libobjc2/gnustep-make/gnustep-base toolchain that does work.
+  #
+  # Tests are deliberately NOT gated on Linux yet. A full GNUstep
+  # `AllTests --gated=run` completes (4,726 tests, 933s) but reports 562
+  # failures, so gating today would turn CI red on every PR. Triaging that
+  # backlog is tracked in workstream 08; wiring `AllTests` into the Linux gate
+  # is the follow-up once it is green.
+
+  linux-docker-build:
+    # The Linux/GNUstep gate. docker/Dockerfile.gnustep builds libobjc2,
+    # gnustep-make, and gnustep-base from source (stage 1), then compiles the
+    # whole Objective-C tree and links every service binary against that
+    # toolchain (stage 2). That is the compile signal the removed apt-based
+    # job pretended to provide. Binary build only -- see the note above the
+    # removed job for why AllTests is not gated here yet.
+    name: Linux GNUstep Build (Docker)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
 
@@ -153,94 +198,12 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-
-      - name: Cache apt packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/cache/apt
-            /var/lib/apt
-          key: linux-apt-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
-          restore-keys: |
-            linux-apt-${{ runner.os }}-
-
-      - name: Cache CMake build
-        uses: actions/cache@v4
-        with:
-          path: |
-            build-linux/_deps
-            build-linux/CMakeCache.txt
-            build-linux/CMakeFiles
-          key: linux-cmake-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt', '.github/workflows/ci.yml') }}
-          restore-keys: |
-            linux-cmake-${{ runner.os }}-
-
-      - name: Install Build Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            clang \
-            cmake \
-            ninja-build \
-            ccache \
-            gnustep-make \
-            libgnustep-base-dev \
-            libblocksruntime-dev \
-            libssl-dev \
-            libsqlite3-dev \
-            libqrencode-dev
 
       - name: Check Module Boundaries
         run: |
+          # Source-level import check: pure shell, needs no Objective-C
+          # toolchain, so it runs on the runner rather than in the image.
           ./scripts/dev/check_module_boundaries.sh .
-
-      - name: Configure (GNUstep CMake)
-        run: |
-          # Do not pass -DCMAKE_{C,CXX,OBJC}_COMPILER here: CMakeLists.txt's
-          # pre-project() block already resolves and sets them on Linux via
-          # find_program(), to an absolute path (e.g. /bin/clang). Passing
-          # the unqualified names here too creates a cache entry that never
-          # textually matches what the pre-project block sets, which CMake
-          # treats as "compiler changed" on every internal reconfigure --
-          # deleting the cache and restarting configure from scratch,
-          # forever, within a single `cmake` invocation.
-          cmake -S . -B build-linux \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_OBJC_COMPILER_LAUNCHER=ccache \
-            -DBUILD_SECP256K1=ON \
-            -DBUILD_TESTS=ON \
-            -DBUILD_FUZZERS=OFF
-
-      - name: Build (GNUstep)
-        run: |
-          cmake --build build-linux --parallel 4 --target kaszlak AllTests
-
-      - name: Check Module Boundaries (Link-Time, GNUstep)
-        run: |
-          ./scripts/check_module_boundaries.sh build-linux
-
-      - name: Run §1.5 DAG-CBOR strict gate (GNUstep)
-        run: |
-          cmake --build build-linux --target test_dagcbor_strict
-
-      - name: Run Tests (GNUstep)
-        run: |
-          ctest --test-dir build-linux --output-on-failure -j4 -E '^AllTests$'
-
-  linux-docker-build:
-    name: Linux Docker Build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: recursive
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
