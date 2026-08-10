@@ -20,6 +20,7 @@ covers the *process* around that work and does not repeat it.
 | `.codex/agents/` | The same roles as Codex `*.toml` definitions |
 | `.claude/skills/` | Claude-specific compatibility skills; `.claude/worktrees/` holds local worktrees |
 | `scripts/` | Human- and agent-invoked runners, generators, and CI gates |
+| `nix/`, `nixos/` | Linux GNUstep toolchain + flake packages; NixOS service modules and example. Deploy guide: [`docs/20-explanation/guides/NIXOS.md`](docs/20-explanation/guides/NIXOS.md) |
 | deciduous graph | Decision and outcome history. Not a backlog — `docs/plans/` owns that |
 
 Nothing outside `docs/plans/` is an active plan. If you find a roadmap,
