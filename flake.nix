@@ -89,12 +89,14 @@
               "-DBUILD_SECP256K1=ON"
             ];
 
+            # nixpkgs' cmake builder configures into build/ and runs the build
+            # and install phases from inside it, so the target path is `.`.
             buildPhase = ''
-              cmake --build build --target zuk --parallel 4
+              cmake --build . --target zuk --parallel 4
             '';
 
             installPhase = ''
-              install -Dm755 build/bin/zuk $out/bin/zuk
+              install -Dm755 bin/zuk $out/bin/zuk
             '';
 
             meta = with lib; {
