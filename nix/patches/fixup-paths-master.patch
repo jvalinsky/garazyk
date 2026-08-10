@@ -1,5 +1,6 @@
---- libs-base-6930c840/Makefile.postamble
-+++ libs-base-6930c840.patched/Makefile.postamble
+diff -ru --no-dereference /nix/store/ad7yji4bph8isqjslcnzx0179b5cr0n5-source/Makefile.postamble src/Makefile.postamble
+--- a/Makefile.postamble	1969-12-31 19:00:01.000000000 -0500
++++ b/Makefile.postamble	2026-08-10 10:30:46.174335671 -0400
 @@ -50,13 +50,13 @@
  # Things to do after compiling
  # after-all::
@@ -27,33 +28,24 @@
  
  # Things to do before cleaning
  # before-clean::
---- libs-base-6930c840/Source/NSPathUtilities.m
-+++ libs-base-6930c840.patched/Source/NSPathUtilities.m
-@@ -154,17 +154,28 @@
- static NSString *gnustepLocalUsersDir = nil;
- 
- static NSString *gnustepSystemApps = nil;
-+static NSArray *gnustepSystemAppsNix = nil;
- static NSString *gnustepSystemAdminApps = nil;
-+static NSArray *gnustepSystemAdminAppsNix = nil;
- static NSString *gnustepSystemWebApps = nil;
-+static NSArray *gnustepSystemWebAppsNix = nil;
- static NSString *gnustepSystemTools = nil;
-+static NSArray *gnustepSystemToolsNix = nil;
- static NSString *gnustepSystemAdminTools = nil;
-+static NSArray *gnustepSystemAdminToolsNix = nil;
- static NSString *gnustepSystemLibrary = nil;
-+static NSArray *gnustepSystemLibraryNix = nil;
- static NSString *gnustepSystemLibraries = nil;
-+static NSArray *gnustepSystemLibrariesNix = nil;
- static NSString *gnustepSystemServices = nil;
- static NSString *gnustepSystemHeaders = nil;
-+static NSArray *gnustepSystemHeadersNix = nil;
+Only in src: Makefile.postamble.orig
+diff -ru --no-dereference /nix/store/ad7yji4bph8isqjslcnzx0179b5cr0n5-source/Source/NSPathUtilities.m src/Source/NSPathUtilities.m
+--- a/Source/NSPathUtilities.m	1969-12-31 19:00:01.000000000 -0500
++++ b/Source/NSPathUtilities.m	2026-08-10 10:31:37.456129512 -0400
+@@ -165,6 +165,17 @@
  static NSString *gnustepSystemDocumentation = nil;
-+static NSArray *gnustepSystemDocumentationNix = nil;
  static NSString *gnustepSystemDocumentationInfo = nil;
-+static NSArray *gnustepSystemDocumentationInfoNix = nil;
  static NSString *gnustepSystemDocumentationMan = nil;
++static NSArray *gnustepSystemAppsNix = nil;
++static NSArray *gnustepSystemAdminAppsNix = nil;
++static NSArray *gnustepSystemWebAppsNix = nil;
++static NSArray *gnustepSystemToolsNix = nil;
++static NSArray *gnustepSystemAdminToolsNix = nil;
++static NSArray *gnustepSystemLibraryNix = nil;
++static NSArray *gnustepSystemLibrariesNix = nil;
++static NSArray *gnustepSystemHeadersNix = nil;
++static NSArray *gnustepSystemDocumentationNix = nil;
++static NSArray *gnustepSystemDocumentationInfoNix = nil;
 +static NSArray *gnustepSystemDocumentationManNix = nil;
  
  static NSString *gnustepNetworkApps = nil;
