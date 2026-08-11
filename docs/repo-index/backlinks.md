@@ -413,11 +413,20 @@ Inbound links: **7**
 
 ## `docs/adr/0033-per-service-embedded-admin-uis.md`
 
-Inbound links: **5**
+Inbound links: **14**
 
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
 - [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md)
+- [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md)
+- [docs/plans/workstreams/service-admin-uis/chat.md](../plans/workstreams/service-admin-uis/chat.md)
+- [docs/plans/workstreams/service-admin-uis/germ.md](../plans/workstreams/service-admin-uis/germ.md)
+- [docs/plans/workstreams/service-admin-uis/mikrus.md](../plans/workstreams/service-admin-uis/mikrus.md)
+- [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md)
+- [docs/plans/workstreams/service-admin-uis/plc.md](../plans/workstreams/service-admin-uis/plc.md)
+- [docs/plans/workstreams/service-admin-uis/video.md](../plans/workstreams/service-admin-uis/video.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
@@ -1127,7 +1136,7 @@ Inbound links: **2**
 
 ## `docs/plans/mega-plan.md`
 
-Inbound links: **22**
+Inbound links: **23**
 
 - [docs/archive/planning/README.md](../archive/planning/README.md)
 - [docs/index.md](../index.md)
@@ -1166,7 +1175,7 @@ Inbound links: **9**
 
 ## `docs/plans/README.md`
 
-Inbound links: **63**
+Inbound links: **84**
 
 - [docs/index.md](../index.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
@@ -1319,11 +1328,150 @@ Inbound links: **9**
 
 ## `docs/plans/workstreams/11-per-service-admin-uis.md`
 
-Inbound links: **6**
+Inbound links: **26**
 
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md)
+- [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md)
+- [docs/plans/workstreams/service-admin-uis/chat.md](../plans/workstreams/service-admin-uis/chat.md)
+- [docs/plans/workstreams/service-admin-uis/germ.md](../plans/workstreams/service-admin-uis/germ.md)
+- [docs/plans/workstreams/service-admin-uis/mikrus.md](../plans/workstreams/service-admin-uis/mikrus.md)
+- [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md)
+- [docs/plans/workstreams/service-admin-uis/plc.md](../plans/workstreams/service-admin-uis/plc.md)
+- [docs/plans/workstreams/service-admin-uis/relay.md](../plans/workstreams/service-admin-uis/relay.md)
+- [docs/plans/workstreams/service-admin-uis/video.md](../plans/workstreams/service-admin-uis/video.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/appview.md`
+
+Inbound links: **11**
+
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/mikrus.md](../plans/workstreams/service-admin-uis/mikrus.md)
+- [docs/plans/workstreams/service-admin-uis/relay.md](../plans/workstreams/service-admin-uis/relay.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/beskid.md`
+
+Inbound links: **10**
+
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/chat.md`
+
+Inbound links: **11**
+
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/germ.md](../plans/workstreams/service-admin-uis/germ.md)
+- [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/germ.md`
+
+Inbound links: **9**
+
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/chat.md](../plans/workstreams/service-admin-uis/chat.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/mikrus.md`
+
+Inbound links: **11**
+
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md)
+- [docs/plans/workstreams/service-admin-uis/relay.md](../plans/workstreams/service-admin-uis/relay.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/pds.md`
+
+Inbound links: **15**
+
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md)
+- [docs/plans/workstreams/service-admin-uis/chat.md](../plans/workstreams/service-admin-uis/chat.md)
+- [docs/plans/workstreams/service-admin-uis/plc.md](../plans/workstreams/service-admin-uis/plc.md)
+- [docs/plans/workstreams/service-admin-uis/video.md](../plans/workstreams/service-admin-uis/video.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/plc.md`
+
+Inbound links: **12**
+
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md)
+- [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md)
+- [docs/plans/workstreams/service-admin-uis/relay.md](../plans/workstreams/service-admin-uis/relay.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/README.md`
+
+Inbound links: **27**
+
+- [docs/plans/README.md](../plans/README.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md)
+- [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md)
+- [docs/plans/workstreams/service-admin-uis/chat.md](../plans/workstreams/service-admin-uis/chat.md)
+- [docs/plans/workstreams/service-admin-uis/germ.md](../plans/workstreams/service-admin-uis/germ.md)
+- [docs/plans/workstreams/service-admin-uis/mikrus.md](../plans/workstreams/service-admin-uis/mikrus.md)
+- [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md)
+- [docs/plans/workstreams/service-admin-uis/plc.md](../plans/workstreams/service-admin-uis/plc.md)
+- [docs/plans/workstreams/service-admin-uis/relay.md](../plans/workstreams/service-admin-uis/relay.md)
+- [docs/plans/workstreams/service-admin-uis/video.md](../plans/workstreams/service-admin-uis/video.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/relay.md`
+
+Inbound links: **13**
+
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md)
+- [docs/plans/workstreams/service-admin-uis/mikrus.md](../plans/workstreams/service-admin-uis/mikrus.md)
+- [docs/plans/workstreams/service-admin-uis/plc.md](../plans/workstreams/service-admin-uis/plc.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/service-admin-uis/video.md`
+
+Inbound links: **9**
+
+- [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
+- [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
+- [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -1337,7 +1485,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **259**
+Inbound links: **269**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1348,7 +1496,7 @@ Inbound links: **259**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **56**
+Inbound links: **66**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1357,7 +1505,7 @@ Inbound links: **56**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **187**
+Inbound links: **197**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)

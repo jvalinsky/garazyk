@@ -518,6 +518,13 @@ async function testLabOAuthFlow(page: Page): Promise<void> {
 
 async function main(): Promise<void> {
   const root = await repoRoot();
+  // The local binary topology hosts the Lab client's metadata on the same
+  // loopback interface as the PDS. Keep production SSRF protection enabled;
+  // this opt-in is inherited only by the smoke's child processes.
+  const previousPrivateClientSetting = Deno.env.get(
+    "GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS",
+  );
+  Deno.env.set("GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS", "1");
   logProgress(`Starting local PLC+PDS binary network (run ${RUN_ID})...`);
   await startLocalNetwork({ useBinary: true, runId: RUN_ID });
 
@@ -602,6 +609,14 @@ async function main(): Promise<void> {
     logProgress("[teardown] stopping local PLC+PDS binary network...");
     await stopLocalNetwork({ useBinary: true, runId: RUN_ID });
     logProgress("[teardown] local network stopped");
+    if (previousPrivateClientSetting === undefined) {
+      Deno.env.delete("GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS");
+    } else {
+      Deno.env.set(
+        "GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS",
+        previousPrivateClientSetting,
+      );
+    }
   }
 
   console.log(

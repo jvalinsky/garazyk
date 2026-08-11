@@ -71,6 +71,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)incrementCounter:(NSString *)name by:(int64_t)delta;
 
 /**
+ * @abstract Returns one internally consistent, bounded metrics snapshot.
+ * @discussion The result contains the public counters, operation counts,
+ * cache totals, verification totals, custom gauges/counters, and latency
+ * sample summary. Callers must treat it as immutable.
+ */
+- (NSDictionary<NSString *, id> *)snapshot;
+
+/**
  * @abstract Renders all metrics as a string.
  * @return Metrics output string.
  */

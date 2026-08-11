@@ -58,6 +58,22 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
     return [self.innerStore getLatestOperationForDID:did error:error];
 }
 
+- (NSInteger)operationCountForDid:(NSString *)did error:(NSError **)error {
+    return [self.innerStore operationCountForDid:did error:error];
+}
+
+- (NSInteger)nullifiedOperationCountForDid:(NSString *)did error:(NSError **)error {
+    return [self.innerStore nullifiedOperationCountForDid:did error:error];
+}
+
+- (NSUInteger)uniqueDIDCountWithError:(NSError **)error {
+    return [self.innerStore uniqueDIDCountWithError:error];
+}
+
+- (NSUInteger)totalOperationCountWithError:(NSError **)error {
+    return [self.innerStore totalOperationCountWithError:error];
+}
+
 - (nullable NSArray<PLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
                                                       count:(NSUInteger)count
                                                       error:(NSError **)error {

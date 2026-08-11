@@ -334,6 +334,10 @@ async function handleForm(form) {
     case 'save-connections':
       await saveConnections();
       break;
+    case 'plc-sync':
+      await adminRequest('/admin/actions/plc-sync', { action: action.dataset.plcAction || '' });
+      reloadPartial('/admin/partials/plc-metrics', '#plc-metrics');
+      break;
     default:
       break;
   }

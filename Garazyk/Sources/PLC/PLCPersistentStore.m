@@ -91,6 +91,15 @@ static NSString * const kSelectHistorySinceSQL =
 static NSString * const kCountOperationsSQL = 
     @"SELECT COUNT(*) FROM plc_operations WHERE did = ?;";
 
+static NSString * const kCountNullifiedOperationsSQL =
+    @"SELECT COUNT(*) FROM plc_operations WHERE did = ? AND nullified = 1;";
+
+static NSString * const kCountDIDsSQL =
+    @"SELECT COUNT(DISTINCT did) FROM plc_operations;";
+
+static NSString * const kCountAllOperationsSQL =
+    @"SELECT COUNT(*) FROM plc_operations;";
+
 static NSString * const kDeleteOperationsSQL =
     @"DELETE FROM plc_operations WHERE did = ?;";
 
@@ -617,6 +626,24 @@ static NSString * const kSelectAllDIDsSQL =
 }
 
 - (NSInteger)operationCountForDid:(NSString *)did error:(NSError **)error {
+    return [self countForSQL:kCountOperationsSQL did:did error:error];
+}
+
+- (NSInteger)nullifiedOperationCountForDid:(NSString *)did error:(NSError **)error {
+    return [self countForSQL:kCountNullifiedOperationsSQL did:did error:error];
+}
+
+- (NSUInteger)uniqueDIDCountWithError:(NSError **)error {
+    NSInteger count = [self countForSQL:kCountDIDsSQL did:nil error:error];
+    return (NSUInteger)MAX(count, 0);
+}
+
+- (NSUInteger)totalOperationCountWithError:(NSError **)error {
+    NSInteger count = [self countForSQL:kCountAllOperationsSQL did:nil error:error];
+    return (NSUInteger)MAX(count, 0);
+}
+
+- (NSInteger)countForSQL:(NSString *)sql did:(nullable NSString *)did error:(NSError **)error {
     if (!self.open) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -631,7 +658,7 @@ static NSString * const kSelectAllDIDsSQL =
     
     [self.connectionManager execute:^(sqlite3 *db) {
         sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(db, kCountOperationsSQL.UTF8String, -1, &stmt, NULL);
+        int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
             blockError = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
                                              code:rc
@@ -639,7 +666,9 @@ static NSString * const kSelectAllDIDsSQL =
             return;
         }
 
-        sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+        if (did) {
+            sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+        }
 
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             count = sqlite3_column_int64(stmt, 0);

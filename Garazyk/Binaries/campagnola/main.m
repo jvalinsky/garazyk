@@ -14,6 +14,11 @@
 #import "PLC/PLCSyncClient.h"
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/UIServiceConfig.h"
+#import "PLC/AdminUI/PLCAdminSnapshot.h"
+#import "PLC/AdminUI/PLCAdminUIPack.h"
+#import "PLC/AdminUI/GZPLCAdminUIConfiguration.h"
 
 #import <readline/readline.h>
 #import <readline/history.h>
@@ -36,6 +41,9 @@ void print_usage(const char *executable_name) {
     printf("  --replica          Run serve command in read-only replica mode\n");
     printf("  --upstream <url>   Upstream PLC URL for replica sync\n");
     printf("  --data-dir <path>  Data directory for replica\n");
+    printf("  --admin-ui-host <address>  Admin UI bind address (default: 127.0.0.1)\n");
+    printf("  --admin-ui-port <number>   Admin UI port (default: 2592)\n");
+    printf("  --admin-password-file <path>  Admin password file (overrides environment)\n");
     printf("  --help, -h         Show help information\n\n");
     printf("Examples:\n");
     printf("  %s serve --port 2582                    # Start on default port\n", executable_name);
@@ -122,19 +130,42 @@ static const char *executable_name = "campagnola";
 @interface PLCRuntimeComposite : NSObject <GZServiceRuntimeProtocol>
 @property (nonatomic, strong) PLCServer *server;
 @property (nonatomic, strong, nullable) PLCSyncEngine *syncEngine;
+@property (nonatomic, strong, nullable) GZAdminUIHost *adminUIHost;
 @end
 
 @implementation PLCRuntimeComposite
 - (BOOL)startWithError:(NSError **)error {
-    return [self.server startWithError:error];
+    if (![self.server startWithError:error]) return NO;
+    if (self.adminUIHost && ![self.adminUIHost startWithError:error]) {
+        [self.server stop];
+        return NO;
+    }
+    return YES;
 }
 - (void)stop {
     if (self.syncEngine) {
         [self.syncEngine stop];
     }
+    [self.adminUIHost stop];
     [self.server stop];
 }
 @end
+
+static NSString *PLCAdminPassword(NSString *explicitPath) {
+    NSDictionary<NSString *, NSString *> *environment = NSProcessInfo.processInfo.environment;
+    NSString *path = explicitPath.length > 0 ? explicitPath : environment[@"GARAZYK_PLC_ADMIN_PASSWORD_FILE"];
+    if (path.length > 0) {
+        NSError *readError = nil;
+        NSString *password = GZPLCAdminPasswordFromFile(path, &readError);
+        if (!password) {
+            GZ_LOG_CORE_ERROR(@"PLC admin UI password file could not be read: %@", readError.localizedDescription);
+            return nil;
+        }
+        return password;
+    }
+    NSString *password = environment[@"GARAZYK_PLC_ADMIN_PASSWORD"];
+    return password.length > 0 ? password : nil;
+}
 
 static int run_status_command(NSString *host, NSUInteger port) {
     NSString *urlString = [NSString stringWithFormat:@"http://%@:%lu/_health", host, (unsigned long)port];
@@ -223,6 +254,9 @@ int main(int argc, const char * argv[]) {
             [GZCommandLineOption optionWithLongName:@"replica" shortName:@"r" type:GZCommandLineOptionTypeBoolean isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"upstream" shortName:@"u" type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"data-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-ui-host" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-ui-port" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-password-file" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"help" shortName:@"h" type:GZCommandLineOptionTypeBoolean isRequired:NO]
         ];
         [parser registerOptions:serveOptions forCommand:@"serve"];
@@ -248,13 +282,26 @@ int main(int argc, const char * argv[]) {
             return fail_with_usage(binaryName, parseError.localizedDescription);
         }
 
-        NSUInteger port = parsedArgs[@"port"] ? (NSUInteger)[parsedArgs[@"port"] integerValue] : 2582;
+        NSString *portValue = parsedArgs[@"port"];
+        NSInteger parsedPort = portValue ? portValue.integerValue : 2582;
+        if (parsedPort <= 0 || parsedPort > 65535) {
+            return fail_with_usage(binaryName, @"Port must be an integer from 1 through 65535");
+        }
+        NSUInteger port = (NSUInteger)parsedPort;
         NSString *host = parsedArgs[@"host"] ?: @"127.0.0.1";
         NSString *dbPath = parsedArgs[@"database"];
         NSString *dataDir = parsedArgs[@"data-dir"];
         NSString *upstreamURL = parsedArgs[@"upstream"];
         BOOL replicaMode = [parsedArgs[@"replica"] boolValue] || [command isEqualToString:@"replica"];
         BOOL inMemory = [parsedArgs[@"in-memory"] boolValue];
+        NSString *adminHost = parsedArgs[@"admin-ui-host"] ?: NSProcessInfo.processInfo.environment[@"GARAZYK_PLC_ADMIN_UI_HOST"] ?: @"127.0.0.1";
+        NSString *adminPortValue = parsedArgs[@"admin-ui-port"] ?: NSProcessInfo.processInfo.environment[@"GARAZYK_PLC_ADMIN_UI_PORT"];
+        NSInteger parsedAdminPort = adminPortValue ? adminPortValue.integerValue : 2592;
+        if (parsedAdminPort <= 0 || parsedAdminPort > 65535) {
+            return fail_with_usage(binaryName, @"Admin UI port must be an integer from 1 through 65535");
+        }
+        NSUInteger adminPort = (NSUInteger)parsedAdminPort;
+        NSString *adminPassword = PLCAdminPassword(parsedArgs[@"admin-password-file"]);
 
         if ([command isEqualToString:@"status"] || [command isEqualToString:@"health"]) {
             return run_status_command(host, port);
@@ -335,6 +382,19 @@ int main(int argc, const char * argv[]) {
         PLCRuntimeComposite *composite = [[PLCRuntimeComposite alloc] init];
         composite.server = server;
         composite.syncEngine = syncEngine;
+        if (adminPassword.length > 0) {
+            GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
+            adminConfig.host = adminHost;
+            adminConfig.port = adminPort;
+            adminConfig.adminPassword = adminPassword;
+            adminConfig.serviceIdentifier = @"plc";
+            adminConfig.plcBaseURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@:%lu", host, (unsigned long)port]];
+            composite.adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig packs:@[GZPLCAdminUIPack.class]];
+            [GZPLCAdminUIPack configureHost:composite.adminUIHost
+                                  snapshot:[[GZPLCAdminSnapshot alloc] initWithStore:server.store syncEngine:syncEngine]];
+        } else {
+            GZ_LOG_CORE_WARN(@"PLC admin UI disabled: GARAZYK_PLC_ADMIN_PASSWORD or GARAZYK_PLC_ADMIN_PASSWORD_FILE is not configured");
+        }
 
         return [GZServiceLifecycle runServiceWithRuntime:composite
                                              serviceName:@"PLC server"
@@ -344,6 +404,9 @@ int main(int argc, const char * argv[]) {
                                                          printf("Sync engine started (upstream: %s)\n", [upstreamURL UTF8String]);
                                                      }
                                                      printf("PLC server listening on port %lu\n", (unsigned long)port);
+                                                     if (composite.adminUIHost) {
+                                                         printf("PLC admin UI listening on http://%s:%lu/admin\n", adminHost.UTF8String, (unsigned long)adminPort);
+                                                     }
                                                      printf("Use --help for options, 'repl' for interactive mode\n");
                                                  }
                                          announceSignals:NO];
