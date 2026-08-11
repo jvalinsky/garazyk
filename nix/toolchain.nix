@@ -104,26 +104,38 @@ let
     ];
   };
 
-  # Libraries the built binaries link directly. Used as buildInputs, so the
-  # un-pinned packages are intended: the stdenv setup hook adds each package's
-  # dev output (headers) to the compile search path and its lib output to the
-  # link path and RUNPATH. Their store paths stay in the binaries' RUNPATH, so
-  # they must be referenced to keep them in the derivation closure.
-  runtimeLibs = [
-    gnustepBase
-    pkgs.gnustep-libobjc
+  # Libraries the built binaries link directly. The `out`/`lib` outputs must be
+  # in the derivation closure (they land in the binaries' RUNPATH), and the
+  # `dev` outputs carry the headers the configure/compile phases need.
+  # nixpkgs' stdenv used to auto-map an un-pinned buildInput to its dev output;
+  # recent revisions only map some packages (icu, gnutls) and leave the rest on
+  # `out`, which silently breaks find_package(OpenSSL). List both outputs
+  # explicitly so the build no longer depends on that mapping.
+  runtimeLibs = with pkgs; [
+    (lib.getOutput "lib" gnustepBase)
+    gnustep-libobjc
     libdispatch
-    pkgs.openssl
-    pkgs.sqlite
-    pkgs.curl
-    pkgs.qrencode
-    pkgs.libxml2
-    pkgs.libffi
-    pkgs.icu
-    pkgs.zlib
-    pkgs.readline
-    pkgs.libbsd
-    pkgs.gnutls
+    (lib.getOutput "out" openssl)
+    (lib.getDev openssl)
+    (lib.getOutput "out" sqlite)
+    (lib.getDev sqlite)
+    (lib.getOutput "out" curl)
+    (lib.getDev curl)
+    (lib.getOutput "out" qrencode)
+    (lib.getDev qrencode)
+    (lib.getOutput "out" libxml2)
+    (lib.getDev libxml2)
+    libffi
+    (lib.getOutput "out" icu)
+    (lib.getDev icu)
+    (lib.getOutput "out" zlib)
+    (lib.getDev zlib)
+    (lib.getOutput "out" readline)
+    (lib.getDev readline)
+    (lib.getOutput "out" libbsd)
+    (lib.getDev libbsd)
+    (lib.getOutput "out" gnutls)
+    (lib.getDev gnutls)
   ];
 in
 {
