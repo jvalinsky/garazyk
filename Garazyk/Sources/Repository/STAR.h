@@ -318,6 +318,107 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 
 @end
 
+#pragma mark - ATProtoSTARLiteV0Writer
+
+/*!
+ @class ATProtoSTARLiteV0Writer
+
+ @abstract Writes upstream STAR-lite version 0 archives (`*l\0`).
+
+ @discussion This is the interoperable STAR-lite defined by the upstream spec
+ at https://tangled.org/microcosm.blue/star, distinct from the local variant
+ written by ATProtoSTARLiteWriter. The wire format is:
+
+     [ 2A 6C 00 | mst-root-cid (36 bytes) | varint(len) | commit ]
+     [ varint(keyLen) | key | varint(recLen) | record ] ...
+
+ The header CID links the repo's ATProtoMST root directly, so the commit
+ carried in the header is *partial*: the `data` key is stripped. A reader
+ re-inserts `data` from the header CID to recover the signed commit, so the
+ remaining commit keys must be preserved byte-faithfully — this writer strips
+ `data` from the stored commit block rather than rebuilding the map from a
+ fixed field list.
+
+ Records are emitted in strict lexicographic key order with no duplicates.
+ There is no representation for a partial (`since`) export: the record stream
+ must rebuild the exact ATProtoMST root named in the header.
+ */
+@interface ATProtoSTARLiteV0Writer : NSObject
+
+/*! The ATProtoMST root ATProtoCID committed to by the header. */
+@property (nonatomic, strong, readonly) ATProtoCID *mstRootCID;
+
+/*! The partial (data-stripped) commit as DAG-CBOR. */
+@property (nonatomic, copy, readonly) NSData *partialCommit;
+
+/*!
+ @method initWithMSTRootCID:commitBlock:error:
+
+ @abstract Initialize a writer from the repo's ATProtoMST root and stored commit.
+
+ @param mstRootCID The ATProtoMST root ATProtoCID. Pass nil for an empty repository to
+ use ATProtoMSTEmptyRootCID().
+ @param commitBlock The stored commit block as DAG-CBOR, including `data`.
+ @param error Error pointer for decoding failures.
+ @return A new writer, or nil if the commit block could not be decoded, or if
+ re-inserting `data` into the partial commit does not reproduce the stored
+ commit byte-for-byte.
+ */
+- (nullable instancetype)initWithMSTRootCID:(nullable ATProtoCID *)mstRootCID
+                                commitBlock:(NSData *)commitBlock
+                                      error:(NSError **)error;
+
+/*!
+ @method headerData
+
+ @abstract Returns the encoded archive header.
+
+ @return magic + root ATProtoCID + varint-prefixed partial commit.
+ */
+- (NSData *)headerData;
+
+/*!
+ @method recordChunkWithKey:data:
+
+ @abstract Encodes one key/record pair as a standalone archive chunk.
+
+ @param key The record key (e.g. "app.bsky.feed.post/abc123").
+ @param recordData The raw DAG-CBOR record data.
+ @return varint(keyLen) | key | varint(dataLen) | record.
+ */
++ (NSData *)recordChunkWithKey:(NSString *)key data:(NSData *)recordData;
+
+/*!
+ @method writeFromMST:blockProvider:error:
+
+ @abstract Walk the ATProtoMST in key order and serialize as STAR-lite v0.
+
+ @param mst The ATProtoMST to serialize.
+ @param blockProvider Block that returns record data for a given ATProtoCID.
+ @param error Error pointer for serialization failures.
+ @return YES on success, NO on failure.
+ */
+- (BOOL)writeFromMST:(nullable ATProtoMST *)mst
+       blockProvider:(nullable NSData * _Nullable (^)(ATProtoCID *cid))blockProvider
+               error:(NSError **)error;
+
+/*!
+ @method serialize
+
+ @abstract Returns the complete STAR-lite v0 archive data.
+
+ @return STAR-lite v0 encoded data.
+ */
+- (nullable NSData *)serialize;
+
+@end
+
+/*! Maximum record key length: 317 (collection) + 1 (slash) + 512 (rkey). */
+FOUNDATION_EXPORT const NSUInteger STARLiteV0MaxKeyLength;
+
+/*! Maximum record size, per atproto limits. */
+FOUNDATION_EXPORT const NSUInteger STARLiteV0MaxRecordLength;
+
 #pragma mark - ATProtoSTARReader
 
 /*!
@@ -424,16 +525,24 @@ FOUNDATION_EXPORT BOOL STARDetectFormatFromPath(NSString *path);
 
 FOUNDATION_EXPORT NSString *const STARContentTypeL0;
 FOUNDATION_EXPORT NSString *const STARContentTypeLite;
+FOUNDATION_EXPORT NSString *const STARContentTypeLiteV0;
 FOUNDATION_EXPORT NSString *const CARContentType;
 
 /*!
 
  @abstract Repository serialization format for content negotiation.
+
+ @constant PDSRepoFormatCAR CAR v1, the protocol default.
+ @constant PDSRepoFormatSTARL0 STAR-L0 (local variant, version 1).
+ @constant PDSRepoFormatSTARLite STAR-lite (local variant, version 2).
+ @constant PDSRepoFormatSTARLiteV0 Upstream STAR-lite version 0, the
+ interoperable variant consumed by microcosm's Hubble.
  */
 typedef NS_ENUM(NSUInteger, PDSRepoFormat) {
     PDSRepoFormatCAR,
     PDSRepoFormatSTARL0,
-    PDSRepoFormatSTARLite
+    PDSRepoFormatSTARLite,
+    PDSRepoFormatSTARLiteV0
 };
 
 /*!
@@ -446,6 +555,22 @@ typedef NS_ENUM(NSUInteger, PDSRepoFormat) {
  supported representation has a positive quality.
  */
 FOUNDATION_EXPORT PDSRepoFormat PDSRepoFormatFromAcceptHeader(NSString * _Nullable acceptHeader);
+
+/*!
+ @function PDSRepoFormatFromAcceptQueryParameter
+
+ @abstract Negotiate the desired repo format from an `accept` query parameter.
+
+ @discussion A non-standard convenience parameter mirroring Hubble's own
+ `getRepo?accept=star-lite`. When present and recognized it overrides the
+ Accept header; unrecognized values leave negotiation to the header.
+
+ @param value The raw `accept` query parameter value (may be nil).
+ @param format On return, the negotiated format when the value is recognized.
+ @return YES if the parameter named a supported format.
+ */
+FOUNDATION_EXPORT BOOL PDSRepoFormatFromAcceptQueryParameter(NSString * _Nullable value,
+                                                             PDSRepoFormat *format);
 
 /*!
  @function ContentTypeForPDSRepoFormat

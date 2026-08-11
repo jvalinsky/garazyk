@@ -1787,3 +1787,12 @@ asDeleteIntoOperations:(NSMutableArray<ATProtoMSTDiffOperation *> *)operations {
 }
 
 @end
+
+ATProtoCID *ATProtoMSTEmptyRootCID(void) {
+    static ATProtoCID *emptyRootCID = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        emptyRootCID = [[[ATProtoMST alloc] init] rootCID];
+    });
+    return emptyRootCID;
+}

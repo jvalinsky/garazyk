@@ -394,4 +394,17 @@ typedef NSData * _Nullable (^MSTBlockProvider)(ATProtoCID *cid);
 
 @end
 
+/*!
+ @function ATProtoMSTEmptyRootCID
+
+ @abstract The root ATProtoCID of an empty repository.
+
+ @discussion Computed from an empty tree rather than hard-coded, so it can
+ never disagree with what this implementation actually builds. Archive formats
+ that must name a root even for a zero-record repository use this.
+
+ @return The ATProtoCID of the canonical empty ATProtoMST node.
+ */
+FOUNDATION_EXPORT ATProtoCID *ATProtoMSTEmptyRootCID(void);
+
 NS_ASSUME_NONNULL_END
