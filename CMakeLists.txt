@@ -367,6 +367,7 @@ include("${PDS_MODULE_MANIFEST_DIR}/ATProtoServices.cmake")
 include("${PDS_MODULE_MANIFEST_DIR}/ATProtoTransport.cmake")
 include("${PDS_MODULE_MANIFEST_DIR}/ATProtoXRPC.cmake")
 include("${PDS_MODULE_MANIFEST_DIR}/ATProtoSync.cmake")
+include("${PDS_MODULE_MANIFEST_DIR}/ATProtoRelayAdminUI.cmake")
 include("${PDS_MODULE_MANIFEST_DIR}/ATProtoPLC.cmake")
 include("${PDS_MODULE_MANIFEST_DIR}/ATProtoRuntime.cmake")
 include("${PDS_MODULE_MANIFEST_DIR}/ATProtoMediaCore.cmake")
@@ -382,6 +383,7 @@ set(PDS_MODULE_MANIFEST_VARS
   ATPROTO_TRANSPORT_MANIFEST
   ATPROTO_XRPC_MANIFEST
   ATPROTO_SYNC_MANIFEST
+  ATPROTO_RELAY_ADMIN_UI_MANIFEST
   ATPROTO_PLC_MANIFEST
   ATPROTO_RUNTIME_MANIFEST
   ATPROTO_MEDIA_CORE_MANIFEST
@@ -398,6 +400,7 @@ set(PDS_MODULE_SOURCE_VARS
   ATPROTO_TRANSPORT_SOURCES
   ATPROTO_XRPC_SOURCES
   ATPROTO_SYNC_SOURCES
+  ATPROTO_RELAY_ADMIN_UI_SOURCES
   ATPROTO_PLC_SOURCES
   ATPROTO_RUNTIME_SOURCES
   ATPROTO_MEDIA_CORE_SOURCES
@@ -528,6 +531,7 @@ add_library(ATProtoServices STATIC ${ATPROTO_SERVICES_SOURCES})
 add_library(ATProtoTransport STATIC ${ATPROTO_TRANSPORT_SOURCES})
 add_library(ATProtoXRPC STATIC ${ATPROTO_XRPC_SOURCES})
 add_library(ATProtoSync STATIC ${ATPROTO_SYNC_SOURCES})
+add_library(ATProtoRelayAdminUI STATIC ${ATPROTO_RELAY_ADMIN_UI_SOURCES})
 add_library(ATProtoPLC STATIC ${ATPROTO_PLC_SOURCES})
 add_library(ATProtoRuntime STATIC ${ATPROTO_RUNTIME_SOURCES})
 add_library(ATProtoMediaCore STATIC ${ATPROTO_MEDIA_CORE_SOURCES})
@@ -558,6 +562,7 @@ set(PDS_MODULE_TARGETS
   ATProtoAdminUI
   ATProtoXRPC
   ATProtoSync
+  ATProtoRelayAdminUI
   ATProtoPLC
   ATProtoRuntime
   ATProtoVideoService
@@ -583,6 +588,7 @@ if(OpenSSL_FOUND)
 endif()
 target_link_libraries(ATProtoTransport PUBLIC ATProtoCore)
 target_link_libraries(ATProtoSync PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
+target_link_libraries(ATProtoRelayAdminUI PUBLIC ATProtoSync ATProtoAdminUI)
 target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoPLC ATProtoCore)
 # PLCPersistentStore owns the serialized SQLite connection and query-runner
 # construction used by the PLC directory.  Storage depends only on Core, so
@@ -715,7 +721,6 @@ set_target_properties(campagnola PROPERTIES
 # Relay Server (zuk - AT Protocol relay)
 add_executable(zuk
   Garazyk/Binaries/zuk/main.m
-  Garazyk/Binaries/zuk/DashboardHTML.m
 )
 
 target_include_directories(zuk PRIVATE
@@ -727,6 +732,7 @@ target_include_directories(zuk PRIVATE
 if(APPLE)
   target_link_libraries(zuk PRIVATE
     ATProtoAppViewServer
+    ATProtoRelayAdminUI
     ATProtoSync
     ATProtoTransport
     ATProtoCore
@@ -741,6 +747,7 @@ else()
   target_link_libraries(zuk PRIVATE
     -Wl,--whole-archive
     ATProtoAppViewServer
+    ATProtoRelayAdminUI
     ATProtoSync
     ATProtoTransport
     ATProtoCore
@@ -1048,12 +1055,13 @@ target_include_directories(garazyk-ui PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-# garazyk-ui keeps serving the PLC-owned pack through the compatibility host
-# until workstream 11 M5.  AdminUI itself remains service-neutral.
+# garazyk-ui keeps serving the PLC- and Relay-owned packs through the
+# compatibility host until workstream 11 M5. AdminUI itself remains service-neutral.
 if(APPLE)
   target_link_libraries(garazyk-ui PRIVATE
     ATProtoAdminUI
     ATProtoPLC
+    ATProtoRelayAdminUI
     ATProtoTransport
     ATProtoCore
     ${PLATFORM_LIBRARIES}
@@ -1065,6 +1073,7 @@ else()
     -Wl,--whole-archive
     ATProtoAdminUI
     ATProtoPLC
+    ATProtoRelayAdminUI
     ATProtoTransport
     ATProtoCore
     -Wl,--no-whole-archive
@@ -1241,6 +1250,7 @@ endfunction()
 
 add_admin_ui_assets(garazyk-ui)
 add_admin_ui_assets(campagnola)
+add_admin_ui_assets(zuk)
 
 # Tutorial examples are optional; local/dev checkouts may omit examples/.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/tutorial-1-hello-pds/src/main.m")
@@ -1737,6 +1747,7 @@ if(BUILD_TESTS)
       ATProtoRuntime
       ATProtoServices
       ATProtoAdminUI
+      ATProtoRelayAdminUI
       ATProtoTransport
       ATProtoXRPC
       ATProtoSync
@@ -1765,6 +1776,7 @@ if(BUILD_TESTS)
        ATProtoRuntime
        ATProtoServices
        ATProtoAdminUI
+       ATProtoRelayAdminUI
        ATProtoTransport
        ATProtoXRPC
        ATProtoSync

@@ -36,10 +36,12 @@
 #import "Compat/PDSTypes.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "PLC/DIDPLCResolver.h"
-#import "AdminUIServer/UIAuthManager.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/UIServiceConfig.h"
+#import "Sync/Relay/AdminUI/RelayAdminSnapshot.h"
+#import "Sync/Relay/AdminUI/RelayAdminUIPack.h"
 #import "CLI/GZCommandLineOptions.h"
 #import "Runtime/GZServiceLifecycle.h"
-#import "DashboardHTML.h"
 #include <stdlib.h>
 
 static const char *executable_name = "zuk";
@@ -48,18 +50,13 @@ static NSString *ZukRelayAdminPassword(void) {
     const char *relayPasswordFile = getenv("RELAY_ADMIN_PASSWORD_FILE");
     if (relayPasswordFile && relayPasswordFile[0] != '\0') {
         NSString *path = [NSString stringWithUTF8String:relayPasswordFile];
-        NSError *readError = nil;
-        NSString *password = [NSString stringWithContentsOfFile:path
-                                                       encoding:NSUTF8StringEncoding
-                                                          error:&readError];
+        NSError *error = nil;
+        NSString *password = GZRelayAdminPasswordFromFile(path, &error);
         if (!password) {
-            GZ_LOG_CORE_ERROR(@"Failed to read relay dashboard password file: %@",
-                              readError.localizedDescription);
+            GZ_LOG_CORE_ERROR(@"Failed to read relay admin password file");
             return nil;
         }
-        password = [password stringByTrimmingCharactersInSet:
-            [NSCharacterSet newlineCharacterSet]];
-        return password.length > 0 ? password : nil;
+        return password;
     }
 
     const char *relayToken = getenv("RELAY_ADMIN_PASSWORD");
@@ -69,84 +66,22 @@ static NSString *ZukRelayAdminPassword(void) {
     return nil;
 }
 
-static BOOL ZukRequestUsesSecureCookie(ATProtoHttpRequest *request) {
-    NSString *forwardedProto = [[request headerForKey:@"X-Forwarded-Proto"] lowercaseString];
-    if ([forwardedProto isEqualToString:@"https"]) return YES;
-
-    NSString *host = [[request headerForKey:@"Host"] lowercaseString];
-    if (host.length == 0 || [host isEqualToString:@"localhost"] ||
-        [host hasPrefix:@"localhost:"] || [host isEqualToString:@"127.0.0.1"] ||
-        [host hasPrefix:@"127.0.0.1:"] || [host isEqualToString:@"[::1]"] ||
-        [host hasPrefix:@"[::1]:"]) {
-        return NO;
-    }
-    return YES;
-}
-
-static BOOL ZukEnsureDashboardSession(GZAdminUIAuthManager *authManager,
-                                      ATProtoHttpRequest *request,
-                                      ATProtoHttpResponse *response,
-                                      BOOL redirectToLogin) {
-    if (!authManager) {
-        response.statusCode = HttpStatusServiceUnavailable;
-        [response setJsonBody:@{
-            @"error": @"AdminPasswordNotConfigured",
-            @"message": @"Relay dashboard is disabled until RELAY_ADMIN_PASSWORD or "
-                         @"RELAY_ADMIN_PASSWORD_FILE is configured"
-        }];
-        return NO;
-    }
-    if ([authManager isAuthorizedRequest:request]) return YES;
-
-    if (redirectToLogin) {
-        response.statusCode = 302;
-        [response setHeader:@"/login" forKey:@"Location"];
-        response.contentType = @"text/plain; charset=utf-8";
-        [response setBodyString:@"Authentication required\n"];
-    } else {
-        response.statusCode = HttpStatusUnauthorized;
-        [response setJsonBody:@{
-            @"error": @"AuthenticationRequired",
-            @"message": @"Relay dashboard session required"
-        }];
-    }
-    return NO;
-}
-
-static BOOL ZukAuthorizeRelayMutation(GZAdminUIAuthManager *authManager,
-                                      ATProtoHttpRequest *request,
-                                      ATProtoHttpResponse *response) {
-    if (!ZukEnsureDashboardSession(authManager, request, response, NO)) return NO;
-    if (![authManager validateCSRFForRequest:request]) {
-        response.statusCode = HttpStatusForbidden;
-        [response setJsonBody:@{
-            @"error": @"InvalidCSRFToken",
-            @"message": @"Relay dashboard request nonce is missing or expired"
-        }];
-        return NO;
-    }
-
-    NSString *nextNonce = nil;
-    NSString *nextNonceCookie = nil;
-    [authManager createCSRFNonce:&nextNonce
-                          cookie:&nextNonceCookie
-                          secure:ZukRequestUsesSecureCookie(request)];
-    [response setHeader:nextNonceCookie forKey:@"Set-Cookie"];
-    [response setHeader:nextNonce forKey:@"X-UI-Admin-Nonce"];
-    return YES;
-}
-
 @interface ZukRuntimeComposite : NSObject <GZServiceRuntimeProtocol>
 @property (nonatomic, strong) ATProtoHttpServer *server;
 @property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
 @property (nonatomic, strong) NSArray<NSString *> *upstreamURLs;
 @property (nonatomic, assign) BOOL noUpstream;
 @property (nonatomic, strong, nullable) RelayRepoStateManager *repoStateManager;
+@property (nonatomic, strong, nullable) GZAdminUIHost *adminUIHost;
 @end
 
 @implementation ZukRuntimeComposite
 - (BOOL)startWithError:(NSError **)error {
     if (![self.server startWithError:error]) {
+        return NO;
+    }
+    if (self.adminUIHost && ![self.adminUIHost startWithError:error]) {
+        [self.server stop];
         return NO;
     }
     if (!self.noUpstream && self.upstreamURLs.count > 0) {
@@ -163,6 +98,7 @@ static BOOL ZukAuthorizeRelayMutation(GZAdminUIAuthManager *authManager,
         [self.upstreamManager disconnectAll];
     }
     [self.repoStateManager persistState];
+    [self.adminUIHost stop];
     [self.server stop];
 }
 @end
@@ -184,6 +120,8 @@ void print_usage(void) {
     printf("  --config <path>       Configuration file path\n");
     printf("  --validation-mode <mode>  Continuity policy: strict, log-only, or lenient\n");
     printf("  --no-upstream         Run without upstream (passthrough mode)\n");
+    printf("  --admin-ui-host <host>  Admin listener host (default: 127.0.0.1)\n");
+    printf("  --admin-ui-port <port>  Admin listener port (default: 2594)\n");
     printf("  -v, --verbose         Enable debug logging\n");
     printf("  -h, --help            Show this help\n\n");
     printf("Environment:\n");
@@ -286,6 +224,8 @@ int main(int argc, const char * argv[]) {
             [GZCommandLineOption optionWithLongName:@"validation-mode" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"upstream" shortName:@"u" type:GZCommandLineOptionTypeRepeatableString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"no-upstream" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-ui-host" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-ui-port" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"help" shortName:@"h" type:GZCommandLineOptionTypeBoolean isRequired:NO]
         ];
@@ -305,6 +245,13 @@ int main(int argc, const char * argv[]) {
         }
 
         NSUInteger port = parsedArgs[@"port"] ? (NSUInteger)[parsedArgs[@"port"] integerValue] : 2584;
+        NSString *adminHost = parsedArgs[@"admin-ui-host"] ?: NSProcessInfo.processInfo.environment[@"GARAZYK_RELAY_ADMIN_UI_HOST"] ?: @"127.0.0.1";
+        NSString *adminPortValue = parsedArgs[@"admin-ui-port"] ?: NSProcessInfo.processInfo.environment[@"GARAZYK_RELAY_ADMIN_UI_PORT"];
+        NSInteger configuredAdminPort = adminPortValue.integerValue;
+        if (adminPortValue.length > 0 && (configuredAdminPort <= 0 || configuredAdminPort > 65535)) {
+            return fail_with_usage(@"Admin UI port must be an integer from 1 through 65535");
+        }
+        NSUInteger adminPort = adminPortValue.length > 0 ? (NSUInteger)configuredAdminPort : 2594;
         NSString *dataDir = parsedArgs[@"data-dir"];
         NSString *configPath = parsedArgs[@"config"];
         NSString *validationModeName =
@@ -473,117 +420,9 @@ int main(int argc, const char * argv[]) {
         ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:port];
 
         NSString *dashboardPassword = ZukRelayAdminPassword();
-        GZAdminUIAuthManager *dashboardAuth = dashboardPassword.length > 0
-            ? [[GZAdminUIAuthManager alloc] initWithPassword:dashboardPassword
-                                          serviceIdentifier:@"relay"]
-            : nil;
-        if (!dashboardAuth) {
-            GZ_LOG_CORE_WARN(@"Relay dashboard disabled: RELAY_ADMIN_PASSWORD or "
-                             @"RELAY_ADMIN_PASSWORD_FILE is not configured");
-        }
-
-        [server addRoute:@"GET"
-                    path:@"/login"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     if (!dashboardAuth) {
-                         ZukEnsureDashboardSession(nil, request, response, NO);
-                         return;
-                     }
-                     if ([dashboardAuth isAuthorizedRequest:request]) {
-                         response.statusCode = 302;
-                         [response setHeader:@"/" forKey:@"Location"];
-                         return;
-                     }
-                     NSString *csrfNonce = nil;
-                     NSString *csrfCookie = nil;
-                     [dashboardAuth createCSRFNonce:&csrfNonce
-                                             cookie:&csrfCookie
-                                             secure:ZukRequestUsesSecureCookie(request)];
-                     [response setHeader:csrfCookie forKey:@"Set-Cookie"];
-                     response.statusCode = HttpStatusOK;
-                     response.contentType = @"text/html; charset=utf-8";
-                     [response setBodyString:ZukDashboardLoginHTML(csrfNonce)];
-                 }];
-
-        [server addRoute:@"POST"
-                    path:@"/login"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     if (!dashboardAuth) {
-                         ZukEnsureDashboardSession(nil, request, response, NO);
-                         return;
-                     }
-                     if (![dashboardAuth validateCSRFForRequest:request]) {
-                         response.statusCode = HttpStatusForbidden;
-                         [response setJsonBody:@{@"error": @"InvalidCSRFToken"}];
-                         return;
-                     }
-                     NSString *password = [request stringBodyForKey:@"password"];
-                     if (![dashboardAuth validatePassword:password]) {
-                         NSString *nextNonce = nil;
-                         NSString *nextNonceCookie = nil;
-                         [dashboardAuth createCSRFNonce:&nextNonce
-                                                 cookie:&nextNonceCookie
-                                                 secure:ZukRequestUsesSecureCookie(request)];
-                         [response setHeader:nextNonceCookie forKey:@"Set-Cookie"];
-                         [response setHeader:nextNonce forKey:@"X-UI-Admin-Nonce"];
-                         response.statusCode = HttpStatusUnauthorized;
-                         [response setJsonBody:@{@"error": @"InvalidCredentials"}];
-                         return;
-                     }
-                     NSString *sessionToken = [dashboardAuth createSessionToken];
-                     NSString *sessionCookie = [dashboardAuth
-                         cookieHeaderValueForToken:sessionToken
-                                           secure:ZukRequestUsesSecureCookie(request)];
-                     [response setHeader:sessionCookie forKey:@"Set-Cookie"];
-                     response.statusCode = HttpStatusOK;
-                     [response setJsonBody:@{@"success": @YES}];
-                 }];
-
-        // Root dashboard
-        [server addRoute:@"GET"
-                    path:@"/"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     if (!ZukEnsureDashboardSession(dashboardAuth, request, response, YES)) return;
-                     NSString *csrfNonce = nil;
-                     NSString *csrfCookie = nil;
-                     [dashboardAuth createCSRFNonce:&csrfNonce
-                                             cookie:&csrfCookie
-                                             secure:ZukRequestUsesSecureCookie(request)];
-                     [response setHeader:csrfCookie forKey:@"Set-Cookie"];
-                     response.statusCode = HttpStatusOK;
-                     response.contentType = @"text/html; charset=utf-8";
-                     [response setBodyString:ZukDashboardHTML(csrfNonce)];
-                 }];
-
-        [server addRoute:@"POST"
-                    path:@"/logout"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     if (!ZukEnsureDashboardSession(dashboardAuth, request, response, NO)) return;
-                     if (![dashboardAuth validateCSRFForRequest:request]) {
-                         response.statusCode = HttpStatusForbidden;
-                         [response setJsonBody:@{@"error": @"InvalidCSRFToken"}];
-                         return;
-                     }
-                     NSString *sessionToken = [dashboardAuth extractTokenFromRequest:request];
-                     [dashboardAuth invalidateSessionToken:sessionToken];
-                     NSMutableString *expiredCookie = [NSMutableString stringWithFormat:
-                         @"%@=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict",
-                         dashboardAuth.sessionCookieName];
-                     if (ZukRequestUsesSecureCookie(request)) [expiredCookie appendString:@"; Secure"];
-                     [response setHeader:expiredCookie forKey:@"Set-Cookie"];
-                     response.statusCode = HttpStatusOK;
-                     [response setJsonBody:@{@"success": @YES}];
-                 }];
-
-        [server addRoute:@"GET"
-                    path:@"/favicon.ico"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     response.statusCode = HttpStatusNoContent;
-                     response.contentType = @"image/x-icon";
-                     [response setBodyData:[NSData data]];
-                 }];
-
-        // Register relay API endpoints
+        // The protocol listener deliberately remains free of browser sessions and
+        // dashboard mutations. The embedded host owns authenticated UI traffic.
+        // Read-only endpoints remain for relay monitoring and `zuk status`.
         [server addRoute:@"GET"
                     path:@"/api/relay/metrics"
                  handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -601,50 +440,6 @@ int main(int argc, const char * argv[]) {
                  handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
-
-        // POST routes for relay API
-        [server addRoute:@"POST"
-                    path:@"/api/relay/upstreams"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     if (!ZukAuthorizeRelayMutation(dashboardAuth, request, response)) return;
-                     [relayAPIHandler handleRequest:request response:response];
-                 }];
-
-        [server addRoute:@"POST"
-                    path:@"/api/relay/requestCrawl"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     if (!ZukAuthorizeRelayMutation(dashboardAuth, request, response)) return;
-                     [relayAPIHandler handleRequest:request response:response];
-                 }];
-
-        [server addRoute:@"POST"
-                    path:@"/api/relay/upstreams/reconnect-all"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     if (!ZukAuthorizeRelayMutation(dashboardAuth, request, response)) return;
-                     [relayAPIHandler handleRequest:request response:response];
-                 }];
-
-        [server addRoute:@"POST"
-                    path:@"/api/relay/upstreams/disconnect-all"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     if (!ZukAuthorizeRelayMutation(dashboardAuth, request, response)) return;
-                     [relayAPIHandler handleRequest:request response:response];
-                 }];
-
-        [server addRoute:@"GET"
-                    path:@"/api/relay/capabilities"
-                 handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                     [relayAPIHandler handleRequest:request response:response];
-                 }];
-
-        // Catch-all for upstream sub-paths (connect/disconnect individual URLs)
-        [server addHandlerForPath:@"/api/relay/upstreams/"
-                          handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                              if (request.method != HttpMethodGET &&
-                                  !ZukAuthorizeRelayMutation(dashboardAuth, request, response)) return;
-                              [relayAPIHandler handleRequest:request response:response];
-                          }];
-
 
         // OPTIONS preflight for WebSocket upgrade (CORS)
         [server addRoute:@"OPTIONS"
@@ -684,22 +479,30 @@ int main(int argc, const char * argv[]) {
         composite.upstreamURLs = upstreamURLs;
         composite.noUpstream = noUpstream;
         composite.repoStateManager = repoStateManager;
+        if (dashboardPassword.length > 0) {
+            GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
+            adminConfig.host = adminHost;
+            adminConfig.port = adminPort;
+            adminConfig.adminPassword = dashboardPassword;
+            adminConfig.serviceIdentifier = @"relay";
+            composite.adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig packs:@[GZRelayAdminUIPack.class]];
+            [GZRelayAdminUIPack configureHost:composite.adminUIHost snapshot:[[GZRelayAdminSnapshot alloc] initWithMetrics:metrics upstreamManager:upstreamManager]];
+        } else {
+            GZ_LOG_CORE_WARN(@"Relay admin UI disabled: RELAY_ADMIN_PASSWORD or "
+                             @"RELAY_ADMIN_PASSWORD_FILE is not configured");
+        }
 
         return [GZServiceLifecycle runServiceWithRuntime:composite
                                              serviceName:@"Zuk relay server"
                                                  onStart:^{
                                                      printf("Zuk relay server started on port %lu\n", (unsigned long)port);
+                                                     if (composite.adminUIHost) printf("Relay admin UI listening on http://%s:%lu/admin\n", adminHost.UTF8String, (unsigned long)adminPort);
                                                      printf("Data directory: %s\n", [dataDir UTF8String]);
                                                      printf("Upstreams: %lu configured\n", (unsigned long)upstreamURLs.count);
-                                                     printf("\nAPI endpoints:\n");
+                                                     printf("\nRead-only monitoring endpoints:\n");
                                                      printf("  GET  /api/relay/metrics\n");
                                                      printf("  GET  /api/relay/upstreams\n");
-                                                     printf("  POST /api/relay/upstreams\n");
-                                                     printf("  GET  /api/relay/capabilities\n");
                                                      printf("  GET  /api/relay/health\n");
-                                                     printf("  POST /api/relay/requestCrawl\n");
-                                                     printf("  POST /api/relay/upstreams/reconnect-all\n");
-                                                     printf("  POST /api/relay/upstreams/disconnect-all\n");
                                                      printf("\nFirehose endpoint:\n");
                                                      printf("  WS   /xrpc/com.atproto.sync.subscribeRepos\n");
                                                      printf("\nPress Ctrl+C to stop.\n");

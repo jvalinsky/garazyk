@@ -186,6 +186,12 @@ async function handleAction(element) {
     case 'request-crawl':
       await postHTML('/admin/actions/request-crawl', { hostname: byID('crawl-hostname')?.value || '' }, byID('crawl-result'), '/admin/partials/relay-upstreams', '#relay-upstreams');
       break;
+    case 'relay-reconnect-all':
+      await postHTML('/admin/actions/relay-reconnect-all', {}, byID('relay-action-result'), '/admin/partials/relay-sources', '#relay-sources');
+      break;
+    case 'relay-disconnect-all':
+      await postHTML('/admin/actions/relay-disconnect-all', {}, byID('relay-action-result'), '/admin/partials/relay-sources', '#relay-sources');
+      break;
     case 'bulk-action': {
       const dids = Array.from(document.querySelectorAll('.account-checkbox:checked')).map((checkbox) => checkbox.value);
       if (dids.length === 0 || !window.confirm(`Apply ${element.dataset.uiActionKind} to ${dids.length} accounts?`)) return;
@@ -337,6 +343,9 @@ async function handleForm(form) {
     case 'plc-sync':
       await adminRequest('/admin/actions/plc-sync', { action: action.dataset.plcAction || '' });
       reloadPartial('/admin/partials/plc-metrics', '#plc-metrics');
+      break;
+    case 'relay-request-crawl':
+      await postHTML('/admin/actions/request-crawl', { hostname: byID('relay-crawl-hostname')?.value || '' }, byID('relay-action-result'), '/admin/partials/relay-sources', '#relay-sources');
       break;
     default:
       break;

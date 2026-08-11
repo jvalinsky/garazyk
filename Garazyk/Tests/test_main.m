@@ -978,6 +978,7 @@ int main(int argc, char *argv[]) {
       @"RelayEventFilterTests",
       @"RelayEventBufferTests",
       @"RelayRepoStateManagerTests",
+      @"RelayAdminUIPackTests",
       @"RelayIntegrationTests",
       @"ZukCommandTests",
       @"SessionStoreTests",

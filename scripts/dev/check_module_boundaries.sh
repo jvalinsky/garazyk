@@ -114,6 +114,7 @@ allowed_links_for_module() {
     ATProtoAdminUI) echo "ATProtoTransport ATProtoCore" ;;
     ATProtoServices) echo "ATProtoStorage ATProtoCore" ;;
     ATProtoSync) echo "ATProtoStorage ATProtoTransport ATProtoCore" ;;
+    ATProtoRelayAdminUI) echo "ATProtoSync ATProtoAdminUI" ;;
     ATProtoXRPC) echo "ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoPLC ATProtoCore" ;;
     # PLCPersistentStore owns the serialized SQLite/query-runner lifecycle;
     # PLC -> Storage is the deliberate acyclic edge documented in workstream 08
@@ -132,7 +133,7 @@ module_rank_for() {
     ATProtoCore) echo 1 ;;
     ATProtoStorage|ATProtoTransport) echo 2 ;;
     ATProtoServices|ATProtoSync|ATProtoPLC|ATProtoMediaCore|ATProtoAdminUI) echo 3 ;;
-    ATProtoXRPC|ATProtoVideoService) echo 4 ;;
+    ATProtoXRPC|ATProtoVideoService|ATProtoRelayAdminUI) echo 4 ;;
     ATProtoRuntime) echo 5 ;;
     *) echo 0 ;;
   esac
@@ -145,6 +146,7 @@ modules=(
   ATProtoTransport
   ATProtoAdminUI
   ATProtoSync
+  ATProtoRelayAdminUI
   ATProtoXRPC
   ATProtoPLC
   ATProtoVideoService
@@ -192,7 +194,7 @@ expected_links_for_executable() {
   case "$1" in
     kaszlak) echo "ATProtoAppViewServer ATProtoRuntime ATProtoVideoService ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoStorage ATProtoPLC ATProtoCore" ;;
     campagnola) echo "ATProtoAppViewServer ATProtoPLC ATProtoAdminUI ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices" ;;
-    zuk) echo "ATProtoAppViewServer ATProtoSync ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices ATProtoStorage" ;;
+    zuk) echo "ATProtoAppViewServer ATProtoRelayAdminUI ATProtoSync ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices ATProtoStorage" ;;
     *) echo "" ;;
   esac
 }
