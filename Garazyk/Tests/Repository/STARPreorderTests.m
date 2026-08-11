@@ -137,6 +137,33 @@
                                  sig:[@"fixture-sig" dataUsingEncoding:NSUTF8StringEncoding]];
 }
 
+/// A stored commit block in the shape a PDS persists it, as raw DAG-CBOR
+/// (not routed through ATProtoSTARCommit's fixed-field-list model). `extraKey`
+/// stands in for a field this implementation does not otherwise model.
+- (NSData *)rawCommitBlockForRoot:(ATProtoCID *)rootCID
+                   includeNullPrev:(BOOL)includeNullPrev
+                          extraKey:(nullable NSString *)extraKey {
+    NSMutableData *tagged = [NSMutableData dataWithBytes:(uint8_t[]){0x00} length:1];
+    [tagged appendData:rootCID.bytes];
+
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *map = [NSMutableDictionary dictionary];
+    map[[ATProtoCBORValue textString:@"did"]] = [ATProtoCBORValue textString:@"did:plc:starfixture"];
+    map[[ATProtoCBORValue textString:@"version"]] = [ATProtoCBORValue unsignedInteger:3];
+    map[[ATProtoCBORValue textString:@"data"]] =
+        [ATProtoCBORValue tag:42 value:[ATProtoCBORValue byteString:tagged]];
+    map[[ATProtoCBORValue textString:@"rev"]] = [ATProtoCBORValue textString:@"3jzfcijpj2z2z"];
+    if (includeNullPrev) {
+        map[[ATProtoCBORValue textString:@"prev"]] = [ATProtoCBORValue nilValue];
+    }
+    if (extraKey) {
+        map[[ATProtoCBORValue textString:extraKey]] = [ATProtoCBORValue textString:@"unmodeled-value"];
+    }
+    map[[ATProtoCBORValue textString:@"sig"]] =
+        [ATProtoCBORValue byteString:[@"fixture-signature-64-bytes-placeholder"
+                                         dataUsingEncoding:NSUTF8StringEncoding]];
+    return [[ATProtoCBORValue map:map] encode];
+}
+
 #pragma mark - Chunk classification
 
 /// Classify a chunk by inspecting its decoded DAG-CBOR structure.
@@ -358,6 +385,59 @@ static NSUInteger TestReadVarint(const uint8_t *bytes, NSUInteger maxLength, uin
         if (shift >= 64) return 0;
     }
     return 0;
+}
+
+#pragma mark - STAR-L0 commit fidelity (mirrors STARLiteV0Writer's strip/verify pattern)
+
+- (void)testL0HeaderEmbedsStoredCommitVerbatimIncludingNullPrev {
+    ATProtoMST *tree = [self buildSmallDeterministicFixture];
+    NSData *commitBlock = [self rawCommitBlockForRoot:tree.rootCID includeNullPrev:YES extraKey:nil];
+
+    NSError *err = nil;
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommitBlock:commitBlock error:&err];
+    XCTAssertNotNil(writer, @"writer init failed: %@", err);
+    XCTAssertTrue([writer writeFromMST:tree
+                         blockProvider:[self recordProviderForTree:tree]
+                                 error:&err]);
+    NSData *starData = [writer serialize];
+
+    const uint8_t *bytes = starData.bytes;
+    NSUInteger offset = 1; // past magic
+    uint64_t ver = 0;
+    offset += TestReadVarint(bytes + offset, starData.length - offset, &ver);
+    uint64_t commitLen = 0;
+    offset += TestReadVarint(bytes + offset, starData.length - offset, &commitLen);
+    NSData *embeddedCommit = [starData subdataWithRange:NSMakeRange(offset, (NSUInteger)commitLen)];
+
+    XCTAssertEqualObjects(embeddedCommit, commitBlock,
+                          @"STAR-L0 must embed the stored commit verbatim, including a present-but-null `prev`");
+}
+
+- (void)testL0HeaderPreservesUnmodeledField {
+    NSData *commitBlock = [self rawCommitBlockForRoot:[self buildSmallDeterministicFixture].rootCID
+                                       includeNullPrev:NO
+                                              extraKey:@"futureField"];
+
+    NSError *err = nil;
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommitBlock:commitBlock error:&err];
+    XCTAssertNotNil(writer, @"writer init failed: %@", err);
+    XCTAssertEqualObjects([ATProtoSTARL0Writer commitBytesFromCommitBlock:commitBlock error:nil], commitBlock,
+                          @"An unmodeled field must survive the round-trip verification unchanged");
+}
+
+- (void)testL0RejectsNonMapCommitBlock {
+    NSData *notAMap = [[ATProtoCBORValue textString:@"nope"] encode];
+    NSError *err = nil;
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommitBlock:notAMap error:&err];
+    XCTAssertNil(writer);
+    XCTAssertNotNil(err);
+}
+
+- (void)testL0RejectsEmptyCommitBlock {
+    NSError *err = nil;
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommitBlock:[NSData data] error:&err];
+    XCTAssertNil(writer);
+    XCTAssertNotNil(err);
 }
 
 - (void)testSTARL0VFlagAbsentWhenVIsAbsent {

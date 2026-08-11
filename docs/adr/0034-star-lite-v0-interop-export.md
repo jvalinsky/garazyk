@@ -114,24 +114,38 @@ for operators and debugging, not a protocol requirement.
 - **Negative**: Two lite variants now exist with near-identical names. The
   media types are the disambiguator; `STARVariant` in the reader is unchanged
   because no v0 *reader* is implemented — we export only.
-- **Open**: STAR-L0 still rebuilds its commit from a fixed field list and has
-  the same latent present-but-null `prev` drop. Tracked separately; it has no
-  external consumer waiting on it.
-- **Blocking, outside this ADR's scope**: our initial commit omits `prev`
-  entirely, which the atproto repository spec forbids — in v3 repos `prev`
-  "must exist in the CBOR object", and the spec notes that specifying it as
-  optional "caused interoperability issues". Consumers reconstruct the
-  unsigned commit per spec and will therefore verify a five-key map against a
-  signature we made over four keys. Hubble does exactly this
+- **Resolved**: STAR-L0 rebuilt its commit from a fixed field list and had the
+  same latent present-but-null `prev` drop. `ATProtoSTARL0Writer` now has
+  `-initWithCommitBlock:error:` / `-initWithCommitBlock:outputBlock:error:`,
+  which embed the stored commit verbatim (STAR-L0 keeps `data` in the header,
+  unlike v0, so nothing needs stripping) after decoding it and verifying our
+  own re-encoding reproduces it byte-for-byte — the same guard philosophy as
+  `ATProtoSTARLiteV0Writer`. `PDSRepositoryService+Export.m`'s three STAR-L0
+  call sites use the new initializer; `starCommitFromExport:` (still
+  fixed-field-list) remains in use only for STAR-lite v2, which has no
+  external consumer.
+- **Resolved**: our initial commit omitted `prev` entirely, which the atproto
+  repository spec forbids — in v3 repos `prev` "must exist in the CBOR
+  object", and the spec notes that specifying it as optional "caused
+  interoperability issues". Consumers reconstruct the unsigned commit per
+  spec and would therefore verify a five-key map against a signature we made
+  over four keys. Hubble does exactly this
   (`hubble-sync/src/commit/commit_object.rs`: `UnsignedCommit.prev` is
   `Option<DaslCid>` with no `skip_serializing_if`, commented "must be present
   (null when unset)").
 
-  Scope: `Garazyk/Sources/Repository/RepoCommit.m` emits `prev` only when
-  non-nil, and only the initial commit passes nil
-  (`PDSRepositoryService+RepoInit.m` — the normal write path chains
-  `prev` to the previous commit CID). So the failure is confined to
-  repositories that have never been written to, which is also the
-  zero-record case for this format. Fixing it changes the initial commit's
-  bytes, CID, and signature, so it needs its own decision about existing
-  repositories and is not bundled here.
+  `ATProtoRepoCommit` gained a `prevKeyExplicit` flag
+  (`Garazyk/Sources/Repository/RepoCommit.m`/`.h`): commits created via
+  `+createCommitWithDid:data:rev:prev:` now always serialize `prev` (as null
+  when there is no previous commit), matching the spec. Commits decoded via
+  `+fromSignedBlockData:` preserve whatever the wire actually did — key
+  present (CID or null) vs. absent — so re-serializing a decoded commit (as
+  `-verifySignatureWithPublicKey:error:` does, since verification rebuilds
+  the signed bytes from the parsed object rather than comparing raw bytes)
+  reproduces exactly what was signed. This means existing stored genesis
+  commits, which omitted `prev` under the old code, keep verifying under
+  Garazyk's own signature check without any data migration — only newly
+  created genesis commits changed shape. It also fixes federation import: an
+  externally-created commit with an explicit `prev: null` (spec-compliant)
+  previously failed `PDSRepoImportValidator` verification because decoding
+  and re-serializing it silently dropped the null.

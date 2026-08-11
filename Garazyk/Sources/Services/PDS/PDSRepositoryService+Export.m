@@ -599,17 +599,13 @@
 
     if (noChangesSince) {
         // Empty tree: just the header with data: null
-        ATProtoSTARCommit *commit = [self starCommitFromExport:did
-                                             commitCID:commitCID
-                                           commitBlock:commitBlock];
-        ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
+        ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommitBlock:commitBlock error:error];
+        if (!writer) return nil;
         return [writer serialize];
     }
 
-    ATProtoSTARCommit *commit = [self starCommitFromExport:did
-                                         commitCID:commitCID
-                                       commitBlock:commitBlock];
-    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit];
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommitBlock:commitBlock error:error];
+    if (!writer) return nil;
 
     __weak typeof(self) weakSelf = self;
     __block NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
@@ -752,24 +748,23 @@
         return nil;
     }
 
-    ATProtoSTARCommit *commit = [self starCommitFromExport:did
-                                         commitCID:commitCID
-                                       commitBlock:commitBlock];
-
     __block NSMutableArray<NSData *> *chunks = [NSMutableArray array];
     __block BOOL finished = NO;
     __block NSError *exportError = nil;
 
     // We can't easily do a true "async generator" in ObjC without threads,
-    // so we'll run the traversal once and capture the chunks. 
+    // so we'll run the traversal once and capture the chunks.
     // This is still better than one giant NSData because we've already split it.
     // In a future version, we'd use a thread-safe queue.
 
-    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommit:commit outputBlock:^(NSData *chunk) {
+    ATProtoSTARL0Writer *writer = [[ATProtoSTARL0Writer alloc] initWithCommitBlock:commitBlock
+                                                                        outputBlock:^(NSData *chunk) {
         if (chunk.length > 0) {
             [chunks addObject:chunk];
         }
-    }];
+    }
+                                                                              error:error];
+    if (!writer) return nil;
 
     __weak typeof(self) weakSelf = self;
     __block NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
