@@ -24,6 +24,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     commit.dataCID = dataCID;
     commit.rev = rev ?: [[ATProtoTID tid] stringValue];
     commit.prevCID = prevCID;
+    commit.prevKeyExplicit = YES;
     return commit;
 }
 
@@ -49,6 +50,8 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 
     if (self.prevCID) {
         commitDict[@"prev"] = self.prevCID;
+    } else if (self.prevKeyExplicit) {
+        commitDict[@"prev"] = [NSNull null];
     }
 
     if (includeSignature && self.signature) {
@@ -226,8 +229,11 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     }
     commit.rev = commitMap[@"rev"];
 
-    // prev (optional) - ATProtoCID-link
+    // prev (optional) - ATProtoCID-link, or explicit CBOR null for a genesis commit.
+    // Track whether the key was present at all (vs. absent) so re-serializing this
+    // decoded commit reproduces the bytes that were actually signed.
     id prevValue = commitMap[@"prev"];
+    commit.prevKeyExplicit = (prevValue != nil);
     if ([prevValue isKindOfClass:[ATProtoCID class]]) {
         commit.prevCID = (ATProtoCID *)prevValue;
     } else if ([prevValue isKindOfClass:[NSString class]]) {
@@ -261,6 +267,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     [coder encodeObject:self.dataCID forKey:@"dataCID"];
     [coder encodeObject:self.rev forKey:@"rev"];
     [coder encodeObject:self.prevCID forKey:@"prevCID"];
+    [coder encodeBool:self.prevKeyExplicit forKey:@"prevKeyExplicit"];
     [coder encodeObject:self.signature forKey:@"signature"];
 }
 
@@ -272,6 +279,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         self.dataCID = [coder decodeObjectOfClass:[ATProtoCID class] forKey:@"dataCID"];
         self.rev = [coder decodeObjectOfClass:[NSString class] forKey:@"rev"];
         self.prevCID = [coder decodeObjectOfClass:[ATProtoCID class] forKey:@"prevCID"];
+        self.prevKeyExplicit = [coder decodeBoolForKey:@"prevKeyExplicit"];
         self.signature = [coder decodeObjectOfClass:[NSData class] forKey:@"signature"];
     }
     return self;

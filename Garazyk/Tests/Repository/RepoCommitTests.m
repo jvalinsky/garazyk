@@ -5,6 +5,7 @@
 #import "Core/CBOR.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
+#import "Core/ATProtoDagCBOR.h"
 #import "Auth/Crypto/Secp256k1.h"
 #import "Auth/PDSAppleKeyManager.h"
 
@@ -73,7 +74,10 @@
     ATProtoCBORValue *sigKey = [ATProtoCBORValue textString:@"sig"];
     ATProtoCBORValue *prevKey = [ATProtoCBORValue textString:@"prev"];
     XCTAssertNil(map[sigKey], @"Should not have 'sig' field in unsigned commit");
-    XCTAssertNil(map[prevKey], @"Should not have 'prev' field when nil");
+    // v3 repo spec requires 'prev' to always be present, using null for a
+    // genesis commit; a commit created via the factory is always spec-compliant.
+    XCTAssertNotNil(map[prevKey], @"Should have 'prev' field (as null) even when prevCID is nil");
+    XCTAssertEqual(map[prevKey].type, CBORTypeSimpleOrFloat, @"'prev' should be the null simple value");
 }
 
 - (void)testCommitSerializationWithPrevContainsCIDTag {
@@ -91,6 +95,79 @@
     ATProtoCBORValue *prevKey = [ATProtoCBORValue textString:@"prev"];
     XCTAssertNotNil(map[prevKey], @"Should have 'prev' field when set");
     XCTAssertEqual(map[prevKey].type, CBORTypeTag, @"Prev should be a CID tag");
+}
+
+- (void)testCommitDecodePreservesAbsentPrevForLegacyRoundTrip {
+    // Simulate a pre-fix stored genesis commit: 'prev' key entirely absent,
+    // not present-as-null. Re-serializing a decode of these bytes must
+    // reproduce them exactly, so a signature computed over the original bytes
+    // still verifies.
+    NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    NSDictionary *legacyDict = @{
+        @"did": did,
+        @"version": @3,
+        @"data": dataCID,
+        @"rev": @"3l66k7pp33p"
+    };
+    NSData *legacyUnsignedBytes = [ATProtoDagCBOR encodeObject:legacyDict error:nil];
+    XCTAssertNotNil(legacyUnsignedBytes);
+
+    NSError *error = nil;
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:&error];
+    NSData *hash = [ATProtoCID rawSha256:legacyUnsignedBytes];
+    NSData *signature = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:&error];
+    XCTAssertNotNil(signature);
+
+    NSMutableDictionary *legacySignedDict = [legacyDict mutableCopy];
+    legacySignedDict[@"sig"] = signature;
+    NSData *legacySignedBytes = [ATProtoDagCBOR encodeObject:legacySignedDict error:nil];
+
+    ATProtoRepoCommit *parsed = [ATProtoRepoCommit fromSignedBlockData:legacySignedBytes error:&error];
+    XCTAssertNotNil(parsed, @"Should parse legacy commit without a 'prev' key: %@", error);
+    XCTAssertNil(parsed.prevCID);
+    XCTAssertFalse(parsed.prevKeyExplicit, @"Decoding an absent 'prev' key should not mark it explicit");
+
+    XCTAssertEqualObjects([parsed serialize], legacyUnsignedBytes,
+                           @"Re-serializing must reproduce the original bytes exactly");
+    BOOL verified = [parsed verifySignatureWithPublicKey:keyPair.publicKey error:&error];
+    XCTAssertTrue(verified, @"Legacy commit missing 'prev' must still verify: %@", error);
+}
+
+- (void)testCommitDecodePreservesExplicitNullPrev {
+    // Simulate a spec-compliant genesis commit from another implementation
+    // (e.g. Hubble): 'prev' present as CBOR null, not omitted.
+    NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
+    ATProtoCID *dataCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    NSDictionary *explicitNullDict = @{
+        @"did": did,
+        @"version": @3,
+        @"data": dataCID,
+        @"rev": @"3l66k7pp33p",
+        @"prev": [NSNull null]
+    };
+    NSData *unsignedBytes = [ATProtoDagCBOR encodeObject:explicitNullDict error:nil];
+    XCTAssertNotNil(unsignedBytes);
+
+    NSError *error = nil;
+    ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:&error];
+    NSData *hash = [ATProtoCID rawSha256:unsignedBytes];
+    NSData *signature = [[ATProtoSecp256k1 shared] signHash:hash withPrivateKey:keyPair.privateKey error:&error];
+    XCTAssertNotNil(signature);
+
+    NSMutableDictionary *signedDict = [explicitNullDict mutableCopy];
+    signedDict[@"sig"] = signature;
+    NSData *signedBytes = [ATProtoDagCBOR encodeObject:signedDict error:nil];
+
+    ATProtoRepoCommit *parsed = [ATProtoRepoCommit fromSignedBlockData:signedBytes error:&error];
+    XCTAssertNotNil(parsed, @"Should parse commit with explicit 'prev': null: %@", error);
+    XCTAssertNil(parsed.prevCID);
+    XCTAssertTrue(parsed.prevKeyExplicit, @"Decoding an explicit null 'prev' should mark it explicit");
+
+    XCTAssertEqualObjects([parsed serialize], unsignedBytes,
+                           @"Re-serializing must preserve the explicit null, not drop it");
+    BOOL verified = [parsed verifySignatureWithPublicKey:keyPair.publicKey error:&error];
+    XCTAssertTrue(verified, @"Commit with explicit null 'prev' must verify: %@", error);
 }
 
 - (void)testCommitSigning {

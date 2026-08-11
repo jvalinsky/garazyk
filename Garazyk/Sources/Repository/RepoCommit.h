@@ -39,6 +39,21 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract ATProtoCID of the previous commit, or nil for genesis commit. */
 @property (nonatomic, strong, nullable) ATProtoCID *prevCID;
 
+/**
+ * @abstract Whether `prev` should be serialized explicitly (as the ATProtoCID or,
+ * with prevCID nil, as CBOR null) rather than omitted from the map entirely.
+ * @discussion The v3 repo spec requires `prev` to always be present in the CBOR
+ * object, using null for a genesis commit; optionality "caused interoperability
+ * issues" (other implementations, e.g. Hubble, reconstruct and verify a five-key
+ * map unconditionally). Commits created via +createCommitWithDid:data:rev:prev:
+ * default this to YES. Commits decoded via +fromSignedBlockData: preserve
+ * whatever the wire actually did — YES if `prev` was present (CID or null), NO
+ * if the key was absent entirely — so re-serializing a decoded commit (as
+ * -verifySignatureWithPublicKey:error: does) reproduces the bytes that were
+ * actually signed, including legacy commits stored before this property existed.
+ */
+@property (nonatomic, assign) BOOL prevKeyExplicit;
+
 /** @abstract Cryptographic signature (secp256k1). */
 @property (nonatomic, copy, nullable) NSData *signature;
 
