@@ -1,3 +1,9 @@
+Note: This repo was heavily LLM assisted and written as a personal project.
+I do not recommend actually using this for anything serious (it's an Objective-C server on Linux for starters).
+
+If you want a serious ATProto project for macOS, check out https://github.com/MasterJ93/ATProtoKit
+and give them a sponsor!
+
 # Garazyk
 
 Garazyk is an Objective-C implementation of AT Protocol services. It runs on
