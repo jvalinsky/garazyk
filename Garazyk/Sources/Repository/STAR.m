@@ -251,7 +251,8 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
 @interface ATProtoSTARL0Writer ()
 @property (nonatomic, strong) NSMutableData *outputData;
-@property (nonatomic, strong, readwrite) ATProtoSTARCommit *commit;
+@property (nonatomic, strong, readwrite, nullable) ATProtoSTARCommit *commit;
+@property (nonatomic, copy, nullable) NSData *verbatimCommitBlock;
 @property (nonatomic, copy, nullable) void (^outputBlock)(NSData *chunk);
 @end
 
@@ -268,6 +269,59 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
 - (instancetype)initWithCommit:(ATProtoSTARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock {
     self = [self initWithCommit:commit];
+    if (self) {
+        _outputBlock = [outputBlock copy];
+    }
+    return self;
+}
+
+// Validates the stored commit decodes as a CBOR map and that re-encoding it
+// reproduces the exact same bytes, then returns it unchanged. STAR-L0 embeds
+// the full signed commit in the header (unlike STAR-lite v0, which strips
+// `data`), so there is nothing to transform — only to verify before trusting
+// our own canonicalization of it.
++ (nullable NSData *)commitBytesFromCommitBlock:(NSData *)commitBlock error:(NSError **)error {
+    if (commitBlock.length == 0) {
+        if (error) *error = STARError(60, @"STAR-L0 requires a commit block");
+        return nil;
+    }
+
+    ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlock];
+    if (!commitValue || commitValue.type != CBORTypeMap) {
+        if (error) *error = STARError(61, @"Commit block is not a CBOR map");
+        return nil;
+    }
+
+    NSData *reencoded = [commitValue encode];
+    if (!reencoded) {
+        if (error) *error = STARError(62, @"Failed to re-encode commit");
+        return nil;
+    }
+    if (![reencoded isEqualToData:commitBlock]) {
+        if (error) *error = STARError(63,
+            @"Re-encoding the stored commit did not reproduce it byte-for-byte; "
+             "refusing to serve an archive whose signature cannot verify");
+        return nil;
+    }
+    return commitBlock;
+}
+
+- (nullable instancetype)initWithCommitBlock:(NSData *)commitBlock error:(NSError **)error {
+    self = [super init];
+    if (!self) return nil;
+
+    NSData *verified = [[self class] commitBytesFromCommitBlock:commitBlock error:error];
+    if (!verified) return nil;
+
+    _verbatimCommitBlock = verified;
+    _outputData = [NSMutableData data];
+    return self;
+}
+
+- (nullable instancetype)initWithCommitBlock:(NSData *)commitBlock
+                                  outputBlock:(void (^)(NSData *chunk))outputBlock
+                                        error:(NSError **)error {
+    self = [self initWithCommitBlock:commitBlock error:error];
     if (self) {
         _outputBlock = [outputBlock copy];
     }
@@ -296,11 +350,14 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
 - (BOOL)writeHeaderWithError:(NSError **)error {
     // Header: 0x2A | varint(1) | varint(commitLen) | commit
-    NSError *cborErr = nil;
-    NSData *commitCBOR = [self.commit serializeToDagCBOR:&cborErr];
+    NSData *commitCBOR = self.verbatimCommitBlock;
     if (!commitCBOR) {
-        if (error) *error = cborErr ?: STARError(1, @"Failed to serialize commit");
-        return NO;
+        NSError *cborErr = nil;
+        commitCBOR = [self.commit serializeToDagCBOR:&cborErr];
+        if (!commitCBOR) {
+            if (error) *error = cborErr ?: STARError(1, @"Failed to serialize commit");
+            return NO;
+        }
     }
 
     uint8_t magic = 0x2A;
