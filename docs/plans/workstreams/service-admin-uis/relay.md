@@ -12,29 +12,30 @@ last_verified: 2026-08-11
 
 ## Outcome and current evidence
 
-`zuk` already serves an authenticated operations dashboard. It provides an
-overall view plus a selectable per-upstream view, health and metrics, live
-events, crawl inventory state, connection/retry state, event-kind counts, and
-crawl/reconnect/disconnect actions. `GZAdminUIAuthManager` provides a
-service-scoped session and CSRF rotation, and `nixos/modules/zuk.nix` loads
-`RELAY_ADMIN_PASSWORD_FILE` through a systemd credential.
+The legacy dashboard has been converged onto a Relay-owned operations pack.
+`GZRelayAdminSnapshot` serializes bounded reads of `RelayMetrics` and
+`RelayUpstreamManager`; `GZRelayAdminUIPack` renders health, totals, source
+state, crawl state, repository count, events, cursors, and reconnect attempts
+from that view. `zuk` runs the pack on a password-gated, loopback-default
+`GZAdminUIHost` listener (concurrency 8), while the protocol/firehose listener
+keeps only its read-only relay monitoring routes. The same pack remains in
+`garazyk-ui` as a read-only compatibility surface until M5.
 
-The remaining work is architectural convergence: the dashboard is currently
-custom HTML in `Garazyk/Binaries/zuk/DashboardHTML.m` and is registered from
-`zuk`'s main server. It must become the Relay-owned `GZAdminUIRelayPack`, use
-the shared assets, and run on the dedicated listener required by ADR 0033.
+`RELAY_ADMIN_PASSWORD_FILE` is loaded through a systemd credential in
+`nixos/modules/zuk.nix`; failures are redacted and neither the password nor its
+contents are put in the Nix store. The browser receives only the Relay-scoped
+HttpOnly session cookie and rotating CSRF nonce. Reconnect, disconnect, and
+request-crawl controls exist only on the embedded listener and require both.
 
 ## Dashboard shape
 
-- **Overview:** health, uptime, current sequence, connected/configured sources,
-  event rate, subscribers, validation failures, and last event age.
-- **Sources:** overall and per-upstream events, event-kind distribution,
-  connection age, cursor, inventory/account counts, crawl state, retries, last
-  error, and last event.
-- **Delivery:** downstream subscribers, broadcasts/drops, queue pressure, and
-  slow-consumer disconnects when these counters exist.
-- **Actions:** request crawl, add/remove/connect/disconnect one upstream, and
-  reconnect/disconnect all. All remain session plus CSRF protected.
+- **Overview:** health, current sequence, connected/configured sources, and
+  aggregate events.
+- **Sources:** per-upstream connection state, cursor, inventory count, crawl
+  state, retry count, and event total in an accessible polling table.
+- **Actions:** request crawl plus reconnect/disconnect all; all require a
+  scoped session and one-time CSRF nonce. DID/protocol operations remain on
+  their protocol surface.
 
 ## Slices and acceptance
 
@@ -50,9 +51,36 @@ the shared assets, and run on the dedicated listener required by ADR 0033.
 5. Extend `nixos/modules/zuk.nix` and its VM/smoke coverage for the separate
    port while keeping the existing password file reusable.
 
-Acceptance requires parity with the live dashboard, independent sessions beside
-another service UI, mutation auth/CSRF negative tests, a sustained firehose
-during UI polling, and no token in browser requests or rendered assets.
+## Current validation and remaining acceptance
+
+On 2026-08-11, fresh native configuration and `AllTests` build passed. Focused
+`RelayAdminUIPackTests` (8 tests, 0 failures, including clean listener
+shutdown under loopback access), `ZukCommandTests` (6/0), and
+`UIServerRuntimeTests` (28/0) passed with `--gated=run`. The pack tests cover
+empty/populated snapshots, scoped-session isolation, missing/stale CSRF,
+one-time CSRF rotation, mutation state, default loopback binding, the 8-request
+limit, credential-file trimming/redaction, and compatibility-host route parity.
+`scripts/admin_ui_visual_smoke_test.ts` and
+`scripts/admin_ui_browser_smoke_test.ts` also passed with real loopback
+listeners and Chromium. The latter brought up a local PLC/PDS/Relay/AppView/
+Germ/Mikrus/Beskid topology and verified login, session/CSRF rejection,
+keyboard navigation, heading/tab semantics, CSP, and the Lab OAuth flow.
+
+M4 remains in progress until the full repository gates, NixOS/loopback smoke,
+sustained firehose-under-polling scenario, browser/visual smoke, and GNUstep
+binary gate have fresh successful evidence. The reduced legacy dashboard did
+not contain a maintainable per-source event inspector; restoring any omitted
+live-event or delivery counters requires adding bounded source fields first,
+not a browser-side polling shortcut.
+
+**Blocked on (2026-08-11):** the fresh full `AllTests --gated=run` attempt was
+stopped after the host volume reached 100% capacity (131 MB free at first
+failure). `AdminAuthSyncTests` then failed creating its temporary blob
+directory with `NSPOSIXErrorDomain` 28, and unrelated PDS integration tests
+continued to report disk-full I/O failures. Two duplicate test processes were
+terminated to prevent further failed writes; this is environmental evidence,
+not a green full-suite result. Free sufficient local disk before rerunning the
+full suite, browser/visual smoke, NixOS smoke, and GNUstep Docker gate.
 
 Rollback keeps the current dashboard available until the pack and dedicated
 listener pass; it never weakens the existing session gate.

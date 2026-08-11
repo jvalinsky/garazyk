@@ -229,7 +229,7 @@ static NSString *ZukStringFromFileDescriptor(int descriptor) {
     XCTAssertTrue([source containsString:@"downstreamHandler.eventValidator = eventValidator;"]);
 }
 
-- (void)testDashboardUsesServerSideAdminSessionAuthorization {
+- (void)testEmbeddedAdminUIUsesServiceOwnedPackAndRedactedCredentialLoading {
     NSString *syncTestsDirectory = [@__FILE__ stringByDeletingLastPathComponent];
     NSString *testsDirectory = [syncTestsDirectory stringByDeletingLastPathComponent];
     NSString *garazykDirectory = [testsDirectory stringByDeletingLastPathComponent];
@@ -241,24 +241,17 @@ static NSString *ZukStringFromFileDescriptor(int descriptor) {
     XCTAssertNotNil(source, @"Expected Zuk composition source at %@", sourcePath);
     if (!source) return;
 
-    XCTAssertTrue([source containsString:@"GZAdminUIAuthManager"]);
+    XCTAssertTrue([source containsString:@"GZAdminUIHost"]);
+    XCTAssertTrue([source containsString:@"GZRelayAdminUIPack"]);
+    XCTAssertTrue([source containsString:@"GZRelayAdminSnapshot"]);
     XCTAssertTrue([source containsString:@"RELAY_ADMIN_PASSWORD"]);
     XCTAssertTrue([source containsString:@"RELAY_ADMIN_PASSWORD_FILE"]);
-    XCTAssertTrue([source containsString:@"validateCSRFForRequest:request"]);
-    XCTAssertTrue([source containsString:@"path:@\"/login\""]);
-    XCTAssertTrue([source containsString:@"path:@\"/logout\""]);
-    XCTAssertEqual([source componentsSeparatedByString:
-        @"ZukAuthorizeRelayMutation(dashboardAuth, request, response)"].count - 1,
-        (NSUInteger)5);
-
-    NSString *dashboardPath = [[garazykDirectory stringByAppendingPathComponent:@"Binaries/zuk"]
-        stringByAppendingPathComponent:@"DashboardHTML.m"];
-    NSString *dashboardSource = [NSString stringWithContentsOfFile:dashboardPath
-                                                          encoding:NSUTF8StringEncoding
-                                                             error:nil];
-    XCTAssertNotNil(dashboardSource, @"Expected Zuk dashboard source at %@", dashboardPath);
-    XCTAssertFalse([dashboardSource containsString:@"id=\\\"adminToken\\\""]);
-    XCTAssertTrue([dashboardSource containsString:@"meta name=\\\"csrf-nonce\\\""]);
+    XCTAssertTrue([source containsString:@"adminConfig.host = adminHost"]);
+    XCTAssertTrue([source containsString:@"adminConfig.port = adminPort"]);
+    XCTAssertTrue([source containsString:@"Failed to read relay admin password file"]);
+    XCTAssertFalse([source containsString:@"ZukAuthorizeRelayMutation"]);
+    XCTAssertFalse([source containsString:@"DashboardHTML"]);
+    XCTAssertFalse([source containsString:@"readError.localizedDescription"]);
 }
 
 @end

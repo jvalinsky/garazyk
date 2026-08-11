@@ -4,7 +4,6 @@
 
 #import "AdminUIServer/Packs/GZAdminUIPDSPack.h"
 #import "AdminUIServer/Packs/GZAdminUIAppViewPack.h"
-#import "AdminUIServer/Packs/GZAdminUIRelayPack.h"
 #import "AdminUIServer/Packs/GZAdminUIDataExplorerPack.h"
 #import "AdminUIServer/Packs/GZAdminUILabPack.h"
 #import "AdminUIServer/Packs/GZAdminUIOzonePack.h"
@@ -17,7 +16,6 @@ NSArray<Class> *GZAdminUIDefaultPacks(void) {
     return @[
         GZAdminUIPDSPack.class,
         GZAdminUIAppViewPack.class,
-        GZAdminUIRelayPack.class,
         GZAdminUIDataExplorerPack.class,
         GZAdminUILabPack.class,
         GZAdminUIOzonePack.class,

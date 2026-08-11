@@ -4,7 +4,7 @@
 #
 # Workstream 08 M5.1/M5.2: project-symbol namespace gate.
 #
-# The ten ATProto* static archives export a flat Objective-C class namespace.
+# The ATProto* static archives export a flat Objective-C class namespace.
 # M5's policy reserves three semantic prefixes for project-owned types:
 #   ATProto - protocol/domain primitives
 #   PDS     - PDS-specific types
@@ -18,7 +18,7 @@
 #   scripts/check_namespace.sh [build-dir]          # gate (default)
 #   scripts/check_namespace.sh [build-dir] --init   # (re)generate baseline
 #
-# The gate scans the ten archives for defined _OBJC_CLASS_$_ symbols, strips
+# The gate scans the module archives for defined _OBJC_CLASS_$_ symbols, strips
 # system/vendored classes by provenance (anything not defined in the ten
 # ATProto* archives is invisible to nm here, so only project-compiled code
 # appears), and classifies the remainder by the reserved prefixes above.
@@ -42,7 +42,7 @@ fi
 
 BASELINE="docs/namespace-baseline.txt"
 
-MODULES="ATProtoCore ATProtoStorage ATProtoServices ATProtoTransport ATProtoAdminUI ATProtoXRPC ATProtoSync ATProtoPLC ATProtoRuntime ATProtoMediaCore ATProtoVideoService"
+MODULES="ATProtoCore ATProtoStorage ATProtoServices ATProtoTransport ATProtoAdminUI ATProtoXRPC ATProtoSync ATProtoRelayAdminUI ATProtoPLC ATProtoRuntime ATProtoMediaCore ATProtoVideoService"
 
 for m in $MODULES; do
   lib="$BUILD_DIR/lib${m}.a"

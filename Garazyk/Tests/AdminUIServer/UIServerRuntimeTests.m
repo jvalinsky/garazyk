@@ -14,7 +14,7 @@
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/GZAdminUIDefaultPacks.h"
 #import "AdminUIServer/Packs/GZAdminUIChatPack.h"
-#import "AdminUIServer/Packs/GZAdminUIRelayPack.h"
+#import "Sync/Relay/AdminUI/RelayAdminUIPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
@@ -575,7 +575,6 @@
         @{@"identifier": @"connections", @"displayName": @"Connections"},
         @{@"identifier": @"pds", @"displayName": @"PDS"},
         @{@"identifier": @"appview", @"displayName": @"AppView"},
-        @{@"identifier": @"relay", @"displayName": @"Relay"},
         @{@"identifier": @"explorer", @"displayName": @"Data Explorer"},
         @{@"identifier": @"ozone", @"displayName": @"Ozone"},
         @{@"identifier": @"security", @"displayName": @"Security"},
@@ -608,12 +607,13 @@
     }
     XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-overview\" aria-controls=\"tab-overview\" aria-selected=\"true\" tabindex=\"0\""]);
     XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-connections\" aria-controls=\"tab-connections\" aria-selected=\"false\" tabindex=\"-1\""]);
+    XCTAssertFalse([response.bodyString containsString:@"id=\"tabbtn-relay\""]);
     XCTAssertFalse([response.bodyString containsString:@"tabbtn-lab"]);
 }
 
 - (void)testSingleSurfaceShellUsesSidebarAndHasNoConfiguredPeers {
     GZAdminUIHost *relayHost = [[GZAdminUIHost alloc] initWithConfiguration:self.config
-                                                                       packs:@[GZAdminUIRelayPack.class]];
+                                                                       packs:@[GZRelayAdminUIPack.class]];
     NSString *token = [relayHost.authManager createSessionToken];
     ATProtoHttpRequest *request = [self createRequestWithMethod:@"GET"
                                                     path:@"/admin"

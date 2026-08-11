@@ -54,11 +54,23 @@ in
       default = null;
       example = "/run/secrets/relay_admin_password";
       description = ''
-        Runtime path to a file containing the relay dashboard password. The
-        file is loaded through systemd credentials and is not copied into the
-        Nix store. When unset, the dashboard and mutation routes fail closed;
-        read-only relay telemetry and protocol routes remain available.
+        Runtime path to a file containing the relay admin password. The file is
+        loaded through systemd credentials and is not copied into the Nix
+        store. When unset, the separate admin listener is disabled; read-only
+        relay telemetry and protocol routes remain available.
       '';
+    };
+
+    adminHost = lib.mkOption {
+      type = lib.types.str;
+      default = "127.0.0.1";
+      description = "Loopback host for the separate Relay admin listener.";
+    };
+
+    adminPort = lib.mkOption {
+      type = lib.types.port;
+      default = 2594;
+      description = "TCP port for the separate Relay admin listener.";
     };
 
     openFirewall = lib.mkOption {
@@ -99,7 +111,11 @@ in
         RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" ];
       } // lib.optionalAttrs (cfg.adminPasswordFile != null) {
         LoadCredential = [ "relay-admin-password:${cfg.adminPasswordFile}" ];
-        Environment = [ "RELAY_ADMIN_PASSWORD_FILE=%d/relay-admin-password" ];
+        Environment = [
+          "RELAY_ADMIN_PASSWORD_FILE=%d/relay-admin-password"
+          "GARAZYK_RELAY_ADMIN_UI_HOST=${cfg.adminHost}"
+          "GARAZYK_RELAY_ADMIN_UI_PORT=${toString cfg.adminPort}"
+        ];
       };
       script = lib.concatStringsSep " " (
         [ "${cfg.package}/bin/zuk" "serve" ]
@@ -110,6 +126,7 @@ in
         ++ [ "--port" (toString cfg.port) ]
         ++ [ "--data-dir" cfg.dataDir ]
         ++ [ "--validation-mode" cfg.validationMode ]
+        ++ [ "--admin-ui-host" cfg.adminHost "--admin-ui-port" (toString cfg.adminPort) ]
       );
     };
 
