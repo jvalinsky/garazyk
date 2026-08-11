@@ -76,6 +76,14 @@ repository commits, identity changes, or stream errors.
 to downstream subscribers. Its WebSocket client handles TLS, masking,
 heartbeats, cursors, and reconnects.
 
+The relay root route serves a self-contained HTML/CSS/JavaScript dashboard. It
+polls relay health, metrics, and upstream crawl state through `/api/relay/*`,
+provides crawl and upstream connection actions, and can display live
+`subscribeRepos` frames. Operators can also consume the same binary DAG-CBOR
+stream with `scripts/monitor_relay_firehose.ts`, which reports sequence progress,
+throughput, event types, commit actions, collections, repositories, reconnects,
+and malformed frames.
+
 The AppView consumes relay events in two steps:
 
 1. The ingest path stores and queues incoming data.
@@ -115,3 +123,4 @@ OpenSSL, and the compatibility code under `Garazyk/Sources/Compat/`.
 - [Database architecture](../../../Garazyk/Sources/Database/ARCHITECTURE.md)
 - [Admin UI architecture](../../../Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md)
 - [Deployment](../guides/DEPLOYMENT.md)
+- [NixOS build and deployment](../guides/NIXOS.md)
