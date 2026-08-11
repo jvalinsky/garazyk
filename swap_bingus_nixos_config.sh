@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Swap the staged NixOS configuration into place and activate it.
+# Swap a staged NixOS host-configuration tree into place and activate it.
 # This script intentionally does not run automatically when copied to bingus.
+# SRC contains only /etc/nixos files; the Garazyk source is fetched by the
+# host flake from GitHub.
 
-SRC="${SRC:-$HOME/zuk-swap}"
+SRC="${SRC:-$HOME/bingus-nixos-config}"
 TARGET="${TARGET:-/etc/nixos}"
 HOST="${HOST:-bingus}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -41,7 +43,7 @@ fail() {
 }
 
 [[ "$(id -u)" -ne 0 ]] || fail "Run this script as the bingus user without sudo: ~/swap_bingus_nixos_config.sh"
-[[ -d "$SRC" ]] || fail "Staged configuration directory does not exist: $SRC"
+[[ -d "$SRC" ]] || fail "Staged NixOS configuration directory does not exist: $SRC"
 [[ -f "$SRC/flake.nix" ]] || fail "Missing $SRC/flake.nix"
 [[ -f "$SRC/configuration.nix" ]] || fail "Missing $SRC/configuration.nix"
 [[ -f "$SRC/hardware-configuration.nix" ]] || fail "Missing $SRC/hardware-configuration.nix"
@@ -79,10 +81,10 @@ if [[ -e "$TARGET" ]]; then
 fi
 sudo mv "$STAGED" "$TARGET"
 
-# The flake uses garazyk-src as a local path input. Refresh its lock after the
-# swap so the active tree points at the current source checkout.
-echo "Refreshing the garazyk-src path lock"
-sudo nix flake lock --update-input garazyk-src "$TARGET"
+# Pin the public Garazyk GitHub flake. No local Garazyk source checkout is
+# required on the NixOS host.
+echo "Refreshing the public garazyk flake input"
+sudo nix flake lock --update-input garazyk "$TARGET"
 
 # Build and activate. If this fails, the EXIT trap restores the old config.
 echo "Rebuilding NixOS configuration for $HOST"
