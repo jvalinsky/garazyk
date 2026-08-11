@@ -127,6 +127,9 @@ host should aggregate a fixed set of PDS firehoses.
 services.zuk = {
   enable = true;
   package = garazykPkgs.zuk;
+  # Runtime secret path supplied by sops-nix, agenix, or equivalent. The
+  # module passes it to zuk through a systemd credential, not the Nix store.
+  adminPasswordFile = "/run/secrets/relay_admin_password";
   # port/dataDir/upstreams/validationMode all have safe defaults:
   # 2470, /var/lib/zuk, [] (passthrough --no-upstream), log-only
 };
@@ -148,19 +151,24 @@ services.cloudflaredTunnel = {
 The module's systemd unit runs zuk as the `zuk` system user with
 `ProtectSystem=strict`, `PrivateTmp`, `NoNewPrivileges`, and a hardened
 address family set. The host firewall stays closed (`openFirewall` defaults to
-`false`); the tunnel connects to the loopback, so no host port is exposed.
+`false`); the tunnel connects to the loopback, so no host port is exposed. Set
+`adminPasswordFile` to a root-readable runtime secret. The module loads it with
+systemd's credential mechanism and exposes only the credential path to zuk as
+`RELAY_ADMIN_PASSWORD_FILE`.
 
-The relay root URL serves a self-contained dashboard. It polls:
+The relay root URL redirects unauthenticated operators to `/login`. A successful
+login creates an opaque, service-scoped HttpOnly session cookie; state-changing
+controls also require a rotating one-time CSRF nonce. The authenticated dashboard
+polls:
 
 - `GET /api/relay/health` for status, sequence, and connection counts;
 - `GET /api/relay/metrics` for event and validation counters;
 - `GET /api/relay/upstreams` for configured hosts, crawl state, account counts,
   and sequence state.
 
-It also exposes crawl/reconnect/disconnect actions and renders a live
-`/xrpc/com.atproto.sync.subscribeRepos` event feed. These routes are operational
-interfaces; protect the public hostname with the tunnel and deployment boundary
-appropriate for the host.
+It also exposes session-protected crawl/reconnect/disconnect actions and renders
+a live `/xrpc/com.atproto.sync.subscribeRepos` event feed. Read-only telemetry
+and relay protocol routes remain public for monitoring and federation.
 
 ### Procedure
 
@@ -191,7 +199,9 @@ For Zuk, use its relay health route rather than the PDS `/xrpc/_health` route:
 ```sh
 systemctl status zuk --no-pager
 curl -fsS http://127.0.0.1:2470/api/relay/health
-# dashboard through the tunnel: https://relay.example.com/
+# Unauthenticated dashboard requests should redirect to /login.
+curl -fsSI https://relay.example.com/ | grep -i '^location: /login'
+# Complete a dashboard login through a browser: https://relay.example.com/
 # Run this from a Garazyk checkout containing scripts/monitor_relay_firehose.ts:
 deno run -A scripts/monitor_relay_firehose.ts \
   --relay-url https://relay.example.com \
@@ -213,6 +223,6 @@ The previous deployment ran the reference `indigo` relay through the `nur`
 package set with an admin password secret. On swap:
 
 - remove the `nur` input and the indigo service from `/etc/nixos`;
-- drop the `relay_admin_password` secret file reference (zuk takes no admin
-  password);
+- point `services.zuk.adminPasswordFile` at the existing relay admin-password
+  secret, or provision a new runtime secret before switching;
 - run `nixos-rebuild build` first, then `switch` when the health check passes.

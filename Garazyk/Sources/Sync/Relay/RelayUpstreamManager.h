@@ -19,6 +19,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import <stdint.h>
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Firehose/Firehose.h"
 
@@ -165,6 +166,21 @@ typedef NS_ENUM(NSInteger, RelayCrawlState) {
 
 /*! Updates account count for a host (called when repos are added/removed). */
 - (void)setAccountCount:(NSUInteger)count forUpstream:(NSString *)url;
+
+/*! Returns the number of firehose events received from an upstream since process start. */
+- (uint64_t)eventCountForUpstream:(NSString *)url;
+
+/*! Returns firehose event counts grouped by protocol event kind. */
+- (NSDictionary<NSString *, NSNumber *> *)eventCountsByKindForUpstream:(NSString *)url;
+
+/*! Returns the most recent firehose event time, or nil before the first event. */
+- (nullable NSDate *)lastEventAtForUpstream:(NSString *)url;
+
+/*! Returns when the current upstream connection was established, if connected. */
+- (nullable NSDate *)connectedAtForUpstream:(NSString *)url;
+
+/*! Returns the current automatic reconnection attempt count. */
+- (NSUInteger)reconnectAttemptsForUpstream:(NSString *)url;
 
 #pragma mark - Repository Inventory Crawl State
 

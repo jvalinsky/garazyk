@@ -123,15 +123,16 @@ Inbound links: **58**
 
 ## `docs/11-reference/tooling-and-skills-documentation.md`
 
-Inbound links: **51**
+Inbound links: **53**
 
+- [README.md](../../README.md)
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/scripts.md](scripts.md)
 
 ## `docs/20-explanation/architecture/atproto_pds_architecture.md`
 
-Inbound links: **8**
+Inbound links: **9**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/setup.md](../01-getting-started/setup.md)
@@ -160,9 +161,11 @@ Inbound links: **6**
 
 ## `docs/20-explanation/guides/NIXOS.md`
 
-Inbound links: **4**
+Inbound links: **7**
 
 - [AGENTS.md](../../AGENTS.md)
+- [README.md](../../README.md)
+- [docs/20-explanation/architecture/atproto_pds_architecture.md](../20-explanation/architecture/atproto_pds_architecture.md)
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -1096,7 +1099,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **351**
+Inbound links: **353**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -1334,7 +1337,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **256**
+Inbound links: **259**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1345,7 +1348,7 @@ Inbound links: **256**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **55**
+Inbound links: **56**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1354,7 +1357,7 @@ Inbound links: **55**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **184**
+Inbound links: **187**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1428,6 +1431,13 @@ Inbound links: **2**
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/reports/2026-07-17-optimization-research.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/reports/2026-08-11T0139Z-relay-crawl-cloudflare-findings.md`
 
 Inbound links: **2**
 
@@ -1782,7 +1792,7 @@ Inbound links: **1**
 
 ## `README.md`
 
-Inbound links: **8**
+Inbound links: **10**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)

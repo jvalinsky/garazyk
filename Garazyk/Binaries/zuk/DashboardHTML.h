@@ -10,8 +10,15 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- @abstract Returns the HTML content for the relay monitoring dashboard.
+ @abstract Returns the HTML content for the authenticated relay monitoring dashboard.
+ @param csrfNonce One-time nonce used for the first state-changing request.
  */
-NSString *ZukDashboardHTML(void);
+NSString *ZukDashboardHTML(NSString *csrfNonce);
+
+/**
+ @abstract Returns the relay dashboard login page.
+ @param csrfNonce One-time nonce used by the login request.
+ */
+NSString *ZukDashboardLoginHTML(NSString *csrfNonce);
 
 NS_ASSUME_NONNULL_END

@@ -715,6 +715,7 @@ set_target_properties(campagnola PROPERTIES
 add_executable(zuk
   Garazyk/Binaries/zuk/main.m
   Garazyk/Binaries/zuk/DashboardHTML.m
+  Garazyk/Sources/AdminUIServer/UIAuthManager.m
 )
 
 target_include_directories(zuk PRIVATE

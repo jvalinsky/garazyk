@@ -109,6 +109,9 @@
     XCTAssertEqualObjects(upstream[@"crawlState"], @"not-requested");
     XCTAssertEqualObjects(upstream[@"crawlRequested"], @NO);
     XCTAssertEqualObjects(upstream[@"crawlRepoCount"], @0);
+    XCTAssertEqualObjects(upstream[@"eventsReceived"], @0);
+    XCTAssertEqualObjects(upstream[@"eventCounts"], @{});
+    XCTAssertEqualObjects(upstream[@"reconnectAttempts"], @0);
 }
 
 - (void)testRequestCrawlMetadataAppearsInUpstreamList {

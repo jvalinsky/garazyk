@@ -6,6 +6,9 @@
 
 @interface RelayUpstreamManager (ValidationTesting)
 @property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, RelayClient *> *upstreamClients;
+- (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event;
+- (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
 @end
 
 @interface RelayValidationHTTPClient : ATProtoSafeHTTPClient
@@ -138,6 +141,24 @@
     [manager failInventoryForUpstream:url generation:generation error:@"inventory unavailable"];
     XCTAssertEqual([manager crawlStateForUpstream:url], RelayCrawlStateFailed);
     XCTAssertEqualObjects([manager crawlErrorForUpstream:url], @"inventory unavailable");
+}
+
+- (void)testTracksPerUpstreamEventActivityByKind {
+    NSString *url = @"https://events.test/xrpc/com.atproto.sync.subscribeRepos";
+    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc]
+        initWithInitialURLs:@[url]];
+    RelayClient *client = manager.upstreamClients[url];
+
+    [manager relayClient:client didReceiveCommitEvent:[[FirehoseCommitEvent alloc] init]];
+    [manager relayClient:client didReceiveCommitEvent:[[FirehoseCommitEvent alloc] init]];
+    [manager relayClient:client didReceiveIdentityEvent:[[FirehoseIdentityEvent alloc] init]];
+
+    XCTAssertEqual([manager eventCountForUpstream:url], (uint64_t)3);
+    NSDictionary<NSString *, NSNumber *> *counts =
+        [manager eventCountsByKindForUpstream:url];
+    XCTAssertEqualObjects(counts[@"commit"], @2);
+    XCTAssertEqualObjects(counts[@"identity"], @1);
+    XCTAssertNotNil([manager lastEventAtForUpstream:url]);
 }
 
 - (void)testValidateHostUsesSafeHTTPClientWithBoundedPolicy {
