@@ -783,7 +783,9 @@ static NSURL *didWebDocumentURL(NSString *did) {
         return;
     }
 
-    // Add upstream for crawling
+    // Record the request separately from configured upstreams so relay
+    // operators can see the crawl lifecycle in the dashboard.
+    [_upstreamManager markCrawlRequestedForUpstream:upstreamURL];
     [_upstreamManager addUpstream:upstreamURL];
 
     GZ_LOG_SYNC_INFO(@"Relay requestCrawl: Added upstream %@", upstreamURL);
@@ -879,7 +881,9 @@ static NSURL *didWebDocumentURL(NSString *did) {
         }
     }
 
-    // Add upstream immediately (admin bypasses validation)
+    // Add upstream immediately (admin bypasses validation), while retaining
+    // the request origin for crawl lifecycle reporting.
+    [_upstreamManager markCrawlRequestedForUpstream:upstreamURL];
     [_upstreamManager addUpstream:upstreamURL];
 
     GZ_LOG_SYNC_INFO(@"Relay admin requestCrawl: Added upstream %@ (bypassing validation)", upstreamURL);
