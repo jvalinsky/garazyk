@@ -145,5 +145,16 @@ curl -fsS https://pds.example.com/xrpc/com.atproto.server.describeServer
 ```
 
 If federation changed, also test a relay crawl and an active `subscribeRepos`
-connection. Roll back the binary if startup or public checks fail and the change
-does not require a database migration.
+connection. For a Zuk relay, check `/api/relay/health` and
+`/api/relay/upstreams`; the root URL serves the operator dashboard. A short
+firehose monitor run provides a repeatable stream check:
+
+```sh
+deno run -A scripts/monitor_relay_firehose.ts \
+  --relay-url https://relay.example.com \
+  --duration 30 \
+  --no-color
+```
+
+Roll back the binary if startup or public checks fail and the change does not
+require a database migration.
