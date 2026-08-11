@@ -77,7 +77,9 @@ A relay host (codename `bingus`) runs the services through the flake modules.
 The repository carries only the reusable service modules and a dummy example;
 the server-specific values (real tunnel ID, hostname, credentials file) live in
 `/etc/nixos` and are never committed. The host flake should import the public
-GitHub flake rather than a local Garazyk source checkout.
+GitHub flake rather than a local Garazyk source checkout. Because the relay
+package builds the `secp256k1` Git submodule, use the explicit Git fetch URL with
+submodules enabled; the `github:` shorthand does not populate that submodule.
 
 ### `/etc/nixos` shape
 
@@ -89,7 +91,7 @@ need a local Garazyk source checkout:
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     garazyk = {
-      url = "github:jvalinsky/garazyk";
+      url = "git+https://github.com/jvalinsky/garazyk.git?submodules=1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -139,9 +141,13 @@ address family set. The host firewall stays closed (`openFirewall` defaults to
 ### Procedure
 
 ```sh
-# Update the pinned public GitHub input.
+# First edit /etc/nixos/flake.nix and change the garazyk input URL from
+# `github:jvalinsky/garazyk` to:
+# `git+https://github.com/jvalinsky/garazyk.git?submodules=1`
+# Then update the pinned input. This fetches vendor/secp256k1 for the zuk build.
 cd /etc/nixos
 sudo nix flake lock --update-input garazyk
+sudo nix flake metadata | sed -n '/garazyk:/,/^[^ ]/p'
 
 # Build the locked package and system configuration without switching.
 nix build /etc/nixos#nixosConfigurations.bingus.config.system.build.toplevel
