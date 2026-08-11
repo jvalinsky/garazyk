@@ -20,6 +20,8 @@
     port = 2470;
     dataDir = "/var/lib/zuk";
     validationMode = "log-only";
+    # Supply this from sops-nix, agenix, or another runtime secret manager.
+    adminPasswordFile = "/run/secrets/relay_admin_password";
     # Empty: this relay is itself a source (passthrough mode, --no-upstream).
     upstreams = [ ];
   };

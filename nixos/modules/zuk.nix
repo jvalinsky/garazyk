@@ -49,6 +49,18 @@ in
       description = "Event continuity policy (strict, log-only, or lenient).";
     };
 
+    adminPasswordFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "/run/secrets/relay_admin_password";
+      description = ''
+        Runtime path to a file containing the relay dashboard password. The
+        file is loaded through systemd credentials and is not copied into the
+        Nix store. When unset, the dashboard and mutation routes fail closed;
+        read-only relay telemetry and protocol routes remain available.
+      '';
+    };
+
     openFirewall = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -85,6 +97,9 @@ in
         ProtectHome = true;
         ProtectSystem = "strict";
         RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" ];
+      } // lib.optionalAttrs (cfg.adminPasswordFile != null) {
+        LoadCredential = [ "relay-admin-password:${cfg.adminPasswordFile}" ];
+        Environment = [ "RELAY_ADMIN_PASSWORD_FILE=%d/relay-admin-password" ];
       };
       script = lib.concatStringsSep " " (
         [ "${cfg.package}/bin/zuk" "serve" ]

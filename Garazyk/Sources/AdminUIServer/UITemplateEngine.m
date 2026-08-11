@@ -34,7 +34,7 @@ static NSString *TemplateFilePath(NSString *assetRoot,
     }
 
     NSString *packsDirectory = [sourceRoot stringByAppendingPathComponent:@"packs"];
-    NSDirectoryEnumerator<NSString *> *enumerator = [fileManager enumeratorAtPath:packsDirectory];
+    NSDirectoryEnumerator *enumerator = [fileManager enumeratorAtPath:packsDirectory];
     for (NSString *relativePath in enumerator) {
         if (![relativePath.lastPathComponent isEqualToString:filename]) {
             continue;

@@ -22,6 +22,9 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostSeqs;           // url -> seq
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostAccountCounts; // url -> count
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostStatuses;      // url -> @ RelayHostStatus
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableDictionary<NSString *, NSNumber *> *> *hostEventCounts;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *hostLastEventDates;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *hostConnectedDates;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *crawlStates;       // url -> @ RelayCrawlState
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *crawlGenerations;   // url -> generation
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *crawlRepoCounts;   // url -> inventory repo count
@@ -61,6 +64,9 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
         _hostSeqs = [NSMutableDictionary dictionary];
         _hostAccountCounts = [NSMutableDictionary dictionary];
         _hostStatuses = [NSMutableDictionary dictionary];
+        _hostEventCounts = [NSMutableDictionary dictionary];
+        _hostLastEventDates = [NSMutableDictionary dictionary];
+        _hostConnectedDates = [NSMutableDictionary dictionary];
         _crawlStates = [NSMutableDictionary dictionary];
         _crawlGenerations = [NSMutableDictionary dictionary];
         _crawlRepoCounts = [NSMutableDictionary dictionary];
@@ -296,9 +302,24 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 #pragma mark - RelayClientDelegate
 
+- (void)recordEventKind:(NSString *)kind fromUpstream:(NSString *)url {
+    dispatch_async(_managerQueue, ^{
+        NSMutableDictionary<NSString *, NSNumber *> *counts = self.hostEventCounts[url];
+        if (!counts) {
+            counts = [NSMutableDictionary dictionary];
+            self.hostEventCounts[url] = counts;
+        }
+        counts[kind] = @([counts[kind] unsignedLongLongValue] + 1);
+        self.hostLastEventDates[url] = [NSDate date];
+    });
+}
+
 - (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
+    if (url) {
+        [self recordEventKind:@"commit" fromUpstream:url];
+    }
     if (url && delegate) {
         [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
@@ -307,6 +328,9 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 - (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
+    if (url) {
+        [self recordEventKind:@"identity" fromUpstream:url];
+    }
     if (url && delegate) {
         [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
@@ -315,6 +339,9 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 - (void)relayClient:(RelayClient *)client didReceiveAccountEvent:(FirehoseAccountEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
+    if (url) {
+        [self recordEventKind:@"account" fromUpstream:url];
+    }
     if (url && delegate) {
         [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
@@ -323,6 +350,9 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 - (void)relayClient:(RelayClient *)client didReceiveSyncEvent:(FirehoseSyncEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
+    if (url) {
+        [self recordEventKind:@"sync" fromUpstream:url];
+    }
     if (url && delegate) {
         [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
@@ -331,6 +361,9 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 - (void)relayClient:(RelayClient *)client didReceiveRawEvent:(FirehoseRawEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
+    if (url) {
+        [self recordEventKind:@"raw" fromUpstream:url];
+    }
     if (url && delegate) {
         [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
@@ -339,6 +372,9 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 - (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
+    if (url) {
+        [self recordEventKind:@"error" fromUpstream:url];
+    }
     if (url && delegate) {
         [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
@@ -353,6 +389,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
             self.reconnectAttempts[url] = @0;
             self.reconnectDelays[url] = @(self.baseReconnectInterval);
             self.hostStatuses[url] = @(RelayHostStatusActive);
+            self.hostConnectedDates[url] = [NSDate date];
         });
         [[RelayMetrics sharedMetrics] recordUpstreamConnected];
         id<RelayUpstreamManagerDelegate> delegate = self.delegate;
@@ -368,6 +405,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
         dispatch_async(_managerQueue, ^{
             [self.connectedUpstreams removeObject:url];
             self.hostStatuses[url] = @(error ? RelayHostStatusError : RelayHostStatusDisconnected);
+            [self.hostConnectedDates removeObjectForKey:url];
         });
         [[RelayMetrics sharedMetrics] recordUpstreamDisconnected];
         id<RelayUpstreamManagerDelegate> delegate = self.delegate;
@@ -466,6 +504,48 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     dispatch_async(_managerQueue, ^{
         self.hostAccountCounts[url] = @(count);
     });
+}
+
+- (uint64_t)eventCountForUpstream:(NSString *)url {
+    __block uint64_t count = 0;
+    [self performSynchronouslyOnManagerQueue:^{
+        for (NSNumber *kindCount in self.hostEventCounts[url].allValues) {
+            count += kindCount.unsignedLongLongValue;
+        }
+    }];
+    return count;
+}
+
+- (NSDictionary<NSString *, NSNumber *> *)eventCountsByKindForUpstream:(NSString *)url {
+    __block NSDictionary<NSString *, NSNumber *> *counts = nil;
+    [self performSynchronouslyOnManagerQueue:^{
+        counts = [self.hostEventCounts[url] copy] ?: @{};
+    }];
+    return counts;
+}
+
+- (NSDate *)lastEventAtForUpstream:(NSString *)url {
+    __block NSDate *date = nil;
+    [self performSynchronouslyOnManagerQueue:^{
+        date = [self.hostLastEventDates[url] copy];
+    }];
+    return date;
+}
+
+- (NSDate *)connectedAtForUpstream:(NSString *)url {
+    __block NSDate *date = nil;
+    [self performSynchronouslyOnManagerQueue:^{
+        date = [self.hostConnectedDates[url] copy];
+    }];
+    return date;
+}
+
+- (NSUInteger)reconnectAttemptsForUpstream:(NSString *)url {
+    __block NSUInteger attempts = 0;
+    [self performSynchronouslyOnManagerQueue:^{
+        attempts = [self.reconnectAttempts[url] unsignedIntegerValue];
+    }];
+    return attempts;
 }
 
 - (RelayHostStatus)statusForUpstream:(NSString *)url {

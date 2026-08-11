@@ -136,7 +136,9 @@
             @"disconnect_all": @YES,
             @"remove_upstream": @YES,
             @"event_stream": @YES,
-            @"host_repo_state": @YES
+            @"host_repo_state": @YES,
+            @"mutations_require_auth": @YES,
+            @"mutation_auth": @"dashboard_session"
         },
         @"version": @"1.0.0"
     };
@@ -247,7 +249,10 @@
         @"crawlState": [self crawlStateString:crawlState],
         @"crawlRepoCount": @([self.upstreamManager crawlRepoCountForUpstream:upstreamURL]),
         @"seq": @([self.upstreamManager seqForUpstream:upstreamURL]),
-        @"accountCount": @([self.upstreamManager accountCountForUpstream:upstreamURL])
+        @"accountCount": @([self.upstreamManager accountCountForUpstream:upstreamURL]),
+        @"eventsReceived": @([self.upstreamManager eventCountForUpstream:upstreamURL]),
+        @"eventCounts": [self.upstreamManager eventCountsByKindForUpstream:upstreamURL],
+        @"reconnectAttempts": @([self.upstreamManager reconnectAttemptsForUpstream:upstreamURL])
     } mutableCopy];
     NSDate *requestedAt = [self.upstreamManager crawlRequestedAtForUpstream:upstreamURL];
     if (requestedAt) {
@@ -256,6 +261,16 @@
     }
     NSString *crawlError = [self.upstreamManager crawlErrorForUpstream:upstreamURL];
     if (crawlError.length > 0) upstream[@"crawlError"] = crawlError;
+    NSDate *lastEventAt = [self.upstreamManager lastEventAtForUpstream:upstreamURL];
+    if (lastEventAt) {
+        upstream[@"lastEventAt"] =
+            [[[NSISO8601DateFormatter alloc] init] stringFromDate:lastEventAt];
+    }
+    NSDate *connectedAt = [self.upstreamManager connectedAtForUpstream:upstreamURL];
+    if (connectedAt) {
+        upstream[@"connectedAt"] =
+            [[[NSISO8601DateFormatter alloc] init] stringFromDate:connectedAt];
+    }
     return upstream;
 }
 

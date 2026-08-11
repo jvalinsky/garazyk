@@ -5,7 +5,7 @@ title: All Documents
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **253**
+Total documents in this view: **254**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -192,6 +192,7 @@ Total documents in this view: **253**
 | [docs/repo-index/tooling.md](tooling.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-05-21-e2e-run.md](../reports/2026-05-21-e2e-run.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-07-17-optimization-research.md](../reports/2026-07-17-optimization-research.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/reports/2026-08-11T0139Z-relay-crawl-cloudflare-findings.md](../reports/2026-08-11T0139Z-relay-crawl-cloudflare-findings.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/spec-conformance-matrix.md](../reports/spec-conformance-matrix.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/standard-site-appview-kickstart.md](../standard-site-appview-kickstart.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
