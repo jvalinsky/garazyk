@@ -37,7 +37,8 @@ The derivation:
   2+ GB, and `build/`, `node_modules/`, `coverage/`);
 - configures with CMake (`Release`, `BUILD_TESTS=OFF`, `BUILD_FUZZERS=OFF`,
   `BUILD_SECP256K1=ON`) and builds only the `zuk` target with `--parallel 4`
-  (unbounded builds exhaust memory on 16 GB hosts);
+  (unbounded builds exhaust memory on 16 GB hosts). The source fetch must include
+  the `vendor/secp256k1` Git submodule;
 - installs `build/bin/zuk` into `$out/bin`.
 
 Before trusting a change to the pinned toolchain, re-run the local gates:
@@ -104,6 +105,9 @@ need a local Garazyk source checkout:
         modules = [
           ./configuration.nix
           garazyk.nixosModules.zuk
+          # Use this only if the host consumes the repository's optional
+          # cloudflaredTunnel module; the bingus host instead imports its
+          # native services/cloudflared.nix configuration.
           garazyk.nixosModules.cloudflaredTunnel
         ];
         specialArgs = {
@@ -114,7 +118,10 @@ need a local Garazyk source checkout:
 }
 ```
 
-Then enable the services:
+Then enable the services. An empty `upstreams` list is intentional for a
+passthrough relay: it starts without a configured PDS and accepts crawl requests
+through the relay API or dashboard. Set explicit upstream URLs instead when this
+host should aggregate a fixed set of PDS firehoses.
 
 ```nix
 services.zuk = {
@@ -124,6 +131,7 @@ services.zuk = {
   # 2470, /var/lib/zuk, [] (passthrough --no-upstream), log-only
 };
 
+# Alternative when using garazyk.nixosModules.cloudflaredTunnel:
 services.cloudflaredTunnel = {
   enable = true;
   tunnelId = "<real tunnel ID>";
@@ -131,12 +139,28 @@ services.cloudflaredTunnel = {
   credentialsFile = "/var/lib/cloudflared/<tunnelId>.json";
   origin = "http://127.0.0.1:2470";
 };
+
+# The bingus host uses native NixOS cloudflared instead, in
+# /etc/nixos/services/cloudflared.nix:
+# services.cloudflared.tunnels.<tunnel-id> = { ... };
 ```
 
 The module's systemd unit runs zuk as the `zuk` system user with
 `ProtectSystem=strict`, `PrivateTmp`, `NoNewPrivileges`, and a hardened
 address family set. The host firewall stays closed (`openFirewall` defaults to
 `false`); the tunnel connects to the loopback, so no host port is exposed.
+
+The relay root URL serves a self-contained dashboard. It polls:
+
+- `GET /api/relay/health` for status, sequence, and connection counts;
+- `GET /api/relay/metrics` for event and validation counters;
+- `GET /api/relay/upstreams` for configured hosts, crawl state, account counts,
+  and sequence state.
+
+It also exposes crawl/reconnect/disconnect actions and renders a live
+`/xrpc/com.atproto.sync.subscribeRepos` event feed. These routes are operational
+interfaces; protect the public hostname with the tunnel and deployment boundary
+appropriate for the host.
 
 ### Procedure
 
@@ -162,16 +186,22 @@ sudo nixos-rebuild switch --flake /etc/nixos#bingus
 
 ### Verification
 
+For Zuk, use its relay health route rather than the PDS `/xrpc/_health` route:
+
 ```sh
 systemctl status zuk --no-pager
-curl -fsS http://127.0.0.1:2470/xrpc/_health
-# through the tunnel, from outside:
-curl -fsS https://relay.example.com/xrpc/_health
+curl -fsS http://127.0.0.1:2470/api/relay/health
+# dashboard through the tunnel: https://relay.example.com/
+# Run this from a Garazyk checkout containing scripts/monitor_relay_firehose.ts:
+deno run -A scripts/monitor_relay_firehose.ts \
+  --relay-url https://relay.example.com \
+  --duration 30
 ```
 
-A relay change also deserves a crawl check: confirm the PDS announces the relay
-and that a `subscribeRepos` connection stays alive. Roll back with the previous
-generation if startup or the public checks fail:
+On a headless host, replace `open` with a browser or `curl -I` check. A relay
+change also deserves a crawl check: confirm the PDS announces the relay, inspect
+`/api/relay/upstreams`, and verify that a `subscribeRepos` connection stays alive.
+Roll back with the previous generation if startup or the public checks fail:
 
 ```sh
 sudo nixos-rebuild switch --rollback
