@@ -74,37 +74,38 @@ extra.
 ## Deploying on NixOS
 
 A relay host (codename `bingus`) runs the services through the flake modules.
-The repository carries only the reusable config and a dummy example; the
-server-specific values (real tunnel ID, hostname, credentials file) live in
-`/etc/nixos` and are never committed.
+The repository carries only the reusable service modules and a dummy example;
+the server-specific values (real tunnel ID, hostname, credentials file) live in
+`/etc/nixos` and are never committed. The host flake should import the public
+GitHub flake rather than a local Garazyk source checkout.
 
 ### `/etc/nixos` shape
 
-Take the repository as a `path:` input rather than carrying the services in a
-third-party channel:
+Consume the public Garazyk GitHub flake as a pinned input. The host does not
+need a local Garazyk source checkout:
 
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    garazyk-src = {
-      url = "path:/home/bingus/garazyk-src";
+    garazyk = {
+      url = "github:jvalinsky/garazyk";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, garazyk-src }:
+  outputs = { self, nixpkgs, garazyk }:
     let system = "x86_64-linux";
     in {
       nixosConfigurations.bingus = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
           ./configuration.nix
-          garazyk-src.nixosModules.zuk
-          garazyk-src.nixosModules.cloudflaredTunnel
+          garazyk.nixosModules.zuk
+          garazyk.nixosModules.cloudflaredTunnel
         ];
         specialArgs = {
-          garazykPkgs = garazyk-src.packages.${system};
+          garazykPkgs = garazyk.packages.${system};
         };
       };
     };
@@ -138,18 +139,19 @@ address family set. The host firewall stays closed (`openFirewall` defaults to
 ### Procedure
 
 ```sh
-# pull the new commit in the source checkout
-cd /home/bingus/garazyk-src && git pull
+# Update the pinned public GitHub input.
+cd /etc/nixos
+sudo nix flake lock --update-input garazyk
 
-# build the package and the config (does not touch the live system)
-nix build .#zuk
-sudo nixos-rebuild build
+# Build the locked package and system configuration without switching.
+nix build /etc/nixos#nixosConfigurations.bingus.config.system.build.toplevel
+sudo nixos-rebuild build --flake /etc/nixos#bingus
 
-# inspect the rendered unit before switching
+# Inspect the rendered unit before switching.
 systemctl cat zuk
 
-# then switch
-sudo nixos-rebuild switch
+# Activate the new generation.
+sudo nixos-rebuild switch --flake /etc/nixos#bingus
 ```
 
 ### Verification
