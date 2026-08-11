@@ -100,6 +100,34 @@
     XCTAssertNoThrow([self.handler handleRequest:request response:response], @"Should handle upstreams request without crash");
     XCTAssertEqual(response.statusCode, 200, @"Should return 200 OK");
     XCTAssertNotNil(response.body, @"Should have body");
+
+    NSDictionary *body = response.jsonBody;
+    NSArray *upstreams = body[@"upstreams"];
+    XCTAssertEqual(upstreams.count, (NSUInteger)1);
+    NSDictionary *upstream = upstreams.firstObject;
+    XCTAssertEqualObjects(upstream[@"hostname"], @"test.pds.com");
+    XCTAssertEqualObjects(upstream[@"crawlState"], @"not-requested");
+    XCTAssertEqualObjects(upstream[@"crawlRequested"], @NO);
+    XCTAssertEqualObjects(upstream[@"crawlRepoCount"], @0);
+}
+
+- (void)testRequestCrawlMetadataAppearsInUpstreamList {
+    RelayAPIHandler *handler = [RelayAPIHandler sharedHandler];
+    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc]
+        initWithInitialURLs:@[@"https://requested.test/xrpc/com.atproto.sync.subscribeRepos"]];
+    [handler setUpstreamManager:manager];
+
+    [manager markCrawlRequestedForUpstream:@"https://requested.test/xrpc/com.atproto.sync.subscribeRepos"];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/api/relay/upstreams"];
+    ATProtoHttpResponse *response = [self response];
+    [handler handleRequest:request response:response];
+
+    NSDictionary *upstream = [response.jsonBody[@"upstreams"] firstObject];
+    XCTAssertEqualObjects(upstream[@"hostname"], @"requested.test");
+    XCTAssertEqualObjects(upstream[@"crawlRequested"], @YES);
+    XCTAssertEqualObjects(upstream[@"inventoryRequested"], @YES);
+    XCTAssertEqualObjects(upstream[@"crawlState"], @"requested");
+    XCTAssertNotNil(upstream[@"crawlRequestedAt"]);
 }
 
 - (void)testHandleHealthRequest {

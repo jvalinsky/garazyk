@@ -109,6 +109,37 @@
     XCTAssertTrue(manager.autoReconnectEnabled);
 }
 
+- (void)testCrawlStateTransitionsAndRequestOrigin {
+    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc]
+        initWithInitialURLs:@[@"https://crawl.test/xrpc/com.atproto.sync.subscribeRepos"]];
+    NSString *url = @"https://crawl.test/xrpc/com.atproto.sync.subscribeRepos";
+
+    XCTAssertFalse([manager crawlWasRequestedForUpstream:url]);
+    XCTAssertEqual([manager crawlStateForUpstream:url], RelayCrawlStateNotRequested);
+
+    [manager markCrawlRequestedForUpstream:url];
+    XCTAssertTrue([manager crawlWasRequestedForUpstream:url]);
+    XCTAssertTrue([manager inventoryWasRequestedForUpstream:url]);
+    XCTAssertNotNil([manager crawlRequestedAtForUpstream:url]);
+    XCTAssertEqual([manager crawlStateForUpstream:url], RelayCrawlStateRequested);
+
+    NSUInteger generation = [manager beginInventoryForUpstream:url];
+    XCTAssertEqual([manager crawlStateForUpstream:url], RelayCrawlStateCrawling);
+    XCTAssertEqual([manager crawlGenerationForUpstream:url], generation);
+
+    [manager recordInventoryPageForUpstream:url generation:generation repoCount:3];
+    [manager recordInventoryPageForUpstream:url generation:generation repoCount:2];
+    XCTAssertEqual([manager crawlRepoCountForUpstream:url], (NSUInteger)5);
+
+    [manager completeInventoryForUpstream:url generation:generation repoCount:5];
+    XCTAssertEqual([manager crawlStateForUpstream:url], RelayCrawlStateComplete);
+    XCTAssertNil([manager crawlErrorForUpstream:url]);
+
+    [manager failInventoryForUpstream:url generation:generation error:@"inventory unavailable"];
+    XCTAssertEqual([manager crawlStateForUpstream:url], RelayCrawlStateFailed);
+    XCTAssertEqualObjects([manager crawlErrorForUpstream:url], @"inventory unavailable");
+}
+
 - (void)testValidateHostUsesSafeHTTPClientWithBoundedPolicy {
     RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[]];
     RelayValidationHTTPClient *client = [[RelayValidationHTTPClient alloc] init];

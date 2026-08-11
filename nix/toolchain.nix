@@ -60,8 +60,16 @@ let
     # (record DID document fetches) cannot compile. nixpkgs' package never
     # depended on curl (TLS via gnutls alone). docker/Dockerfile.gnustep passes
     # --with-libcurl; replicate that.
-    buildInputs = (old.buildInputs or [ ]) ++ [ pkgs.curl ];
+    buildInputs = (old.buildInputs or [ ]) ++ [ pkgs.curl libdispatch ];
     configureFlags = (old.configureFlags or [ ]) ++ [ "--with-libcurl" ];
+
+    # libdispatch must be present at configure time so libs-base enables the
+    # runloop <-> main dispatch queue integration (GS_USE_LIBDISPATCH_RUNLOOP).
+    # Without it dispatch_async(dispatch_get_main_queue(), ...) blocks silently
+    # never execute under GNUstep, which breaks the PDS/zuk WebSocket and
+    # firehose paths. Propagate so libgnustep-base.so keeps the dependency in
+    # its RUNPATH.
+    propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ [ libdispatch ];
   });
 
   # libdispatch with the C API only. Swift toolchain avoided (see header).

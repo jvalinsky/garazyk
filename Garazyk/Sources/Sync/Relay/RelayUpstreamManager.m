@@ -22,6 +22,13 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostSeqs;           // url -> seq
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostAccountCounts; // url -> count
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostStatuses;      // url -> @ RelayHostStatus
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *crawlStates;       // url -> @ RelayCrawlState
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *crawlGenerations;   // url -> generation
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *crawlRepoCounts;   // url -> inventory repo count
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *crawlErrors;        // url -> display-safe error
+@property (nonatomic, strong) NSMutableSet<NSString *> *crawlRequestedURLSet;
+@property (nonatomic, strong) NSMutableSet<NSString *> *inventoryRequestedUpstreams;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *crawlRequestedDates;
 @property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
 
 @end
@@ -54,6 +61,13 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
         _hostSeqs = [NSMutableDictionary dictionary];
         _hostAccountCounts = [NSMutableDictionary dictionary];
         _hostStatuses = [NSMutableDictionary dictionary];
+        _crawlStates = [NSMutableDictionary dictionary];
+        _crawlGenerations = [NSMutableDictionary dictionary];
+        _crawlRepoCounts = [NSMutableDictionary dictionary];
+        _crawlErrors = [NSMutableDictionary dictionary];
+        _crawlRequestedURLSet = [NSMutableSet set];
+        _inventoryRequestedUpstreams = [NSMutableSet set];
+        _crawlRequestedDates = [NSMutableDictionary dictionary];
         _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
 
         for (NSString *url in urls) {
@@ -460,6 +474,150 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
         status = (RelayHostStatus)[self.hostStatuses[url] integerValue];
     }];
     return status;
+}
+
+#pragma mark - Repository Inventory Crawl State
+
+- (void)markCrawlRequestedForUpstream:(NSString *)url {
+    if (url.length == 0) return;
+    [self performSynchronouslyOnManagerQueue:^{
+        [self.crawlRequestedURLSet addObject:url];
+        [self.inventoryRequestedUpstreams addObject:url];
+        self.crawlRequestedDates[url] = [NSDate date];
+        RelayCrawlState state = (RelayCrawlState)[self.crawlStates[url] integerValue];
+        if (state != RelayCrawlStateCrawling && state != RelayCrawlStateComplete) {
+            self.crawlStates[url] = @(RelayCrawlStateRequested);
+        }
+        [self.crawlErrors removeObjectForKey:url];
+    }];
+}
+
+- (void)markInventoryRequestedForUpstream:(NSString *)url {
+    if (url.length == 0) return;
+    [self performSynchronouslyOnManagerQueue:^{
+        [self.inventoryRequestedUpstreams addObject:url];
+        if (![self.crawlStates[url] isEqual:@(RelayCrawlStateComplete)] &&
+            ![self.crawlStates[url] isEqual:@(RelayCrawlStateCrawling)]) {
+            self.crawlStates[url] = @(RelayCrawlStateRequested);
+        }
+    }];
+}
+
+- (NSUInteger)beginInventoryForUpstream:(NSString *)url {
+    if (url.length == 0) return 0;
+    __block NSUInteger generation = 0;
+    [self performSynchronouslyOnManagerQueue:^{
+        [self.inventoryRequestedUpstreams addObject:url];
+        generation = [self.crawlGenerations[url] unsignedIntegerValue] + 1;
+        self.crawlGenerations[url] = @(generation);
+        self.crawlStates[url] = @(RelayCrawlStateCrawling);
+        self.crawlRepoCounts[url] = @0;
+        [self.crawlErrors removeObjectForKey:url];
+    }];
+    return generation;
+}
+
+- (void)recordInventoryPageForUpstream:(NSString *)url
+                          generation:(NSUInteger)generation
+                           repoCount:(NSUInteger)repoCount {
+    if (url.length == 0) return;
+    [self performSynchronouslyOnManagerQueue:^{
+        if ([self.crawlGenerations[url] unsignedIntegerValue] != generation) return;
+        NSUInteger currentCount = [self.crawlRepoCounts[url] unsignedIntegerValue];
+        self.crawlRepoCounts[url] = @(currentCount + repoCount);
+    }];
+}
+
+- (void)completeInventoryForUpstream:(NSString *)url
+                         generation:(NSUInteger)generation
+                          repoCount:(NSUInteger)repoCount {
+    if (url.length == 0) return;
+    [self performSynchronouslyOnManagerQueue:^{
+        if ([self.crawlGenerations[url] unsignedIntegerValue] != generation) return;
+        self.crawlStates[url] = @(RelayCrawlStateComplete);
+        self.crawlRepoCounts[url] = @(repoCount);
+        [self.crawlErrors removeObjectForKey:url];
+    }];
+}
+
+- (void)failInventoryForUpstream:(NSString *)url
+                     generation:(NSUInteger)generation
+                           error:(NSString *)error {
+    if (url.length == 0) return;
+    [self performSynchronouslyOnManagerQueue:^{
+        if ([self.crawlGenerations[url] unsignedIntegerValue] != generation) return;
+        self.crawlStates[url] = @(RelayCrawlStateFailed);
+        if (error.length > 0) {
+            self.crawlErrors[url] = error;
+        } else {
+            [self.crawlErrors removeObjectForKey:url];
+        }
+    }];
+}
+
+- (NSArray<NSString *> *)crawlRequestedUpstreams {
+    __block NSArray<NSString *> *urls = nil;
+    [self performSynchronouslyOnManagerQueue:^{
+        urls = [[self.crawlRequestedURLSet allObjects]
+            sortedArrayUsingSelector:@selector(compare:)];
+    }];
+    return urls;
+}
+
+- (BOOL)crawlWasRequestedForUpstream:(NSString *)url {
+    __block BOOL requested = NO;
+    [self performSynchronouslyOnManagerQueue:^{
+        requested = [self.crawlRequestedURLSet containsObject:url];
+    }];
+    return requested;
+}
+
+- (BOOL)inventoryWasRequestedForUpstream:(NSString *)url {
+    __block BOOL requested = NO;
+    [self performSynchronouslyOnManagerQueue:^{
+        requested = [self.inventoryRequestedUpstreams containsObject:url];
+    }];
+    return requested;
+}
+
+- (NSDate *)crawlRequestedAtForUpstream:(NSString *)url {
+    __block NSDate *date = nil;
+    [self performSynchronouslyOnManagerQueue:^{
+        date = [self.crawlRequestedDates[url] copy];
+    }];
+    return date;
+}
+
+- (NSUInteger)crawlGenerationForUpstream:(NSString *)url {
+    __block NSUInteger generation = 0;
+    [self performSynchronouslyOnManagerQueue:^{
+        generation = [self.crawlGenerations[url] unsignedIntegerValue];
+    }];
+    return generation;
+}
+
+- (RelayCrawlState)crawlStateForUpstream:(NSString *)url {
+    __block RelayCrawlState state = RelayCrawlStateNotRequested;
+    [self performSynchronouslyOnManagerQueue:^{
+        state = (RelayCrawlState)[self.crawlStates[url] integerValue];
+    }];
+    return state;
+}
+
+- (NSUInteger)crawlRepoCountForUpstream:(NSString *)url {
+    __block NSUInteger count = 0;
+    [self performSynchronouslyOnManagerQueue:^{
+        count = [self.crawlRepoCounts[url] unsignedIntegerValue];
+    }];
+    return count;
+}
+
+- (NSString *)crawlErrorForUpstream:(NSString *)url {
+    __block NSString *error = nil;
+    [self performSynchronouslyOnManagerQueue:^{
+        error = [self.crawlErrors[url] copy];
+    }];
+    return error;
 }
 
 @end
