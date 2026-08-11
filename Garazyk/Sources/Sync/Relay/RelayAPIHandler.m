@@ -62,7 +62,7 @@
         [self handleCapabilitiesRequest:request response:response];
     }
     else if ([path isEqualToString:@"/api/relay/health"] ||
-             [path isEqualToString:@"//api/relay/health/"]) {
+             [path isEqualToString:@"/api/relay/health/"]) {
         [self handleHealthRequest:request response:response];
     }
     else if ([path isEqualToString:@"/api/relay/requestCrawl"] ||
@@ -213,23 +213,63 @@
     return decoded;
 }
 
+- (NSString *)crawlStateString:(RelayCrawlState)state {
+    switch (state) {
+        case RelayCrawlStateRequested: return @"requested";
+        case RelayCrawlStateCrawling: return @"crawling";
+        case RelayCrawlStateComplete: return @"complete";
+        case RelayCrawlStateFailed: return @"failed";
+        case RelayCrawlStateNotRequested: return @"not-requested";
+    }
+    return @"not-requested";
+}
+
+- (NSDictionary *)upstreamDictionaryForURL:(NSString *)upstreamURL {
+    BOOL isActive = [[self.upstreamManager activeUpstreams] containsObject:upstreamURL];
+    BOOL isConnected = [self.upstreamManager isConnectedToUpstream:upstreamURL];
+    NSURL *parsedURL = [NSURL URLWithString:upstreamURL];
+    NSString *hostname = parsedURL.host ?: upstreamURL;
+    RelayHostStatus hostStatus = [self.upstreamManager statusForUpstream:upstreamURL];
+    RelayCrawlState crawlState = [self.upstreamManager crawlStateForUpstream:upstreamURL];
+    NSString *hostStatusString = @"disconnected";
+    if (hostStatus == RelayHostStatusActive) hostStatusString = @"active";
+    else if (hostStatus == RelayHostStatusError) hostStatusString = @"error";
+
+    NSMutableDictionary *upstream = [@{
+        @"url": upstreamURL,
+        @"hostname": hostname,
+        @"active": @(isActive),
+        @"connected": @(isConnected),
+        @"status": isConnected ? @"connected" : (isActive ? @"connecting" : @"disconnected"),
+        @"hostStatus": hostStatusString,
+        @"crawlRequested": @([self.upstreamManager crawlWasRequestedForUpstream:upstreamURL]),
+        @"inventoryRequested": @([self.upstreamManager inventoryWasRequestedForUpstream:upstreamURL]),
+        @"crawlState": [self crawlStateString:crawlState],
+        @"crawlRepoCount": @([self.upstreamManager crawlRepoCountForUpstream:upstreamURL]),
+        @"seq": @([self.upstreamManager seqForUpstream:upstreamURL]),
+        @"accountCount": @([self.upstreamManager accountCountForUpstream:upstreamURL])
+    } mutableCopy];
+    NSDate *requestedAt = [self.upstreamManager crawlRequestedAtForUpstream:upstreamURL];
+    if (requestedAt) {
+        upstream[@"crawlRequestedAt"] =
+            [[[NSISO8601DateFormatter alloc] init] stringFromDate:requestedAt];
+    }
+    NSString *crawlError = [self.upstreamManager crawlErrorForUpstream:upstreamURL];
+    if (crawlError.length > 0) upstream[@"crawlError"] = crawlError;
+    return upstream;
+}
+
 - (void)handleUpstreamsList:(ATProtoHttpResponse *)response {
     NSMutableArray *upstreamsData = [NSMutableArray array];
 
     if (self.upstreamManager) {
-        NSArray<NSString *> *activeUpstreams = [self.upstreamManager activeUpstreams];
-        NSArray<NSString *> *allUpstreams = [self.upstreamManager allUpstreams];
-
-        for (NSString *upstreamURL in allUpstreams) {
-            BOOL isActive = [activeUpstreams containsObject:upstreamURL];
-            BOOL isConnected = [self.upstreamManager isConnectedToUpstream:upstreamURL];
-
-            [upstreamsData addObject:@{
-                @"url": upstreamURL,
-                @"active": @(isActive),
-                @"connected": @(isConnected),
-                @"status": isConnected ? @"connected" : (isActive ? @"connecting" : @"disconnected")
-            }];
+        for (NSString *upstreamURL in [self.upstreamManager allUpstreams]) {
+            [upstreamsData addObject:[self upstreamDictionaryForURL:upstreamURL]];
+        }
+        for (NSString *requestedURL in [self.upstreamManager crawlRequestedUpstreams]) {
+            if (![[self.upstreamManager allUpstreams] containsObject:requestedURL]) {
+                [upstreamsData addObject:[self upstreamDictionaryForURL:requestedURL]];
+            }
         }
     }
 
@@ -425,9 +465,11 @@
         return;
     }
 
-    // Construct a websocket URL from the hostname and attempt to add/connect
+    // Construct a websocket URL from the hostname and record the request before
+    // adding the upstream so the dashboard can distinguish it from configuration.
     NSString *wsURL = [hostname hasPrefix:@"ws"] ? hostname :
                       [NSString stringWithFormat:@"wss://%@/xrpc/com.atproto.sync.subscribeRepos", hostname];
+    [self.upstreamManager markCrawlRequestedForUpstream:wsURL];
 
     // Check if already an upstream
     if ([[self.upstreamManager allUpstreams] containsObject:wsURL]) {

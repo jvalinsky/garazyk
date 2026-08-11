@@ -40,6 +40,22 @@ typedef NS_ENUM(NSInteger, RelayHostStatus) {
 };
 
 /**
+ * @abstract Explicit repository inventory state for an upstream PDS.
+ */
+typedef NS_ENUM(NSInteger, RelayCrawlState) {
+    /** The upstream has no active or completed inventory crawl. */
+    RelayCrawlStateNotRequested,
+    /** A crawl was requested and is waiting for the upstream connection. */
+    RelayCrawlStateRequested,
+    /** The relay is fetching the upstream repository inventory. */
+    RelayCrawlStateCrawling,
+    /** The inventory fetch completed successfully. */
+    RelayCrawlStateComplete,
+    /** The inventory fetch failed or stopped because of invalid pagination. */
+    RelayCrawlStateFailed
+};
+
+/**
  * @abstract Receives upstream connection and event callbacks from the relay manager.
  */
 @protocol RelayUpstreamManagerDelegate <NSObject>
@@ -149,6 +165,56 @@ typedef NS_ENUM(NSInteger, RelayHostStatus) {
 
 /*! Updates account count for a host (called when repos are added/removed). */
 - (void)setAccountCount:(NSUInteger)count forUpstream:(NSString *)url;
+
+#pragma mark - Repository Inventory Crawl State
+
+/*! Records that the relay API received a requestCrawl for an upstream. */
+- (void)markCrawlRequestedForUpstream:(NSString *)url;
+
+/*! Records that a configured upstream is beginning inventory without requestCrawl. */
+- (void)markInventoryRequestedForUpstream:(NSString *)url;
+
+/*! Records that repository inventory fetching has started. */
+- (NSUInteger)beginInventoryForUpstream:(NSString *)url;
+
+/*! Records repositories loaded from one inventory page for a crawl generation. */
+- (void)recordInventoryPageForUpstream:(NSString *)url
+                          generation:(NSUInteger)generation
+                           repoCount:(NSUInteger)repoCount;
+
+/*! Records successful completion of repository inventory fetching for a generation. */
+- (void)completeInventoryForUpstream:(NSString *)url
+                         generation:(NSUInteger)generation
+                          repoCount:(NSUInteger)repoCount;
+
+/*! Records a failed repository inventory fetch for a generation. */
+- (void)failInventoryForUpstream:(NSString *)url
+                     generation:(NSUInteger)generation
+                           error:(nullable NSString *)error;
+
+/*! Returns upstream URLs that have been explicitly requested through requestCrawl. */
+- (NSArray<NSString *> *)crawlRequestedUpstreams;
+
+/*! Returns whether this upstream was explicitly requested through requestCrawl. */
+- (BOOL)crawlWasRequestedForUpstream:(NSString *)url;
+
+/*! Returns whether any inventory request is currently tracked for this upstream. */
+- (BOOL)inventoryWasRequestedForUpstream:(NSString *)url;
+
+/*! Returns the last crawl request time, or nil if no explicit request was recorded. */
+- (nullable NSDate *)crawlRequestedAtForUpstream:(NSString *)url;
+
+/*! Returns the current inventory crawl generation for an upstream. */
+- (NSUInteger)crawlGenerationForUpstream:(NSString *)url;
+
+/*! Returns the explicit inventory crawl state for an upstream. */
+- (RelayCrawlState)crawlStateForUpstream:(NSString *)url;
+
+/*! Returns the number of repositories loaded by the last successful inventory crawl. */
+- (NSUInteger)crawlRepoCountForUpstream:(NSString *)url;
+
+/*! Returns the last inventory error summary, if any. */
+- (nullable NSString *)crawlErrorForUpstream:(NSString *)url;
 
 @end
 

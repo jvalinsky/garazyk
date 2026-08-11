@@ -38,6 +38,7 @@
 #import "PLC/DIDPLCResolver.h"
 #import "CLI/GZCommandLineOptions.h"
 #import "Runtime/GZServiceLifecycle.h"
+#import "DashboardHTML.h"
 
 static const char *executable_name = "zuk";
 
@@ -311,8 +312,9 @@ int main(int argc, const char * argv[]) {
             }
         }
 
-        // Initialize relay metrics
-        RelayMetrics *metrics = [[RelayMetrics alloc] init];
+        // Initialize relay metrics (use shared singleton so RelayUpstreamManager
+        // and all other components share the same instance)
+        RelayMetrics *metrics = [RelayMetrics sharedMetrics];
 
         // Initialize event buffer (72hr retention per Sync v1.1)
         RelayEventBuffer *eventBuffer = [RelayEventBuffer bufferWithDefaultRetention];
@@ -373,13 +375,13 @@ int main(int argc, const char * argv[]) {
         // Create HTTP server
         ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:port];
 
-        // Root ASCII service banner
+        // Root dashboard
         [server addRoute:@"GET"
                     path:@"/"
                  handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                      response.statusCode = 200;
-                     response.contentType = @"text/plain; charset=utf-8";
-                     [response setBodyString:@"________  ___  ___  ___  __       \n|\\_____  \\|\\  \\|\\  \\|\\  \\|\\  \\     \n \\|___/  /\\ \\  \\\\  \\ \\  \\/  /|_   \n     /  / /\\ \\  \\\\  \\ \\   ___  \\  \n    /  /_/__\\ \\  \\\\  \\ \\  \\\\ \\  \\ \n   |\\________\\ \\_______\\ \\__\\\\ \\___\\\n    \\|_______|\\|_______|\\|__| \\|__| \n"];
+                     response.contentType = @"text/html; charset=utf-8";
+                     [response setBodyString:ZukDashboardHTML()];
                  }];
 
         [server addRoute:@"GET"

@@ -714,6 +714,7 @@ set_target_properties(campagnola PROPERTIES
 # Relay Server (zuk - AT Protocol relay)
 add_executable(zuk
   Garazyk/Binaries/zuk/main.m
+  Garazyk/Binaries/zuk/DashboardHTML.m
 )
 
 target_include_directories(zuk PRIVATE

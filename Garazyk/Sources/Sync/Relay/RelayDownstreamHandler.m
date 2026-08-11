@@ -36,6 +36,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 @property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
 @property (nonatomic, strong) NSMutableSet<NSString *> *bootstrappingUpstreams;
 @property (nonatomic, strong) NSMutableSet<NSString *> *recoveringRepos;
+@property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
 - (nullable ATProtoRepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
                                            error:(NSError **)error;
 - (nullable ATProtoRepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
@@ -224,20 +225,35 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 - (void)upstreamManager:(RelayUpstreamManager *)manager
     didConnectToUpstream:(NSString *)url {
     GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Connected to upstream %@", url);
+    self.upstreamManager = manager;
     dispatch_async(self.handlerQueue, ^{
         if (!self.repoStateManager || url.length == 0 || [self.bootstrappingUpstreams containsObject:url]) {
             return;
         }
         [self.bootstrappingUpstreams addObject:url];
-        [self fetchRepoInventoryFromUpstream:url cursor:nil pageNumber:1 seenCursors:[NSMutableSet set]];
+        [manager markInventoryRequestedForUpstream:url];
+        NSUInteger generation = [manager beginInventoryForUpstream:url];
+        [self fetchRepoInventoryFromUpstream:url
+                                      cursor:nil
+                                  pageNumber:1
+                                  generation:generation
+                                 seenCursors:[NSMutableSet set]];
     });
 }
 
 - (void)upstreamManager:(RelayUpstreamManager *)manager
     didDisconnectFromUpstream:(NSString *)url
                         error:(nullable NSError *)error {
-    GZ_LOG_SYNC_WARN(@"RelayDownstreamHandler: Disconnected from upstream %@ (error: %@)", 
+    GZ_LOG_SYNC_WARN(@"RelayDownstreamHandler: Disconnected from upstream %@ (error: %@)",
                  url, error.localizedDescription ?: @"none");
+    dispatch_async(self.handlerQueue, ^{
+        if ([self.bootstrappingUpstreams containsObject:url]) {
+            [manager failInventoryForUpstream:url
+                                generation:[manager crawlGenerationForUpstream:url]
+                                      error:@"Upstream disconnected during inventory"];
+            [self.bootstrappingUpstreams removeObject:url];
+        }
+    });
 }
 
 - (void)upstreamManager:(RelayUpstreamManager *)manager
@@ -640,10 +656,14 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 - (void)fetchRepoInventoryFromUpstream:(NSString *)upstreamURL
                                 cursor:(nullable NSString *)cursor
                             pageNumber:(NSUInteger)pageNumber
+                           generation:(NSUInteger)generation
                            seenCursors:(NSMutableSet<NSString *> *)seenCursors {
     NSURL *inventoryURL = [self repoInventoryURLForUpstream:upstreamURL cursor:cursor];
     if (!inventoryURL) {
         GZ_LOG_SYNC_WARN(@"Relay inventory: invalid upstream URL %@", upstreamURL);
+        [self.upstreamManager failInventoryForUpstream:upstreamURL
+                                            generation:generation
+                                                  error:@"Invalid upstream URL"];
         [self.bootstrappingUpstreams removeObject:upstreamURL];
         return;
     }
@@ -675,6 +695,9 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
                                  inventoryURL.absoluteString,
                                  (long)response.statusCode,
                                  error.localizedDescription ?: @"none");
+                [strongSelf.upstreamManager failInventoryForUpstream:upstreamURL
+                                                             generation:generation
+                                                                   error:error.localizedDescription ?: @"Inventory request failed"];
                 [strongSelf.bootstrappingUpstreams removeObject:upstreamURL];
                 return;
             }
@@ -685,17 +708,27 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
                 GZ_LOG_SYNC_WARN(@"Relay inventory: invalid response from %@: %@",
                                  inventoryURL.absoluteString,
                                  parseError.localizedDescription ?: @"expected JSON object");
+                [strongSelf.upstreamManager failInventoryForUpstream:upstreamURL
+                                                             generation:generation
+                                                                   error:parseError.localizedDescription ?: @"Invalid inventory response"];
                 [strongSelf.bootstrappingUpstreams removeObject:upstreamURL];
                 return;
             }
 
             NSDictionary *inventory = (NSDictionary *)decoded;
             NSUInteger applied = [strongSelf applyRepoInventoryPage:inventory];
+            [strongSelf.upstreamManager recordInventoryPageForUpstream:upstreamURL
+                                                                generation:generation
+                                                                 repoCount:applied];
             NSString *nextCursor = [inventory[@"cursor"] isKindOfClass:[NSString class]] ? inventory[@"cursor"] : nil;
             if (nextCursor.length == 0) {
                 GZ_LOG_SYNC_INFO(@"Relay inventory: completed %@ after %lu page(s)",
                                  upstreamURL,
                                  (unsigned long)pageNumber);
+                NSUInteger repoCount = [strongSelf.upstreamManager crawlRepoCountForUpstream:upstreamURL];
+                [strongSelf.upstreamManager completeInventoryForUpstream:upstreamURL
+                                                               generation:generation
+                                                                repoCount:repoCount];
                 [strongSelf.bootstrappingUpstreams removeObject:upstreamURL];
                 return;
             }
@@ -704,6 +737,9 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
                 GZ_LOG_SYNC_WARN(@"Relay inventory: stopped %@ at page %lu due to invalid pagination",
                                  upstreamURL,
                                  (unsigned long)pageNumber);
+                [strongSelf.upstreamManager failInventoryForUpstream:upstreamURL
+                                                             generation:generation
+                                                                   error:@"Invalid inventory pagination"];
                 [strongSelf.bootstrappingUpstreams removeObject:upstreamURL];
                 return;
             }
@@ -716,6 +752,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
             [strongSelf fetchRepoInventoryFromUpstream:upstreamURL
                                                 cursor:nextCursor
                                             pageNumber:pageNumber + 1
+                                            generation:generation
                                            seenCursors:seenCursors];
         });
     }];
