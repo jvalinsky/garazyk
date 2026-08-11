@@ -178,6 +178,7 @@
       # working (dummy) composition.
       nixosModules = {
         zuk = import ./nixos/modules/zuk.nix;
+        campagnola = import ./nixos/modules/campagnola.nix;
         cloudflaredTunnel = import ./nixos/modules/cloudflared-tunnel.nix;
       };
     };

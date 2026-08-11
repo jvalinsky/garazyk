@@ -5,7 +5,7 @@ title: Docs Noncanonical
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **183**
+Total documents in this view: **193**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -163,6 +163,16 @@ Total documents in this view: **183**
 | [docs/plans/workstreams/09-test-suite-speedups.md](../plans/workstreams/09-test-suite-speedups.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/chat.md](../plans/workstreams/service-admin-uis/chat.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/germ.md](../plans/workstreams/service-admin-uis/germ.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/mikrus.md](../plans/workstreams/service-admin-uis/mikrus.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/plc.md](../plans/workstreams/service-admin-uis/plc.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/relay.md](../plans/workstreams/service-admin-uis/relay.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/video.md](../plans/workstreams/service-admin-uis/video.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plc-legacy-create-operation.md](../plc-legacy-create-operation.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/all-documents.md](all-documents.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/repo-index/backlinks.md](backlinks.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |

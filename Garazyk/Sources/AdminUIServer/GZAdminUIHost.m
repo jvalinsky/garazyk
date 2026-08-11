@@ -120,7 +120,8 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     if (self) {
         _configuration = configuration;
         _packs = [packs copy];
-        _authManager = [[GZAdminUIAuthManager alloc] initWithPassword:configuration.adminPassword ?: @""];
+        _authManager = [[GZAdminUIAuthManager alloc] initWithPassword:configuration.adminPassword ?: @""
+                                                     serviceIdentifier:configuration.serviceIdentifier];
         _backendClient = [[GZAdminUIBackendClient alloc] initWithConfiguration:configuration];
         // Auto-obtain PDS admin ATProtoJWT if a password is configured but no token
         if (configuration.pdsAdminPassword.length > 0 && configuration.pdsAdminToken.length == 0) {
@@ -135,7 +136,9 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         return YES;
     }
 
-    self.httpServer = [ATProtoHttpServer serverWithHost:self.configuration.host port:self.configuration.port];
+    self.httpServer = [ATProtoHttpServer serverWithHost:self.configuration.host
+                                                    port:self.configuration.port
+                                   maxConcurrentRequests:8];
     if (!self.httpServer) {
         if (error) {
             *error = [NSError errorWithDomain:@"GZAdminUIHost"
@@ -184,7 +187,9 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
 
 - (ATProtoHttpResponse *)dispatchRequestForTesting:(ATProtoHttpRequest *)request {
     if (!self.httpServer) {
-        self.httpServer = [ATProtoHttpServer serverWithHost:self.configuration.host port:self.configuration.port];
+        self.httpServer = [ATProtoHttpServer serverWithHost:self.configuration.host
+                                                        port:self.configuration.port
+                                       maxConcurrentRequests:8];
         [self registerRoutes];
     }
     return [self.httpServer dispatchRequest:request];

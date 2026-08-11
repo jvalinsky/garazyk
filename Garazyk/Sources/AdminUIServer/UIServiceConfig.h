@@ -12,6 +12,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy) NSString *host;
 @property(nonatomic, assign) NSUInteger port;
 @property(nonatomic, copy) NSString *adminPassword;
+/** Service cookie namespace for embedded hosts; nil retains compatibility names. */
+@property(nonatomic, copy, nullable) NSString *serviceIdentifier;
 
 @property(nonatomic, strong) NSURL *pdsBaseURL;
 @property(nonatomic, strong) NSURL *plcBaseURL;
@@ -52,4 +54,3 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 NS_ASSUME_NONNULL_END
-

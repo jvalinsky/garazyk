@@ -114,6 +114,42 @@
     return op;
 }
 
+- (NSInteger)operationCountForDid:(NSString *)did error:(NSError **)error {
+    __block NSInteger count = 0;
+    dispatch_sync(self.queue, ^{
+        count = self.storage[did].count;
+    });
+    return count;
+}
+
+- (NSInteger)nullifiedOperationCountForDid:(NSString *)did error:(NSError **)error {
+    __block NSInteger count = 0;
+    dispatch_sync(self.queue, ^{
+        for (PLCOperation *operation in self.storage[did]) {
+            if (operation.nullified) count++;
+        }
+    });
+    return count;
+}
+
+- (NSUInteger)uniqueDIDCountWithError:(NSError **)error {
+    __block NSUInteger count = 0;
+    dispatch_sync(self.queue, ^{
+        count = self.storage.count;
+    });
+    return count;
+}
+
+- (NSUInteger)totalOperationCountWithError:(NSError **)error {
+    __block NSUInteger count = 0;
+    dispatch_sync(self.queue, ^{
+        for (NSArray<PLCOperation *> *operations in self.storage.allValues) {
+            count += operations.count;
+        }
+    });
+    return count;
+}
+
 - (nullable NSArray<PLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
                                                       count:(NSUInteger)count
                                                       error:(NSError **)error {

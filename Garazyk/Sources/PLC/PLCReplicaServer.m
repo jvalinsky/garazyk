@@ -72,24 +72,16 @@
     health[@"mode"] = @"replica";
     health[@"readOnly"] = @(self.readOnlyMode);
     
-    if ([self.store respondsToSelector:@selector(totalOperationCountWithError:)]) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        NSNumber *opCount = (NSNumber *)[self.store performSelector:@selector(totalOperationCountWithError:) withObject:(NSError *)nil];
-#pragma clang diagnostic pop
-        if (opCount) {
-            health[@"operationsCount"] = opCount;
-        }
+    NSError *operationCountError = nil;
+    NSUInteger operationCount = [self.store totalOperationCountWithError:&operationCountError];
+    if (!operationCountError) {
+        health[@"operationsCount"] = @(operationCount);
     }
-    
-    if ([self.store respondsToSelector:@selector(uniqueDIDCountWithError:)]) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        NSNumber *didCount = (NSNumber *)[self.store performSelector:@selector(uniqueDIDCountWithError:) withObject:(NSError *)nil];
-#pragma clang diagnostic pop
-        if (didCount) {
-            health[@"didsCount"] = didCount;
-        }
+
+    NSError *didCountError = nil;
+    NSUInteger didCount = [self.store uniqueDIDCountWithError:&didCountError];
+    if (!didCountError) {
+        health[@"didsCount"] = @(didCount);
     }
     
     if ([self.store respondsToSelector:@selector(lastSyncTimestampWithError:)]) {

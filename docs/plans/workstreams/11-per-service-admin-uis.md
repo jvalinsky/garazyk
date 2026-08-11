@@ -1,7 +1,7 @@
 ---
 title: Per-Service Admin UIs
 status: active
-last_verified: 2026-08-08
+last_verified: 2026-08-11
 ---
 
 ## Target
@@ -15,14 +15,25 @@ compile-time knowledge of any service, and is reached through a
 The decision and its constraints are recorded in
 [ADR 0033](../../adr/0033-per-service-embedded-admin-uis.md).
 
-## Current evidence (2026-08-08)
+Service-specific execution detail lives in the subordinate
+[per-service brief index](service-admin-uis/README.md). Those briefs do not
+create a separate backlog: this workstream owns their scope and status.
 
-M2.6 is implemented on `main` (merge `8b45c6d9`): `ATProtoAdminUI` is a
-static library with only `ATProtoTransport` and `ATProtoCore` dependencies,
+## Current evidence (2026-08-11)
+
+The deployable-service inventory was rechecked after the Relay operations
+dashboard landed. `zuk` now supplies the concrete overall/per-upstream
+information model and browser-session boundary. Existing packs cover PLC,
+AppView, Chat, Video, and the six PDS-owned surfaces; Mikrus, Beskid, and Germ
+have no packs. All nine service binaries and the missing-pack work are now
+accounted for in the [service brief index](service-admin-uis/README.md).
+
+M2.6 is complete on `main` (merge `8b45c6d9`): `ATProtoAdminUI` is a static
+library with only `ATProtoTransport` and `ATProtoCore` dependencies,
 `garazyk-ui` is its compatibility consumer, and the three boundary/namespace
-gates include the new target. Phase 30 remains in progress because the legacy
-static/page-load checks and Playwright smoke prerequisites did not complete;
-the exact evidence is recorded in the M2.6 entry below.
+gates include the new target. Phase 30 closed on 2026-08-11 after a complete
+gated suite, live browser and visual smokes, design-system, and asset-sync
+evidence; the exact closeout evidence is recorded in the M2.6 entry below.
 
 **The code is already cut along service seams.** Ten
 `UIBackendClient+<Service>` categories, eleven
@@ -186,9 +197,10 @@ deleted in M5, not carried into the library.
 - **M2.4 complete and validated (2026-08-08):** pack metadata now generates the existing shell's twelve tabs in the pre-extraction visual order, with the original panels retained until M2.5 owns their asset relocation. One-section compositions use a sidebar tablist and service identity, plus a presentation-only empty peer-switcher; no discovery, polling, credentials, or health claims were added. `UIServerRuntimeTests` adds default-composition ARIA/order coverage and a relay-only sidebar/peer-empty-state test. After initializing the previously absent `vendor/secp256k1` submodule in this worktree, `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug`, `cmake --build build --target AllTests --parallel 4`, and `./build/tests/AllTests --filter UIServerRuntimeTests --gated=run` passed (28 tests, 0 failures). `node --check`, `git diff --check`, source/link module-boundary, recursive-setter, and host-process-exit gates passed. `check_ui_design_system.sh` could not run because `rg` is absent; `test_static_files.sh` remains a pre-existing unrelated failure because current `kaszlak` returns 404 for its stale `/explore` target.
 - **M2.5 complete and validated (2026-08-08):** library-owned CSS, shared templates/scripts, and pack-owned partials/scripts now live in separate `Assets/library/` and `Assets/packs/<pack>/` source trees. A reusable `add_admin_ui_assets()` CMake function overlays both trees into the single shared `${CMAKE_BINARY_DIR}/bin/Assets/` directory, with one generalized `ADMIN_UI_ASSET_STAMP` and pack-safe `AdminUIAssetsSync` inventory/hash checking. `UITemplateEngine` resolves library templates and searches pack partials in the source-tree fallback; the CSS bundle generator follows the relocated library CSS. Verified with `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug`, `cmake --build build --target AllTests --parallel 4`, `UIServerRuntimeTests` (28 tests, 0 failures), `GZAdminUIBackendClientTests` (52 tests, 0 failures), `AdminUIAssetsSync`, CSS bundle drift, JavaScript syntax, `check_ui_design_system.sh`, and `git diff --check`. The full-suite baseline required by Phase 30 was run before edits and returned exit 1; its redirected rerun was intentionally interrupted after 11m43s without a final summary. `test_static_files.sh` and `test_page_load.sh` remain unrelated stale `/explore`/legacy resource checks and fail against current `kaszlak` routes.
 - **M2.6 implementation complete, acceptance blocked (2026-08-08):** added `ATProtoAdminUI` as a static target with only `ATProtoTransport` and `ATProtoCore` library dependencies; registered it with source, link-time, and namespace gates; rebuilt `garazyk-ui` as the compatibility consumer; moved service route categories under `AdminUIServer/Packs/`; and completed the post-WS08 HTTP handoff using `ATProtoHttp*` symbols. Exposed UI symbols were renamed to `GZAdminUIAuthManager`, `GZAdminUIServiceConfig`, `GZAdminUITemplateEngine`, `GZAdminUITileDataProtocol*`, `GZAdminUITileExecution*`, `GZAdminUIBackendClient`, `GZAdminUIHost`, and `GZAdminUIHost` helpers. The shared `Assets/` output remains a single directory. Native configure and `cmake --build build --target AllTests --parallel 4` passed. The bounded UI/security suites passed: `UIAuthManagerTests` 21, `GZAdminUIBackendClientTests` 52, `UIServerRuntimeTests` 28, `UITileExecutionPolicyTests` 5, `GarazykUICommandTests` 7, `UILabAuthTests` 21, `UILabIntegrationTests` 16, and `Phase2SecurityIntegrationTests` 36 (186 total, 0 failures). Source boundaries, link-time boundaries, namespace, recursive-setter, host-process-exit, NSID, literal-registration, skill-index, design-system, and `AdminUIAssetsSync` gates passed; the namespace check remained at 175 baselined classes with no new leaks. The required global `AllTests --gated=run` was started but interrupted after reaching `RepoAuthRepoTests`, with no final summary; it is not a pass. `test_static_files.sh` failed because the legacy `/explore` route returned 404, and `test_page_load.sh` failed because the same legacy HTML/CSS/JS/API resources were 404/undersized. Browser and visual smokes were attempted but both stopped at missing `npm:playwright@1.52.0` installation. These are named blockers for Phase 30 closeout; no service rollout or M3 work was started.
-- **Post-merge integration evidence (2026-08-08):** after the WS08 M4.5 manifest merge (`313bc2b3`), a fresh configure and `cmake --build build --target AllTests --parallel 4` passed on `main`. The post-merge bounded UI suites passed 143/143 (including `UIServerRuntimeTests` 28, `GZAdminUIBackendClientTests` 52, `UIAuthManagerTests` 21, `UILabIntegrationTests` 16, `UILabAuthTests` 21, and `UITileExecutionPolicyTests` 5); `AdminUIAssetsSync`, source/link boundaries, namespace (175 baselined), safety, metadata, and documentation gates passed. The full gated suite remains incomplete and is not claimed as passing.
+- **Post-merge integration evidence (2026-08-08):** after the WS08 M4.5 manifest merge (`313bc2b3`), a fresh configure and `cmake --build build --target AllTests --parallel 4` passed on `main`. The post-merge bounded UI suites passed 143/143 (including `UIServerRuntimeTests` 28, `GZAdminUIBackendClientTests` 52, `UIAuthManagerTests` 21, `UILabIntegrationTests` 16, `UILabAuthTests` 21, and `UITileExecutionPolicyTests` 5); `AdminUIAssetsSync`, source/link boundaries, namespace (175 baselined), safety, metadata, and documentation gates passed.
+- **M2.6 closeout evidence (2026-08-11):** after rebuilding `AllTests`, `./build/tests/AllTests --gated=run` completed 5,004 tests with 0 failures in 506.708s. `scripts/admin_ui_browser_smoke_test.ts` passed against a live local binary topology (including CSP, session/CSRF, keyboard, accessibility, and Lab OAuth); `scripts/admin_ui_visual_smoke_test.ts` passed; `scripts/test/check_ui_design_system.sh` and `ctest --test-dir build -R AdminUIAssetsSync --output-on-failure` passed. The legacy static/page-load scripts remain retired rather than blockers.
 
-### M2.6 blocked on
+### M2.6 historical blockers
 
 - ~~A current replacement or retirement decision for the legacy `/explore`,
   `/css/explore.css`, `/js/ui.js`, and `/api/pds/accounts` checks.~~
@@ -205,8 +217,9 @@ deleted in M5, not carried into the library.
   compares asset inventories and SHA-256 hashes. `.agents/skills/garazyk-admin-ui`
   was updated to point at the live tests and at the post-M2.5/M2.6 source
   paths, several of which were still pre-extraction.
-- A worktree environment with the pinned Playwright npm dependency available
-  for the browser and visual smoke scripts.
+- ~~A worktree environment with the pinned Playwright npm dependency available
+  for the browser and visual smoke scripts.~~ **Resolved (2026-08-11):** the
+  pinned Chromium runtime was installed and both live browser smokes passed.
 
 ### M2.4. Make the shell composable
 
@@ -262,6 +275,17 @@ workstream 08 M5.3.
 
 ## M3. PLC pilot (campagnola)
 
+Execution detail: [PLC service brief](service-admin-uis/plc.md).
+
+### M3 status (2026-08-11)
+
+**Complete.** The PLC pilot has a bounded snapshot, PLC-owned pack,
+password-gated loopback listener, compatibility-host composition, and focused
+tests; no other service rollout is in scope. Native configure/build, focused
+PLC/Admin UI/auth/command/lifecycle tests, the local-network gated suite
+(5,018 tests, 0 failures), browser smoke, asset/design gates, module/safety
+gates, and the GNUstep/Linux container binary gate passed on 2026-08-11.
+
 The smallest real surface: six routes (`plc-did`, `plc-log`, `plc-health`,
 `plc-metrics`, `plc-list`, `plc-export`), a 103-line backend client, three
 partials. Chosen because PLC has no admin credential today, which forces the
@@ -270,13 +294,12 @@ PDS.
 
 1. Introduce `GARAZYK_PLC_ADMIN_PASSWORD`. Fail closed when unset — the admin
    listener does not start, and the service logs why.
-2. Add `PLCAdminUIPack` under `Garazyk/Sources/PLC/AdminUI/`.
+2. Add `GZPLCAdminUIPack` under `Garazyk/Sources/PLC/AdminUI/`.
 3. Attach it to `PLCRuntimeComposite` as a third member alongside `server` and
    `syncEngine`. Add `--admin-ui-port` / `GARAZYK_PLC_ADMIN_UI_PORT`, bound to
    `127.0.0.1` unless explicitly overridden.
-4. Mint the internal loopback token at startup and hand it to the pack
-   in-process. No token reaches the environment, disk, or any network beyond
-   loopback.
+4. The embedded pack reads the bounded in-process snapshot directly, so no
+   internal protocol-listener token is minted or exposed to the browser.
 5. Register the new test suite in **both** places: re-run
    `cmake -S . -B build` so the glob picks the file up, and add the class to
    the `testClasses` array in `Garazyk/Tests/test_main.m`. The registration
@@ -287,19 +310,47 @@ identical one from the same pack; both run simultaneously without session
 interference (M1.2) or worker starvation under concurrent load (M1.1);
 `campagnola` refuses to expose the admin listener with no password set.
 
+### M3 closeout evidence
+
+- **GNUstep/Linux binary build (2026-08-11):** OrbStack Docker 29.4.0 built
+  `garazyk-gnustep` successfully with `docker build -f
+  docker/Dockerfile.gnustep -t garazyk-gnustep .`. The first build exposed a
+  GNUstep-only `dispatch_queue_t` ownership error in the new snapshot adapter;
+  it was corrected using the existing `PDS_DISPATCH_QUEUE_STRONG` portability
+  macro. The rebuilt image was inspected as
+  `sha256:6c99e5d86c7d4b546dace4331795990dff91b9b189cd79207e588ee886a5fa49`,
+  and `campagnola serve --help` passed inside that image.
+
 ## M4. Roll out the remaining services
 
-In ascending order of surface, so the mechanical pattern is established before
-the largest one: `zuk` (relay), `syrena` (appview), `syrena-chat` (chat),
-`jelcz` (video), then `kaszlak` (pds, ozone, security, explorer, mst, lab).
+The governed inventory and service-specific acceptance gates are in the
+[service brief index](service-admin-uis/README.md). Roll out in dependency
+order so existing packs establish the pattern before new surfaces and the PDS
+lands last: `zuk` (relay convergence), `beskid` (edge cache), `mikrus` (link
+index), `syrena` (AppView), `syrena-chat` (chat), `germ` (E2EE mailbox),
+`jelcz` (video), then `kaszlak` (PDS, Ozone, Security, Data Explorer, MST,
+Lab).
+
+| Binary | Execution brief |
+| --- | --- |
+| `zuk` | [Relay](service-admin-uis/relay.md) |
+| `beskid` | [Beskid](service-admin-uis/beskid.md) |
+| `mikrus` | [Mikrus](service-admin-uis/mikrus.md) |
+| `syrena` | [AppView](service-admin-uis/appview.md) |
+| `syrena-chat` | [Chat](service-admin-uis/chat.md) |
+| `germ` | [Germ](service-admin-uis/germ.md) |
+| `jelcz` | [Video](service-admin-uis/video.md) |
+| `kaszlak` | [PDS](service-admin-uis/pds.md) |
 
 `jelcz` retains a narrow PDS client for the cross-service calls in
 `UIBackendClient+Video`. `kaszlak` composes six packs — the pack protocol
 should absorb this without special-casing, and if it does not, that is a
 defect in M2.1 rather than a reason to special-case `kaszlak`.
 
-**Acceptance:** every service serves its own UI; `garazyk-ui` still works;
-double maintenance is confined to this milestone.
+**Acceptance:** every service in the brief index serves its own UI;
+`garazyk-ui` still works; browser requests use service-scoped sessions rather
+than manually attached auth tokens; double maintenance is confined to this
+milestone.
 
 ## M5. Retire garazyk-ui
 

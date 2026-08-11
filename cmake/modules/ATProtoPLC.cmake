@@ -2,6 +2,10 @@
 # Entries are repository-relative; CMake validates existence, ownership, and
 # build-host independence before resolving them into target source lists.
 set(ATPROTO_PLC_MANIFEST
+  "Garazyk/Sources/PLC/AdminUI/PLCAdminSnapshot.m"
+  "Garazyk/Sources/PLC/AdminUI/PLCAdminUIPack.m"
+  "Garazyk/Sources/PLC/AdminUI/GZAdminUIBackendClient+PLC.m"
+  "Garazyk/Sources/PLC/AdminUI/GZPLCAdminUIConfiguration.m"
   "Garazyk/Sources/PLC/DIDPLCResolver.m"
   "Garazyk/Sources/PLC/PDSPLCAccountOperationProvider.m"
   "Garazyk/Sources/PLC/PLCAuditor.m"
