@@ -587,6 +587,190 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @end
 
 // ---------------------------------------------------------------------------
+// ATProtoSTARLiteV0Writer (upstream interop variant)
+// ---------------------------------------------------------------------------
+
+const NSUInteger STARLiteV0MaxKeyLength = 830;
+const NSUInteger STARLiteV0MaxRecordLength = 1048576;
+
+static const uint8_t kSTARLiteV0Magic[3] = {0x2A, 0x6C, 0x00};
+
+@interface ATProtoSTARLiteV0Writer ()
+@property (nonatomic, strong, readwrite) ATProtoCID *mstRootCID;
+@property (nonatomic, copy, readwrite) NSData *partialCommit;
+@property (nonatomic, strong) NSMutableData *outputData;
+@property (nonatomic, assign) BOOL headerWritten;
+@property (nonatomic, copy, nullable) NSString *lastKey;
+@end
+
+@implementation ATProtoSTARLiteV0Writer
+
+// Strips the `data` key from a stored commit block, preserving every other
+// key byte-faithfully. A reader re-inserts `data` from the header CID to
+// recover the exact bytes the commit signature covers, so fields we do not
+// model (or that are present-but-null, like `prev` on a first commit from
+// another implementation) must survive the round trip.
++ (nullable NSData *)partialCommitFromCommitBlock:(NSData *)commitBlock error:(NSError **)error {
+    if (commitBlock.length == 0) {
+        if (error) *error = STARError(50, @"STAR-lite v0 requires a commit block");
+        return nil;
+    }
+
+    ATProtoCBORValue *commitValue = [ATProtoCBORValue decode:commitBlock];
+    if (!commitValue || commitValue.type != CBORTypeMap) {
+        if (error) *error = STARError(51, @"Commit block is not a CBOR map");
+        return nil;
+    }
+
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *stripped =
+        [commitValue.map mutableCopy];
+    [stripped removeObjectForKey:[ATProtoCBORValue textString:@"data"]];
+
+    NSData *encoded = [[ATProtoCBORValue map:stripped] encode];
+    if (!encoded) {
+        if (error) *error = STARError(52, @"Failed to re-encode partial commit");
+        return nil;
+    }
+    if (encoded.length > 4096) {
+        if (error) *error = STARError(53, @"Partial commit exceeds 4096 bytes (%lu)",
+                                      (unsigned long)encoded.length);
+        return nil;
+    }
+    return encoded;
+}
+
+// The exact operation a STAR-lite v0 reader performs before checking `sig`.
++ (BOOL)partialCommit:(NSData *)partial
+    reproducesCommitBlock:(NSData *)commitBlock
+                 withRoot:(ATProtoCID *)root {
+    ATProtoCBORValue *decoded = [ATProtoCBORValue decode:partial];
+    if (!decoded || decoded.type != CBORTypeMap) return NO;
+
+    NSMutableDictionary<ATProtoCBORValue *, ATProtoCBORValue *> *rebuilt = [decoded.map mutableCopy];
+    rebuilt[[ATProtoCBORValue textString:@"data"]] = CIDToTaggedCBOR(root);
+    return [[[ATProtoCBORValue map:rebuilt] encode] isEqualToData:commitBlock];
+}
+
+- (nullable instancetype)initWithMSTRootCID:(nullable ATProtoCID *)mstRootCID
+                                commitBlock:(NSData *)commitBlock
+                                      error:(NSError **)error {
+    self = [super init];
+    if (!self) return nil;
+
+    NSData *partial = [[self class] partialCommitFromCommitBlock:commitBlock error:error];
+    if (!partial) return nil;
+
+    // A zero-record repository still names a root: the empty MST node. Computed
+    // rather than hard-coded so it cannot disagree with the tree we build.
+    //
+    // NOTE: the upstream spec's readme states this CID as
+    // bafyreihmh6lpqcmyus4kt4rsypvxgvnvzkmj4aqczyewol5rsf7pdzzta4, which is not
+    // the CID of an empty MST node ({e: [], l: null} in canonical DAG-CBOR
+    // hashes to bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm,
+    // the well-known atproto empty-repo root). Serving a root CID that does not
+    // match our own tree would fail verification, so we serve the real one.
+    ATProtoCID *root = mstRootCID ?: ATProtoMSTEmptyRootCID();
+    if (root.bytes.length != 36) {
+        if (error) *error = STARError(54, @"STAR-lite v0 requires a 36-byte root CID, got %lu",
+                                      (unsigned long)root.bytes.length);
+        return nil;
+    }
+
+    // Run the consumer's verification step before we ever serve the archive: a
+    // reader re-inserts `data` from the header CID and checks `sig` over the
+    // result. If that does not reproduce the stored commit exactly, the archive
+    // would fail verification on the far side — fail loudly here instead.
+    if (![[self class] partialCommit:partial
+                 reproducesCommitBlock:commitBlock
+                              withRoot:root]) {
+        if (error) *error = STARError(59,
+            @"Re-inserting `data` does not reproduce the stored commit; refusing to "
+             "serve an archive whose signature cannot verify");
+        return nil;
+    }
+
+    _mstRootCID = root;
+    _partialCommit = partial;
+    _outputData = [NSMutableData data];
+    _headerWritten = NO;
+    _lastKey = nil;
+    return self;
+}
+
+- (NSData *)headerData {
+    NSMutableData *header = [NSMutableData data];
+    [header appendBytes:kSTARLiteV0Magic length:sizeof(kSTARLiteV0Magic)];
+    [header appendData:self.mstRootCID.bytes];
+    [header appendData:STARVarintData((uint64_t)self.partialCommit.length)];
+    [header appendData:self.partialCommit];
+    return header;
+}
+
++ (NSData *)recordChunkWithKey:(NSString *)key data:(NSData *)recordData {
+    NSData *keyData = [key dataUsingEncoding:NSUTF8StringEncoding];
+    NSMutableData *chunk = [NSMutableData data];
+    [chunk appendData:STARVarintData((uint64_t)keyData.length)];
+    [chunk appendData:keyData];
+    [chunk appendData:STARVarintData((uint64_t)recordData.length)];
+    [chunk appendData:recordData];
+    return chunk;
+}
+
+- (BOOL)validateKey:(NSString *)key recordData:(NSData *)recordData error:(NSError **)error {
+    NSData *keyData = [key dataUsingEncoding:NSUTF8StringEncoding];
+    if (keyData.length == 0 || keyData.length > STARLiteV0MaxKeyLength) {
+        if (error) *error = STARError(55, @"Record key length %lu out of range for key: %@",
+                                      (unsigned long)keyData.length, key);
+        return NO;
+    }
+    if (recordData.length > STARLiteV0MaxRecordLength) {
+        if (error) *error = STARError(56, @"Record %@ exceeds %lu bytes",
+                                      key, (unsigned long)STARLiteV0MaxRecordLength);
+        return NO;
+    }
+    // The header commits to an MST root the reader rebuilds from this stream,
+    // so strict ascending key order with no duplicates is load-bearing.
+    if (self.lastKey && [self.lastKey compare:key] != NSOrderedAscending) {
+        if (error) *error = STARError(57, @"Keys out of order: %@ then %@", self.lastKey, key);
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)writeFromMST:(nullable ATProtoMST *)mst
+       blockProvider:(nullable NSData * _Nullable (^)(ATProtoCID *cid))blockProvider
+               error:(NSError **)error {
+    if (!self.headerWritten) {
+        [self.outputData appendData:[self headerData]];
+        self.headerWritten = YES;
+    }
+    if (!mst) return YES;
+
+    for (ATProtoMSTEntry *entry in [mst allEntries]) {
+        if (!blockProvider) continue;
+        NSData *recordData = blockProvider(entry.valueCID);
+        if (!recordData) {
+            if (error) *error = STARError(58, @"Block provider returned nil for key: %@", entry.key);
+            return NO;
+        }
+        if (![self validateKey:entry.key recordData:recordData error:error]) return NO;
+        [self.outputData appendData:[[self class] recordChunkWithKey:entry.key data:recordData]];
+        self.lastKey = entry.key;
+    }
+    return YES;
+}
+
+- (nullable NSData *)serialize {
+    if (!self.headerWritten) {
+        [self.outputData appendData:[self headerData]];
+        self.headerWritten = YES;
+    }
+    return [self.outputData copy];
+}
+
+@end
+
+// ---------------------------------------------------------------------------
 // ATProtoSTARReader
 // ---------------------------------------------------------------------------
 
@@ -1111,6 +1295,7 @@ BOOL STARDetectFormatFromPath(NSString *path) {
 
 NSString *const STARContentTypeL0 = @"application/vnd.atproto.star";
 NSString *const STARContentTypeLite = @"application/vnd.atproto.star-lite";
+NSString *const STARContentTypeLiteV0 = @"application/x.microcosm.star-lite";
 NSString *const CARContentType = @"application/vnd.ipld.car";
 
 static double PDSRepoQualityForMediaType(NSString *mediaType,
@@ -1178,10 +1363,13 @@ PDSRepoFormat PDSRepoFormatFromAcceptHeader(NSString * _Nullable acceptHeader) {
 
     NSArray<NSString *> *ranges =
         [[acceptHeader lowercaseString] componentsSeparatedByString:@","];
+    // Index order must match the PDSRepoFormat enum: the winning index is
+    // cast straight to the format below.
     NSArray<NSString *> *mediaTypes = @[
         CARContentType,
         STARContentTypeL0,
-        STARContentTypeLite
+        STARContentTypeLite,
+        STARContentTypeLiteV0
     ];
 
     PDSRepoFormat selectedFormat = PDSRepoFormatCAR;
@@ -1197,12 +1385,46 @@ PDSRepoFormat PDSRepoFormatFromAcceptHeader(NSString * _Nullable acceptHeader) {
     return selectedQuality > 0.0 ? selectedFormat : PDSRepoFormatCAR;
 }
 
+BOOL PDSRepoFormatFromAcceptQueryParameter(NSString * _Nullable value,
+                                           PDSRepoFormat *format) {
+    if (value.length == 0 || !format) return NO;
+
+    NSString *normalized = [[value stringByTrimmingCharactersInSet:
+                                [NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+
+    // Hubble spells the interop variant "star-lite"; accept the full media
+    // type too so the parameter and the header take the same spellings.
+    if ([normalized isEqualToString:@"star-lite"] ||
+        [normalized isEqualToString:STARContentTypeLiteV0]) {
+        *format = PDSRepoFormatSTARLiteV0;
+        return YES;
+    }
+    if ([normalized isEqualToString:@"car"] ||
+        [normalized isEqualToString:CARContentType]) {
+        *format = PDSRepoFormatCAR;
+        return YES;
+    }
+    if ([normalized isEqualToString:@"star"] ||
+        [normalized isEqualToString:@"star-l0"] ||
+        [normalized isEqualToString:STARContentTypeL0]) {
+        *format = PDSRepoFormatSTARL0;
+        return YES;
+    }
+    if ([normalized isEqualToString:STARContentTypeLite]) {
+        *format = PDSRepoFormatSTARLite;
+        return YES;
+    }
+    return NO;
+}
+
 NSString *ContentTypeForPDSRepoFormat(PDSRepoFormat format) {
     switch (format) {
         case PDSRepoFormatSTARL0:
             return STARContentTypeL0;
         case PDSRepoFormatSTARLite:
             return STARContentTypeLite;
+        case PDSRepoFormatSTARLiteV0:
+            return STARContentTypeLiteV0;
         case PDSRepoFormatCAR:
         default:
             return CARContentType;
@@ -1217,6 +1439,9 @@ NSString *PDSRepoAcceptHeaderForPreferredFormat(PDSRepoFormat format) {
         case PDSRepoFormatSTARLite:
             return [NSString stringWithFormat:@"%@, %@;q=0.9, %@;q=0.8",
                     STARContentTypeLite, STARContentTypeL0, CARContentType];
+        case PDSRepoFormatSTARLiteV0:
+            return [NSString stringWithFormat:@"%@, %@;q=0.8",
+                    STARContentTypeLiteV0, CARContentType];
         case PDSRepoFormatCAR:
         default:
             return CARContentType;

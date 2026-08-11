@@ -831,6 +831,125 @@
     };
 }
 
+- (nullable PDSRepoChunkProducer)repoContentsSTARLiteV0ChunkProducer:(NSString *)did
+                                                               error:(NSError **)error {
+    PDSActorStore *store = nil;
+    ATProtoMST *mst = nil;
+    ATProtoCID *commitCID = nil;
+    NSData *commitBlock = nil;
+    BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray<NSString *> *changedMSTKeys = nil;
+    NSArray<NSString *> *recordCIDStrings = nil;
+    NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+    NSDictionary<NSString *, NSData *> *materializedBlocks = nil;
+
+    // STAR-lite v0 has no partial-export representation: the header names an
+    // MST root the reader rebuilds from the record stream, so a `since`-
+    // filtered archive would never verify. Always export the full repo.
+    if (![self prepareRepoExportForDid:did
+                                 since:nil
+                                 store:&store
+                                   mst:&mst
+                             commitCID:&commitCID
+                           commitBlock:&commitBlock
+                        noChangesSince:&noChangesSince
+                        includeFullMST:&includeFullMST
+                        changedMSTKeys:&changedMSTKeys
+                       recordCIDStrings:&recordCIDStrings
+                            recordByCID:&recordByCID
+                    materializedBlocks:&materializedBlocks
+                                 error:error]) {
+        return nil;
+    }
+
+    ATProtoSTARCommit *commit = [self starCommitFromExport:did
+                                                commitCID:commitCID
+                                              commitBlock:commitBlock];
+
+    ATProtoSTARLiteV0Writer *writer =
+        [[ATProtoSTARLiteV0Writer alloc] initWithMSTRootCID:commit.data
+                                                commitBlock:commitBlock
+                                                      error:error];
+    if (!writer) return nil;
+
+    NSArray<ATProtoMSTEntry *> *entries = mst ? [mst allEntries] : @[];
+
+    __weak typeof(self) weakSelf = self;
+    __block NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
+    __block NSDictionary<NSString *, NSData *> *capturedMaterializedBlocks = [materializedBlocks copy];
+    __block NSUInteger entryIndex = 0;
+    __block BOOL headerSent = NO;
+    __block NSString *previousKey = nil;
+
+    // Records are fetched one at a time so peak memory stays bounded by the
+    // largest single record rather than the whole archive.
+    return ^NSData * _Nullable (NSError **producerError) {
+        if (!headerSent) {
+            headerSent = YES;
+            return [writer headerData];
+        }
+
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return nil;
+
+        while (entryIndex < entries.count) {
+            ATProtoMSTEntry *entry = entries[entryIndex++];
+
+            NSString *cidString = entry.valueCID.stringValue;
+            NSData *data = capturedMaterializedBlocks[cidString];
+            if (!data) {
+                PDSDatabaseBlock *block = [strongSelf.blockRepository blockWithCid:entry.valueCID.bytes
+                                                                          repoDid:did
+                                                                            error:nil];
+                data = block.blockData;
+            }
+            if (!data) {
+                PDSDatabaseRecord *record = capturedRecordByCID[cidString];
+                data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+            }
+            if (!data) {
+                PDSActorStore *entryStore = [strongSelf.databasePool storeForDid:did error:nil];
+                if (entryStore) {
+                    PDSDatabaseRecord *dbRec = [entryStore getRecordByCID:cidString forDid:did error:nil];
+                    if (dbRec) {
+                        data = [strongSelf recordBlockDataForRecord:dbRec];
+                    }
+                }
+            }
+            if (!data) {
+                if (producerError) {
+                    *producerError = [NSError errorWithDomain:@"com.atproto.star"
+                                                         code:58
+                                                     userInfo:@{
+                        NSLocalizedDescriptionKey :
+                            [NSString stringWithFormat:@"Missing record block for key: %@", entry.key]
+                    }];
+                }
+                return nil;
+            }
+
+            if (previousKey && [previousKey compare:entry.key] != NSOrderedAscending) {
+                if (producerError) {
+                    *producerError = [NSError errorWithDomain:@"com.atproto.star"
+                                                         code:57
+                                                     userInfo:@{
+                        NSLocalizedDescriptionKey :
+                            [NSString stringWithFormat:@"Keys out of order: %@ then %@",
+                                                       previousKey, entry.key]
+                    }];
+                }
+                return nil;
+            }
+            previousKey = entry.key;
+
+            return [ATProtoSTARLiteV0Writer recordChunkWithKey:entry.key data:data];
+        }
+
+        return nil;
+    };
+}
+
 - (ATProtoSTARCommit *)starCommitFromExport:(NSString *)did
                            commitCID:(ATProtoCID *)commitCID
                          commitBlock:(NSData *)commitBlock {

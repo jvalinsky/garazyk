@@ -272,8 +272,13 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     PDSRepoFormat format = PDSRepoFormatFromAcceptHeader([request headerForKey:@"Accept"]);
+    PDSRepoFormat queryFormat = PDSRepoFormatCAR;
+    if (PDSRepoFormatFromAcceptQueryParameter([request queryParamForKey:@"accept"], &queryFormat)) {
+      format = queryFormat;
+    }
 
-    if (format == PDSRepoFormatSTARL0 || format == PDSRepoFormatSTARLite) {
+    if (format == PDSRepoFormatSTARL0 || format == PDSRepoFormatSTARLite ||
+        format == PDSRepoFormatSTARLiteV0) {
       // STAR format requested
       NSError *exportError = nil;
       PDSRepoChunkProducer producer = nil;
@@ -281,6 +286,10 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
         producer = [repositoryService repoContentsSTARL0ChunkProducer:did
                                                                 since:sinceRev
                                                                 error:&exportError];
+      } else if (format == PDSRepoFormatSTARLiteV0) {
+        // `since` is not representable in STAR-lite v0; always a full export.
+        producer = [repositoryService repoContentsSTARLiteV0ChunkProducer:did
+                                                                    error:&exportError];
       } else {
         producer = [repositoryService repoContentsSTARLiteChunkProducer:did
                                                                   since:sinceRev
@@ -292,6 +301,13 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
           [response setJsonBody:@{
             @"error" : @"PayloadTooLarge",
             @"message" : exportError.localizedDescription ?: @"Repository export exceeds safety cap"
+          }];
+        } else if ([exportError.domain isEqualToString:@"com.atproto.star"]) {
+          // The repo exists; we could not produce a verifiable archive for it.
+          response.statusCode = HttpStatusInternalServerError;
+          [response setJsonBody:@{
+            @"error" : @"RepoExportFailed",
+            @"message" : exportError.localizedDescription ?: @"Repository export failed"
           }];
         } else {
           response.statusCode = HttpStatusNotFound;
@@ -348,12 +364,19 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     PDSRepoFormat format = PDSRepoFormatFromAcceptHeader([request headerForKey:@"Accept"]);
+    PDSRepoFormat queryFormat = PDSRepoFormatCAR;
+    if (PDSRepoFormatFromAcceptQueryParameter([request queryParamForKey:@"accept"], &queryFormat)) {
+      format = queryFormat;
+    }
 
-    if (format == PDSRepoFormatSTARL0 || format == PDSRepoFormatSTARLite) {
+    if (format == PDSRepoFormatSTARL0 || format == PDSRepoFormatSTARLite ||
+        format == PDSRepoFormatSTARLiteV0) {
       NSError *error = nil;
       PDSRepoChunkProducer producer = nil;
       if (format == PDSRepoFormatSTARL0) {
         producer = [repositoryService repoContentsSTARL0ChunkProducer:did since:nil error:&error];
+      } else if (format == PDSRepoFormatSTARLiteV0) {
+        producer = [repositoryService repoContentsSTARLiteV0ChunkProducer:did error:&error];
       } else {
         producer = [repositoryService repoContentsSTARLiteChunkProducer:did since:nil error:&error];
       }

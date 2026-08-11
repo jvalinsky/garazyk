@@ -213,6 +213,20 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
                                                               error:(NSError **)error;
 
 /**
+ * @abstract Creates a chunk producer for upstream STAR-lite v0 repository contents.
+ * @discussion Emits the interoperable `application/x.microcosm.star-lite`
+ * encoding: a header naming the ATProtoMST root, then one chunk per record in
+ * lexicographic key order. There is no incremental variant — the header
+ * commits to a root the reader rebuilds from the full record stream — so this
+ * always exports the complete repository.
+ * @param did Decentralized identifier of repository owner.
+ * @param error Error pointer for export preparation failures.
+ * @return Chunk producer block or nil on failure.
+ */
+- (nullable PDSRepoChunkProducer)repoContentsSTARLiteV0ChunkProducer:(NSString *)did
+                                                               error:(NSError **)error;
+
+/**
  * @abstract Creates a chunk producer for collection-filtered CAR repository contents.
  * @discussion The returned CAR contains only records matching the specified collections.
  * Includes the commit block, ATProtoMST proof nodes for matching keys, and the record blocks.

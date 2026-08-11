@@ -1155,6 +1155,7 @@ int main(int argc, char *argv[]) {
       @"MSTDiffTests",
       @"MSTPreorderTests",
       @"MSTPreorderFixtureTests",
+      @"STARLiteV0Tests",
       @"STARPreorderTests",
       @"MimeTypeValidatorTests",
       @"MultiTenantDatabaseTests",
