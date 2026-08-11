@@ -10,6 +10,7 @@
 
 #import <XCTest/XCTest.h>
 #import "AdminUIServer/GZAdminUIBackendClient.h"
+#import "PLC/AdminUI/GZAdminUIBackendClient+PLC.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 

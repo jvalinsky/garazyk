@@ -23,6 +23,7 @@ cd "$repo_root"
 
 matches=""
 while IFS= read -r source; do
+  [[ -f "$source" ]] || continue
   hit="$(perl -0pe 's{/\*.*?\*/}{ my $s = $&; $s =~ s/[^\n]/ /g; $s }gse; s{//[^\n]*}{}g' "$source" \
     | grep -nE '(^|[^A-Za-z0-9_])(exit|abort)\(' | sed "s#^#${source}:#" || true)"
   if [[ -n "$hit" ]]; then

@@ -1,7 +1,7 @@
 ---
 phase: 30
 title: Extract ATProtoAdminUI and invert route registration (WS11 M2)
-status: in-progress
+status: complete
 agent: worker
 depends_on: []
 ---
@@ -21,6 +21,15 @@ protocol that services implement.
 and behaves identically. The extraction is proven by the existing application
 before anything embeds. Embedding happens in a later phase (WS11 M3, the PLC
 pilot).
+
+## Completion evidence (2026-08-11)
+
+The remaining acceptance prerequisites now pass: `cmake --build build --target
+AllTests --parallel 4` followed by `./build/tests/AllTests --gated=run`
+completed 5,004 tests with zero failures (506.708s); the live browser and
+visual smokes passed against the rebuilt `garazyk-ui`; `AdminUIAssetsSync` and
+`scripts/test/check_ui_design_system.sh` passed. The retired legacy page-load
+scripts are not acceptance gates.
 
 ## Read first
 

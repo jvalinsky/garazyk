@@ -9,6 +9,7 @@ cd "$repo_root"
 
 matches="$(
   while IFS= read -r source; do
+    [[ -f "$source" ]] || continue
     perl -0ne '
       while (/^[ \t]*-[ \t]*\([^)]*\)[ \t]*set([A-Z][A-Za-z0-9_]*)[ \t]*:[ \t]*\([^)]*\)[ \t]*([A-Za-z_][A-Za-z0-9_]*)[ \t]*\{/mg) {
         my ($name, $parameter, $start) = ($1, $2, pos($_));

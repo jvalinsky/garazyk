@@ -609,7 +609,11 @@ for full traceability; mirrored in the
     consumer before any service is touched. Phase 30 closeout remains blocked
     on its named static/page-load, browser, and full-suite acceptance evidence;
     M3 pilots
-    on `campagnola`, which has no admin credential today. Coordinate the Web
+    on `campagnola`, which has no admin credential today. The governed
+    [per-service brief index](workstreams/service-admin-uis/README.md) adds
+    cross-linked execution and acceptance plans for Relay, PLC, AppView,
+    Mikrus, Beskid, Chat, Germ, Video, and PDS without creating a second
+    backlog. Coordinate the Web
     Tiles files (`UITileDataProtocol`, `UITileExecutionPolicy`) with
     workstream 10, and the `UI*` → `GZAdminUI*` rename with workstream 08 M5.3.
 

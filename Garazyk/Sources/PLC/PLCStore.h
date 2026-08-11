@@ -67,6 +67,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable PLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error;
 
+/*! @abstract Returns the exact number of stored operations without materializing them. */
+- (NSInteger)operationCountForDid:(NSString *)did error:(NSError **)error;
+
+/*! @abstract Returns the exact number of nullified operations for a DID. */
+- (NSInteger)nullifiedOperationCountForDid:(NSString *)did error:(NSError **)error;
+
+/*! @abstract Returns the exact number of DIDs without materializing the directory. */
+- (NSUInteger)uniqueDIDCountWithError:(NSError **)error;
+
+/*! @abstract Returns the exact number of operations without materializing the log. */
+- (NSUInteger)totalOperationCountWithError:(NSError **)error;
+
 /*!
  @method exportOperationsAfter:count:error:
 

@@ -3,18 +3,16 @@
 /*!
  @file GZAdminUIDefaultPacks.h
 
- @abstract Composition root listing every pack garazyk-ui serves today.
+ @abstract Composition root listing service-neutral Admin UI packs.
  */
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Returns every pack garazyk-ui composes, in shell tab order.
- * @discussion This is the one place in the tree allowed to name every service's admin UI pack;
- * @c GZAdminUIHost itself holds no compile-time knowledge of any of them. Callers that want the
- * full existing route surface (garazyk-ui's main, and tests exercising it end to end) use this
- * instead of duplicating the pack list.
+ * @abstract Returns the service-neutral packs in shell tab order.
+ * @discussion Service-owned packs are appended by their compatibility executable. This preserves
+ * the Admin UI library's one-way dependency boundary.
  */
 FOUNDATION_EXPORT NSArray<Class> *GZAdminUIDefaultPacks(void);
 

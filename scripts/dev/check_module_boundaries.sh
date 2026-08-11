@@ -118,7 +118,9 @@ allowed_links_for_module() {
     # PLCPersistentStore owns the serialized SQLite/query-runner lifecycle;
     # PLC -> Storage is the deliberate acyclic edge documented in workstream 08
     # and exercised by plc_persistent_store_link_tests.
-    ATProtoPLC) echo "ATProtoStorage ATProtoTransport ATProtoCore" ;;
+    # PLC owns the optional embedded admin pack. The shared Admin UI archive
+    # remains transport/core-only and never depends on PLC.
+    ATProtoPLC) echo "ATProtoStorage ATProtoAdminUI ATProtoTransport ATProtoCore" ;;
     ATProtoVideoService) echo "ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport" ;;
     ATProtoRuntime) echo "ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService" ;;
     *) echo "" ;;
@@ -166,6 +168,9 @@ for module in "${modules[@]}"; do
 
     module_rank_value="$(module_rank_for "$module")"
     dep_rank_value="$(module_rank_for "$dep")"
+    if [[ "$module" == "ATProtoPLC" && "$dep" == "ATProtoAdminUI" ]]; then
+      continue
+    fi
     if [[ "$dep_rank_value" -ge "$module_rank_value" ]]; then
       echo "FAIL: ${module} links reverse/lateral dependency ${dep} (rank ${module_rank_value} -> ${dep_rank_value})"
       failures=$((failures + 1))
@@ -186,7 +191,7 @@ echo "==> Executable link surface checks"
 expected_links_for_executable() {
   case "$1" in
     kaszlak) echo "ATProtoAppViewServer ATProtoRuntime ATProtoVideoService ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoStorage ATProtoPLC ATProtoCore" ;;
-    campagnola) echo "ATProtoAppViewServer ATProtoPLC ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices" ;;
+    campagnola) echo "ATProtoAppViewServer ATProtoPLC ATProtoAdminUI ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices" ;;
     zuk) echo "ATProtoAppViewServer ATProtoSync ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices ATProtoStorage" ;;
     *) echo "" ;;
   esac

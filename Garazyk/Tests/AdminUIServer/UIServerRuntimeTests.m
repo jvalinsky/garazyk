@@ -76,11 +76,6 @@
     return @{@"options": @[@{@"key": @"triageMode", @"value": @"manual"}]};
 }
 
-- (NSDictionary *)fetchPLCList {
-    [self recordCall:NSStringFromSelector(_cmd)];
-    return @{@"dids": @[@"did:plc:alice"]};
-}
-
 - (NSDictionary *)lockChatConvo:(NSString *)convoID {
     [self recordCall:NSStringFromSelector(_cmd)];
     self.lastConvoID = convoID;
@@ -581,7 +576,6 @@
         @{@"identifier": @"pds", @"displayName": @"PDS"},
         @{@"identifier": @"appview", @"displayName": @"AppView"},
         @{@"identifier": @"relay", @"displayName": @"Relay"},
-        @{@"identifier": @"plc", @"displayName": @"PLC"},
         @{@"identifier": @"explorer", @"displayName": @"Data Explorer"},
         @{@"identifier": @"ozone", @"displayName": @"Ozone"},
         @{@"identifier": @"security", @"displayName": @"Security"},
@@ -719,8 +713,7 @@
         @{@"path": @"/admin/partials/sessions?did=did:plc:alice", @"call": @"fetchActiveSessionsForDID:"},
         @{@"path": @"/admin/partials/app-passwords?did=did:plc:alice", @"call": @"fetchAppPasswordsForDID:"},
         @{@"path": @"/admin/partials/ozone-reports?cursor=cursor-a", @"call": @"fetchModerationReportsWithCursor:limit:"},
-        @{@"path": @"/admin/partials/ozone-settings", @"call": @"listOzoneSettings"},
-        @{@"path": @"/admin/partials/plc-list", @"call": @"fetchPLCList"}
+        @{@"path": @"/admin/partials/ozone-settings", @"call": @"listOzoneSettings"}
     ];
 
     for (NSDictionary *testCase in cases) {

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PLC/PLCMetrics.h"
 #import "Debug/GZLogger.h"
-#import "libkern/OSAtomic.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -55,31 +54,31 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)recordCacheHit {
-    OSAtomicIncrement64(&_cacheHits);
+    dispatch_sync(_metricsQueue, ^{ self->_cacheHits++; });
     GZ_LOG_CORE_DEBUG(@"PLC cache hit");
 }
 
 - (void)recordCacheMiss {
-    OSAtomicIncrement64(&_cacheMisses);
+    dispatch_sync(_metricsQueue, ^{ self->_cacheMisses++; });
     GZ_LOG_CORE_DEBUG(@"PLC cache miss");
 }
 
 - (void)recordMemcacheHit {
-    OSAtomicIncrement64(&_memcacheHits);
+    dispatch_sync(_metricsQueue, ^{ self->_memcacheHits++; });
     GZ_LOG_CORE_DEBUG(@"PLC memcache hit");
 }
 
 - (void)recordMemcacheMiss {
-    OSAtomicIncrement64(&_memcacheMisses);
+    dispatch_sync(_metricsQueue, ^{ self->_memcacheMisses++; });
     GZ_LOG_CORE_DEBUG(@"PLC memcache miss");
 }
 
 - (void)recordRequest {
-    OSAtomicIncrement64(&_totalRequests);
+    dispatch_sync(_metricsQueue, ^{ self->_totalRequests++; });
 }
 
 - (void)recordError {
-    OSAtomicIncrement64(&_totalErrors);
+    dispatch_sync(_metricsQueue, ^{ self->_totalErrors++; });
     GZ_LOG_CORE_DEBUG(@"PLC error recorded");
 }
 
@@ -93,12 +92,12 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)recordVerificationSuccess {
-    OSAtomicIncrement64(&_verificationSuccesses);
+    dispatch_sync(_metricsQueue, ^{ self->_verificationSuccesses++; });
     GZ_LOG_CORE_DEBUG(@"PLC verification success");
 }
 
 - (void)recordVerificationFailure {
-    OSAtomicIncrement64(&_verificationFailures);
+    dispatch_sync(_metricsQueue, ^{ self->_verificationFailures++; });
     GZ_LOG_CORE_DEBUG(@"PLC verification failure");
 }
 
@@ -125,35 +124,86 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (int64_t)cacheHits {
-    return _cacheHits;
+    __block int64_t value;
+    dispatch_sync(_metricsQueue, ^{ value = self->_cacheHits; });
+    return value;
 }
 
 - (int64_t)cacheMisses {
-    return _cacheMisses;
+    __block int64_t value;
+    dispatch_sync(_metricsQueue, ^{ value = self->_cacheMisses; });
+    return value;
 }
 
 - (int64_t)memcacheHits {
-    return _memcacheHits;
+    __block int64_t value;
+    dispatch_sync(_metricsQueue, ^{ value = self->_memcacheHits; });
+    return value;
 }
 
 - (int64_t)memcacheMisses {
-    return _memcacheMisses;
+    __block int64_t value;
+    dispatch_sync(_metricsQueue, ^{ value = self->_memcacheMisses; });
+    return value;
 }
 
 - (int64_t)verificationSuccesses {
-    return _verificationSuccesses;
+    __block int64_t value;
+    dispatch_sync(_metricsQueue, ^{ value = self->_verificationSuccesses; });
+    return value;
 }
 
 - (int64_t)verificationFailures {
-    return _verificationFailures;
+    __block int64_t value;
+    dispatch_sync(_metricsQueue, ^{ value = self->_verificationFailures; });
+    return value;
 }
 
 - (int64_t)totalRequests {
-    return _totalRequests;
+    __block int64_t value;
+    dispatch_sync(_metricsQueue, ^{ value = self->_totalRequests; });
+    return value;
 }
 
 - (int64_t)totalErrors {
-    return _totalErrors;
+    __block int64_t value;
+    dispatch_sync(_metricsQueue, ^{ value = self->_totalErrors; });
+    return value;
+}
+
+- (NSDictionary<NSString *, id> *)snapshot {
+    __block NSDictionary<NSString *, id> *result = nil;
+    dispatch_sync(_metricsQueue, ^{
+        double latencyTotal = 0;
+        double latencyMinimum = 0;
+        double latencyMaximum = 0;
+        for (NSNumber *sample in self.latencySamples) {
+            double value = sample.doubleValue;
+            latencyTotal += value;
+            if (latencyMinimum == 0 || value < latencyMinimum) latencyMinimum = value;
+            if (value > latencyMaximum) latencyMaximum = value;
+        }
+        result = @{
+            @"cacheHits": @(self->_cacheHits),
+            @"cacheMisses": @(self->_cacheMisses),
+            @"memcacheHits": @(self->_memcacheHits),
+            @"memcacheMisses": @(self->_memcacheMisses),
+            @"verificationSuccesses": @(self->_verificationSuccesses),
+            @"verificationFailures": @(self->_verificationFailures),
+            @"totalRequests": @(self->_totalRequests),
+            @"totalErrors": @(self->_totalErrors),
+            @"operationCounts": [self.operationCounts copy],
+            @"gauges": [self.customGauges copy],
+            @"counters": [self.customCounters copy],
+            @"resolutionLatency": @{
+                @"samples": @(self.latencySamples.count),
+                @"averageMilliseconds": @(self.latencySamples.count ? latencyTotal / self.latencySamples.count : 0),
+                @"minimumMilliseconds": @(latencyMinimum),
+                @"maximumMilliseconds": @(latencyMaximum),
+            },
+        };
+    });
+    return result;
 }
 
 - (NSString *)renderMetrics {

@@ -76,6 +76,7 @@
         }
         .login-card input {
             width: 100%;
+            min-height: 48px;
             margin-bottom: var(--space-md);
             padding: var(--space-md);
             border-radius: var(--radius-md);
@@ -84,8 +85,15 @@
         }
         .login-card input:focus {
             background: var(--color-bg-primary);
+            outline: 2px solid var(--color-accent);
+            outline-offset: 2px;
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 20%, transparent);
             transform: translateY(-1px);
+        }
+        #password:focus-visible {
+            outline: 2px solid #0a84ff !important;
+            outline-offset: 2px;
+            box-shadow: 0 0 0 3px rgb(10 132 255 / 55%) !important;
         }
         .login-card button { 
             width: 100%; 
@@ -93,7 +101,7 @@
             border-radius: var(--radius-md);
             font-weight: 600;
             letter-spacing: 0.3px;
-            height: 40px;
+            height: 48px;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .login-card button:hover {

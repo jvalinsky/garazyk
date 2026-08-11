@@ -587,7 +587,7 @@ target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoT
 # PLCPersistentStore owns the serialized SQLite connection and query-runner
 # construction used by the PLC directory.  Storage depends only on Core, so
 # this is a fundamental acyclic public edge and part of PLC's link closure.
-target_link_libraries(ATProtoPLC PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
+target_link_libraries(ATProtoPLC PUBLIC ATProtoStorage ATProtoAdminUI ATProtoTransport ATProtoCore)
 target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService)
 target_link_libraries(ATProtoMediaCore PUBLIC ATProtoStorage ATProtoCore ATProtoTransport)
 target_link_libraries(ATProtoVideoService PUBLIC ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport)
@@ -677,6 +677,7 @@ if(APPLE)
   target_link_libraries(campagnola PRIVATE
     ATProtoAppViewServer
     ATProtoPLC
+    ATProtoAdminUI
     ATProtoTransport
     ATProtoCore
     ATProtoRuntime
@@ -715,7 +716,6 @@ set_target_properties(campagnola PROPERTIES
 add_executable(zuk
   Garazyk/Binaries/zuk/main.m
   Garazyk/Binaries/zuk/DashboardHTML.m
-  Garazyk/Sources/AdminUIServer/UIAuthManager.m
 )
 
 target_include_directories(zuk PRIVATE
@@ -1048,12 +1048,12 @@ target_include_directories(garazyk-ui PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-# garazyk-ui is the compatibility consumer for the transport-only Admin UI
-# library.  The archive's public closure is deliberately the complete link
-# surface for this target: AdminUI, Transport, and Core.
+# garazyk-ui keeps serving the PLC-owned pack through the compatibility host
+# until workstream 11 M5.  AdminUI itself remains service-neutral.
 if(APPLE)
   target_link_libraries(garazyk-ui PRIVATE
     ATProtoAdminUI
+    ATProtoPLC
     ATProtoTransport
     ATProtoCore
     ${PLATFORM_LIBRARIES}
@@ -1064,6 +1064,7 @@ else()
   target_link_libraries(garazyk-ui PRIVATE
     -Wl,--whole-archive
     ATProtoAdminUI
+    ATProtoPLC
     ATProtoTransport
     ATProtoCore
     -Wl,--no-whole-archive
@@ -1239,6 +1240,7 @@ function(add_admin_ui_assets target)
 endfunction()
 
 add_admin_ui_assets(garazyk-ui)
+add_admin_ui_assets(campagnola)
 
 # Tutorial examples are optional; local/dev checkouts may omit examples/.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/tutorial-1-hello-pds/src/main.m")
