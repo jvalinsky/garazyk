@@ -606,10 +606,10 @@ for full traceability; mirrored in the
     `HttpServer` concurrency, service-scoped session cookies) unblocks
     embedding; M2 has been implemented and merged to `main` as
     `ATProtoAdminUI`, validated by rebuilding `garazyk-ui` as its first
-    consumer before any service is touched. Phase 30 closeout remains blocked
-    on its named static/page-load, browser, and full-suite acceptance evidence;
-    M3 pilots
-    on `campagnola`, which has no admin credential today. The governed
+    consumer before any service is touched. Phase 30 and the M3 PLC pilot are
+    complete with current full-suite and browser evidence. M4 is now converging
+    Relay (`zuk`) onto its service-owned pack before any later service rollout.
+    The governed
     [per-service brief index](workstreams/service-admin-uis/README.md) adds
     cross-linked execution and acceptance plans for Relay, PLC, AppView,
     Mikrus, Beskid, Chat, Germ, Video, and PDS without creating a second

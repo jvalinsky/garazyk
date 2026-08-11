@@ -331,6 +331,23 @@ index), `syrena` (AppView), `syrena-chat` (chat), `germ` (E2EE mailbox),
 `jelcz` (video), then `kaszlak` (PDS, Ozone, Security, Data Explorer, MST,
 Lab).
 
+### M4 status (2026-08-11)
+
+**In progress — Relay convergence.** `zuk` now owns `GZRelayAdminSnapshot` and
+`GZRelayAdminUIPack` under `Sync/Relay/AdminUI/`; its former inline dashboard,
+separate login routes, and dashboard mutations have been removed from the
+protocol listener. A password-configured relay starts `GZAdminUIHost` on a
+configurable `127.0.0.1:2594` listener with concurrency 8; missing credentials
+disable that listener. The NixOS module exposes `adminHost`, `adminPort`, and a
+systemd-credential password file without copying the secret to the Nix store.
+`garazyk-ui` composes the same Relay pack for M5 compatibility.
+
+Fresh focused evidence is recorded in the Relay brief. Do not start Beskid or
+Mikrus until Relay's remaining M4 acceptance gates are recorded as passed or a
+named governed blocker is recorded there. **Blocked on:** the current host
+volume filled during the mandatory full gated suite; see the Relay brief for
+the dated failure evidence. This does not authorize a later-service rollout.
+
 | Binary | Execution brief |
 | --- | --- |
 | `zuk` | [Relay](service-admin-uis/relay.md) |
