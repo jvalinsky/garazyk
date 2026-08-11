@@ -185,9 +185,10 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 @interface ATProtoSTARL0Writer : NSObject
 
 /**
- * @abstract Exposes the commit value.
+ * @abstract Exposes the commit value. nil when the writer was built from a
+ * raw commit block via -initWithCommitBlock:error: / -initWithCommitBlock:outputBlock:error:.
  */
-@property (nonatomic, strong, readonly) ATProtoSTARCommit *commit;
+@property (nonatomic, strong, readonly, nullable) ATProtoSTARCommit *commit;
 
 /**
  * @abstract Performs the initWithCommit operation.
@@ -204,6 +205,56 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  @return A new ATProtoSTARL0Writer instance.
  */
 - (instancetype)initWithCommit:(ATProtoSTARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock;
+
+/*!
+ @method commitBytesFromCommitBlock:error:
+
+ @abstract Validates a stored commit block and returns it unchanged.
+
+ @discussion Decodes the block to confirm it is a CBOR map and that
+ re-encoding it reproduces the exact same bytes, guarding against a latent
+ canonicalization bug in our own encoder before trusting the block enough to
+ embed it in an archive header.
+
+ @param commitBlock The stored, signed commit block as DAG-CBOR.
+ @param error Error pointer for decoding or round-trip-verification failures.
+ @return commitBlock unchanged, or nil on failure.
+ */
++ (nullable NSData *)commitBytesFromCommitBlock:(NSData *)commitBlock error:(NSError **)error;
+
+/*!
+ @method initWithCommitBlock:error:
+
+ @abstract Initialize a writer from a stored commit block, embedded verbatim.
+
+ @discussion Unlike -initWithCommit:, which rebuilds the header commit from a
+ fixed field list (did, version, data, rev, prev, sig) and so silently drops
+ a present-but-null `prev` or any field it does not model, this decodes the
+ stored commit only to validate it and confirm our own re-encoding of it is
+ byte-identical, then embeds the original bytes unchanged. Unlike STAR-lite
+ v0, STAR-L0 embeds the full signed commit (including `data`) in the header,
+ so no stripping is needed.
+
+ @param commitBlock The stored, signed commit block as DAG-CBOR.
+ @param error Error pointer for decoding or round-trip-verification failures.
+ @return A new writer, or nil if the block is not a CBOR map, or if
+ re-encoding it does not reproduce it byte-for-byte.
+ */
+- (nullable instancetype)initWithCommitBlock:(NSData *)commitBlock error:(NSError **)error;
+
+/*!
+ @method initWithCommitBlock:outputBlock:error:
+
+ @abstract Streaming variant of -initWithCommitBlock:error:.
+
+ @param commitBlock The stored, signed commit block as DAG-CBOR.
+ @param outputBlock Block called whenever a new chunk of data is ready.
+ @param error Error pointer for decoding or round-trip-verification failures.
+ @return A new writer, or nil on the same failures as -initWithCommitBlock:error:.
+ */
+- (nullable instancetype)initWithCommitBlock:(NSData *)commitBlock
+                                  outputBlock:(void (^)(NSData *chunk))outputBlock
+                                        error:(NSError **)error;
 
 /*!
  @method writeFromMST:blockProvider:error:
