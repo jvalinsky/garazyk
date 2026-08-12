@@ -57,14 +57,8 @@
             [res setBodyString:@"<div class=\"alert alert-warning\">No snapshot data.</div>"];
             return;
         }
-        // Use legacy renderer for robustness
-        NSMutableDictionary *healthCtx = [NSMutableDictionary dictionary];
-        healthCtx[@"status"] = snap[@"health"] ?: @"unknown";
-        healthCtx[@"message"] = [NSString stringWithFormat:@"Jobs: %@, Workers: %@/%@",
-                                   snap[@"queue"][@"depth"] ?: @0,
-                                   snap[@"worker"][@"activeJobs"] ?: @0,
-                                   snap[@"worker"][@"maxConcurrency"] ?: @0];
-        [res setBodyString:[GZAdminUIVideoPack renderVideoHealthPartial:healthCtx]];
+        // Full overview dashboard with queue breakdown
+        [res setBodyString:[GZAdminUIVideoPack renderVideoOverviewPartial:snap]];
     }];
 
     // Jobs (delegates to centralized pack's renderer for consistency)

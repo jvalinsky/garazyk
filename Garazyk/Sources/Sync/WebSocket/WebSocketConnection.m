@@ -376,6 +376,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     [handshake appendString:@"\r\n"];
     
     GZ_LOG_SYNC_DEBUG(@"WebSocket: Sending handshake to %@:%u", self.host, self.port);
+    fprintf(stderr, "[WS-HANDSHAKE]\n%s\n", handshake.UTF8String);
     
     NSData *data = [handshake dataUsingEncoding:NSUTF8StringEncoding];
     [self writeData:data];
