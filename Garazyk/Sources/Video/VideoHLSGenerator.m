@@ -18,6 +18,16 @@
 
 NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
 
+NSInteger ATProtoVideoHLSSegmentDurationSecondsForProfile(ATProtoVideoHLSSegmentProfile profile) {
+    switch (profile) {
+        case ATProtoVideoHLSSegmentProfileShortForm:
+            return 2;
+        case ATProtoVideoHLSSegmentProfileLongForm:
+            return 6;
+    }
+    return 6;
+}
+
 @implementation GZVideoHLSResult
 @end
 
@@ -38,6 +48,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
         _ffmpegPath = @"ffmpeg";
         _outputBaseDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:@"hls"];
         _include1080p = NO;
+        _segmentProfile = ATProtoVideoHLSSegmentProfileLongForm;
     }
     return self;
 }
@@ -183,7 +194,8 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
         [args addObject:@"-f"];
         [args addObject:@"hls"];
         [args addObject:@"-hls_time"];
-        [args addObject:@"6"];
+        [args addObject:[NSString stringWithFormat:@"%ld",
+                           (long)ATProtoVideoHLSSegmentDurationSecondsForProfile(self.segmentProfile)]];
         [args addObject:@"-hls_list_size"];
         [args addObject:@"0"];
         [args addObject:@"-hls_segment_type"];
