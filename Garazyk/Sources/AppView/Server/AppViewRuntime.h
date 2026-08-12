@@ -48,6 +48,15 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Returns the video URI builder (nil if no video service configured). */
 @property (nonatomic, strong, readonly, nullable) AppViewVideoUriBuilder *videoUriBuilder;
 
+/*! Admin UI host for loopback bind (e.g. "127.0.0.1"). */
+@property (nonatomic, copy, nullable) NSString *adminUIHost;
+
+/*! Admin UI port (default: 2596). */
+@property (nonatomic, assign) NSUInteger adminUIPort;
+
+/*! Admin password for the embedded UI dashboard. */
+@property (nonatomic, copy, nullable) NSString *adminPassword;
+
 /*!
  @method sharedRuntime
 

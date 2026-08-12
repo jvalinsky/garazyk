@@ -1,8 +1,31 @@
 ---
 title: AppView Admin UI Brief
-status: planned
+status: in-progress
 last_verified: 2026-08-11
 ---
+
+## 2026-08-11 — Slices 1-3 implemented, slice 4 packaging done
+
+- Slice 1: SyrenaMetrics (serial-queue counters for ingest events/commits/ops/
+  deletes/identities/errors, backfill completed/failed/enqueued, query families
+  [backlink/manyToMany/identity/record/other], query errors, rate-limit rejects)
+  instrumented in AppViewRuntime ingest/backfill delegates.
+- Slice 2: GZSyrenaAdminSnapshot (bounded: health, uptime, ingest relayHealth/
+  lagByRelay/throughput from AppViewIngestEngine, backfill queueDepth/
+  activeWorkers/repo state counts, index collection counts, DB page_count PRAGMA,
+  config relays/backfill/partial) + password-file helper.
+- Slice 3: GZSyrenaAdminUIPack with 4 partials (appview-metrics, ingest-health,
+  appview-backfill, appview-indexes) + embedded admin host on 127.0.0.1:2596
+  wired into AppViewRuntime + syrena/main.m (SYRENA_ADMIN_PASSWORD,
+  SYRENA_ADMIN_PASSWORD_FILE, --admin-password-file).
+- Slice 4: NixOS module (nixos/modules/syrena.nix), flake package + module
+  registration, CMake manifest, module-boundary script entries.
+- Tests: SyrenaAdminUITests.m (15 tests: metrics counters/snapshot/sidebar,
+  pack auth/scoping, HTML output, password helper). Compilation blocked by
+  pre-existing AllTests linker error (GZCommandLineOptions symbol duplication).
+- Existing AppViewAdminRoutePack fail-open (validateAuth returns YES when
+  adminSecret nil) is preserved for internal automation callers; embedded UI
+  uses session auth.
 
 # AppView (`syrena`)
 

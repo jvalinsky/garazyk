@@ -20,6 +20,7 @@
 #import "Debug/GZLogger.h"
 #import "CLI/GZCommandLineOptions.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "AppView/Server/AdminUI/SyrenaAdminSnapshot.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 #import "Runtime/GZServiceLifecycle.h"
 #import "Core/NSDateFormatter+ATProto.h"
@@ -47,6 +48,9 @@ void print_usage(void) {
     printf("  --partial             Enable interest-graph partial mode\n");
     printf("  --seed-did <did>      Add a seed DID (partial mode)\n");
     printf("  --no-backfill         Disable backfill orchestrator\n");
+    printf("  --admin-ui-host <addr>  Admin UI bind address (default: 127.0.0.1)\n");
+    printf("  --admin-ui-port <num>   Admin UI port (default: 2596)\n");
+    printf("  --admin-password-file <path>  Admin password file (overrides env)\n");
     printf("  -v, --verbose         Enable debug logging\n");
     printf("  -h, --help            Show this help\n\n");
     printf("Environment variables:\n");
@@ -133,6 +137,9 @@ int main(int argc, const char * argv[]) {
             [GZCommandLineOption optionWithLongName:@"partial" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"seed-did" shortName:nil type:GZCommandLineOptionTypeRepeatableString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"no-backfill" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-ui-host" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-ui-port" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-password-file" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO]
         ] forCommand:@"serve"];
 
@@ -158,6 +165,10 @@ int main(int argc, const char * argv[]) {
         NSString *configPath = parsedArgs[@"config"];
         BOOL partial = [parsedArgs[@"partial"] boolValue];
         BOOL noBackfill = [parsedArgs[@"no-backfill"] boolValue];
+        NSString *adminUIHost = parsedArgs[@"admin-ui-host"];
+        NSString *adminUIPortStr = parsedArgs[@"admin-ui-port"];
+        NSUInteger adminUIPort = adminUIPortStr ? (NSUInteger)[adminUIPortStr integerValue] : 0;
+        NSString *adminPassword = GZSyrenaAdminPassword(parsedArgs[@"admin-password-file"]);
 
         // ----------------------------------------------------------------
         // status command: query a running instance
@@ -211,6 +222,11 @@ int main(int argc, const char * argv[]) {
         if (partial)             config.partialEnabled  = YES;
         if (noBackfill)          config.backfillEnabled = NO;
 
+        // Admin UI
+        if (adminUIHost.length > 0) runtime.adminUIHost = adminUIHost;
+        if (adminUIPort > 0)        runtime.adminUIPort = adminUIPort;
+        runtime.adminPassword = adminPassword;
+
         // ----------------------------------------------------------------
         // Start
         // ----------------------------------------------------------------
@@ -233,6 +249,11 @@ int main(int argc, const char * argv[]) {
             printf("  POST /admin/backfill/scope/rebuild\n");
             printf("  GET  /admin/ingest/health\n");
             printf("  GET  /admin/appview/metrics/stats\n");
+            if (runtime.adminPassword.length > 0) {
+                NSUInteger uiPort = runtime.adminUIPort ?: 2596;
+                printf("\nEmbedded admin UI: http://%s:%lu/admin\n",
+                       (runtime.adminUIHost ?: @"127.0.0.1").UTF8String, (unsigned long)uiPort);
+            }
             printf("\nPress Ctrl+C to stop.\n");
         }];
     }
