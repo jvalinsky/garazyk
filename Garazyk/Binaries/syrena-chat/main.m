@@ -11,6 +11,9 @@
 #import "CLI/GZCommandLineOptions.h"
 #import "Debug/GZLogger.h"
 #import "Runtime/GZServiceLifecycle.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/UIServiceConfig.h"
+#import "Chat/AdminUI/ChatAdminUIPack.h"
 
 static const char *executable_name = "syrena-chat";
 
@@ -64,6 +67,7 @@ int main(int argc, const char * argv[]) {
                 [GZCommandLineOption optionWithLongName:@"data-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
                 [GZCommandLineOption optionWithLongName:@"config" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
                 [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO],
+                [GZCommandLineOption optionWithLongName:@"admin-password-file" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
                 [GZCommandLineOption optionWithLongName:@"help" shortName:@"h" type:GZCommandLineOptionTypeBoolean isRequired:NO]
             ];
             [optionsParser registerOptions:options forCommand:@"serve"];
@@ -98,6 +102,40 @@ int main(int argc, const char * argv[]) {
             }
             if ([parsed[@"verbose"] boolValue]) {
                 [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
+            }
+
+            // --- Embedded admin UI listener ---
+            NSString *adminPassword = nil;
+            NSString *adminPasswordFile = parsed[@"admin-password-file"];
+            if (adminPasswordFile.length > 0) {
+                adminPassword = [NSString stringWithContentsOfFile:adminPasswordFile
+                                                          encoding:NSUTF8StringEncoding
+                                                             error:nil];
+                adminPassword = [adminPassword stringByTrimmingCharactersInSet:
+                                 [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            }
+            if (adminPassword.length == 0) {
+                adminPassword = [[[NSProcessInfo processInfo] environment]
+                                 objectForKey:@"CHAT_ADMIN_PASSWORD"];
+            }
+
+            GZAdminUIHost *adminUIHost = nil;
+            if (adminPassword.length > 0) {
+                GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
+                adminConfig.host = @"127.0.0.1";
+                adminConfig.port = 2598;
+                adminConfig.adminPassword = adminPassword;
+                adminConfig.serviceIdentifier = @"chat";
+                adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig
+                                                                      packs:@[ChatAdminUIPack.class]];
+                NSError *adminErr = nil;
+                if (![adminUIHost startWithError:&adminErr]) {
+                    GZ_LOG_WARN(@"Chat admin UI failed to start: %@", adminErr.localizedDescription);
+                } else {
+                    GZ_LOG_INFO(@"Chat admin UI listening on 127.0.0.1:%lu", (unsigned long)adminConfig.port);
+                }
+            } else {
+                GZ_LOG_INFO(@"Chat admin UI disabled: set CHAT_ADMIN_PASSWORD or --admin-password-file");
             }
 
             return [GZServiceLifecycle runServiceWithRuntime:(id<GZServiceRuntimeProtocol>)runtime

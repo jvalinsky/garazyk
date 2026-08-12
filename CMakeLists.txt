@@ -1123,6 +1123,7 @@ if(APPLE)
     ATProtoSync
     ATProtoStorage
     ATProtoCore
+    ATProtoAdminUI
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
     ${READLINE_LIBRARY}
@@ -1138,6 +1139,7 @@ else()
     ATProtoStorage
     -Wl,--no-whole-archive
     ATProtoCore
+    ATProtoAdminUI
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
     ${READLINE_LIBRARY}
