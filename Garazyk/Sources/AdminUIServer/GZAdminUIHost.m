@@ -107,6 +107,17 @@ void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSSt
     [response setHeader:csp forKey:@"content-security-policy"];
 }
 
+static NSString *GZAdminUIHxTriggerForRefreshSeconds(id refreshSeconds) {
+    if ([refreshSeconds respondsToSelector:@selector(integerValue)]) {
+        NSInteger seconds = [refreshSeconds integerValue];
+        if (seconds <= 0) {
+            return @"revealed";
+        }
+        return [NSString stringWithFormat:@"revealed, every %lds", (long)seconds];
+    }
+    return @"revealed, every 10s";
+}
+
 static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArray<Class> *packs) {
     NSMutableArray<NSDictionary<NSString *, NSString *> *> *tabs = [NSMutableArray array];
     for (Class<GZAdminUIPack> packClass in packs) {
@@ -119,6 +130,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
             [tabs addObject:@{
                 @"tabIdentifier": identifier,
                 @"displayName": displayName,
+                @"hxTrigger": GZAdminUIHxTriggerForRefreshSeconds(section[@"refreshSeconds"]),
             }];
         }
     }
@@ -130,6 +142,9 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         renderedTab[@"activeClass"] = active ? @" active" : @"";
         renderedTab[@"ariaSelected"] = active ? @"true" : @"false";
         renderedTab[@"tabIndex"] = active ? @"0" : @"-1";
+        if (renderedTab[@"hxTrigger"].length == 0) {
+            renderedTab[@"hxTrigger"] = @"revealed, every 10s";
+        }
         [renderedTabs addObject:[renderedTab copy]];
     }];
     return renderedTabs;
@@ -395,6 +410,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
                 @"hidden": active ? @"" : @"hidden",
                 @"ariaLabelledby": [NSString stringWithFormat:@"tabbtn-%@", identifier],
                 @"tabIndex": active ? @"0" : @"-1",
+                @"hxTrigger": tab[@"hxTrigger"] ?: @"revealed, every 10s",
             }];
         }
     }

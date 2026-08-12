@@ -11,6 +11,7 @@ title: Documentation Map
 - `docs/01-getting-started/`: setup and repository layout
 - `docs/10-tutorials/`: task guides
 - `docs/20-explanation/`: architecture and deployment
+- `docs/20-explanation/guides/repo-export-formats.md`: CAR vs STAR-L0 vs STAR-lite
 - `docs/adr/`: architecture decisions
 - `docs/plans/`: active and retired plans
 

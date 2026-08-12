@@ -107,6 +107,11 @@
     return validSignature;
 }
 
+- (void)prepareForJobWithOwnerDID:(NSString *)ownerDID blobProvider:(id)blobProvider {
+    self.did = ownerDID;
+    self.blobProvider = blobProvider;
+}
+
 - (void)processMediaAtURL:(NSURL *)inputURL
           outputDirectory:(NSString *)outputDirectory
             progressBlock:(nullable void (^)(float progress))progressBlock
@@ -223,7 +228,6 @@
             NSString *hlsDirectory = nil;
             if (outputDirectory.length > 0) {
                 ATProtoVideoHLSGenerator *hlsGenerator = [ATProtoVideoHLSGenerator sharedGenerator];
-                hlsGenerator.outputBaseDirectory = outputDirectory;
                 hlsGenerator.include1080p = self.include1080p;
 
                 // HLS generation requires DID and blob ATProtoCID for path construction

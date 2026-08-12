@@ -12,6 +12,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)configureHost:(GZAdminUIHost *)host snapshot:(GZSyrenaAdminSnapshot *)snapshot;
 
+/** Serving tab — client-facing health + three-lane pulse. */
++ (NSString *)servingHTML:(NSDictionary *)snapshot;
+/** Firehose tab — relay ingest. */
++ (NSString *)firehoseHTML:(NSDictionary *)snapshot;
+/** Repo sync tab — funnel, enqueue, queue actions. */
++ (NSString *)repoSyncHTML:(NSDictionary *)snapshot queue:(NSDictionary *)queue;
+/** Coverage tab — social index completeness. */
++ (NSString *)coverageHTML:(NSDictionary *)snapshot;
+/** Queue-only fragment for HTMX refresh (#appview-queue). */
++ (NSString *)queueTableHTML:(NSDictionary *)queue;
+
+// Compatibility aliases used by older tests / call sites.
 + (NSString *)overviewHTML:(NSDictionary *)snapshot;
 + (NSString *)ingestionHTML:(NSDictionary *)snapshot;
 + (NSString *)backfillHTML:(NSDictionary *)snapshot;

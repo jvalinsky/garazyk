@@ -132,6 +132,7 @@
             if ([state isEqualToString:@"JOB_STATE_COMPLETED"]) badge = @"badge badge-success";
             else if ([state isEqualToString:@"JOB_STATE_FAILED"]) badge = @"badge badge-destructive";
             mj[@"badgeClass"] = badge;
+            mj[@"state"] = [state stringByReplacingOccurrencesOfString:@"JOB_STATE_" withString:@""];
             [mapped addObject:mj];
         }
         ctx[@"jobs"] = mapped;

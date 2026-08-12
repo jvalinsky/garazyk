@@ -58,6 +58,18 @@ static MikrusDatabase *MikrusOpenDB(XCTestCase *t) {
     XCTAssertEqualObjects(v[@"health"], @"ok");
     [db close];
 }
+- (void)testIdentityCountUsesHandlesTable {
+    MikrusDatabase *db = MikrusOpenDB(self);
+    NSError *error = nil;
+    XCTAssertTrue([db saveHandle:@"alice.test" did:@"did:plc:alice" error:&error], @"%@", error);
+    GZMikrusAdminSnapshot *snap = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db
+                                                                          metrics:[[MikrusMetrics alloc] init]
+                                                                    configuration:[MikrusConfiguration defaultConfiguration]
+                                                                     ingestEngine:nil];
+    NSDictionary *identities = [snap indexFamilyStatistics][@"identities"];
+    XCTAssertGreaterThan([identities[@"approxCount"] longLongValue], (long long)0);
+    [db close];
+}
 - (void)testDatabasePressure {
     MikrusDatabase *db = MikrusOpenDB(self);
     GZMikrusAdminSnapshot *snap = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db metrics:[[MikrusMetrics alloc] init] configuration:[MikrusConfiguration defaultConfiguration] ingestEngine:nil];
@@ -116,6 +128,7 @@ static MikrusDatabase *MikrusOpenDB(XCTestCase *t) {
     XCTAssertTrue([shell.bodyString containsString:@"Overview"]);
     XCTAssertTrue([shell.bodyString containsString:@"Ingestion"]);
     XCTAssertTrue([shell.bodyString containsString:@"Indexes"]);
+    XCTAssertTrue([shell.bodyString containsString:@"Explore"]);
     XCTAssertFalse([shell.bodyString containsString:@"<nav class=\"service-segments\""]);
 }
 - (void)testMetricsRequiresScopedSession {
@@ -124,6 +137,71 @@ static MikrusDatabase *MikrusOpenDB(XCTestCase *t) {
     ATProtoHttpResponse *res = [self.host dispatchRequestForTesting:[self r:@"GET" path:@"/admin/partials/mikrus-metrics" headers:hdr body:nil]];
     XCTAssertEqual(res.statusCode, HttpStatusOK);
     XCTAssertTrue([res.bodyString containsString:@"Health"]);
+}
+- (void)testExploreSearchAndCollectionBrowse {
+    NSError *error = nil;
+    BOOL indexed = [self.db indexRecord:@{@"$type": @"app.bsky.feed.post", @"text": @"hello"}
+                                    did:@"did:plc:explore1"
+                             collection:@"app.bsky.feed.post"
+                                   rkey:@"3jabc"
+                                    cid:@"bafyreiabc"
+                                    seq:42
+                                  error:&error];
+    XCTAssertTrue(indexed, @"%@", error);
+
+    NSString *t = [self.host.authManager createSessionToken];
+    NSDictionary *hdr = @{@"Cookie":[NSString stringWithFormat:@"gz_admin_mikrus_token=%@",t]};
+
+    ATProtoHttpResponse *shell = [self.host dispatchRequestForTesting:[self r:@"GET" path:@"/admin/partials/mikrus-explore" headers:hdr body:nil]];
+    XCTAssertEqual(shell.statusCode, HttpStatusOK);
+    XCTAssertTrue([shell.bodyString containsString:@"Explore index"]);
+    XCTAssertTrue([shell.bodyString containsString:@"mikrus-explore-results"]);
+
+    ATProtoHttpRequest *searchReq = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                                  methodString:@"GET"
+                                                                          path:@"/admin/partials/mikrus-explore-results"
+                                                                   queryString:@"q=app.bsky.feed.post"
+                                                                   queryParams:@{@"q": @"app.bsky.feed.post"}
+                                                                       version:@"HTTP/1.1"
+                                                                       headers:hdr
+                                                                          body:[NSData data]
+                                                                 remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *search = [self.host dispatchRequestForTesting:searchReq];
+    XCTAssertEqual(search.statusCode, HttpStatusOK);
+    XCTAssertTrue([search.bodyString containsString:@"at://did:plc:explore1/app.bsky.feed.post/3jabc"]);
+
+    ATProtoHttpRequest *detailReq = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                                   methodString:@"GET"
+                                                                           path:@"/admin/partials/mikrus-explore-record"
+                                                                    queryString:@"uri=at://did:plc:explore1/app.bsky.feed.post/3jabc"
+                                                                    queryParams:@{@"uri": @"at://did:plc:explore1/app.bsky.feed.post/3jabc"}
+                                                                        version:@"HTTP/1.1"
+                                                                        headers:hdr
+                                                                           body:[NSData data]
+                                                                  remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *detail = [self.host dispatchRequestForTesting:detailReq];
+    XCTAssertEqual(detail.statusCode, HttpStatusOK);
+    XCTAssertTrue([detail.bodyString containsString:@"hello"]);
+    XCTAssertTrue([detail.bodyString containsString:@"code-block"]);
+}
+- (void)testSnapshotExploreAPIs {
+    NSError *error = nil;
+    BOOL indexed = [self.db indexRecord:@{@"$type": @"app.bsky.feed.like", @"subject": @{@"uri": @"at://did:plc:x/app.bsky.feed.post/1"}}
+                                    did:@"did:plc:liker"
+                             collection:@"app.bsky.feed.like"
+                                   rkey:@"like1"
+                                    cid:nil
+                                    seq:7
+                                  error:&error];
+    XCTAssertTrue(indexed, @"%@", error);
+    NSString *next = nil;
+    NSArray *rows = [self.snapshot listRecordsInCollection:@"app.bsky.feed.like" limit:10 cursor:nil nextCursor:&next];
+    XCTAssertEqual(rows.count, 1u);
+    XCTAssertEqualObjects(rows.firstObject[@"rkey"], @"like1");
+    NSDictionary *detail = [self.snapshot recordDetailForURI:@"at://did:plc:liker/app.bsky.feed.like/like1"];
+    XCTAssertNotNil(detail[@"value"]);
+    NSArray *didHits = [self.snapshot searchIndexWithQuery:@"did:plc:liker" limit:10];
+    XCTAssertEqualObjects(didHits.firstObject[@"collection"], @"app.bsky.feed.like");
 }
 - (void)testSiblingCookieRejected {
     NSString *t = [self.host.authManager createSessionToken];

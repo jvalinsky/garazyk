@@ -1266,6 +1266,7 @@ endfunction()
 add_admin_ui_assets(garazyk-ui)
 add_admin_ui_assets(campagnola)
 add_admin_ui_assets(zuk)
+add_admin_ui_assets(jelcz)
 
 # Tutorial examples are optional; local/dev checkouts may omit examples/.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/tutorial-1-hello-pds/src/main.m")

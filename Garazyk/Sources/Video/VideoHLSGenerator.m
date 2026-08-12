@@ -4,6 +4,10 @@
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
+#if TARGET_OS_MAC
+#import <AVFoundation/AVFoundation.h>
+#endif
+
 #ifdef LINUX
 #define PDS_TASK_SET_EXECUTABLE(task, path) task.launchPath = path
 #define PDS_TASK_LAUNCH(task, error) ([task launch], YES)
@@ -54,6 +58,19 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
 
 - (NSString *)thumbnailPathForDID:(NSString *)did cid:(NSString *)cid {
     return [[self hlsDirectoryForDID:did cid:cid] stringByAppendingPathComponent:@"thumbnail.jpg"];
+}
+
+#pragma mark - Input Probing
+
+- (BOOL)inputHasAudioTrackAtURL:(NSURL *)inputURL
+{
+#if TARGET_OS_MAC
+    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:inputURL options:nil];
+    return [asset tracksWithMediaType:AVMediaTypeAudio].count > 0;
+#else
+    (void)inputURL;
+    return YES;
+#endif
 }
 
 #pragma mark - HLS Generation
@@ -126,6 +143,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
 
     // Generate HLS for each variant using ffmpeg
     // We use a single ffmpeg invocation with multiple -hls outputs for efficiency
+    BOOL hasAudio = [self inputHasAudioTrackAtURL:inputURL];
     NSMutableArray<NSString *> *args = [NSMutableArray array];
     [args addObject:@"-i"];
     [args addObject:inputURL.path];
@@ -138,16 +156,22 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
 
         [args addObject:@"-map"];
         [args addObject:@"0:v"];
-        [args addObject:@"-map"];
-        [args addObject:@"0:a"];
+        if (hasAudio) {
+            [args addObject:@"-map"];
+            [args addObject:@"0:a"];
+        }
         [args addObject:@"-c:v"];
         [args addObject:@"libx264"];
         [args addObject:@"-preset"];
         [args addObject:@"fast"];
-        [args addObject:@"-c:a"];
-        [args addObject:@"aac"];
-        [args addObject:@"-b:a"];
-        [args addObject:@"128k"];
+        if (hasAudio) {
+            [args addObject:@"-c:a"];
+            [args addObject:@"aac"];
+            [args addObject:@"-b:a"];
+            [args addObject:@"128k"];
+        } else {
+            [args addObject:@"-an"];
+        }
         [args addObject:@"-vf"];
         [args addObject:[NSString stringWithFormat:@"scale=%@:force_original_aspect_ratio=decrease", config[@"resolution"]]];
         [args addObject:@"-b:v"];
@@ -162,8 +186,18 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
         [args addObject:@"6"];
         [args addObject:@"-hls_list_size"];
         [args addObject:@"0"];
+        [args addObject:@"-hls_segment_type"];
+        [args addObject:@"fmp4"];
+        // Resolved relative to playlistPath's directory (i.e. variantDir), not the
+        // process CWD -- verified empirically against ffmpeg 9.0. A bare filename
+        // here is what keeps the init segment inside the correct variant directory.
+        [args addObject:@"-hls_fmp4_init_filename"];
+        [args addObject:@"init.mp4"];
         [args addObject:@"-hls_segment_filename"];
-        [args addObject:[variantDir stringByAppendingPathComponent:@"segment_%03d.ts"]];
+        // %05d avoids the %03d wraparound (1,000 segments = 100 min at
+        // -hls_time 6), after which ffmpeg would silently overwrite earlier
+        // segments.
+        [args addObject:[variantDir stringByAppendingPathComponent:@"segment_%05d.m4s"]];
         [args addObject:playlistPath];
     }
 
@@ -251,6 +285,35 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
         }
     }
 
+    // Walk the on-disk tree once here so callers never need to re-scan it: map
+    // every produced file to its MASL bundle-root-relative path.
+    NSMutableDictionary<NSString *, NSString *> *producedFiles = [NSMutableDictionary dictionary];
+    producedFiles[@"/"] = masterPlaylistPath;
+    for (NSDictionary *config in variantConfigs) {
+        NSString *variantName = config[@"name"];
+        NSString *variantDir = [hlsDir stringByAppendingPathComponent:variantName];
+        NSString *variantPlaylistPath = [variantDir stringByAppendingPathComponent:@"video.m3u8"];
+        NSString *initSegmentPath = [variantDir stringByAppendingPathComponent:@"init.mp4"];
+
+        producedFiles[[NSString stringWithFormat:@"/%@/video.m3u8", variantName]] = variantPlaylistPath;
+        if ([fm fileExistsAtPath:initSegmentPath]) {
+            producedFiles[[NSString stringWithFormat:@"/%@/init.mp4", variantName]] = initSegmentPath;
+        } else {
+            GZ_LOG_WARN(@"HLS init segment missing for variant %@ at %@", variantName, initSegmentPath);
+        }
+
+        NSArray<NSString *> *variantDirContents = [fm contentsOfDirectoryAtPath:variantDir error:nil] ?: @[];
+        NSPredicate *segmentPredicate = [NSPredicate predicateWithBlock:^BOOL(NSString *filename, NSDictionary *bindings) {
+            return [filename hasPrefix:@"segment_"] && [filename hasSuffix:@".m4s"];
+        }];
+        NSArray<NSString *> *segmentFilenames = [[variantDirContents filteredArrayUsingPredicate:segmentPredicate]
+            sortedArrayUsingSelector:@selector(compare:)];
+        for (NSString *segmentFilename in segmentFilenames) {
+            producedFiles[[NSString stringWithFormat:@"/%@/%@", variantName, segmentFilename]] =
+                [variantDir stringByAppendingPathComponent:segmentFilename];
+        }
+    }
+
     // Build result
     VideoHLSResult *result = [[VideoHLSResult alloc] init];
     result.masterPlaylistPath = masterPlaylistPath;
@@ -259,6 +322,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
                                           [cid stringByReplacingOccurrencesOfString:@":" withString:@"_"]];
     result.variants = [variantResults copy];
     result.thumbnailPath = thumbnailPath;
+    result.producedFiles = [producedFiles copy];
 
     GZ_LOG_INFO(@"HLS generation complete for %@/%@: %lu variants, master at %@",
                  did, cid, (unsigned long)variantConfigs.count, masterPlaylistPath);

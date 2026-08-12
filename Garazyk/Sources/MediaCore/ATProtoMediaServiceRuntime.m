@@ -89,7 +89,7 @@
     ATProtoMediaXrpcPack *xrpcPack = [[ATProtoMediaXrpcPack alloc] init];
     xrpcPack.methodMappings = @{
         @"getJobStatus":    [NSString stringWithFormat:@"%@.getJobStatus",    self.processor.mediaTypeIdentifier],
-        @"upload":          [NSString stringWithFormat:@"%@.uploadMedia",     self.processor.mediaTypeIdentifier],
+        @"upload":          [NSString stringWithFormat:@"%@.uploadVideo",     self.processor.mediaTypeIdentifier],
         @"getUploadLimits": [NSString stringWithFormat:@"%@.getUploadLimits", self.processor.mediaTypeIdentifier],
     };
     [xrpcPack registerWithDispatcher:dispatcher services:routeServices];

@@ -29,11 +29,12 @@
     [self.metrics recordIngestCommit];
     [self.metrics recordIngestOp];
     [self.metrics recordBackfillCompleted];
+    [self.metrics recordQuery:@"identity"];
+    [self.metrics recordQueryError];
 
     AppViewConfiguration *avConfig = [AppViewConfiguration defaultConfiguration];
     avConfig.relayURLs = @[@"wss://test.example.com"];
 
-    // Snapshot without a real database — nil database means no repo sync counts
     self.snapshot = [[GZSyrenaAdminSnapshot alloc] initWithDatabase:nil
                                                              metrics:self.metrics
                                                        configuration:avConfig
@@ -90,7 +91,7 @@
     NSDictionary *snap = [self.metrics snapshotDictionary];
     XCTAssertEqualObjects(snap[@"queries"][@"backlink"], @(2));
     XCTAssertEqualObjects(snap[@"queries"][@"manyToMany"], @(1));
-    XCTAssertEqualObjects(snap[@"queries"][@"total"], @(6));
+    XCTAssertEqualObjects(snap[@"queries"][@"total"], @(7)); // +1 from setUp
 }
 
 #pragma mark - Snapshot
@@ -104,11 +105,21 @@
     NSDictionary *s = [self.snapshot snapshot];
     XCTAssertNotNil(s[@"health"]);
     XCTAssertNotNil(s[@"uptimeSeconds"]);
+    XCTAssertNotNil(s[@"lanes"]);
     XCTAssertNotNil(s[@"ingest"]);
     XCTAssertNotNil(s[@"backfill"]);
+    XCTAssertNotNil(s[@"coverage"]);
+    XCTAssertNotNil(s[@"exceptions"]);
     XCTAssertNotNil(s[@"indexes"]);
     XCTAssertNotNil(s[@"queries"]);
     XCTAssertNotNil(s[@"database"]);
+}
+
+- (void)testSnapshotLanesIncludeFirehoseSyncServing {
+    NSDictionary *lanes = [self.snapshot snapshot][@"lanes"];
+    XCTAssertEqualObjects(lanes[@"firehose"], @"down");
+    XCTAssertEqualObjects(lanes[@"sync"], @"idle");
+    XCTAssertNotNil(lanes[@"serving"]);
 }
 
 - (void)testSnapshotConfigReflectsRelays {
@@ -118,11 +129,16 @@
     XCTAssertEqualObjects(relays[0], @"wss://test.example.com");
 }
 
+- (void)testEnqueueWithoutOrchestratorFailsClosed {
+    NSDictionary *result = [self.snapshot enqueueDIDs:@[@"did:plc:abc"]];
+    XCTAssertEqualObjects(result[@"error"], @"BackfillDisabled");
+}
+
 #pragma mark - Pack auth + scoping
 
 - (void)testUnauthRedirects {
     ATProtoHttpResponse *res = [self.host dispatchRequestForTesting:
-        [self r:@"GET" path:@"/admin/partials/appview-metrics" headers:@{} body:nil]];
+        [self r:@"GET" path:@"/admin/partials/appview-serving" headers:@{} body:nil]];
     XCTAssertEqual(res.statusCode, 302);
 }
 
@@ -131,7 +147,13 @@
     NSString *cookie = [NSString stringWithFormat:@"%@=%@", self.host.authManager.sessionCookieName, token];
     NSDictionary *h = @{@"Cookie": cookie};
 
-    for (NSString *path in @[@"/admin/partials/appview-metrics",
+    for (NSString *path in @[@"/admin/partials/appview-serving",
+                              @"/admin/partials/appview-firehose",
+                              @"/admin/partials/appview-reposync",
+                              @"/admin/partials/appview-coverage",
+                              @"/admin/partials/appview-queue",
+                              // compatibility aliases
+                              @"/admin/partials/appview-metrics",
                               @"/admin/partials/ingest-health",
                               @"/admin/partials/appview-backfill",
                               @"/admin/partials/appview-indexes"]) {
@@ -141,22 +163,34 @@
     }
 }
 
+- (void)testMutationRequiresCSRF {
+    NSString *token = [self.host.authManager createSessionToken];
+    NSString *cookie = [NSString stringWithFormat:@"%@=%@", self.host.authManager.sessionCookieName, token];
+    NSData *body = [NSJSONSerialization dataWithJSONObject:@{@"dids": @[@"did:plc:abc"]} options:0 error:nil];
+    ATProtoHttpResponse *res = [self.host dispatchRequestForTesting:
+        [self r:@"POST" path:@"/admin/actions/appview-enqueue-dids" headers:@{@"Cookie": cookie} body:body]];
+    XCTAssertEqual(res.statusCode, 403);
+}
+
 #pragma mark - HTML output
 
-- (void)testOverviewHTMLContainsMetrics {
+- (void)testServingHTMLContainsPipelineAndQueries {
     NSDictionary *s = [self.snapshot snapshot];
-    NSString *html = [GZSyrenaAdminUIPack overviewHTML:s];
-    XCTAssertTrue([html containsString:@"detail-label"]);
-    XCTAssertTrue([html containsString:@"Degraded"] || [html containsString:@"degraded"]);
+    NSString *html = [GZSyrenaAdminUIPack servingHTML:s];
+    XCTAssertTrue([html containsString:@"Pipeline"]);
+    XCTAssertTrue([html containsString:@"Serving health"]);
+    XCTAssertTrue([html containsString:@"Query families"]);
+    XCTAssertTrue([html containsString:@"Exceptions"]);
+    XCTAssertTrue([html containsString:@"Degraded"] || [html containsString:@"degraded"] || [html containsString:@"badge"]);
 }
 
-- (void)testBackfillHTMLShowsDisabledWhenNilOrch {
+- (void)testRepoSyncHTMLShowsDisabledWhenNilOrch {
     NSDictionary *s = [self.snapshot snapshot];
-    NSString *html = [GZSyrenaAdminUIPack backfillHTML:s];
+    NSString *html = [GZSyrenaAdminUIPack repoSyncHTML:s queue:@{@"entries": @[], @"enabled": @NO}];
     XCTAssertTrue([html containsString:@"no"]);
+    XCTAssertTrue([html containsString:@"Enqueue DIDs"]);
+    XCTAssertTrue([html containsString:@"Rebuild scope"]);
 }
-
-
 
 #pragma mark - Password helper
 
@@ -178,9 +212,13 @@
 - (void)testSidebarSectionsMatchPartialRoutes {
     NSArray *sections = [GZSyrenaAdminUIPack sidebarSections];
     XCTAssertEqual(sections.count, 4u);
-    NSArray *expectedIds = @[@"appview-metrics", @"ingest-health", @"appview-backfill", @"appview-indexes"];
+    NSArray *expectedIds = @[@"appview-serving", @"appview-firehose", @"appview-reposync", @"appview-coverage"];
     for (NSUInteger i = 0; i < sections.count; i++) {
         XCTAssertEqualObjects(sections[i][@"tabIdentifier"], expectedIds[i]);
+    }
+    NSArray *labels = @[@"Serving", @"Firehose", @"Repo sync", @"Coverage"];
+    for (NSUInteger i = 0; i < sections.count; i++) {
+        XCTAssertEqualObjects(sections[i][@"displayName"], labels[i]);
     }
 }
 

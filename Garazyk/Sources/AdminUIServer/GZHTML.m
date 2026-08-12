@@ -132,7 +132,14 @@ static NSString *GZHTMLTableHeaderHTML(id header) {
 + (NSString *)tableRowWithHtmlCells:(NSArray<NSString *> *)htmlCells {
     NSMutableString *html = [NSMutableString stringWithString:@"<tr>"];
     for (NSString *cell in htmlCells) {
-        [html appendFormat:@"<td>%@</td>", cell ?: @""];
+        NSString *value = cell ?: @"";
+        NSString *trimmed = [value stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+        // +tableCellWithText:/HTML: already emit a full <td>; don't wrap again.
+        if ([trimmed.lowercaseString hasPrefix:@"<td"]) {
+            [html appendString:value];
+        } else {
+            [html appendFormat:@"<td>%@</td>", value];
+        }
     }
     [html appendString:@"</tr>"];
     return html;

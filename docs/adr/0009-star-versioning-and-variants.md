@@ -93,3 +93,9 @@ The `carDataFromSTARData:` method now performs **verifying** conversion:
   caller existed, so no migration burden.
 - **Neutral**: The Error Domain `com.atproto.star` error codes 14-19 remain
   unused; codes 30-44 are the new verifier rejection codes.
+
+## See also
+
+- [Repository export formats](../20-explanation/guides/repo-export-formats.md) —
+  when to use CAR, STAR-L0, local STAR-lite, and STAR-lite v0.
+- [ADR 0034](0034-star-lite-v0-interop-export.md) — upstream STAR-lite v0 export.

@@ -4,7 +4,7 @@
 {{^error}}
 <table class="table"><thead><tr><th>Job ID</th><th>DID</th><th>State</th><th>Created</th><th>Actions</th></tr></thead><tbody>
 {{#jobs}}
-<tr><td class="text-mono text-sm">{{jobId}}</td><td class="text-mono text-sm">{{did}}</td><td><span class="{{badgeClass}}">{{state}}</span></td><td class="text-sm">{{createdAt}}</td><td><button class="btn btn-secondary btn-sm" data-ui-action="view-video-job" data-ui-job-id="{{jobId}}">View</button></td></tr>
+<tr><td class="text-mono text-sm">{{jobId}}</td><td class="text-mono text-sm">{{did}}</td><td><span class="{{badgeClass}}">{{state}}</span></td><td class="text-sm">{{createdAt}}</td><td><button type="button" class="btn btn-secondary btn-sm" hx-get="/admin/partials/video-job-detail?jobId={{jobId}}" hx-target="closest .admin-partial" hx-swap="innerHTML">View</button></td></tr>
 {{/jobs}}
 {{^jobs}}
 <tr><td colspan="5" class="text-center text-secondary p-lg">No video jobs found.</td></tr>
