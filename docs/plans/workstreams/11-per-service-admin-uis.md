@@ -348,8 +348,8 @@ named governed blocker is recorded there.
 
 On **2026-08-12**, the mandatory full `AllTests --gated=run` passed (exit 0)
 after disk space was restored (~11 GB free). Remaining M4 gates are NixOS/loopback
-smoke, browser/visual smoke re-run, sustained firehose-under-polling, and
-GNUstep binary gate — see the Relay brief.
+smoke, sustained firehose-under-polling, and GNUstep binary gate — browser and
+visual smokes re-passed 2026-08-12 (see Relay brief).
 
 | Binary | Execution brief |
 | --- | --- |

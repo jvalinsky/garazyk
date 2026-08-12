@@ -83,7 +83,7 @@ async function main(): Promise<void> {
       );
     }
 
-    await page.keyboard.press("Tab");
+    await page.locator("#password").focus();
     const focus = await page.evaluate(() => {
       // deno-lint-ignore no-explicit-any
       const win = globalThis as any;
