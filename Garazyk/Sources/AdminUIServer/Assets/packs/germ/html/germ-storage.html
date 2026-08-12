@@ -1,0 +1,11 @@
+{{^error}}
+<div class="metric-row">
+<div class="metric"><span class="metric-label">Ephemeral addresses</span><span class="metric-value">{{ephemeralCount}}</span></div>
+<div class="metric"><span class="metric-label">Rendezvous addresses</span><span class="metric-value">{{rendezvousCount}}</span></div>
+<div class="metric"><span class="metric-label">Pending messages</span><span class="metric-value">{{pendingMessages}}</span></div>
+<div class="metric"><span class="metric-label">Database size</span><span class="metric-value">{{dbSizeBytes}} bytes</span></div>
+</div>
+{{/error}}
+{{#error}}
+<div class="alert alert-warning">{{message}}</div>
+{{/error}}

@@ -24,6 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong) NSURL *appViewBaseURL;
 @property(nonatomic, strong) NSURL *chatBaseURL;
 @property(nonatomic, strong) NSURL *videoBaseURL;
+@property(nonatomic, strong) NSURL *germBaseURL;
 
 @property(nonatomic, copy, nullable) NSString *pdsAdminToken;
 @property(nonatomic, copy, nullable) NSString *pdsAdminPassword;
@@ -35,6 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy, nullable) NSString *appViewAdminToken;
 @property(nonatomic, copy, nullable) NSString *chatAdminToken;
 @property(nonatomic, copy, nullable) NSString *videoAdminToken;
+@property(nonatomic, copy, nullable) NSString *germAdminToken;
 
 /**
  * @abstract Directory containing static assets (CSS, JS, images). Defaults to Assets/ next to the binary.
@@ -45,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Update service URLs and tokens from the given dictionary.
- * @discussion Keys: pdsURL, plcURL, relayURL, appViewURL, chatURL, videoURL, pdsToken, plcToken, relayToken, appViewToken, chatToken, videoToken.
+ * @discussion Keys: pdsURL, plcURL, relayURL, appViewURL, chatURL, videoURL, germURL, pdsToken, plcToken, relayToken, appViewToken, chatToken, videoToken, germToken.
  * @param updates The dictionary of updates.
  * @return YES if all URLs were valid; otherwise NO.
  */
