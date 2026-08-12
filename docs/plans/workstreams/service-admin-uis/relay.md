@@ -75,9 +75,15 @@ keyboard navigation, heading/tab semantics, CSP, and the Lab OAuth flow.
 the visual script was corrected to focus the autofocused password field instead
 of tabbing past it.
 
-M4 remains in progress until NixOS/loopback smoke, sustained
-firehose-under-polling scenario, and GNUstep
-binary gate have fresh successful evidence. The reduced legacy dashboard did
+**Re-run (2026-08-12, afternoon):** `scripts/test/nixos_zuk_module_smoke.sh`
+passed on macOS (flake `nixosModules.zuk` type check + `eval-config.nix`
+verification of `RELAY_ADMIN_PASSWORD_FILE` wiring). `scripts/test/relay_admin_loopback_smoke.ts`
+passed: PLC/PDS/relay binary topology with fixed ports, loopback admin listener,
+24 rounds of HTMX partial polling on metrics/sources while `subscribeRepos`
+delivered commit events during post creation.
+
+M4 remains in progress until the GNUstep
+binary gate has fresh successful evidence. The reduced legacy dashboard did
 not contain a maintainable per-source event inspector; restoring any omitted
 live-event or delivery counters requires adding bounded source fields first,
 not a browser-side polling shortcut.
