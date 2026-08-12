@@ -154,6 +154,7 @@ Environment knobs (also listed in [repo-export-formats](repo-export-formats.md))
 | `STAR_LITE_BENCH_ACCOUNTS_PER_PDS` | `5` | Accounts seeded per PDS |
 | `STAR_LITE_BENCH_QUICK` | off | When `1`, ~500 KB / 1 PDS / 2 accounts |
 | `STAR_LITE_BENCH_JSON_OUT` | — | Optional machine-readable summary path |
+| `STAR_LITE_BENCH_ACCEPT_ENCODING` | — | Optional `Accept-Encoding` for timed size/latency fetches (e.g. `zstd`). Correctness still uses identity archives |
 | `BUILD_DIR` | `build/bin` | Directory containing `kaszlak` and `campagnola` |
 
 ## What we expect to see
@@ -177,6 +178,45 @@ order-of-magnitude win on loopback.
 We also do **not** expect STAR-lite to use dramatically less memory: the PDS
 still loads the repo to export it. The experiment measures export-path cost,
 not cold-start migration cost.
+
+## Results (bingus, 2026-08-12)
+
+### Caveat
+
+These numbers are from a host that was also running a live relay (and other
+services) at the same time. CPU, latency, and RSS are **contended** —
+treat absolute times and resource samples as directional, not as a clean
+isolated baseline. Size and correctness are unaffected by that load.
+
+### 10 MB default run (`targetBytes=10000000`, 3×5 accounts)
+
+| Aggregate | CAR | STAR-lite | STAR-lite / CAR |
+| --- | ---: | ---: | ---: |
+| Total export bytes | 12 686 640 | 10 248 195 | **0.808** (~19.2% smaller) |
+| Total generation+transfer ms | 92 484 | 32 230 | **0.348** |
+| Peak RSS (max over run, KB) | 924 820 | 928 080 | ~1.00 |
+
+Per-account shape:
+
+- **15 / 15** repos passed cross-format correctness (1774 posts each).
+- STAR-lite size was identical across accounts (**683 213 B**, header 223 B) —
+  expected for equal post counts and fixed-length text.
+- CAR sizes clustered ~842–849 KB (MST layout differs slightly by DID/rkey set).
+- Per-export wall times were noisy: early/cold CAR exports on a PDS were much
+  slower; later pairs were near parity and occasionally CAR was faster. The
+  aggregate **0.35×** time ratio is dominated by those cold starts — do not
+  read it as a stable 3× win.
+- Disk Δ during export was 0 KB for STAR-lite and usually **+32 KB** for CAR
+  (likely WAL/page-cache noise, not export payload).
+- Avg CPU samples sat ~32–33% on both formats (lower than the quiet smoke’s
+  ~87%, consistent with a busy host).
+
+Larger targets (e.g. 100 MB) were still running when this section was written;
+add those rows here when they finish.
+
+HTTP `Content-Encoding` (zstd/gzip) for exports landed as workstream 02 **A9**
+(2026-08-12). Re-run with `STAR_LITE_BENCH_ACCEPT_ENCODING=zstd` to measure
+compressed wire sizes; see [repo-export-formats](repo-export-formats.md).
 
 ## Success criteria
 

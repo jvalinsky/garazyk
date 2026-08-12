@@ -26,6 +26,7 @@ title: Garazyk Documentation
 - [Architecture](20-explanation/architecture/atproto_pds_architecture.md)
 - [Repository export formats](20-explanation/guides/repo-export-formats.md)
 - [STAR-lite v0 vs CAR export benchmark](20-explanation/guides/star-lite-vs-car-export-benchmark.md)
+- [Relay subscribeRepos WebSocket stability probe](20-explanation/guides/relay-subscribe-repos-ws-stability.md)
 - [Deployment](20-explanation/guides/DEPLOYMENT.md)
 - [NixOS build and deployment](20-explanation/guides/NIXOS.md)
 - [Video discovery and peer-sharing options](20-explanation/guides/video-discovery-and-peer-sharing-options.md)

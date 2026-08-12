@@ -29,6 +29,10 @@ HTTP(S) relay base URL, converting it to the corresponding WebSocket endpoint:
   tabular summary.
 - `scripts/dump_relay_firehose.ts` prints decoded header/body JSON for a bounded
   number of binary frames.
+- `scripts/test/relay_ws_stability.ts` measures long-lived connection stability
+  (disconnect codes/reasons, reconnects, optional JSON summary). Experiment
+  write-up:
+  [Relay subscribeRepos WebSocket stability probe](../20-explanation/guides/relay-subscribe-repos-ws-stability.md).
 
 Run the live monitor with:
 

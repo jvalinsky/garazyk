@@ -1,7 +1,7 @@
 ---
 title: Core Architecture and Reliability
 status: active
-last_verified: 2026-07-26
+last_verified: 2026-08-12
 ---
 
 # Core Architecture and Reliability
@@ -184,3 +184,84 @@ After generator and coverage work:
 - ~~keep AppView pooling deferred under ADR 0002~~ — done (2026-07-24):
   ADR 0002 superseded; AppView pooling and migration safety implemented
   (mega-plan Phase 5 item 3).
+
+## A8. Relay subscribeRepos disconnect ops hardening (complete)
+
+**Opened 2026-08-12** after the live probe documented in
+[Relay subscribeRepos WebSocket stability probe](../../20-explanation/guides/relay-subscribe-repos-ws-stability.md).
+**Closed 2026-08-12.**
+
+### Verdict (locked)
+
+Do **not** disable or loosen `ConsumerTooSlow` / outbound-queue closes as the
+“fix.” Those closes are intentional bounded-memory backpressure. The probe
+showed catch-up without a cursor dies with `1009`/`1008`; near-tip held for
+10 minutes with 0 unexpected disconnects.
+
+### What shipped
+
+| Slice | Result |
+| --- | --- |
+| A8.1 Inventory | Table in the experiment doc — AppView, Beskid, Zuk upstream, gruszka, probe/monitor scripts; Hubble noted as external |
+| A8.2 Consumers | Owned long-lived clients already cursor+reconnect; gap was close-code observability. Shipped `FirehoseCloseCodeKey` / `FirehoseCloseReasonKey`, `FirehoseErrorIsBackpressureClose()`, richer logs in `Firehose` / `RelayClient` / Beskid / AppView disconnect paths; gruszka `onclose` logs code/reason/backpressure |
+| A8.3 Runbook | Operator runbook section in the experiment doc (classify closes, reproduce commands, alert guidance) |
+| A8.4 Relay polish | **Not pursued** beyond observability: no threshold raise; no error-frame flush change (no evidence gap after A8.1–A8.3) |
+| A8.5 Close-out | Prior probe evidence retained in experiment doc; unit tests for close userInfo + backpressure helper |
+
+### Evidence
+
+```text
+./build/tests/AllTests -XCTest 'FirehoseTests/testCloseIncludesCodeAndReasonInErrorUserInfo' --gated=run
+./build/tests/AllTests -XCTest 'FirehoseTests/testBackpressureCloseHelperRecognizesConsumerTooSlow' --gated=run
+./build/tests/AllTests -f 'RelayClientTests' --gated=run
+```
+
+Live probe tables remain in the experiment doc (catch-up vs near-tip on
+`relay.garazyk.xyz`).
+
+### Non-goals (unchanged)
+
+- Removing or default-raising `PDS_FIREHOSE_MAX_PENDING_*` / WS outbound caps
+- Treating every 1008/1009 as a relay regression
+- Changing ADR 0012 future-cursor → OutdatedCursor behavior
+
+## A9. HTTP Content-Encoding for repo exports (zstd + gzip; brotli optional) (complete)
+
+**Opened 2026-08-12.** STAR / STAR-lite / CAR are **identity** wire formats.
+Size wins Microcosm documents for STAR-lite assume a second layer:
+`Accept-Encoding` → `Content-Encoding` (Hubble prefers **zstd**, also offers
+**gzip**).
+
+**Closed 2026-08-12.**
+
+### Verdict (locked)
+
+- Compress **on the HTTP response path**, wrapping
+  `HttpResponseBodyChunkProducer` / `PDSRepoChunkProducer`. Do **not** bake
+  compression into STAR/CAR producers or change media types.
+- Ship **zstd + gzip** first (Hubble-compatible negotiation). **Brotli** is an
+  optional follow-on only if a named consumer needs it — not required for
+  Microcosm interop.
+- Use **portable C libraries** (`libzstd`, `zlib`) on both macOS and Linux
+  GNUstep. Do **not** depend on Apple Compression.framework as the sole
+  implementation.
+
+### What shipped
+
+| Slice | Result |
+| --- | --- |
+| A9.1 Negotiate | `GZHttpContentEncodingFromAcceptEncoding` — q-values, `*`, q=0, ties → zstd; `PDS_HTTP_CONTENT_ENCODING=0` forces identity |
+| A9.2 Deps | CMake finds `ZLIB` + `libzstd`; Nix toolchain adds `zstd` |
+| A9.3 Compressor | `GZHttpStreamCompressor` (level 3) with zstd + gzip streaming |
+| A9.4 Wrapper | `GZHttpCompressingBodyChunkProducer` — no EOS until finish trailer flushed |
+| A9.5 Handlers | `getRepo` / `getCheckout` / `getRepoFiltered` via `GZHttpResponseSetExportBodyChunkProducer`; `Vary: Accept, Accept-Encoding` |
+| A9.6 Docs + bench | repo-export-formats + STAR-lite bench note; `STAR_LITE_BENCH_ACCEPT_ENCODING` for compressed size/latency |
+
+Brotli remains **not pursued**.
+
+### Evidence
+
+```text
+./build/tests/AllTests --filter 'HttpContentEncodingTests' --gated=run
+# 9 tests, 0 failures (negotiate, zstd/gzip round-trip, producer wrap, headers)
+```

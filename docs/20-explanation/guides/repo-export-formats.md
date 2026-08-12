@@ -39,6 +39,33 @@ Recognized media types:
 Quality values (`q=`) work. If the client sends no preference, Garazyk serves
 **CAR**.
 
+### Content-Encoding (zstd / gzip)
+
+Archive media types are always identity bytes. Clients that want compression
+send a separate `Accept-Encoding` header. Garazyk negotiates like Hubble:
+
+| Client asks | Response |
+| --- | --- |
+| `zstd` (or tie with gzip) | `Content-Encoding: zstd` |
+| `gzip` preferred by q-value | `Content-Encoding: gzip` |
+| nothing / unusable | identity (no `Content-Encoding`) |
+
+`Vary` is `Accept, Accept-Encoding`. Default compression level is **3**. Set
+`PDS_HTTP_CONTENT_ENCODING=0` to force identity. Applies to `getRepo`,
+`getCheckout`, and `tools.garazyk.sync.getRepoFiltered`.
+
+```sh
+curl -fsS \
+  -H 'Accept: application/x.microcosm.star-lite' \
+  -H 'Accept-Encoding: zstd' \
+  "https://pds.example/xrpc/com.atproto.sync.getRepo?did=did:plc:…" \
+  --compressed \
+  -o repo.starlite
+```
+
+Note: many `curl` builds understand `--compressed` for gzip but not zstd;
+decode zstd with `zstd -d` when needed.
+
 For operators and debugging, Garazyk also accepts `?accept=…` on those
 methods. A recognized value overrides `Accept`. Example:
 
