@@ -3,6 +3,7 @@
 #import "AdminUIServer/GZAdminUIHost.h"
 
 #import "AdminUIServer/GZAdminUIPack.h"
+#import "AdminUIServer/GZHTML.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
@@ -18,11 +19,38 @@ NSString *GZAdminUIEscaped(NSString *value) {
     if (![value isKindOfClass:[NSString class]]) {
         return @"";
     }
-    NSString *escaped = [value stringByReplacingOccurrencesOfString:@"&" withString:@"&amp;"];
-    escaped = [escaped stringByReplacingOccurrencesOfString:@"<" withString:@"&lt;"];
-    escaped = [escaped stringByReplacingOccurrencesOfString:@">" withString:@"&gt;"];
-    escaped = [escaped stringByReplacingOccurrencesOfString:@"\"" withString:@"&quot;"];
-    return escaped;
+    return [GZHTML escapedString:value];
+}
+
+NSString *GZAdminUIHealthBadge(NSString *health) {
+    return [GZHTML healthBadge:health];
+}
+
+NSString *GZAdminUIConnectionBadge(NSString *status) {
+    return [GZHTML connectionBadge:status];
+}
+
+NSString *GZAdminUIDetailRow(NSString *label, NSString *valueHTML) {
+    return [GZHTML detailRowWithLabel:label valueHTML:valueHTML];
+}
+
+NSString *GZAdminUIMonoValue(id value) {
+    return [GZHTML monoValue:value];
+}
+
+NSString *GZAdminUIDetailCardOpen(void) { return [GZHTML detailCardOpening]; }
+NSString *GZAdminUIDetailCardClose(void) { return [GZHTML detailCardClosing]; }
+
+NSString *GZAdminUISectionTitle(NSString *title) {
+    return [GZHTML sectionTitle:title];
+}
+
+NSString *GZAdminUIFormatUptime(int64_t seconds) {
+    return [GZHTML formatUptime:seconds];
+}
+
+NSString *GZAdminUIFormatMegabytes(int64_t bytes) {
+    return [GZHTML formatMegabytes:bytes];
 }
 
 /// Safely extract a string from a dictionary, treating NSNull and non-string values as nil.
@@ -63,18 +91,18 @@ void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSSt
             @"default-src 'self'; "
             "script-src 'self' 'nonce-%@' https://unpkg.com; "
             "script-src-attr 'none'; "
-            "style-src 'self' 'unsafe-inline' 'nonce-%@'; "
+            "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
             "connect-src 'self' %@;",
-            nonce, nonce, pdsOrigin];
+            nonce, pdsOrigin];
     } else {
         csp = [NSString stringWithFormat:
             @"default-src 'self'; "
             "script-src 'self' 'nonce-%@' https://unpkg.com; "
             "script-src-attr 'none'; "
-            "style-src 'self' 'unsafe-inline' 'nonce-%@'; "
+            "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:;",
-            nonce, nonce];
+            nonce];
     }
     [response setHeader:csp forKey:@"content-security-policy"];
 }
@@ -314,16 +342,39 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
 }
 
 - (NSString *)loginPageHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
+    NSString *serviceDisplayName = @"Admin";
+    if (self.packs.count == 1) {
+        Class<GZAdminUIPack> packClass = self.packs.firstObject;
+        NSString *displayName = [packClass displayName];
+        if (displayName.length > 0) {
+            serviceDisplayName = displayName;
+        }
+    } else if (self.configuration.serviceIdentifier.length > 0) {
+        serviceDisplayName = self.configuration.serviceIdentifier;
+    }
     return [GZAdminUITemplateEngine renderTemplate:@"login" context:@{
         @"nonce": nonce ?: @"",
-        @"csrfNonce": csrfNonce ?: @""
+        @"csrfNonce": csrfNonce ?: @"",
+        @"serviceDisplayName": serviceDisplayName,
     }];
 }
 
 - (NSString *)adminShellHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
     NSArray<NSDictionary<NSString *, NSString *> *> *tabs = GZAdminUIShellTabs(self.packs);
     NSString *activeTabIdentifier = tabs.firstObject[@"tabIdentifier"] ?: @"overview";
-    NSString *shellTitle = tabs.count == 1 ? tabs.firstObject[@"displayName"] : @"Garazyk UI Service";
+    // One pack = one service surface: sidebar sections + service title.
+    // Tab count is not the signal — Mikrus alone has three sections.
+    BOOL isSingleSurface = self.packs.count == 1;
+    NSString *shellTitle = @"Garazyk UI Service";
+    if (isSingleSurface) {
+        Class<GZAdminUIPack> packClass = self.packs.firstObject;
+        NSString *displayName = [packClass displayName];
+        if (displayName.length > 0) {
+            shellTitle = displayName;
+        } else if (tabs.firstObject[@"displayName"].length > 0) {
+            shellTitle = tabs.firstObject[@"displayName"];
+        }
+    }
 
     NSSet<NSString *> *knownPanels = [NSSet setWithArray:@[
         @"pds", @"appview", @"relay", @"plc"
@@ -357,7 +408,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         @"nonce": nonce ?: @"",
         @"csrfNonce": csrfNonce ?: @"",
         @"tabs": tabs,
-        @"isSingleSurface": @(tabs.count == 1),
+        @"isSingleSurface": @(isSingleSurface),
         @"shellTitle": shellTitle,
         @"peerLinks": @[],
         @"dynamicPanes": dynamicPanes,

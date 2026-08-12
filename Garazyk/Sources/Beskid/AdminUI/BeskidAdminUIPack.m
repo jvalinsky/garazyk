@@ -3,6 +3,7 @@
 #import "Beskid/AdminUI/BeskidAdminUIPack.h"
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZHTML.h"
 #import "Beskid/AdminUI/BeskidAdminSnapshot.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -25,7 +26,7 @@
 + (NSString *)displayName { return @"Beskid"; }
 + (NSArray<NSDictionary<NSString *,id> *> *)sidebarSections {
     return @[
-        @{ @"tabIdentifier": @"beskid-metrics", @"displayName": @"Beskid Metrics" },
+        @{ @"tabIdentifier": @"beskid-metrics", @"displayName": @"Overview" },
         @{ @"tabIdentifier": @"beskid-cache", @"displayName": @"Cache" },
         @{ @"tabIdentifier": @"beskid-upstreams", @"displayName": @"Upstreams" },
     ];
@@ -38,50 +39,48 @@
     NSDictionary *overall = cache[@"overall"] ?: @{};
     double hitRatio = [overall[@"hitRatio"] doubleValue];
     NSString *hitRatioStr = [NSString stringWithFormat:@"%d%%", (int)(hitRatio * 100.0)];
-    NSString *expiry = [NSString stringWithFormat:@"%@/%@",
+    NSString *expiry = [NSString stringWithFormat:@"%@ / %@",
         overall[@"expired"] ?: @0, @([overall[@"entries"] longLongValue] + [overall[@"expired"] longLongValue])];
-    
+
     int64_t upstreamFailures = 0;
-    for (NSDictionary *up in snapshot[@"upstreams"] ?: @[]) {
-        upstreamFailures += [up[@"failures"] longLongValue];
-    }
-    
-    id avgLatency = [NSNull null];
     int64_t totalSuc = 0, totalLat = 0;
     for (NSDictionary *up in snapshot[@"upstreams"] ?: @[]) {
-        totalSuc += [up[@"successes"] longLongValue];
-        totalLat += [up[@"successes"] longLongValue] * ([up[@"averageLatencyMilliseconds"] isKindOfClass:[NSNumber class]]
-            ? [up[@"averageLatencyMilliseconds"] longLongValue] : 0);
+        upstreamFailures += [up[@"failures"] longLongValue];
+        int64_t successes = [up[@"successes"] longLongValue];
+        totalSuc += successes;
+        if ([up[@"averageLatencyMilliseconds"] isKindOfClass:[NSNumber class]]) {
+            totalLat += successes * [up[@"averageLatencyMilliseconds"] longLongValue];
+        }
     }
-    if (totalSuc > 0) avgLatency = @(totalLat / totalSuc);
-    NSString *latencyStr = [avgLatency isKindOfClass:[NSNumber class]]
-        ? [NSString stringWithFormat:@"%@ ms", avgLatency] : @"—";
-    
+    NSString *latencyStr = totalSuc > 0
+        ? [NSString stringWithFormat:@"%lld ms", (long long)(totalLat / totalSuc)]
+        : @"—";
+
     NSDictionary *db = snapshot[@"database"] ?: @{};
-    int64_t storageMB = [db[@"storageBytes"] longLongValue] / (1024 * 1024);
-    
-    return [NSString stringWithFormat:
-        @"<div class=\"metric-row\">"
-        @"<div class=\"metric\"><span class=\"metric-label\">Health</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Uptime</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Cache entries</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Hit ratio</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Expired reads / total</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Upstream failures</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Avg upstream latency</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Rate-limit rejects</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Storage</span><span class=\"metric-value\">%@ MB</span></div>"
-        @"</div>",
-        GZAdminUIEscaped(snapshot[@"health"] ?: @"unknown"),
-        snapshot[@"uptimeSeconds"] ?: @0,
-        overall[@"entries"] ?: @0,
-        hitRatioStr,
-        expiry,
-        @(upstreamFailures),
-        latencyStr,
-        snapshot[@"rateLimitRejects"] ?: @0,
-        @(storageMB)
-    ];
+    NSDictionary *ttl = snapshot[@"ttl"] ?: @{};
+
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Service Health"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Health", @"html": [GZHTML healthBadge:snapshot[@"health"]]},
+        @{@"label": @"Uptime", @"html": [GZHTML monoValue:[GZHTML formatUptime:[snapshot[@"uptimeSeconds"] longLongValue]]]},
+        @{@"label": @"Cache entries", @"html": [GZHTML monoValue:overall[@"entries"]]},
+        @{@"label": @"Hit ratio", @"html": [GZHTML monoValue:hitRatioStr]},
+        @{@"label": @"Expired reads / total", @"html": [GZHTML monoValue:expiry]},
+        @{@"label": @"Upstream failures", @"html": [GZHTML monoValue:@(upstreamFailures)]},
+        @{@"label": @"Avg upstream latency", @"html": [GZHTML monoValue:latencyStr]},
+        @{@"label": @"Rate-limit rejects", @"html": [GZHTML monoValue:snapshot[@"rateLimitRejects"]]},
+        @{@"label": @"Storage", @"html": [GZHTML monoValue:[GZHTML formatMegabytes:[db[@"storageBytes"] longLongValue]]]},
+    ]]];
+
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Configured TTLs"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Record TTL", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ s", ttl[@"recordSeconds"] ?: @"—"]]},
+        @{@"label": @"Identity TTL", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ s", ttl[@"identitySeconds"] ?: @"—"]]},
+    ]]];
+    [html appendString:@"</section>"];
+    return html;
 }
 
 + (NSString *)cacheFamilyRowHTML:(NSDictionary *)family ttl:(NSNumber *)ttl {
@@ -91,82 +90,76 @@
         soonestExpiry = [[NSISO8601DateFormatter new] stringFromDate:[NSDate dateWithTimeIntervalSince1970:ts]];
     }
     double ratio = [family[@"hitRatio"] doubleValue];
-    return [NSString stringWithFormat:
-        @"<tr>"
-        @"<td>%@</td><td>%@</td><td>%@</td><td>%@</td>"
-        @"<td>%@</td><td>%@</td><td>%@</td><td>%@</td>"
-        @"<td class=\"text-mono text-xs\">%@</td>"
-        @"</tr>",
-        GZAdminUIEscaped(family[@"family"]),
-        family[@"entries"] ?: @0,
-        family[@"hits"] ?: @0, family[@"misses"] ?: @0,
-        family[@"expired"] ?: @0,
-        family[@"writes"] ?: @0, family[@"deletes"] ?: @0,
-        [NSString stringWithFormat:@"%d%%", (int)(ratio * 100.0)],
-        soonestExpiry
-    ];
+    NSString *ttlDisplay = ttl ? [NSString stringWithFormat:@"%@ s", ttl] : @"—";
+    return [GZHTML tableRowWithHtmlCells:@[
+        [GZHTML tableCellWithText:family[@"family"] ?: @"" className:nil],
+        [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", family[@"entries"] ?: @0] className:@"text-right text-mono"],
+        [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", family[@"hits"] ?: @0] className:@"text-right text-mono"],
+        [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", family[@"misses"] ?: @0] className:@"text-right text-mono"],
+        [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", family[@"expired"] ?: @0] className:@"text-right text-mono"],
+        [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", family[@"writes"] ?: @0] className:@"text-right text-mono"],
+        [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", family[@"deletes"] ?: @0] className:@"text-right text-mono"],
+        [GZHTML tableCellWithText:[NSString stringWithFormat:@"%d%%", (int)(ratio * 100.0)] className:@"text-right text-mono"],
+        [GZHTML tableCellWithText:ttlDisplay className:@"text-right text-mono"],
+        [GZHTML tableCellWithText:soonestExpiry className:@"text-mono text-sm"],
+    ]];
 }
 
 + (NSString *)cacheHTML:(NSDictionary *)snapshot {
     NSDictionary *cache = snapshot[@"cache"] ?: @{};
     NSDictionary *ttl = snapshot[@"ttl"] ?: @{};
-    NSMutableString *html = [NSMutableString stringWithString:
-        @"<table class=\"table\">"
-        @"<thead><tr>"
-        @"<th>Family</th><th>Entries</th><th>Hits</th><th>Misses</th>"
-        @"<th>Expired</th><th>Writes</th><th>Deletes</th>"
-        @"<th>Hit ratio</th><th>Soonest expiry</th>"
-        @"</tr></thead><tbody>"];
-    
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Cache families"]];
+
+    NSMutableArray *rows = [NSMutableArray array];
     for (NSString *key in @[@"overall", @"record", @"identity"]) {
         NSDictionary *family = cache[key];
         if (!family) continue;
         NSNumber *familyTTL = nil;
         if ([key isEqualToString:@"record"]) familyTTL = ttl[@"recordSeconds"];
         else if ([key isEqualToString:@"identity"]) familyTTL = ttl[@"identitySeconds"];
-        [html appendString:[self cacheFamilyRowHTML:family ttl:familyTTL]];
+        [rows addObject:[self cacheFamilyRowHTML:family ttl:familyTTL]];
     }
-    
-    if (cache.count == 0) {
-        [html appendString:@"<tr><td colspan=\"9\" class=\"text-secondary p-lg\">No cache data.</td></tr>"];
-    }
-    [html appendString:@"</tbody></table>"];
+
+    [html appendString:@"<div class=\"table-scroll\">"];
+    [html appendString:[GZHTML tableWithHeaders:@[
+        @"Family", @"Entries", @"Hits", @"Misses", @"Expired", @"Writes", @"Deletes", @"Hit ratio", @"TTL", @"Soonest expiry"
+    ]
+                                       htmlRows:rows.count > 0 ? rows : nil
+                                  emptyMessage:@"No cache data."]];
+    [html appendString:@"</div>"];
     return html;
 }
 
 + (NSString *)upstreamsHTML:(NSDictionary *)snapshot {
     NSArray *upstreams = snapshot[@"upstreams"] ?: @[];
-    NSMutableString *html = [NSMutableString stringWithString:
-        @"<table class=\"table\">"
-        @"<thead><tr>"
-        @"<th>Host</th><th>Requests</th><th>Successes</th><th>Failures</th>"
-        @"<th>Avg latency</th><th>Last success</th>"
-        @"</tr></thead><tbody>"];
-    
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Upstream hosts"]];
+
+    NSMutableArray *rows = [NSMutableArray arrayWithCapacity:upstreams.count];
     for (NSDictionary *entry in upstreams) {
         NSString *lat = [entry[@"averageLatencyMilliseconds"] isKindOfClass:[NSNumber class]]
             ? [NSString stringWithFormat:@"%@ ms", entry[@"averageLatencyMilliseconds"]] : @"—";
         NSString *lastSuccess = [entry[@"lastSuccessAt"] isKindOfClass:[NSString class]]
             ? entry[@"lastSuccessAt"] : @"—";
-        [html appendFormat:
-            @"<tr>"
-            @"<td class=\"text-mono\">%@</td><td>%@</td><td>%@</td><td>%@</td>"
-            @"<td>%@</td><td class=\"text-mono text-xs\">%@</td>"
-            @"</tr>",
-            GZAdminUIEscaped(entry[@"host"]),
-            entry[@"requests"] ?: @0, entry[@"successes"] ?: @0,
-            entry[@"failures"] ?: @0, lat, GZAdminUIEscaped(lastSuccess)
-        ];
+        [rows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:entry[@"host"] ?: @"" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"requests"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"successes"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"failures"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:lat className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:lastSuccess className:@"text-mono text-sm"],
+        ]]];
     }
-    if (upstreams.count == 0) {
-        [html appendString:@"<tr><td colspan=\"6\" class=\"text-secondary p-lg\">No upstream requests recorded.</td></tr>"];
-    }
-    [html appendString:@"</tbody></table>"];
+
+    [html appendString:[GZHTML tableWithHeaders:@[@"Host", @"Requests", @"Successes", @"Failures", @"Avg latency", @"Last success"]
+                                       htmlRows:rows.count > 0 ? rows : nil
+                                  emptyMessage:@"No upstream requests recorded."]];
     return html;
 }
 
 + (NSString *)errorUnavailableHTML {
-    return @"<div class=\"alert alert-destructive\">Beskid dashboard is unavailable — embedded listener required.</div>";
+    return [GZHTML alertWithType:@"destructive" message:@"Beskid dashboard is unavailable — embedded listener required."];
 }
 
 #pragma mark - Routes
@@ -175,21 +168,21 @@
     GZBeskidAdminSnapshot *snapshot = nil;
     @synchronized(self) { snapshot = [[self snapshots] objectForKey:host]; }
     __weak GZAdminUIHost *weakHost = host;
-    
+
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/beskid-metrics" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakHost, request, response);
         response.contentType = @"text/html; charset=utf-8";
         NSDictionary *value = snapshot ? [snapshot snapshot] : nil;
         [response setBodyString:snapshot ? [self metricsHTML:value] : [self errorUnavailableHTML]];
     }];
-    
+
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/beskid-cache" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakHost, request, response);
         response.contentType = @"text/html; charset=utf-8";
         NSDictionary *value = snapshot ? [snapshot snapshot] : nil;
         [response setBodyString:snapshot ? [self cacheHTML:value] : [self errorUnavailableHTML]];
     }];
-    
+
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/beskid-upstreams" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakHost, request, response);
         response.contentType = @"text/html; charset=utf-8";

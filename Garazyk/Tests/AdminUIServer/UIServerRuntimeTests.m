@@ -629,27 +629,27 @@
     XCTAssertTrue([response.bodyString containsString:@"class=\"admin-sidebar-tab ui-tab active\""]);
     XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-relay\" aria-controls=\"tab-relay\" aria-selected=\"true\" tabindex=\"0\""]);
     NSRange relayPanelStart = [response.bodyString rangeOfString:@"<div id=\"tab-relay\""];
-    NSRange overviewPanelStart = [response.bodyString rangeOfString:@"<div id=\"tab-overview\""];
+    NSRange pdsPanelStart = [response.bodyString rangeOfString:@"<div id=\"tab-pds\""];
     XCTAssertNotEqual(relayPanelStart.location, NSNotFound);
-    XCTAssertNotEqual(overviewPanelStart.location, NSNotFound);
-    if (relayPanelStart.location == NSNotFound || overviewPanelStart.location == NSNotFound) {
+    XCTAssertNotEqual(pdsPanelStart.location, NSNotFound);
+    if (relayPanelStart.location == NSNotFound || pdsPanelStart.location == NSNotFound) {
         return;
     }
     NSRange relayPanelEnd = [response.bodyString rangeOfString:@">"
                                                      options:0
                                                        range:NSMakeRange(relayPanelStart.location, response.bodyString.length - relayPanelStart.location)];
-    NSRange overviewPanelEnd = [response.bodyString rangeOfString:@">"
+    NSRange pdsPanelEnd = [response.bodyString rangeOfString:@">"
                                                         options:0
-                                                          range:NSMakeRange(overviewPanelStart.location, response.bodyString.length - overviewPanelStart.location)];
+                                                          range:NSMakeRange(pdsPanelStart.location, response.bodyString.length - pdsPanelStart.location)];
     XCTAssertNotEqual(relayPanelEnd.location, NSNotFound);
-    XCTAssertNotEqual(overviewPanelEnd.location, NSNotFound);
-    if (relayPanelEnd.location == NSNotFound || overviewPanelEnd.location == NSNotFound) {
+    XCTAssertNotEqual(pdsPanelEnd.location, NSNotFound);
+    if (relayPanelEnd.location == NSNotFound || pdsPanelEnd.location == NSNotFound) {
         return;
     }
     NSString *relayPanel = [response.bodyString substringWithRange:NSMakeRange(relayPanelStart.location, NSMaxRange(relayPanelEnd) - relayPanelStart.location)];
-    NSString *overviewPanel = [response.bodyString substringWithRange:NSMakeRange(overviewPanelStart.location, NSMaxRange(overviewPanelEnd) - overviewPanelStart.location)];
+    NSString *pdsPanel = [response.bodyString substringWithRange:NSMakeRange(pdsPanelStart.location, NSMaxRange(pdsPanelEnd) - pdsPanelStart.location)];
     XCTAssertFalse([relayPanel containsString:@"hidden"]);
-    XCTAssertTrue([overviewPanel containsString:@"hidden"]);
+    XCTAssertTrue([pdsPanel containsString:@"hidden"]);
     XCTAssertNotEqual(peerSectionStart.location, NSNotFound);
     if (peerSectionStart.location == NSNotFound) {
         return;

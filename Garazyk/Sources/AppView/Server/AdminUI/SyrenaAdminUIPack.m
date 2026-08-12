@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AppView/Server/AdminUI/SyrenaAdminUIPack.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZHTML.h"
 #import "AppView/Server/AdminUI/SyrenaAdminSnapshot.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -38,26 +39,41 @@
     NSDictionary *backfill = snapshot[@"backfill"] ?: @{};
     NSDictionary *queries = snapshot[@"queries"] ?: @{};
     NSDictionary *db = snapshot[@"database"] ?: @{};
-    return [NSString stringWithFormat:
-        @"<div class=\"metric-row\">"
-        @"<div class=\"metric\"><span class=\"metric-label\">Health</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Uptime</span><span class=\"metric-value\">%@ s</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Ingest</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Events / Errors</span><span class=\"metric-value\">%@ / %@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Commits / Deletes</span><span class=\"metric-value\">%@ / %@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Queries / Errors</span><span class=\"metric-value\">%@ / %@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Rate-limit rejects</span><span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Storage</span><span class=\"metric-value\">%@ MB</span></div>"
-        @"</div>",
-        GZAdminUIEscaped(snapshot[@"health"] ?: @"unknown"),
-        snapshot[@"uptimeSeconds"] ?: @0,
-        ingest[@"running"] && [ingest[@"running"] boolValue] ? @"running" : @"stopped",
-        ingest[@"events"] ?: @0, ingest[@"errors"] ?: @0,
-        ingest[@"commits"] ?: @0, ingest[@"deletes"] ?: @0,
-        queries[@"total"] ?: @0, queries[@"errors"] ?: @0,
-        snapshot[@"rateLimitRejects"] ?: @0,
-        @([db[@"storageBytes"] longLongValue] / (1024 * 1024))
-    ];
+    BOOL running = [ingest[@"running"] boolValue];
+
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Service Health"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Health", @"html": [GZHTML healthBadge:snapshot[@"health"]]},
+        @{@"label": @"Uptime", @"html": [GZHTML monoValue:[GZHTML formatUptime:[snapshot[@"uptimeSeconds"] longLongValue]]]},
+        @{@"label": @"Ingest", @"html": [GZHTML connectionBadge:running ? @"running" : @"stopped"]},
+        @{@"label": @"Events / Errors", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@",
+            ingest[@"events"] ?: @0, ingest[@"errors"] ?: @0]]},
+        @{@"label": @"Commits / Deletes", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@",
+            ingest[@"commits"] ?: @0, ingest[@"deletes"] ?: @0]]},
+        @{@"label": @"Queries / Errors", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@",
+            queries[@"total"] ?: @0, queries[@"errors"] ?: @0]]},
+        @{@"label": @"Rate-limit rejects", @"html": [GZHTML monoValue:snapshot[@"rateLimitRejects"]]},
+        @{@"label": @"Backfill queue", @"html": [GZHTML monoValue:backfill[@"queueDepth"]]},
+        @{@"label": @"Storage", @"html": [GZHTML monoValue:[GZHTML formatMegabytes:[db[@"storageBytes"] longLongValue]]]},
+    ]]];
+
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Query families"]];
+    NSMutableArray *queryRows = [NSMutableArray array];
+    for (NSArray *pair in @[
+         @[@"Backlink", @"backlink"], @[@"Many-to-many", @"manyToMany"],
+         @[@"Identity", @"identity"], @[@"Record", @"record"], @[@"Other", @"other"] ]) {
+        [queryRows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:pair[0] className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", queries[pair[1]] ?: @0] className:@"text-right text-mono"],
+        ]]];
+    }
+    [html appendString:[GZHTML tableWithHeaders:@[@"Family", @"Requests"]
+                                       htmlRows:queryRows
+                                  emptyMessage:@"No query families."]];
+    [html appendString:@"</section>"];
+    return html;
 }
 
 + (NSString *)ingestionHTML:(NSDictionary *)snapshot {
@@ -67,101 +83,143 @@
     NSDictionary *lagByRelay = ingest[@"lagByRelay"] ?: @{};
     NSDictionary *throughput = ingest[@"throughput"] ?: @{};
 
-    NSMutableString *html = [NSMutableString stringWithString:
-        @"<section class=\"mt-md\"><h3 class=\"section-title\">Relay health</h3>"
-        @"<table class=\"table\"><thead><tr><th>Relay</th><th>Status</th><th>Lag</th><th>Events/s</th></tr></thead><tbody>"];
-
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Relay health"]];
+    NSMutableArray *relayRows = [NSMutableArray arrayWithCapacity:relayURLs.count];
     for (NSString *url in relayURLs) {
         NSString *status = relayHealth[url] ?: @"unknown";
         NSNumber *lagValue = lagByRelay[url];
         NSNumber *tput = throughput[url];
-        [html appendFormat:@"<tr><td class=\"text-mono\">%@</td><td>%@</td><td>%@</td><td>%@</td></tr>",
-         GZAdminUIEscaped(url), GZAdminUIEscaped(status),
-         lagValue ?: @"—", tput ?: @"—"];
+        NSString *lagDisplay = lagValue ? [lagValue description] : @"—";
+        NSString *tputDisplay = tput ? [tput description] : @"—";
+        [relayRows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:url className:@"text-mono text-sm"],
+            [GZHTML tableCellWithHTML:[GZHTML connectionBadge:status] className:nil],
+            [GZHTML tableCellWithText:lagDisplay className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:tputDisplay className:@"text-right text-mono"],
+        ]]];
     }
-    if (relayURLs.count == 0) {
-        [html appendString:@"<tr><td colspan=\"4\" class=\"text-secondary p-md\">No relays configured.</td></tr>"];
-    }
-    [html appendString:@"</tbody></table></section>"];
+    [html appendString:[GZHTML tableWithHeaders:@[@"Relay", @"Status", @"Lag", @"Events/s"]
+                                       htmlRows:relayRows.count > 0 ? relayRows : nil
+                                  emptyMessage:@"No relays configured."]];
+    [html appendString:@"</section>"];
 
-    [html appendFormat:
-        @"<section class=\"mt-md\"><h3 class=\"section-title\">Event counters</h3>"
-        @"<table class=\"table\"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>"
-        @"<tr><td>Events</td><td>%@</td></tr>"
-        @"<tr><td>Commits</td><td>%@</td></tr>"
-        @"<tr><td>Deletes</td><td>%@</td></tr>"
-        @"<tr><td>Ops (creates/updates)</td><td>%@</td></tr>"
-        @"<tr><td>Identities</td><td>%@</td></tr>"
-        @"<tr><td>Errors</td><td>%@</td></tr>"
-        @"</tbody></table></section>",
-        ingest[@"events"] ?: @0, ingest[@"commits"] ?: @0, ingest[@"deletes"] ?: @0,
-        ingest[@"ops"] ?: @0, ingest[@"identities"] ?: @0, ingest[@"errors"] ?: @0
-    ];
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Event counters"]];
+    [html appendString:[GZHTML tableWithHeaders:@[@"Metric", @"Value"]
+                                       htmlRows:@[
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Events" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", ingest[@"events"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Commits" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", ingest[@"commits"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Deletes" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", ingest[@"deletes"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Ops (creates/updates)" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", ingest[@"ops"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Identities" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", ingest[@"identities"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Errors" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", ingest[@"errors"] ?: @0] className:@"text-right text-mono"],
+        ]],
+    ]
+                                  emptyMessage:@"No event counters."]];
+    [html appendString:@"</section>"];
 
     return html;
 }
 
 + (NSString *)backfillHTML:(NSDictionary *)snapshot {
     NSDictionary *backfill = snapshot[@"backfill"] ?: @{};
-    return [NSString stringWithFormat:
-        @"<section class=\"mt-md\"><h3 class=\"section-title\">Backfill status</h3>"
-        @"<table class=\"table\"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>"
-        @"<tr><td>Enabled</td><td>%@</td></tr>"
-        @"<tr><td>Queue depth</td><td>%@</td></tr>"
-        @"<tr><td>Active workers</td><td>%@</td></tr>"
-        @"<tr><td>Pending</td><td>%@</td></tr>"
-        @"<tr><td>Processing</td><td>%@</td></tr>"
-        @"<tr><td>Synced</td><td>%@</td></tr>"
-        @"<tr><td>Dirty</td><td>%@</td></tr>"
-        @"<tr><td>Completed (session)</td><td>%@</td></tr>"
-        @"<tr><td>Failed (session)</td><td>%@</td></tr>"
-        @"<tr><td>Enqueued (session)</td><td>%@</td></tr>"
-        @"</tbody></table></section>",
-        [backfill[@"enabled"] boolValue] ? @"yes" : @"no",
-        backfill[@"queueDepth"] ?: @0,
-        backfill[@"activeWorkers"] ?: @0,
-        backfill[@"repoPending"] ?: @0,
-        backfill[@"repoProcessing"] ?: @0,
-        backfill[@"repoSynced"] ?: @0,
-        backfill[@"repoDirty"] ?: @0,
-        backfill[@"completed"] ?: @0,
-        backfill[@"failed"] ?: @0,
-        backfill[@"enqueued"] ?: @0
-    ];
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Backfill status"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Enabled", @"value": [backfill[@"enabled"] boolValue] ? @"yes" : @"no"},
+        @{@"label": @"Queue depth", @"html": [GZHTML monoValue:backfill[@"queueDepth"]]},
+        @{@"label": @"Active workers", @"html": [GZHTML monoValue:backfill[@"activeWorkers"]]},
+    ]]];
+
+    [html appendString:[GZHTML tableWithHeaders:@[@"Repo state", @"Count"]
+                                       htmlRows:@[
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Pending" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", backfill[@"repoPending"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Processing" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", backfill[@"repoProcessing"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Synced" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", backfill[@"repoSynced"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Dirty" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", backfill[@"repoDirty"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Completed (session)" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", backfill[@"completed"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Failed (session)" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", backfill[@"failed"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Enqueued (session)" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", backfill[@"enqueued"] ?: @0] className:@"text-right text-mono"],
+        ]],
+    ]
+                                  emptyMessage:@"No backfill data."]];
+    [html appendString:@"</section>"];
+    return html;
 }
 
 + (NSString *)indexesHTML:(NSDictionary *)snapshot {
     NSDictionary *indexes = snapshot[@"indexes"] ?: @{};
     NSArray *collections = indexes[@"collections"] ?: @[];
 
-    NSMutableString *html = [NSMutableString stringWithFormat:
-        @"<section class=\"mt-md\"><h3 class=\"section-title\">Indexed collections (%lu)</h3>"
-        @"<table class=\"table\"><thead><tr><th>Collection</th><th>Records</th></tr></thead><tbody>",
-        (unsigned long)collections.count];
-
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendFormat:@"%@%@", [GZHTML sectionTitle:@"Indexed collections"],
+     [NSString stringWithFormat:@"<p class=\"text-secondary text-sm mb-md\">%lu collections</p>", (unsigned long)collections.count]];
+    NSMutableArray *collectionRows = [NSMutableArray arrayWithCapacity:collections.count];
     for (NSDictionary *col in collections) {
-        [html appendFormat:@"<tr><td class=\"text-mono\">%@</td><td>%@</td></tr>",
-         GZAdminUIEscaped(col[@"collection"] ?: @""), col[@"count"] ?: @0];
+        [collectionRows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:col[@"collection"] ?: @"" className:@"text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", col[@"count"] ?: @0] className:@"text-right text-mono"],
+        ]]];
     }
-    if (collections.count == 0) {
-        [html appendString:@"<tr><td colspan=\"2\" class=\"text-secondary p-md\">No indexed collections.</td></tr>"];
-    }
-    [html appendString:@"</tbody></table></section>"];
+    [html appendString:[GZHTML tableWithHeaders:@[@"Collection", @"Records"]
+                                       htmlRows:collectionRows.count > 0 ? collectionRows : nil
+                                  emptyMessage:@"No indexed collections."]];
+    [html appendString:@"</section>"];
 
     NSDictionary *lexicons = snapshot[@"lexicons"] ?: @{};
-    [html appendFormat:
-        @"<section class=\"mt-md\"><h3 class=\"section-title\">Lexicons</h3>"
-        @"<table class=\"table\"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>"
-        @"<tr><td>Filtered collections</td><td>%@</td></tr>"
-        @"</tbody></table></section>",
-        lexicons[@"count"] ?: @0
-    ];
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Lexicons"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Filtered collections", @"html": [GZHTML monoValue:lexicons[@"count"]]},
+    ]]];
+    [html appendString:@"</section>"];
 
     return html;
 }
 
 + (NSString *)errorUnavailableHTML {
-    return @"<div class=\"alert alert-destructive\">AppView dashboard is unavailable — embedded listener required.</div>";
+    return [GZHTML alertWithType:@"destructive" message:@"AppView dashboard is unavailable — embedded listener required."];
 }
 
 #pragma mark - Route registration

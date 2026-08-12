@@ -25,6 +25,25 @@ NSString * _Nullable GZAdminUIStringFromDict(NSDictionary *dict, NSString *key);
 NSString *GZAdminUISafe(id value, NSString *fallback);
 /** @abstract Returns the length of a string-like value, or zero for an unsupported value. */
 NSUInteger GZAdminUISafeLength(id value);
+
+/** @abstract Semantic badge for service health (`ok`/`healthy`, `degraded`, else error). */
+NSString *GZAdminUIHealthBadge(NSString * _Nullable health);
+/** @abstract Semantic badge for connection-like status strings. */
+NSString *GZAdminUIConnectionBadge(NSString * _Nullable status);
+/** @abstract One label/value row for a `detail-card`. `valueHTML` is trusted markup. */
+NSString *GZAdminUIDetailRow(NSString *label, NSString * _Nullable valueHTML);
+/** @abstract Mono-formatted text node for numeric/exact values. */
+NSString *GZAdminUIMonoValue(id _Nullable value);
+/** @abstract Opens a `detail-card` container. */
+NSString *GZAdminUIDetailCardOpen(void);
+/** @abstract Closes a `detail-card` container. */
+NSString *GZAdminUIDetailCardClose(void);
+/** @abstract Section heading used inside pack partials. */
+NSString *GZAdminUISectionTitle(NSString *title);
+/** @abstract Formats uptime seconds as `Nh Nm`. */
+NSString *GZAdminUIFormatUptime(int64_t seconds);
+/** @abstract Formats byte counts as `N MB`. */
+NSString *GZAdminUIFormatMegabytes(int64_t bytes);
 /** @abstract Generates a nonce for one response's content-security policy. */
 NSString *GZAdminUIGenerateNonce(void);
 /** @abstract Adds a nonce-bound CSP response header, allowing the configured PDS origin when present. */

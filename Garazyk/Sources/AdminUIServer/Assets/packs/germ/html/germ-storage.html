@@ -1,9 +1,9 @@
 {{^error}}
-<div class="metric-row">
-<div class="metric"><span class="metric-label">Ephemeral addresses</span><span class="metric-value">{{ephemeralCount}}</span></div>
-<div class="metric"><span class="metric-label">Rendezvous addresses</span><span class="metric-value">{{rendezvousCount}}</span></div>
-<div class="metric"><span class="metric-label">Pending messages</span><span class="metric-value">{{pendingMessages}}</span></div>
-<div class="metric"><span class="metric-label">Database size</span><span class="metric-value">{{dbSizeBytes}} bytes</span></div>
+<div class="detail-card">
+<div class="detail-row"><span class="detail-label">Ephemeral addresses</span><span class="detail-value text-mono">{{ephemeralCount}}</span></div>
+<div class="detail-row"><span class="detail-label">Rendezvous addresses</span><span class="detail-value text-mono">{{rendezvousCount}}</span></div>
+<div class="detail-row"><span class="detail-label">Pending messages</span><span class="detail-value text-mono">{{pendingMessages}}</span></div>
+<div class="detail-row"><span class="detail-label">Database size</span><span class="detail-value text-mono">{{dbSizeBytes}} bytes</span></div>
 </div>
 {{/error}}
 {{#error}}

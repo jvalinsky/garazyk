@@ -181,10 +181,13 @@
 - (void)testTableEscapesHeadersAndCells {
     NSArray *headers = @[@"<th>"];
     NSArray *rows = @[@[@"<td>"]];
-    NSString *result = [GZHTML tableWithHeaders:headers rows:rows emptyMessage:@"<x>"];
+    NSString *result = [GZHTML tableWithHeaders:headers rows:rows emptyMessage:@"unused"];
     XCTAssertTrue([result containsString:@"&lt;th&gt;"]);
     XCTAssertTrue([result containsString:@"&lt;td&gt;"]);
-    XCTAssertTrue([result containsString:@"&lt;x&gt;"]);
+    XCTAssertFalse([result containsString:@"unused"]);
+
+    NSString *empty = [GZHTML tableWithHeaders:headers rows:nil emptyMessage:@"<x>"];
+    XCTAssertTrue([empty containsString:@"&lt;x&gt;"]);
 }
 
 - (void)testTableWithHtmlRows {
@@ -396,8 +399,9 @@
 #pragma mark - Compound: Link
 
 - (void)testLinkWithClass {
+    // Attributes are emitted in sorted key order (class before href).
     XCTAssertEqualObjects([GZHTML linkWithHref:@"/admin/login" text:@"Sign in" className:@"nav-link"],
-                         @"<a href=\"/admin/login\" class=\"nav-link\">Sign in</a>");
+                         @"<a class=\"nav-link\" href=\"/admin/login\">Sign in</a>");
 }
 
 - (void)testLinkWithoutClass {
@@ -410,6 +414,65 @@
     XCTAssertTrue([result containsString:@"&quot;"]);
     XCTAssertTrue([result containsString:@"&amp;"]);
     XCTAssertTrue([result containsString:@"&lt;b&gt;"]);
+}
+
+#pragma mark - Product dashboard primitives
+
+- (void)testDetailCardWithFields {
+    NSString *result = [GZHTML detailCardWithFields:@[
+        @{@"label": @"Status", @"html": [GZHTML healthBadge:@"ok"]},
+        @{@"label": @"Uptime", @"value": @"1h 2m"},
+    ]];
+    XCTAssertTrue([result hasPrefix:@"<div class=\"detail-card\">"]);
+    XCTAssertTrue([result containsString:@"detail-label"]);
+    XCTAssertTrue([result containsString:@"badge badge-success"]);
+    XCTAssertTrue([result containsString:@"1h 2m"]);
+    XCTAssertTrue([result hasSuffix:@"</div>"]);
+}
+
+- (void)testHealthBadgeVariants {
+    XCTAssertEqualObjects([GZHTML healthBadge:@"healthy"],
+                         @"<span class=\"badge badge-success\">Healthy</span>");
+    XCTAssertEqualObjects([GZHTML healthBadge:@"degraded"],
+                         @"<span class=\"badge badge-warning\">Degraded</span>");
+    XCTAssertEqualObjects([GZHTML healthBadge:@"boom"],
+                         @"<span class=\"badge badge-destructive\">Error</span>");
+}
+
+- (void)testConnectionBadgeVariants {
+    XCTAssertTrue([[GZHTML connectionBadge:@"connected"] containsString:@"badge-success"]);
+    XCTAssertTrue([[GZHTML connectionBadge:@"disconnected"] containsString:@"badge-secondary"]);
+    XCTAssertTrue([[GZHTML connectionBadge:@"error"] containsString:@"badge-destructive"]);
+}
+
+- (void)testMonoValueFormatsNumbersAndNil {
+    XCTAssertEqualObjects([GZHTML monoValue:@42], @"<span class=\"text-mono\">42</span>");
+    XCTAssertEqualObjects([GZHTML monoValue:nil], @"<span class=\"text-mono\">—</span>");
+}
+
+- (void)testSectionTitleEscapes {
+    XCTAssertEqualObjects([GZHTML sectionTitle:@"<x>"],
+                         @"<h3 class=\"section-title\">&lt;x&gt;</h3>");
+}
+
+- (void)testTableCellHelpers {
+    XCTAssertEqualObjects([GZHTML tableCellWithText:@"9" className:@"text-right text-mono"],
+                         @"<td class=\"text-right text-mono\">9</td>");
+    XCTAssertEqualObjects([GZHTML tableCellWithHTML:@"<b>1</b>" className:nil],
+                         @"<td><b>1</b></td>");
+}
+
+- (void)testButtonRow {
+    NSString *result = [GZHTML buttonRowWithButtons:@[
+        [GZHTML buttonWithClass:@"btn" text:@"A" action:@"a" data:nil],
+    ]];
+    XCTAssertTrue([result hasPrefix:@"<div class=\"button-row\">"]);
+    XCTAssertTrue([result containsString:@"data-ui-action=\"a\""]);
+}
+
+- (void)testFormatHelpers {
+    XCTAssertEqualObjects([GZHTML formatUptime:3661], @"1h 1m");
+    XCTAssertEqualObjects([GZHTML formatMegabytes:2 * 1024 * 1024], @"2 MB");
 }
 
 @end

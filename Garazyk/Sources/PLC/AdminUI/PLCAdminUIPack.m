@@ -4,6 +4,7 @@
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/GZAdminUIBackendClient.h"
+#import "AdminUIServer/GZHTML.h"
 #import "PLC/AdminUI/GZAdminUIBackendClient+PLC.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -26,58 +27,139 @@
 + (NSString *)packIdentifier { return @"plc"; }
 + (NSString *)displayName { return @"PLC"; }
 + (NSArray<NSDictionary<NSString *,id> *> *)sidebarSections {
-    return @[@{ @"tabIdentifier": @"plc", @"displayName": @"PLC" }];
+    return @[@{ @"tabIdentifier": @"plc", @"displayName": @"Overview" }];
 }
 
 + (NSString *)metricsHTML:(NSDictionary *)snapshot {
     NSDictionary *metrics = snapshot[@"metrics"] ?: @{};
     NSDictionary *latency = metrics[@"resolutionLatency"] ?: @{};
-    NSMutableString *html = [NSMutableString stringWithFormat:
-        @"<div class=\"metric-row\"><div class=\"metric\"><span class=\"metric-label\">Mode</span><span class=\"metric-value\">%@</span></div><div class=\"metric\"><span class=\"metric-label\">Health</span><span class=\"metric-value\">%@</span></div><div class=\"metric\"><span class=\"metric-label\">DIDs</span><span class=\"metric-value\">%@</span></div><div class=\"metric\"><span class=\"metric-label\">Operations</span><span class=\"metric-value\">%@</span></div><div class=\"metric\"><span class=\"metric-label\">Requests / Errors</span><span class=\"metric-value\">%@ / %@</span></div><div class=\"metric\"><span class=\"metric-label\">Resolution avg</span><span class=\"metric-value\">%@ ms</span></div></div>",
-        GZAdminUIEscaped(snapshot[@"mode"] ?: @"unknown"), GZAdminUIEscaped(snapshot[@"health"] ?: @"unknown"),
-        snapshot[@"didTotal"] ?: @0, snapshot[@"operationTotal"] ?: @0,
-        metrics[@"totalRequests"] ?: @0, metrics[@"totalErrors"] ?: @0,
-        latency[@"averageMilliseconds"] ?: @0];
+
+    int64_t hits = [metrics[@"cacheHits"] longLongValue] + [metrics[@"memcacheHits"] longLongValue];
+    int64_t misses = [metrics[@"cacheMisses"] longLongValue] + [metrics[@"memcacheMisses"] longLongValue];
+    int64_t cacheTotal = hits + misses;
+    NSString *hitRatio = cacheTotal > 0
+        ? [NSString stringWithFormat:@"%d%%", (int)(100.0 * hits / cacheTotal)]
+        : @"—";
+
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Directory"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Mode", @"value": snapshot[@"mode"] ?: @"unknown"},
+        @{@"label": @"Health", @"html": [GZHTML healthBadge:snapshot[@"health"]]},
+        @{@"label": @"DIDs", @"html": [GZHTML monoValue:snapshot[@"didTotal"]]},
+        @{@"label": @"Operations", @"html": [GZHTML monoValue:snapshot[@"operationTotal"]]},
+        @{@"label": @"Requests / Errors", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@",
+            metrics[@"totalRequests"] ?: @0, metrics[@"totalErrors"] ?: @0]]},
+        @{@"label": @"Cache hit ratio", @"html": [GZHTML monoValue:hitRatio]},
+        @{@"label": @"Verification failures", @"html": [GZHTML monoValue:metrics[@"verificationFailures"]]},
+        @{@"label": @"Resolution avg", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ ms",
+            latency[@"averageMilliseconds"] ?: @0]]},
+    ]]];
+
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Resolution latency"]];
+    [html appendString:[GZHTML tableWithHeaders:@[@"Samples", @"Avg", @"Min", @"Max"]
+                                       htmlRows:@[
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", latency[@"samples"] ?: @0] className:@"text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@ ms", latency[@"averageMilliseconds"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@ ms", latency[@"minimumMilliseconds"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@ ms", latency[@"maximumMilliseconds"] ?: @0] className:@"text-right text-mono"],
+        ]],
+    ]
+                                  emptyMessage:@"No latency samples."]];
+    [html appendString:@"</section>"];
+
     NSDictionary *replication = snapshot[@"replication"];
     if (replication) {
-        [html appendFormat:@"<div class=\"detail-card mt-lg\"><div class=\"detail-row\"><span class=\"detail-label\">Replication</span><span>%@</span></div><div class=\"detail-row\"><span class=\"detail-label\">Cursor</span><span>%@</span></div><div class=\"detail-row\"><span class=\"detail-label\">Ingested / Failed</span><span>%@ / %@</span></div><div><button class=\"btn btn-secondary btn-sm\" data-ui-action=\"plc-sync\" data-plc-action=\"pause\">Pause</button> <button class=\"btn btn-secondary btn-sm\" data-ui-action=\"plc-sync\" data-plc-action=\"resume\">Resume</button> <button class=\"btn btn-primary btn-sm\" data-ui-action=\"plc-sync\" data-plc-action=\"sync-once\">Sync once</button></div></div>", GZAdminUIEscaped(replication[@"state"] ?: @"unknown"), replication[@"cursor"] ?: @0, replication[@"ingested"] ?: @0, replication[@"failed"] ?: @0];
+        [html appendString:@"<section class=\"mt-md\">"];
+        [html appendString:[GZHTML sectionTitle:@"Replication"]];
+        [html appendString:[GZHTML detailCardWithFields:@[
+            @{@"label": @"State", @"value": replication[@"state"] ?: @"unknown"},
+            @{@"label": @"Cursor", @"html": [GZHTML monoValue:replication[@"cursor"]]},
+            @{@"label": @"Last sync", @"html": [GZHTML monoValue:replication[@"lastSync"] ?: @"—"]},
+            @{@"label": @"Ingested / Failed", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@",
+                replication[@"ingested"] ?: @0, replication[@"failed"] ?: @0]]},
+            @{@"label": @"Workers / Batch", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@",
+                replication[@"workers"] ?: @0, replication[@"batchSize"] ?: @0]]},
+        ]]];
+        [html appendString:@"<div class=\"action-row mt-md\">"
+         @"<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"plc-sync\" data-plc-action=\"pause\">Pause</button>"
+         @"<button class=\"btn btn-secondary btn-sm\" data-ui-action=\"plc-sync\" data-plc-action=\"resume\">Resume</button>"
+         @"<button class=\"btn btn-primary btn-sm\" data-ui-action=\"plc-sync\" data-plc-action=\"sync-once\">Sync once</button>"
+         @"</div></section>"];
     }
+
+    NSDictionary *opCounts = [metrics[@"operationCounts"] isKindOfClass:[NSDictionary class]] ? metrics[@"operationCounts"] : nil;
+    if (opCounts.count > 0) {
+        [html appendString:@"<section class=\"mt-md\">"];
+        [html appendString:[GZHTML sectionTitle:@"Operation counts"]];
+        NSArray *keys = [[opCounts allKeys] sortedArrayUsingSelector:@selector(compare:)];
+        NSMutableArray *rows = [NSMutableArray arrayWithCapacity:keys.count];
+        for (NSString *key in keys) {
+            [rows addObject:[GZHTML tableRowWithHtmlCells:@[
+                [GZHTML tableCellWithText:key className:@"text-mono"],
+                [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", opCounts[key] ?: @0] className:@"text-right text-mono"],
+            ]]];
+        }
+        [html appendString:[GZHTML tableWithHeaders:@[@"Operation", @"Count"]
+                                           htmlRows:rows
+                                      emptyMessage:@"No operation counts."]];
+        [html appendString:@"</section>"];
+    }
+
     return html;
 }
 
 + (NSString *)errorHTML:(NSDictionary *)result fallback:(NSString *)fallback {
     NSString *message = result[@"message"] ?: result[@"error"] ?: fallback;
-    return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(message)];
+    return [GZHTML alertWithType:@"destructive" message:message];
 }
 
 + (NSString *)remoteDetailHTML:(NSDictionary *)result {
     if (result[@"error"]) return [self errorHTML:result fallback:@"PLC lookup failed"];
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
-    for (NSString *key in @[ @"did", @"handle", @"service", @"rotationKeys", @"alsoKnownAs", @"createdAt" ]) {
+    NSMutableArray *fields = [NSMutableArray array];
+    for (NSString *key in @[ @"did", @"handle", @"service", @"rotationKeys", @"alsoKnownAs", @"createdAt",
+                             @"operationChainLength", @"nullifiedOperations" ]) {
         id value = result[key];
         if (!value) continue;
         NSString *display = [value isKindOfClass:[NSArray class]] ? [(NSArray *)value componentsJoinedByString:@", "] : [value description];
-        [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">%@</span><span class=\"text-mono text-xs\">%@</span></div>", GZAdminUIEscaped(key), GZAdminUIEscaped(display)];
+        [fields addObject:@{@"label": key, @"html": [GZHTML monoValue:display]}];
     }
-    [html appendString:@"</div>"];
-    return html;
+    NSDictionary *verification = result[@"verification"];
+    if ([verification isKindOfClass:[NSDictionary class]]) {
+        [fields addObject:@{@"label": @"Verification", @"value": verification[@"status"] ?: @"unknown"}];
+    }
+    return [GZHTML detailCardWithFields:fields];
 }
 
 + (NSString *)remoteLogHTML:(NSDictionary *)result {
     if (result[@"error"]) return [self errorHTML:result fallback:@"PLC log fetch failed"];
     NSArray *entries = [result[@"log"] isKindOfClass:[NSArray class]] ? result[@"log"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Seq</th><th>Type</th><th>Time</th><th>Detail</th></tr></thead><tbody>"];
+    NSMutableArray *rows = [NSMutableArray arrayWithCapacity:entries.count];
     for (NSDictionary *entry in entries) {
-        [html appendFormat:@"<tr><td>%@</td><td>%@</td><td class=\"text-mono text-xs\">%@</td><td>%@</td></tr>", GZAdminUIEscaped([entry[@"seq"] description]), GZAdminUIEscaped([entry[@"type"] description]), GZAdminUIEscaped([entry[@"createdAt"] description]), GZAdminUIEscaped([entry[@"detail"] description])];
+        [rows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:[entry[@"seq"] description] ?: @"" className:@"text-mono"],
+            [GZHTML tableCellWithText:[entry[@"type"] description] ?: @"" className:nil],
+            [GZHTML tableCellWithText:[entry[@"createdAt"] description] ?: @"" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:[entry[@"detail"] description] ?: @"" className:nil],
+        ]]];
     }
-    if (entries.count == 0) [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No log entries.</td></tr>"];
-    [html appendString:@"</tbody></table>"];
-    return html;
+    return [GZHTML tableWithHeaders:@[@"Seq", @"Type", @"Time", @"Detail"]
+                           htmlRows:rows.count > 0 ? rows : nil
+                      emptyMessage:@"No log entries."];
 }
 
 + (NSString *)remoteMetricsHTML:(NSDictionary *)result {
     if (result[@"error"]) return [self errorHTML:result fallback:@"PLC metrics fetch failed"];
-    return [NSString stringWithFormat:@"<pre class=\"text-mono text-xs\">%@</pre>", GZAdminUIEscaped(result[@"text"] ?: @"")];
+    // Compatibility host may only have Prometheus text — keep searchable but avoid a raw dump chrome.
+    NSString *text = result[@"text"] ?: @"";
+    return [NSString stringWithFormat:
+            @"<section>%@"
+            @"<p class=\"text-secondary text-sm mb-md\">Remote Prometheus scrape (compatibility host).</p>"
+            @"<pre class=\"text-mono text-sm\">%@</pre></section>",
+            [GZHTML sectionTitle:@"Metrics"],
+            [GZHTML escapedString:text]];
 }
 
 + (void)registerRoutesWithHost:(GZAdminUIHost *)host {
@@ -96,14 +178,20 @@
         NSDictionary *entry = snapshot ? [snapshot directoryEntryForDID:did] : [weakHost.backendClient lookupDID:did];
         response.contentType = @"text/html; charset=utf-8";
         if (entry[@"error"]) {
-            [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(entry[@"message"] ?: entry[@"error"])]];
+            [response setBodyString:[GZHTML alertWithType:@"destructive"
+                                                  message:entry[@"message"] ?: entry[@"error"]]];
             return;
         }
         if (!snapshot) {
             [response setBodyString:[self remoteDetailHTML:entry]];
             return;
         }
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"detail-card\"><div class=\"detail-row\"><span class=\"detail-label\">DID</span><span class=\"text-mono\">%@</span></div><div class=\"detail-row\"><span class=\"detail-label\">Operation chain</span><span>%@</span></div><div class=\"detail-row\"><span class=\"detail-label\">Nullified</span><span>%@</span></div><div class=\"detail-row\"><span class=\"detail-label\">Verification</span><span>%@</span></div></div>", GZAdminUIEscaped(entry[@"did"]), entry[@"operationChainLength"] ?: @0, entry[@"nullifiedOperations"] ?: @0, GZAdminUIEscaped(entry[@"verification"][@"status"] ?: @"unknown")]];
+        [response setBodyString:[GZHTML detailCardWithFields:@[
+            @{@"label": @"DID", @"html": [GZHTML monoValue:entry[@"did"]]},
+            @{@"label": @"Operation chain", @"html": [GZHTML monoValue:entry[@"operationChainLength"]]},
+            @{@"label": @"Nullified", @"html": [GZHTML monoValue:entry[@"nullifiedOperations"]]},
+            @{@"label": @"Verification", @"value": entry[@"verification"][@"status"] ?: @"unknown"},
+        ]]];
     }];
     [host.httpServer addRoute:@"POST" path:@"/admin/actions/plc-sync" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakHost, request, response);
@@ -118,13 +206,13 @@
         AUTH_GUARD(weakHost, request, response);
         NSDictionary *result = snapshot ? [snapshot directoryEntryForDID:[request queryParamForKey:@"did"] ?: @""] : [weakHost.backendClient lookupDID:[request queryParamForKey:@"did"] ?: @""];
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:snapshot ? [self remoteDetailHTML:result] : [self remoteDetailHTML:result]];
+        [response setBodyString:[self remoteDetailHTML:result]];
     }];
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/plc-log" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakHost, request, response);
         response.contentType = @"text/html; charset=utf-8";
         if (snapshot) {
-            [response setBodyString:@"<div class=\"alert\">Operation audit is available from the directory lookup.</div>"];
+            [response setBodyString:@"<div class=\"alert alert-info\">Operation audit is available from the directory lookup.</div>"];
         } else {
             [response setBodyString:[self remoteLogHTML:[weakHost.backendClient fetchPLCLogForDID:[request queryParamForKey:@"did"] ?: @""]]];
         }
@@ -134,17 +222,29 @@
         NSDictionary *result = snapshot ? [snapshot snapshot] : [weakHost.backendClient fetchPLCHealth];
         response.contentType = @"text/html; charset=utf-8";
         NSString *status = result[@"health"] ?: result[@"status"] ?: @"unknown";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"metric\"><span class=\"metric-label\">PLC health</span><span class=\"metric-value\">%@</span></div>", GZAdminUIEscaped(status)]];
+        [response setBodyString:[GZHTML detailCardWithFields:@[
+            @{@"label": @"PLC health", @"html": [GZHTML healthBadge:status]},
+        ]]];
     }];
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/plc-list" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakHost, request, response);
         NSDictionary *result = snapshot ? @{ @"dids": @[] } : [weakHost.backendClient fetchPLCList];
         response.contentType = @"text/html; charset=utf-8";
         if (result[@"error"]) { [response setBodyString:[self errorHTML:result fallback:@"PLC list fetch failed"]]; return; }
-        NSMutableString *html = [NSMutableString stringWithString:@"<ul class=\"list\">"];
-        for (NSString *did in result[@"dids"] ?: @[]) [html appendFormat:@"<li class=\"text-mono\">%@</li>", GZAdminUIEscaped(did)];
-        [html appendString:@"</ul>"];
-        [response setBodyString:html];
+        NSArray *dids = result[@"dids"] ?: @[];
+        if (dids.count == 0) {
+            [response setBodyString:[GZHTML alertWithType:@"info" message:@"No directory entries in this view."]];
+            return;
+        }
+        NSMutableArray *rows = [NSMutableArray arrayWithCapacity:dids.count];
+        for (NSString *did in dids) {
+            [rows addObject:[GZHTML tableRowWithHtmlCells:@[
+                [GZHTML tableCellWithText:did className:@"text-mono"],
+            ]]];
+        }
+        [response setBodyString:[GZHTML tableWithHeaders:@[@"DID"]
+                                                htmlRows:rows
+                                           emptyMessage:@"No directory entries."]];
     }];
 }
 

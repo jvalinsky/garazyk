@@ -146,8 +146,8 @@
 - (void)testOverviewHTMLContainsMetrics {
     NSDictionary *s = [self.snapshot snapshot];
     NSString *html = [GZSyrenaAdminUIPack overviewHTML:s];
-    XCTAssertTrue([html containsString:@"metric-label"]);
-    XCTAssertTrue([html containsString:@"degraded"]);
+    XCTAssertTrue([html containsString:@"detail-label"]);
+    XCTAssertTrue([html containsString:@"Degraded"] || [html containsString:@"degraded"]);
 }
 
 - (void)testBackfillHTMLShowsDisabledWhenNilOrch {
