@@ -46,19 +46,11 @@ addressing the real failure mode: **stale reads after upstream invalidation**.
 - Serving any stale content past correctness TTL (keep TTL semantics
   authoritative).
 
-## Phase 0 — governance and wiring decision
+## Phase 0 — DONE: governance and wiring decision
 
-- **Evidence.** A firehose subscription changes runtime lifecycle and introduces
-  new external connectivity needs.
-- **Change.** Decide auth/relay source:
-  - where to connect (relay vs direct PDS),
-  - whether to run in full or interest-graph partial mode (if later exposed).
-- **Owner boundary.** `BeskidRuntime` + `BeskidDatabase` + `BeskidMetrics`.
-- **Gate.** A design note documenting:
-  - event handling mapping to delete/expiry operations,
-  - explicit failure modes when subscription is down.
-- **Rollback.** Feature flag disables the subscription; cache continues as
-  current TTL read-through.
+Design note: [14-beskid-firehose-invalidation-phase0.md](14-beskid-firehose-invalidation-phase0.md)
+(accepted 2026-08-12). Connect to relay; full subscription; event mapping and
+failure modes documented. Phase 1 may proceed.
 
 ## Phase 1 — internal subscription + invalidation hooks
 

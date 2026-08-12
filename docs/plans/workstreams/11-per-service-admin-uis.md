@@ -1,7 +1,7 @@
 ---
 title: Per-Service Admin UIs
 status: active
-last_verified: 2026-08-11
+last_verified: 2026-08-12
 ---
 
 ## Target
@@ -331,7 +331,7 @@ index), `syrena` (AppView), `syrena-chat` (chat), `germ` (E2EE mailbox),
 `jelcz` (video), then `kaszlak` (PDS, Ozone, Security, Data Explorer, MST,
 Lab).
 
-### M4 status (2026-08-11)
+### M4 status (2026-08-12)
 
 **In progress — Relay convergence.** `zuk` now owns `GZRelayAdminSnapshot` and
 `GZRelayAdminUIPack` under `Sync/Relay/AdminUI/`; its former inline dashboard,
@@ -344,9 +344,12 @@ systemd-credential password file without copying the secret to the Nix store.
 
 Fresh focused evidence is recorded in the Relay brief. Do not start Beskid or
 Mikrus until Relay's remaining M4 acceptance gates are recorded as passed or a
-named governed blocker is recorded there. **Blocked on:** the current host
-volume filled during the mandatory full gated suite; see the Relay brief for
-the dated failure evidence. This does not authorize a later-service rollout.
+named governed blocker is recorded there.
+
+On **2026-08-12**, the mandatory full `AllTests --gated=run` passed (exit 0)
+after disk space was restored (~11 GB free). Remaining M4 gates are NixOS/loopback
+smoke, browser/visual smoke re-run, sustained firehose-under-polling, and
+GNUstep binary gate — see the Relay brief.
 
 | Binary | Execution brief |
 | --- | --- |
