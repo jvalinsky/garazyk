@@ -332,6 +332,39 @@ static NSString *GZHTMLTableHeaderHTML(id header) {
     return html;
 }
 
++ (NSString *)jsonViewerWithValue:(nullable id)value {
+    NSString *pretty = @"{}";
+    if ([value isKindOfClass:[NSString class]]) {
+        NSString *asString = (NSString *)value;
+        pretty = asString.length > 0 ? asString : @"{}";
+    } else if (value && value != [NSNull null] &&
+               [NSJSONSerialization isValidJSONObject:value]) {
+        NSData *data = [NSJSONSerialization dataWithJSONObject:value
+                                                       options:(NSJSONWritingPrettyPrinted | NSJSONWritingSortedKeys)
+                                                         error:nil];
+        if (data) {
+            pretty = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] ?: @"{}";
+        }
+    }
+    return [NSString stringWithFormat:
+            @"<div class=\"json-viewer\" data-json-viewer>"
+            @"<div class=\"json-viewer-toolbar\" role=\"toolbar\" aria-label=\"JSON viewer\">"
+            @"<div class=\"json-viewer-modes\" role=\"group\" aria-label=\"View mode\">"
+            @"<button type=\"button\" class=\"btn btn-secondary btn-sm\" data-json-mode=\"tree\" aria-pressed=\"false\">Tree</button>"
+            @"<button type=\"button\" class=\"btn btn-secondary btn-sm is-active\" data-json-mode=\"raw\" aria-pressed=\"true\">Raw</button>"
+            @"</div>"
+            @"<div class=\"json-viewer-actions\">"
+            @"<button type=\"button\" class=\"btn btn-secondary btn-sm\" data-json-action=\"expand\" hidden>Expand</button>"
+            @"<button type=\"button\" class=\"btn btn-secondary btn-sm\" data-json-action=\"collapse\" hidden>Collapse</button>"
+            @"<button type=\"button\" class=\"btn btn-secondary btn-sm\" data-json-action=\"copy\">Copy</button>"
+            @"</div>"
+            @"</div>"
+            @"<div class=\"json-viewer-tree\" data-json-tree hidden aria-live=\"polite\"></div>"
+            @"<pre class=\"json-viewer-raw text-xs text-mono\" data-json-raw>%@</pre>"
+            @"</div>",
+            [self escapedString:pretty]];
+}
+
 + (NSString *)formatUptime:(int64_t)seconds {
     if (seconds < 0) seconds = 0;
     int64_t hours = seconds / 3600;

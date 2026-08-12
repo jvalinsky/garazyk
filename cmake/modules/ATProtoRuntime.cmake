@@ -32,6 +32,7 @@ set(ATPROTO_RUNTIME_MANIFEST
   "Garazyk/Sources/CLI/PDSCLIReplCommand.m"
   "Garazyk/Sources/CLI/PDSCLIRepoCommand.m"
   "Garazyk/Sources/CLI/PDSCLIServeCommand.m"
+  "Garazyk/Sources/CLI/PDSAdminUIBootstrapStub.m"
   "Garazyk/Sources/Chat/Server/ChatRuntime.m"
   "Garazyk/Sources/Chat/AdminUI/ChatAdminUIPack.m"
   "Garazyk/Sources/Germ/Server/Runtime/GermRuntime.m"

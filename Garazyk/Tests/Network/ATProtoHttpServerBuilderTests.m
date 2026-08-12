@@ -536,14 +536,16 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
     XCTAssertNil(error);
 }
 
-- (void)testAdminRoutesRedirectToUIServerAndRootIsPlainText {
+- (void)testPublicRootServesLandingAndLinksAdminUI {
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir
                                                             serviceMaxSize:10
                                                           userDatabaseSize:10];
 
     NSString *previousUIURL = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"] copy];
-    setenv("PDS_UI_SERVER_URL", "http://ui.local:4599", 1);
+    NSString *previousAdminURL = [[[NSProcessInfo processInfo] environment][@"PDS_ADMIN_UI_PUBLIC_URL"] copy];
+    setenv("PDS_UI_SERVER_URL", "https://ui.example.test/admin", 1);
+    unsetenv("PDS_ADMIN_UI_PUBLIC_URL");
     @try {
         ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
         builder.controller = controller;
@@ -554,7 +556,6 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
         builder.enableOAuthDemo = NO;
         builder.enableMSTViewer = NO;
         builder.enableNodeInfo = NO;
-        // Admin routes are enabled by default through PDSHttpAdminRoutePack registration
 
         NSError *buildError = nil;
         self.testServer = [builder buildWithError:&buildError];
@@ -584,9 +585,15 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
                                                                 port:actualPort];
         XCTAssertEqual([rootResponse[@"statusCode"] integerValue], 200);
         NSString *rootType = rootResponse[@"headers"][@"content-type"];
-        XCTAssertTrue([rootType containsString:@"text/plain"]);
-        NSString *rootBody = [rootResponse[@"body"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        XCTAssertTrue([rootBody hasPrefix:@",--."]);
+        XCTAssertTrue([rootType containsString:@"text/html"]);
+        NSString *rootBody = rootResponse[@"body"];
+        XCTAssertFalse([rootBody containsString:@"Location:"]);
+        XCTAssertTrue([rootBody containsString:@"https://ui.example.test/admin"]);
+        XCTAssertTrue([rootBody containsString:@"Sign in to admin"] ||
+                      [rootBody containsString:@"admin panel"] ||
+                      [rootBody containsString:@"Admin sign-in"]);
+        XCTAssertTrue([rootBody containsString:@"Personal Data Server"] ||
+                      [rootBody containsString:@"Accounts"]);
 
         [self.testServer stop];
         self.testServer = nil;
@@ -596,6 +603,11 @@ static void PDSCleanupControllerTestDirectory(PDSController *controller,
             setenv("PDS_UI_SERVER_URL", previousUIURL.UTF8String, 1);
         } else {
             unsetenv("PDS_UI_SERVER_URL");
+        }
+        if (previousAdminURL.length > 0) {
+            setenv("PDS_ADMIN_UI_PUBLIC_URL", previousAdminURL.UTF8String, 1);
+        } else {
+            unsetenv("PDS_ADMIN_UI_PUBLIC_URL");
         }
     }
 }

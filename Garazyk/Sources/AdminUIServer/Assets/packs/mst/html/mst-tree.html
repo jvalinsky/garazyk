@@ -6,28 +6,30 @@
 <div class="alert alert-info">No tree data available.</div>
 {{/emptyTree}}
 {{^emptyTree}}
-<div class="card">
-<div class="d-flex justify-content-between align-items-center mb-sm"><span class="font-medium text-secondary">Root CID</span><span class="text-mono text-sm">{{rootCID}}</span></div>
-<div class="d-flex justify-content-between align-items-center mb-sm"><span class="font-medium text-secondary">Nodes</span><span>{{nodeCount}}</span></div>
-<div class="d-flex justify-content-between align-items-center mb-sm"><span class="font-medium text-secondary">Entries</span><span>{{entryCount}}</span></div>
-<div class="d-flex justify-content-between align-items-center"><span class="font-medium text-secondary">Max Depth</span><span>{{maxDepth}}</span></div>
+<div class="mst-inspect">
+<div class="mst-stat-strip" role="group" aria-label="Tree summary">
+<div class="mst-stat"><span class="mst-stat-label">Root CID</span><span class="mst-stat-value text-mono">{{rootCIDShort}}</span></div>
+<div class="mst-stat"><span class="mst-stat-label">Nodes</span><span class="mst-stat-value">{{nodeCount}}</span></div>
+<div class="mst-stat"><span class="mst-stat-label">Entries</span><span class="mst-stat-value">{{entryCount}}</span></div>
+<div class="mst-stat"><span class="mst-stat-label">Max depth</span><span class="mst-stat-value">{{maxDepth}}</span></div>
 </div>
+
 {{#hasNodes}}
-<table class="table mt-sm"><thead><tr><th>CID</th><th>Level</th><th>Kind</th><th>Entries</th></tr></thead><tbody>
+<div class="mst-viz-panel" data-ui-mst-viz>
+<pre class="mst-tree-data" hidden>{{mstJson}}</pre>
+<div class="mst-viz-toolbar">
+<span class="text-sm text-secondary">Drag to pan · scroll to zoom</span>
+<button type="button" class="btn btn-secondary btn-sm" data-ui-action="mst-viz-reset">Reset view</button>
+</div>
+<svg class="mst-viz-svg" role="img" aria-label="Merkle search tree diagram"></svg>
+</div>
+
+<table class="table mt-md"><thead><tr><th>CID</th><th>Level</th><th>Kind</th><th>Entries</th></tr></thead><tbody>
 {{#nodes}}
-<tr><td class="text-mono text-sm">{{cid}}</td><td>{{level}}</td><td>{{kind}}</td><td>{{entriesCount}}</td></tr>
+<tr><td class="text-mono text-sm">{{shortCid}}…</td><td>{{level}}</td><td>{{kind}}</td><td>{{entriesCount}}</td></tr>
 {{/nodes}}
 </tbody></table>
-{{#nodes}}
-{{#hasEntries}}
-<h3 class="mt-md">Node {{shortCid}}</h3>
-<table class="table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
-{{#entries}}
-<tr><td class="text-mono text-sm">{{fullKey}}</td><td class="text-mono text-sm">{{value}}</td></tr>
-{{/entries}}
-</tbody></table>
-{{/hasEntries}}
-{{/nodes}}
 {{/hasNodes}}
+</div>
 {{/emptyTree}}
 {{/error}}

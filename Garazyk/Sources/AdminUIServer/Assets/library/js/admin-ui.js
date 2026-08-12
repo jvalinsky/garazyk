@@ -58,6 +58,59 @@ function reloadPartial(path, targetSelector) {
     .catch(() => showError(target, 'Unable to refresh data.'));
 }
 
+function loadLazyPartials(root) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll('[hx-get]').forEach((el) => {
+    // Forms fetch on submit only.
+    if (el.tagName === 'FORM') return;
+    if (el.dataset.uiLoaded === '1') return;
+    const path = el.getAttribute('hx-get');
+    if (!path) return;
+    // Already hydrated (e.g. MST shell with DID input) — never clobber.
+    if (el.innerHTML.trim()) {
+      el.dataset.uiLoaded = '1';
+      return;
+    }
+    // Mark before the request so overlapping revealed/load handlers cannot
+    // stampede the same placeholder.
+    el.dataset.uiLoaded = '1';
+    if (window.htmx) {
+      window.htmx.ajax('GET', path, { source: el, target: el, swap: 'innerHTML' });
+      return;
+    }
+    fetch(path, { credentials: 'same-origin' })
+      .then((response) => replaceServerHTML(el, response))
+      .catch(() => {
+        el.dataset.uiLoaded = '0';
+        showError(el, 'Unable to load data.');
+      });
+  });
+}
+
+const pollTimers = new Map();
+
+function stopPartialPolls() {
+  pollTimers.forEach((id) => clearInterval(id));
+  pollTimers.clear();
+}
+
+function startPartialPolls(pane) {
+  stopPartialPolls();
+  if (!pane) return;
+  pane.querySelectorAll('[data-ui-poll-seconds]').forEach((el) => {
+    const seconds = Number(el.dataset.uiPollSeconds);
+    const path = el.getAttribute('hx-get');
+    if (!seconds || seconds < 1 || !path || !el.id) return;
+    const timer = setInterval(() => {
+      if (pane.hidden) return;
+      if (window.htmx) {
+        window.htmx.ajax('GET', path, { source: el, target: el, swap: 'innerHTML' });
+      }
+    }, seconds * 1000);
+    pollTimers.set(el.id, timer);
+  });
+}
+
 function switchTab(name, options = {}) {
   document.querySelectorAll('.tab-pane').forEach((pane) => {
     pane.hidden = pane.id !== `tab-${name}`;
@@ -74,27 +127,13 @@ function switchTab(name, options = {}) {
     byID(`tabbtn-${name}`)?.focus();
   }
 
-  // Partials use hx-trigger="revealed". Empty placeholders have no layout
-  // box, so IntersectionObserver often never fires — and switching tabs
-  // alone does not re-check. Explicitly load hx-get nodes in the active pane.
   const pane = byID(`tab-${name}`);
   if (!pane) return;
-  pane.querySelectorAll('[hx-get]').forEach((el) => {
-    if (window.htmx) {
-      window.htmx.trigger(el, 'revealed');
-      if (!el.innerHTML.trim()) {
-        const path = el.getAttribute('hx-get');
-        if (path) {
-          window.htmx.ajax('GET', path, { source: el, target: el, swap: 'innerHTML' });
-        }
-      }
-      return;
-    }
-    const path = el.getAttribute('hx-get');
-    if (path && !el.innerHTML.trim()) {
-      reloadPartial(path, `#${CSS.escape(el.id)}`);
-    }
-  });
+  // One-shot lazy load for the active pane only. Do not use hx-trigger
+  // "revealed" — empty .admin-partial boxes re-intersect forever and spam.
+  loadLazyPartials(pane);
+  hydrateUIWidgets(pane);
+  startPartialPolls(pane);
 }
 
 // Arrow-key navigation between tabs, per the WAI-ARIA APG tabs pattern.
@@ -196,12 +235,404 @@ async function testConnection(service) {
   }
 }
 
+function shortCID(cid) {
+  if (!cid || typeof cid !== 'string') return '';
+  return cid.length > 10 ? `${cid.slice(0, 6)}…${cid.slice(-4)}` : cid;
+}
+
+function buildMSTHierarchy(flat) {
+  if (!flat?.nodes?.length || !flat.rootCID) return null;
+  const nodeMap = new Map();
+  flat.nodes.forEach((node) => {
+    if (node?.cid) nodeMap.set(node.cid, node);
+  });
+  const build = (cid) => {
+    const node = nodeMap.get(cid);
+    if (!node) return null;
+    const clone = { cid: node.cid, kind: node.kind, level: node.level, entries: node.entries || [] };
+    const children = [];
+    if (node.left) {
+      const left = build(node.left);
+      if (left) {
+        left.edgeLabel = 'L';
+        children.push(left);
+      }
+    }
+    (node.entries || []).forEach((entry) => {
+      if (entry?.tree) {
+        const child = build(entry.tree);
+        if (child) {
+          child.edgeLabel = entry.fullKey || entry.key || '';
+          children.push(child);
+        }
+        return;
+      }
+      // Record leaves (value CID, no subtree) still deserve a visual node.
+      if (entry?.value || entry?.fullKey || entry?.key) {
+        children.push({
+          cid: entry.value || entry.fullKey || entry.key,
+          kind: 'leaf',
+          level: (node.level || 0) + 1,
+          edgeLabel: entry.fullKey || entry.key || 'record',
+          entries: [],
+        });
+      }
+    });
+    if (children.length) clone.children = children;
+    return clone;
+  };
+  return build(flat.rootCID);
+}
+
+function layoutMSTTree(root, width, height) {
+  const levels = [];
+  const visit = (node, depth) => {
+    if (!levels[depth]) levels[depth] = [];
+    levels[depth].push(node);
+    (node.children || []).forEach((child) => visit(child, depth + 1));
+  };
+  visit(root, 0);
+  const depthCount = Math.max(levels.length, 1);
+  const vGap = Math.max(72, (height - 48) / Math.max(depthCount - 1, 1));
+  levels.forEach((row, depth) => {
+    const hGap = width / (row.length + 1);
+    row.forEach((node, index) => {
+      node._x = hGap * (index + 1);
+      node._y = 28 + depth * vGap;
+    });
+  });
+  return root;
+}
+
+function renderMSTVisualization(panel) {
+  if (!(panel instanceof Element)) return;
+  const dataEl = panel.querySelector('.mst-tree-data');
+  const svg = panel.querySelector('svg.mst-viz-svg');
+  if (!dataEl || !svg) return;
+
+  let flat;
+  try {
+    flat = JSON.parse(dataEl.textContent || '{}');
+  } catch (_) {
+    svg.replaceChildren();
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', '24');
+    text.setAttribute('y', '40');
+    text.setAttribute('class', 'mst-viz-empty');
+    text.textContent = 'Unable to parse tree data';
+    svg.append(text);
+    panel.dataset.uiRendered = '1';
+    return;
+  }
+
+  const hierarchy = buildMSTHierarchy(flat);
+  if (!hierarchy) {
+    svg.replaceChildren();
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', '24');
+    text.setAttribute('y', '40');
+    text.setAttribute('class', 'mst-viz-empty');
+    text.textContent = flat?.rootCID ? 'Root CID present, but no matching node payload' : 'Empty tree';
+    svg.append(text);
+    panel.dataset.uiRendered = '1';
+    return;
+  }
+
+  // Allow re-render when HTMX swaps a new tree into the same panel shell.
+  if (panel.dataset.uiRendered === '1' && panel.dataset.uiMstCid === (hierarchy.cid || '')) {
+    return;
+  }
+  panel.dataset.uiMstCid = hierarchy.cid || '';
+
+  const width = Math.max(panel.clientWidth || 640, 480);
+  const height = 360;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', String(height));
+  layoutMSTTree(hierarchy, width, height);
+
+  const ns = 'http://www.w3.org/2000/svg';
+  const rootGroup = document.createElementNS(ns, 'g');
+  rootGroup.setAttribute('class', 'mst-viz-scene');
+
+  const links = [];
+  const nodes = [];
+  const walk = (node) => {
+    nodes.push(node);
+    (node.children || []).forEach((child) => {
+      links.push({ from: node, to: child, label: child.edgeLabel || '' });
+      walk(child);
+    });
+  };
+  walk(hierarchy);
+
+  links.forEach((link) => {
+    const path = document.createElementNS(ns, 'path');
+    const midY = (link.from._y + link.to._y) / 2;
+    path.setAttribute('d', `M${link.from._x},${link.from._y} C${link.from._x},${midY} ${link.to._x},${midY} ${link.to._x},${link.to._y}`);
+    path.setAttribute('class', 'mst-viz-link');
+    rootGroup.append(path);
+    if (link.label) {
+      const label = document.createElementNS(ns, 'text');
+      label.setAttribute('x', String((link.from._x + link.to._x) / 2));
+      label.setAttribute('y', String(midY - 4));
+      label.setAttribute('class', 'mst-viz-edge-label');
+      label.textContent = link.label.length > 18 ? `${link.label.slice(0, 16)}…` : link.label;
+      rootGroup.append(label);
+    }
+  });
+
+  nodes.forEach((node) => {
+    const group = document.createElementNS(ns, 'g');
+    group.setAttribute('transform', `translate(${node._x},${node._y})`);
+    group.setAttribute('class', `mst-viz-node${node === hierarchy ? ' is-root' : ''}${node.children?.length ? '' : ' is-leaf'}`);
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('r', node === hierarchy ? '16' : '12');
+    circle.setAttribute('class', 'mst-viz-circle');
+    const label = document.createElementNS(ns, 'text');
+    label.setAttribute('y', '32');
+    label.setAttribute('class', 'mst-viz-label');
+    label.textContent = shortCID(node.cid);
+    const title = document.createElementNS(ns, 'title');
+    title.textContent = `${node.cid || ''}\n${node.kind || 'node'} · level ${node.level ?? '?'}`;
+    group.append(circle, label, title);
+    rootGroup.append(group);
+  });
+
+  svg.replaceChildren(rootGroup);
+  panel._mstVizGroup = rootGroup;
+  panel._mstVizScale = 1;
+  panel._mstVizTX = 0;
+  panel._mstVizTY = 0;
+  panel.dataset.uiRendered = '1';
+
+  const applyTransform = () => {
+    rootGroup.setAttribute(
+      'transform',
+      `translate(${panel._mstVizTX} ${panel._mstVizTY}) scale(${panel._mstVizScale})`,
+    );
+  };
+
+  let dragging = false;
+  let lastX = 0;
+  let lastY = 0;
+  svg.onpointerdown = (event) => {
+    dragging = true;
+    lastX = event.clientX;
+    lastY = event.clientY;
+    svg.setPointerCapture(event.pointerId);
+  };
+  svg.onpointermove = (event) => {
+    if (!dragging) return;
+    panel._mstVizTX += event.clientX - lastX;
+    panel._mstVizTY += event.clientY - lastY;
+    lastX = event.clientX;
+    lastY = event.clientY;
+    applyTransform();
+  };
+  svg.onpointerup = () => { dragging = false; };
+  svg.onpointercancel = () => { dragging = false; };
+  svg.onwheel = (event) => {
+    event.preventDefault();
+    const delta = event.deltaY < 0 ? 1.08 : 0.92;
+    panel._mstVizScale = Math.min(3, Math.max(0.4, panel._mstVizScale * delta));
+    applyTransform();
+  };
+}
+
+function truncateJSONPreview(text, max = 64) {
+  const value = String(text ?? '');
+  if (value.length <= max) return value;
+  return `${value.slice(0, max - 1)}…`;
+}
+
+function jsonTypeOf(value) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
+}
+
+function appendJSONToken(parent, className, text) {
+  const el = document.createElement('span');
+  el.className = className;
+  el.textContent = text;
+  parent.append(el);
+  return el;
+}
+
+function buildJSONTreeNode(value, key, depth) {
+  const type = jsonTypeOf(value);
+  const row = document.createElement('div');
+  row.className = 'json-node';
+
+  if (type === 'object' || type === 'array') {
+    const entries = type === 'array'
+      ? value.map((item, index) => [index, item])
+      : Object.keys(value).map((k) => [k, value[k]]);
+    const details = document.createElement('details');
+    details.className = 'json-collection';
+    details.open = depth < 2;
+    const summary = document.createElement('summary');
+    summary.className = 'json-summary';
+    if (key !== undefined && key !== null) {
+      appendJSONToken(summary, 'json-key', String(key));
+      appendJSONToken(summary, 'json-punct', ': ');
+    }
+    appendJSONToken(summary, 'json-punct', type === 'array' ? '[' : '{');
+    appendJSONToken(summary, 'json-meta', `${entries.length}`);
+    appendJSONToken(summary, 'json-punct', type === 'array' ? ']' : '}');
+    details.append(summary);
+    const children = document.createElement('div');
+    children.className = 'json-children';
+    if (entries.length === 0) {
+      appendJSONToken(children, 'json-meta', type === 'array' ? '[]' : '{}');
+    } else {
+      entries.forEach(([childKey, childValue]) => {
+        children.append(buildJSONTreeNode(childValue, childKey, depth + 1));
+      });
+    }
+    details.append(children);
+    row.append(details);
+    return row;
+  }
+
+  const leaf = document.createElement('div');
+  leaf.className = 'json-leaf';
+  if (key !== undefined && key !== null) {
+    appendJSONToken(leaf, 'json-key', String(key));
+    appendJSONToken(leaf, 'json-punct', ': ');
+  }
+  if (type === 'string') {
+    appendJSONToken(leaf, 'json-string', JSON.stringify(value));
+  } else if (type === 'number') {
+    appendJSONToken(leaf, 'json-number', String(value));
+  } else if (type === 'boolean') {
+    appendJSONToken(leaf, 'json-boolean', value ? 'true' : 'false');
+  } else if (type === 'null') {
+    appendJSONToken(leaf, 'json-null', 'null');
+  } else {
+    appendJSONToken(leaf, 'json-meta', truncateJSONPreview(String(value)));
+  }
+  row.append(leaf);
+  return row;
+}
+
+function setJSONViewerMode(viewer, mode) {
+  const tree = viewer.querySelector('[data-json-tree]');
+  const raw = viewer.querySelector('[data-json-raw]');
+  if (!tree || !raw) return;
+  const showRaw = mode === 'raw';
+  tree.hidden = showRaw;
+  raw.hidden = !showRaw;
+  viewer.querySelectorAll('[data-json-mode]').forEach((btn) => {
+    const active = btn.getAttribute('data-json-mode') === mode;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  viewer.querySelectorAll('[data-json-action="expand"], [data-json-action="collapse"]').forEach((btn) => {
+    btn.hidden = showRaw;
+  });
+}
+
+async function copyJSONViewerRaw(viewer, button) {
+  const raw = viewer.querySelector('[data-json-raw]');
+  const text = raw?.textContent || '';
+  const label = button?.textContent || 'Copy';
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.left = '-9999px';
+      document.body.append(area);
+      area.select();
+      document.execCommand('copy');
+      area.remove();
+    }
+    if (button) {
+      button.textContent = 'Copied';
+      window.setTimeout(() => {
+        button.textContent = label;
+      }, 1200);
+    }
+  } catch (_) {
+    if (button) {
+      button.textContent = 'Copy failed';
+      window.setTimeout(() => {
+        button.textContent = label;
+      }, 1200);
+    }
+  }
+}
+
+function hydrateJSONViewers(root) {
+  if (!root || !root.querySelectorAll) return;
+  const viewers = [];
+  if (root.matches?.('[data-json-viewer]')) viewers.push(root);
+  root.querySelectorAll('[data-json-viewer]').forEach((viewer) => viewers.push(viewer));
+  viewers.forEach((viewer) => {
+    if (viewer.dataset.jsonHydrated === '1') return;
+    const tree = viewer.querySelector('[data-json-tree]');
+    const raw = viewer.querySelector('[data-json-raw]');
+    if (!tree || !raw) return;
+    viewer.dataset.jsonHydrated = '1';
+    let parsed;
+    try {
+      parsed = JSON.parse(raw.textContent || '{}');
+    } catch (_) {
+      tree.replaceChildren();
+      const err = document.createElement('div');
+      err.className = 'text-secondary text-sm';
+      err.textContent = 'Unable to parse JSON; showing raw.';
+      tree.append(err);
+      setJSONViewerMode(viewer, 'raw');
+      return;
+    }
+    tree.replaceChildren(buildJSONTreeNode(parsed, null, 0));
+    setJSONViewerMode(viewer, 'tree');
+  });
+}
+
+function hydrateUIWidgets(root) {
+  if (!root) return;
+  hydrateMSTVisualizations(root);
+  hydrateJSONViewers(root);
+  // HTMX may report the triggering element as target; also scan a nearby pane.
+  if (root instanceof Element) {
+    const pane = root.closest('.tab-pane');
+    if (pane && pane !== root) {
+      hydrateMSTVisualizations(pane);
+      hydrateJSONViewers(pane);
+    }
+  }
+}
+
+function hydrateMSTVisualizations(root) {
+  const scope = root instanceof Element ? root : document;
+  scope.querySelectorAll?.('[data-ui-mst-viz]')?.forEach(renderMSTVisualization);
+  if (scope.matches?.('[data-ui-mst-viz]')) renderMSTVisualization(scope);
+}
+
 async function handleAction(element) {
   const action = element.dataset.uiAction;
   switch (action) {
     case 'switch-tab':
       switchTab(element.dataset.tab);
       break;
+    case 'mst-viz-reset': {
+      const panel = element.closest('[data-ui-mst-viz]');
+      if (!panel) break;
+      panel._mstVizScale = 1;
+      panel._mstVizTX = 0;
+      panel._mstVizTY = 0;
+      if (panel._mstVizGroup) {
+        panel._mstVizGroup.setAttribute('transform', 'translate(0 0) scale(1)');
+      }
+      break;
+    }
     case 'disable-invites':
       await postHTML('/admin/actions/disable-invites', { account: byID('disable-account')?.value || '' }, byID('invite-action-result'), '/admin/partials/invites', '#invites');
       break;
@@ -314,8 +745,25 @@ async function handleForm(form) {
   switch (form.dataset.uiForm) {
     case 'login': {
       const response = await adminRequest('/admin/login', { password: byID('password')?.value || '' });
-      if (response.ok) window.location.assign('/admin');
-      else byID('error').textContent = 'Invalid credentials';
+      if (response.ok) {
+        window.location.assign('/admin');
+        return;
+      }
+      let message = 'Invalid credentials';
+      try {
+        const body = await response.json();
+        if (body?.error === 'invalid_csrf_token') {
+          message = 'Sign-in expired. Try again.';
+        } else if (body?.error === 'invalid_credentials') {
+          message = 'Invalid credentials';
+        } else if (body?.error) {
+          message = String(body.error);
+        }
+      } catch (_) {
+        /* keep default */
+      }
+      const error = byID('error');
+      if (error) error.textContent = message;
       break;
     }
     case 'logout':
@@ -391,7 +839,63 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// Nested placeholders arrive inside swapped tab HTML (Ozone/MST). Load them
+// once; never rely on IntersectionObserver "revealed".
+document.body.addEventListener('htmx:afterSwap', (event) => {
+  const target = event.detail?.target;
+  if (!(target instanceof Element)) return;
+  const pane = target.closest('.tab-pane');
+  // Lazy partials only when the owning pane is visible.
+  if (pane && !pane.hidden) {
+    loadLazyPartials(target);
+  }
+  // Widget hydration must not depend on tab visibility — swap targets can be
+  // nested fragments, and MST/JSON payloads need to render immediately.
+  hydrateUIWidgets(target);
+});
+
+document.body.addEventListener('htmx:afterSettle', (event) => {
+  const target = event.detail?.target;
+  if (!(target instanceof Element)) return;
+  hydrateUIWidgets(target);
+});
+
 document.addEventListener('click', (event) => {
+  const modeBtn = event.target.closest('[data-json-mode]');
+  if (modeBtn) {
+    const viewer = modeBtn.closest('[data-json-viewer]');
+    if (viewer) {
+      event.preventDefault();
+      if (viewer.dataset.jsonHydrated !== '1') {
+        hydrateJSONViewers(viewer);
+      }
+      setJSONViewerMode(viewer, modeBtn.getAttribute('data-json-mode') || 'tree');
+      return;
+    }
+  }
+  const jsonAction = event.target.closest('[data-json-action]');
+  if (jsonAction) {
+    const viewer = jsonAction.closest('[data-json-viewer]');
+    if (viewer) {
+      event.preventDefault();
+      if (viewer.dataset.jsonHydrated !== '1') {
+        hydrateJSONViewers(viewer);
+      }
+      const action = jsonAction.getAttribute('data-json-action');
+      if (action === 'expand') {
+        viewer.querySelectorAll('details.json-collection').forEach((el) => {
+          el.open = true;
+        });
+      } else if (action === 'collapse') {
+        viewer.querySelectorAll('details.json-collection').forEach((el) => {
+          el.open = false;
+        });
+      } else if (action === 'copy') {
+        copyJSONViewerRaw(viewer, jsonAction).catch(() => {});
+      }
+      return;
+    }
+  }
   const action = event.target.closest('[data-ui-action]');
   if (action) {
     event.preventDefault();

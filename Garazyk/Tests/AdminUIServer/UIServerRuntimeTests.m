@@ -14,6 +14,12 @@
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/GZAdminUIDefaultPacks.h"
 #import "AdminUIServer/Packs/GZAdminUIChatPack.h"
+#import "AdminUIServer/Packs/GZAdminUIPDSPack.h"
+#import "AdminUIServer/Packs/GZAdminUIOzonePack.h"
+#import "AdminUIServer/Packs/GZAdminUISecurityPack.h"
+#import "AdminUIServer/Packs/GZAdminUIDataExplorerPack.h"
+#import "AdminUIServer/Packs/GZAdminUIMSTPack.h"
+#import "AdminUIServer/Packs/GZAdminUILabPack.h"
 #import "Sync/Relay/AdminUI/RelayAdminUIPack.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIServiceConfig.h"
@@ -611,6 +617,52 @@
     XCTAssertFalse([response.bodyString containsString:@"tabbtn-lab"]);
 }
 
+- (void)testServiceScopedPDSShellOmitsFleetOverviewAndConnections {
+    self.config.serviceIdentifier = @"pds";
+    GZAdminUIHost *pdsHost = [[GZAdminUIHost alloc] initWithConfiguration:self.config
+                                                                     packs:@[
+        GZAdminUIPDSPack.class,
+        GZAdminUIOzonePack.class,
+        GZAdminUISecurityPack.class,
+        GZAdminUIDataExplorerPack.class,
+        GZAdminUIMSTPack.class,
+        GZAdminUILabPack.class,
+    ]];
+    NSString *token = [pdsHost.authManager createSessionToken];
+    NSMutableDictionary *headers = [NSMutableDictionary dictionary];
+    headers[@"Cookie"] = [NSString stringWithFormat:@"%@=%@",
+                          pdsHost.authManager.sessionCookieName, token];
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                                methodString:@"GET"
+                                                                        path:@"/admin"
+                                                                 queryString:@""
+                                                                  queryParams:@{}
+                                                                     version:@"HTTP/1.1"
+                                                                     headers:headers
+                                                                        body:[NSData data]
+                                                               remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *response = [pdsHost dispatchRequestForTesting:request];
+
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.bodyString containsString:@"<h1 class=\"admin-header-title\">PDS</h1>"]);
+    XCTAssertFalse([response.bodyString containsString:@"Garazyk UI Service"]);
+    XCTAssertFalse([response.bodyString containsString:@"id=\"tabbtn-overview\""]);
+    XCTAssertFalse([response.bodyString containsString:@"id=\"tabbtn-connections\""]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-pds\" aria-controls=\"tab-pds\" aria-selected=\"true\" tabindex=\"0\""]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-ozone\""]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-security\""]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-explorer\""]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-mst\""]);
+    XCTAssertFalse([response.bodyString containsString:@"id=\"tabbtn-lab\""]);
+    XCTAssertFalse([response.bodyString containsString:@"/admin/partials/appview-metrics"]);
+    XCTAssertFalse([response.bodyString containsString:@"/admin/partials/relay-metrics"]);
+    XCTAssertFalse([response.bodyString containsString:@"/admin/partials/plc-metrics"]);
+    XCTAssertFalse([response.bodyString containsString:@"admin-peer-switcher"]);
+    XCTAssertFalse([response.bodyString containsString:@"every 10s"]);
+    XCTAssertFalse([response.bodyString containsString:@"hx-trigger=\"revealed\""]);
+    XCTAssertTrue([response.bodyString containsString:@"hx-trigger=\"none\""]);
+}
+
 - (void)testSingleSurfaceShellUsesSidebarAndHasNoConfiguredPeers {
     GZAdminUIHost *relayHost = [[GZAdminUIHost alloc] initWithConfiguration:self.config
                                                                        packs:@[GZRelayAdminUIPack.class]];
@@ -620,7 +672,6 @@
                                              sessionToken:token
                                                 jsonBody:nil];
     ATProtoHttpResponse *response = [relayHost dispatchRequestForTesting:request];
-    NSRange peerSectionStart = [response.bodyString rangeOfString:@"<section class=\"admin-peer-switcher\""];
 
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertTrue([response.bodyString containsString:@"<h1 class=\"admin-header-title\">Relay</h1>"]);
@@ -629,42 +680,23 @@
     XCTAssertTrue([response.bodyString containsString:@"class=\"admin-sidebar-tab ui-tab active\""]);
     XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-relay\" aria-controls=\"tab-relay\" aria-selected=\"true\" tabindex=\"0\""]);
     NSRange relayPanelStart = [response.bodyString rangeOfString:@"<div id=\"tab-relay\""];
-    NSRange pdsPanelStart = [response.bodyString rangeOfString:@"<div id=\"tab-pds\""];
     XCTAssertNotEqual(relayPanelStart.location, NSNotFound);
-    XCTAssertNotEqual(pdsPanelStart.location, NSNotFound);
-    if (relayPanelStart.location == NSNotFound || pdsPanelStart.location == NSNotFound) {
+    // Hardcoded fleet panes are only emitted when that tab is in the composition.
+    XCTAssertFalse([response.bodyString containsString:@"id=\"tab-pds\""]);
+    XCTAssertFalse([response.bodyString containsString:@"/admin/partials/appview-metrics"]);
+    XCTAssertFalse([response.bodyString containsString:@"admin-peer-switcher"]);
+    if (relayPanelStart.location == NSNotFound) {
         return;
     }
     NSRange relayPanelEnd = [response.bodyString rangeOfString:@">"
                                                      options:0
                                                        range:NSMakeRange(relayPanelStart.location, response.bodyString.length - relayPanelStart.location)];
-    NSRange pdsPanelEnd = [response.bodyString rangeOfString:@">"
-                                                        options:0
-                                                          range:NSMakeRange(pdsPanelStart.location, response.bodyString.length - pdsPanelStart.location)];
     XCTAssertNotEqual(relayPanelEnd.location, NSNotFound);
-    XCTAssertNotEqual(pdsPanelEnd.location, NSNotFound);
-    if (relayPanelEnd.location == NSNotFound || pdsPanelEnd.location == NSNotFound) {
+    if (relayPanelEnd.location == NSNotFound) {
         return;
     }
     NSString *relayPanel = [response.bodyString substringWithRange:NSMakeRange(relayPanelStart.location, NSMaxRange(relayPanelEnd) - relayPanelStart.location)];
-    NSString *pdsPanel = [response.bodyString substringWithRange:NSMakeRange(pdsPanelStart.location, NSMaxRange(pdsPanelEnd) - pdsPanelStart.location)];
     XCTAssertFalse([relayPanel containsString:@"hidden"]);
-    XCTAssertTrue([pdsPanel containsString:@"hidden"]);
-    XCTAssertNotEqual(peerSectionStart.location, NSNotFound);
-    if (peerSectionStart.location == NSNotFound) {
-        return;
-    }
-    NSRange peerSectionEnd = [response.bodyString rangeOfString:@"</section>"
-                                                         options:0
-                                                           range:NSMakeRange(peerSectionStart.location, response.bodyString.length - peerSectionStart.location)];
-    XCTAssertNotEqual(peerSectionEnd.location, NSNotFound);
-    if (peerSectionEnd.location == NSNotFound) {
-        return;
-    }
-    NSString *peerSection = [response.bodyString substringWithRange:NSMakeRange(peerSectionStart.location, NSMaxRange(peerSectionEnd) - peerSectionStart.location)];
-    XCTAssertTrue([peerSection containsString:@"No peer UIs configured."]);
-    XCTAssertFalse([peerSection containsString:@"href="]);
-    XCTAssertFalse([peerSection containsString:@"hx-"]);
 }
 
 - (void)testDeleteAccountRoute {

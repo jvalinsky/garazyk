@@ -3,8 +3,8 @@
 #import "Admin/PDSAdminAuth.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
-#import "Admin/PDSAdminAuth.h"
 #import "Auth/Crypto/JWT.h"
+#import "CLI/PDSAdminUIBootstrap.h"
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
@@ -51,6 +51,12 @@
          @"enable\n"
          @"  --foreground          Run in foreground (don't daemonize)\n"
          @"  --help                Show this help\n\n"
+         @"Admin UI (separate loopback listener, default 127.0.0.1:2590):\n"
+         @"  Requires PDS_ADMIN_PASSWORD or PDS_ADMIN_PASSWORD_FILE\n"
+         @"  (or PDS_ADMIN_UI_PASSWORD / PDS_ADMIN_UI_PASSWORD_FILE).\n"
+         @"  PDS_ADMIN_UI_HOST / PDS_ADMIN_UI_PORT override the bind address.\n"
+         @"  PDS_ADMIN_UI_PUBLIC_URL (or PDS_UI_SERVER_URL) is linked from the\n"
+         @"  public GET / landing page as the admin sign-in target.\n\n"
          @"Examples:\n"
          @"  kaszlak serve                           # Start server on default port\n"
          @"  kaszlak serve --port 3000              # Start on port 3000\n"
@@ -425,6 +431,15 @@
   // Start relay service to notify external relays to crawl this PDS
   [[controller relayService] start];
 
+  NSError *adminUIError = nil;
+  id adminUIHost = PDSAdminUIStartHost((NSUInteger)port, &adminUIError);
+  if (adminUIError) {
+    printf("Failed to start PDS admin UI: %s\n",
+           adminUIError.localizedDescription.UTF8String);
+    [httpServer stop];
+    return 0;
+  }
+
   ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSString *displayHost = config.serverHost ?: @"localhost";
   if ([displayHost isEqualToString:@"0.0.0.0"]) {
@@ -434,6 +449,13 @@
   printf("HTTP server started successfully on port %ld\n", (long)port);
   printf("Service endpoint available at: http://%s:%ld/\n",
          [displayHost UTF8String], (long)port);
+  if (adminUIHost) {
+    const char *uiHostEnv = getenv("PDS_ADMIN_UI_HOST");
+    const char *uiPortEnv = getenv("PDS_ADMIN_UI_PORT");
+    const char *uiHost = (uiHostEnv && uiHostEnv[0] != '\0') ? uiHostEnv : "127.0.0.1";
+    const char *uiPort = (uiPortEnv && uiPortEnv[0] != '\0') ? uiPortEnv : "2590";
+    printf("PDS admin UI available at: http://%s:%s/admin\n", uiHost, uiPort);
+  }
 
   if (!foreground) {
     printf("Running in background...\n");
@@ -478,6 +500,7 @@
 
   [GZServiceLifecycle announceInterrupt];
   [subscribeReposHandler stop];
+  [adminUIHost stop];
   [httpServer stop];
   [GZServiceLifecycle endInterruptibleRunLoop];
   printf("Server stopped.\n");

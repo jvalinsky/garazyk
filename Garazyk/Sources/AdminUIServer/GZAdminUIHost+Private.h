@@ -34,6 +34,8 @@ NSString *GZAdminUIConnectionBadge(NSString * _Nullable status);
 NSString *GZAdminUIDetailRow(NSString *label, NSString * _Nullable valueHTML);
 /** @abstract Mono-formatted text node for numeric/exact values. */
 NSString *GZAdminUIMonoValue(id _Nullable value);
+/** @abstract Interactive JSON tree/raw viewer markup for a JSON-serializable value. */
+NSString *GZAdminUIJSONViewer(id _Nullable value);
 /** @abstract Opens a `detail-card` container. */
 NSString *GZAdminUIDetailCardOpen(void);
 /** @abstract Closes a `detail-card` container. */

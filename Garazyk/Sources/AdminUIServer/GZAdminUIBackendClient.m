@@ -52,7 +52,13 @@ static NSString *UIBackendSafeBearerHeader(NSString *token) {
 }
 
 - (NSURL *)URLByAppendingPath:(NSString *)path queryItems:(id)queryItems baseURL:(NSURL *)baseURL {
+    if (![baseURL isKindOfClass:[NSURL class]]) {
+        return nil;
+    }
     NSURLComponents *components = [NSURLComponents componentsWithURL:baseURL resolvingAgainstBaseURL:NO];
+    if (!components) {
+        return nil;
+    }
     NSString *basePath = components.percentEncodedPath ?: @"";
     NSString *appendPath = path ?: @"";
     while ([basePath hasSuffix:@"/"] && basePath.length > 1) {
@@ -143,7 +149,10 @@ static NSString *UIBackendSafeBearerHeader(NSString *token) {
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
     ATProtoSafeHTTPClient *client = self.httpClient ?: [ATProtoSafeHTTPClient sharedClient];
-    [client performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    options.allowHTTP = YES;
+    options.allowPrivateHosts = YES;
+    [client performSafeDataTaskWithRequest:request options:options completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
@@ -239,7 +248,11 @@ static NSString *UIBackendSafeBearerHeader(NSString *token) {
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
     ATProtoSafeHTTPClient *client = self.httpClient ?: [ATProtoSafeHTTPClient sharedClient];
-    [client performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
+    // Embedded admin UIs call the local protocol listener over loopback HTTP.
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    options.allowHTTP = YES;
+    options.allowPrivateHosts = YES;
+    [client performSafeDataTaskWithRequest:request options:options completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
@@ -265,8 +278,12 @@ static NSString *UIBackendSafeBearerHeader(NSString *token) {
                            baseURL:(NSURL *)baseURL
                          xrpcPath:(nullable NSString *)xrpcPath
                      bearerToken:(nullable NSString *)token {
-    if (!baseURL) {
-        return @{@"name": name, @"status": @"offline", @"url": @"(not configured)"};
+    // Specs historically used NSNull for unset URLs; NSNull is truthy, so
+    // check the class before touching NSURL APIs (scheme/components).
+    if (![baseURL isKindOfClass:[NSURL class]]) {
+        return @{@"name": name ?: @"unknown",
+                 @"status": @"offline",
+                 @"url": @"(not configured)"};
     }
 
     NSTimeInterval start = [[NSDate date] timeIntervalSince1970];
@@ -275,6 +292,11 @@ static NSString *UIBackendSafeBearerHeader(NSString *token) {
     
     NSString *probePath = xrpcPath ?: @"/xrpc/_health";
     NSURL *probeURL = [self URLByAppendingPath:probePath queryItems:nil baseURL:baseURL];
+    if (!probeURL) {
+        return @{@"name": name ?: @"unknown",
+                 @"status": @"offline",
+                 @"url": [baseURL absoluteString] ?: @"(not configured)"};
+    }
     
     NSData *data = [self performRequestWithURL:probeURL method:@"GET" body:nil contentType:nil bearerToken:token statusCode:&status error:&error];
     NSTimeInterval latency = ([[NSDate date] timeIntervalSince1970] - start) * 1000.0;
@@ -327,7 +349,10 @@ static NSString *UIBackendSafeBearerHeader(NSString *token) {
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
     ATProtoSafeHTTPClient *client = self.httpClient ?: [ATProtoSafeHTTPClient sharedClient];
-    [client performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *error) {
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    options.allowHTTP = YES;
+    options.allowPrivateHosts = YES;
+    [client performSafeDataTaskWithRequest:request options:options completion:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (!error && [response isKindOfClass:[NSHTTPURLResponse class]]) {
             statusCode = ((NSHTTPURLResponse *)response).statusCode;
         }

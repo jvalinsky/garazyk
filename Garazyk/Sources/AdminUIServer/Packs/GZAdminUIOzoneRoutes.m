@@ -19,7 +19,7 @@
         AUTH_GUARD(weakSelf, request, response);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[GZAdminUIOzonePack renderOzoneOverviewHTML]];
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneOverviewHTMLWithBackend:weakSelf.backendClient]];
     }];
 
     // Ozone: Moderation statuses
