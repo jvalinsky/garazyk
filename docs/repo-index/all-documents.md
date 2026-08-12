@@ -5,7 +5,7 @@ title: All Documents
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **279**
+Total documents in this view: **280**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -30,6 +30,7 @@ Total documents in this view: **279**
 | [docs/20-explanation/guides/iblt-for-atproto-reconciliation.md](../20-explanation/guides/iblt-for-atproto-reconciliation.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/NIXOS.md](../20-explanation/guides/NIXOS.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/20-explanation/guides/relay-subscribe-repos-ws-stability.md](../20-explanation/guides/relay-subscribe-repos-ws-stability.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/repo-export-formats.md](../20-explanation/guides/repo-export-formats.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/star-lite-vs-car-export-benchmark.md](../20-explanation/guides/star-lite-vs-car-export-benchmark.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
