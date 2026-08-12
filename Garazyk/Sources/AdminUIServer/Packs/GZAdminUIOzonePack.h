@@ -39,6 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Renders Ozone hosting history, optionally scoped to a DID. */
 + (NSString *)renderOzoneHostingPartial:(NSDictionary *)result did:(nullable NSString *)did;
 
+/** @abstract Renders the Ozone overview dashboard with summary metrics and links to sub-panels. */
++ (NSString *)renderOzoneOverviewHTML;
+
 @end
 
 NS_ASSUME_NONNULL_END

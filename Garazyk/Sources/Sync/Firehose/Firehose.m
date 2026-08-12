@@ -83,6 +83,9 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
                                                           port:port
                                                           path:path
                                                      secureTLS:secureTLS];
+    // Relays (e.g. bsky.network) reject handshakes that do not
+    // negotiate the com.atproto.sync.subscribeRepos subprotocol.
+    self.connection.subprotocol = @"com.atproto.sync.subscribeRepos";
     if (self.accessToken.length > 0) {
         self.connection.authorizationHeader =
             [@"Bearer " stringByAppendingString:self.accessToken];
