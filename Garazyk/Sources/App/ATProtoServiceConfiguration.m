@@ -123,6 +123,8 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
 @property (nonatomic, assign) unsigned long long softQuotaRepoBytes;
 @property (nonatomic, assign) unsigned long long blobStorageQuotaBytes;
 @property (nonatomic, assign) NSTimeInterval blobTemporaryGracePeriodSeconds;
+@property (nonatomic, assign) NSUInteger maxImportSize;
+@property (nonatomic, assign) BOOL acceptingImports;
 @property (nonatomic, assign) BOOL metricsPerAccountLabels;
 @end
 
@@ -247,6 +249,11 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _softQuotaBlobBytes = 0;
     _softQuotaRecordCount = 0;
     _softQuotaRepoBytes = 0;
+
+    // Repo import defaults (upstream service.maxImportSize / acceptingImports).
+    // maxImportSize has a safe default here where upstream requires it in config.
+    _maxImportSize = 1ULL * 1024ULL * 1024ULL * 1024ULL; // 1 GiB
+    _acceptingImports = YES;
     _blobStorageQuotaBytes = 10ULL * 1024ULL * 1024ULL * 1024ULL;
     _blobTemporaryGracePeriodSeconds = 6 * 60 * 60;
     _metricsPerAccountLabels = NO;
@@ -564,6 +571,25 @@ BOOL ATProtoServiceConfigRunningUnderTests(void) {
       _sequencerPoolMaxSize =
           [database[@"sequencer_pool_max_size"] unsignedIntegerValue];
   }
+
+  // Repo import configuration (mirrors upstream service.maxImportSize /
+  // acceptingImports). Env overrides always win, matching how other sections
+  // treat PDS_* env vars, so PDS_MAX_REPO_IMPORT_SIZE / PDS_ACCEPTING_REPO_IMPORTS
+  // work even without a config file.
+  NSDictionary *service = config[@"service"];
+  if (service && [service isKindOfClass:[NSDictionary class]]) {
+    if ([self dictionary:service hasValueForKey:@"max_import_size"])
+      _maxImportSize = [service[@"max_import_size"] unsignedIntegerValue];
+    if ([self dictionary:service hasValueForKey:@"accepting_imports"])
+      _acceptingImports = [service[@"accepting_imports"] boolValue];
+  }
+  NSString *envMaxImport =
+      [self resolveEnvOverrideForKey:@"PDS_MAX_REPO_IMPORT_SIZE" default:nil];
+  if (envMaxImport.length > 0) {
+    _maxImportSize = (NSUInteger)[envMaxImport longLongValue];
+  }
+  _acceptingImports =
+      [self boolFromEnv:@"PDS_ACCEPTING_REPO_IMPORTS" default:_acceptingImports];
 
   NSDictionary *session = config[@"session"];
   if (session) {

@@ -15,11 +15,15 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 
-static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
-static const NSUInteger kPDSImportRepoMaxCARBlocks = 100000;
-static const NSUInteger kPDSImportRepoMaxMSTNodes = 100000;
-static const NSUInteger kPDSImportRepoMaxRecords = 100000;
+// Work bounds for a single import. These are DoS guards, not feature limits:
+// with maxImportSize capping the body, worst-case work is bounded by the
+// configuration. The values were raised from 100k (ADR 0035) because a large
+// real account's repo (180 MB CAR) plausibly exceeds 100k records/blocks.
+static const NSUInteger kPDSImportRepoMaxCARBlocks = 1000000;
+static const NSUInteger kPDSImportRepoMaxMSTNodes = 1000000;
+static const NSUInteger kPDSImportRepoMaxRecords = 1000000;
 static const NSUInteger kPDSImportRepoMaxMSTDepth = 512;
+static const NSUInteger kPDSImportRepoBlockBatchSize = 2048;
 
 static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
     if (!value) {
@@ -82,7 +86,7 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
 
 + (nullable NSArray<PDSDatabaseRecord *> *)extractRecordsFromMSTRoot:(ATProtoCID *)rootCID
                                                                  did:(NSString *)did
-                                                              reader:(ATProtoCARReader *)reader
+                                                              reader:(ATProtoCARStreamReader *)reader
                                                                  rev:(NSString *)rev
                                                                error:(NSError **)error {
     if (!rootCID) {
@@ -212,19 +216,43 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
     return [records copy];
 }
 
++ (NSUInteger)maxImportCARBlocks {
+    return kPDSImportRepoMaxCARBlocks;
+}
+
++ (NSUInteger)importBlockBatchSize {
+    return kPDSImportRepoBlockBatchSize;
+}
+
 + (nullable PDSRepoImportValidationResult *)validateCARData:(NSData *)carData
-                                                     reader:(ATProtoCARReader *)reader
+                                                     reader:(ATProtoCARStreamReader *)reader
                                                      commit:(ATProtoRepoCommit *)commit
                                                         did:(NSString *)did
                                               databasePool:(PDSDatabasePool *)databasePool
                                      allowLocalKeyFallback:(BOOL)allowLocalKeyFallback
+                                             maxImportSize:(NSUInteger)maxImportSize
                                                       error:(NSError **)error {
-    if (carData.length > kPDSImportRepoMaxBodyBytes) {
+    if (carData.length > maxImportSize) {
         if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Repository import body too large");
         return nil;
     }
-    if (reader.blocks.count > kPDSImportRepoMaxCARBlocks) {
-        if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Repository import has too many CAR blocks");
+
+    // Single streaming pass over the whole body: the strict stream reader
+    // verifies every block's CID against its payload as it goes, and this
+    // loop enforces the block-count bound before any database work. A
+    // failure here is a clean validation error that never touches the store.
+    __block NSUInteger blockCount = 0;
+    if (![reader enumerateBlocksWithError:error handler:^BOOL(ATProtoCARBlock *block, NSError **stopError) {
+        (void)block;
+        blockCount += 1;
+        if (blockCount > kPDSImportRepoMaxCARBlocks) {
+            if (stopError) {
+                *stopError = repoPackValidationError(PDSRepoPackValidationErrorPayloadTooLarge, @"Repository import has too many CAR blocks");
+            }
+            return NO;
+        }
+        return YES;
+    }]) {
         return nil;
     }
 
@@ -232,14 +260,6 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
     if (!computedCommitCID || ![computedCommitCID isEqualToCID:reader.rootCID]) {
         if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"Commit CID does not match CAR root");
         return nil;
-    }
-
-    for (ATProtoCARBlock *block in reader.blocks) {
-        ATProtoCID *computed = [ATProtoCID cidWithDigest:[ATProtoCID sha256Digest:block.data] codec:block.cid.codec];
-        if (!computed || ![computed isEqualToCID:block.cid]) {
-            if (error) *error = repoPackValidationError(PDSRepoPackValidationErrorInvalidRequest, @"CAR block CID does not match block data");
-            return nil;
-        }
     }
 
     if (![self validateCommitSignature:commit did:did databasePool:databasePool allowLocalKeyFallback:allowLocalKeyFallback error:error]) {
@@ -255,18 +275,7 @@ static ATProtoCID *cidFromTaggedCBORValue(ATProtoCBORValue *value) {
         return nil;
     }
 
-    NSMutableArray<PDSDatabaseBlock *> *blocks = [NSMutableArray arrayWithCapacity:reader.blocks.count];
-    for (ATProtoCARBlock *block in reader.blocks) {
-        PDSDatabaseBlock *dbBlock = [[PDSDatabaseBlock alloc] init];
-        dbBlock.cid = block.cid.bytes;
-        dbBlock.blockData = block.data;
-        dbBlock.size = (NSInteger)block.data.length;
-        dbBlock.rev = commit.rev ?: @"";
-        [blocks addObject:dbBlock];
-    }
-
     PDSRepoImportValidationResult *result = [[PDSRepoImportValidationResult alloc] init];
-    result.blocks = [blocks copy];
     result.records = records;
     return result;
 }

@@ -487,6 +487,293 @@ static BOOL CARIsIntegerOne(id value) {
 
 @end
 
+#pragma mark - ATProtoCARStreamReader Implementation
+
+@interface ATProtoCARStreamReader ()
+
+@property (nonatomic, copy, readwrite, nullable) NSArray<ATProtoCID *> *roots;
+@property (nonatomic, copy, readwrite, nullable) NSDictionary *metadata;
+@property (nonatomic, strong, readwrite, nullable) ATProtoMASLDocument *maslDocument;
+@property (nonatomic, strong, nullable) NSData *data;
+@property (nonatomic, assign) NSUInteger bodyOffset;
+@property (nonatomic, assign) NSUInteger offset;
+@property (nonatomic, assign) BOOL strict;
+@property (nonatomic, assign, readwrite) BOOL isFinished;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoCARBlock *> *blockIndex;
+
+- (BOOL)parseHeaderWithError:(NSError **)error;
+- (BOOL)verifyRootsPresentWithError:(NSError **)error;
+
+@end
+
+@implementation ATProtoCARStreamReader
+
+- (nullable instancetype)initWithData:(NSData *)data
+                               strict:(BOOL)strict
+                                error:(NSError **)error {
+    self = [super init];
+    if (self) {
+        _data = data;
+        _strict = strict;
+        _offset = 0;
+        _isFinished = NO;
+        _blockIndex = [NSMutableDictionary dictionary];
+        if (![self parseHeaderWithError:error]) {
+            return nil;
+        }
+    }
+    return self;
+}
+
+- (ATProtoCID *)rootCID {
+    return self.roots.firstObject;
+}
+
+- (BOOL)parseHeaderWithError:(NSError **)error {
+    if (self.data.length < 2) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Data too short for CAR header"}];
+        }
+        return NO;
+    }
+
+    const uint8_t *bytes = self.data.bytes;
+    NSUInteger offset = 0;
+    uint64_t headerLength = 0;
+    NSUInteger headerSize = ReadVarint(bytes + offset, self.data.length - offset, &headerLength);
+    if (headerSize == 0 || headerLength == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-4
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid CAR block length"}];
+        }
+        return NO;
+    }
+    offset += headerSize;
+
+    if (headerLength > self.data.length - offset) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-5
+                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR header extends beyond data"}];
+        }
+        return NO;
+    }
+
+    NSData *headerData = [self.data subdataWithRange:NSMakeRange(offset, (NSUInteger)headerLength)];
+    offset += (NSUInteger)headerLength;
+
+    NSError *headerError = nil;
+    id header = [ATProtoDagCBOR decodeData:headerData
+                                    profile:ATProtoDRISLProfileDRISL
+                                      error:&headerError];
+    if (![header isKindOfClass:[NSDictionary class]]) {
+        if (error) {
+            *error = headerError ?: [NSError errorWithDomain:@"com.atproto.car"
+                                                        code:-10
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"CAR header is not a DRISL map"}];
+        }
+        return NO;
+    }
+    NSDictionary *headerMap = (NSDictionary *)header;
+
+    id rootsValue = headerMap[@"roots"];
+    if (![rootsValue isKindOfClass:[NSArray class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR header missing roots"}];
+        }
+        return NO;
+    }
+
+    NSArray *rootEntries = (NSArray *)rootsValue;
+    NSMutableArray<ATProtoCID *> *parsedRoots = [NSMutableArray arrayWithCapacity:rootEntries.count];
+    for (id rootEntry in rootEntries) {
+        if (![rootEntry isKindOfClass:[ATProtoCID class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-10
+                                         userInfo:@{NSLocalizedDescriptionKey: @"CAR header roots entry is not a CID tag"}];
+            }
+            return NO;
+        }
+        ATProtoCID *rootCID = (ATProtoCID *)rootEntry;
+        if (self.strict && !rootCID.isDASLConformant) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-12
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"CAR root %@ is not a DASL CID", rootCID.stringValue]}];
+            }
+            return NO;
+        }
+        [parsedRoots addObject:rootCID];
+    }
+
+    id versionValue = headerMap[@"version"];
+    if (!CARIsIntegerOne(versionValue)) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-3
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported CAR version"}];
+        }
+        return NO;
+    }
+
+    _metadata = [headerMap copy];
+    NSError *maslError = nil;
+    ATProtoMASLDocument *maslDocument =
+        [ATProtoMASLDocument documentWithObject:headerMap error:&maslError];
+    if (maslDocument) {
+        NSError *compatibilityError = nil;
+        if (![maslDocument validateForCARWithError:&compatibilityError]) {
+            if (error) *error = compatibilityError;
+            return NO;
+        }
+        _maslDocument = maslDocument;
+    }
+
+    _roots = [parsedRoots copy];
+    _bodyOffset = offset;
+    _offset = offset;
+    return YES;
+}
+
+- (BOOL)verifyRootsPresentWithError:(NSError **)error {
+    for (ATProtoCID *rootCID in self.roots) {
+        if (!self.blockIndex[rootCID.stringValue]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-9
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"CAR root %@ is not present in the body", rootCID.stringValue]}];
+            }
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (nullable ATProtoCARBlock *)nextBlockWithError:(NSError **)error {
+    if (self.isFinished) {
+        return nil;
+    }
+
+    NSUInteger offset = self.offset;
+    if (offset >= self.data.length) {
+        self.isFinished = YES;
+        if (self.strict && ![self verifyRootsPresentWithError:error]) {
+            return nil;
+        }
+        return nil;
+    }
+
+    const uint8_t *bytes = self.data.bytes;
+    uint64_t blockLen = 0;
+    NSUInteger blockSize = ReadVarint(bytes + offset, self.data.length - offset, &blockLen);
+    if (blockSize == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-4
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid CAR block length"}];
+        }
+        return nil;
+    }
+    offset += blockSize;
+
+    if (blockLen > self.data.length - offset) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-5
+                                     userInfo:@{NSLocalizedDescriptionKey: @"CAR block extends beyond data"}];
+        }
+        return nil;
+    }
+
+    NSData *blockBytes = [self.data subdataWithRange:NSMakeRange(offset, (NSUInteger)blockLen)];
+    offset += (NSUInteger)blockLen;
+
+    ATProtoCID *blockCID = nil;
+    NSUInteger cidLength = 0;
+    if (!DecodeCIDFromBlock(blockBytes.bytes, blockBytes.length, &blockCID, &cidLength)) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.car"
+                                         code:-6
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse CID from CAR block"}];
+        }
+        return nil;
+    }
+
+    NSData *blockData = [blockBytes subdataWithRange:NSMakeRange(cidLength, blockBytes.length - cidLength)];
+
+    if (self.strict) {
+        if (!blockCID.isDASLConformant) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-7
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"CAR block CID %@ is not a DASL CID", blockCID.stringValue]}];
+            }
+            return nil;
+        }
+        // Without this the ATProtoCID is just a label: a peer can ship any bytes
+        // under any ATProtoCID and every downstream lookup silently trusts it.
+        NSData *actualDigest = [ATProtoCID sha256Digest:blockData];
+        NSData *statedDigest = [blockCID.multihash subdataWithRange:NSMakeRange(2, blockCID.multihash.length - 2)];
+        if (![actualDigest isEqualToData:statedDigest]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"com.atproto.car"
+                                             code:-8
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"CAR block %@ does not hash to its stated CID", blockCID.stringValue]}];
+            }
+            return nil;
+        }
+    }
+
+    self.offset = offset;
+    ATProtoCARBlock *block = [ATProtoCARBlock blockWithCID:blockCID data:blockData];
+    self.blockIndex[blockCID.stringValue] = block;
+    return block;
+}
+
+- (BOOL)enumerateBlocksWithError:(NSError **)error
+                         handler:(BOOL (^)(ATProtoCARBlock *block, NSError **stopError))handler {
+    while (YES) {
+        NSError *blockError = nil;
+        ATProtoCARBlock *block = [self nextBlockWithError:&blockError];
+        if (blockError) {
+            if (error) *error = blockError;
+            return NO;
+        }
+        if (!block) {
+            // Exhausted; in strict mode nextBlockWithError already verified
+            // that every declared root is present in the body.
+            return YES;
+        }
+        NSError *stopError = nil;
+        BOOL continueStreaming = handler(block, &stopError);
+        if (!continueStreaming) {
+            if (stopError) {
+                if (error) *error = stopError;
+                return NO;
+            }
+            return YES;
+        }
+    }
+}
+
+- (ATProtoCARBlock *)blockWithCID:(ATProtoCID *)cid {
+    return self.blockIndex[cid.stringValue];
+}
+
+- (void)reset {
+    self.offset = self.bodyOffset;
+    self.isFinished = NO;
+    [self.blockIndex removeAllObjects];
+}
+
+@end
+
 #pragma mark - ATProtoCARWriter Implementation
 
 @interface ATProtoCARWriter ()

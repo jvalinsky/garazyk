@@ -27,6 +27,11 @@
     return self;
 }
 
+- (void)setBodySizeLimitProvider:(NSUInteger (^)(NSString *path))bodySizeLimitProvider {
+    _bodySizeLimitProvider = [bodySizeLimitProvider copy];
+    self.session.bodySizeLimitProvider = self.bodySizeLimitProvider;
+}
+
 - (NSArray<NSNumber *> *)feedData:(NSData *)data {
     NSArray<NSNumber *> *sessionEvents = [self.session feedData:data];
     

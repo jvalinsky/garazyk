@@ -31,6 +31,11 @@
   return self;
 }
 
+- (void)setBodySizeLimitProvider:(NSUInteger (^)(NSString *path))bodySizeLimitProvider {
+  _bodySizeLimitProvider = [bodySizeLimitProvider copy];
+  self.parser.bodySizeLimitProvider = self.bodySizeLimitProvider;
+}
+
 - (NSArray<NSNumber *> *)feedData:(NSData *)data {
   if (self.upgradedToWebSocket) {
     return @[];
