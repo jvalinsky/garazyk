@@ -514,6 +514,7 @@ static NSDictionary<NSString *, NSString *> *PDSGatedClassMap(void) {
       // socket gate
       @"HealthEndpointIntegrationTests" : @"socket",
       @"HttpServerTests"               : @"socket",
+      @"HttpImportBodyCapServerTests"   : @"socket",
       @"OAuth2EndpointTests"            : @"socket",
       @"PDSApplicationTests"           : @"socket",
       @"ATProtoHttpServerBuilderTests"     : @"socket",
@@ -1279,7 +1280,11 @@ int main(int argc, char *argv[]) {
       @"PDSCLIDispatcherTests",
       @"PDSCLIAdminCommandTests",
       @"PDSCLIOAuthCommandTests",
-      @"PDSCLIRegisterAllTests"
+      @"PDSCLIRegisterAllTests",
+      @"CARStreamReaderTests",
+      @"AccountMigrationXrpcTests",
+      @"ImportRepoScalingTests",
+      @"HttpImportBodyCapServerTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

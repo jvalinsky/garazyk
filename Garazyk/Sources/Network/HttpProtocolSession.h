@@ -46,6 +46,14 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
 @property(nonatomic, assign) BOOL upgradedToWebSocket;
 
 /**
+ * @abstract Per-path body-size override forwarded to the parser.
+ * @discussion Returns a route-specific cap in bytes for a request path, or 0
+ * to fall back to the parser's generic maxBodyBytes. Installed by the server
+ * from the XRPC dispatcher's per-method caps.
+ */
+@property(nonatomic, copy, nullable) NSUInteger (^bodySizeLimitProvider)(NSString *path);
+
+/**
  * @method feedData:
  * @abstract Feeds raw bytes from the wire into the session state machine.
  * @param data The bytes received from the network.

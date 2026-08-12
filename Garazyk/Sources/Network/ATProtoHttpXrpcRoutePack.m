@@ -117,6 +117,23 @@
                       }];
   }
 
+  // Install the per-method request-body caps on the HTTP server so the parser
+  // can admit large bodies for routes that registered an override (e.g.
+  // com.atproto.repo.importRepo with maxImportSize) while every other XRPC
+  // endpoint keeps the generic parser limit. 0 means "no override".
+  __weak XrpcDispatcher *weakDispatcher = resolvedDispatcher;
+  server.bodySizeLimitProvider = ^NSUInteger(NSString *path) {
+    XrpcDispatcher *strongDispatcher = weakDispatcher;
+    if (!strongDispatcher || ![path hasPrefix:@"/xrpc/"]) {
+      return 0;
+    }
+    NSString *method = [path substringFromIndex:6];
+    if (method.length == 0) {
+      return 0;
+    }
+    return [strongDispatcher maxBodyBytesForMethod:method];
+  };
+
   GZ_LOG_DEBUG(@"ATProtoHttpXrpcRoutePack: XRPC routes registered");
 }
 

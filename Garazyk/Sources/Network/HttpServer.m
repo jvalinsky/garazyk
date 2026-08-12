@@ -397,7 +397,6 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           __weak typeof(strongSelf) weakInnerSelf = strongSelf;
           __weak typeof(strongConnection) weakInnerConn = strongConnection;
           __weak ATProtoHttpConnectionState *weakConnState = connState;
-          __weak ATProtoHttpConnectionIOCoordinator *weakCoord = coordinator;
           coordinator.requestReadyHandler = ^(ATProtoHttpRequest *request) {
             __strong typeof(weakInnerSelf) s = weakInnerSelf;
             __strong typeof(weakInnerConn) c = weakInnerConn;
@@ -414,14 +413,14 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           coordinator.errorHandler = ^(NSError *error) {
             __strong typeof(weakInnerSelf) s = weakInnerSelf;
             __strong typeof(weakInnerConn) c = weakInnerConn;
-            ATProtoHttpConnectionIOCoordinator *coord = weakCoord;
             if (!s || !c) return;
-            [coord close];
-            dispatch_async(s.connectionQueue, ^{
-              [s.activeConnections removeObject:c];
-              [s.connectionStates removeObjectForKey:c];
-              [[GZMetrics sharedMetrics] setActiveConnections:(NSInteger)s.activeConnections.count];
-            });
+            // Enqueue the error response BEFORE any teardown: keepAlive = NO
+            // makes the normal send path cancel the connection after the
+            // response has flushed. The previous order closed the coordinator
+            // first, cancelling the socket mid-upload — clients then saw a
+            // bare connection error instead of the status response, and the
+            // freed connection state could crash the process when the send
+            // completion ran.
             ATProtoHttpResponse *response = [ATProtoHttpResponse responseWithStatusCode:error.code ?: 400];
             response.keepAlive = NO;
             [response setJsonBody:@{
@@ -429,6 +428,11 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
               @"message": error.localizedDescription ?: @"Protocol error"
             }];
             [s enqueueResponse:response forConnection:c];
+            dispatch_async(s.connectionQueue, ^{
+              [s.activeConnections removeObject:c];
+              [s.connectionStates removeObjectForKey:c];
+              [[GZMetrics sharedMetrics] setActiveConnections:(NSInteger)s.activeConnections.count];
+            });
           };
           coordinator.outputQueueSizeProvider = ^NSUInteger {
             ATProtoHttpConnectionState *cs = weakConnState;
@@ -518,6 +522,13 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                            connection];
       state.transportQueue =
           dispatch_queue_create([queueLabel UTF8String], DISPATCH_QUEUE_SERIAL);
+    }
+    // Propagate the per-path body-size override (installed by the XRPC route
+    // pack) into the connection's parser. The provider is set at server
+    // configuration time and never changes afterward, so assigning it on
+    // every state lookup is idempotent.
+    if (self.bodySizeLimitProvider) {
+      state.driver.bodySizeLimitProvider = self.bodySizeLimitProvider;
     }
   });
   return state;

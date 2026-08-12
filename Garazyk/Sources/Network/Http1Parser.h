@@ -60,6 +60,15 @@ typedef NS_ENUM(NSInteger, Http1ParserState) {
 /** Maximum accepted request body size in bytes. Defaults to 50 MB. */
 @property (nonatomic, assign) NSUInteger maxBodyBytes;    // default 50MB
 
+/**
+ * Optional per-path body-size override consulted when the request line is
+ * known but before the body is read. Returns a route-specific cap in bytes,
+ * or 0 to fall back to maxBodyBytes. Used to admit large bodies (e.g.
+ * com.atproto.repo.importRepo) without raising the generic cap for all
+ * routes. The block must be safe to call from any queue.
+ */
+@property (nonatomic, copy, nullable) NSUInteger (^bodySizeLimitProvider)(NSString *path);
+
 /** Client IP address copied into the completed ATProtoHttpRequest. */
 @property (nonatomic, copy, nullable) NSString *remoteAddress;
 

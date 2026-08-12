@@ -176,6 +176,56 @@
     XCTAssertEqual(err.statusCode, 400);
 }
 
+- (void)testBodySizeLimitProviderOverridesGenericCapForMatchingPath {
+    // Route-specific caps (e.g. com.atproto.repo.importRepo admitting large
+    // bodies) must override the generic parser limit for that path only.
+    self.parser.maxBodyBytes = 8; // tiny generic cap
+    self.parser.bodySizeLimitProvider = ^NSUInteger(NSString *path) {
+        if ([path isEqualToString:@"/xrpc/com.atproto.repo.importRepo"]) {
+            return 1024 * 1024;
+        }
+        return 0; // fall back to maxBodyBytes
+    };
+
+    NSString *body = [@"" stringByPaddingToLength:64 withString:@"x" startingAtIndex:0];
+    NSString *reqStr = [NSString stringWithFormat:
+        @"POST /xrpc/com.atproto.repo.importRepo HTTP/1.1\r\n"
+        @"Host: localhost\r\n"
+        @"Content-Type: application/vnd.ipld.car\r\n"
+        @"Content-Length: %lu\r\n\r\n%@",
+        (unsigned long)body.length, body];
+
+    BOOL complete = [self.parser feedData:[reqStr dataUsingEncoding:NSUTF8StringEncoding]];
+    XCTAssertTrue(complete, @"%@", [self.parser parseError]);
+    XCTAssertEqual(self.parser.state, Http1ParserStateComplete);
+    XCTAssertNil([self.parser parseError]);
+    XCTAssertEqualObjects([self.parser completedRequest].path, @"/xrpc/com.atproto.repo.importRepo");
+}
+
+- (void)testBodySizeLimitProviderFallbackKeepsGenericCapForOtherPaths {
+    // A provider returning 0 for a path must fall back to maxBodyBytes, so
+    // the route-specific relaxation never widens unrelated endpoints.
+    self.parser.maxBodyBytes = 8;
+    self.parser.bodySizeLimitProvider = ^NSUInteger(NSString *path) {
+        if ([path isEqualToString:@"/xrpc/com.atproto.repo.importRepo"]) {
+            return 1024 * 1024;
+        }
+        return 0;
+    };
+
+    NSString *body = [@"" stringByPaddingToLength:64 withString:@"x" startingAtIndex:0];
+    NSString *reqStr = [NSString stringWithFormat:
+        @"POST /xrpc/com.atproto.repo.getRecord HTTP/1.1\r\n"
+        @"Content-Length: %lu\r\n\r\n%@",
+        (unsigned long)body.length, body];
+
+    BOOL complete = [self.parser feedData:[reqStr dataUsingEncoding:NSUTF8StringEncoding]];
+    XCTAssertTrue(complete);
+    XCTAssertEqual(self.parser.state, Http1ParserStateError);
+    XCTAssertEqual([self.parser parseError].statusCode, 413);
+    XCTAssertEqualObjects([self.parser parseError].errorCode, @"RequestTooLarge");
+}
+
 - (void)testPipelinedDataRetention {
     NSString *req1 = @"GET /1 HTTP/1.1\r\n\r\n";
     NSString *req2 = @"GET /2 HTTP/1.1\r\n\r\n";
