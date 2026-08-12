@@ -69,6 +69,8 @@ project(ATProtoPDS
   LANGUAGES C CXX OBJC
 )
 
+option(GARAZYK_INSTALL "Generate CMake package install/export rules for library consumers" OFF)
+
 #=============================
 # Global Settings
 #=============================
@@ -1889,11 +1891,13 @@ add_custom_target(check-boundaries
 #=============================
 # Installation
 #=============================
-install(TARGETS kaszlak
-  RUNTIME DESTINATION bin
-)
+if(NOT GARAZYK_INSTALL)
+  install(TARGETS kaszlak
+    RUNTIME DESTINATION bin
+  )
+endif()
 
-if(BUILD_FUZZERS)
+if(BUILD_FUZZERS AND NOT GARAZYK_INSTALL)
   set(FUZZER_TARGETS_TO_INSTALL)
   foreach(target fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst)
     if(TARGET ${target})
@@ -2094,4 +2098,10 @@ message(STATUS "  -DBUILD_TESTS=ON     - Build test targets")
 message(STATUS "  -DCMAKE_BUILD_TYPE=  - Debug|Release")
 message(STATUS "  -DBUILD_FUZZERS_USE_MSAN=ON  - Enable memory sanitizer")
 message(STATUS "  -DBUILD_FUZZERS_USE_UBSAN=ON  - Enable undefined behavior sanitizer")
+message(STATUS "  -DGARAZYK_INSTALL=ON  - Emit Garazyk:: CMake package install rules")
 message(STATUS "===========================================")
+
+if(GARAZYK_INSTALL)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  include("${CMAKE_SOURCE_DIR}/cmake/GarazykInstall.cmake")
+endif()

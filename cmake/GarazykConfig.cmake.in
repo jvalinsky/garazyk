@@ -1,0 +1,75 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+set(GARAZYK_INCLUDE_SOURCES "${PACKAGE_PREFIX_DIR}/@GARAZYK_INSTALL_INCLUDEDIR@/garazyk/Sources")
+set(GARAZYK_INCLUDE_FRAMEWORKS "${PACKAGE_PREFIX_DIR}/@GARAZYK_INSTALL_INCLUDEDIR@/garazyk/Frameworks")
+
+if(@GARAZYK_WITH_OPENSSL@)
+  find_dependency(OpenSSL)
+endif()
+
+if(APPLE)
+  find_library(GARAZYK_Foundation Foundation REQUIRED)
+  find_library(GARAZYK_Security Security REQUIRED)
+  find_library(GARAZYK_LocalAuthentication LocalAuthentication REQUIRED)
+  find_library(GARAZYK_SQLite3 sqlite3 REQUIRED)
+  find_library(GARAZYK_Resolv resolv REQUIRED)
+  find_library(GARAZYK_Network Network REQUIRED)
+  set(GARAZYK_PLATFORM_LIBS
+    ${GARAZYK_Foundation}
+    ${GARAZYK_Security}
+    ${GARAZYK_LocalAuthentication}
+    ${GARAZYK_SQLite3}
+    ${GARAZYK_Resolv}
+    ${GARAZYK_Network})
+  if(@GARAZYK_WITH_OPENSSL@ AND OpenSSL_FOUND)
+    list(APPEND GARAZYK_PLATFORM_LIBS OpenSSL::Crypto)
+  endif()
+else()
+  if(NOT @GARAZYK_WITH_OPENSSL@)
+    find_dependency(OpenSSL REQUIRED)
+  endif()
+  find_library(GARAZYK_SQLite3 sqlite3 REQUIRED)
+  set(GARAZYK_PLATFORM_LIBS OpenSSL::SSL OpenSSL::Crypto ${GARAZYK_SQLite3} pthread m dl resolv)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/GarazykTargets.cmake")
+
+set(Garazyk_ATProtoCore_FOUND TRUE)
+set(Garazyk_ATProtoStorage_FOUND TRUE)
+set(Garazyk_ATProtoTransport_FOUND TRUE)
+set(Garazyk_ATProtoServices_FOUND TRUE)
+set(Garazyk_ATProtoXRPC_FOUND TRUE)
+set(Garazyk_ATProtoSync_FOUND TRUE)
+set(Garazyk_ATProtoPLC_FOUND TRUE)
+set(Garazyk_ATProtoRuntime_FOUND TRUE)
+set(Garazyk_ATProtoMediaCore_FOUND TRUE)
+set(Garazyk_ATProtoVideoService_FOUND TRUE)
+set(Garazyk_ATProtoAdminUI_FOUND TRUE)
+
+# Installed consumers need the same two-root include layout as the build tree.
+foreach(_gz_target IN ITEMS
+    ATProtoCore ATProtoStorage ATProtoTransport ATProtoServices ATProtoXRPC
+    ATProtoSync ATProtoPLC ATProtoRuntime ATProtoMediaCore ATProtoVideoService)
+  if(TARGET Garazyk::${_gz_target})
+    set_target_properties(Garazyk::${_gz_target} PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES
+        "${GARAZYK_INCLUDE_SOURCES};${GARAZYK_INCLUDE_FRAMEWORKS}")
+    if(APPLE)
+      target_link_libraries(Garazyk::${_gz_target} INTERFACE ${GARAZYK_PLATFORM_LIBS})
+    endif()
+  endif()
+endforeach()
+
+if(APPLE AND TARGET Garazyk::ATProtoRuntime)
+  find_library(GARAZYK_Readline readline)
+  find_library(GARAZYK_AppKit AppKit REQUIRED)
+  set(_gz_runtime_extra ${GARAZYK_AppKit})
+  if(GARAZYK_Readline)
+    list(APPEND _gz_runtime_extra ${GARAZYK_Readline})
+  endif()
+  target_link_libraries(Garazyk::ATProtoRuntime INTERFACE ${_gz_runtime_extra})
+endif()
+
+check_required_components(Garazyk)
