@@ -237,6 +237,32 @@ static NSString *BeskidNow(void) {
     return success;
 }
 
+- (BOOL)deleteAllRecordsForDID:(NSString *)did error:(NSError **)error {
+    if (did.length == 0) return YES;
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
+    __block int64_t deletedCount = 0;
+    dispatch_sync(_writeQueue, ^{
+        success = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+            NSArray<NSDictionary *> *rows = [tx executeQuery:@"SELECT COUNT(*) as cnt FROM beskid_records WHERE did = ?"
+                                                     params:@[did]
+                                                      error:innerError];
+            if (!rows) return NO;
+            deletedCount = [rows.firstObject[@"cnt"] longLongValue];
+            return [tx executeUpdate:@"DELETE FROM beskid_records WHERE did = ?"
+                              params:@[did]
+                               error:innerError];
+        } error:&localError];
+    });
+    if (success) {
+        for (int64_t i = 0; i < deletedCount; i++) {
+            [self.metrics recordRecordDelete];
+        }
+    }
+    if (!success && error) *error = localError;
+    return success;
+}
+
 - (BOOL)saveHandle:(NSString *)handle did:(NSString *)did error:(NSError **)error {
     if (handle.length == 0 || did.length == 0) return YES;
     NSString *normalized = [handle lowercaseString];
@@ -390,6 +416,24 @@ static NSString *BeskidNow(void) {
         @"signing_key": row[@"signing_key"] ?: @"",
         @"raw_document": rawDoc
     };
+}
+
+- (BOOL)deleteIdentityForDID:(NSString *)did error:(NSError **)error {
+    if (did.length == 0) return YES;
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
+    dispatch_sync(_writeQueue, ^{
+        success = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
+            return [tx executeUpdate:@"DELETE FROM beskid_identities WHERE did = ?"
+                              params:@[did]
+                               error:innerError];
+        } error:&localError];
+    });
+    if (success) {
+        [self.metrics recordIdentityDelete];
+    }
+    if (!success && error) *error = localError;
+    return success;
 }
 
 #pragma mark - SQLite helpers

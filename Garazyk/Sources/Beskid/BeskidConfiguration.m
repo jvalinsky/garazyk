@@ -14,6 +14,8 @@
     _domain = @"slingshot.microcosm.blue";
     _cacheRecordTtlSeconds = 3600;
     _cacheIdentityTtlSeconds = 86400;
+    _firehoseEnabled = NO;
+    _firehoseURL = @"ws://127.0.0.1:2587";
     _rateLimitEnabled = YES;
     _rateLimitIpLimit = 200;
     _rateLimitIpWindowSeconds = 60;
@@ -34,6 +36,9 @@
             [GZConfigurationProperty propertyWithTargetKey:@"domain" jsonKeys:@[@"domain"] envVar:@"BESKID_DOMAIN" type:GZConfigurationPropertyTypeString],
             [GZConfigurationProperty propertyWithTargetKey:@"cacheRecordTtlSeconds" jsonKeys:@[@"cache_record_ttl", @"cache_record_ttl_seconds"] envVar:@"BESKID_CACHE_RECORD_TTL" type:GZConfigurationPropertyTypeDouble],
             [GZConfigurationProperty propertyWithTargetKey:@"cacheIdentityTtlSeconds" jsonKeys:@[@"cache_identity_ttl", @"cache_identity_ttl_seconds"] envVar:@"BESKID_CACHE_IDENTITY_TTL" type:GZConfigurationPropertyTypeDouble],
+            [GZConfigurationProperty propertyWithTargetKey:@"firehoseEnabled" jsonKeys:@[@"firehose.enabled", @"firehose_enabled"] envVar:@"BESKID_FIREHOSE_ENABLED" type:GZConfigurationPropertyTypeBoolean],
+            [GZConfigurationProperty propertyWithTargetKey:@"firehoseURL" jsonKeys:@[@"firehose.url", @"firehose_url"] envVar:@"BESKID_FIREHOSE_URL" type:GZConfigurationPropertyTypeString],
+            [GZConfigurationProperty propertyWithTargetKey:@"firehoseCursorPath" jsonKeys:@[@"firehose.cursor_path", @"firehose_cursor_path"] envVar:@"BESKID_FIREHOSE_CURSOR_PATH" type:GZConfigurationPropertyTypeString],
             [GZConfigurationProperty propertyWithTargetKey:@"rateLimitEnabled" jsonKeys:@[@"rate_limit.enabled", @"rate_limit_enabled"] envVar:@"BESKID_RATELIMIT_ENABLED" type:GZConfigurationPropertyTypeBoolean],
             [GZConfigurationProperty propertyWithTargetKey:@"rateLimitIpLimit" jsonKeys:@[@"rate_limit.ip_limit", @"rate_limit_ip_limit"] envVar:@"BESKID_RATELIMIT_IP_LIMIT" type:GZConfigurationPropertyTypeInteger],
             [GZConfigurationProperty propertyWithTargetKey:@"rateLimitIpWindowSeconds" jsonKeys:@[@"rate_limit.ip_window", @"rate_limit_ip_window"] envVar:@"BESKID_RATELIMIT_IP_WINDOW" type:GZConfigurationPropertyTypeDouble]

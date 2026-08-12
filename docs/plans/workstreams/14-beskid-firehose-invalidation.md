@@ -52,18 +52,20 @@ Design note: [14-beskid-firehose-invalidation-phase0.md](14-beskid-firehose-inva
 (accepted 2026-08-12). Connect to relay; full subscription; event mapping and
 failure modes documented. Phase 1 may proceed.
 
-## Phase 1 — internal subscription + invalidation hooks
+## Phase 1 — DONE: internal subscription + invalidation hooks (2026-08-12)
 
-- **Evidence.** `com.atproto.sync.subscribeRepos` is already supported by Garazyk
-  as a firehose client (see `Sync/Firehose/Firehose.m`).
-- **Change.** Extend `BeskidRuntime` to optionally start a `Firehose` instance:
-  - store cursor in `beskid` data dir,
-  - handle reconnect with backoff,
-  - expose “subscription health” metrics.
-- **Owner boundary.** `BeskidRuntime.m` and a new `BeskidFirehoseInvalidator.*`
-  module; no changes to other binaries.
-- **Gate.** Unit tests for invalidator mapping logic using fixture events.
-- **Rollback.** Disable subscription; invalidator remains inert.
+- **`GZBeskidFirehoseInvalidator`:** optional relay subscription via
+  `ATProtoFirehose`, cursor file under `<dataDir>/firehose.cursor`, reconnect
+  with backoff, commit/identity/account → cache eviction mapping.
+- **Feature flag:** `BESKID_FIREHOSE_ENABLED` (default off), `BESKID_FIREHOSE_URL`,
+  `BESKID_FIREHOSE_CURSOR_PATH`; wired from `GZBeskidRuntime`.
+- **Database helpers:** `deleteAllRecordsForDID:`, `deleteIdentityForDID:`.
+- **Metrics:** firehose connected gauge, invalidation/reconnect/parse-error counters
+  in `GZBeskidMetrics` snapshot.
+- **Gate:** `BeskidFirehoseInvalidatorTests` (5/0) with fixture events.
+
+Phase 2 may add integration coverage for read-through convergence after upstream
+updates.
 
 ## Phase 2 — record invalidation mapping (`#commit`)
 

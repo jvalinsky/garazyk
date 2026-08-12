@@ -18,6 +18,11 @@ static const NSUInteger kMaxUpstreamHosts = 32;
     int64_t _upstreamRequests, _upstreamSuccesses, _upstreamFailures, _upstreamTotalLatencyMs;
     // entry gauges
     int64_t _recordEntries, _identityEntries;
+    // firehose
+    BOOL _firehoseConnected;
+    int64_t _firehoseInvalidationsCommit, _firehoseInvalidationsIdentity, _firehoseInvalidationsAccount;
+    int64_t _firehoseReconnects, _firehoseParseErrors;
+    int64_t _identityDeletes;
     // expiry bounding
     int64_t _recordMinExpiryAt, _identityMinExpiryAt;
     // uptime
@@ -92,6 +97,39 @@ static const NSUInteger kMaxUpstreamHosts = 32;
         if (self->_identityMinExpiryAt == 0 || expiresAt < self->_identityMinExpiryAt) {
             self->_identityMinExpiryAt = expiresAt;
         }
+    });
+}
+
+#pragma mark - Firehose
+
+- (void)setFirehoseConnected:(BOOL)connected {
+    dispatch_sync(_queue, ^{ self->_firehoseConnected = connected; });
+}
+
+- (void)recordFirehoseInvalidation:(NSString *)type {
+    dispatch_sync(_queue, ^{
+        if ([type isEqualToString:@"identity"]) {
+            ++self->_firehoseInvalidationsIdentity;
+        } else if ([type isEqualToString:@"account"]) {
+            ++self->_firehoseInvalidationsAccount;
+        } else {
+            ++self->_firehoseInvalidationsCommit;
+        }
+    });
+}
+
+- (void)recordFirehoseReconnect {
+    dispatch_sync(_queue, ^{ ++self->_firehoseReconnects; });
+}
+
+- (void)recordFirehoseParseError {
+    dispatch_sync(_queue, ^{ ++self->_firehoseParseErrors; });
+}
+
+- (void)recordIdentityDelete {
+    dispatch_sync(_queue, ^{
+        ++self->_identityDeletes;
+        if (self->_identityEntries > 0) self->_identityEntries--;
     });
 }
 
@@ -231,6 +269,14 @@ static NSDictionary *familySnapshot(NSString *name, int64_t entries,
             @"overall": overallFam,
             @"upstreams": upstreams,
             @"rateLimitRejects": @(self->_rateLimitRejects),
+            @"firehose": @{
+                @"connected": @(self->_firehoseConnected),
+                @"invalidationsCommit": @(self->_firehoseInvalidationsCommit),
+                @"invalidationsIdentity": @(self->_firehoseInvalidationsIdentity),
+                @"invalidationsAccount": @(self->_firehoseInvalidationsAccount),
+                @"reconnects": @(self->_firehoseReconnects),
+                @"parseErrors": @(self->_firehoseParseErrors),
+            },
         };
     });
     return result;

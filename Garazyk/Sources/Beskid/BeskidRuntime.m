@@ -6,6 +6,7 @@
 #import "Beskid/BeskidDatabase.h"
 #import "Beskid/BeskidXrpcRoutePack.h"
 #import "Beskid/BeskidMetrics.h"
+#import "Beskid/BeskidFirehoseInvalidator.h"
 #import "Beskid/AdminUI/BeskidAdminSnapshot.h"
 #import "Beskid/AdminUI/BeskidAdminUIPack.h"
 #import "AdminUIServer/GZAdminUIHost.h"
@@ -21,6 +22,7 @@
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) GZBeskidMetrics *metrics;
 @property (nonatomic, strong) GZAdminUIHost *adminUIHostInstance;
+@property (nonatomic, strong, nullable) GZBeskidFirehoseInvalidator *firehoseInvalidator;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
 
@@ -141,6 +143,19 @@
         GZ_LOG_CORE_WARN(@"Beskid admin UI disabled: BESKID_ADMIN_PASSWORD or BESKID_ADMIN_PASSWORD_FILE is not configured");
     }
 
+    if (config.firehoseEnabled) {
+        self.firehoseInvalidator = [[GZBeskidFirehoseInvalidator alloc] initWithDatabase:self.database
+                                                                                metrics:self.metrics
+                                                                          configuration:config];
+        NSError *firehoseError = nil;
+        if (![self.firehoseInvalidator startWithError:&firehoseError]) {
+            [self.adminUIHostInstance stop];
+            [self.httpServer stop];
+            if (error) *error = firehoseError;
+            return NO;
+        }
+    }
+
     self.isRunning = YES;
     GZ_LOG_INFO(@"[Beskid] Started on port %lu", (unsigned long)config.httpPort);
     return YES;
@@ -148,6 +163,8 @@
 
 - (void)stop {
     if (!self.isRunning) return;
+    [self.firehoseInvalidator stop];
+    self.firehoseInvalidator = nil;
     [self.adminUIHostInstance stop];
     [self.httpServer stop];
     [self.database close];

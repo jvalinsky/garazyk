@@ -24,6 +24,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordIdentityExpiredRead;
 - (void)recordIdentityWriteWithExpiresAt:(int64_t)expiresAt;
 
+/// @name Firehose invalidation
+- (void)setFirehoseConnected:(BOOL)connected;
+- (void)recordFirehoseInvalidation:(NSString *)type;
+- (void)recordFirehoseReconnect;
+- (void)recordFirehoseParseError;
+- (void)recordIdentityDelete;
+
 /// @name Rate limiting
 - (void)recordRateLimitReject;
 
