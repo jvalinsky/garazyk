@@ -1,11 +1,11 @@
 {{^error}}
-<div class="metric-row">
-<div class="metric"><span class="metric-label">Claims</span><span class="metric-value">{{claims}}</span></div>
-<div class="metric"><span class="metric-label">Delivers</span><span class="metric-value">{{delivers}}</span></div>
-<div class="metric"><span class="metric-label">Polls</span><span class="metric-value">{{polls}}</span></div>
-<div class="metric"><span class="metric-label">Misses</span><span class="metric-value">{{misses}}</span></div>
-<div class="metric"><span class="metric-label">Expirations</span><span class="metric-value">{{expirations}}</span></div>
-<div class="metric"><span class="metric-label">Auth failures</span><span class="metric-value">{{authFailures}}</span></div>
+<div class="detail-card">
+<div class="detail-row"><span class="detail-label">Claims</span><span class="detail-value text-mono">{{claims}}</span></div>
+<div class="detail-row"><span class="detail-label">Delivers</span><span class="detail-value text-mono">{{delivers}}</span></div>
+<div class="detail-row"><span class="detail-label">Polls</span><span class="detail-value text-mono">{{polls}}</span></div>
+<div class="detail-row"><span class="detail-label">Misses</span><span class="detail-value text-mono">{{misses}}</span></div>
+<div class="detail-row"><span class="detail-label">Expirations</span><span class="detail-value text-mono">{{expirations}}</span></div>
+<div class="detail-row"><span class="detail-label">Auth failures</span><span class="detail-value text-mono">{{authFailures}}</span></div>
 </div>
 {{/error}}
 {{#error}}

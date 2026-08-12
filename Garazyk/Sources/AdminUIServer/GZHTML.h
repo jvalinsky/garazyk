@@ -261,6 +261,99 @@ NS_ASSUME_NONNULL_BEGIN
                       text:(NSString *)text
                   className:(nullable NSString *)className;
 
+/// @name Product dashboard primitives
+/// Preferred over metric-row for operator dashboards after the 2026 redesign.
+
+/**
+ * @abstract Builds a stacked detail card of label/value rows.
+ * @discussion Produces <div class="detail-card">…</div>. Each field dictionary may include:
+ * - @"label" (required, escaped)
+ * - @"value" (escaped plain text), or
+ * - @"html" (trusted pre-rendered value markup, e.g. a badge)
+ * Prefer @"html" when the value is a badge or mono span from another GZHTML helper.
+ * @param fields Field dictionaries.
+ * @return The rendered detail-card HTML.
+ */
++ (NSString *)detailCardWithFields:(NSArray<NSDictionary<NSString *, NSString *> *> *)fields;
+
+/**
+ * @abstract Opening tag for an incrementally built detail card.
+ * @discussion Prefer +detailCardWithFields: when all rows are known up front.
+ */
++ (NSString *)detailCardOpening;
+
+/** @abstract Closing tag for an incrementally built detail card. */
++ (NSString *)detailCardClosing;
+
+/**
+ * @abstract Builds one detail-card row with a trusted HTML value.
+ * @param label Escaped label text.
+ * @param valueHTML Trusted markup for the value cell (use +monoValue: / +healthBadge: / +text:).
+ * @return The rendered detail-row HTML.
+ */
++ (NSString *)detailRowWithLabel:(NSString *)label valueHTML:(nullable NSString *)valueHTML;
+
+/**
+ * @abstract Builds a semantic health badge for ok/healthy/degraded/error states.
+ * @param health Raw health string from a snapshot. Case-insensitive.
+ * @return Badge HTML with success/warning/destructive classes.
+ */
++ (NSString *)healthBadge:(nullable NSString *)health;
+
+/**
+ * @abstract Builds a semantic connection/status badge.
+ * @param status Raw status (connected, running, disconnected, error, …).
+ * @return Badge HTML; text is the original status string (escaped).
+ */
++ (NSString *)connectionBadge:(nullable NSString *)status;
+
+/**
+ * @abstract Builds a monospace span for IDs, counts, URLs, and other exact values.
+ * @param value String, number, or description-able object. Nil becomes "—".
+ * @return Escaped mono span HTML.
+ */
++ (NSString *)monoValue:(nullable id)value;
+
+/**
+ * @abstract Builds a standalone section title (h3.section-title).
+ * @param title Escaped title text.
+ * @return The heading HTML without a wrapping section.
+ */
++ (NSString *)sectionTitle:(NSString *)title;
+
+/**
+ * @abstract Builds a table cell with optional CSS class.
+ * @param text Escaped cell text.
+ * @param className Optional class (e.g. @"text-right text-mono"). Nil omits class.
+ * @return The <td> HTML.
+ */
++ (NSString *)tableCellWithText:(NSString *)text className:(nullable NSString *)className;
+
+/**
+ * @abstract Builds a table cell containing trusted HTML with an optional class.
+ * @param html Trusted cell markup.
+ * @param className Optional class. Nil omits class.
+ * @return The <td> HTML.
+ */
++ (NSString *)tableCellWithHTML:(NSString *)html className:(nullable NSString *)className;
+
+/**
+ * @abstract Builds a horizontal button/action row.
+ * @param buttons Pre-rendered button HTML strings (from +buttonWithClass:…).
+ * @return A div.button-row wrapping the buttons.
+ */
++ (NSString *)buttonRowWithButtons:(NSArray<NSString *> *)buttons;
+
+/**
+ * @abstract Formats uptime seconds as `Nh Nm` for operator displays.
+ */
++ (NSString *)formatUptime:(int64_t)seconds;
+
+/**
+ * @abstract Formats a byte count as `N MB` for storage pressure displays.
+ */
++ (NSString *)formatMegabytes:(int64_t)bytes;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -3,6 +3,7 @@
 #import "AdminUIServer/Packs/GZAdminUIVideoPack.h"
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZHTML.h"
 #import "AdminUIServer/UITemplateEngine.h"
 #import "AdminUIServer/Packs/JelczAdminSnapshot.h"
 #import "AdminUIServer/Packs/GZAdminUIBackendClient+Video.h"
@@ -38,10 +39,8 @@
     NSDictionary *storage = snapshot[@"storage"] ?: @{};
     NSDictionary *counts = queue[@"countsByState"] ?: @{};
 
-    // Extract values safely
-    NSString *health = GZAdminUIEscaped(snapshot[@"health"]);
-    NSString *pdsHealth = GZAdminUIEscaped(snapshot[@"pdsUploadHealth"]);
-    NSString *backend = GZAdminUIEscaped(storage[@"backend"]);
+    NSString *health = snapshot[@"health"] ?: @"unknown";
+    NSString *pdsHealth = snapshot[@"pdsUploadHealth"] ?: @"unknown";
     id activeJobs = worker[@"activeJobs"] ?: @0;
     id maxConcurrency = worker[@"maxConcurrency"] ?: @0;
     id depth = queue[@"depth"] ?: @0;
@@ -53,59 +52,47 @@
     long long outMB = [storage[@"outputBytes"] respondsToSelector:@selector(longLongValue)]
         ? [storage[@"outputBytes"] longLongValue] / (1024 * 1024) : 0;
 
+    NSMutableArray *healthFields = [NSMutableArray arrayWithArray:@[
+        @{@"label": @"Health", @"html": [GZHTML healthBadge:health]},
+    ]];
+    if (snapshot[@"uptimeSeconds"]) {
+        [healthFields addObject:@{@"label": @"Uptime", @"html": [GZHTML monoValue:[GZHTML formatUptime:[snapshot[@"uptimeSeconds"] longLongValue]]]}];
+    }
+    [healthFields addObjectsFromArray:@[
+        @{@"label": @"Active / Capacity", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@", activeJobs, maxConcurrency]]},
+        @{@"label": @"Queue depth", @"html": [GZHTML monoValue:depth]},
+        @{@"label": @"Oldest job", @"html": [GZHTML monoValue:oldest]},
+        @{@"label": @"Completed / Failed (24h)", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@", completed24h, failed24h]]},
+        @{@"label": @"PDS upload", @"html": [GZHTML healthBadge:pdsHealth]},
+        @{@"label": @"Storage backend", @"value": storage[@"backend"] ?: @"—"},
+        @{@"label": @"Temp / Output", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%lld MB / %lld MB", tempMB, outMB]]},
+    ]];
+
     NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Service Health"]];
+    [html appendString:[GZHTML detailCardWithFields:healthFields]];
 
-    // Metric row
-    [html appendFormat:
-        @"<div class=\"metric-row\">"
-        @"<div class=\"metric\"><span class=\"metric-label\">Health</span>"
-        @"<span class=\"metric-value status-%@\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Active / Capacity</span>"
-        @"<span class=\"metric-value\">%@ / %@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Queue depth</span>"
-        @"<span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Oldest job</span>"
-        @"<span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Completed / Failed (24h)</span>"
-        @"<span class=\"metric-value\">%@ / %@</span></div>"
-        @"</div>",
-        health, health,
-        activeJobs, maxConcurrency,
-        depth, oldest,
-        completed24h, failed24h
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Queue breakdown"]];
+    NSArray *stateOrder = @[
+        @[@"Pending", @"JOB_STATE_PENDING"],
+        @[@"Processing", @"JOB_STATE_PROCESSING"],
+        @[@"Transcoding", @"JOB_STATE_TRANSCODING"],
+        @[@"Thumbnail", @"JOB_STATE_GENERATING_THUMBNAIL"],
+        @[@"Completed", @"JOB_STATE_COMPLETED"],
+        @[@"Failed", @"JOB_STATE_FAILED"],
     ];
-
-    // Second metric row
-    [html appendFormat:
-        @"<div class=\"metric-row\">"
-        @"<div class=\"metric\"><span class=\"metric-label\">PDS upload</span>"
-        @"<span class=\"metric-value status-%@\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Storage backend</span>"
-        @"<span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Temp / Output</span>"
-        @"<span class=\"metric-value text-sm\">%lld MB / %lld MB</span></div>"
-        @"</div>",
-        pdsHealth, pdsHealth,
-        backend,
-        tempMB, outMB
-    ];
-
-    // Queue breakdown table
-    [html appendFormat:
-        @"<section class=\"mt-lg\"><h3 class=\"section-title\">Queue breakdown</h3>"
-        @"<table class=\"table\"><thead><tr>"
-        @"<th>Pending</th><th>Processing</th><th>Transcoding</th>"
-        @"<th>Thumbnail</th><th>Completed</th><th>Failed</th>"
-        @"</tr></thead><tbody><tr>"
-        @"<td>%@</td><td>%@</td><td>%@</td><td>%@</td><td>%@</td><td>%@</td>"
-        @"</tr></tbody></table></section>",
-        counts[@"JOB_STATE_PENDING"] ?: @0,
-        counts[@"JOB_STATE_PROCESSING"] ?: @0,
-        counts[@"JOB_STATE_TRANSCODING"] ?: @0,
-        counts[@"JOB_STATE_GENERATING_THUMBNAIL"] ?: @0,
-        counts[@"JOB_STATE_COMPLETED"] ?: @0,
-        counts[@"JOB_STATE_FAILED"] ?: @0
-    ];
+    NSMutableArray *stateRows = [NSMutableArray arrayWithCapacity:stateOrder.count];
+    for (NSArray *pair in stateOrder) {
+        [stateRows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:pair[0] className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", counts[pair[1]] ?: @0] className:@"text-right text-mono"],
+        ]]];
+    }
+    [html appendString:[GZHTML tableWithHeaders:@[@"State", @"Count"]
+                                       htmlRows:stateRows
+                                  emptyMessage:@"No queue data."]];
+    [html appendString:@"</section>"];
 
     return html;
 }
@@ -193,28 +180,22 @@
     NSDictionary *storage = result[@"storage"] ?: @{};
     NSDictionary *worker = result[@"worker"] ?: @{};
 
-    return [NSString stringWithFormat:
-        @"<div class=\"metric-row\">"
-        @"<div class=\"metric\"><span class=\"metric-label\">Active workers</span>"
-        @"<span class=\"metric-value\">%@ / %@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Max upload size</span>"
-        @"<span class=\"metric-value\">%@ bytes</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Max duration</span>"
-        @"<span class=\"metric-value\">%@ s</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Max quality</span>"
-        @"<span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">HLS variants</span>"
-        @"<span class=\"metric-value\">%@</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Storage backend</span>"
-        @"<span class=\"metric-value\">%@</span></div>"
-        @"</div>",
-        worker[@"activeJobs"] ?: @0, worker[@"maxConcurrency"] ?: @0,
-        config[@"maxUploadSize"] ?: @"—",
-        config[@"maxDuration"] ?: @"—",
-        config[@"maxQuality"] ?: @"auto",
-        config[@"hlsVariants"] ?: @3,
-        GZAdminUIEscaped(storage[@"backend"])
-    ];
+    long long maxUpload = [config[@"maxUploadSize"] respondsToSelector:@selector(longLongValue)]
+        ? [config[@"maxUploadSize"] longLongValue] : 0;
+    NSString *uploadDisplay = maxUpload > 0 ? [GZHTML formatMegabytes:maxUpload] : @"—";
+
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Capacity"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Active workers", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@",
+            worker[@"activeJobs"] ?: @0, worker[@"maxConcurrency"] ?: @0]]},
+        @{@"label": @"Max upload size", @"html": [GZHTML monoValue:uploadDisplay]},
+        @{@"label": @"Max duration", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ s", config[@"maxDuration"] ?: @"—"]]},
+        @{@"label": @"Max quality", @"value": config[@"maxQuality"] ?: @"auto"},
+        @{@"label": @"HLS variants", @"html": [GZHTML monoValue:config[@"hlsVariants"] ?: @3]},
+        @{@"label": @"Storage backend", @"value": storage[@"backend"] ?: @"—"},
+    ]]];
+    return html;
 }
 
 #pragma mark - Quotas (legacy, kept for compat)

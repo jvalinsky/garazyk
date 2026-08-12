@@ -4,6 +4,7 @@
 #import "Sync/Relay/AdminUI/RelayAdminSnapshot.h"
 #import "AdminUIServer/GZAdminUIBackendClient.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZHTML.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -24,7 +25,9 @@
 + (NSString *)packIdentifier { return @"relay"; }
 + (NSString *)displayName { return @"Relay"; }
 + (NSArray<NSDictionary<NSString *,id> *> *)sidebarSections {
-    return @[@{ @"tabIdentifier": @"relay", @"displayName": @"Relay" }];
+    return @[
+        @{ @"tabIdentifier": @"relay", @"displayName": @"Overview" },
+    ];
 }
 
 + (NSDictionary *)snapshotForHost:(GZAdminUIHost *)host snapshot:(GZRelayAdminSnapshot *)snapshot {
@@ -61,29 +64,121 @@
 
 + (NSString *)metricsHTMLForValue:(NSDictionary *)value embedded:(BOOL)embedded {
     if (value[@"error"]) {
-        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>",
-                GZAdminUIEscaped(value[@"message"] ?: @"Relay status is unavailable.")];
+        return [GZHTML alertWithType:@"destructive"
+                             message:value[@"message"] ?: @"Relay status is unavailable."];
     }
     NSDictionary *metrics = value[@"metrics"] ?: @{};
-    NSMutableString *html = [NSMutableString stringWithFormat:@"<div class=\"metric-row\"><div class=\"metric\"><span class=\"metric-label\">Health</span><span class=\"metric-value\">%@</span></div><div class=\"metric\"><span class=\"metric-label\">Sources online</span><span class=\"metric-value\">%@ / %@</span></div><div class=\"metric\"><span class=\"metric-label\">Events</span><span class=\"metric-value\">%@</span></div><div class=\"metric\"><span class=\"metric-label\">Sequence</span><span class=\"metric-value\">%@</span></div></div>", GZAdminUIEscaped(value[@"health"]), value[@"connectedUpstreams"] ?: @0, @([value[@"upstreams"] count]), metrics[@"eventsReceived"] ?: @0, metrics[@"currentSequence"] ?: @0];
+    NSUInteger upstreamCount = [value[@"upstreams"] count];
+    NSMutableString *html = [NSMutableString string];
+
+    [html appendString:[GZHTML sectionTitle:@"Service Health"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Health", @"html": [GZHTML healthBadge:value[@"health"]]},
+        @{@"label": @"Sources online", @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %lu",
+            value[@"connectedUpstreams"] ?: @0, (unsigned long)upstreamCount]]},
+        @{@"label": @"Events received", @"html": [GZHTML monoValue:metrics[@"eventsReceived"]]},
+        @{@"label": @"Events forwarded", @"html": [GZHTML monoValue:metrics[@"eventsForwarded"]]},
+        @{@"label": @"Events dropped", @"html": [GZHTML monoValue:metrics[@"eventsDropped"]]},
+        @{@"label": @"Sequence", @"html": [GZHTML monoValue:metrics[@"currentSequence"]]},
+    ]]];
+
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Validation"]];
+    [html appendString:[GZHTML tableWithHeaders:@[@"Check", @"Success", @"Failure"]
+                                       htmlRows:@[
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"MST" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", metrics[@"mstValidationSuccess"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", metrics[@"mstValidationFailure"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Signature" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", metrics[@"signatureValidationSuccess"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", metrics[@"signatureValidationFailure"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Continuity" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", metrics[@"continuityVerified"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", metrics[@"continuityFailures"] ?: @0] className:@"text-right text-mono"],
+        ]],
+        [GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:@"Reconnects" className:nil],
+            [GZHTML tableCellWithHTML:[GZHTML escapedString:[NSString stringWithFormat:@"%@", metrics[@"reconnectionCount"] ?: @0]] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:@"" className:nil],
+        ]],
+    ]
+                                  emptyMessage:@"No validation metrics."]];
+    [html appendString:@"</section>"];
+
     if (embedded) {
-        [html appendString:@"<section class=\"mt-lg\"><h3 class=\"section-title\">Source controls</h3><div id=\"relay-action-result\" aria-live=\"polite\"></div><div class=\"button-row\"><button class=\"btn btn-secondary\" data-ui-action=\"relay-reconnect-all\">Reconnect all</button><button class=\"btn btn-secondary\" data-ui-action=\"relay-disconnect-all\">Disconnect all</button></div><form class=\"form-row mt-md\" data-ui-form=\"relay-request-crawl\"><label for=\"relay-crawl-hostname\">Request inventory crawl</label><input id=\"relay-crawl-hostname\" name=\"hostname\" type=\"text\" autocomplete=\"off\" placeholder=\"pds.example.com\"><button class=\"btn btn-primary\" type=\"submit\">Request crawl</button></form></section>"];
+        [html appendString:@"<section class=\"mt-md\">"];
+        [html appendString:[GZHTML sectionTitle:@"Source controls"]];
+        [html appendString:@"<div id=\"relay-action-result\" aria-live=\"polite\"></div>"
+         @"<div class=\"button-row\">"
+         @"<button class=\"btn btn-secondary\" data-ui-action=\"relay-reconnect-all\">Reconnect all</button>"
+         @"<button class=\"btn btn-secondary\" data-ui-action=\"relay-disconnect-all\">Disconnect all</button>"
+         @"</div>"
+         @"<form class=\"form-row mt-md\" data-ui-form=\"relay-request-crawl\">"
+         @"<label class=\"form-label\" for=\"relay-crawl-hostname\">Request inventory crawl</label>"
+         @"<input id=\"relay-crawl-hostname\" class=\"form-input\" name=\"hostname\" type=\"text\" autocomplete=\"off\" placeholder=\"pds.example.com\">"
+         @"<button class=\"btn btn-primary\" type=\"submit\">Request crawl</button>"
+         @"</form></section>"];
     }
-    [html appendString:@"<section class=\"mt-lg\"><h3 class=\"section-title\">Sources</h3><div id=\"relay-sources\" hx-get=\"/admin/partials/relay-sources\" hx-trigger=\"load, every 10s\"></div></section>"];
+
+    NSArray *audit = [value[@"adminAudit"] isKindOfClass:[NSArray class]] ? value[@"adminAudit"] : @[];
+    if (audit.count > 0) {
+        [html appendString:@"<section class=\"mt-md\">"];
+        [html appendString:[GZHTML sectionTitle:@"Recent admin actions"]];
+        NSMutableArray *auditRows = [NSMutableArray array];
+        NSUInteger limit = MIN(audit.count, (NSUInteger)10);
+        for (NSUInteger i = 0; i < limit; i++) {
+            NSDictionary *entry = audit[i];
+            NSString *result = [entry[@"succeeded"] boolValue] ? @"ok" : @"failed";
+            [auditRows addObject:[GZHTML tableRowWithHtmlCells:@[
+                [GZHTML tableCellWithText:entry[@"at"] ?: @"—" className:@"text-mono text-sm"],
+                [GZHTML tableCellWithText:entry[@"action"] ?: @"—" className:nil],
+                [GZHTML tableCellWithText:entry[@"hostname"] ?: @"—" className:@"text-mono text-sm"],
+                [GZHTML tableCellWithText:result className:nil],
+            ]]];
+        }
+        [html appendString:[GZHTML tableWithHeaders:@[@"Time", @"Action", @"Host", @"Result"]
+                                           htmlRows:auditRows
+                                      emptyMessage:@"No admin actions."]];
+        [html appendString:@"</section>"];
+    }
+
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Sources"]];
+    [html appendString:@"<div id=\"relay-sources\" hx-get=\"/admin/partials/relay-sources\" hx-trigger=\"load, every 10s\"></div></section>"];
     return html;
 }
 
 + (NSString *)sourcesHTMLForValue:(NSDictionary *)value {
-    if (value[@"error"]) return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(value[@"message"] ?: @"Relay sources are unavailable.")];
+    if (value[@"error"]) {
+        return [GZHTML alertWithType:@"destructive"
+                             message:value[@"message"] ?: @"Relay sources are unavailable."];
+    }
     NSArray *sources = value[@"upstreams"] ?: @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Source</th><th>Status</th><th>Crawl</th><th>Repositories</th><th>Events</th><th>Cursor</th></tr></thead><tbody>"];
+    NSMutableArray *rows = [NSMutableArray arrayWithCapacity:sources.count];
     for (NSDictionary *entry in sources) {
         NSString *status = entry[@"status"] ?: ([entry[@"connected"] boolValue] ? @"connected" : @"disconnected");
-        [html appendFormat:@"<tr><td class=\"text-mono\">%@</td><td>%@</td><td>%@</td><td>%@</td><td>%@</td><td>%@</td></tr>", GZAdminUIEscaped(entry[@"hostname"]), GZAdminUIEscaped(status), GZAdminUIEscaped(entry[@"crawlState"]), entry[@"repositories"] ?: @0, entry[@"eventsReceived"] ?: @0, entry[@"cursor"] ?: @0];
+        NSString *crawlError = entry[@"crawlError"];
+        NSString *errorDisplay = ([crawlError isKindOfClass:[NSString class]] && crawlError.length > 0)
+            ? crawlError : @"—";
+        [rows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:entry[@"hostname"] ?: @"" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithHTML:[GZHTML connectionBadge:status] className:nil],
+            [GZHTML tableCellWithText:entry[@"crawlState"] ?: @"—" className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"repositories"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"eventsReceived"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"cursor"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"reconnectAttempts"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:errorDisplay className:@"text-sm"],
+        ]]];
     }
-    if (sources.count == 0) [html appendString:@"<tr><td colspan=\"6\" class=\"text-secondary\">No upstreams configured.</td></tr>"];
-    [html appendString:@"</tbody></table>"];
-    return html;
+    return [GZHTML tableWithHeaders:@[@"Source", @"Status", @"Crawl", @"Repos", @"Events", @"Cursor", @"Reconnects", @"Last crawl error"]
+                           htmlRows:rows.count > 0 ? rows : nil
+                      emptyMessage:@"No upstreams configured."];
 }
 
 + (void)registerRoutesWithHost:(GZAdminUIHost *)host {
@@ -110,7 +205,8 @@
             else if (!result) result = [snapshot performAction:@"request-crawl" hostname:request.jsonBody[@"hostname"]];
             response.statusCode = result[@"error"] ? HttpStatusBadRequest : HttpStatusOK;
             response.contentType = @"text/html; charset=utf-8";
-            [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", result[@"error"] ? @"alert-destructive" : @"alert-success", GZAdminUIEscaped(result[@"message"])]];
+            [response setBodyString:[GZHTML alertWithType:result[@"error"] ? @"destructive" : @"success"
+                                                  message:result[@"message"] ?: @""]];
         }];
     }
 }

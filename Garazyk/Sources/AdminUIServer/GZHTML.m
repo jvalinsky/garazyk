@@ -216,6 +216,108 @@
     return [self element:@"a" attributes:attrs children:@[[self escapedString:text]]];
 }
 
+#pragma mark - Product dashboard primitives
+
++ (NSString *)detailCardWithFields:(NSArray<NSDictionary<NSString *, NSString *> *> *)fields {
+    NSMutableString *html = [NSMutableString stringWithString:[self detailCardOpening]];
+    for (NSDictionary<NSString *, NSString *> *field in fields) {
+        NSString *label = field[@"label"] ?: @"";
+        NSString *valueHTML = field[@"html"];
+        if (valueHTML.length == 0) {
+            valueHTML = [self text:field[@"value"] ?: @"—"];
+        }
+        [html appendString:[self detailRowWithLabel:label valueHTML:valueHTML]];
+    }
+    [html appendString:[self detailCardClosing]];
+    return html;
+}
+
++ (NSString *)detailCardOpening { return @"<div class=\"detail-card\">"; }
++ (NSString *)detailCardClosing { return @"</div>"; }
+
++ (NSString *)detailRowWithLabel:(NSString *)label valueHTML:(nullable NSString *)valueHTML {
+    return [NSString stringWithFormat:
+            @"<div class=\"detail-row\">"
+            @"<span class=\"detail-label\">%@</span>"
+            @"<span class=\"detail-value\">%@</span>"
+            @"</div>",
+            [self escapedString:label],
+            valueHTML.length > 0 ? valueHTML : @"—"];
+}
+
++ (NSString *)healthBadge:(nullable NSString *)health {
+    NSString *normalized = health.lowercaseString ?: @"unknown";
+    if ([normalized isEqualToString:@"ok"] || [normalized isEqualToString:@"healthy"]) {
+        return [self badgeWithClass:@"badge badge-success" text:@"Healthy"];
+    }
+    if ([normalized isEqualToString:@"degraded"]) {
+        return [self badgeWithClass:@"badge badge-warning" text:@"Degraded"];
+    }
+    return [self badgeWithClass:@"badge badge-destructive" text:@"Error"];
+}
+
++ (NSString *)connectionBadge:(nullable NSString *)status {
+    NSString *display = status.length > 0 ? status : @"unknown";
+    NSString *normalized = display.lowercaseString;
+    NSString *className = @"badge badge-secondary";
+    if ([normalized isEqualToString:@"connected"] || [normalized isEqualToString:@"running"] || [normalized isEqualToString:@"online"]) {
+        className = @"badge badge-success";
+    } else if ([normalized isEqualToString:@"error"] || [normalized isEqualToString:@"failed"]) {
+        className = @"badge badge-destructive";
+    }
+    return [self badgeWithClass:className text:display];
+}
+
++ (NSString *)monoValue:(nullable id)value {
+    NSString *text = @"—";
+    if ([value isKindOfClass:[NSString class]] && [(NSString *)value length] > 0) {
+        text = value;
+    } else if ([value isKindOfClass:[NSNumber class]]) {
+        text = [value description];
+    } else if (value && value != [NSNull null]) {
+        text = [value description];
+    }
+    return [self element:@"span" attributes:@{@"class": @"text-mono"} children:@[[self escapedString:text]]];
+}
+
++ (NSString *)sectionTitle:(NSString *)title {
+    return [NSString stringWithFormat:@"<h3 class=\"section-title\">%@</h3>", [self escapedString:title]];
+}
+
++ (NSString *)tableCellWithText:(NSString *)text className:(nullable NSString *)className {
+    return [self tableCellWithHTML:[self escapedString:text] className:className];
+}
+
++ (NSString *)tableCellWithHTML:(NSString *)html className:(nullable NSString *)className {
+    if (className.length > 0) {
+        return [NSString stringWithFormat:@"<td class=\"%@\">%@</td>",
+                [self escapedString:className], html ?: @""];
+    }
+    return [NSString stringWithFormat:@"<td>%@</td>", html ?: @""];
+}
+
++ (NSString *)buttonRowWithButtons:(NSArray<NSString *> *)buttons {
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"button-row\">"];
+    for (NSString *button in buttons) {
+        if (button.length > 0) {
+            [html appendString:button];
+        }
+    }
+    [html appendString:@"</div>"];
+    return html;
+}
+
++ (NSString *)formatUptime:(int64_t)seconds {
+    if (seconds < 0) seconds = 0;
+    int64_t hours = seconds / 3600;
+    int64_t mins = (seconds % 3600) / 60;
+    return [NSString stringWithFormat:@"%lldh %lldm", (long long)hours, (long long)mins];
+}
+
++ (NSString *)formatMegabytes:(int64_t)bytes {
+    return [NSString stringWithFormat:@"%lld MB", (long long)(bytes / (1024 * 1024))];
+}
+
 #pragma mark - Private
 
 + (void)appendAttributes:(nullable NSDictionary<NSString *, NSString *> *)attributes

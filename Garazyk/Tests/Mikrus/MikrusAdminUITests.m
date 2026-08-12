@@ -99,6 +99,25 @@ static MikrusDatabase *MikrusOpenDB(XCTestCase *t) {
     ATProtoHttpResponse *res = [self.host dispatchRequestForTesting:[self r:@"GET" path:@"/admin/partials/mikrus-metrics" headers:@{} body:nil]];
     XCTAssertEqual(res.statusCode, HttpStatusFound);
 }
+- (void)testSingleSurfaceShellAndLogin {
+    ATProtoHttpResponse *login = [self.host dispatchRequestForTesting:[self r:@"GET" path:@"/admin/login" headers:@{} body:nil]];
+    XCTAssertEqual(login.statusCode, HttpStatusOK);
+    XCTAssertTrue([login.bodyString containsString:@"Mikrus"]);
+    XCTAssertTrue([login.bodyString containsString:@"login-panel"]);
+    XCTAssertFalse([login.bodyString containsString:@"mesh-bg"]);
+    XCTAssertFalse([login.bodyString containsString:@"background-clip: text"]);
+
+    NSString *token = [self.host.authManager createSessionToken];
+    NSDictionary *hdr = @{@"Cookie":[NSString stringWithFormat:@"gz_admin_mikrus_token=%@",token]};
+    ATProtoHttpResponse *shell = [self.host dispatchRequestForTesting:[self r:@"GET" path:@"/admin" headers:hdr body:nil]];
+    XCTAssertEqual(shell.statusCode, HttpStatusOK);
+    XCTAssertTrue([shell.bodyString containsString:@"<h1 class=\"admin-header-title\">Mikrus</h1>"]);
+    XCTAssertTrue([shell.bodyString containsString:@"<aside class=\"admin-sidebar\""]);
+    XCTAssertTrue([shell.bodyString containsString:@"Overview"]);
+    XCTAssertTrue([shell.bodyString containsString:@"Ingestion"]);
+    XCTAssertTrue([shell.bodyString containsString:@"Indexes"]);
+    XCTAssertFalse([shell.bodyString containsString:@"<nav class=\"service-segments\""]);
+}
 - (void)testMetricsRequiresScopedSession {
     NSString *t = [self.host.authManager createSessionToken];
     NSDictionary *hdr = @{@"Cookie":[NSString stringWithFormat:@"gz_admin_mikrus_token=%@",t]};

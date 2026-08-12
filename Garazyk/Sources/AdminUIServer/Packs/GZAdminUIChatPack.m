@@ -3,6 +3,7 @@
 #import "AdminUIServer/Packs/GZAdminUIChatPack.h"
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZHTML.h"
 #import "AdminUIServer/UITemplateEngine.h"
 
 @implementation GZAdminUIChatPack
@@ -58,7 +59,7 @@
                     // Show timestamp but not body content
                     NSString *at = lm[@"sentAt"];
                     if (at.length > 19) at = [at substringToIndex:19];
-                    lastMsg = [NSString stringWithFormat:@"<span class=\"text-secondary\">message at %@</span>", GZAdminUIEscaped(at)];
+                    lastMsg = [NSString stringWithFormat:@"<span class=\"text-secondary\">message at %@</span>", [GZHTML escapedString:at]];
                 }
             }
             mc[@"lastMsg"] = lastMsg;
@@ -99,7 +100,7 @@
                 // The template renders this field raw ({{{text}}}); msg[@"text"]
                 // is user-controlled chat content, so it must be escaped here —
                 // the other branch above is a literal, already-safe HTML fragment.
-                mm[@"text"] = GZAdminUIEscaped(msg[@"text"] ?: @"");
+                mm[@"text"] = [GZHTML escapedString:msg[@"text"] ?: @""];
             }
             mm[@"time"] = msg[@"createdAt"] ?: msg[@"sentAt"] ?: @"";
             [mapped addObject:mm];
@@ -110,23 +111,27 @@
 }
 
 + (NSString *)renderChatOverviewHTML {
-    return @"<div class=\"metric-row\">"
-        @"<div class=\"metric\"><span class=\"metric-label\">Privacy</span>"
-        @"<span class=\"metric-value\">No message content displayed</span></div>"
-        @"<div class=\"metric\"><span class=\"metric-label\">Encryption</span>"
-        @"<span class=\"metric-value\">E2EE + plaintext supported</span></div>"
-        @"</div>"
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Operator posture"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Privacy", @"value": @"Metadata only — no message bodies"},
+        @{@"label": @"Encryption", @"value": @"E2EE and plaintext conversations supported"},
+    ]]];
 
-        @"<section class=\"mt-lg\"><h3 class=\"section-title\">Conversations</h3>"
-        @"<div id=\"chat-convos\" hx-get=\"/admin/partials/chat-convos\" hx-trigger=\"revealed\"></div></section>"
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Conversations"]];
+    [html appendString:@"<div id=\"chat-convos\" hx-get=\"/admin/partials/chat-convos\" hx-trigger=\"revealed\"></div></section>"];
 
-        @"<section class=\"mt-lg\"><h3 class=\"section-title\">Messages</h3>"
-        @"<div class=\"search-row\">"
-        @"<form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/chat-messages\" hx-target=\"#chat-messages\">"
-        @"<input type=\"text\" name=\"convoID\" placeholder=\"Conversation ID\" class=\"form-input flex-1\"/>"
-        @"<button type=\"submit\" class=\"btn btn-primary btn-sm\">View</button>"
-        @"</form></div>"
-        @"<div id=\"chat-messages\"></div></section>";
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Message metadata"]];
+    [html appendString:@"<div class=\"search-row\">"
+     @"<form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/chat-messages\" hx-target=\"#chat-messages\">"
+     @"<label class=\"sr-only\" for=\"chat-convo-id\">Conversation ID</label>"
+     @"<input id=\"chat-convo-id\" type=\"text\" name=\"convoID\" placeholder=\"Conversation ID\" class=\"form-input flex-1\"/>"
+     @"<button type=\"submit\" class=\"btn btn-primary btn-sm\">Look up</button>"
+     @"</form></div>"
+     @"<div id=\"chat-messages\" class=\"mt-md\"></div></section>"];
+    return html;
 }
 
 @end

@@ -3,6 +3,7 @@
 #import "Video/AdminUI/JelczAdminUIPack.h"
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZHTML.h"
 #import "AdminUIServer/Packs/JelczAdminSnapshot.h"
 #import "AdminUIServer/Packs/GZAdminUIVideoPack.h"
 #import "Network/HttpRequest.h"
@@ -34,7 +35,7 @@
 }
 
 + (NSString *)errorUnavailableHTML {
-    return @"<div class=\"alert alert-destructive\">Video dashboard is unavailable — embedded listener required.</div>";
+    return [GZHTML alertWithType:@"destructive" message:@"Video dashboard is unavailable — embedded listener required."];
 }
 
 #pragma mark - Route registration
@@ -54,7 +55,7 @@
         }
         NSDictionary *snap = snapshot.snapshot;
         if (!snap) {
-            [res setBodyString:@"<div class=\"alert alert-warning\">No snapshot data.</div>"];
+            [res setBodyString:[GZHTML alertWithType:@"warning" message:@"No snapshot data."]];
             return;
         }
         // Full overview dashboard with queue breakdown
@@ -101,28 +102,25 @@
         NSString *jobId = [req.jsonBody[@"jobId"] isKindOfClass:[NSString class]] ? req.jsonBody[@"jobId"] : @"";
         NSString *msg = jobId.length > 0 ? @"Job queued for retry (embedded — direct access)."
                                          : @"Job ID required.";
-        [res setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>",
-                            jobId.length > 0 ? @"alert-success" : @"alert-destructive",
-                            GZAdminUIEscaped(msg)]];
+        [res setBodyString:[GZHTML alertWithType:jobId.length > 0 ? @"success" : @"destructive" message:msg]];
     }];
 }
 
 + (NSString *)jobsEmbeddedHTML:(NSArray<NSDictionary *> *)jobRows {
-    NSMutableString *html = [NSMutableString stringWithString:
-        @"<section><h3 class=\"section-title\">Job state counts</h3>"
-        @"<table class=\"table\"><thead><tr><th>State</th><th>Count</th></tr></thead><tbody>"];
-
-    if (jobRows.count == 0) {
-        [html appendString:@"<tr><td colspan=\"2\" class=\"text-secondary p-md\">No jobs in the queue.</td></tr>"];
-    } else {
-        for (NSDictionary *row in jobRows) {
-            NSString *state = row[@"state"] ?: @"";
-            NSString *display = [state stringByReplacingOccurrencesOfString:@"JOB_STATE_" withString:@""];
-            [html appendFormat:@"<tr><td>%@</td><td>%@</td></tr>",
-             GZAdminUIEscaped(display), row[@"count"] ?: @0];
-        }
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Job state counts"]];
+    NSMutableArray *rows = [NSMutableArray arrayWithCapacity:jobRows.count];
+    for (NSDictionary *row in jobRows) {
+        NSString *state = row[@"state"] ?: @"";
+        NSString *display = [state stringByReplacingOccurrencesOfString:@"JOB_STATE_" withString:@""];
+        [rows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:display className:nil],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", row[@"count"] ?: @0] className:@"text-right text-mono"],
+        ]]];
     }
-    [html appendString:@"</tbody></table></section>"];
+    [html appendString:[GZHTML tableWithHeaders:@[@"State", @"Count"]
+                                       htmlRows:rows.count > 0 ? rows : nil
+                                  emptyMessage:@"No jobs in the queue."]];
     return html;
 }
 

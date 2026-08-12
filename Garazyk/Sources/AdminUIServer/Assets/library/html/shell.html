@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Garazyk UI Service</title>
+    <title>{{shellTitle}}</title>
     <link rel="stylesheet" href="/css/system.css">
     <meta name="csrf-nonce" content="{{csrfNonce}}">
     <script nonce="{{nonce}}" src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
@@ -100,7 +100,7 @@
             <!-- Relay tab -->
             <div id="tab-relay" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-relay" tabindex="0" {{^activeRelay}}hidden{{/activeRelay}}>
                 <section class="admin-section">
-                    <h2 class="admin-section-title">Relay Metrics</h2>
+                    <h2 class="admin-section-title">Overview</h2>
                     <div id="relay-metrics" hx-get="/admin/partials/relay-metrics" hx-trigger="revealed, every 10s"></div>
                 </section>
             </div>
@@ -108,14 +108,15 @@
             <!-- PLC tab -->
             <div id="tab-plc" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-plc" tabindex="0" {{^activePLC}}hidden{{/activePLC}}>
                 <section class="admin-section">
-                    <h2 class="admin-section-title">PLC Metrics</h2>
+                    <h2 class="admin-section-title">Overview</h2>
                     <div id="plc-metrics" hx-get="/admin/partials/plc-metrics" hx-trigger="revealed, every 30s"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Resolve DID</h2>
                     <div class="search-row">
                         <form class="d-flex gap-sm flex-1" hx-get="/admin/partials/plc-resolve" hx-target="#plc-resolve-result">
-                            <input type="text" name="did" placeholder="did:plc:..." class="form-input flex-1"/>
+                            <label class="sr-only" for="plc-resolve-did">DID</label>
+                            <input id="plc-resolve-did" type="text" name="did" placeholder="did:plc:..." class="form-input flex-1"/>
                             <button type="submit" class="btn btn-primary btn-sm">Resolve</button>
                         </form>
                     </div>
