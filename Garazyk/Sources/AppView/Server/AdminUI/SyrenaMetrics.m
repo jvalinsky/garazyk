@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AppView/Server/AdminUI/SyrenaMetrics.h"
+#import "Compat/PDSTypes.h"
 
 @interface GZSyrenaMetrics ()
-@property (nonatomic, strong) dispatch_queue_t queue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @property (nonatomic, assign) int64_t ingestEvents;
 @property (nonatomic, assign) int64_t ingestCommits;
 @property (nonatomic, assign) int64_t ingestOps;
