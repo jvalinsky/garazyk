@@ -14,6 +14,14 @@
 - (void)registerChatRoutes {
     __weak typeof(self) weakSelf = self;
 
+    // Chat: Overview dashboard
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        AUTH_GUARD(weakSelf, request, response);
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[GZAdminUIChatPack renderChatOverviewHTML]];
+    }];
+
     // Chat: Get conversations
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat-convos" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);

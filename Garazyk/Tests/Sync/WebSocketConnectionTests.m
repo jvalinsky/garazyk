@@ -3,6 +3,10 @@
 #import <XCTest/XCTest.h>
 #import "Sync/WebSocket/WebSocketConnection.h"
 
+@interface WebSocketConnection (Testing)
+- (NSString *)handshakeRequestStringWithKey:(NSString *)key;
+@end
+
 @interface WebSocketConnectionTests : XCTestCase
 @end
 
@@ -83,6 +87,40 @@
     XCTAssertNotNil(connection.queryParams);
     XCTAssertEqualObjects(connection.queryParams[@"cursor"], @"200");
     XCTAssertEqualObjects(connection.queryParams[@"collections"], @"app.bsky.feed.post");
+}
+
+- (void)testHandshakeOmitsDefaultTLSPortFromHost {
+    WebSocketConnection *connection =
+        [[WebSocketConnection alloc] initWithHost:@"northamerica.firehose.network"
+                                             port:443
+                                             path:@"/xrpc/com.atproto.sync.subscribeRepos"
+                                        secureTLS:YES];
+
+    NSString *handshake = [connection handshakeRequestStringWithKey:@"dGVzdCBrZXk="];
+    NSString *hostLine = [handshake componentsSeparatedByString:@"\r\n"][1];
+    XCTAssertEqualObjects(hostLine, @"Host: northamerica.firehose.network");
+}
+
+- (void)testHandshakeOmitsDefaultPlaintextPortFromHost {
+    WebSocketConnection *connection =
+        [[WebSocketConnection alloc] initWithHost:@"localhost"
+                                             port:80
+                                             path:@"/xrpc/com.atproto.sync.subscribeRepos"];
+
+    NSString *handshake = [connection handshakeRequestStringWithKey:@"dGVzdCBrZXk="];
+    NSString *hostLine = [handshake componentsSeparatedByString:@"\r\n"][1];
+    XCTAssertEqualObjects(hostLine, @"Host: localhost");
+}
+
+- (void)testHandshakeKeepsNonDefaultPortInHost {
+    WebSocketConnection *connection =
+        [[WebSocketConnection alloc] initWithHost:@"localhost"
+                                             port:8081
+                                             path:@"/xrpc/com.atproto.sync.subscribeRepos"];
+
+    NSString *handshake = [connection handshakeRequestStringWithKey:@"dGVzdCBrZXk="];
+    NSString *hostLine = [handshake componentsSeparatedByString:@"\r\n"][1];
+    XCTAssertEqualObjects(hostLine, @"Host: localhost:8081");
 }
 
 @end
