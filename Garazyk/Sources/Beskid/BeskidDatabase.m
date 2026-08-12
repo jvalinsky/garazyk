@@ -8,6 +8,7 @@
 #import "Database/Pool/ATProtoConnectionPool.h"
 #import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 #import "Debug/GZLogger.h"
+#import "Beskid/BeskidMetrics.h"
 
 #import <sqlite3.h>
 
@@ -131,6 +132,7 @@ static NSString *BeskidNow(void) {
     NSString *sql = @"SELECT uri, cid, value_json, expires_at FROM beskid_records WHERE uri = ? LIMIT 1";
     NSArray<NSDictionary *> *rows = [self executeQuery:sql params:@[uri ?: @""] error:error];
     if (!rows || rows.count == 0) {
+        [self.metrics recordRecordMiss];
         if (error) *error = [NSError errorWithDomain:BeskidDatabaseErrorDomain
                                                 code:404
                                             userInfo:@{NSLocalizedDescriptionKey: @"Record not found"}];
@@ -140,6 +142,7 @@ static NSString *BeskidNow(void) {
     NSDictionary *row = rows.firstObject;
     int64_t expiresAt = [row[@"expires_at"] longLongValue];
     if (now >= expiresAt) {
+        [self.metrics recordRecordExpiredRead];
         if (error) *error = [NSError errorWithDomain:BeskidDatabaseErrorDomain
                                                 code:410
                                             userInfo:@{NSLocalizedDescriptionKey: @"Record cache has expired"}];
@@ -154,6 +157,7 @@ static NSString *BeskidNow(void) {
         return nil;
     }
 
+    [self.metrics recordRecordHit];
     NSDictionary *value = @{};
     NSString *json = row[@"value_json"];
     if ([json isKindOfClass:[NSString class]] && json.length > 0) {
@@ -211,6 +215,7 @@ static NSString *BeskidNow(void) {
         } error:&localError];
     });
 
+    if (success) [self.metrics recordRecordWriteWithExpiresAt:expiresAt];
     if (!success && error) *error = localError;
     return success;
 }
@@ -228,10 +233,9 @@ static NSString *BeskidNow(void) {
         } error:&localError];
     });
     if (!success && error) *error = localError;
+    if (success) [self.metrics recordRecordDelete];
     return success;
 }
-
-#pragma mark - Identity Cache Operations
 
 - (BOOL)saveHandle:(NSString *)handle did:(NSString *)did error:(NSError **)error {
     if (handle.length == 0 || did.length == 0) return YES;
@@ -338,6 +342,9 @@ static NSString *BeskidNow(void) {
     });
 
     if (!success && error) *error = localError;
+    if (success) {
+        [self.metrics recordIdentityWriteWithExpiresAt:expiresAt];
+    }
     return success;
 }
 
@@ -345,11 +352,15 @@ static NSString *BeskidNow(void) {
     int64_t now = (int64_t)[[NSDate date] timeIntervalSince1970];
     NSString *sql = @"SELECT did, handle, pds_endpoint, signing_key, raw_doc_json, expires_at FROM beskid_identities WHERE did = ? LIMIT 1";
     NSArray<NSDictionary *> *rows = [self executeQuery:sql params:@[did ?: @""] error:error];
-    if (!rows || rows.count == 0) return nil;
+    if (!rows || rows.count == 0) {
+        [self.metrics recordIdentityMiss];
+        return nil;
+    }
 
     NSDictionary *row = rows.firstObject;
     int64_t expiresAt = [row[@"expires_at"] longLongValue];
     if (now >= expiresAt) {
+        [self.metrics recordIdentityExpiredRead];
         if (error) *error = [NSError errorWithDomain:BeskidDatabaseErrorDomain
                                                 code:410
                                             userInfo:@{NSLocalizedDescriptionKey: @"Identity cache has expired"}];
@@ -358,8 +369,11 @@ static NSString *BeskidNow(void) {
 
     NSString *json = row[@"raw_doc_json"];
     if ([json isEqualToString:@"{}"]) {
-        return nil; // Partial cache (handle only), treat as miss for full identity
+        [self.metrics recordIdentityMiss];
+        return nil;
     }
+
+    [self.metrics recordIdentityHit];
 
     NSDictionary *rawDoc = @{};
     if ([json isKindOfClass:[NSString class]] && json.length > 0) {
@@ -389,6 +403,30 @@ static NSString *BeskidNow(void) {
 - (BOOL)performWriteTransaction:(BOOL (^)(id<ATProtoDatabaseTransactor> tx, NSError **error))block
                           error:(NSError **)error {
     return [self.queryRunner performWriteTransaction:block error:error];
+}
+
+- (NSDictionary<NSString *, NSNumber *> *)entryCountsWithError:(NSError **)error {
+    int64_t now = (int64_t)[[NSDate date] timeIntervalSince1970];
+    NSArray *recordRows = [self executeQuery:@"SELECT COUNT(*) as cnt FROM beskid_records WHERE expires_at > ?" params:@[@(now)] error:error];
+    NSArray *identityRows = [self executeQuery:@"SELECT COUNT(*) as cnt FROM beskid_identities WHERE expires_at > ? AND raw_doc_json != '{}'" params:@[@(now)] error:error];
+    NSUInteger recordCount = recordRows.count > 0 ? (NSUInteger)[recordRows.firstObject[@"cnt"] longLongValue] : 0;
+    NSUInteger identityCount = identityRows.count > 0 ? (NSUInteger)[identityRows.firstObject[@"cnt"] longLongValue] : 0;
+    return @{ @"records": @(recordCount), @"identities": @(identityCount) };
+}
+
+- (BeskidMetrics *)metrics {
+    if (!_metrics) {
+        _metrics = [[BeskidMetrics alloc] init];
+    }
+    return _metrics;
+}
+
+- (long long)storageBytes {
+    NSArray *pageCount = [self executeQuery:@"PRAGMA page_count" params:@[] error:nil];
+    NSArray *pageSize  = [self executeQuery:@"PRAGMA page_size"  params:@[] error:nil];
+    if (pageCount.count == 0 || pageSize.count == 0) return 0;
+    return [pageCount.firstObject[@"page_count"] longLongValue]
+         * [pageSize.firstObject[@"page_size"] longLongValue];
 }
 
 @end

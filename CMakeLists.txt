@@ -833,6 +833,7 @@ target_link_libraries(ATProtoBeskid PRIVATE
   ATProtoTransport
   ATProtoXRPC
   ATProtoPLC
+  ATProtoAdminUI
   ATProtoCore
 )
 
@@ -962,6 +963,7 @@ if(APPLE)
     ATProtoSync
     ATProtoTransport
     ATProtoXRPC
+    ATProtoAdminUI
     ATProtoCore
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
@@ -978,6 +980,7 @@ else()
     ATProtoSync
     ATProtoTransport
     ATProtoXRPC
+    ATProtoAdminUI
     ATProtoCore
     -Wl,--no-whole-archive
     ${PLATFORM_LIBRARIES}

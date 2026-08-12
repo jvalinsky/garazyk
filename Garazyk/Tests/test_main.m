@@ -1240,6 +1240,9 @@ int main(int argc, char *argv[]) {
       @"BeskidConfigurationTests",
       @"BeskidDatabaseTests",
       @"BeskidXrpcRoutePackTests",
+      @"BeskidMetricsTests",
+      @"BeskidAdminSnapshotTests",
+      @"BeskidAdminUIPackTests",
       // ── New tests (testing gaps) ──
       @"PDSDatabaseWebAuthnTests",
       @"PDSDatabaseModerationTests",

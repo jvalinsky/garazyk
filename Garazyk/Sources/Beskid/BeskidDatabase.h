@@ -7,6 +7,8 @@
 
 #import <Foundation/Foundation.h>
 
+@class BeskidMetrics;
+
 NS_ASSUME_NONNULL_BEGIN
 
 /**
@@ -111,6 +113,17 @@ extern NSString * const BeskidDatabaseErrorDomain;
  * @abstract Retrieves a cached identity record for a DID.
  */
 - (nullable NSDictionary *)identityForDID:(NSString *)did error:(NSError **)error;
+
+#pragma mark - Metrics
+
+/** @abstract Metrics recorder: set to wire cache counters; lazily creates a private instance when nil. */
+@property (nonatomic, strong) BeskidMetrics *metrics;
+
+/** @abstract One-time COUNT of live record and identity entries for gauge seeding. */
+- (NSDictionary<NSString *, NSNumber *> *)entryCountsWithError:(NSError **)error;
+
+/** @abstract Total database storage in bytes via PRAGMA (cheap in-process lookup). */
+- (long long)storageBytes;
 
 @end
 

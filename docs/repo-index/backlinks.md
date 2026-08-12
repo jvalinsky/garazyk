@@ -1499,7 +1499,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **269**
+Inbound links: **272**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1519,7 +1519,7 @@ Inbound links: **66**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **197**
+Inbound links: **200**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
