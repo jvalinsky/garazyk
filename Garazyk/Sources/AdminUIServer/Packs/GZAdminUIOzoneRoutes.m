@@ -14,6 +14,14 @@
 - (void)registerOzoneRoutes {
     __weak typeof(self) weakSelf = self;
 
+    // Ozone: Overview dashboard
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        AUTH_GUARD(weakSelf, request, response);
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[GZAdminUIOzonePack renderOzoneOverviewHTML]];
+    }];
+
     // Ozone: Moderation statuses
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-statuses" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);

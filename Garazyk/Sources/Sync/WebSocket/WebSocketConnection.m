@@ -10,6 +10,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 static const NSUInteger WS_DEFAULT_MAX_QUEUE_BYTES = 10 * 1024 * 1024; // 10MB default
+static NSString *const kWSSDefaultUserAgent = @"atprotopds/0.1.0";
 
 NSString *const WebSocketConnectionErrorDomain =
     @"com.atproto.pds.websocket.error";
@@ -357,6 +358,8 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     NSMutableString *handshake = [NSMutableString string];
     [handshake appendFormat:@"GET %@ HTTP/1.1\r\n", self.path];
     [handshake appendFormat:@"Host: %@:%u\r\n", self.host, self.port];
+    [handshake appendFormat:@"User-Agent: %@\r\n", kWSSDefaultUserAgent];
+    [handshake appendString:@"Accept: */*\r\n"];
     [handshake appendString:@"Upgrade: websocket\r\n"];
     [handshake appendString:@"Connection: Upgrade\r\n"];
     [handshake appendFormat:@"Sec-WebSocket-Key: %@\r\n", key];

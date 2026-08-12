@@ -181,4 +181,29 @@
     return [GZAdminUITemplateEngine renderTemplate:@"ozone-hosting" context:ctx];
 }
 
++ (NSString *)renderOzoneOverviewHTML {
+    return @"<div class=\"metric-row\">"
+        @"<div class=\"metric\"><span class=\"metric-label\">Moderation</span>"
+        @"<span class=\"metric-value\">Reports &amp; Events</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Team</span>"
+        @"<span class=\"metric-value\">Members &amp; Roles</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Communication</span>"
+        @"<span class=\"metric-value\">Templates &amp; Sets</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Safety</span>"
+        @"<span class=\"metric-value\">Safelinks &amp; Signatures</span></div>"
+        @"</div>"
+
+        @"<section class=\"mt-lg\"><h3 class=\"section-title\">Moderation</h3>"
+        @"<div class=\"stack\">"
+        @"<div id=\"ozone-reports\" hx-get=\"/admin/partials/ozone-reports\" hx-trigger=\"revealed\"></div>"
+        @"<div id=\"ozone-events\" hx-get=\"/admin/partials/ozone-events\" hx-trigger=\"revealed\"></div>"
+        @"</div></section>"
+
+        @"<section class=\"mt-lg\"><h3 class=\"section-title\">Subject Status</h3>"
+        @"<div id=\"ozone-statuses\" hx-get=\"/admin/partials/ozone-statuses\" hx-trigger=\"revealed\"></div></section>"
+
+        @"<section class=\"mt-lg\"><h3 class=\"section-title\">Configuration</h3>"
+        @"<div id=\"ozone-config\" hx-get=\"/admin/partials/ozone-config\" hx-trigger=\"revealed\"></div></section>";
+}
+
 @end
