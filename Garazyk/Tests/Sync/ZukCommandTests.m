@@ -223,7 +223,7 @@ static NSString *ZukStringFromFileDescriptor(int descriptor) {
     if (!source) return;
 
     XCTAssertTrue([source containsString:@"RelayValidationMode validationMode = RelayValidationModeLogOnly;"]);
-    XCTAssertTrue([source containsString:@"[[RelayEventValidator alloc]"]);
+    XCTAssertTrue([source containsString:@"[[ATProtoRelayEventValidator alloc]"]);
     XCTAssertTrue([source containsString:@"initWithValidationMode:validationMode"]);
     XCTAssertTrue([source containsString:@"eventValidator.plcResolver = plcResolver;"]);
     XCTAssertTrue([source containsString:@"downstreamHandler.eventValidator = eventValidator;"]);
