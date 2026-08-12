@@ -50,7 +50,7 @@
             <div id="tab-overview" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-overview" tabindex="0" {{^activeOverview}}hidden{{/activeOverview}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Service Status</h2>
-                    <div id="overview" hx-get="/admin/partials/overview" hx-trigger="load, every 20s"></div>
+                    <div id="overview" hx-get="/admin/partials/overview" hx-trigger="revealed, every 20s"></div>
                 </section>
             </div>
 
@@ -59,7 +59,7 @@
                 <section class="admin-section">
                     <h2 class="admin-section-title">Service Connections</h2>
                     <p class="text-secondary text-sm mb-lg">Configure URLs and admin tokens for each AT Protocol service. Changes apply immediately but are not persisted across restarts.</p>
-                    <div id="connections-form" hx-get="/admin/partials/connections" hx-trigger="load"></div>
+                    <div id="connections-form" hx-get="/admin/partials/connections" hx-trigger="revealed"></div>
                 </section>
             </div>
 
@@ -73,11 +73,11 @@
                             <button type="submit" class="btn btn-primary btn-sm">Search</button>
                         </form>
                     </div>
-                    <div id="accounts" hx-get="/admin/partials/accounts" hx-trigger="load"></div>
+                    <div id="accounts" hx-get="/admin/partials/accounts" hx-trigger="revealed"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Invite Codes</h2>
-                    <div id="invites" hx-get="/admin/partials/invites" hx-trigger="load"></div>
+                    <div id="invites" hx-get="/admin/partials/invites" hx-trigger="revealed"></div>
                     <div class="action-row">
                         <input id="disable-account" type="text" placeholder="DID to disable invites" class="form-input flex-1"/>
                         <button class="btn btn-destructive btn-sm" data-ui-action="disable-invites">Disable Invites</button>
@@ -90,15 +90,15 @@
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Server Stats</h2>
-                    <div id="pds-stats" hx-get="/admin/partials/pds-stats" hx-trigger="load, every 30s"></div>
+                    <div id="pds-stats" hx-get="/admin/partials/pds-stats" hx-trigger="revealed, every 30s"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Audit Log</h2>
-                    <div id="audit-log-content" hx-get="/admin/partials/audit-log" hx-trigger="load"></div>
+                    <div id="audit-log-content" hx-get="/admin/partials/audit-log" hx-trigger="revealed"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Blobs</h2>
-                    <div id="blobs-content" hx-get="/admin/partials/blobs" hx-trigger="load"></div>
+                    <div id="blobs-content" hx-get="/admin/partials/blobs" hx-trigger="revealed"></div>
                 </section>
             </div>
 
@@ -106,11 +106,11 @@
             <div id="tab-appview" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-appview" tabindex="0" {{^activeAppView}}hidden{{/activeAppView}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">AppView Metrics</h2>
-                    <div id="appview-metrics" hx-get="/admin/partials/appview-metrics" hx-trigger="load, every 10s"></div>
+                    <div id="appview-metrics" hx-get="/admin/partials/appview-metrics" hx-trigger="revealed, every 10s"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Ingest Health</h2>
-                    <div id="ingest-health" hx-get="/admin/partials/ingest-health" hx-trigger="load, every 10s"></div>
+                    <div id="ingest-health" hx-get="/admin/partials/ingest-health" hx-trigger="revealed, every 10s"></div>
                 </section>
             </div>
 
@@ -118,7 +118,7 @@
             <div id="tab-relay" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-relay" tabindex="0" {{^activeRelay}}hidden{{/activeRelay}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Relay Metrics</h2>
-                    <div id="relay-metrics" hx-get="/admin/partials/relay-metrics" hx-trigger="load, every 10s"></div>
+                    <div id="relay-metrics" hx-get="/admin/partials/relay-metrics" hx-trigger="revealed, every 10s"></div>
                 </section>
             </div>
 
@@ -126,7 +126,7 @@
             <div id="tab-plc" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-plc" tabindex="0" {{^activePLC}}hidden{{/activePLC}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">PLC Metrics</h2>
-                    <div id="plc-metrics" hx-get="/admin/partials/plc-metrics" hx-trigger="load, every 30s"></div>
+                    <div id="plc-metrics" hx-get="/admin/partials/plc-metrics" hx-trigger="revealed, every 30s"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Resolve DID</h2>
@@ -166,23 +166,23 @@
                             <button type="submit" class="btn btn-primary btn-sm">Search</button>
                         </form>
                     </div>
-                    <div id="ozone-reports" hx-get="/admin/partials/ozone-reports" hx-trigger="load"></div>
+                    <div id="ozone-reports" hx-get="/admin/partials/ozone-reports" hx-trigger="revealed"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Moderation Actions</h2>
-                    <div id="ozone-events" hx-get="/admin/partials/ozone-events" hx-trigger="load"></div>
+                    <div id="ozone-events" hx-get="/admin/partials/ozone-events" hx-trigger="revealed"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Account Statuses</h2>
-                    <div id="ozone-statuses" hx-get="/admin/partials/ozone-statuses" hx-trigger="load"></div>
+                    <div id="ozone-statuses" hx-get="/admin/partials/ozone-statuses" hx-trigger="revealed"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Communication Templates</h2>
-                    <div id="ozone-templates" hx-get="/admin/partials/ozone-templates" hx-trigger="load"></div>
+                    <div id="ozone-templates" hx-get="/admin/partials/ozone-templates" hx-trigger="revealed"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Ozone Configuration</h2>
-                    <div id="ozone-config" hx-get="/admin/partials/ozone-config" hx-trigger="load"></div>
+                    <div id="ozone-config" hx-get="/admin/partials/ozone-config" hx-trigger="revealed"></div>
                 </section>
             </div>
 
@@ -191,7 +191,7 @@
                 <section class="admin-section">
                     <h2 class="admin-section-title">Security Dashboard</h2>
                     <p class="text-secondary text-sm mb-lg">Monitor auth events and active sessions.</p>
-                    <div id="security-dashboard" hx-get="/admin/partials/security" hx-trigger="load, every 60s"></div>
+                    <div id="security-dashboard" hx-get="/admin/partials/security" hx-trigger="revealed, every 60s"></div>
                 </section>
             </div>
 
@@ -222,7 +222,7 @@
             <div id="tab-chat" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-chat" tabindex="0" {{^activeChat}}hidden{{/activeChat}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Chat Metrics</h2>
-                    <div id="chat-metrics" hx-get="/admin/partials/chat-metrics" hx-trigger="load, every 15s"></div>
+                    <div id="chat-metrics" hx-get="/admin/partials/chat-metrics" hx-trigger="revealed, every 15s"></div>
                 </section>
             </div>
 
@@ -230,13 +230,21 @@
             <div id="tab-video" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-video" tabindex="0" {{^activeVideo}}hidden{{/activeVideo}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Video Metrics</h2>
-                    <div id="video-metrics" hx-get="/admin/partials/video-metrics" hx-trigger="load, every 15s"></div>
+                    <div id="video-metrics" hx-get="/admin/partials/video-metrics" hx-trigger="revealed, every 15s"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Video Jobs</h2>
-                    <div id="video-jobs" hx-get="/admin/partials/video-jobs" hx-trigger="load, every 5s"></div>
+                    <div id="video-jobs" hx-get="/admin/partials/video-jobs" hx-trigger="revealed, every 5s"></div>
                 </section>
             </div>
+            {{#dynamicPanes}}
+            <div id="tab-{{tabIdentifier}}" class="tab-pane" role="tabpanel" aria-labelledby="{{ariaLabelledby}}" tabindex="{{tabIndex}}" {{hidden}}>
+                <section class="admin-section">
+                    <h2 class="admin-section-title">{{displayName}}</h2>
+                    <div id="{{tabIdentifier}}-content" hx-get="/admin/partials/{{tabIdentifier}}" hx-trigger="revealed, every 10s"></div>
+                </section>
+            </div>
+            {{/dynamicPanes}}
             </main>
         </div>
     </div>

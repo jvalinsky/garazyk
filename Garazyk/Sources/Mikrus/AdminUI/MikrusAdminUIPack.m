@@ -23,7 +23,11 @@
 + (NSString *)packIdentifier { return @"mikrus"; }
 + (NSString *)displayName { return @"Mikrus"; }
 + (NSArray<NSDictionary<NSString *,id> *> *)sidebarSections {
-    return @[@{ @"tabIdentifier": @"mikrus", @"displayName": @"Mikrus" }];
+    return @[
+        @{ @"tabIdentifier": @"mikrus-metrics", @"displayName": @"Mikrus Metrics" },
+        @{ @"tabIdentifier": @"mikrus-ingestion", @"displayName": @"Ingestion" },
+        @{ @"tabIdentifier": @"mikrus-indexes", @"displayName": @"Indexes" },
+    ];
 }
 
 #pragma mark - HTML renderers
