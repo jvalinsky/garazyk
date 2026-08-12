@@ -39,6 +39,12 @@
 #import "CLI/GZCommandLineOptions.h"
 #import "Runtime/GZServiceLifecycle.h"
 #import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/UIServiceConfig.h"
+#import "AdminUIServer/Packs/JelczAdminSnapshot.h"
+#import "Video/AdminUI/JelczAdminUIPack.h"
+#import "Video/VideoWorker.h"
+#import "Video/JelczDatabase.h"
 
 static const char *executable_name = "jelcz";
 
@@ -222,6 +228,7 @@ static int run_serve(NSArray<NSString *> *args) {
         [GZCommandLineOption optionWithLongName:@"hls-dir" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
         [GZCommandLineOption optionWithLongName:@"hls-base-url" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
         [GZCommandLineOption optionWithLongName:@"hls-1080p" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
+        [GZCommandLineOption optionWithLongName:@"admin-password-file" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
         [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO],
     ] forCommand:@"serve"];
 
@@ -290,6 +297,58 @@ static int run_serve(NSArray<NSString *> *args) {
 
     // Register video-specific HLS serving routes on the runtime's HTTP server
     registerHLSRoutes(runtime.httpServer, hlsGenerator);
+
+    // --- Embedded admin UI listener ---
+    NSString *adminPassword = nil;
+    NSString *adminPasswordFile = parsedArgs[@"admin-password-file"];
+    if (adminPasswordFile.length > 0) {
+        adminPassword = [NSString stringWithContentsOfFile:adminPasswordFile
+                                                  encoding:NSUTF8StringEncoding
+                                                     error:nil];
+        adminPassword = [adminPassword stringByTrimmingCharactersInSet:
+                         [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    }
+    if (adminPassword.length == 0) {
+        adminPassword = [[[NSProcessInfo processInfo] environment]
+                         objectForKey:@"JELCZ_ADMIN_PASSWORD"];
+    }
+
+    GZAdminUIHost *adminUIHost = nil;
+    if (adminPassword.length > 0) {
+        GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
+        adminConfig.host = @"127.0.0.1";
+        adminConfig.port = 2597;
+        adminConfig.adminPassword = adminPassword;
+        adminConfig.serviceIdentifier = @"video";
+
+        adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig
+                                                              packs:@[JelczAdminUIPack.class]];
+
+        // Build snapshot with direct worker + database access
+        ATProtoVideoWorker *worker = [ATProtoVideoWorker sharedWorker];
+        NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"jelcz.db"];
+        JelczDatabase *db = [[JelczDatabase alloc] initWithDatabasePath:dbPath error:nil];
+        [db openDatabaseWithError:nil];
+
+        JelczAdminSnapshot *snapshot = [[JelczAdminSnapshot alloc]
+            initWithWorker:worker
+                  jobStore:db
+                    config:@{
+                        @"maxUploadSize": @(50 * 1024 * 1024),
+                        @"maxDuration": @(180),
+                    }
+              uptimeSeconds:0];
+        [JelczAdminUIPack configureHost:adminUIHost snapshot:snapshot];
+
+        NSError *adminErr = nil;
+        if (![adminUIHost startWithError:&adminErr]) {
+            GZ_LOG_WARN(@"Jelcz admin UI failed to start: %@", adminErr.localizedDescription);
+        } else {
+            GZ_LOG_INFO(@"Jelcz admin UI listening on 127.0.0.1:%lu", (unsigned long)adminConfig.port);
+        }
+    } else {
+        GZ_LOG_INFO(@"Jelcz admin UI disabled: set JELCZ_ADMIN_PASSWORD or --admin-password-file");
+    }
 
     return [GZServiceLifecycle runServiceWithRuntime:runtime
                                          serviceName:@"Jelcz video processing service"

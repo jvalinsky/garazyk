@@ -15,4 +15,5 @@ set(ATPROTO_VIDEO_MANIFEST
   "Garazyk/Sources/Video/VideoThumbnailGenerator.m"
   "Garazyk/Sources/Video/VideoTranscoder.m"
   "Garazyk/Sources/Video/VideoWorker.m"
+  "Garazyk/Sources/Video/AdminUI/JelczAdminUIPack.m"
 )

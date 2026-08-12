@@ -27,7 +27,7 @@ static void print_usage(void) {
     printf("  help         Show this help\n\n");
     printf("Options:\n");
     printf("  --port <number>       HTTP API port (default: 3210)\n");
-    printf("  --relay <url>         Relay WebSocket URL (repeatable; default: wss://bsky.network)\n");
+    printf("  --relay <url>         Relay WebSocket URL (repeatable; required unless --no-ingest)\n");
     printf("  --data-dir <path>     Data directory for database and ingest state\n");
     printf("  --config <path>       JSON configuration file path\n");
     printf("  --no-ingest           Serve queries without connecting to a relay\n");
@@ -148,6 +148,10 @@ int main(int argc, const char *argv[]) {
         if (relayURLs.count > 0) config.relayURLs = relayURLs;
         if (dataDir.length > 0) config.dataDirectory = dataDir;
         if (noIngest) config.ingestEnabled = NO;
+
+        if (config.ingestEnabled && config.relayURLs.count == 0) {
+            return fail_with_usage(@"--relay <url> is required (or use --no-ingest to serve without ingestion)");
+        }
 
         // Admin UI
         NSString *adminHost = parsedArgs[@"admin-ui-host"] ?: NSProcessInfo.processInfo.environment[@"GARAZYK_MIKRUS_ADMIN_UI_HOST"] ?: @"127.0.0.1";

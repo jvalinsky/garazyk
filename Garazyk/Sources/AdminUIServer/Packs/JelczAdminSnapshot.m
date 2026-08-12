@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminUIServer/Packs/JelczAdminSnapshot.h"
+#import "Video/JelczDatabase.h"
 
 /// Known video job state values (server-side enum strings).
 static NSSet<NSString *> *sKnownStates(void) {
@@ -60,6 +61,130 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
         [self buildSnapshotWithHealth:health ?: @{} jobs:jobs ?: @[] quotas:quotas ?: @{}];
     }
     return self;
+}
+
+- (instancetype)initWithWorker:(id)worker
+                      jobStore:(id)jobStore
+                        config:(NSDictionary *)config
+                  uptimeSeconds:(NSTimeInterval)uptimeSeconds {
+    self = [super init];
+    if (self) {
+        [self buildEmbeddedSnapshotWithWorker:worker jobStore:jobStore config:config ?: @{} uptimeSeconds:uptimeSeconds];
+    }
+    return self;
+}
+
+/// Build a snapshot from direct worker + database access (embedded mode).
+- (void)buildEmbeddedSnapshotWithWorker:(id)worker
+                               jobStore:(id)jobStore
+                                 config:(NSDictionary *)config
+                           uptimeSeconds:(NSTimeInterval)uptimeSeconds {
+    // Worker state via KVC (safe for both ATProtoVideoWorker and nil)
+    BOOL enabled = [[worker valueForKey:@"enabled"] boolValue];
+    NSInteger maxConcurrency = [[worker valueForKey:@"maxConcurrentJobs"] integerValue];
+    if (maxConcurrency <= 0) maxConcurrency = 1;
+
+    _healthStatus = enabled ? @"healthy" : @"degraded";
+
+    // Per-state counts via listVideoJobsWithState: on JelczDatabase
+    NSMutableDictionary *counts = [NSMutableDictionary dictionary];
+    NSDate *oldestDate = nil;
+    NSUInteger completed24h = 0, failed24h = 0;
+    NSDate *now = [NSDate date];
+    NSTimeInterval twentyFourHours = 24 * 60 * 60;
+    NSUInteger total = 0;
+
+    for (NSString *state in sKnownStates()) {
+        NSArray *jobs = nil;
+        if ([jobStore respondsToSelector:@selector(listVideoJobsWithState:limit:offset:error:)]) {
+            jobs = [jobStore listVideoJobsWithState:state limit:500 offset:0 error:nil];
+        }
+        if (!jobs) jobs = @[];
+        counts[state] = @(jobs.count);
+        total += jobs.count;
+
+        for (NSDictionary *job in jobs) {
+            NSString *created = [job[@"createdAt"] isKindOfClass:[NSString class]] ? job[@"createdAt"] : nil;
+            if (created.length > 0) {
+                NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
+                NSDate *date = [fmt dateFromString:created];
+                if (date && (!oldestDate || [date compare:oldestDate] == NSOrderedAscending)) {
+                    oldestDate = date;
+                }
+            }
+            if ([state isEqualToString:@"JOB_STATE_COMPLETED"] || [state isEqualToString:@"JOB_STATE_FAILED"]) {
+                NSString *updated = [job[@"updatedAt"] isKindOfClass:[NSString class]] ? job[@"updatedAt"] : created;
+                if (updated.length > 0) {
+                    NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
+                    NSDate *date = [fmt dateFromString:updated];
+                    if (date && [now timeIntervalSinceDate:date] <= twentyFourHours) {
+                        if ([state isEqualToString:@"JOB_STATE_COMPLETED"]) completed24h++;
+                        else failed24h++;
+                    }
+                }
+            }
+        }
+    }
+
+    _totalJobs = total;
+    _countsByState = [counts copy];
+    NSTimeInterval oldestAge = oldestDate ? [now timeIntervalSinceDate:oldestDate] : 0;
+
+    // Worker
+    NSDictionary *workerDict = @{
+        @"active": @(enabled),
+        @"activeJobs": counts[@"JOB_STATE_PROCESSING"] ?: @0,
+        @"pendingJobs": counts[@"JOB_STATE_PENDING"] ?: @0,
+        @"maxConcurrency": @(maxConcurrency),
+    };
+
+    // Throughput
+    NSDictionary *throughput = @{
+        @"completed24h": @(completed24h),
+        @"failed24h": @(failed24h),
+    };
+
+    // Storage (from config)
+    NSString *backend = config[@"storageBackend"] ?: @"disk";
+    NSDictionary *storage = @{
+        @"tempBytes": config[@"tempStorageBytes"] ?: @0,
+        @"outputBytes": config[@"outputStorageBytes"] ?: @0,
+        @"backend": backend,
+    };
+
+    // Config
+    NSMutableDictionary *cfg = [NSMutableDictionary dictionary];
+    if (config[@"maxUploadSize"]) cfg[@"maxUploadSize"] = config[@"maxUploadSize"];
+    if (config[@"maxDuration"]) cfg[@"maxDuration"] = config[@"maxDuration"];
+    cfg[@"hlsVariants"] = @(3);
+
+    // PDS upload health
+    NSString *pdsHealth = @"unknown";
+    if (enabled) {
+        NSUInteger failures = [counts[@"JOB_STATE_FAILED"] unsignedIntegerValue];
+        NSUInteger completed = [counts[@"JOB_STATE_COMPLETED"] unsignedIntegerValue];
+        NSUInteger finished = completed + failures;
+        if (finished > 0 && (double)failures / (double)finished > 0.5) {
+            pdsHealth = @"degraded";
+        } else {
+            pdsHealth = @"healthy";
+        }
+    }
+
+    _snapshot = @{
+        @"health": _healthStatus,
+        @"uptimeSeconds": @(uptimeSeconds),
+        @"worker": workerDict,
+        @"queue": @{
+            @"countsByState": _countsByState,
+            @"depth": @(_totalJobs),
+            @"oldestAgeSeconds": @(oldestAge),
+        },
+        @"throughput": throughput,
+        @"storage": storage,
+        @"config": cfg,
+        @"pdsUploadHealth": pdsHealth,
+    };
 }
 
 - (void)buildSnapshotWithHealth:(NSDictionary *)health

@@ -1014,26 +1014,26 @@ target_include_directories(jelcz PRIVATE
 
 if(APPLE)
   target_link_libraries(jelcz PRIVATE
-    ATProtoVideoService
     ATProtoMediaCore
     ATProtoRuntime
     ATProtoStorage
     ATProtoServices
     ATProtoTransport
     ATProtoCore
+    ATProtoAdminUI
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
   )
 else()
   target_link_libraries(jelcz PRIVATE
     -Wl,--whole-archive
-    ATProtoVideoService
     ATProtoMediaCore
     ATProtoRuntime
     ATProtoStorage
     ATProtoServices
     ATProtoTransport
     ATProtoCore
+    ATProtoAdminUI
     -Wl,--no-whole-archive
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
