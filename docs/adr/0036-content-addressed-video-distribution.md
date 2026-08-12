@@ -68,6 +68,55 @@ encoder settings (`libx264 -preset fast` with default threading,
 thread counts or ffmpeg builds. Coupling distribution to reproducible addressing
 would block the former on the latter for no distribution benefit.
 
+### Alternative: flat VOD (one blob per video)
+
+Streamplace's VOD model (`pkg/vod/flat_vod.go` in
+[streamplace/streamplace](https://github.com/streamplace/streamplace)) stores
+one blob per video: `[flat-header][canonical fragments]`, content-addressed by
+the MUXL CID — the BDASL hash of the fragments alone. A JSON "metafile"
+(`pkg/vod/metafile.go`) carries per-track byte ranges into that single object,
+and HLS is served with `EXT-X-BYTERANGE`. The same bytes also serve as a
+progressive faststart MP4.
+
+Set against this ADR's MASL manifest model: ~1,800 separately-addressed segment
+objects and a ~123 KB path→CID manifest, versus one object and a byte-offset
+table. The consequences are not marginal:
+
+- Phase 2 (segment store) becomes a blob store with range reads — which
+  `BlobStorage.h` already is.
+- Phase 6 (segment reclamation) collapses. Refcounting 1,800 segments per
+  video against live manifests is the hardest correctness work in the plan;
+  GC per-VOD is a delete.
+- Phase 9 (BDASL sidecar) largely disappears. With BLAKE3 addressing, bao's
+  root hash *is* the object CID, and [slice verification needs nothing but the
+  root](https://github.com/oconnor663/bao/blob/master/docs/spec.md) — no
+  sidecar to invent, ship, or find a trusted channel for.
+- Manifest size stops scaling with segment count. Byte offsets compress;
+  36-byte CIDs don't.
+
+The counterweight is real. Streamplace's `pkg/vod/transfer.go` carries a
+candid note that `TransferVOD` "has NOT yet been ported to the flat-MP4 content
+model and will fail-safe (CID mismatch, nothing stored)" — because the CID
+covers the fragments while the network transfers the whole blob, so the
+receiver cannot verify what it downloaded. Their mirror path is currently
+broken by the header decoupling.
+
+This failure vindicates an invariant the MASL manifest model holds implicitly
+and should state explicitly: **the addressed bytes are exactly the served
+bytes.** A synthesis is available that is better than either option: one object
+per VOD, addressed over the *entire* served object (not fragments alone), with
+a byte-range track table. This gets the cardinality win, free incremental
+verification, and the invariant intact.
+
+The flat-VOD model does not cover live streaming, where segments flow through
+the firehose and `prev`-chained manifests are the natural shape. The MASL
+manifest model is retained for live; the flat-VOD synthesis is a candidate for
+VOD only.
+
+This fork is recorded as a considered alternative. The decision is **open** and
+must be resolved before Phase 2 begins implementation — it is the phase's
+premise.
+
 ## Decision
 
 ### Only the manifest is an atproto blob
@@ -81,6 +130,17 @@ It removes the recursive-pinning requirement, the per-account quota interaction,
 and the upload storm at once, and it is what makes retrieval pluggable: segments
 are no longer bound to `getBlob` semantics, so a mirror, CDN, or peer transport
 can serve them without protocol changes.
+
+### Invariant: addressed bytes ≡ served bytes
+
+The bytes a CID covers are exactly the bytes a client receives and verifies.
+Streamplace's flat-VOD model violates this invariant by addressing fragments
+alone while serving the whole blob, which breaks their transfer verification
+path. Any content-addressing model adopted here must preserve it: the CID must
+cover exactly what the network delivers, whether that is a segment, a whole
+VOD object, or a rendition. This invariant is what makes untrusted mirrors
+safe — a client can verify any byte range against the address without a
+separate trust channel.
 
 ### The manifest is a MASL bundle document
 
@@ -128,18 +188,53 @@ CID in the manifest. This transitive signature is the property that makes
 third-party redistribution safe, and it is the reason the manifest must be
 referenced by a record rather than fetched out of band.
 
-### Segment CIDs are SHA-256 raw, not BLAKE3
+### Object addressing: SHA-256 default, BLAKE3 open
 
-Segments are addressed with the base DASL profile (`0x55` raw, SHA-256), matching
-every other atproto blob. `Garazyk/Sources/Core/CID+DASL.h:61` is explicit that
-BLAKE3 CIDs are not interoperable with atproto peers and must never be written
-into a record; that constraint holds here even though segment CIDs appear only
-inside manifest bytes, because the manifest is itself repo-referenced content.
+Segments are currently addressed with the base DASL profile (`0x55` raw,
+SHA-256), matching every other atproto blob. `CID+DASL.h:61-62` states that
+"BLAKE3 CIDs are not interoperable with ATProto peers — never write one into a
+record or a repository block." That constraint applies to records and
+repository blocks — the structures an ATProto peer must decode. A manifest
+blob's payload is neither: it is a blob referenced by a record, not a record
+or block itself.
 
-BDASL/BLAKE3 addressing is deferred to the point where trustless *partial*
-verification is actually needed (seeking against an untrusted mirror). When it
-lands it applies to segment `src` values only, never to the manifest blob's own
-CID.
+Three things confirm the restriction does not reach manifest payload:
+
+- `MASLIsCID` (`ATProtoMASLDocument.m:17-19`) validates manifest `src` values
+  against `ATProtoDASLCIDProfileBig`, which accepts BLAKE3. Every `src` in the
+  manifest, and `prev`, admits a BDASL CID today.
+- Streamplace is an atproto peer and addresses video blobs with BDASL,
+  routing around `getBlob` with `place.stream.playback.getVideoBlob`. This ADR
+  already routes around the blob store for the same bytes.
+- The cost of SHA-256 is Phase 9's entire existence. With BLAKE3, bao's root
+  hash *is* the plain BLAKE3 hash, and [slice verification needs nothing but
+  the root](https://github.com/oconnor663/bao/blob/master/docs/spec.md).
+  BLAKE3-address the object and trustless partial verification is a property
+  of the address, not a sidecar to invent, ship, and find a trusted channel
+  for.
+
+The sidecar scaling problem is the unrecorded cost of SHA-256.
+`ATProtoBDASLVerifier.h:9-10` requires the caller to supply "the complete
+sidecar array" of one BLAKE3 digest per 1 KiB chunk — 3.125% of payload. At
+~5 Mbps aggregate across a three-rendition ladder, a one-hour video is ~2.2 GB
+and that array is ~70 MB. It cannot live in a 123 KB manifest, and there is no
+other trusted surface. Phase 9's owner boundary reads "Core/ verifier +
+MediaCore fetch plumbing," as if it were plumbing. It is a contract
+replacement, and the existing contract does not scale.
+
+The one genuine objection to BLAKE3 is browser support: there is no
+[SubtleCrypto BLAKE3](https://parsa.wtf/blake3/), so web clients need WASM
+while SHA-256 is hardware-accelerated. At video bitrates this does not bind —
+0.2–0.6 MB/s of payload against a WASM implementation doing hundreds of MB/s.
+The cost is bundle size, not throughput. Worth recording as a consequence,
+not treating as a blocker.
+
+**Decision: open.** If the flat-VOD synthesis is adopted (see above), BLAKE3
+addressing of the single VOD object is the natural choice and Phase 9
+collapses. If the MASL manifest model is retained, the question is whether
+segment `src` values in the manifest use BLAKE3 — which `MASLIsCID` already
+permits — or stay SHA-256 and accept the Phase 9 sidecar cost. Must be
+resolved before Phase 2.
 
 The manifest blob receives codec `0x55` because atproto blobs always do, even
 though its payload is DRISL (`0x71`). This is an accepted infelicity; the blob's
@@ -189,6 +284,32 @@ resolves against the local segment store. `rasl://` hints
 retrieval with no new transport. Peer transports are evaluated later against
 that same seam.
 
+The manifest itself is immutable content and should sit behind the same seam.
+The author PDS remains the authority of record, but operational fan-out should
+not depend on repeated per-viewer manifest fetches from the author PDS.
+Manifests are therefore cacheable and rehostable by the same retrieval
+infrastructure as segments, with CID verification unchanged.
+
+Provider location hints are mutable operational state, not immutable content
+identity. They belong on a **mirror-authored origin attestation record** — the
+shape already vendored as `place.stream.broadcast.origin` (`broadcast/origin.json`)
+— not on the author's video record or embedded in the immutable manifest payload.
+The origin record is authored by the hosting node (the mirror), not the video
+author, and carries the mirror's DID, address, and a heartbeat timestamp. This
+decomposition yields three records with distinct owners:
+
+| Record | Owner | Mutability | Answers |
+| --- | --- | --- | --- |
+| video record → manifest/blob CID | author | immutable identity | what is this |
+| distribution policy | author | mutable | who may redistribute, how long |
+| origin attestation | mirror | mutable + heartbeat | who has it right now |
+
+Every mirror joining, leaving, or heartbeating writes to its own repo — not
+the author's. The author cannot attest to a mirror's liveness. The vendored
+`place.stream.metadata.distributionPolicy` lexicon carries `allowedBroadcasters`
+(with `*` for anyone and a `!` prefix to ban) and `deleteAfter` — the consent
+and retention primitive.
+
 IPFS is rejected as a retrieval layer. UnixFS chunking produces a different CID
 than the raw SHA-256 addressing used here, so the same video would carry two
 incompatible identities and the manifest's CIDs would not match what a Bitswap
@@ -215,14 +336,37 @@ budget; and Bitswap has no range semantics, which makes seeking pathological.
   segment store or accepted.
 - **Negative**: the fMP4 switch raises the client floor. Players without fMP4
   HLS support lose playback; TS output is not retained in parallel.
+- **Negative**: verified playback imposes an additional client floor beyond
+  fMP4 support. Clients that bypass application-level fetch (for example, native
+  HLS paths that pull network bytes directly) cannot enforce CID verification.
+- **Negative**: serving by manifest CID alone has no built-in moderation verdict
+  surface. The serving route needs a locally-synced denylist at minimum (CID or
+  record-level) before bytes are returned.
 - **Deferred**: BDASL range verification, MUXL determinism, and peer transports
   are all out of scope and gated separately.
-- **Unresolved**: `Garazyk/Resources/lexicons/place/stream/` (Streamplace's
-  `segment.json`, `livestream.json`, and related defs) is vendored and referenced
-  by nothing in `Garazyk/Sources/`. Streamplace models one record per segment,
-  which suits live ingest — segments flow through the firehose — but is wrong for
-  VOD at 600+ records per hour per rendition. The record shape for this workstream
-  is deliberately left open rather than adopted from those lexicons.
+- **Deferred**: short-form and long-form segment policy are intentionally split.
+  This ADR keeps the content-addressing and layering decisions; profile tuning
+  (segment duration, prefetch shape, startup targets) is recorded separately.
+- **Constraint**: a video-first service at live write rates has to be the PDS.
+  A manifest republished every 10 seconds is a blob upload plus a repo commit
+  plus a firehose event, six times a minute per live stream. The Bluesky PDS
+  fleet is not designed for this traffic ([Streamplace hit the rate-limit wall
+  and runs its own PDS](https://blog.stream.place/3lut7mgni5s2k) for the same
+  reason). Garazyk is a PDS (`kaszlak`), so this is not a blocker — but "sign
+  in with your existing Bluesky account and post video" is not a supportable
+  story for live, and probably not for high-volume short-form. This constrains
+  the product to be a PDS with an app, not an app on atproto.
+- **Unresolved**: `Garazyk/Resources/lexicons/place/stream/` contains
+  Streamplace's live/broadcast/chat/moderation lexicons only. `segment.json` is
+  a live-ingest record (one record per segment, suited to firehose streaming) and
+  is correctly rejected as a VOD model. Streamplace's VOD model uses
+  `place.stream.video`, `place.stream.media.track`, and
+  `place.stream.media.origin`, none of which are vendored. Re-vendor before
+  Phase 7 defines anything. The `place.stream.broadcast.origin` lexicon
+  (vendored, in `broadcast/origin.json`) is a mirror-authored origin attestation
+  record — the right shape for provider hints — and
+  `place.stream.metadata.distributionPolicy` carries `allowedBroadcasters` and
+  `deleteAfter` — the consent and retention primitive.
 
 ## See also
 
@@ -234,3 +378,12 @@ budget; and Bitswap has no range semantics, which makes seeking pathological.
   segment and manifest addressing selects from.
 - [Workstream 10](../plans/workstreams/10-dasl-conformance.md) — RASL, BDASL,
   MASL, and MUXL slices this workstream consumes.
+- [ADR 0037](0037-video-segment-profile-short-vs-long.md) — resolves short-form
+  versus long-form segment and startup policy without changing this ADR's
+  content-addressing model.
+- [Video discovery and peer-sharing options](../20-explanation/guides/video-discovery-and-peer-sharing-options.md)
+  — the discovery layer above the retrieval strategy this ADR leaves open.
+- [Range-based set reconciliation and the Willow protocol](../20-explanation/guides/range-based-set-reconciliation.md)
+  — why the manifest decided here removes the need for set reconciliation on the
+  per-asset path, and the argument for resolving the deferred BDASL sidecar
+  format with bao outboard encoding.

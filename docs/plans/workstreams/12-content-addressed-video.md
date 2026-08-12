@@ -22,10 +22,14 @@ keeps MUXL viable later; it is not an implementation of it.
 
 ## Status (2026-08-12)
 
-Phase 0 only. Phases 1–8 are specified below with evidence, owner boundary,
-gate, and rollback; none are implemented. Phases 9–10 are deferred and are
+Phase 0 only. Phases 1–9 are specified below with evidence, owner boundary,
+gate, and rollback; none are implemented. Phase 10 is deferred and is
 explicitly *not* ready for implementation — they need their own evidence and
 gates recorded here first, per `docs/plans/README.md`.
+
+Short-form versus long-form segment policy is now split by
+[ADR 0037](../../adr/0037-video-segment-profile-short-vs-long.md). This
+workstream owns implementation of both profiles, not a single hard-coded value.
 
 ## Current-state evidence (verified 2026-08-12)
 
@@ -60,7 +64,9 @@ worth landing on its own merit even if later phases slip.
   ffmpeg silently overwrites earlier segments. MPEG-TS also forecloses MUXL and
   clean range decomposition (ADR 0036).
 - **Change.** Add `-hls_segment_type fmp4` and `-hls_fmp4_init_filename init.mp4`;
-  segments become `segment_%05d.m4s`. Extend `VideoHLSResult` to carry the
+  segments become `segment_%05d.m4s`. Segment duration is profile-driven per
+  ADR 0037 (short-form and long-form), not a single fixed product setting.
+  Extend `VideoHLSResult` to carry the
   produced file list — it currently exposes only `{resolution, bandwidth,
   playlistPath}` per variant, which is insufficient for Phase 3.
 - **Owner boundary.** `Garazyk/Sources/Video/VideoHLSGenerator.{h,m}` only. No
@@ -79,10 +85,17 @@ worth landing on its own merit even if later phases slip.
 - **Evidence.** ADR 0036 decides segments are not atproto blobs. There is no
   store for them today; the ladder is left on local disk under
   `hlsDirectoryForDID:cid:` with no addressing and no lifecycle.
-- **Change.** A content-addressed segment store keyed by DASL CID (SHA-256, raw
-  `0x55`), with put/get/exists and a byte-range read. Backed by the same provider
-  abstraction pattern as `PDSBlobProvider` so disk and object-storage backends
-  are interchangeable.
+- **Open decision (blocks this phase).** ADR 0036 records two open decisions
+  that determine this phase's premise: (1) flat-VOD synthesis vs MASL manifest
+  model for VOD, and (2) SHA-256 vs BLAKE3 addressing. If the flat-VOD synthesis
+  is adopted, this phase becomes a blob store with range reads (which
+  `BlobStorage.h` already is), not a per-segment store. If the MASL manifest
+  model is retained, this phase is as specified below. Resolve before
+  implementing.
+- **Change (MASL manifest model).** A content-addressed segment store keyed
+  by DASL CID (SHA-256, raw `0x55`), with put/get/exists and a byte-range read.
+  Backed by the same provider abstraction pattern as `PDSBlobProvider` so disk
+  and object-storage backends are interchangeable.
 - **Owner boundary.** New files under `Garazyk/Sources/MediaCore/`. Must not
   import `Database/` or PDS blob types. Run
   `./scripts/dev/check_module_boundaries.sh .` — `ATProtoCore` (for `ATProtoCID`
@@ -134,7 +147,7 @@ worth landing on its own merit even if later phases slip.
 - **Rollback.** Column is nullable and ignored by readers that do not know it;
   a down-migration is not required for correctness.
 
-## Phase 5 — Serving route
+## Phase 5 — Serving route + moderation floor
 
 - **Evidence.** No `/watch` route exists (`ATProtoMediaServiceRuntime.m:106-146`),
   so `VideoUriBuilder`'s URL pattern currently resolves to nothing.
@@ -142,7 +155,9 @@ worth landing on its own merit even if later phases slip.
   segment CID via `resourceCIDForPath:`, streams from the segment store, and
   applies MASL's `httpHeadersForPath:` allow-list output as response headers.
   Range support is required; `BlobStorage.h:139` is the existing precedent for
-  the response shape.
+  the response shape. Before returning bytes, the route consults a local
+  denylist (CID and/or record scope) so moderation/takedown decisions can be
+  enforced on the byte-serving path.
 - **Owner boundary.** `Garazyk/Sources/MediaCore/`. Path traversal is structurally
   prevented by resolving through the manifest's exact-path map rather than the
   filesystem — no request path ever reaches a file API. That property is the
@@ -151,7 +166,8 @@ worth landing on its own merit even if later phases slip.
   traversal attempts 404 (not 403, not a filesystem error), range request
   returns 206 with exact requested length, unsatisfiable range 416. Tagged
   `socket`/`integration` consistently with existing route-pack suites, so
-  `--gated=run` covers them.
+  `--gated=run` covers them. Include moderation gate tests: denied CID returns
+  policy response and does not stream any bytes.
 - **Rollback.** Route registration is behind the Phase 3 configuration flag.
 
 ## Phase 6 — Segment reclamation
@@ -172,15 +188,28 @@ worth landing on its own merit even if later phases slip.
 - **Rollback.** Sweep disabled by configuration leaves segments in place; the
   failure mode is disk growth, not data loss.
 
-## Phase 7 — Record and lexicon shape
+## Phase 7 — Record and lexicon shape (mirror-authored origin records)
 
 - **Evidence.** `app.bsky.embed.video` carries a single `video: blob` intended
   as a playable MP4; handing it a DRISL manifest would break Bluesky clients.
   `place/stream/*` is vendored but unused, and its one-record-per-segment model
   does not fit VOD (600+ records per hour per rendition) — see ADR 0036's
-  unresolved note.
+  unresolved note. The vendored `place.stream.broadcast.origin` lexicon
+  (`broadcast/origin.json`) is a mirror-authored origin attestation record —
+  the right shape for provider hints. `place.stream.metadata.distributionPolicy`
+  carries `allowedBroadcasters` and `deleteAfter` — the consent and retention
+  primitive.
+- **Prerequisite.** Re-vendor Streamplace's VOD lexicons (`place.stream.video`,
+  `place.stream.media.track`, `place.stream.media.origin`) before defining
+  anything. The currently vendored set is live/broadcast/chat/moderation only.
 - **Change.** Define a Garazyk-owned lexicon carrying the manifest blob plus
-  duration, renditions, and aspect ratio. NSIDs come from
+  duration, renditions, and aspect ratio. Provider hints are **not** on this
+  record — they belong on a **mirror-authored origin attestation record** (the
+  shape of `place.stream.broadcast.origin`), authored by the hosting node, not
+  the video author. This decomposition yields three records with distinct
+  owners: video record (author, immutable identity), distribution policy
+  (author, mutable consent/retention), origin attestation (mirror, mutable +
+  heartbeat). NSIDs come from
   `Network/Generated/GZXrpcNSID.h` via `scripts/generate_nsid_constants.ts`;
   raw literals are rejected by the `narzedzia` lint (ADR 0003).
 - **Owner boundary.** `Garazyk/Resources/lexicons/`, regenerated constants,
@@ -192,11 +221,55 @@ worth landing on its own merit even if later phases slip.
   both pass; lexicon validation suite covers the new record.
 - **Rollback.** Additive lexicon; no existing record shape changes.
 
-## Phase 8 — RASL retrieval hints
+## Phase 8 — Feed prefetch contract (short-form critical path)
+
+- **Evidence.** Short-form feed UX depends on prefetching the next items while
+  current playback continues. A per-item chain of record fetch -> manifest fetch
+  -> segment fetch adds avoidable RTTs and causes startup stalls.
+- **Change.** Define and implement a prefetch-oriented response shape that
+  returns **next-N playback bootstrap metadata in one response**, including:
+  - stable video identifier / at-uri,
+  - manifest CID,
+  - first-segment access metadata (path/CID reference),
+  - mutable provider hints suitable for immediate fetch.
+  This contract is product-surface metadata only; it does not alter manifest
+  identity or segment addressing.
+- **Owner boundary.** Video discovery/query surface and associated lexicon fields
+  (Phase 7), plus client-facing response builders.
+- **Gate.** Integration test proving a single request yields bootstrap metadata
+  for next-N items, and playback tests showing reduced startup stalls across
+  consecutive short-form videos. **Include a prefetch-waste ceiling**: measure
+  bytes prefetched but never played (swiped past) and bound it alongside the
+  startup-stall target. [Network-aware prefetching
+  research](https://arxiv.org/abs/2209.02927) reports 37–52% data-waste
+  reduction over naive methods, which means naive prefetch wastes a great deal.
+  Prefetching N videos a user swipes past is the dominant cost of a short-form
+  feed; measure both sides.
+- **Rollback.** Keep existing per-item resolution path; prefetch contract remains
+  additive and feature-flagged.
+
+## Phase 9 — BDASL sidecar for incremental verification
+
+- **Evidence.** Short-form playback startup is sensitive to verify-before-play
+  buffering. Full-segment verification on untrusted mirrors can dominate startup
+  latency. `ATProtoBDASLVerifier` exists but does not yet define sidecar wire
+  format.
+- **Change.** Adopt a concrete sidecar format for incremental verification
+  (preferred: bao outboard encoding), and integrate it on the fetch path where
+  untrusted mirrors are used.
+- **Owner boundary.** `Core/` verifier + MediaCore fetch plumbing. Keep segment
+  addressing rules from ADR 0036 intact (manifest CID remains SHA-256).
+- **Gate.** Verified-range tests proving partial verification correctness and
+  startup-path latency improvement for short-form profile.
+- **Rollback.** Disable untrusted-mirror incremental path and fall back to
+  trusted/local origin retrieval policy.
+
+## Phase 10 — Provider hint resolution and mirror retrieval
 
 - **Evidence.** `ATProtoRASLURL` and `ATProtoRASLClient` exist and are exercised
   only by workstream 10's conformance slice; nothing emits hints.
-- **Change.** Allow a manifest's segments to be resolved from mirror hosts when
+- **Change.** Resolve provider hints from mutable record metadata (Phase 7) and
+  allow a manifest's segments to be resolved from mirror hosts when
   absent locally, via the existing parallel verified-fetch client. Mirrors are
   ordinary HTTPS origins; the manifest's CIDs make them untrusted-safe.
 - **Owner boundary.** `ATProtoRASLClient` lives in `Network/`, and MediaCore
@@ -207,29 +280,52 @@ worth landing on its own merit even if later phases slip.
   coverage. Do not discover it at link time.
 - **Gate.** Fetch-fallback test against a stub fetcher: local hit does not fetch,
   local miss fetches and verifies, CID mismatch from a hostile mirror is rejected
-  and does not poison the store.
+  and does not poison the store. Untrusted mirror path requires Phase 9 to be
+  enabled for short-form profile.
 - **Rollback.** Hint emission and resolution are independently configurable; off
   means local-only, which is Phase 5 behavior.
 
 ## Deferred — needs evidence before implementation
 
-Neither item below is ready. Per `docs/plans/README.md`, each needs source
+The item below is not ready. Per `docs/plans/README.md`, it needs source
 evidence, an owner boundary, a verification gate, and rollback notes recorded
 here before any implementation starts.
 
-- **Phase 9 — BDASL range verification.** `ATProtoBDASLVerifier` provides
-  streaming BLAKE3 verification, but its header states it does not define a wire
-  format for the chunk-digest sidecar. Trustless partial verification against an
-  untrusted mirror needs one — either a Garazyk-defined sidecar or adoption of
-  bao's outboard encoding. Interacts with ADR 0036's SHA-256 segment addressing:
-  BLAKE3 may appear only in segment `src` values, never in the manifest blob's
-  own CID.
-- **Phase 10 — Peer transports.** Evaluated only after Phase 8 is in production
-  and origin bandwidth is measured. The candidate seam is the Phase 8 resolver.
+- **Phase 11 — Peer transports.** Evaluated only after Phase 10 is in production
+  and origin bandwidth is measured. The candidate seam is the Phase 10 resolver.
   iroh is the leading candidate (BLAKE3 range verification, QUIC, dial-by-key,
   NAT traversal for residential seeders) and would run as a sidecar process, not
   as a link-time dependency of the Objective-C tree. IPFS is rejected in ADR 0036
   with reasons; do not re-open without new evidence.
+
+  *Short-form note:* peer transports for short-form are structurally dead, not
+  just unmeasured. A WebRTC swarm needs concurrent viewers of the same asset;
+  peers find each other through [trackers keyed on the
+  stream](https://github.com/Novage/p2p-media-loader). A short-form feed
+  fragments its audience across thousands of clips and each viewer holds a
+  given clip for ~15 seconds — swarm lifetime ≈ view duration. "Evaluate after
+  measuring" is the right discipline for long-form; for short-form the answer
+  is available now.
+
+  *Scoping note (2026-08-12, research only):* if peer transports raise a
+  "which bytes does the peer hold" question, it decomposes by scale and only the
+  largest scale is a set-reconciliation problem.
+
+  | Question | Scale | Right answer |
+  | --- | --- | --- |
+  | Same version of asset X? | 1 asset | Compare manifest CIDs — 32 bytes, produced by Phase 3 |
+  | Which segments of asset X? | ~10³ | Possession bitmap over manifest-ordered indices (~225 B for a 1-hour 3-rendition ladder) |
+  | Which assets does this mirror hold? | ~10⁷–10⁸ CIDs | Range-based set reconciliation over the CID-ordered keyspace |
+
+  Do not put a set-reconciliation protocol on the per-asset path: the manifest
+  already enumerates the set, which is the question such protocols exist to
+  answer. Where reconciliation *is* warranted (the third row), prefer RBSR over
+  IBLT — the keyspace is ordered, RBSR has no decode-failure mode, it localizes
+  divergence, and it can reconcile a slice, which a partial-catalog mirror needs.
+  Reasoning and sizing in the
+  [range-based set reconciliation guide](../../20-explanation/guides/range-based-set-reconciliation.md);
+  the IBLT counterpart is
+  [here](../../20-explanation/guides/iblt-for-atproto-reconciliation.md).
 
 ## Verification gates for the workstream
 
