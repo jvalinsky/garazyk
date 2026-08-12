@@ -328,11 +328,11 @@ static int run_serve(NSArray<NSString *> *args) {
         ATProtoVideoWorker *worker = [ATProtoVideoWorker sharedWorker];
         NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"jelcz.db"];
         JelczDatabase *db = [[JelczDatabase alloc] initWithDatabasePath:dbPath error:nil];
-        [db openDatabaseWithError:nil];
+        BOOL dbOpen = [db openDatabaseWithError:nil];
 
         JelczAdminSnapshot *snapshot = [[JelczAdminSnapshot alloc]
             initWithWorker:worker
-                  jobStore:db
+                  jobStore:dbOpen ? db : nil
                     config:@{
                         @"maxUploadSize": @(50 * 1024 * 1024),
                         @"maxDuration": @(180),

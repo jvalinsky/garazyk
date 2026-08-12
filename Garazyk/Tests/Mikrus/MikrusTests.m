@@ -93,6 +93,34 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
     XCTAssertEqual(config.rateLimitIpWindowSeconds, 120, @"IP window should be 120s");
 }
 
+- (void)testRelayURLsDefaultEmpty {
+    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    XCTAssertEqual(config.relayURLs.count, 0u, @"relay URLs must not be hardcoded by default");
+}
+
+- (void)testRelayURLNormalization {
+    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    [config loadFromDictionary:@{
+        @"relay_urls": @[@"northamerica.firehose.network",
+                         @"  wss://bsky.network  ",
+                         @"ws://localhost:2583"]
+    }];
+    XCTAssertEqualObjects(config.relayURLs,
+                          (@[@"wss://northamerica.firehose.network",
+                             @"wss://bsky.network",
+                             @"ws://localhost:2583"]));
+}
+
+- (void)testValidateRequiresRelayWhenIngestEnabled {
+    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    config.ingestEnabled = YES;
+    NSError *error = nil;
+    XCTAssertFalse([config validate:&error]);
+    XCTAssertNotNil(error);
+    config.ingestEnabled = NO;
+    XCTAssertTrue([config validate:&error]);
+}
+
 - (void)testRuntimeHealthEndpoint {
     NSDictionary *config = @{
         @"data_directory": self.tempDir,
