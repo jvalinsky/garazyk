@@ -410,7 +410,7 @@ async function main(): Promise<void> {
     console.log("\n✅ STAR-lite export benchmark completed");
   } finally {
     await stopBinaryServices(ctx, services);
-    await stopLocalNetwork({ runId });
+    await stopLocalNetwork({ runId, useBinary: true });
   }
 }
 
