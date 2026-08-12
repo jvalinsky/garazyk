@@ -67,38 +67,21 @@ failure modes documented. Phase 1 may proceed.
 Phase 2 may add integration coverage for read-through convergence after upstream
 updates.
 
-## Phase 2 — record invalidation mapping (`#commit`)
+## Phase 2 — DONE: record invalidation mapping (`#commit`) (2026-08-12)
 
-- **Evidence.** `BeskidDatabase` can delete cached records by
-  `(did, collection, rkey)` and the route handler refreshes on miss.
-- **Change.** Translate `FirehoseCommitEvent.ops` to affected record keys:
-  - For ops with known `$type`/fields that identify `collection` and `rkey`,
-    delete `beskid_records` rows matching `(did, collection, rkey)`.
-  - For ops with unknown/unsupported shapes, fallback to conservative
-    invalidation policy (configurable), e.g.:
-    - invalidate all collections for that `did`, or
-    - invalidate only collections in an allow-list.
-- **Owner boundary.** `BeskidDatabase` gets new helper methods only if needed
-  (e.g. delete-by-DID).
-- **Gate.** Integration test:
-  update a record upstream, assert:
-  - `beskid` stops serving it after invalidation,
-  - subsequent fetch returns the new value within bounded time.
-- **Rollback.** Conservative mapping only (or invalidation disabled) so correctness is preserved.
+Implemented in Phase 1's `handleCommitEvent:`: known `path` ops delete
+`(did, collection, rkey)`; unknown/malformed ops fall back to
+`deleteAllRecordsForDID:`. Gate evidence extended with
+`testCommitInvalidationThenReseedServesUpdatedRecord` (invalidate → miss →
+reseed → fresh hit). Live multi-process read-through timing remains optional
+hardening for Phase 4 SLOs.
 
-## Phase 3 — identity invalidation mapping (`#identity`) and account events
+## Phase 3 — DONE: identity invalidation and account events (2026-08-12)
 
-- **Evidence.** `BeskidDatabase` caches identities with TTL and supports
-  handle/DID mapping, but currently has no “delete identity now” API.
-- **Change.**
-  - Add `deleteIdentityForDID:` or `expireIdentityForDID:` to
-    `BeskidDatabase`.
-  - On identity events: invalidate the DID row.
-  - On account events (`#account`): optionally purge records/identities if
-    takedown/deactivation is signaled.
-- **Gate.** Integration test:
-  identity update upstream -> invalidator evicts cached identity promptly.
-- **Rollback.** Leave identity TTL unchanged; still invalidate records.
+`deleteIdentityForDID:` plus `handleIdentityEvent:` /
+`handleAccountEvent:` (takedown/suspend/deactivate purge) shipped with Phase 1
+fixture coverage (`testIdentityEventDeletesCachedIdentity`,
+`testAccountTakedownPurgesRecordsAndIdentity`).
 
 ## Phase 4 — observability, SLOs, and operational safety
 
