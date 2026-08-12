@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
-// SPDX-License-Identifier: Unlicense OR CC0-1.0
+/* SPDX-FileCopyrightText: 2025-2026 Jack Valinsky */
+/* SPDX-License-Identifier: Unlicense OR CC0-1.0 */
 /* Garazyk Admin UI - Master Design System
  *
  * This is the main entry point for the UI server design system.
@@ -267,7 +267,7 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 10%, transparent);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
 }
 
 input:focus-visible,
@@ -712,6 +712,11 @@ pre code { background: none; padding: 0; color: inherit; }
 }
 
 .text-right { text-align: right; }
+.table th.text-right,
+.table td.text-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .text-sm { font-size: var(--font-size-xs); }
 
 /* Login */
@@ -721,16 +726,21 @@ pre code { background: none; padding: 0; color: inherit; }
   align-items: center;
   min-height: 100vh;
   padding: var(--space-xl);
-  background: var(--color-bg-primary);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%,
+      color-mix(in srgb, var(--color-strawberry) 8%, transparent),
+      transparent 70%),
+    var(--color-bg-primary);
 }
 
 .login-panel {
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   padding: var(--space-2xl);
   border: 1px solid var(--separator-color);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-md);
 }
 
 .login-header {
@@ -739,9 +749,10 @@ pre code { background: none; padding: 0; color: inherit; }
 
 .login-kicker {
   margin: 0 0 var(--space-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-strawberry);
   font-size: var(--font-size-xs);
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .login-panel h1 {
@@ -750,6 +761,7 @@ pre code { background: none; padding: 0; color: inherit; }
   font-size: var(--font-size-xl);
   font-weight: 700;
   line-height: var(--line-height-tight);
+  letter-spacing: -0.02em;
   text-wrap: balance;
 }
 
@@ -778,7 +790,7 @@ pre code { background: none; padding: 0; color: inherit; }
 
 .form-input {
   width: 100%;
-  min-height: 36px;
+  min-height: 44px;
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--separator-color);
   border-radius: var(--radius-md);
@@ -788,6 +800,11 @@ pre code { background: none; padding: 0; color: inherit; }
 }
 
 .form-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.form-input:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-color: var(--color-accent);
@@ -795,7 +812,7 @@ pre code { background: none; padding: 0; color: inherit; }
 
 .login-submit {
   width: 100%;
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .login-error {

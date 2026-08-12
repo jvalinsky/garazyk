@@ -114,24 +114,32 @@ NS_ASSUME_NONNULL_BEGIN
  * @param emptyMessage Message shown when rows is empty. HTML-escaped.
  * @return The rendered table HTML.
  */
-+ (NSString *)tableWithHeaders:(NSArray<NSString *> *)headers
++ (NSString *)tableWithHeaders:(NSArray *)headers
                           rows:(nullable NSArray<NSArray<NSString *> *> *)rows
                   emptyMessage:(NSString *)emptyMessage;
 
 /**
  * @abstract Builds a data table with pre-rendered HTML rows.
- * @discussion Produces a <table class="table"> with <thead> and <tbody>. Headers are HTML-escaped.
- * Row content is inserted raw — the caller is responsible for escaping cell content. Use this
- * variant when rows contain form controls, links, or other HTML elements.
- * @param headers Column header strings. HTML-escaped.
+ * @discussion Produces a <table class="table"> with <thead> and <tbody>, wrapped in
+ * `.table-scroll`. Headers are HTML-escaped unless already a `<th>` fragment.
+ * Each header may be an `NSString` (escaped) or
+ * `@{ @"text": …, @"className": … }` for alignment utilities.
+ * Row content is inserted raw — the caller is responsible for escaping cell content.
+ * @param headers Column headers (see discussion).
  * @param htmlRows An array of pre-rendered <tr>...</tr> strings. Inserted raw.
  *                  Pass nil for no rows (renders empty state).
  * @param emptyMessage Message shown when htmlRows is empty. HTML-escaped.
  * @return The rendered table HTML.
  */
-+ (NSString *)tableWithHeaders:(NSArray<NSString *> *)headers
++ (NSString *)tableWithHeaders:(NSArray *)headers
                        htmlRows:(nullable NSArray<NSString *> *)htmlRows
                   emptyMessage:(NSString *)emptyMessage;
+
+/**
+ * @abstract Builds a `<th>` with optional alignment/utility classes.
+ */
++ (NSString *)tableHeaderCellWithText:(NSString *)text
+                            className:(nullable NSString *)className;
 
 /**
  * @abstract Builds a table row (<tr>) with text cells.
