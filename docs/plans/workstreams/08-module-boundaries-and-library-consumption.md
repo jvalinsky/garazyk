@@ -37,9 +37,11 @@ M5 has started: the namespace gate landed, and
 low-consumer half of Storage/Transport, 14 classes) is complete**. Batch 3b's
 Storage slice is now landed: 17 higher-consumer Storage classes are prefixed;
 its Core HTTP slice is also landed: six Core-owned HTTP classes are prefixed.
-The namespace baseline is 283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 →
-229 → 228 → 214 → 197 → 191 → 175. Batch 3b is complete; batches 4-6
-remain open. M6 has not started.
+The namespace baseline is 283 → … → 175 → **0** (2026-08-12). Batches 4–7
+(PLC/Sync/Services/XRPC/VideoService/Runtime/Core/AppView/Beskid/Mikrus) are
+complete; **M5.4 passes on macOS**. M6.1 started: build-tree `Garazyk::`
+aliases added in `CMakeLists.txt`; install/export and relocatable includes
+remain open.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -1803,8 +1805,9 @@ Deno check/test stop before execution because this worktree lacks npm cache
 entries for `cborg` and `zod`; repository-doc validation is blocked by its
 missing generated registry. The applicable GNUstep Docker builder was also
 attempted, but OrbStack ran out of storage while copying the source context
-(`no space left on device`) before configure or compilation. Batch 3b is
-complete; batches 4–6 remain open.
+(`no space left on device`) before configure or compilation. Batches 4–7 and
+M5.4 namespace closure landed 2026-08-12 (0 unprefixed classes on macOS).
+M6.1 build-tree aliases landed; install/export remains open.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
