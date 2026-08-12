@@ -319,8 +319,15 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 - (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didCloseWithError:(NSError *)error {
     self.isConnected = NO;
 
-    GZ_LOG_SYNC_WARN(@"RelayClient: Firehose closed from %@ (error=%@, currentSeq=%lld)",
-                       self.serverURL, error.localizedDescription, (long long)self.currentSeq);
+    NSNumber *closeCode = error.userInfo[FirehoseCloseCodeKey];
+    NSString *closeReason = error.userInfo[FirehoseCloseReasonKey] ?: error.localizedDescription;
+    BOOL backpressure = FirehoseErrorIsBackpressureClose(error);
+    GZ_LOG_SYNC_WARN(@"RelayClient: Firehose closed from %@ (code=%@ reason=%@ backpressure=%@ currentSeq=%lld)",
+                       self.serverURL,
+                       closeCode ?: @"-",
+                       closeReason ?: @"clean",
+                       backpressure ? @"YES" : @"NO",
+                       (long long)self.currentSeq);
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     int64_t seq = self.currentSeq;  // Capture value

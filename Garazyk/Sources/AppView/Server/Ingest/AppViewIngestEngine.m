@@ -178,9 +178,15 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 }
 
 - (void)relayClient:(ATProtoRelayClient *)client didDisconnectWithError:(nullable NSError *)error {
+    NSNumber *closeCode = error.userInfo[FirehoseCloseCodeKey];
+    NSString *closeReason = error.userInfo[FirehoseCloseReasonKey] ?: error.localizedDescription;
+    BOOL backpressure = FirehoseErrorIsBackpressureClose(error);
     if (error) {
-        GZ_LOG_WARN(@"[AppView Ingest] Disconnected from relay %@: %@",
-                     self.relayURL, error.localizedDescription);
+        GZ_LOG_WARN(@"[AppView Ingest] Disconnected from relay %@ code=%@ reason=%@ backpressure=%@",
+                     self.relayURL,
+                     closeCode ?: @"-",
+                     closeReason ?: error.localizedDescription,
+                     backpressure ? @"YES" : @"NO");
     } else {
         GZ_LOG_INFO(@"[AppView Ingest] Disconnected from relay %@ (clean)", self.relayURL);
     }

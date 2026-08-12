@@ -12,6 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface ATProtoFirehose (Testing)
 - (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveMessage:(NSData *)message;
 - (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveText:(NSString *)text;
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason;
 @end
 
 @interface FirehoseTestDelegate : NSObject <FirehoseSubscriptionDelegate>
@@ -19,10 +20,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) XCTestExpectation *identityExpectation;
 @property (nonatomic, strong) XCTestExpectation *errorExpectation;
 @property (nonatomic, strong) XCTestExpectation *rawExpectation;
+@property (nonatomic, strong) XCTestExpectation *closeExpectation;
 @property (nonatomic, strong, nullable) ATProtoFirehoseRawEvent *rawEvent;
 @property (nonatomic, strong, nullable) ATProtoFirehoseCommitEvent *commitEvent;
 @property (nonatomic, strong, nullable) ATProtoFirehoseIdentityEvent *identityEvent;
 @property (nonatomic, strong, nullable) ATProtoFirehoseErrorEvent *errorEvent;
+@property (nonatomic, strong, nullable) NSError *closeError;
 @end
 
 @implementation FirehoseTestDelegate
@@ -45,6 +48,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveRawEvent:(ATProtoFirehoseRawEvent *)event {
     self.rawEvent = event;
     [self.rawExpectation fulfill];
+}
+
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didCloseWithError:(NSError * _Nullable)error {
+    self.closeError = error;
+    [self.closeExpectation fulfill];
 }
 
 @end
@@ -163,6 +171,37 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects(delegate.rawEvent.messageType, @"#futureEvent");
     XCTAssertEqualObjects(delegate.rawEvent.payload[@"x"], @1);
     XCTAssertEqualObjects(delegate.rawEvent.frameData, frame);
+}
+
+- (void)testCloseIncludesCodeAndReasonInErrorUserInfo {
+    ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
+    FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
+    delegate.closeExpectation = [self expectationWithDescription:@"close"];
+    [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
+
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
+    [firehose webSocketConnection:connection didCloseWithCode:1009 reason:@"Outbound queue limit exceeded"];
+    [self waitForExpectations:@[delegate.closeExpectation] timeout:1.0];
+
+    XCTAssertNotNil(delegate.closeError);
+    XCTAssertEqualObjects(delegate.closeError.userInfo[FirehoseCloseCodeKey], @1009);
+    XCTAssertEqualObjects(delegate.closeError.userInfo[FirehoseCloseReasonKey], @"Outbound queue limit exceeded");
+    XCTAssertTrue(FirehoseErrorIsBackpressureClose(delegate.closeError));
+}
+
+- (void)testBackpressureCloseHelperRecognizesConsumerTooSlow {
+    NSError *error = [NSError errorWithDomain:FirehoseErrorDomain
+                                         code:FirehoseErrorCodeSubscriptionClosed
+                                     userInfo:@{
+        FirehoseCloseCodeKey: @1008,
+        FirehoseCloseReasonKey: @"ConsumerTooSlow",
+    }];
+    XCTAssertTrue(FirehoseErrorIsBackpressureClose(error));
+    XCTAssertFalse(FirehoseErrorIsBackpressureClose(nil));
+    XCTAssertFalse(FirehoseErrorIsBackpressureClose(
+        [NSError errorWithDomain:FirehoseErrorDomain
+                            code:FirehoseErrorCodeSubscriptionClosed
+                        userInfo:@{FirehoseCloseCodeKey: @1001, FirehoseCloseReasonKey: @"Going away"}]));
 }
 
 @end
