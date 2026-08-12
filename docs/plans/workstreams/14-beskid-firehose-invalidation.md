@@ -1,6 +1,6 @@
 ---
 title: Beskid Firehose Invalidation
-status: proposed
+status: active
 last_verified: 2026-08-12
 ---
 
