@@ -193,6 +193,8 @@ fixed in ADR 0005).
 
 ### Evidence
 
+Commit `d179ae3a`.
+
 ```text
 ./build/tests/AllTests -f 'PDSRecordServiceTests' -f 'ActorStoreTests' --gated=run
   → 73 tests, 0 failures (includes testListRecordsWithCursorPagination,
