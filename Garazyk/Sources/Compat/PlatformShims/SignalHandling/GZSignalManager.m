@@ -75,7 +75,8 @@
     // Create dispatch source if one doesn't exist for this signal
     dispatch_sync(_signalQueue, ^{
         if (!self.sources[key]) {
-            // Unblock the signal so dispatch_source can receive it
+            // Block the signal so dispatch_source receives it (required by GCD).
+            // A historical "unblock" comment here was wrong; SIG_BLOCK is correct.
             sigset_t mask;
             sigemptyset(&mask);
             sigaddset(&mask, signalNumber);

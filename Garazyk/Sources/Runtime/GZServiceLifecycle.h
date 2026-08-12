@@ -34,6 +34,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param serviceName The service name for logging (e.g. "Beskid edge cache").
  * @param onStart Optional block executed immediately after successful startup.
  * @return Exist status code (0 for success, non-zero for failure).
+ * @discussion SIGINT/SIGTERM set a flag, wake the runloop, and arm an 8s force-exit
+ * watchdog so a hung graceful stop (or a main thread blocked on a full stdout pipe)
+ * cannot leave the process stuck. A second interrupt exits immediately.
  */
 + (int)runServiceWithRuntime:(id<GZServiceRuntimeProtocol>)runtime
                  serviceName:(NSString *)serviceName
