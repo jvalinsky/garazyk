@@ -57,7 +57,14 @@ interface SeededAccount {
   pdsName: BinaryServiceName;
   did: string;
   accessJwt: string;
+  refreshJwt: string;
   postCount: number;
+}
+
+interface BenchSession {
+  did: string;
+  accessJwt: string;
+  refreshJwt: string;
 }
 
 function readConfig(): BenchConfig {
@@ -118,6 +125,8 @@ async function xrpcPost(base: string, method: string, body: unknown, accessJwt?:
 const MAX_POST_TEXT = 280; // app.bsky.feed.post: maxGraphemes 300
 const SEED_BATCH_SIZE = 50;
 const SEED_SAMPLE_POSTS = 24;
+const MAX_POSTS_PER_BATCH = 100;
+const POSTS_PER_SESSION_REFRESH = 100;
 
 function payloadText(accountLabel: string, index: number, payloadChars: number): string {
   const prefix = `star-lite-bench ${accountLabel} post ${index} `;
@@ -146,31 +155,57 @@ async function measureStarLiteExportBytes(pdsUrl: string, did: string): Promise<
   return bytes.byteLength;
 }
 
+async function refreshBenchSession(pdsUrl: string, session: BenchSession): Promise<void> {
+  const body = await xrpcPost(
+    pdsUrl,
+    "com.atproto.server.refreshSession",
+    {},
+    session.refreshJwt,
+  );
+  session.accessJwt = body.accessJwt as string;
+  if (body.refreshJwt) session.refreshJwt = body.refreshJwt as string;
+}
+
+async function createRecord(
+  pdsUrl: string,
+  session: BenchSession,
+  label: string,
+  index: number,
+  payloadChars: number,
+): Promise<void> {
+  const postBody = {
+    repo: session.did,
+    collection: "app.bsky.feed.post",
+    record: {
+      $type: "app.bsky.feed.post",
+      text: payloadText(label, index, payloadChars),
+      createdAt: new Date().toISOString(),
+    },
+  };
+
+  try {
+    await xrpcPost(pdsUrl, "com.atproto.repo.createRecord", postBody, session.accessJwt);
+  } catch (err) {
+    const msg = String(err);
+    if (!msg.includes("401") || !msg.includes("ExpiredToken")) throw err;
+    await refreshBenchSession(pdsUrl, session);
+    await xrpcPost(pdsUrl, "com.atproto.repo.createRecord", postBody, session.accessJwt);
+  }
+}
+
 async function createPostBatch(
   pdsUrl: string,
-  did: string,
-  accessJwt: string,
+  session: BenchSession,
   label: string,
   startIndex: number,
   count: number,
   payloadChars: number,
 ): Promise<void> {
   for (let i = 0; i < count; i++) {
-    const index = startIndex + i;
-    await xrpcPost(
-      pdsUrl,
-      "com.atproto.repo.createRecord",
-      {
-        repo: did,
-        collection: "app.bsky.feed.post",
-        record: {
-          $type: "app.bsky.feed.post",
-          text: payloadText(label, index, payloadChars),
-          createdAt: new Date().toISOString(),
-        },
-      },
-      accessJwt,
-    );
+    if (i > 0 && i % POSTS_PER_SESSION_REFRESH === 0) {
+      await refreshBenchSession(pdsUrl, session);
+    }
+    await createRecord(pdsUrl, session, label, startIndex + i, payloadChars);
   }
 }
 
@@ -187,12 +222,19 @@ async function seedAccount(
     email: `${label}@star-lite-bench.local`,
     password: PASSWORD,
   });
+  if (!account.accessJwt || !account.refreshJwt) {
+    throw new Error("createAccount did not return accessJwt and refreshJwt");
+  }
+  const session: BenchSession = {
+    did: account.did as string,
+    accessJwt: account.accessJwt as string,
+    refreshJwt: account.refreshJwt as string,
+  };
 
   let postCount = 0;
   await createPostBatch(
     pdsUrl,
-    account.did,
-    account.accessJwt,
+    session,
     label,
     postCount,
     SEED_SAMPLE_POSTS,
@@ -200,26 +242,28 @@ async function seedAccount(
   );
   postCount += SEED_SAMPLE_POSTS;
 
-  let exportBytes = await measureStarLiteExportBytes(pdsUrl, account.did);
+  let exportBytes = await measureStarLiteExportBytes(pdsUrl, session.did);
   let bytesPerPost = exportBytes / postCount;
 
   while (exportBytes < targetBytesPerAccount) {
     const remainingBytes = targetBytesPerAccount - exportBytes;
-    const estimatedPosts = Math.max(
-      SEED_BATCH_SIZE,
-      Math.ceil(remainingBytes / Math.max(bytesPerPost, 1)),
+    const estimatedPosts = Math.min(
+      MAX_POSTS_PER_BATCH,
+      Math.max(
+        SEED_BATCH_SIZE,
+        Math.ceil(remainingBytes / Math.max(bytesPerPost, 1)),
+      ),
     );
     await createPostBatch(
       pdsUrl,
-      account.did,
-      account.accessJwt,
+      session,
       label,
       postCount,
       estimatedPosts,
       payloadChars,
     );
     postCount += estimatedPosts;
-    exportBytes = await measureStarLiteExportBytes(pdsUrl, account.did);
+    exportBytes = await measureStarLiteExportBytes(pdsUrl, session.did);
     bytesPerPost = exportBytes / postCount;
     console.log(
       `    ${label}: ${postCount} posts, export≈${formatBytes(exportBytes)} (target ${formatBytes(targetBytesPerAccount)})`,
@@ -231,14 +275,15 @@ async function seedAccount(
   }
 
   console.log(
-    `  seeded ${label} on ${pdsName}: did=${account.did} posts=${postCount} export≈${formatBytes(exportBytes)}`,
+    `  seeded ${label} on ${pdsName}: did=${session.did} posts=${postCount} export≈${formatBytes(exportBytes)}`,
   );
   return {
     label,
     pdsUrl,
     pdsName,
-    did: account.did,
-    accessJwt: account.accessJwt,
+    did: session.did,
+    accessJwt: session.accessJwt,
+    refreshJwt: session.refreshJwt,
     postCount,
   };
 }
