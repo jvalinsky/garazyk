@@ -1052,7 +1052,6 @@ set_target_properties(jelcz PROPERTIES
 # Dedicated Admin UI server
     add_executable(garazyk-ui
         Garazyk/Binaries/garazyk-ui/main.m
-        Garazyk/Sources/CLI/GZCommandLineOptions.m
     )
 
 target_include_directories(garazyk-ui PRIVATE
