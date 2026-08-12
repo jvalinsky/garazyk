@@ -227,7 +227,10 @@ static void lifecycleCancelWakeSource(void) {
             char buf[32];
             while (read(gWakePipe[0], buf, sizeof(buf)) > 0) {
             }
+#if defined(__APPLE__)
             CFRunLoopStop(CFRunLoopGetMain());
+#endif
+            // GNUstep: +runMainRunLoopUntilInterrupted polls gShutdownSignal every 250ms.
         });
         dispatch_resume(gWakeSource);
     }
