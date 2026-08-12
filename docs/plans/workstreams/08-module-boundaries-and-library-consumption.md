@@ -1,7 +1,7 @@
 ---
 title: Module Boundaries and Library Consumption
 status: active
-last_verified: 2026-08-08
+last_verified: 2026-08-12
 ---
 
 ## Verified status (2026-08-08)
@@ -1807,7 +1807,13 @@ missing generated registry. The applicable GNUstep Docker builder was also
 attempted, but OrbStack ran out of storage while copying the source context
 (`no space left on device`) before configure or compilation. Batches 4–7 and
 M5.4 namespace closure landed 2026-08-12 (0 unprefixed classes on macOS).
-M6.1 build-tree aliases landed; install/export remains open.
+M6.1 build-tree aliases landed; **M6.2–M6.4 pass on macOS (2026-08-12)** via
+`scripts/test/package-consumer-smoke.sh` (relocated prefix, core-only,
+full-graph, and private-header-denied consumers). Curated header install uses
+`scripts/cmake/collect_public_headers.py` and repaired umbrellas (including
+`ATProtoStorage.h` dropping internal `DatabasePool.h`). `GarazykConfig.cmake`
+bundles vendored `secp256k1`, records `@GARAZYK_WITH_OPENSSL@`, and discovers
+Apple platform libraries. GNUstep/Linux consumer CI remains open.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are
