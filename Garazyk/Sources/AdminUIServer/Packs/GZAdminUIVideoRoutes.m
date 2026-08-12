@@ -3,8 +3,10 @@
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/Packs/GZAdminUIVideoPack.h"
+#import "AdminUIServer/Packs/JelczAdminSnapshot.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/GZAdminUIBackendClient.h"
+#import "AdminUIServer/Packs/GZAdminUIBackendClient+Video.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -13,6 +15,19 @@
 
 - (void)registerVideoRoutes {
     __weak typeof(self) weakSelf = self;
+
+    // Video: Overview (Slice 1 — snapshot from health + jobs + quotas)
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-metrics" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        AUTH_GUARD(weakSelf, request, response);
+        NSDictionary *health = [weakSelf.backendClient fetchVideoHealth];
+        NSDictionary *jobsResult = [weakSelf.backendClient fetchVideoJobsWithState:nil limit:100 cursor:nil];
+        NSArray *jobs = [jobsResult[@"jobs"] isKindOfClass:[NSArray class]] ? jobsResult[@"jobs"] : @[];
+        NSDictionary *quotas = [weakSelf.backendClient fetchVideoUploadLimits];
+        JelczAdminSnapshot *snap = [[JelczAdminSnapshot alloc] initWithHealth:health jobs:jobs quotas:quotas];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[GZAdminUIVideoPack renderVideoOverviewPartial:snap.snapshot]];
+    }];
 
     // Video: Health
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -43,6 +58,19 @@
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[GZAdminUIVideoPack renderVideoJobDetailPartial:result]];
+    }];
+
+    // Video: Capacity
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-capacity" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        AUTH_GUARD(weakSelf, request, response);
+        NSDictionary *health = [weakSelf.backendClient fetchVideoHealth];
+        NSDictionary *jobsResult = [weakSelf.backendClient fetchVideoJobsWithState:nil limit:100 cursor:nil];
+        NSArray *jobs = [jobsResult[@"jobs"] isKindOfClass:[NSArray class]] ? jobsResult[@"jobs"] : @[];
+        NSDictionary *quotas = [weakSelf.backendClient fetchVideoUploadLimits];
+        JelczAdminSnapshot *snap = [[JelczAdminSnapshot alloc] initWithHealth:health jobs:jobs quotas:quotas];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[GZAdminUIVideoPack renderVideoCapacityPartial:snap.snapshot]];
     }];
 
     // Video: Upload quotas
