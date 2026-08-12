@@ -24,7 +24,11 @@
 + (NSString *)packIdentifier { return @"beskid"; }
 + (NSString *)displayName { return @"Beskid"; }
 + (NSArray<NSDictionary<NSString *,id> *> *)sidebarSections {
-    return @[@{ @"tabIdentifier": @"beskid", @"displayName": @"Beskid" }];
+    return @[
+        @{ @"tabIdentifier": @"beskid-metrics", @"displayName": @"Beskid Metrics" },
+        @{ @"tabIdentifier": @"beskid-cache", @"displayName": @"Cache" },
+        @{ @"tabIdentifier": @"beskid-upstreams", @"displayName": @"Upstreams" },
+    ];
 }
 
 #pragma mark - HTML renderers

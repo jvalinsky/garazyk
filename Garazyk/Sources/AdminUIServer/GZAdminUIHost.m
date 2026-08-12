@@ -63,7 +63,7 @@ void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSSt
             @"default-src 'self'; "
             "script-src 'self' 'nonce-%@' https://unpkg.com; "
             "script-src-attr 'none'; "
-            "style-src 'self' 'nonce-%@'; "
+            "style-src 'self' 'unsafe-inline' 'nonce-%@'; "
             "img-src 'self' data:; "
             "connect-src 'self' %@;",
             nonce, nonce, pdsOrigin];
@@ -72,7 +72,7 @@ void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSSt
             @"default-src 'self'; "
             "script-src 'self' 'nonce-%@' https://unpkg.com; "
             "script-src-attr 'none'; "
-            "style-src 'self' 'nonce-%@'; "
+            "style-src 'self' 'unsafe-inline' 'nonce-%@'; "
             "img-src 'self' data:;",
             nonce, nonce];
     }
@@ -324,13 +324,44 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     NSArray<NSDictionary<NSString *, NSString *> *> *tabs = GZAdminUIShellTabs(self.packs);
     NSString *activeTabIdentifier = tabs.firstObject[@"tabIdentifier"] ?: @"overview";
     NSString *shellTitle = tabs.count == 1 ? tabs.firstObject[@"displayName"] : @"Garazyk UI Service";
+
+    NSSet<NSString *> *knownPanels = [NSSet setWithArray:@[
+        @"overview", @"connections", @"pds", @"appview", @"relay", @"plc",
+        @"explorer", @"ozone", @"security", @"mst", @"chat", @"video"
+    ]];
+
+    // Dynamic panes: tabs whose identifiers don't match a known hardcoded pane.
+    // Embedded service packs (Mikrus, Beskid) use tabIdentifiers like "mikrus",
+    // "beskid" that need a generic pane rendered from this list.
+    NSMutableArray<NSDictionary<NSString *, NSString *> *> *dynamicPanes = [NSMutableArray array];
+    for (NSDictionary<NSString *, NSString *> *tab in tabs) {
+        NSString *identifier = tab[@"tabIdentifier"];
+        if (identifier.length > 0 && ![knownPanels containsObject:identifier]) {
+            BOOL active = [identifier isEqualToString:activeTabIdentifier];
+            [dynamicPanes addObject:@{
+                @"tabIdentifier": identifier,
+                @"displayName": tab[@"displayName"] ?: identifier,
+                @"activeClass": active ? @" active" : @"",
+                @"hidden": active ? @"" : @"hidden",
+                @"ariaLabelledby": [NSString stringWithFormat:@"tabbtn-%@", identifier],
+                @"tabIndex": active ? @"0" : @"-1",
+            }];
+        }
+    }
+
+    // Determine if the active tab is a dynamic pane (no known-panel match).
+    // When YES the hardcoded panes are all hidden and the dynamic loop renders
+    // the visible panes.
+    BOOL activeIsDynamic = ![knownPanels containsObject:activeTabIdentifier];
+
     NSMutableDictionary<NSString *, id> *context = [@{
         @"nonce": nonce ?: @"",
         @"csrfNonce": csrfNonce ?: @"",
         @"tabs": tabs,
         @"isSingleSurface": @(tabs.count == 1),
         @"shellTitle": shellTitle,
-        @"peerLinks": @[]
+        @"peerLinks": @[],
+        @"dynamicPanes": dynamicPanes,
     } mutableCopy];
     NSDictionary<NSString *, NSString *> *panelContextKeys = @{
         @"overview": @"activeOverview",
@@ -347,7 +378,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         @"video": @"activeVideo",
     };
     [panelContextKeys enumerateKeysAndObjectsUsingBlock:^(NSString *identifier, NSString *key, BOOL *stop) {
-        context[key] = @([identifier isEqualToString:activeTabIdentifier]);
+        context[key] = @(!activeIsDynamic && [identifier isEqualToString:activeTabIdentifier]);
     }];
     return [GZAdminUITemplateEngine renderTemplate:@"shell" context:context];
 }
