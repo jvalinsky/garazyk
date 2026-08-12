@@ -71,8 +71,12 @@ listeners and Chromium. The latter brought up a local PLC/PDS/Relay/AppView/
 Germ/Mikrus/Beskid topology and verified login, session/CSRF rejection,
 keyboard navigation, heading/tab semantics, CSP, and the Lab OAuth flow.
 
+**Re-run (2026-08-12):** both browser and visual smokes passed on macOS after
+the visual script was corrected to focus the autofocused password field instead
+of tabbing past it.
+
 M4 remains in progress until NixOS/loopback smoke, sustained
-firehose-under-polling scenario, browser/visual smoke **re-run**, and GNUstep
+firehose-under-polling scenario, and GNUstep
 binary gate have fresh successful evidence. The reduced legacy dashboard did
 not contain a maintainable per-source event inspector; restoring any omitted
 live-event or delivery counters requires adding bounded source fields first,
