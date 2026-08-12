@@ -127,6 +127,23 @@
     XCTAssertTrue(self.generator.include1080p);
 }
 
+#pragma mark - Segment profile (ADR 0037)
+
+- (void)testDefaultSegmentProfileIsLongForm {
+    ATProtoVideoHLSGenerator *gen = [[ATProtoVideoHLSGenerator alloc] init];
+    XCTAssertEqual(gen.segmentProfile, ATProtoVideoHLSSegmentProfileLongForm);
+}
+
+- (void)testSegmentDurationSecondsForProfile {
+    XCTAssertEqual(ATProtoVideoHLSSegmentDurationSecondsForProfile(ATProtoVideoHLSSegmentProfileShortForm), 2);
+    XCTAssertEqual(ATProtoVideoHLSSegmentDurationSecondsForProfile(ATProtoVideoHLSSegmentProfileLongForm), 6);
+}
+
+- (void)testSegmentProfileCanBeSet {
+    self.generator.segmentProfile = ATProtoVideoHLSSegmentProfileShortForm;
+    XCTAssertEqual(self.generator.segmentProfile, ATProtoVideoHLSSegmentProfileShortForm);
+}
+
 #pragma mark - GZVideoHLSResult
 
 - (void)testVideoHLSResultProperties {

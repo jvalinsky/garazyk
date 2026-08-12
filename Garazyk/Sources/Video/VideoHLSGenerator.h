@@ -21,6 +21,21 @@ typedef NS_ENUM(NSInteger, ATProtoVideoHLSError) {
 };
 
 /**
+ * @abstract Segment duration profile for HLS packaging (ADR 0037).
+ */
+typedef NS_ENUM(NSInteger, ATProtoVideoHLSSegmentProfile) {
+    /** @abstract Short-form feed profile: 2-second segments. */
+    ATProtoVideoHLSSegmentProfileShortForm = 0,
+    /** @abstract Long-form playback profile: 6-second segments (default). */
+    ATProtoVideoHLSSegmentProfileLongForm = 1,
+};
+
+/**
+ * @abstract Returns the ffmpeg @c -hls_time value for @c profile.
+ */
+FOUNDATION_EXPORT NSInteger ATProtoVideoHLSSegmentDurationSecondsForProfile(ATProtoVideoHLSSegmentProfile profile);
+
+/**
  * @abstract Result of HLS generation.
  * @discussion Contains paths to the master playlist and all variant assets.
  */
@@ -88,6 +103,12 @@ typedef NS_ENUM(NSInteger, ATProtoVideoHLSError) {
  * @discussion Default: NO, matching Bluesky reference CDN.
  */
 @property (nonatomic, assign) BOOL include1080p;
+
+/**
+ * @abstract Segment duration profile (ADR 0037).
+ * @discussion Default: @c ATProtoVideoHLSSegmentProfileLongForm (6-second segments).
+ */
+@property (nonatomic, assign) ATProtoVideoHLSSegmentProfile segmentProfile;
 
 /**
  * @abstract Returns the singleton instance of the HLS generator.

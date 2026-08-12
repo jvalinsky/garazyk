@@ -22,10 +22,9 @@ keeps MUXL viable later; it is not an implementation of it.
 
 ## Status (2026-08-12)
 
-Phase 0 only. Phases 1–9 are specified below with evidence, owner boundary,
-gate, and rollback; none are implemented. Phase 10 is deferred and is
-explicitly *not* ready for implementation — they need their own evidence and
-gates recorded here first, per `docs/plans/README.md`.
+Phase 1 **complete** (fMP4 segments, `%05d` numbering, `producedFiles`,
+profile-driven segment duration per ADR 0037). Phases 2–9 are specified below;
+Phase 10 remains deferred.
 
 Short-form versus long-form segment policy is now split by
 [ADR 0037](../../adr/0037-video-segment-profile-short-vs-long.md). This
@@ -38,8 +37,9 @@ and nothing content-addresses it.
 
 | Site | Observed state |
 | --- | --- |
-| `Garazyk/Sources/Video/VideoHLSGenerator.m:184-191` | `-f hls -hls_time 6 -hls_list_size 0`, segments `segment_%03d.ts` (MPEG-TS) |
-| `Garazyk/Sources/Video/VideoHLSGenerator.m:164-166` | `libx264 -preset fast`, default threading — not reproducible |
+| `Garazyk/Sources/Video/VideoHLSGenerator.m` | fMP4: `-hls_segment_type fmp4`, `-hls_fmp4_init_filename init.mp4`, `segment_%05d.m4s`; `-hls_time` from `segmentProfile` (2s short / 6s long, ADR 0037) |
+| `Garazyk/Sources/Video/VideoHLSGenerator.h` | `GZVideoHLSResult.producedFiles` maps bundle-root paths to absolute paths |
+| `Garazyk/Tests/Video/VideoHLSGeneratorTests.m` | Integration suite (ffmpeg-gated) asserts fMP4 tree shape, init segment, numbering width, `producedFiles` completeness |
 | `Garazyk/Sources/Video/VideoWorker.m:371-389` | `VideoHLSResult` logged, then discarded; failure is non-fatal |
 | `Garazyk/Sources/Video/ATProtoVideoProcessor.m:226-253` | retains `hlsMasterPlaylist` / `hlsVariants` / `hlsBaseUrl` in a metadata dict |
 | `Garazyk/Sources/AppView/Services/VideoUriBuilder.m:10-11` | `/watch/{did}/{cid}/playlist.m3u8` exists only as a pattern string |
@@ -54,7 +54,12 @@ This document and [ADR 0036](../../adr/0036-content-addressed-video-distribution
 Registered in the [mega plan](../mega-plan.md) Phase 4 and the
 [workstreams table](../README.md#active-structure).
 
-## Phase 1 — fMP4 segments and segment-numbering fix
+## Phase 1 — DONE: fMP4 segments and segment-numbering fix
+
+Verified 2026-08-12. Gate: `VideoHLSGeneratorTests` + `ATProtoVideoHLSGeneratorTests`
+(registered in `test_main.m`). See current-state evidence table above.
+
+## Phase 1 specification (historical)
 
 Smallest independently shippable slice; carries a real defect fix and is
 worth landing on its own merit even if later phases slip.
