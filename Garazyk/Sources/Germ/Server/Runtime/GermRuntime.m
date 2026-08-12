@@ -108,6 +108,24 @@ static const uint16_t kGermDefaultPort = 8082;
         [response setBodyString:@"ok"];
     }];
 
+    // Admin metrics endpoint (aggregate-only, privacy-safe)
+    [self.httpServer addRoute:@"GET"
+                        path:@"/_admin/metrics"
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        NSError *metricsError = nil;
+        NSDictionary *counters = [self.mailboxService aggregateCountersWithError:&metricsError];
+        if (counters) {
+            NSMutableDictionary *payload = [counters mutableCopy];
+            payload[@"status"] = @"ok";
+            payload[@"uptime"] = @"available";
+            response.statusCode = 200;
+            [response setJsonBody:payload];
+        } else {
+            response.statusCode = 500;
+            [response setJsonBody:@{@"error": @"metrics_failed", @"message": metricsError.localizedDescription ?: @"unknown"}];
+        }
+    }];
+
     // Root endpoint - display ASCII art
     [self.httpServer addRoute:@"GET"
                         path:@"/"

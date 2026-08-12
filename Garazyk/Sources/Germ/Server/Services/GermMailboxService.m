@@ -308,6 +308,48 @@ static const NSInteger kGermAddressByteLength = 32;
     GZ_LOG_DEBUG(@"Expired stale mailbox addresses");
 }
 
+#pragma mark - Aggregate Counters (Privacy-Safe)
+
+- (nullable NSDictionary *)aggregateCountersWithError:(NSError **)error {
+    // All queries are COUNT-only — no addresses, agent refs, or ciphertext
+    // are ever materialized. Safe for admin UI consumption.
+
+    // Active ephemeral addresses
+    NSString *ephemeralSQL = @"SELECT COUNT(*) AS cnt FROM germ_mailboxes WHERE datetime(expires_at) > datetime('now')";
+    NSArray *ephemeralRows = [(PDSDatabase *)self.database executeParameterizedQuery:ephemeralSQL params:@[] error:error];
+    NSInteger ephemeralCount = ephemeralRows.count > 0 ? [ephemeralRows[0][@"cnt"] integerValue] : 0;
+
+    // Active rendezvous addresses
+    NSString *rendezvousSQL = @"SELECT COUNT(*) AS cnt FROM germ_rendezvous";
+    NSArray *rendezvousRows = [(PDSDatabase *)self.database executeParameterizedQuery:rendezvousSQL params:@[] error:error];
+    NSInteger rendezvousCount = rendezvousRows.count > 0 ? [rendezvousRows[0][@"cnt"] integerValue] : 0;
+
+    // Pending undelivered ephemeral messages
+    NSString *pendingEphSQL = @"SELECT COUNT(*) AS cnt FROM germ_mailbox_messages";
+    NSArray *pendingEphRows = [(PDSDatabase *)self.database executeParameterizedQuery:pendingEphSQL params:@[] error:error];
+    NSInteger pendingEphMessages = pendingEphRows.count > 0 ? [pendingEphRows[0][@"cnt"] integerValue] : 0;
+
+    // Pending undelivered rendezvous messages
+    NSString *pendingRzvSQL = @"SELECT COUNT(*) AS cnt FROM germ_rendezvous_messages";
+    NSArray *pendingRzvRows = [(PDSDatabase *)self.database executeParameterizedQuery:pendingRzvSQL params:@[] error:error];
+    NSInteger pendingRzvMessages = pendingRzvRows.count > 0 ? [pendingRzvRows[0][@"cnt"] integerValue] : 0;
+
+    // Expired addresses awaiting cleanup
+    NSString *expiredSQL = @"SELECT COUNT(*) AS cnt FROM germ_mailboxes WHERE datetime(expires_at) <= datetime('now')";
+    NSArray *expiredRows = [(PDSDatabase *)self.database executeParameterizedQuery:expiredSQL params:@[] error:error];
+    NSInteger expiredCount = expiredRows.count > 0 ? [expiredRows[0][@"cnt"] integerValue] : 0;
+
+    return @{
+        @"ephemeralCount": @(ephemeralCount),
+        @"rendezvousCount": @(rendezvousCount),
+        @"pendingMessages": @(pendingEphMessages + pendingRzvMessages),
+        @"pendingEphemeral": @(pendingEphMessages),
+        @"pendingRendezvous": @(pendingRzvMessages),
+        @"expiredCount": @(expiredCount),
+        @"dbSizeBytes": @0,  // placeholder — DB size query is platform-specific
+    };
+}
+
 #pragma mark - Private Helpers
 
 - (NSString *)generateOpaqueAddress {
