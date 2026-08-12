@@ -74,7 +74,7 @@ typedef void (^GZSignalHandlerBlock)(int signalNumber);
 
  @discussion Creates a dispatch_source for the signal if one does not already
  exist. Multiple handlers can be registered for the same signal. The signal
- is unblocked (sigprocmask) so that dispatch_source can receive it.
+ is blocked (sigprocmask SIG_BLOCK) so that dispatch_source can receive it.
 
  For SIGHUP: you must NOT call installIgnoredSignals if you want to receive
  SIGHUP via this method. Instead, call registerHandlerForSignal:SIGHUP and
