@@ -61,10 +61,10 @@ last_verified: 2026-08-11
 | PLC (campagnola) | ✅ existing | ✅ existing | ✅ existing | — |
 | PDS (kaszlak) | ✅ existing | — | ✅ existing | — |
 | AppView (syrena) | ✅ existing | ✅ existing | ✅ modernized | ✅ syrena.nix |
-| Beskid | ✅ existing | ✅ existing | ✅ | — |
-| Mikrus | ✅ existing | ✅ existing | ✅ | — |
+| Beskid | ✅ existing | ✅ existing | ✅ | ✅ beskid.nix |
+| Mikrus | ✅ existing | ✅ existing | ✅ | ✅ mikrus.nix |
 | Video (jelcz) | ✅ + overview fix | ✅ new | ✅ new | ✅ jelcz.nix |
-| Ozone | ✅ + DTO allowlist | — | — | — |
+| Ozone | ✅ + DTO allowlist | — (PDS-integrated) | — (PDS-integrated) | — (PDS-integrated) |
 | Chat (syrena-chat) | ✅ + privacy-safe | ✅ new | ✅ new | ✅ syrena-chat.nix |
 | Germ | ✅ new pack | ✅ new | ✅ new | ✅ germ.nix |
 
@@ -87,11 +87,11 @@ last_verified: 2026-08-11
 | Service | Slices remaining |
 |---|---|
 | PDS (kaszlak) | All 6 slices — largest surface, existing packs need migration |
-| Beskid | NixOS module exists; deploy example pending |
-| Mikrus | NixOS module exists; deploy example pending |
-| Ozone | Embedded listener if standalone binary created; NixOS module |
 | Chat | Server-side admin endpoints for conversation/message data |
-| Germ | Deploy germ + verify live metrics in browser |
+| Germ | Browser verification of live metrics rendering |
+| Ozone | Embedded listener if standalone Ozone binary is created |
+
+All standalone embedded services now have complete NixOS modules and deployment examples.
 
 ## Build & test status
 
