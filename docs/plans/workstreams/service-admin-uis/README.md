@@ -1,7 +1,7 @@
 ---
 title: Per-Service Admin UI Execution Briefs
 status: active
-last_verified: 2026-08-11
+last_verified: 2026-08-11T23:40
 ---
 
 # Per-service Admin UI execution briefs
@@ -24,9 +24,9 @@ moving every surface onto the shared `ATProtoAdminUI` host.
 | AppView | `syrena` | Relay ingestion, indexes, backfill, hooks | Existing AppView pack and JSON admin routes | [AppView](appview.md) |
 | Link index | `mikrus` | Backlinks, many-to-many indexes, record lookup | Health route only; no admin pack | [Mikrus](mikrus.md) |
 | Edge cache | `beskid` | Record and identity read-through caches | Health route only; no admin pack | [Beskid](beskid.md) |
-| Chat | `syrena-chat` | Conversations, messages, groups, moderation | Existing Chat pack | [Chat](chat.md) |
-| E2EE mailbox | `germ` | Ephemeral and rendezvous mailboxes | Health route only; no admin pack | [Germ](germ.md) |
-| Video | `jelcz` | Uploads, transcoding, thumbnails and HLS | Existing Video pack | [Video](video.md) |
+| Chat | `syrena-chat` | Conversations, messages, groups, moderation | Embedded pack with privacy-safe overview; NixOS module + deploy example | [Chat](chat.md) |
+| E2EE mailbox | `germ` | Ephemeral and rendezvous mailboxes | Full embedded pack with aggregate counters, `/admin/metrics`, NixOS module + deploy example | [Germ](germ.md) |
+| Video | `jelcz` | Uploads, transcoding, thumbnails and HLS | Embedded pack with real-time job counters, full overview dashboard, NixOS module + deploy example | [Video](video.md) |
 | PDS | `kaszlak` | Accounts, repositories, blobs, moderation and labs | Six existing PDS-owned packs | [PDS](pds.md) |
 
 `garazyk-ui` is a compatibility host to retire under workstream 11 M5, not a
