@@ -22,6 +22,15 @@ FOUNDATION_EXPORT NSString * _Nullable GZMikrusAdminPasswordFromFile(NSString *p
 
 - (NSDictionary<NSString *, id> *)snapshot;
 
+/// Per-collection record counts (limited to top N collections to avoid unbounded queries)
+- (NSDictionary<NSString *, NSNumber *> *)topCollectionCounts:(NSInteger)limit;
+
+/// Bounded error log entries (most recent N errors)
+- (NSArray<NSDictionary *> *)recentErrors:(NSInteger)limit;
+
+/// Index family statistics
+- (NSDictionary<NSString *, id> *)indexFamilyStatistics;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -17,9 +17,9 @@
 }
 
 + (NSArray<NSDictionary<NSString *, id> *> *)sidebarSections {
+    // Slice 2: Fleet-wide Overview and Connections removed per PDS brief.
+    // The PDS pack now owns only PDS-local surface.
     return @[
-        @{@"tabIdentifier": @"overview", @"displayName": @"Overview"},
-        @{@"tabIdentifier": @"connections", @"displayName": @"Connections"},
         @{@"tabIdentifier": @"pds", @"displayName": @"PDS"},
     ];
 }
