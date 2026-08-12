@@ -11,6 +11,7 @@
 #import "AdminUIServer/Packs/GZAdminUIChatPack.h"
 #import "AdminUIServer/Packs/GZAdminUIVideoPack.h"
 #import "AdminUIServer/Packs/GZAdminUIMSTPack.h"
+#import "AdminUIServer/Packs/GZAdminUIGermPack.h"
 
 NSArray<Class> *GZAdminUIDefaultPacks(void) {
     return @[
@@ -23,5 +24,6 @@ NSArray<Class> *GZAdminUIDefaultPacks(void) {
         GZAdminUIMSTPack.class,
         GZAdminUIChatPack.class,
         GZAdminUIVideoPack.class,
+        GZAdminUIGermPack.class,
     ];
 }

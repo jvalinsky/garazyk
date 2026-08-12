@@ -84,6 +84,8 @@ void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSSt
 - (void)registerVideoRoutes;
 /** @abstract Registers Merkle-search-tree administration routes. */
 - (void)registerMSTRoutes;
+/** @abstract Registers Germ E2EE mailbox administration routes. */
+- (void)registerGermRoutes;
 @end
 
 NS_ASSUME_NONNULL_END

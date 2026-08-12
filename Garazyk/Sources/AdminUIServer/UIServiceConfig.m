@@ -72,6 +72,7 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     NSString *appViewURL = UIEnvString(env, @"GARAZYK_UI_APPVIEW_URL", @"http://127.0.0.1:3200");
     NSString *chatURL = UIEnvString(env, @"GARAZYK_UI_CHAT_URL", appViewURL);
     NSString *videoURL = UIEnvString(env, @"GARAZYK_UI_VIDEO_URL", @"http://127.0.0.1:2586");
+    NSString *germURL = UIEnvString(env, @"GARAZYK_UI_GERM_URL", @"http://127.0.0.1:8082");
 
     config.pdsBaseURL = UIURLFromString(pdsURL, @"http://127.0.0.1:2583");
     config.plcBaseURL = UIURLFromString(plcURL, @"http://127.0.0.1:2582");
@@ -79,6 +80,7 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     config.appViewBaseURL = UIURLFromString(appViewURL, @"http://127.0.0.1:3200");
     config.chatBaseURL = UIURLFromString(chatURL, @"http://127.0.0.1:3200");
     config.videoBaseURL = UIURLFromString(videoURL, @"http://127.0.0.1:2586");
+    config.germBaseURL = UIURLFromString(germURL, @"http://127.0.0.1:8082");
 
     config.pdsAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_PDS_TOKEN");
     config.pdsAdminPassword = UIEnvOptionalString(env, @"GARAZYK_UI_PDS_PASSWORD");
@@ -87,6 +89,7 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     config.appViewAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_APPVIEW_TOKEN");
     config.chatAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_CHAT_TOKEN");
     config.videoAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_VIDEO_TOKEN");
+    config.germAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_GERM_TOKEN");
 
     // Assets directory: env var overrides the auto-detected default from -init
     NSString *assetsDir = UIEnvOptionalString(env, @"GARAZYK_UI_ASSETS_DIR");
@@ -110,7 +113,8 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
         @"appViewURL": @"appViewBaseURL",
         @"appviewURL": @"appViewBaseURL",
         @"chatURL": @"chatBaseURL",
-        @"videoURL": @"videoBaseURL"
+        @"videoURL": @"videoBaseURL",
+        @"germURL": @"germBaseURL"
     };
 
     for (NSString *key in urlMappings) {
@@ -147,6 +151,9 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     }
     if (updates[@"videoToken"] != nil) {
         self.videoAdminToken = updates[@"videoToken"].length > 0 ? updates[@"videoToken"] : nil;
+    }
+    if (updates[@"germToken"] != nil) {
+        self.germAdminToken = updates[@"germToken"].length > 0 ? updates[@"germToken"] : nil;
     }
 
     return allValid;
