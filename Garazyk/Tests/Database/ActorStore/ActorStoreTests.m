@@ -550,4 +550,66 @@
     XCTAssertEqualObjects(fetched, blockData, @"Original block data should be preserved");
 }
 
+- (void)testListRecordsKeysetPaginationCoversAllRkeys {
+    __autoreleasing NSError *error = nil;
+    NSString *collection = @"app.bsky.feed.post";
+    NSArray<NSString *> *rkeys = @[ @"a", @"b", @"c", @"d", @"e" ];
+    for (NSString *rkey in rkeys) {
+        PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+        record.uri = [NSString stringWithFormat:@"at://%@/%@/%@", self.testDID, collection, rkey];
+        record.did = self.testDID;
+        record.collection = collection;
+        record.rkey = rkey;
+        record.cid = [NSString stringWithFormat:@"bafyrei%@", rkey];
+        record.value = @"{\"text\":\"x\"}";
+        record.createdAt = [NSDate date];
+        XCTAssertTrue([self.store putRecord:record forDid:self.testDID error:&error], @"%@", error);
+    }
+
+    NSMutableArray<NSString *> *seen = [NSMutableArray array];
+    NSString *cursor = nil;
+    NSUInteger pages = 0;
+    while (YES) {
+        NSArray<PDSDatabaseRecord *> *page = [self.store listRecordsForDid:self.testDID
+                                                                collection:collection
+                                                                     limit:2
+                                                                    cursor:cursor
+                                                                   reverse:NO
+                                                                     error:&error];
+        XCTAssertNil(error);
+        XCTAssertNotNil(page);
+        pages++;
+        for (PDSDatabaseRecord *row in page) {
+            [seen addObject:row.rkey];
+        }
+        if (page.count < 2) {
+            break;
+        }
+        cursor = page.lastObject.rkey;
+        XCTAssertLessThan(pages, 10U);
+    }
+
+    XCTAssertEqualObjects(seen, (@[ @"e", @"d", @"c", @"b", @"a" ]));
+
+    NSArray<PDSDatabaseRecord *> *ascFirst = [self.store listRecordsForDid:self.testDID
+                                                               collection:collection
+                                                                    limit:2
+                                                                   cursor:nil
+                                                                  reverse:YES
+                                                                    error:&error];
+    XCTAssertEqual(ascFirst.count, 2U);
+    XCTAssertEqualObjects(ascFirst[0].rkey, @"a");
+    XCTAssertEqualObjects(ascFirst[1].rkey, @"b");
+
+    NSArray<PDSDatabaseRecord *> *ascSecond = [self.store listRecordsForDid:self.testDID
+                                                                collection:collection
+                                                                     limit:2
+                                                                    cursor:@"b"
+                                                                   reverse:YES
+                                                                     error:&error];
+    XCTAssertEqual(ascSecond.count, 2U);
+    XCTAssertEqualObjects(ascSecond[0].rkey, @"c");
+    XCTAssertEqualObjects(ascSecond[1].rkey, @"d");
+}
+
 @end

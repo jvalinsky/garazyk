@@ -1,7 +1,7 @@
 ---
 title: Security and Protocol Correctness
 status: active
-last_verified: 2026-08-08
+last_verified: 2026-08-12
 ---
 
 # Security and Protocol Correctness
@@ -10,7 +10,8 @@ Exposed control surfaces, HTTP bounds, XRPC contracts, and federation tests.
 
 The completed items' full detail — evidence, slices, decisions, gates, and
 rollback notes — moved to [the completed-items archive](../../archive/planning/workstream-01-completed-items.md)
-on 2026-08-05, unchanged. **Only the S5 residual watch item remains open.**
+on 2026-08-05, unchanged. Open item: the S5 residual watch item. S21
+(`listRecords` cursor pagination) is complete (2026-08-12).
 
 ## Status summary
 
@@ -36,6 +37,7 @@ on 2026-08-05, unchanged. **Only the S5 residual watch item remains open.**
 | S18 | Auth-verifier protocol extraction | Complete (2026-07-29, `1013aa88`, `d47443f5`) |
 | S19 | DAG-CBOR routing migration | Complete (2026-07-29) |
 | S20 | HTTP transport crash-safety and request boundaries | Complete (2026-07-29), sub-tasks A–E |
+| S21 | `com.atproto.repo.listRecords` cursor pagination | **Complete** (2026-08-12) |
 
 ## Open: S5 residual — `PDSDatabase` null-pointer flake (watch item)
 
@@ -170,6 +172,39 @@ single revert of the relay call site and shared extractor; it restores the
 previous availability-first forwarding policy but knowingly reopens forged-
 commit acceptance. Do not revive the superseded relay continuity graph as a
 backlog; this lane is represented only here and in the current graph action.
+
+## Complete: S21 — `com.atproto.repo.listRecords` cursor pagination
+
+**Closed 2026-08-12.** Keyset pagination on `rkey` now matches Bluesky PDS
+semantics for the ordinary repo endpoint (space-side cursors were already
+fixed in ADR 0005).
+
+### What shipped
+
+- `PDSActorStore` keyset API:
+  `listRecordsForDid:collection:limit:cursor:reverse:error:`
+  (`ORDER BY rkey DESC` by default; exclusive `rkey < cursor` / `rkey > cursor`
+  when reverse).
+- `PDSRecordService` pages through that API (no full-collection load + truncate)
+  and exposes `nextCursor` when `records.count == limit`.
+- `XrpcRepoPack+Records` returns `{ records, cursor? }` with lexicon-shaped
+  record views (`uri`, `cid`, `value`) and honors `reverse`.
+- Default first-page order changed from ASC to **DESC** for protocol parity.
+
+### Evidence
+
+```text
+./build/tests/AllTests -f 'PDSRecordServiceTests' -f 'ActorStoreTests' --gated=run
+  → 73 tests, 0 failures (includes testListRecordsWithCursorPagination,
+     testListRecordsKeysetPaginationCoversAllRkeys)
+```
+
+### Remaining optional follow-ups (not blockers)
+
+- Teach the STAR-lite export benchmark to optionally verify against a full
+  `listRecords` walk.
+- Deprecated lexicon params `rkeyStart` / `rkeyEnd` left unimplemented (no
+  known Garazyk client sends them).
 
 ## Cross-workstream note
 

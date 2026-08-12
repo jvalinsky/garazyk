@@ -99,6 +99,24 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                                                limit:(NSUInteger)limit
                                               offset:(NSUInteger)offset
                                                error:(NSError **)error;
+/**
+ * @abstract Lists records with keyset (rkey) pagination matching com.atproto.repo.listRecords.
+ * @discussion Default order is rkey DESC (reverse=NO). With a cursor, default pages use
+ *             rkey < cursor; reverse pages use rkey > cursor. Collection is required.
+ * @param did Actor DID for the request (store is already scoped; retained for API symmetry).
+ * @param collection Repository collection NSID.
+ * @param limit Maximum number of records to return.
+ * @param cursor Exclusive rkey cursor from a previous page, or nil for the first page.
+ * @param reverse When YES, order ASC and advance with rkey > cursor.
+ * @param error Receives details when the operation fails.
+ * @return The page of records, or nil when the query fails.
+ */
+- (nullable NSArray<PDSDatabaseRecord *> *)listRecordsForDid:(NSString *)did
+                                                  collection:(NSString *)collection
+                                                       limit:(NSUInteger)limit
+                                                      cursor:(nullable NSString *)cursor
+                                                     reverse:(BOOL)reverse
+                                                       error:(NSError **)error;
 - (NSArray<NSString *> *)listRecordCIDsForDid:(NSString *)did
                                         limit:(NSUInteger)limit
                                        offset:(NSUInteger)offset

@@ -89,11 +89,21 @@ static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpRes
             return;
         }
 
-        NSUInteger limit = limitStr ? [limitStr integerValue] : 50;
+        NSUInteger limit = limitStr ? (NSUInteger)[limitStr integerValue] : 50;
+        if (limit == 0) limit = 50;
         if (limit > 100) limit = 100;
 
+        BOOL reverse = [[request queryParamForKey:@"reverse"] boolValue];
+
         NSError *error = nil;
-        NSArray *records = [recordService listRecords:collection forDid:did limit:limit cursor:cursor error:&error];
+        NSString *nextCursor = nil;
+        NSArray *records = [recordService listRecords:collection
+                                               forDid:did
+                                                limit:limit
+                                               cursor:cursor
+                                              reverse:reverse
+                                           nextCursor:&nextCursor
+                                                error:&error];
 
         if (error) {
             response.statusCode = HttpStatusBadRequest;
@@ -101,8 +111,22 @@ static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpRes
             return;
         }
 
+        NSMutableArray *views = [NSMutableArray arrayWithCapacity:records.count];
+        for (NSDictionary *record in records) {
+            if (![record isKindOfClass:[NSDictionary class]]) continue;
+            id uri = record[@"uri"] ?: @"";
+            id cid = record[@"cid"] ?: @"";
+            id value = record[@"value"] ?: @{};
+            [views addObject:@{ @"uri": uri, @"cid": cid, @"value": value }];
+        }
+
+        NSMutableDictionary *body = [@{ @"records": views } mutableCopy];
+        if (nextCursor.length > 0) {
+            body[@"cursor"] = nextCursor;
+        }
+
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"records": records ?: @[]}];
+        [response setJsonBody:body];
     }];
 
 #pragma mark - com.atproto.repo.getRecord

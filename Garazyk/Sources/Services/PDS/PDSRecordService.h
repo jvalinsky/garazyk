@@ -104,6 +104,25 @@ typedef NS_ENUM(NSInteger, PDSValidationMode) {
                           error:(NSError **)error;
 
 /**
+ * @abstract Lists records with keyset pagination and optional reverse order.
+ * @param collection The collection NSID.
+ * @param did The decentralized identifier of the repository owner.
+ * @param limit Maximum number of records to return (clamped to 1…100; 0 → 50).
+ * @param cursor Exclusive rkey cursor from a previous page, or nil.
+ * @param reverse When YES, list ascending and page with rkey > cursor.
+ * @param nextCursor On success, set to the next-page cursor when another page may exist.
+ * @param error Error pointer for listing failures.
+ * @return Array of record dictionaries, or nil if listing fails.
+ */
+- (nullable NSArray *)listRecords:(NSString *)collection
+                           forDid:(NSString *)did
+                            limit:(NSUInteger)limit
+                           cursor:(nullable NSString *)cursor
+                          reverse:(BOOL)reverse
+                       nextCursor:(NSString * _Nullable * _Nullable)nextCursor
+                            error:(NSError **)error;
+
+/**
  * @abstract Creates or updates a record.
  * @param collection The collection NSID (e.g., "app.bsky.feed.post").
  * @param rkey The record key within the collection.

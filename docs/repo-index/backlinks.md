@@ -160,6 +160,19 @@ Inbound links: **6**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/20-explanation/guides/iblt-for-atproto-reconciliation.md`
+
+Inbound links: **12**
+
+- [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md)
+- [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md)
+- [docs/index.md](../index.md)
+- [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
+- [docs/plans/workstreams/13-beskid-edge-reconciliation.md](../plans/workstreams/13-beskid-edge-reconciliation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/20-explanation/guides/NIXOS.md`
 
 Inbound links: **7**
@@ -171,13 +184,49 @@ Inbound links: **7**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/20-explanation/guides/range-based-set-reconciliation.md`
+
+Inbound links: **16**
+
+- [docs/20-explanation/guides/iblt-for-atproto-reconciliation.md](../20-explanation/guides/iblt-for-atproto-reconciliation.md)
+- [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md)
+- [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
+- [docs/index.md](../index.md)
+- [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
+- [docs/plans/workstreams/13-beskid-edge-reconciliation.md](../plans/workstreams/13-beskid-edge-reconciliation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/20-explanation/guides/repo-export-formats.md`
+
+Inbound links: **12**
+
+- [docs/11-reference/glossary.md](../11-reference/glossary.md)
+- [docs/20-explanation/guides/star-lite-vs-car-export-benchmark.md](../20-explanation/guides/star-lite-vs-car-export-benchmark.md)
+- [docs/adr/0009-star-versioning-and-variants.md](../adr/0009-star-versioning-and-variants.md)
+- [docs/adr/0034-star-lite-v0-interop-export.md](../adr/0034-star-lite-v0-interop-export.md)
+- [docs/index.md](../index.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/20-explanation/guides/star-lite-vs-car-export-benchmark.md`
 
 Inbound links: **8**
 
-- [docs/11-reference/glossary.md](../11-reference/glossary.md)
-- [docs/adr/0009-star-versioning-and-variants.md](../adr/0009-star-versioning-and-variants.md)
-- [docs/adr/0034-star-lite-v0-interop-export.md](../adr/0034-star-lite-v0-interop-export.md)
+- [docs/20-explanation/guides/repo-export-formats.md](../20-explanation/guides/repo-export-formats.md)
+- [docs/index.md](../index.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md`
+
+Inbound links: **9**
+
+- [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md)
+- [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -244,9 +293,10 @@ Inbound links: **2**
 
 ## `docs/adr/0009-star-versioning-and-variants.md`
 
-Inbound links: **7**
+Inbound links: **8**
 
 - [docs/20-explanation/guides/repo-export-formats.md](../20-explanation/guides/repo-export-formats.md)
+- [docs/20-explanation/guides/star-lite-vs-car-export-benchmark.md](../20-explanation/guides/star-lite-vs-car-export-benchmark.md)
 - [docs/adr/0034-star-lite-v0-interop-export.md](../adr/0034-star-lite-v0-interop-export.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -450,9 +500,10 @@ Inbound links: **14**
 
 ## `docs/adr/0034-star-lite-v0-interop-export.md`
 
-Inbound links: **7**
+Inbound links: **9**
 
 - [docs/20-explanation/guides/repo-export-formats.md](../20-explanation/guides/repo-export-formats.md)
+- [docs/20-explanation/guides/star-lite-vs-car-export-benchmark.md](../20-explanation/guides/star-lite-vs-car-export-benchmark.md)
 - [docs/adr/0009-star-versioning-and-variants.md](../adr/0009-star-versioning-and-variants.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -467,9 +518,23 @@ Inbound links: **2**
 
 ## `docs/adr/0036-content-addressed-video-distribution.md`
 
-Inbound links: **9**
+Inbound links: **17**
 
+- [docs/20-explanation/guides/iblt-for-atproto-reconciliation.md](../20-explanation/guides/iblt-for-atproto-reconciliation.md)
+- [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md)
+- [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md)
+- [docs/adr/0037-video-segment-profile-short-vs-long.md](../adr/0037-video-segment-profile-short-vs-long.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/adr/0037-video-segment-profile-short-vs-long.md`
+
+Inbound links: **6**
+
+- [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
 - [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1153,7 +1218,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **364**
+Inbound links: **378**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -1221,7 +1286,7 @@ Inbound links: **9**
 
 ## `docs/plans/README.md`
 
-Inbound links: **90**
+Inbound links: **96**
 
 - [docs/index.md](../index.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
@@ -1276,8 +1341,9 @@ Inbound links: **4**
 
 ## `docs/plans/workstreams/01-security-and-protocol-correctness.md`
 
-Inbound links: **12**
+Inbound links: **13**
 
+- [docs/20-explanation/guides/star-lite-vs-car-export-benchmark.md](../20-explanation/guides/star-lite-vs-car-export-benchmark.md)
 - [docs/adr/0032-dasl-conformance-profiles.md](../adr/0032-dasl-conformance-profiles.md)
 - [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
 - [docs/plans/README.md](../plans/README.md)
@@ -1398,11 +1464,43 @@ Inbound links: **26**
 
 ## `docs/plans/workstreams/12-content-addressed-video.md`
 
-Inbound links: **9**
+Inbound links: **17**
 
+- [docs/20-explanation/guides/iblt-for-atproto-reconciliation.md](../20-explanation/guides/iblt-for-atproto-reconciliation.md)
+- [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md)
+- [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md)
 - [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
+- [docs/adr/0037-video-segment-profile-short-vs-long.md](../adr/0037-video-segment-profile-short-vs-long.md)
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/13-beskid-edge-reconciliation.md`
+
+Inbound links: **6**
+
+- [docs/20-explanation/guides/iblt-for-atproto-reconciliation.md](../20-explanation/guides/iblt-for-atproto-reconciliation.md)
+- [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/14-beskid-firehose-invalidation-phase0.md`
+
+Inbound links: **4**
+
+- [docs/plans/workstreams/14-beskid-firehose-invalidation.md](../plans/workstreams/14-beskid-firehose-invalidation.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/14-beskid-firehose-invalidation.md`
+
+Inbound links: **4**
+
+- [docs/plans/workstreams/14-beskid-firehose-invalidation-phase0.md](../plans/workstreams/14-beskid-firehose-invalidation-phase0.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -1552,7 +1650,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **274**
+Inbound links: **284**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1563,7 +1661,7 @@ Inbound links: **274**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **70**
+Inbound links: **80**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1572,7 +1670,7 @@ Inbound links: **70**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **202**
+Inbound links: **212**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)

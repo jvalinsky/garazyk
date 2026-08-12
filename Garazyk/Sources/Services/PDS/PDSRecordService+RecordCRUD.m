@@ -59,18 +59,52 @@
                            limit:(NSUInteger)limit
                           cursor:(nullable NSString *)cursor
                           error:(NSError **)error {
+    return [self listRecords:collection
+                      forDid:did
+                       limit:limit
+                      cursor:cursor
+                     reverse:NO
+                  nextCursor:NULL
+                       error:error];
+}
+
+- (nullable NSArray *)listRecords:(NSString *)collection
+                           forDid:(NSString *)did
+                            limit:(NSUInteger)limit
+                           cursor:(nullable NSString *)cursor
+                          reverse:(BOOL)reverse
+                       nextCursor:(NSString * _Nullable * _Nullable)nextCursor
+                            error:(NSError **)error {
+    if (nextCursor) {
+        *nextCursor = nil;
+    }
+
+    NSUInteger boundedLimit = limit;
+    if (boundedLimit == 0) {
+        boundedLimit = 50;
+    } else if (boundedLimit > 100) {
+        boundedLimit = 100;
+    }
 
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) return nil;
 
-    NSArray<PDSDatabaseRecord *> *records = [self.recordRepository recordsForDid:did
-                                                                      collection:collection
-                                                                           error:error];
-    if (records && records.count > limit) {
-        records = [records subarrayWithRange:NSMakeRange(0, limit)];
+    NSError *listError = nil;
+    NSArray<PDSDatabaseRecord *> *records = [store listRecordsForDid:did
+                                                          collection:collection
+                                                               limit:boundedLimit
+                                                              cursor:cursor
+                                                             reverse:reverse
+                                                               error:&listError];
+    if (listError) {
+        if (error) *error = listError;
+        return nil;
+    }
+    if (!records) {
+        records = @[];
     }
 
-    NSMutableArray *result = [NSMutableArray array];
+    NSMutableArray *result = [NSMutableArray arrayWithCapacity:records.count];
     for (PDSDatabaseRecord *record in records) {
         NSDictionary *parsedValue = @{};
         if (record.value) {
@@ -83,14 +117,21 @@
                 parsedValue = (NSDictionary *)record.value;
             }
         }
-        
+
         [result addObject:@{
-            @"uri": record.uri,
-            @"cid": record.cid,
-            @"collection": record.collection,
-            @"rkey": record.rkey,
+            @"uri": record.uri ?: @"",
+            @"cid": record.cid ?: @"",
+            @"collection": record.collection ?: @"",
+            @"rkey": record.rkey ?: @"",
             @"value": parsedValue
         }];
+    }
+
+    if (nextCursor && result.count == boundedLimit) {
+        NSString *lastRkey = records.lastObject.rkey;
+        if (lastRkey.length > 0) {
+            *nextCursor = [lastRkey copy];
+        }
     }
 
     return result;
