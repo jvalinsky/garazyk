@@ -21,6 +21,7 @@
 #import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/GZHttpContentEncoding.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
@@ -321,8 +322,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
       response.statusCode = HttpStatusOK;
       response.contentType = ContentTypeForPDSRepoFormat(format);
-      [response setHeader:@"Accept" forKey:@"Vary"];
-      [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+      GZHttpResponseSetExportBodyChunkProducer(response, producer, [request headerForKey:@"Accept-Encoding"]);
       return;
     }
 
@@ -351,8 +351,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
     response.statusCode = HttpStatusOK;
     response.contentType = @"application/vnd.ipld.car";
-    [response setHeader:@"Accept" forKey:@"Vary"];
-    [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+    GZHttpResponseSetExportBodyChunkProducer(response, producer, [request headerForKey:@"Accept-Encoding"]);
   }];
 
   // com.atproto.sync.getCheckout
@@ -391,8 +390,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
       response.statusCode = HttpStatusOK;
       response.contentType = ContentTypeForPDSRepoFormat(format);
-      [response setHeader:@"Accept" forKey:@"Vary"];
-      [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+      GZHttpResponseSetExportBodyChunkProducer(response, producer, [request headerForKey:@"Accept-Encoding"]);
       return;
     }
 
@@ -411,8 +409,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
     response.statusCode = HttpStatusOK;
     response.contentType = @"application/vnd.ipld.car";
-    [response setHeader:@"Accept" forKey:@"Vary"];
-    [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+    GZHttpResponseSetExportBodyChunkProducer(response, producer, [request headerForKey:@"Accept-Encoding"]);
   }];
 
   // com.atproto.sync.getHead

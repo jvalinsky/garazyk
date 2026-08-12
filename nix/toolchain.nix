@@ -138,6 +138,8 @@ let
     (lib.getDev icu)
     (lib.getOutput "out" zlib)
     (lib.getDev zlib)
+    (lib.getOutput "out" zstd)
+    (lib.getDev zstd)
     (lib.getOutput "out" readline)
     (lib.getDev readline)
     (lib.getOutput "out" libbsd)

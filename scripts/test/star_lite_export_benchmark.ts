@@ -294,17 +294,35 @@ async function benchmarkAccount(
   dataDir: string,
 ): Promise<ExportComparisonRow> {
   const pid = await readServicePid(pidFile, account.pdsName.toUpperCase());
+  const acceptEncoding = Deno.env.get("STAR_LITE_BENCH_ACCEPT_ENCODING")?.trim() || undefined;
 
-  const carFetch = await fetchRepoExport(account.pdsUrl, account.did, CAR_MEDIA_TYPE, {
+  // Correctness always compares identity archives.
+  const carIdentity = await fetchRepoExport(account.pdsUrl, account.did, CAR_MEDIA_TYPE, {
     pid,
     dataDir,
   });
-  const starFetch = await fetchRepoExport(account.pdsUrl, account.did, STAR_LITE_V0_MEDIA_TYPE, {
-    pid,
-    dataDir,
-  });
+  const starIdentity = await fetchRepoExport(
+    account.pdsUrl,
+    account.did,
+    STAR_LITE_V0_MEDIA_TYPE,
+    { pid, dataDir },
+  );
+  const match = await verifyExportsMatch(carIdentity.bytes, starIdentity.bytes);
 
-  const match = await verifyExportsMatch(carFetch.bytes, starFetch.bytes);
+  const carFetch = acceptEncoding
+    ? await fetchRepoExport(account.pdsUrl, account.did, CAR_MEDIA_TYPE, {
+      pid,
+      dataDir,
+      acceptEncoding,
+    })
+    : carIdentity;
+  const starFetch = acceptEncoding
+    ? await fetchRepoExport(account.pdsUrl, account.did, STAR_LITE_V0_MEDIA_TYPE, {
+      pid,
+      dataDir,
+      acceptEncoding,
+    })
+    : starIdentity;
 
   return {
     did: account.did,
@@ -315,6 +333,7 @@ async function benchmarkAccount(
       bytes: carFetch.bytes.length,
       generationAndTransferMs: carFetch.elapsedMs,
       contentType: carFetch.contentType,
+      contentEncoding: carFetch.contentEncoding,
       resources: carFetch.resources,
     },
     starLite: {
@@ -322,6 +341,7 @@ async function benchmarkAccount(
       bytes: starFetch.bytes.length,
       generationAndTransferMs: starFetch.elapsedMs,
       contentType: starFetch.contentType,
+      contentEncoding: starFetch.contentEncoding,
       resources: starFetch.resources,
     },
     correctnessOk: match.ok,

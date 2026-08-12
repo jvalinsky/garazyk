@@ -993,6 +993,7 @@ int main(int argc, char *argv[]) {
       @"MSTUTF8Tests",
       @"MSTDecoderTests",
       @"HttpResponseTests",
+      @"HttpContentEncodingTests",
       @"ATProtoServiceConfigurationTests",
       @"PDSPhoneVerificationProviderTests",
       @"EventFormatterTests",
