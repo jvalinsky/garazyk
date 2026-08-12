@@ -1,7 +1,7 @@
 ---
 title: Relay Admin UI Brief
 status: partially-implemented
-last_verified: 2026-08-11
+last_verified: 2026-08-12
 ---
 
 # Relay (`zuk`)
@@ -53,34 +53,36 @@ request-crawl controls exist only on the embedded listener and require both.
 
 ## Current validation and remaining acceptance
 
-On 2026-08-11, fresh native configuration and `AllTests` build passed. Focused
-`RelayAdminUIPackTests` (8 tests, 0 failures, including clean listener
-shutdown under loopback access), `ZukCommandTests` (6/0), and
-`UIServerRuntimeTests` (28/0) passed with `--gated=run`. The pack tests cover
-empty/populated snapshots, scoped-session isolation, missing/stale CSRF,
-one-time CSRF rotation, mutation state, default loopback binding, the 8-request
-limit, credential-file trimming/redaction, and compatibility-host route parity.
+On **2026-08-12**, fresh native configuration and `AllTests --gated=run`
+passed (exit 0, ~9.6 min) with **11 GB** free on the host volume (prior
+2026-08-11 disk-full block cleared). Focused relay suites re-verified the same
+day: `RelayAdminUIPackTests` (8/0), `ZukCommandTests` (6/0, including
+post-namespace-rename source composition check), and `UIServerRuntimeTests`
+(28/0).
+
+On 2026-08-11, focused evidence also included clean listener shutdown under
+loopback access. The pack tests cover empty/populated snapshots,
+scoped-session isolation, missing/stale CSRF, one-time CSRF rotation, mutation
+state, default loopback binding, the 8-request limit, credential-file
+trimming/redaction, and compatibility-host route parity.
 `scripts/admin_ui_visual_smoke_test.ts` and
-`scripts/admin_ui_browser_smoke_test.ts` also passed with real loopback
+`scripts/admin_ui_browser_smoke_test.ts` passed with real loopback
 listeners and Chromium. The latter brought up a local PLC/PDS/Relay/AppView/
 Germ/Mikrus/Beskid topology and verified login, session/CSRF rejection,
 keyboard navigation, heading/tab semantics, CSP, and the Lab OAuth flow.
 
-M4 remains in progress until the full repository gates, NixOS/loopback smoke,
-sustained firehose-under-polling scenario, browser/visual smoke, and GNUstep
+M4 remains in progress until NixOS/loopback smoke, sustained
+firehose-under-polling scenario, browser/visual smoke **re-run**, and GNUstep
 binary gate have fresh successful evidence. The reduced legacy dashboard did
 not contain a maintainable per-source event inspector; restoring any omitted
 live-event or delivery counters requires adding bounded source fields first,
 not a browser-side polling shortcut.
 
-**Blocked on (2026-08-11):** the fresh full `AllTests --gated=run` attempt was
-stopped after the host volume reached 100% capacity (131 MB free at first
-failure). `AdminAuthSyncTests` then failed creating its temporary blob
-directory with `NSPOSIXErrorDomain` 28, and unrelated PDS integration tests
-continued to report disk-full I/O failures. Two duplicate test processes were
-terminated to prevent further failed writes; this is environmental evidence,
-not a green full-suite result. Free sufficient local disk before rerunning the
-full suite, browser/visual smoke, NixOS smoke, and GNUstep Docker gate.
+**Resolved (2026-08-11 → 2026-08-12):** the prior full-suite block from host
+volume exhaustion (131 MB free, `NSPOSIXErrorDomain` 28 in
+`AdminAuthSyncTests`) is no longer reproducing after freeing disk space.
+Duplicate test processes from that attempt were terminated; the 2026-08-12
+run was a single clean process with exit 0.
 
 Rollback keeps the current dashboard available until the pack and dedicated
 listener pass; it never weakens the existing session gate.
