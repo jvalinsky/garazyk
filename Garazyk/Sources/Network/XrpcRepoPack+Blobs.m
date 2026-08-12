@@ -13,6 +13,9 @@
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSSpaceStore.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/ActorStore/ActorStore.h"
+#import "Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Core/ATProtoValidator.h"
 #import "Security/Space/PDSSpaceScope.h"
@@ -246,6 +249,15 @@ static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHt
     }];
 
 #pragma mark - com.atproto.repo.listMissingBlobs
+    // Implemented for the account-migration flow (ADR 0035 B5). Garazyk's
+    // blob-reference sync only records refs for blobs whose bytes already
+    // exist on the PDS, so after an importRepo of a CAR whose blob bytes were
+    // never uploaded, the missing references exist only inside the imported
+    // records. This endpoint scans the account's records, extracts every blob
+    // reference, and reports references whose bytes are absent from the blobs
+    // table — exactly the set the migration tool must fetch from the source
+    // PDS and re-upload. The scan is paginated with an opaque offset cursor;
+    // it is an operator/migration endpoint, not a hot path.
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_listMissingBlobs handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
@@ -267,10 +279,111 @@ static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHt
             }
         }
 
-        NSMutableDictionary *result = [@{@"blobs": @[]} mutableCopy];
+        NSUInteger recordOffset = 0;
         NSString *cursor = [request queryParamForKey:@"cursor"];
         if (cursor.length > 0) {
-            result[@"cursor"] = cursor;
+            if (![cursor hasPrefix:@"o:"]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Invalid cursor"}];
+                return;
+            }
+            recordOffset = (NSUInteger)[[cursor substringFromIndex:2] longLongValue];
+        }
+
+        PDSDatabasePool *pool = services.userDatabasePool;
+        if (!pool) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalError", @"message": @"Database pool unavailable"}];
+            return;
+        }
+
+        __block NSMutableArray<NSDictionary *> *blobs = [NSMutableArray array];
+        __block BOOL more = NO;
+        __block NSUInteger nextRecordOffset = recordOffset;
+        NSError *readError = nil;
+        [pool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+            // The set of blob CIDs whose bytes are already stored on this PDS.
+            NSMutableSet<NSString *> *uploadedCIDs = [NSMutableSet set];
+            NSString *blobCursor = nil;
+            BOOL blobsDone = NO;
+            while (!blobsDone) {
+                NSArray<PDSDatabaseBlob *> *page = [reader listBlobsForDid:did limit:1000 cursor:blobCursor error:innerError];
+                if (!page) {
+                    return;
+                }
+                for (PDSDatabaseBlob *blob in page) {
+                    NSString *cidString = PDSBlobAuditCIDStringFromRawBytes(blob.cid);
+                    if (cidString.length > 0) {
+                        [uploadedCIDs addObject:cidString];
+                    }
+                }
+                if (page.count < 1000) {
+                    blobsDone = YES;
+                } else {
+                    blobCursor = PDSBlobAuditCursorFromRawBytes(page.lastObject.cid);
+                    if (!blobCursor) {
+                        blobsDone = YES;
+                    }
+                }
+            }
+
+            // Scan records until the page limit of missing blobs is reached.
+            NSUInteger scanOffset = recordOffset;
+            const NSUInteger kRecordPage = 500;
+            BOOL recordsDone = NO;
+            while (!recordsDone) {
+                if (blobs.count >= (NSUInteger)limit) {
+                    more = YES;
+                    break;
+                }
+                NSArray<PDSDatabaseRecord *> *records = [reader listRecordsForDid:did collection:nil limit:kRecordPage offset:scanOffset error:innerError];
+                if (!records) {
+                    return;
+                }
+                if (records.count == 0) {
+                    break;
+                }
+                for (PDSDatabaseRecord *record in records) {
+                    if (blobs.count >= (NSUInteger)limit) {
+                        more = YES;
+                        break;
+                    }
+                    if (record.value.length == 0) {
+                        continue;
+                    }
+                    NSData *valueData = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+                    id json = valueData ? [NSJSONSerialization JSONObjectWithData:valueData options:0 error:nil] : nil;
+                    NSSet<NSString *> *references = PDSBlobAuditBlobReferenceCIDsFromJSONObject(json);
+                    for (NSString *cidString in references) {
+                        if (blobs.count >= (NSUInteger)limit) {
+                            more = YES;
+                            break;
+                        }
+                        if (![uploadedCIDs containsObject:cidString]) {
+                            [blobs addObject:@{
+                                @"cid": cidString,
+                                @"recordUri": record.uri ?: @"",
+                            }];
+                        }
+                    }
+                }
+                scanOffset += records.count;
+                if (records.count < kRecordPage) {
+                    break;
+                }
+            }
+            nextRecordOffset = scanOffset;
+        } error:&readError];
+
+        if (readError) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalError", @"message": readError.localizedDescription ?: @"Failed to scan for missing blobs"}];
+            return;
+        }
+
+        NSMutableDictionary *result = [@{@"blobs": blobs ?: @[]} mutableCopy];
+        if (more) {
+            result[@"cursor"] = [NSString stringWithFormat:@"o:%lu", (unsigned long)nextRecordOffset];
         }
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
