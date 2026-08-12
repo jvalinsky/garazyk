@@ -1141,3 +1141,268 @@ pre code {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
+
+/* ============================================================================
+   MIKRUS-SPECIFIC COMPONENTS
+   ============================================================================ */
+
+/* Metric Grid */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.metric-card {
+  padding: var(--space-md);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent);
+}
+
+.metric-card .metric-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+.metric-card .metric-value {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  line-height: var(--line-height-tight);
+}
+
+.metric-card .metric-value.metric-large {
+  font-size: var(--font-size-2xl);
+  color: var(--color-foreground-accent);
+}
+
+.metric-card .metric-value.metric-success {
+  color: var(--color-foreground-success);
+}
+
+.metric-card .metric-value.metric-warning {
+  color: var(--color-foreground-warning);
+}
+
+.metric-card .metric-value.metric-destructive {
+  color: var(--color-foreground-destructive);
+}
+
+.metric-card .metric-help {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-xs);
+  font-style: italic;
+}
+
+/* Relay Grid and Cards */
+.relay-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.relay-card {
+  padding: var(--space-md);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.relay-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.relay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--separator-color-secondary);
+}
+
+.relay-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+}
+
+.relay-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.relay-metric .metric-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 500;
+}
+
+.relay-metric .metric-value {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+/* Index Grid and Cards */
+.index-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.index-card {
+  padding: var(--space-lg);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.index-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-accent);
+}
+
+.index-icon {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-sm);
+}
+
+.index-title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.index-count {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-foreground-accent);
+  margin-bottom: var(--space-xs);
+}
+
+.index-description {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+/* Query Stats */
+.query-stats {
+  margin-bottom: var(--space-md);
+}
+
+.query-total {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.query-total strong {
+  color: var(--color-foreground-accent);
+  font-weight: 700;
+}
+
+/* Progress Bar within Tables */
+.progress-bar {
+  display: inline-block;
+  width: 60px;
+  height: 6px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  margin-left: var(--space-sm);
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+.progress-fill.bar-primary {
+  background: var(--color-accent);
+}
+
+.progress-fill.bar-success {
+  background: var(--color-success);
+}
+
+.progress-fill.bar-warning {
+  background: var(--color-warning);
+}
+
+.progress-fill.bar-destructive {
+  background: var(--color-destructive);
+}
+
+.progress-fill.bar-secondary {
+  background: var(--color-text-tertiary);
+}
+
+/* Table Utilities */
+.table-compact th,
+.table-compact td {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-mono {
+  font-family: "Monaco", "Menlo", "SF Mono", "Courier New", monospace;
+}
+
+.text-sm {
+  font-size: var(--font-size-xs);
+}
+
+.text-destructive {
+  color: var(--color-foreground-destructive);
+}
+
+/* Section Title */
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--separator-color);
+}

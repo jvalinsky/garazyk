@@ -8,10 +8,12 @@
 @implementation GZAdminUIBackendClient (Chat)
 
 - (NSDictionary *)fetchChatConvosWithLimit:(NSUInteger)limit cursor:(NSString *)cursor {
+    // Use the Chat service's admin endpoint (privacy-safe metadata only).
+    // Falls through to the configured chatBaseURL for centralized installations.
     NSMutableDictionary *params = [NSMutableDictionary dictionary];
     params[@"limit"] = [@(limit ?: 25) stringValue];
     if (cursor.length > 0) params[@"cursor"] = cursor;
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/chat.bsky.convo.listConvos" queryItems:params baseURL:self.configuration.chatBaseURL];
+    NSURL *url = [self URLByAppendingPath:@"/_admin/convos" queryItems:params baseURL:self.configuration.chatBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
     NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.chatAdminToken statusCode:&status error:&error];
@@ -23,11 +25,12 @@
 
 - (NSDictionary *)fetchChatMessagesForConvoID:(NSString *)convoID limit:(NSUInteger)limit cursor:(NSString *)cursor {
     if (!convoID.length) return @{@"error": @"convo_id_required"};
+    // Use the Chat service's admin endpoint (privacy-safe metadata only).
     NSMutableDictionary *params = [NSMutableDictionary dictionary];
     params[@"convoId"] = convoID;
     params[@"limit"] = [@(limit ?: 50) stringValue];
     if (cursor.length > 0) params[@"cursor"] = cursor;
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/chat.bsky.convo.getMessages" queryItems:params baseURL:self.configuration.chatBaseURL];
+    NSURL *url = [self URLByAppendingPath:@"/_admin/messages" queryItems:params baseURL:self.configuration.chatBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
     NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.chatAdminToken statusCode:&status error:&error];
