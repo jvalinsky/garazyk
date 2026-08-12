@@ -59,12 +59,16 @@ NSString *GZMikrusAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
         @"relayURLs": self.configuration.relayURLs ?: @[],
         @"relayHealth": self.ingestEngine.relayHealth ?: @{},
         @"lagByRelay": self.ingestEngine.lagByRelay ?: @{},
+        @"throughput": self.ingestEngine.throughput ?: @{},
         @"checkpointIntervalMs": @(self.ingestEngine.checkpointIntervalMs),
     } mutableCopy];
     [ingestState addEntriesFromDictionary:metricsSnapshot[@"ingest"]];
     
-    // approximate index gauges from bounded rowid scan
-    int64_t approxEdges = [self approximateRowCount:@"mikrus_links"];
+    // index statistics
+    NSDictionary *indexStats = [self indexFamilyStatistics];
+    
+    // collection distribution (top 10)
+    NSDictionary *topCollections = [self topCollectionCounts:10];
     
     return @{
         @"health": health,
@@ -74,12 +78,70 @@ NSString *GZMikrusAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
             @"ingestEnabled": @(self.configuration.ingestEnabled),
         },
         @"ingest": ingestState,
-        @"indexes": @{
-            @"approxEdges": @(approxEdges),
-        },
+        @"indexes": indexStats,
+        @"topCollections": topCollections,
         @"queries": metricsSnapshot[@"queries"],
         @"rateLimitRejects": metricsSnapshot[@"rateLimitRejects"],
         @"database": @{ @"storageBytes": @([self.database storageBytes]) },
+        @"recentErrors": [self recentErrors:10],
+    };
+}
+
+- (NSDictionary<NSString *, NSNumber *> *)topCollectionCounts:(NSInteger)limit {
+    // Query top N collections by record count from the mikrus_records table
+    NSString *sql = @"SELECT collection, COUNT(*) as cnt FROM mikrus_records "
+                    @"GROUP BY collection ORDER BY cnt DESC LIMIT ?";
+    NSArray *rows = [self.database executeQuery:sql params:@[@(limit)] error:nil];
+    
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    for (NSDictionary *row in rows) {
+        NSString *collection = row[@"collection"];
+        NSNumber *count = row[@"cnt"];
+        if (collection && count) {
+            result[collection] = count;
+        }
+    }
+    return [result copy];
+}
+
+- (NSArray<NSDictionary *> *)recentErrors:(NSInteger)limit {
+    // Query the most recent ingest errors from the event log
+    // This assumes an ingest_errors table exists; if not, return empty array
+    NSString *sql = @"SELECT timestamp, relay_url, error_message, did, seq "
+                    @"FROM ingest_errors ORDER BY timestamp DESC LIMIT ?";
+    NSArray *rows = [self.database executeQuery:sql params:@[@(limit)] error:nil];
+    
+    if (!rows) {
+        return @[];
+    }
+    
+    return rows;
+}
+
+- (NSDictionary<NSString *, id> *)indexFamilyStatistics {
+    // Compute statistics for each index family
+    int64_t linksCount = [self approximateRowCount:@"mikrus_links"];
+    int64_t recordsCount = [self approximateRowCount:@"mikrus_records"];
+    int64_t identitiesCount = [self approximateRowCount:@"mikrus_identities"];
+    int64_t manyToManyCount = [self approximateRowCount:@"mikrus_many_to_many"];
+    
+    return @{
+        @"backlinks": @{
+            @"approxEdges": @(linksCount),
+            @"description": @"URI-to-URI link edges",
+        },
+        @"records": @{
+            @"approxCount": @(recordsCount),
+            @"description": @"Cached record lookups",
+        },
+        @"identities": @{
+            @"approxCount": @(identitiesCount),
+            @"description": @"DID-to-handle mappings",
+        },
+        @"manyToMany": @{
+            @"approxEdges": @(manyToManyCount),
+            @"description": @"Relationship edges",
+        },
     };
 }
 
