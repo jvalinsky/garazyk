@@ -1070,6 +1070,7 @@ if(APPLE)
     ATProtoRelayAdminUI
     ATProtoBeskid
     ATProtoMikrus
+    ATProtoAppViewServer
     ATProtoTransport
     ATProtoCore
     ${PLATFORM_LIBRARIES}
@@ -1084,6 +1085,7 @@ else()
     ATProtoRelayAdminUI
     ATProtoBeskid
     ATProtoMikrus
+    ATProtoAppViewServer
     ATProtoTransport
     ATProtoCore
     -Wl,--no-whole-archive

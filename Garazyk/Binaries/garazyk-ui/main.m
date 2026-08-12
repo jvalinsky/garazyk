@@ -9,6 +9,7 @@
 #import "Sync/Relay/AdminUI/RelayAdminUIPack.h"
 #import "Beskid/AdminUI/BeskidAdminUIPack.h"
 #import "Mikrus/AdminUI/MikrusAdminUIPack.h"
+#import "AppView/Server/AdminUI/SyrenaAdminUIPack.h"
 #import "CLI/GZCommandLineOptions.h"
 #import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Debug/GZLogger.h"
@@ -154,6 +155,7 @@ int main(int argc, const char *argv[]) {
         [packs insertObject:GZPLCAdminUIPack.class atIndex:3];
         [packs addObject:GZBeskidAdminUIPack.class];
         [packs addObject:GZMikrusAdminUIPack.class];
+        [packs addObject:GZSyrenaAdminUIPack.class];
         GZAdminUIHost *runtime = [[GZAdminUIHost alloc] initWithConfiguration:config
                                                                           packs:packs];
         return [GZServiceLifecycle runServiceWithRuntime:runtime
