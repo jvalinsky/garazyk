@@ -124,6 +124,15 @@ for file in "${css_files[@]}"; do
   fi
 done
 
+# `//` is not a CSS comment. A leading `// SPDX` header causes browsers to
+# discard the following `:root { … }` token block and unstyle the UI.
+echo "[check-ui-design-system] Verifying CSS has no // line comments..."
+if rg -n '^//' "${repo_root}/Garazyk/Sources" --glob '*.css' >/dev/null; then
+  echo "ERROR: CSS // comments are invalid and break :root tokens — use /* */"
+  rg -n '^//' "${repo_root}/Garazyk/Sources" --glob '*.css' || true
+  failed=1
+fi
+
 if [[ "$failed" -ne 0 ]]; then
   echo "[check-ui-design-system] FAILED"
   exit 1

@@ -46,7 +46,11 @@ export const SYSTEM_CSS_PATH = new URL("system.css", CSS_DIR);
 /** Modules whose canonical copy lives in the Admin UI library tree. */
 export const SHARED_MODULES = ["tokens.css", "reset.css"] as const;
 
-const SPDX_RE = /^(?:\/\/ SPDX-[^\n]*\n)+/;
+// CSS only allows /* */ comments. A leading `// SPDX` line is parsed as an
+// invalid token stream and browsers discard the following `:root { … }` block,
+// which unstyles the entire admin UI. Accept (and prefer) block-comment SPDX.
+const SPDX_RE =
+  /^(?:(?:\/\/ SPDX-[^\n]*\n)|(?:\/\* SPDX-[^*]*\*\/\n))+/;
 
 /**
  * The canonical files open with a "CANONICAL SOURCE" block telling a reader
@@ -67,9 +71,21 @@ async function moduleBody(name: string): Promise<string> {
  * The canonical module rendered for the shared tree: the file verbatim, with a
  * generated-file banner so it is not hand-edited.
  */
+function cssSpdxBlock(raw: string): string {
+  const match = raw.match(SPDX_RE)?.[0] ?? "";
+  if (!match) {
+    return (
+      "/* SPDX-FileCopyrightText: 2025-2026 Jack Valinsky */\n" +
+      "/* SPDX-License-Identifier: Unlicense OR CC0-1.0 */\n"
+    );
+  }
+  // Normalize to block comments so generated CSS stays browser-safe.
+  return match.replace(/^\/\/ (SPDX-[^\n]*)$/gm, "/* $1 */");
+}
+
 export async function generateSharedModule(name: string): Promise<string> {
   const raw = await Deno.readTextFile(new URL(name, CSS_DIR));
-  const spdx = raw.match(SPDX_RE)?.[0] ?? "";
+  const spdx = cssSpdxBlock(raw);
   const body = raw
     .replace(SPDX_RE, "")
     .replace(CANONICAL_NOTE_RE, "")

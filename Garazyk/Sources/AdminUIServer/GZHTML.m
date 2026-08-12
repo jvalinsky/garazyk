@@ -71,7 +71,7 @@
             [self escapedString:message]];
 }
 
-+ (NSString *)tableWithHeaders:(NSArray<NSString *> *)headers
++ (NSString *)tableWithHeaders:(NSArray *)headers
                           rows:(nullable NSArray<NSArray<NSString *> *> *)rows
                   emptyMessage:(NSString *)emptyMessage {
     NSUInteger colCount = headers.count;
@@ -82,13 +82,31 @@
     return [self tableWithHeaders:headers htmlRows:htmlRows emptyMessage:emptyMessage];
 }
 
-+ (NSString *)tableWithHeaders:(NSArray<NSString *> *)headers
+static NSString *GZHTMLTableHeaderHTML(id header) {
+    if ([header isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *info = (NSDictionary *)header;
+        return [GZHTML tableHeaderCellWithText:info[@"text"] ?: @""
+                                     className:info[@"className"]];
+    }
+    return [GZHTML tableHeaderCellWithText:[header description] className:nil];
+}
+
++ (NSString *)tableHeaderCellWithText:(NSString *)text
+                            className:(nullable NSString *)className {
+    if (className.length > 0) {
+        return [NSString stringWithFormat:@"<th class=\"%@\">%@</th>",
+                [self escapedString:className], [self escapedString:text]];
+    }
+    return [NSString stringWithFormat:@"<th>%@</th>", [self escapedString:text]];
+}
+
++ (NSString *)tableWithHeaders:(NSArray *)headers
                        htmlRows:(nullable NSArray<NSString *> *)htmlRows
                   emptyMessage:(NSString *)emptyMessage {
     NSMutableString *html = [NSMutableString string];
-    [html appendString:@"<table class=\"table\"><thead><tr>"];
-    for (NSString *header in headers) {
-        [html appendFormat:@"<th>%@</th>", [self escapedString:header]];
+    [html appendString:@"<div class=\"table-scroll\"><table class=\"table\"><thead><tr>"];
+    for (id header in headers) {
+        [html appendString:GZHTMLTableHeaderHTML(header)];
     }
     [html appendString:@"</tr></thead><tbody>"];
     if (htmlRows.count > 0) {
@@ -98,7 +116,7 @@
     } else {
         [html appendString:[self emptyStateRowWithColspan:headers.count message:emptyMessage]];
     }
-    [html appendString:@"</tbody></table>"];
+    [html appendString:@"</tbody></table></div>"];
     return html;
 }
 

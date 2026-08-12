@@ -84,7 +84,7 @@
     [html appendString:[GZHTML sectionTitle:@"Ingest Performance"]];
     NSString *errorsCell = [NSString stringWithFormat:@"%@ <span class=\"text-secondary\">(%.2f%%)</span>",
                             [GZHTML escapedString:[@(errors) description]], errorRate];
-    [html appendString:[GZHTML tableWithHeaders:@[@"Metric", @"Value"]
+    [html appendString:[GZHTML tableWithHeaders:@[@"Metric", @{@"text": @"Value", @"className": @"text-right"}]
                                        htmlRows:@[
         [GZHTML tableRowWithHtmlCells:@[
             [GZHTML tableCellWithText:@"Events processed" className:nil],
@@ -112,7 +112,9 @@
 
     [html appendString:@"<section class=\"mt-md\">"];
     [html appendString:[GZHTML sectionTitle:@"Index Statistics"]];
-    [html appendString:[GZHTML tableWithHeaders:@[@"Family", @"Approx. count", @"Notes"]
+    [html appendString:[GZHTML tableWithHeaders:@[@"Family",
+                                                  @{@"text": @"Approx. count", @"className": @"text-right"},
+                                                  @"Notes"]
                                        htmlRows:@[
         [GZHTML tableRowWithHtmlCells:@[
             [GZHTML tableCellWithText:@"Backlink edges" className:nil],
@@ -140,7 +142,7 @@
 
     [html appendString:@"<section class=\"mt-md\">"];
     [html appendString:[GZHTML sectionTitle:@"Query Performance"]];
-    [html appendString:[GZHTML tableWithHeaders:@[@"Family", @"Requests"]
+    [html appendString:[GZHTML tableWithHeaders:@[@"Family", @{@"text": @"Requests", @"className": @"text-right"}]
                                        htmlRows:@[
         [GZHTML tableRowWithHtmlCells:@[
             [GZHTML tableCellWithText:@"Total" className:nil],
@@ -216,7 +218,9 @@
                 [GZHTML tableCellWithText:throughputDisplay className:@"text-right text-mono"],
             ]]];
         }
-        [html appendString:[GZHTML tableWithHeaders:@[@"Relay", @"Status", @"Lag", @"Throughput"]
+        [html appendString:[GZHTML tableWithHeaders:@[@"Relay", @"Status",
+                                                      @{@"text": @"Lag", @"className": @"text-right"},
+                                                      @{@"text": @"Throughput", @"className": @"text-right"}]
                                            htmlRows:rows
                                       emptyMessage:@"No relays configured."]];
     }
@@ -224,7 +228,7 @@
 
     [html appendString:@"<section class=\"mt-md\">"];
     [html appendString:[GZHTML sectionTitle:@"Event Counters"]];
-    [html appendString:[GZHTML tableWithHeaders:@[@"Metric", @"Value"]
+    [html appendString:[GZHTML tableWithHeaders:@[@"Metric", @{@"text": @"Value", @"className": @"text-right"}]
                                        htmlRows:@[
         [GZHTML tableRowWithHtmlCells:@[
             [GZHTML tableCellWithText:@"Events" className:nil],
@@ -280,11 +284,12 @@
                 [GZHTML tableCellWithText:message className:nil],
             ]]];
         }
-        [html appendString:@"<div class=\"table-scroll\">"];
-        [html appendString:[GZHTML tableWithHeaders:@[@"Time", @"Relay", @"DID", @"Seq", @"Error"]
+        [html appendString:[GZHTML tableWithHeaders:@[@"Time", @"Relay", @"DID",
+                                                      @{@"text": @"Seq", @"className": @"text-right"},
+                                                      @"Error"]
                                            htmlRows:errorRows
                                       emptyMessage:@"No recent errors."]];
-        [html appendString:@"</div></section>"];
+        [html appendString:@"</section>"];
     }
 
     return html;
@@ -312,7 +317,9 @@
             [GZHTML tableCellWithText:description className:@"text-secondary text-sm"],
         ]]];
     }
-    [html appendString:[GZHTML tableWithHeaders:@[@"Family", @"Approx. count", @"Description"]
+    [html appendString:[GZHTML tableWithHeaders:@[@"Family",
+                                                  @{@"text": @"Approx. count", @"className": @"text-right"},
+                                                  @"Description"]
                                        htmlRows:familyRows
                                   emptyMessage:@"No index families."]];
     [html appendString:@"</section>"];
@@ -331,7 +338,7 @@
                 [GZHTML tableCellWithText:[count description] className:@"text-right text-mono"],
             ]]];
         }
-        [html appendString:[GZHTML tableWithHeaders:@[@"Collection", @"Records"]
+        [html appendString:[GZHTML tableWithHeaders:@[@"Collection", @{@"text": @"Records", @"className": @"text-right"}]
                                            htmlRows:collectionRows
                                       emptyMessage:@"No collections."]];
         [html appendString:@"</section>"];
@@ -359,7 +366,9 @@
             [GZHTML tableCellWithText:[NSString stringWithFormat:@"%.1f%%", percentage] className:@"text-right text-mono"],
         ]]];
     }
-    [html appendString:[GZHTML tableWithHeaders:@[@"Query family", @"Requests", @"Share"]
+    [html appendString:[GZHTML tableWithHeaders:@[@"Query family",
+                                                  @{@"text": @"Requests", @"className": @"text-right"},
+                                                  @{@"text": @"Share", @"className": @"text-right"}]
                                        htmlRows:queryRows
                                   emptyMessage:@"No query activity."]];
     [html appendString:@"</section>"];

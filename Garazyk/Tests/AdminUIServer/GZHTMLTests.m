@@ -163,19 +163,19 @@
     NSArray *rows = @[@[@"Alice", @"@alice"], @[@"Bob", @"@bob"]];
     NSString *result = [GZHTML tableWithHeaders:headers rows:rows emptyMessage:@"No data"];
     XCTAssertEqualObjects(result,
-                         @"<table class=\"table\"><thead><tr><th>Name</th><th>Handle</th></tr></thead>"
+                         @"<div class=\"table-scroll\"><table class=\"table\"><thead><tr><th>Name</th><th>Handle</th></tr></thead>"
                          @"<tbody><tr><td>Alice</td><td>@alice</td></tr>"
                          @"<tr><td>Bob</td><td>@bob</td></tr>"
-                         @"</tbody></table>");
+                         @"</tbody></table></div>");
 }
 
 - (void)testTableWithEmptyRowsShowsEmptyMessage {
     NSArray *headers = @[@"A", @"B"];
     NSString *result = [GZHTML tableWithHeaders:headers rows:nil emptyMessage:@"Nothing here"];
     XCTAssertEqualObjects(result,
-                         @"<table class=\"table\"><thead><tr><th>A</th><th>B</th></tr></thead>"
+                         @"<div class=\"table-scroll\"><table class=\"table\"><thead><tr><th>A</th><th>B</th></tr></thead>"
                          @"<tbody><tr><td colspan=\"2\" class=\"text-center text-secondary p-lg\">"
-                         @"Nothing here</td></tr></tbody></table>");
+                         @"Nothing here</td></tr></tbody></table></div>");
 }
 
 - (void)testTableEscapesHeadersAndCells {
@@ -195,9 +195,9 @@
     NSArray *htmlRows = @[@"<tr><td>did:plc:abc</td></tr>"];
     NSString *result = [GZHTML tableWithHeaders:headers htmlRows:htmlRows emptyMessage:@"No entries"];
     XCTAssertEqualObjects(result,
-                         @"<table class=\"table\"><thead><tr><th>DID</th></tr></thead>"
+                         @"<div class=\"table-scroll\"><table class=\"table\"><thead><tr><th>DID</th></tr></thead>"
                          @"<tbody><tr><td>did:plc:abc</td></tr>"
-                         @"</tbody></table>");
+                         @"</tbody></table></div>");
 }
 
 - (void)testTableWithHtmlRowsEmptyShowsEmptyMessage {
