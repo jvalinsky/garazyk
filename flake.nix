@@ -106,6 +106,41 @@
             };
           };
 
+          beskid = pkgs.clangStdenv.mkDerivation {
+            pname = "beskid";
+            version = "1.0.0";
+
+            src = zukSource;
+
+            nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+            buildInputs = [ gnustepPrefix ] ++ runtimeLibs;
+
+            preConfigure = ''
+              export GNUSTEP_PREFIX="${gnustepPrefix}"
+            '';
+
+            cmakeFlags = [
+              "-DCMAKE_BUILD_TYPE=Release"
+              "-DBUILD_TESTS=OFF"
+              "-DBUILD_FUZZERS=OFF"
+              "-DBUILD_SECP256K1=ON"
+            ];
+
+            buildPhase = ''
+              cmake --build . --target beskid --parallel 4
+            '';
+
+            installPhase = ''
+              install -Dm755 bin/beskid $out/bin/beskid
+            '';
+
+            meta = with lib; {
+              description = "Garazyk Beskid edge record and identity cache";
+              license = [ licenses.unlicense licenses.cc0 ];
+              platforms = platforms.linux;
+            };
+          };
+
           linuxShellHook =
             if isLinux then ''
               export GNUSTEP_PREFIX="${gnustepPrefix}"
@@ -132,7 +167,7 @@
         in
         {
           packages = lib.optionalAttrs isLinux {
-            inherit zuk;
+            inherit zuk beskid;
           };
 
           inherit formatter;
@@ -179,6 +214,7 @@
       nixosModules = {
         zuk = import ./nixos/modules/zuk.nix;
         campagnola = import ./nixos/modules/campagnola.nix;
+        beskid = import ./nixos/modules/beskid.nix;
         cloudflaredTunnel = import ./nixos/modules/cloudflared-tunnel.nix;
       };
     };
