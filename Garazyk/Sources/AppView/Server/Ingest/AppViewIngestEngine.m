@@ -8,6 +8,7 @@
 
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 
+#import <CoreFoundation/CoreFoundation.h>
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/AppViewTypes.h"
 #import "Core/NSDateFormatter+ATProto.h"
