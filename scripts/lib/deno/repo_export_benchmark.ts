@@ -37,6 +37,7 @@ export interface ExportBenchmarkResult {
   bytes: number;
   generationAndTransferMs: number;
   contentType: string | null;
+  contentEncoding: string | null;
   resources: ExportResourceStats;
 }
 
@@ -296,8 +297,16 @@ export async function fetchRepoExport(
     pid?: number;
     dataDir?: string;
     sampleIntervalMs?: number;
+    /** Optional Accept-Encoding (e.g. "zstd"). Wire bytes may be compressed. */
+    acceptEncoding?: string;
   } = {},
-): Promise<{ bytes: Uint8Array; contentType: string | null; elapsedMs: number; resources: ExportResourceStats }> {
+): Promise<{
+  bytes: Uint8Array;
+  contentType: string | null;
+  contentEncoding: string | null;
+  elapsedMs: number;
+  resources: ExportResourceStats;
+}> {
   const sampler = new ProcessSampler();
   const diskBeforeKb = options.dataDir ? await duKb(options.dataDir) : 0;
   const extraSamples: ProcessSample[] = [];
@@ -309,8 +318,12 @@ export async function fetchRepoExport(
 
   const url = new URL("/xrpc/com.atproto.sync.getRepo", pdsUrl);
   url.searchParams.set("did", did);
+  const headers: Record<string, string> = { Accept: accept };
+  if (options.acceptEncoding) {
+    headers["Accept-Encoding"] = options.acceptEncoding;
+  }
   const start = performance.now();
-  const res = await fetch(url, { headers: { Accept: accept } });
+  const res = await fetch(url, { headers });
   const bytes = new Uint8Array(await res.arrayBuffer());
   const elapsedMs = performance.now() - start;
 
@@ -328,6 +341,7 @@ export async function fetchRepoExport(
   return {
     bytes,
     contentType: res.headers.get("content-type"),
+    contentEncoding: res.headers.get("content-encoding"),
     elapsedMs,
     resources: ProcessSampler.summarize(samples, diskBeforeKb, diskAfterKb),
   };

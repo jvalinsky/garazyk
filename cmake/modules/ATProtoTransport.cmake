@@ -20,6 +20,8 @@ set(ATPROTO_TRANSPORT_MANIFEST
   "Garazyk/Sources/Network/HttpRouteTrie.m"
   "Garazyk/Sources/Network/HttpServer.m"
   "Garazyk/Sources/Network/HttpStreamingBody.m"
+  "Garazyk/Sources/Network/GZHttpContentEncoding.m"
+  "Garazyk/Sources/Network/GZHttpStreamCompressor.m"
   "Garazyk/Sources/Network/RateLimiter.m"
   "Garazyk/Sources/Network/SSLPinningManager.m"
   "Garazyk/Sources/Network/SSRFValidator.m"

@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxslt1.1 \
     tzdata \
     zlib1g \
+    libzstd1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY staging/bin/kaszlak /usr/local/bin/kaszlak

@@ -14,6 +14,7 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/GZHttpContentEncoding.h"
 #import "Core/ATProtoValidator.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
@@ -107,7 +108,7 @@
 
         response.statusCode = HttpStatusOK;
         response.contentType = @"application/vnd.ipld.car";
-        [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+        GZHttpResponseSetExportBodyChunkProducer(response, producer, [request headerForKey:@"Accept-Encoding"]);
     }];
 
     // Register tools.garazyk.admin.getCollectionMembershipStats

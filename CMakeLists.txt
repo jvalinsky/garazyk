@@ -315,6 +315,31 @@ if(SQLite3_INCLUDE_DIRS)
     include_directories(${SQLite3_INCLUDE_DIRS})
 endif()
 
+# zstd + zlib for HTTP Content-Encoding on streaming repo exports (A9).
+find_package(ZLIB REQUIRED)
+if(NOT DEFINED ZSTD_ROOT)
+  foreach(_gz_zstd_prefix /opt/homebrew/opt/zstd /usr/local/opt/zstd)
+    if(EXISTS "${_gz_zstd_prefix}/include/zstd.h")
+      set(ZSTD_ROOT "${_gz_zstd_prefix}")
+      break()
+    endif()
+  endforeach()
+endif()
+find_path(ZSTD_INCLUDE_DIR
+  NAMES zstd.h
+  HINTS ${ZSTD_ROOT}/include
+  PATHS /usr/include /usr/local/include
+)
+find_library(ZSTD_LIBRARY
+  NAMES zstd
+  HINTS ${ZSTD_ROOT}/lib
+  PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu
+)
+if(NOT ZSTD_INCLUDE_DIR OR NOT ZSTD_LIBRARY)
+  message(FATAL_ERROR "libzstd is required for HTTP Content-Encoding (install zstd / libzstd-dev)")
+endif()
+message(STATUS "Found zstd: ${ZSTD_LIBRARY}")
+
 #=============================
 # secp256k1 Subproject
 #=============================
@@ -590,7 +615,8 @@ target_link_libraries(ATProtoServices PUBLIC ATProtoStorage ATProtoCore ${SECP25
 if(OpenSSL_FOUND)
   target_link_libraries(ATProtoServices PUBLIC OpenSSL::Crypto)
 endif()
-target_link_libraries(ATProtoTransport PUBLIC ATProtoCore)
+target_link_libraries(ATProtoTransport PUBLIC ATProtoCore ZLIB::ZLIB ${ZSTD_LIBRARY})
+target_include_directories(ATProtoTransport PUBLIC ${ZSTD_INCLUDE_DIR})
 target_link_libraries(ATProtoSync PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
 target_link_libraries(ATProtoRelayAdminUI PUBLIC ATProtoSync ATProtoAdminUI)
 target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoPLC ATProtoCore)

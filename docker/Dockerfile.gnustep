@@ -119,6 +119,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     pkg-config \
     zlib1g-dev \
+    libzstd-dev \
     autoconf \
     automake \
     libtool \
@@ -183,6 +184,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxslt1.1 \
     tzdata \
     zlib1g \
+    libzstd1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy GNUstep runtime libraries
