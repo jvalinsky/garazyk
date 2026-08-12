@@ -66,9 +66,27 @@
         [html appendFormat:@"<tr><td colspan=\"3\" class=\"text-destructive\">%@</td></tr>", message];
     } else {
         for (NSDictionary *entry in codes) {
+            if (![entry isKindOfClass:[NSDictionary class]]) {
+                continue;
+            }
             NSString *code = GZAdminUIEscaped(entry[@"code"] ?: @"");
-            NSString *available = GZAdminUIEscaped([entry[@"available"] stringValue] ?: @"0");
-            NSString *uses = GZAdminUIEscaped([entry[@"uses"] stringValue] ?: @"0");
+            // Lexicon: available is integer; uses is inviteCodeUse[].
+            id availableValue = entry[@"available"];
+            NSString *availableText = @"0";
+            if ([availableValue isKindOfClass:[NSNumber class]] ||
+                [availableValue isKindOfClass:[NSString class]]) {
+                availableText = [availableValue description];
+            }
+            id usesValue = entry[@"uses"];
+            NSString *usesText = @"0";
+            if ([usesValue isKindOfClass:[NSArray class]]) {
+                usesText = [NSString stringWithFormat:@"%lu", (unsigned long)[(NSArray *)usesValue count]];
+            } else if ([usesValue isKindOfClass:[NSNumber class]] ||
+                       [usesValue isKindOfClass:[NSString class]]) {
+                usesText = [usesValue description];
+            }
+            NSString *available = GZAdminUIEscaped(availableText);
+            NSString *uses = GZAdminUIEscaped(usesText);
             [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td>%@</td></tr>", code, available, uses];
         }
         if (codes.count == 0) {
@@ -110,7 +128,12 @@
         NSArray<NSDictionary *> *blobs = [result[@"blobs"] isKindOfClass:[NSArray class]] ? result[@"blobs"] : @[];
         for (NSDictionary *blob in blobs) {
             NSString *cid = GZAdminUIEscaped(blob[@"cid"] ?: @"");
-            NSString *size = GZAdminUIEscaped([blob[@"size"] stringValue] ?: @"0");
+            id sizeValue = blob[@"size"];
+            NSString *sizeText = @"0";
+            if ([sizeValue isKindOfClass:[NSNumber class]] || [sizeValue isKindOfClass:[NSString class]]) {
+                sizeText = [sizeValue description];
+            }
+            NSString *size = GZAdminUIEscaped(sizeText);
             NSString *type = GZAdminUIEscaped(blob[@"mimeType"] ?: @"");
             [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td>%@</td></tr>", cid, size, type];
         }

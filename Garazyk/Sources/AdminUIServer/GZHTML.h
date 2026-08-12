@@ -355,6 +355,16 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSString *)buttonRowWithButtons:(NSArray<NSString *> *)buttons;
 
 /**
+ * @abstract Builds an interactive JSON viewer shell (tree + raw + copy).
+ * @discussion Emits escaped pretty JSON inside a raw &lt;pre&gt;. Client JS hydrates
+ * a collapsible tree from that text. Pass a JSON-serializable dictionary/array
+ * (or an already-serialized JSON string).
+ * @param value Dictionary, array, or JSON string. Nil becomes "{}".
+ * @return Viewer markup ready to insert into a partial.
+ */
++ (NSString *)jsonViewerWithValue:(nullable id)value;
+
+/**
  * @abstract Formats uptime seconds as `Nh Nm` for operator displays.
  */
 + (NSString *)formatUptime:(int64_t)seconds;

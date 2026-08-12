@@ -333,26 +333,11 @@ Lab).
 
 ### M4 status (2026-08-12)
 
-**In progress — Relay convergence.** `zuk` now owns `GZRelayAdminSnapshot` and
-`GZRelayAdminUIPack` under `Sync/Relay/AdminUI/`; its former inline dashboard,
-separate login routes, and dashboard mutations have been removed from the
-protocol listener. A password-configured relay starts `GZAdminUIHost` on a
-configurable `127.0.0.1:2594` listener with concurrency 8; missing credentials
-disable that listener. The NixOS module exposes `adminHost`, `adminPort`, and a
-systemd-credential password file without copying the secret to the Nix store.
-`garazyk-ui` composes the same Relay pack for M5 compatibility.
-
-Fresh focused evidence is recorded in the Relay brief. Do not start Beskid or
-Mikrus until Relay's remaining M4 acceptance gates are recorded as passed or a
-named governed blocker is recorded there.
-
-On **2026-08-12**, the mandatory full `AllTests --gated=run` passed (exit 0)
-after disk space was restored (~11 GB free). Browser and visual smokes
-re-passed 2026-08-12 (see Relay brief). NixOS module smoke and relay
-loopback/firehose-under-polling smoke also passed 2026-08-12 via
-`scripts/test/nixos_zuk_module_smoke.sh` and
-`scripts/test/relay_admin_loopback_smoke.ts`. Remaining M4 gate: GNUstep binary
-build (host volume was ~100% full again at smoke time — ~3.9 GB free).
+**In progress.** Relay embed evidence is recorded in the Relay brief. Other
+service briefs track their own slices; PDS listener embed for the six existing
+packs landed in `kaszlak` (password-gated `127.0.0.1:2590`) — see
+[PDS](service-admin-uis/pds.md). Remaining PDS M4 gates (overview snapshot
+hardening, NixOS examples, browser smoke) stay open there.
 
 | Binary | Execution brief |
 | --- | --- |

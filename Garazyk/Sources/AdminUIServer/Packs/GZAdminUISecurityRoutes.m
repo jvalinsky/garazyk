@@ -14,6 +14,31 @@
 - (void)registerSecurityRoutes {
     __weak typeof(self) weakSelf = self;
 
+    // Landing pane for shell dynamic tab /admin/partials/security
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/security" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        AUTH_GUARD(weakSelf, request, response);
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:
+         @"<section class=\"admin-section\">"
+         @"<h3 class=\"section-title\">Lookup</h3>"
+         @"<form class=\"d-flex gap-sm\" hx-get=\"/admin/partials/sessions\" hx-target=\"#security-sessions\">"
+         @"<label class=\"sr-only\" for=\"security-did\">DID</label>"
+         @"<input id=\"security-did\" class=\"form-input flex-1\" type=\"text\" name=\"did\" placeholder=\"did:plc:...\" required/>"
+         @"<button type=\"submit\" class=\"btn btn-primary btn-sm\">Sessions</button>"
+         @"</form>"
+         @"<form class=\"d-flex gap-sm mt-sm\" hx-get=\"/admin/partials/app-passwords\" hx-target=\"#security-app-passwords\">"
+         @"<label class=\"sr-only\" for=\"security-app-did\">DID</label>"
+         @"<input id=\"security-app-did\" class=\"form-input flex-1\" type=\"text\" name=\"did\" placeholder=\"did:plc:...\" required/>"
+         @"<button type=\"submit\" class=\"btn btn-secondary btn-sm\">App passwords</button>"
+         @"</form>"
+         @"</section>"
+         @"<section class=\"admin-section mt-lg\"><h3 class=\"section-title\">Sessions</h3>"
+         @"<div id=\"security-sessions\" class=\"text-secondary text-sm\">Enter a DID to list sessions.</div></section>"
+         @"<section class=\"admin-section mt-lg\"><h3 class=\"section-title\">App Passwords</h3>"
+         @"<div id=\"security-app-passwords\" class=\"text-secondary text-sm\">Enter a DID to list app passwords.</div></section>"];
+    }];
+
     // Security: Active sessions
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/sessions" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);

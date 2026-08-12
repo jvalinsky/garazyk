@@ -3,6 +3,8 @@
 #import <Foundation/Foundation.h>
 #import "AdminUIServer/GZAdminUIPack.h"
 
+@class GZAdminUIBackendClient;
+
 NS_ASSUME_NONNULL_BEGIN
 
 /** @abstract Admin UI pack for the Ozone surface. */
@@ -39,8 +41,11 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Renders Ozone hosting history, optionally scoped to a DID. */
 + (NSString *)renderOzoneHostingPartial:(NSDictionary *)result did:(nullable NSString *)did;
 
-/** @abstract Renders the Ozone overview dashboard with summary metrics and links to sub-panels. */
-+ (NSString *)renderOzoneOverviewHTML;
+/**
+ * @abstract Renders the Ozone overview with reports/events/statuses/config already filled.
+ * @discussion Nested HTMX placeholders were unreliable in the embedded shell; compose once.
+ */
++ (NSString *)renderOzoneOverviewHTMLWithBackend:(GZAdminUIBackendClient *)backend;
 
 @end
 

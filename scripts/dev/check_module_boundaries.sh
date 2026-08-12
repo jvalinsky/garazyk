@@ -124,7 +124,7 @@ allowed_links_for_module() {
     ATProtoPLC) echo "ATProtoStorage ATProtoAdminUI ATProtoTransport ATProtoCore" ;;
     ATProtoBeskid) echo "ATProtoAppViewServer ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoPLC ATProtoAdminUI ATProtoCore" ;;
     ATProtoMikrus) echo "ATProtoAppViewServer ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoCore ATProtoRuntime ATProtoAdminUI" ;;
-    ATProtoVideoService) echo "ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport" ;;
+    ATProtoVideoService) echo "ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport ATProtoAdminUI" ;;
     ATProtoRuntime) echo "ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService" ;;
     *) echo "" ;;
   esac
@@ -196,7 +196,7 @@ echo "==> Executable link surface checks"
 
 expected_links_for_executable() {
   case "$1" in
-    kaszlak) echo "ATProtoAppViewServer ATProtoRuntime ATProtoVideoService ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoStorage ATProtoPLC ATProtoCore" ;;
+    kaszlak) echo "ATProtoAppViewServer ATProtoRuntime ATProtoVideoService ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoStorage ATProtoPLC ATProtoAdminUI ATProtoCore" ;;
     campagnola) echo "ATProtoAppViewServer ATProtoPLC ATProtoAdminUI ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices" ;;
     zuk) echo "ATProtoAppViewServer ATProtoRelayAdminUI ATProtoSync ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices ATProtoStorage" ;;
     beskid) echo "ATProtoAppViewServer ATProtoRuntime ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoAdminUI ATProtoCore ATProtoBeskid" ;;

@@ -60,7 +60,8 @@
         dispatch_group_enter(group);
         dispatch_async(queue, ^{
             NSString *name = spec[@"name"];
-            NSURL *baseURL = spec[@"baseURL"];
+            id baseURLValue = spec[@"baseURL"];
+            NSURL *baseURL = [baseURLValue isKindOfClass:[NSURL class]] ? baseURLValue : nil;
             id xrpcPath = spec[@"xrpcPath"];
             id tokenValue = spec[@"token"];
             NSString *token = [tokenValue isKindOfClass:[NSNull class]] ? nil : tokenValue;

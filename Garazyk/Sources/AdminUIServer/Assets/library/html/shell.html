@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>{{shellTitle}}</title>
-    <link rel="stylesheet" href="/css/system.css">
+    <link rel="stylesheet" href="/css/system.css?v=json-mst-2">
     <meta name="csrf-nonce" content="{{csrfNonce}}">
     <script nonce="{{nonce}}" src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
 </head>
@@ -34,6 +34,7 @@
                     <button class="admin-sidebar-tab ui-tab{{activeClass}}" data-tab="{{tabIdentifier}}" data-ui-action="switch-tab" role="tab" id="tabbtn-{{tabIdentifier}}" aria-controls="tab-{{tabIdentifier}}" aria-selected="{{ariaSelected}}" tabindex="{{tabIndex}}">{{displayName}}</button>
                     {{/tabs}}
                 </nav>
+                {{#showPeerSwitcher}}
                 <section class="admin-peer-switcher" aria-labelledby="peer-switcher-title">
                     <h2 id="peer-switcher-title" class="admin-peer-switcher-title">Peer UIs</h2>
                     {{#peerLinks}}
@@ -43,11 +44,13 @@
                     <p class="text-secondary text-sm">No peer UIs configured.</p>
                     {{/peerLinks}}
                 </section>
+                {{/showPeerSwitcher}}
             </aside>
             {{/isSingleSurface}}
             <main class="admin-content">
-            <!-- Legacy multi-service panes (garazyk-ui only) -->
+            <!-- Legacy multi-service panes (garazyk-ui only); omitted when the composed tabs lack that service. -->
             <!-- PDS tab -->
+            {{#includePDSPanel}}
             <div id="tab-pds" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-pds" tabindex="0" {{^activePDS}}hidden{{/activePDS}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Accounts</h2>
@@ -57,11 +60,11 @@
                             <button type="submit" class="btn btn-primary btn-sm">Search</button>
                         </form>
                     </div>
-                    <div id="accounts" hx-get="/admin/partials/accounts" hx-trigger="revealed"></div>
+                    <div id="accounts" hx-get="/admin/partials/accounts" hx-trigger="none"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Invite Codes</h2>
-                    <div id="invites" hx-get="/admin/partials/invites" hx-trigger="revealed"></div>
+                    <div id="invites" hx-get="/admin/partials/invites" hx-trigger="none"></div>
                     <div class="action-row">
                         <input id="disable-account" type="text" placeholder="DID to disable invites" class="form-input flex-1"/>
                         <button class="btn btn-destructive btn-sm" data-ui-action="disable-invites">Disable Invites</button>
@@ -74,43 +77,49 @@
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Server Stats</h2>
-                    <div id="pds-stats" hx-get="/admin/partials/pds-stats" hx-trigger="revealed, every 30s"></div>
+                    <div id="pds-stats" hx-get="/admin/partials/pds-stats" hx-trigger="none" data-ui-poll-seconds="30"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Audit Log</h2>
-                    <div id="audit-log-content" hx-get="/admin/partials/audit-log" hx-trigger="revealed"></div>
+                    <div id="audit-log-content" hx-get="/admin/partials/audit-log" hx-trigger="none"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Blobs</h2>
-                    <div id="blobs-content" hx-get="/admin/partials/blobs" hx-trigger="revealed"></div>
+                    <div id="blobs-content" hx-get="/admin/partials/blobs" hx-trigger="none"></div>
                 </section>
             </div>
+            {{/includePDSPanel}}
 
             <!-- AppView tab -->
+            {{#includeAppViewPanel}}
             <div id="tab-appview" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-appview" tabindex="0" {{^activeAppView}}hidden{{/activeAppView}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">AppView Metrics</h2>
-                    <div id="appview-metrics" class="admin-partial" hx-get="/admin/partials/appview-metrics" hx-trigger="revealed, every 10s"></div>
+                    <div id="appview-metrics" class="admin-partial" hx-get="/admin/partials/appview-metrics" hx-trigger="none"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Ingest Health</h2>
-                    <div id="ingest-health" class="admin-partial" hx-get="/admin/partials/ingest-health" hx-trigger="revealed, every 10s"></div>
+                    <div id="ingest-health" class="admin-partial" hx-get="/admin/partials/ingest-health" hx-trigger="none"></div>
                 </section>
             </div>
+            {{/includeAppViewPanel}}
 
             <!-- Relay tab -->
+            {{#includeRelayPanel}}
             <div id="tab-relay" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-relay" tabindex="0" {{^activeRelay}}hidden{{/activeRelay}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Overview</h2>
-                    <div id="relay-metrics" hx-get="/admin/partials/relay-metrics" hx-trigger="revealed, every 10s"></div>
+                    <div id="relay-metrics" hx-get="/admin/partials/relay-metrics" hx-trigger="none"></div>
                 </section>
             </div>
+            {{/includeRelayPanel}}
 
             <!-- PLC tab -->
+            {{#includePLCPanel}}
             <div id="tab-plc" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-plc" tabindex="0" {{^activePLC}}hidden{{/activePLC}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Overview</h2>
-                    <div id="plc-metrics" hx-get="/admin/partials/plc-metrics" hx-trigger="revealed, every 30s"></div>
+                    <div id="plc-metrics" hx-get="/admin/partials/plc-metrics" hx-trigger="none"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Resolve DID</h2>
@@ -124,11 +133,12 @@
                     <div id="plc-resolve-result"></div>
                 </section>
             </div>
+            {{/includePLCPanel}}
             {{#dynamicPanes}}
             <div id="tab-{{tabIdentifier}}" class="tab-pane" role="tabpanel" aria-labelledby="{{ariaLabelledby}}" tabindex="{{tabIndex}}" {{hidden}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">{{displayName}}</h2>
-                    <div id="{{tabIdentifier}}-content" class="admin-partial" hx-get="/admin/partials/{{tabIdentifier}}" hx-trigger="load, revealed, every 10s"></div>
+                    <div id="{{tabIdentifier}}-content" class="admin-partial" hx-get="/admin/partials/{{tabIdentifier}}" hx-trigger="none"></div>
                 </section>
             </div>
             {{/dynamicPanes}}
@@ -136,6 +146,6 @@
         </div>
     </div>
     
-    <script type="module" src="/js/admin-ui.js"></script>
+    <script type="module" src="/js/admin-ui.js?v=json-mst-2"></script>
 </body>
 </html>

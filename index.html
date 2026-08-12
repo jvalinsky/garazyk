@@ -3,164 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Garazyk PDS Status</title>
-    <link rel="stylesheet" href="https://unpkg.com/@sakun/system.css" />
+    <title>{{server_hostname}} — Garazyk PDS</title>
     <style>
+        :root {
+            --color-bg-primary: oklch(96% 0.003 200);
+            --color-bg-secondary: oklch(99% 0.003 200);
+            --color-bg-tertiary: oklch(93% 0.005 200);
+            --color-text-primary: oklch(13% 0.005 200);
+            --color-text-secondary: oklch(45% 0.005 200);
+            --color-text-tertiary: oklch(60% 0.003 200);
+            --color-strawberry: oklch(65% 0.22 25);
+            --color-accent: oklch(52% 0.18 255);
+            --color-on-accent: white;
+            --color-success: oklch(60% 0.18 145);
+            --separator-color: oklch(85% 0.003 200);
+            --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                           "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-size-xs: 11px;
+            --font-size-sm: 12px;
+            --font-size-md: 15px;
+            --font-size-lg: 19px;
+            --font-size-xl: 24px;
+            --line-height-tight: 1.2;
+            --line-height-normal: 1.5;
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+            --space-2xl: 32px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --shadow-md: 0 2px 8px oklch(0% 0 0 / 0.12);
+            --transition-normal: 150ms ease;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            background-color: #AAAAAA; /* Classic Mac desktop gray */
-            background-image: url('data:image/svg+xml;utf8,<svg width="2" height="2" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" fill="%23000"/><rect width="1" height="1" x="1" y="1" fill="%23000"/></svg>');
-            background-repeat: repeat;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-            font-family: 'Chicago', sans-serif;
+            font-family: var(--font-system);
+            font-size: var(--font-size-md);
+            line-height: var(--line-height-normal);
+            color: var(--color-text-primary);
+            background:
+                radial-gradient(ellipse 80% 50% at 50% 0%,
+                    color-mix(in srgb, var(--color-strawberry) 8%, transparent),
+                    transparent 70%),
+                var(--color-bg-primary);
+            min-height: 100vh;
         }
 
-        .desktop-container {
+        a { color: var(--color-accent); }
+
+        .public-shell {
             display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
             justify-content: center;
+            padding: var(--space-2xl) var(--space-xl);
+            min-height: 100vh;
+        }
+
+        .public-panel {
             width: 100%;
-            max-width: 1000px;
+            max-width: 720px;
+            padding: var(--space-2xl);
+            border: 1px solid var(--separator-color);
+            border-radius: var(--radius-lg);
+            background: var(--color-bg-secondary);
+            box-shadow: var(--shadow-md);
+            align-self: flex-start;
+            margin-top: var(--space-xl);
         }
 
-        .window {
-            flex: 1;
-            min-width: 300px;
-            background: white;
-            box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+        .public-kicker {
+            margin: 0 0 var(--space-xs);
+            color: var(--color-strawberry);
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
         }
 
-        /* Menu bar at the top of the screen */
-        .system-menu-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-bottom: 2px solid black;
-            padding: 2px 10px;
-            display: flex;
-            gap: 15px;
-            font-size: 14px;
-            z-index: 10;
+        .public-panel h1 {
+            margin: 0 0 var(--space-sm);
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            line-height: var(--line-height-tight);
         }
 
-        .system-menu-bar-item {
-            cursor: default;
+        .public-subtitle {
+            margin: 0 0 var(--space-xl);
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
         }
 
-        .system-menu-bar-item:hover {
-            background: black;
-            color: white;
+        .metric-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
         }
 
-        ul.tree-view {
+        .metric {
+            padding: var(--space-lg);
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--separator-color);
+            border-radius: var(--radius-md);
+        }
+
+        .metric-label {
+            display: block;
+            margin-bottom: var(--space-xs);
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .metric-value {
+            color: var(--color-text-primary);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+        }
+
+        .status-online {
+            color: var(--color-success);
+        }
+
+        .section-title {
+            margin: 0 0 var(--space-md);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+        }
+
+        .section-note {
+            margin: 0 0 var(--space-md);
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .account-list {
+            list-style: none;
             margin: 0;
-            padding-left: 20px;
+            padding: 0;
+            border: 1px solid var(--separator-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background: color-mix(in srgb, var(--color-bg-secondary) 80%, transparent);
+            max-height: 280px;
+            overflow-y: auto;
         }
 
-        ul.tree-view li {
-            margin-bottom: 5px;
+        .account-list li {
+            padding: var(--space-md) var(--space-lg);
+            border-bottom: 1px solid var(--separator-color);
         }
 
-        .disk-icon {
-            display: inline-block;
-            width: 32px;
-            height: 32px;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="none" stroke="black" stroke-width="2" d="M4,4 L28,4 L28,28 L4,28 Z"/><path fill="black" d="M10,4 L22,4 L22,12 L10,12 Z"/><rect fill="none" stroke="black" x="8" y="18" width="16" height="10"/></svg>');
-            margin-right: 10px;
-            vertical-align: middle;
+        .account-list li:last-child { border-bottom: none; }
+
+        .account-list summary {
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .account-list ul {
+            margin: var(--space-sm) 0 0;
+            padding-left: var(--space-lg);
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: var(--font-size-xs);
+            word-break: break-all;
+        }
+
+        .muted {
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-top: var(--space-xl);
+        }
+
+        .btn {
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all var(--transition-normal);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            text-decoration: none;
+            min-height: 28px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: var(--color-on-accent);
+        }
+
+        .btn-primary:hover {
+            background: oklch(48% 0.18 255);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--separator-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--separator-color);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-bg-primary: oklch(15% 0.006 15);
+                --color-bg-secondary: oklch(22% 0.01 15);
+                --color-bg-tertiary: oklch(28% 0.012 15);
+                --color-text-primary: oklch(96% 0.003 200);
+                --color-text-secondary: oklch(70% 0.005 200);
+                --color-text-tertiary: oklch(55% 0.004 200);
+                --separator-color: oklch(35% 0.008 15);
+                --shadow-md: 0 2px 8px oklch(0% 0 0 / 0.4);
+            }
         }
     </style>
 </head>
 <body>
+    <div class="public-shell">
+        <main class="public-panel" aria-labelledby="pds-title">
+            <header>
+                <p class="public-kicker">Garazyk PDS</p>
+                <h1 id="pds-title">{{server_hostname}}</h1>
+                <p class="public-subtitle">Public Personal Data Server status — no sign-in required.</p>
+            </header>
 
-    <!-- Classic Mac Menu Bar -->
-    <div class="system-menu-bar">
-        <div class="system-menu-bar-item" style="font-weight: bold;"></div>
-        <div class="system-menu-bar-item">File</div>
-        <div class="system-menu-bar-item">Edit</div>
-        <div class="system-menu-bar-item">View</div>
-        <div class="system-menu-bar-item">Special</div>
+            <div class="metric-row" role="group" aria-label="Server status">
+                <div class="metric">
+                    <span class="metric-label">Status</span>
+                    <span class="metric-value status-online">Online</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Uptime</span>
+                    <span class="metric-value">{{server_uptime}}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Accounts</span>
+                    <span class="metric-value">{{account_count}}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Host memory</span>
+                    <span class="metric-value">{{memory_total}}</span>
+                </div>
+            </div>
+
+            <section aria-labelledby="accounts-heading">
+                <h2 id="accounts-heading" class="section-title">Accounts on this PDS</h2>
+                <p class="section-note">Handles hosted here. Follow and read posts with any AT Protocol client pointed at this PDS.</p>
+                <ul class="account-list">
+                    <!-- {{#each accounts}} -->
+                    <!-- {{/each}} -->
+                </ul>
+            </section>
+
+            <div class="cta-row">
+                <a class="btn btn-primary" href="{{admin_ui_url}}">Sign in to admin panel</a>
+                <a class="btn btn-secondary" href="/xrpc/_health">Health</a>
+                <a class="btn btn-secondary" href="/xrpc/com.atproto.server.describeServer">Describe server</a>
+            </div>
+        </main>
     </div>
-
-    <div class="desktop-container">
-        
-        <!-- Server Info Window -->
-        <div class="window">
-            <div class="title-bar">
-                <button aria-label="Close" class="close"></button>
-                <h1 class="title">Garazyk PDS Control Panel</h1>
-                <button aria-label="Resize" class="resize"></button>
-            </div>
-            <div class="separator"></div>
-            <div class="window-pane">
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <div class="disk-icon"></div>
-                    <h2>Server Info</h2>
-                </div>
-                
-                <p><strong>Hostname:</strong> {{server_hostname}}</p>
-                <p><strong>Version:</strong> System 1.0.0 (Kaszlak)</p>
-                <p><strong>Uptime:</strong> {{server_uptime}}</p>
-                <p><strong>Status:</strong> <span style="color: green; font-weight: bold;">● Online</span></p>
-
-                <fieldset>
-                    <legend>Memory Usage</legend>
-                    <div class="standard-dialog">
-                        <p>Total Memory: {{memory_total}}</p>
-                        <p>Used: {{memory_used}}</p>
-                        <p>Free: {{memory_free}}</p>
-                    </div>
-                </fieldset>
-
-                <div style="margin-top: 15px; text-align: center;">
-                    <button class="btn">Diagnostics</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Accounts Window -->
-        <div class="window">
-            <div class="title-bar">
-                <button aria-label="Close" class="close"></button>
-                <h1 class="title">Active Accounts</h1>
-                <button aria-label="Resize" class="resize"></button>
-            </div>
-            <div class="separator"></div>
-            <div class="window-pane">
-                <p>Total Registered Accounts: <strong>{{account_count}}</strong></p>
-                
-                <div class="standard-dialog" style="height: 200px; overflow-y: scroll; background: white; padding: 10px;">
-                    <ul class="tree-view">
-                        <!-- {{#each accounts}} -->
-                        <li>
-                            <details open>
-                                <summary><strong>{{this.handle}}</strong></summary>
-                                <ul>
-                                    <li>DID: {{this.did}}</li>
-                                    <li>Created: {{this.createdAt}}</li>
-                                    <li>Status: Active</li>
-                                </ul>
-                            </details>
-                        </li>
-                        <!-- {{/each}} -->
-                    </ul>
-                </div>
-                
-                <div style="margin-top: 15px;">
-                    <button class="btn" disabled>Add New User...</button>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
 </body>
 </html>

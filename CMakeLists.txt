@@ -645,6 +645,7 @@ endforeach()
 # CLI Tool (kaszlak - PDS binary)
 add_executable(kaszlak
   Garazyk/Sources/CLI/main.m
+  Garazyk/Binaries/kaszlak/PDSAdminUIBootstrap.m
 )
 
 target_include_directories(kaszlak PRIVATE
@@ -664,6 +665,7 @@ if(APPLE)
     ATProtoSync
     ATProtoStorage
     ATProtoPLC
+    ATProtoAdminUI
     ATProtoCore
     # GNU ld resolves static archives in a single pass; keep a second pass for
     # cyclic refs between runtime/transport/plc objects.
@@ -685,6 +687,7 @@ else()
     ATProtoSync
     ATProtoStorage
     ATProtoPLC
+    ATProtoAdminUI
     ATProtoCore
     -Wl,--no-whole-archive
     ${PLATFORM_LIBRARIES}
@@ -1302,6 +1305,7 @@ add_admin_ui_assets(garazyk-ui)
 add_admin_ui_assets(campagnola)
 add_admin_ui_assets(zuk)
 add_admin_ui_assets(jelcz)
+add_admin_ui_assets(kaszlak)
 
 # Tutorial examples are optional; local/dev checkouts may omit examples/.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/tutorial-1-hello-pds/src/main.m")

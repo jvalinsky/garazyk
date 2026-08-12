@@ -6,6 +6,9 @@
 {{#events}}
 <tr><td>{{event}}</td><td class="text-mono text-sm">{{subject_did}}</td><td class="text-mono text-sm">{{createdBy}}</td><td class="text-sm">{{createdAt}}</td></tr>
 {{/events}}
+{{^events}}
+<tr><td colspan="4" class="text-center text-secondary p-lg">No moderation events found.</td></tr>
+{{/events}}
 </tbody></table>
 {{#cursor}}
 <div class="mt-sm"><button class="btn btn-secondary btn-sm" hx-get="/admin/partials/ozone-events?cursor={{cursor}}" hx-target="#ozone-events">Load more</button></div>

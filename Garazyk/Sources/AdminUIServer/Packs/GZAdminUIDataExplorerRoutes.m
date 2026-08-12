@@ -14,6 +14,35 @@
 - (void)registerDataExplorerRoutes {
     __weak typeof(self) weakSelf = self;
 
+    // Landing pane for shell dynamic tab /admin/partials/explorer
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/explorer" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        AUTH_GUARD(weakSelf, request, response);
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:
+         @"<section class=\"admin-section\">"
+         @"<h3 class=\"section-title\">Describe Repository</h3>"
+         @"<form class=\"d-flex gap-sm\" hx-get=\"/admin/partials/describe-repo\" hx-target=\"#explorer-describe\">"
+         @"<label class=\"sr-only\" for=\"explorer-did\">DID or handle</label>"
+         @"<input id=\"explorer-did\" class=\"form-input flex-1\" type=\"text\" name=\"did\" "
+         @"placeholder=\"did:plc:... or handle\" spellcheck=\"false\" autocomplete=\"off\" required/>"
+         @"<button type=\"submit\" class=\"btn btn-primary btn-sm\">Describe</button>"
+         @"</form>"
+         @"<div id=\"explorer-describe\" class=\"mt-sm text-secondary text-sm\">Enter a DID or handle.</div>"
+         @"</section>"
+         @"<section class=\"admin-section mt-lg\">"
+         @"<h3 class=\"section-title\">List Records</h3>"
+         @"<form class=\"d-flex gap-sm flex-wrap\" hx-get=\"/admin/partials/list-records\" hx-target=\"#explorer-records\">"
+         @"<input class=\"form-input flex-1\" type=\"text\" name=\"did\" placeholder=\"did:plc:...\" "
+         @"spellcheck=\"false\" autocomplete=\"off\" required/>"
+         @"<input class=\"form-input flex-1\" type=\"text\" name=\"collection\" placeholder=\"collection (optional)\" "
+         @"spellcheck=\"false\" autocomplete=\"off\"/>"
+         @"<button type=\"submit\" class=\"btn btn-secondary btn-sm\">List</button>"
+         @"</form>"
+         @"<div id=\"explorer-records\" class=\"mt-sm\"></div>"
+         @"</section>"];
+    }];
+
     // Explorer: Describe repo
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/describe-repo" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);

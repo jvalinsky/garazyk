@@ -34,8 +34,20 @@ NSString *GZAdminUIDetailRow(NSString *label, NSString *valueHTML) {
     return [GZHTML detailRowWithLabel:label valueHTML:valueHTML];
 }
 
+NSString *GZAdminUIJSONViewer(id value) {
+    return [GZHTML jsonViewerWithValue:value];
+}
+
 NSString *GZAdminUIMonoValue(id value) {
     return [GZHTML monoValue:value];
+}
+
+static BOOL GZAdminUIRequestIsSecure(ATProtoHttpRequest *request) {
+    NSString *forwarded = [request headerForKey:@"X-Forwarded-Proto"];
+    if ([[forwarded lowercaseString] isEqualToString:@"https"]) {
+        return YES;
+    }
+    return NO;
 }
 
 NSString *GZAdminUIDetailCardOpen(void) { return [GZHTML detailCardOpening]; }
@@ -115,16 +127,27 @@ static NSString *GZAdminUIHxTriggerForRefreshSeconds(id refreshSeconds) {
         }
         return [NSString stringWithFormat:@"revealed, every %lds", (long)seconds];
     }
-    return @"revealed, every 10s";
+    // Interactive panes (forms, DID inputs) must not auto-reload — that wipes
+    // in-progress operator input. Packs that want polling set refreshSeconds.
+    return @"revealed";
 }
 
-static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArray<Class> *packs) {
+static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArray<Class> *packs,
+                                                                            NSString * _Nullable serviceIdentifier) {
     NSMutableArray<NSDictionary<NSString *, NSString *> *> *tabs = [NSMutableArray array];
+    // Service-scoped embeds (ADR 0033) drop fleet Overview/Connections from the
+    // shared PDS pack; those panels belong to the compatibility host only.
+    BOOL omitFleetTabs = serviceIdentifier.length > 0;
     for (Class<GZAdminUIPack> packClass in packs) {
         for (NSDictionary<NSString *, id> *section in [packClass sidebarSections]) {
             NSString *identifier = section[@"tabIdentifier"];
             NSString *displayName = section[@"displayName"];
             if (identifier.length == 0 || displayName.length == 0) {
+                continue;
+            }
+            if (omitFleetTabs &&
+                ([identifier isEqualToString:@"overview"] ||
+                 [identifier isEqualToString:@"connections"])) {
                 continue;
             }
             [tabs addObject:@{
@@ -143,7 +166,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         renderedTab[@"ariaSelected"] = active ? @"true" : @"false";
         renderedTab[@"tabIndex"] = active ? @"0" : @"-1";
         if (renderedTab[@"hxTrigger"].length == 0) {
-            renderedTab[@"hxTrigger"] = @"revealed, every 10s";
+            renderedTab[@"hxTrigger"] = @"revealed";
         }
         [renderedTabs addObject:[renderedTab copy]];
     }];
@@ -264,7 +287,8 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     [self.httpServer addRoute:@"GET" path:@"/admin/login" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *nonce = GZAdminUIGenerateNonce();
         NSString *csrfNonce, *csrfCookie;
-        [weakSelf.authManager createCSRFNonce:&csrfNonce cookie:&csrfCookie secure:NO];
+        BOOL secure = GZAdminUIRequestIsSecure(request);
+        [weakSelf.authManager createCSRFNonce:&csrfNonce cookie:&csrfCookie secure:secure];
         [response setHeader:csrfCookie forKey:@"Set-Cookie"];
         GZAdminUIApplyNonceCSP(response, nonce, nil);
         response.statusCode = 200;
@@ -273,20 +297,33 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/login" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        BOOL secure = GZAdminUIRequestIsSecure(request);
+        // Always mint a fresh CSRF nonce for the next attempt. validateCSRF
+        // consumes the presented nonce even when the password is wrong, so
+        // retries on the same page would otherwise 403 and the browser UI
+        // mislabels that as "Invalid credentials".
+        void (^rotateCSRF)(void) = ^{
+            NSString *nextNonce, *nextCookie;
+            [weakSelf.authManager createCSRFNonce:&nextNonce cookie:&nextCookie secure:secure];
+            [response setHeader:nextCookie forKey:@"Set-Cookie"];
+            [response setHeader:nextNonce forKey:@"X-UI-Admin-Nonce"];
+        };
+
         if (![weakSelf.authManager validateCSRFForRequest:request]) {
+            rotateCSRF();
             response.statusCode = 403;
             [response setJsonBody:@{@"ok": @NO, @"error": @"invalid_csrf_token"}];
             return;
         }
         NSString *password = request.jsonBody[@"password"];
         if (![weakSelf.authManager validatePassword:password]) {
+            rotateCSRF();
             response.statusCode = 401;
             [response setJsonBody:@{@"ok": @NO, @"error": @"invalid_credentials"}];
             return;
         }
         NSString *token = [weakSelf.authManager createSessionToken];
-        // Use secure cookie helper — omit Secure flag for HTTP localhost
-        NSString *cookie = [weakSelf.authManager cookieHeaderValueForToken:token secure:NO];
+        NSString *cookie = [weakSelf.authManager cookieHeaderValueForToken:token secure:secure];
         [response setHeader:cookie forKey:@"Set-Cookie"];
         response.statusCode = 200;
         [response setJsonBody:@{@"ok": @YES}];
@@ -296,10 +333,12 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         AUTH_GUARD(weakSelf, request, response);
         NSString *token = [weakSelf.authManager extractTokenFromRequest:request];
         [weakSelf.authManager invalidateSessionToken:token];
-        [response setHeader:[NSString stringWithFormat:
-                                @"%@=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict",
-                                weakSelf.authManager.sessionCookieName]
-                     forKey:@"Set-Cookie"];
+        BOOL secure = GZAdminUIRequestIsSecure(request);
+        NSString *clear = [NSString stringWithFormat:
+                                @"%@=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict%@",
+                                weakSelf.authManager.sessionCookieName,
+                                secure ? @"; Secure" : @""];
+        [response setHeader:clear forKey:@"Set-Cookie"];
         response.statusCode = 200;
         [response setJsonBody:@{@"ok": @YES}];
     }];
@@ -308,7 +347,8 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         AUTH_GUARD(weakSelf, request, response);
         NSString *nonce = GZAdminUIGenerateNonce();
         NSString *csrfNonce, *csrfCookie;
-        [weakSelf.authManager createCSRFNonce:&csrfNonce cookie:&csrfCookie secure:NO];
+        BOOL secure = GZAdminUIRequestIsSecure(request);
+        [weakSelf.authManager createCSRFNonce:&csrfNonce cookie:&csrfCookie secure:secure];
         [response setHeader:csrfCookie forKey:@"Set-Cookie"];
         GZAdminUIApplyNonceCSP(response, nonce, [weakSelf.configuration.pdsBaseURL absoluteString]);
         response.statusCode = 200;
@@ -350,7 +390,8 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     // CSRF nonces are one-time values. Rotate after every accepted mutation so
     // the external browser module can safely send the next request.
     NSString *nextNonce, *nextNonceCookie;
-    [self.authManager createCSRFNonce:&nextNonce cookie:&nextNonceCookie secure:NO];
+    BOOL secure = GZAdminUIRequestIsSecure(request);
+    [self.authManager createCSRFNonce:&nextNonce cookie:&nextNonceCookie secure:secure];
     [response setHeader:nextNonceCookie forKey:@"Set-Cookie"];
     [response setHeader:nextNonce forKey:@"X-UI-Admin-Nonce"];
     return YES;
@@ -358,14 +399,14 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
 
 - (NSString *)loginPageHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
     NSString *serviceDisplayName = @"Admin";
-    if (self.packs.count == 1) {
+    if (self.configuration.serviceIdentifier.length > 0) {
+        serviceDisplayName = [self.configuration.serviceIdentifier uppercaseString];
+    } else if (self.packs.count == 1) {
         Class<GZAdminUIPack> packClass = self.packs.firstObject;
         NSString *displayName = [packClass displayName];
         if (displayName.length > 0) {
             serviceDisplayName = displayName;
         }
-    } else if (self.configuration.serviceIdentifier.length > 0) {
-        serviceDisplayName = self.configuration.serviceIdentifier;
     }
     return [GZAdminUITemplateEngine renderTemplate:@"login" context:@{
         @"nonce": nonce ?: @"",
@@ -375,13 +416,16 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
 }
 
 - (NSString *)adminShellHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
-    NSArray<NSDictionary<NSString *, NSString *> *> *tabs = GZAdminUIShellTabs(self.packs);
-    NSString *activeTabIdentifier = tabs.firstObject[@"tabIdentifier"] ?: @"overview";
-    // One pack = one service surface: sidebar sections + service title.
-    // Tab count is not the signal — Mikrus alone has three sections.
-    BOOL isSingleSurface = self.packs.count == 1;
+    NSString *serviceIdentifier = self.configuration.serviceIdentifier;
+    NSArray<NSDictionary<NSString *, NSString *> *> *tabs =
+        GZAdminUIShellTabs(self.packs, serviceIdentifier);
+    NSString *activeTabIdentifier = tabs.firstObject[@"tabIdentifier"] ?: @"pds";
+    // One pack OR a service-scoped embed = single service surface.
+    BOOL isSingleSurface = self.packs.count == 1 || serviceIdentifier.length > 0;
     NSString *shellTitle = @"Garazyk UI Service";
-    if (isSingleSurface) {
+    if (serviceIdentifier.length > 0) {
+        shellTitle = [serviceIdentifier uppercaseString];
+    } else if (isSingleSurface) {
         Class<GZAdminUIPack> packClass = self.packs.firstObject;
         NSString *displayName = [packClass displayName];
         if (displayName.length > 0) {
@@ -394,6 +438,13 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     NSSet<NSString *> *knownPanels = [NSSet setWithArray:@[
         @"pds", @"appview", @"relay", @"plc"
     ]];
+    NSMutableSet<NSString *> *tabIdentifiers = [NSMutableSet set];
+    for (NSDictionary<NSString *, NSString *> *tab in tabs) {
+        NSString *identifier = tab[@"tabIdentifier"];
+        if (identifier.length > 0) {
+            [tabIdentifiers addObject:identifier];
+        }
+    }
 
     // Dynamic panes: tabs whose identifiers don't match a known hardcoded pane.
     // Embedded service packs (Mikrus, Beskid) use tabIdentifiers like "mikrus",
@@ -410,7 +461,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
                 @"hidden": active ? @"" : @"hidden",
                 @"ariaLabelledby": [NSString stringWithFormat:@"tabbtn-%@", identifier],
                 @"tabIndex": active ? @"0" : @"-1",
-                @"hxTrigger": tab[@"hxTrigger"] ?: @"revealed, every 10s",
+                @"hxTrigger": tab[@"hxTrigger"] ?: @"revealed",
             }];
         }
     }
@@ -427,6 +478,11 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         @"isSingleSurface": @(isSingleSurface),
         @"shellTitle": shellTitle,
         @"peerLinks": @[],
+        @"showPeerSwitcher": @NO,
+        @"includePDSPanel": @([tabIdentifiers containsObject:@"pds"]),
+        @"includeAppViewPanel": @([tabIdentifiers containsObject:@"appview"]),
+        @"includeRelayPanel": @([tabIdentifiers containsObject:@"relay"]),
+        @"includePLCPanel": @([tabIdentifiers containsObject:@"plc"]),
         @"dynamicPanes": dynamicPanes,
     } mutableCopy];
     NSDictionary<NSString *, NSString *> *panelContextKeys = @{
