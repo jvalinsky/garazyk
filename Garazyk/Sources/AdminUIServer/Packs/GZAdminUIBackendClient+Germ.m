@@ -11,35 +11,30 @@
     NSURL *url = [self URLByAppendingPath:@"/_health" queryItems:nil baseURL:self.configuration.germBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil
-                                                bearerToken:nil statusCode:&status error:&error];
+    [self performJSONRequestWithURL:url method:@"GET" body:nil
+                        bearerToken:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"status": @"unreachable", @"message": error.localizedDescription ?: @"Germ unreachable"};
     }
-    // Germ /_health returns plain text "ok"; wrap in a dictionary
-    if ([response isKindOfClass:[NSDictionary class]]) {
-        return response;
-    }
-    // Plain text response
-    NSString *body = [[NSString alloc] initWithData:(NSData *)[NSNull null] encoding:NSUTF8StringEncoding];
     return @{@"status": @"ok", @"uptime": @"available"};
 }
 
 - (NSDictionary *)fetchGermFlowMetrics {
-    // Aggregate-only: no per-address or per-agent data is ever returned.
-    // Germ does not yet expose counter endpoints — return placeholder.
-    return @{
-        @"claims": @0, @"delivers": @0, @"polls": @0, @"misses": @0,
-        @"expirations": @0, @"authFailures": @0
-    };
+    // Fetch aggregate-only counters from Germ's admin metrics endpoint
+    NSURL *url = [self URLByAppendingPath:@"/_admin/metrics" queryItems:nil baseURL:self.configuration.germBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil
+                                                bearerToken:nil statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"metrics_unavailable", @"message": error.localizedDescription ?: @"Metrics unavailable"};
+    }
+    return response ?: @{};
 }
 
 - (NSDictionary *)fetchGermStorageMetrics {
-    // Aggregate-only: database-level metrics, no address-level data.
-    return @{
-        @"ephemeralCount": @0, @"rendezvousCount": @0,
-        @"dbSizeBytes": @0, @"pendingMessages": @0
-    };
+    // Reuse flow metrics which includes all aggregate counters
+    return [self fetchGermFlowMetrics];
 }
 
 @end

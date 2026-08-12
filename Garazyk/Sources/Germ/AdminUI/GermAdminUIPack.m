@@ -39,22 +39,28 @@
                           @"<span class=\"badge badge-success\">ok</span></div></div>"];
     }];
 
-    // Flow (aggregate-only placeholder)
+    // Flow (aggregate-only, live counters)
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/germ-flow" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
-        [res setBodyString:@"<div class=\"alert alert-info\">"
-                          @"Flow metrics will be available when aggregate counters are added to GermMailboxService."
-                          @"</div>"];
+        NSDictionary *metrics = [self fetchLocalMetrics];
+        if (metrics) {
+            [res setBodyString:[self flowHTML:metrics]];
+        } else {
+            [res setBodyString:@"<div class=\"alert alert-warning\">Metrics unavailable — Germ service may not be running.</div>"];
+        }
     }];
 
-    // Storage (aggregate-only placeholder)
+    // Storage (aggregate-only, live counters)
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/germ-storage" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
-        [res setBodyString:@"<div class=\"alert alert-info\">"
-                          @"Storage metrics will be available when aggregate counters are added to GermMailboxService."
-                          @"</div>"];
+        NSDictionary *metrics = [self fetchLocalMetrics];
+        if (metrics) {
+            [res setBodyString:[self storageHTML:metrics]];
+        } else {
+            [res setBodyString:@"<div class=\"alert alert-warning\">Metrics unavailable — Germ service may not be running.</div>"];
+        }
     }];
 }
 
@@ -74,6 +80,42 @@
 
         @"<section class=\"mt-lg\"><h3 class=\"section-title\">Storage</h3>"
         @"<div id=\"germ-storage\" hx-get=\"/admin/partials/germ-storage\" hx-trigger=\"revealed, every 30s\"></div></section>";
+}
+
++ (NSDictionary *)fetchLocalMetrics {
+    // Query the Germ service's admin metrics endpoint on localhost.
+    // The metrics response is aggregate-only — no addresses, agents, or ciphertext.
+    NSURL *url = [NSURL URLWithString:@"http://127.0.0.1:8082/_admin/metrics"];
+    NSData *data = [NSData dataWithContentsOfURL:url options:0 error:nil];
+    if (!data) return nil;
+    id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    return [json isKindOfClass:[NSDictionary class]] ? json : nil;
+}
+
++ (NSString *)flowHTML:(NSDictionary *)m {
+    return [NSString stringWithFormat:
+        @"<div class=\"metric-row\">"
+        @"<div class=\"metric\"><span class=\"metric-label\">Ephemeral addrs</span><span class=\"metric-value\">%@</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Rendezvous addrs</span><span class=\"metric-value\">%@</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Pending ephemeral</span><span class=\"metric-value\">%@</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Pending rendezvous</span><span class=\"metric-value\">%@</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Expired (awaiting cleanup)</span><span class=\"metric-value\">%@</span></div>"
+        @"</div>",
+        m[@"ephemeralCount"] ?: @0, m[@"rendezvousCount"] ?: @0,
+        m[@"pendingEphemeral"] ?: @0, m[@"pendingRendezvous"] ?: @0,
+        m[@"expiredCount"] ?: @0];
+}
+
++ (NSString *)storageHTML:(NSDictionary *)m {
+    return [NSString stringWithFormat:
+        @"<div class=\"metric-row\">"
+        @"<div class=\"metric\"><span class=\"metric-label\">Ephemeral addresses</span><span class=\"metric-value\">%@</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Rendezvous addresses</span><span class=\"metric-value\">%@</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Pending messages</span><span class=\"metric-value\">%@</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Database size</span><span class=\"metric-value\">%@ bytes</span></div>"
+        @"</div>",
+        m[@"ephemeralCount"] ?: @0, m[@"rendezvousCount"] ?: @0,
+        m[@"pendingMessages"] ?: @0, m[@"dbSizeBytes"] ?: @0];
 }
 
 @end

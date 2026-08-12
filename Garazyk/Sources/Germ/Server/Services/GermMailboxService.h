@@ -162,6 +162,22 @@ NS_ASSUME_NONNULL_BEGIN
 /** Removes expired mailbox addresses and undelivered messages. */
 - (void)expireStaleAddresses;
 
+#pragma mark - Aggregate Counters (Privacy-Safe)
+
+/*!
+ @method aggregateCountersWithError:
+
+ @abstract Returns aggregate-only counters for operational monitoring.
+
+ @return Dictionary with aggregate counts — never includes addresses,
+ agent references, ciphertext, or row-level data.
+
+ @discussion All counters are aggregate-level only. The server cannot
+ link counts to DIDs or conversations. Safe for admin UI consumption.
+ */
+/** Returns privacy-safe aggregate counters for admin monitoring. */
+- (nullable NSDictionary *)aggregateCountersWithError:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
