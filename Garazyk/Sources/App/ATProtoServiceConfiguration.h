@@ -404,6 +404,20 @@ extern BOOL ATProtoServiceConfigRunningUnderTests(void);
 /*! @abstract Reset data on startup. */
 @property (nonatomic, readonly) BOOL debugResetOnStartup;
 
+#pragma mark - Repo Import
+
+/*! @abstract Maximum accepted com.atproto.repo.importRepo body size in bytes.
+ *  @discussion Mirrors upstream `service.maxImportSize` (env `PDS_MAX_REPO_IMPORT_SIZE`).
+ *  This single value drives the XRPC handler cap, the import validator cap, and the
+ *  per-route HTTP body cap for the import route. Defaults to 1 GiB. */
+@property (nonatomic, readonly) NSUInteger maxImportSize;
+
+/*! @abstract Whether com.atproto.repo.importRepo is accepted at all.
+ *  @discussion Mirrors upstream `service.acceptingImports` (env `PDS_ACCEPTING_REPO_IMPORTS`).
+ *  When NO, the endpoint fails fast with InvalidRequest before the body is read.
+ *  Defaults to YES. */
+@property (nonatomic, readonly) BOOL acceptingImports;
+
 #pragma mark - Soft Quotas
 
 /*! @abstract Soft quota for blob storage in bytes (0 = unlimited). When exceeded, a warning is logged and a Prometheus counter incremented. */

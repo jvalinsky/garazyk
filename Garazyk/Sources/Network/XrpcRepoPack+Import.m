@@ -25,16 +25,21 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
-
 @implementation XrpcRepoPack (Import)
 
 + (void)registerImportRoutesWithDispatcher:(XrpcDispatcher *)dispatcher
                                   services:(id<XrpcRoutePackServices>)services {
     PDSRecordService *recordService = services.recordService;
+    ATProtoServiceConfiguration *config = services.configuration;
 
 #pragma mark - com.atproto.repo.importRepo
-    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_importRepo handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+    // Route-specific body cap: the import route admits bodies up to
+    // maxImportSize while every other XRPC endpoint keeps the generic HTTP
+    // parser limit. The dispatcher exposes the cap to the HTTP layer through
+    // the per-path provider installed by ATProtoHttpXrpcRoutePack.
+    [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_importRepo
+                  maxBodyBytes:config.maxImportSize
+                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
@@ -52,13 +57,24 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
             return;
         }
 
+        // Feature-flag style kill switch, mirroring upstream
+        // (cfg.service.acceptingImports): checked before the body is read.
+        if (!config.acceptingImports) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": @"InvalidRequest",
+                @"message": @"Import is not currently accepted"
+            }];
+            return;
+        }
+
         NSData *repoData = request.body;
         if (!repoData || repoData.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repository body"}];
             return;
         }
-        if (repoData.length > kPDSImportRepoMaxBodyBytes) {
+        if (repoData.length > config.maxImportSize) {
             response.statusCode = HttpStatusPayloadTooLarge;
             [response setJsonBody:@{@"error": @"PayloadTooLarge", @"message": @"Repository import body too large"}];
             return;
@@ -94,11 +110,15 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
             }
         }
 
-        // Caller-supplied archive: verify every block hashes to its stated ATProtoCID
-        // before any of it reaches the repository.
+        // Caller-supplied archive: a strict streaming reader verifies the
+        // header (canonical DRISL, version, roots) and every block's CID
+        // against its payload as it streams, without materializing a full
+        // block array. The reader keeps a CID index as blocks stream so the
+        // MST walk below can resolve nodes/records by CID.
         NSError *carError = nil;
-        ATProtoCARReader *reader = [ATProtoCARReader readFromData:carData strict:YES error:&carError];
-        if (!reader || !reader.rootCID) {
+        ATProtoCARStreamReader *stream =
+            [[ATProtoCARStreamReader alloc] initWithData:carData strict:YES error:&carError];
+        if (!stream || !stream.rootCID) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
                 @"error": @"InvalidRequest",
@@ -146,11 +166,12 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
         NSError *importValidationError = nil;
         PDSRepoImportValidationResult *importValidation =
             [PDSRepoImportValidator validateCARData:carData
-                                             reader:reader
+                                             reader:stream
                                              commit:commit
                                                 did:did
                                       databasePool:databasePool
                              allowLocalKeyFallback:allowLocalKeyFallback
+                                     maxImportSize:config.maxImportSize
                                               error:&importValidationError];
         if (!importValidation) {
             response.statusCode = (importValidationError.code == PDSRepoPackValidationErrorPayloadTooLarge)
@@ -163,7 +184,6 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
             return;
         }
 
-        NSArray<PDSDatabaseBlock *> *blocks = importValidation.blocks;
         NSArray<PDSDatabaseRecord *> *records = importValidation.records;
 
         // Lexicon validation for imported records
@@ -238,27 +258,150 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
         }
 
         __block BOOL committed = NO;
+        __block NSUInteger addedCount = 0;
+        __block NSUInteger updatedCount = 0;
+        __block NSUInteger deletedCount = 0;
         NSError *writeError = nil;
         [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **error) {
-            if (blocks.count > 0 && ![transactor putBlocks:blocks forDid:did error:error]) {
+            // Diff mode (ADR 0035 B4, matching upstream): when the target
+            // store already holds a repo root, re-imports apply only the
+            // deltas instead of a from-scratch overwrite — records missing
+            // from the incoming CAR are deleted (with tombstones and blob-ref
+            // cleanup), records whose CID changed are updated, and unchanged
+            // records are left alone. Reads and writes share this single
+            // transaction, so the diff is race-free. A fresh store (no root)
+            // takes the initial-import path: every record is added.
+            PDSActorStore *actorStore = (PDSActorStore *)transactor;
+            NSData *currentRoot = [actorStore getRepoRootForDid:did error:error];
+            if (*error) {
                 return;
             }
-            if (validatedRecords.count > 0 && ![transactor putRecords:validatedRecords forDid:did error:error]) {
-                return;
-            }
-            for (PDSDatabaseRecord *record in validatedRecords) {
-                NSData *valueData = [record.value dataUsingEncoding:NSUTF8StringEncoding];
-                NSDictionary *recordValue = valueData ? [NSJSONSerialization JSONObjectWithData:valueData options:0 error:nil] : nil;
-                if (![recordValue isKindOfClass:[NSDictionary class]] ||
-                    ![recordService syncBlobReferencesForRecordURI:record.uri
-                                                        recordValue:recordValue
-                                                             forDid:did
-                                                        transactor:transactor
-                                                             error:error]) {
-                    return;
+
+            NSMutableDictionary<NSString *, NSString *> *currentByURI = [NSMutableDictionary dictionary];
+            if (currentRoot) {
+                NSUInteger recordOffset = 0;
+                const NSUInteger kReadPage = 5000;
+                while (YES) {
+                    NSArray<PDSDatabaseRecord *> *page = [actorStore listRecordsForDid:did collection:nil limit:kReadPage offset:recordOffset error:error];
+                    if (*error || !page) {
+                        return;
+                    }
+                    if (page.count == 0) {
+                        break;
+                    }
+                    for (PDSDatabaseRecord *record in page) {
+                        currentByURI[record.uri ?: @""] = record.cid;
+                    }
+                    if (page.count < kReadPage) {
+                        break;
+                    }
+                    recordOffset += page.count;
                 }
             }
-            if (![transactor updateRepoRoot:did rootCid:reader.rootCID.bytes rev:(commit.rev ?: @"") error:error]) {
+
+            NSMutableDictionary<NSString *, PDSDatabaseRecord *> *importedByURI = [NSMutableDictionary dictionary];
+            for (PDSDatabaseRecord *record in validatedRecords) {
+                importedByURI[record.uri ?: @""] = record;
+            }
+
+            // Records present locally but absent from the imported CAR.
+            NSMutableArray<NSString *> *urisToDelete = [NSMutableArray array];
+            for (NSString *uri in currentByURI) {
+                if (!importedByURI[uri]) {
+                    [urisToDelete addObject:uri];
+                }
+            }
+            for (NSString *uri in urisToDelete) {
+                PDSDatabaseRecord *currentRecord = [actorStore getRecord:uri forDid:did error:error];
+                if (*error || !currentRecord) {
+                    return;
+                }
+                if (![transactor deleteRecord:uri forDid:did error:error]) {
+                    return;
+                }
+                if (![transactor addRecordTombstoneURI:uri
+                                                   did:did
+                                             collection:currentRecord.collection ?: @""
+                                                  rkey:currentRecord.rkey ?: @""
+                                                    rev:commit.rev ?: @""
+                                                 error:error]) {
+                    return;
+                }
+                if (![recordService removeBlobReferencesForRecordURI:uri
+                                                              forDid:did
+                                                          transactor:transactor
+                                                               error:error]) {
+                    return;
+                }
+                deletedCount++;
+            }
+
+            // Records to write: new, or existing with a different CID.
+            NSMutableArray<PDSDatabaseRecord *> *recordsToPut = [NSMutableArray array];
+            for (PDSDatabaseRecord *record in validatedRecords) {
+                NSString *previousCID = currentByURI[record.uri ?: @""];
+                if (previousCID == nil) {
+                    addedCount++;
+                } else if (![previousCID isEqualToString:record.cid]) {
+                    updatedCount++;
+                } else {
+                    continue; // unchanged: row and blob refs already in place
+                }
+                [recordsToPut addObject:record];
+            }
+            if (recordsToPut.count > 0) {
+                if (![transactor putRecords:recordsToPut forDid:did error:error]) {
+                    return;
+                }
+                for (PDSDatabaseRecord *record in recordsToPut) {
+                    NSData *valueData = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+                    NSDictionary *recordValue = valueData ? [NSJSONSerialization JSONObjectWithData:valueData options:0 error:nil] : nil;
+                    if (![recordValue isKindOfClass:[NSDictionary class]] ||
+                        ![recordService syncBlobReferencesForRecordURI:record.uri
+                                                            recordValue:recordValue
+                                                                 forDid:did
+                                                            transactor:transactor
+                                                                 error:error]) {
+                        return;
+                    }
+                }
+            }
+
+            // Write blocks in bounded batches inside the single transaction:
+            // peak memory is bounded by the batch size rather than a full
+            // PDSDatabaseBlock array. putBlock: is INSERT OR IGNORE, so
+            // re-writing blocks that are already present is a no-op.
+            const NSUInteger kBatchSize = [PDSRepoImportValidator importBlockBatchSize];
+            [stream reset];
+            NSMutableArray<PDSDatabaseBlock *> *batch = [NSMutableArray arrayWithCapacity:kBatchSize];
+            NSError *streamError = nil;
+            BOOL streamed = [stream enumerateBlocksWithError:&streamError handler:^BOOL(ATProtoCARBlock *block, NSError **stopError) {
+                PDSDatabaseBlock *dbBlock = [[PDSDatabaseBlock alloc] init];
+                dbBlock.cid = block.cid.bytes;
+                dbBlock.blockData = block.data;
+                dbBlock.size = (NSInteger)block.data.length;
+                dbBlock.rev = commit.rev ?: @"";
+                [batch addObject:dbBlock];
+                if (batch.count >= kBatchSize) {
+                    if (![transactor putBlocks:batch forDid:did error:stopError]) {
+                        return NO;
+                    }
+                    [batch removeAllObjects];
+                }
+                return YES;
+            }];
+            if (!streamed) {
+                if (error) {
+                    *error = streamError ?: [NSError errorWithDomain:@"com.atproto.repo"
+                                                                code:1
+                                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to stream imported blocks"}];
+                }
+                return;
+            }
+            if (batch.count > 0 && ![transactor putBlocks:batch forDid:did error:error]) {
+                return;
+            }
+            if (![transactor updateRepoRoot:did rootCid:stream.rootCID.bytes rev:(commit.rev ?: @"") error:error]) {
                 return;
             }
             committed = YES;
@@ -275,10 +418,13 @@ static const NSUInteger kPDSImportRepoMaxBodyBytes = 16 * 1024 * 1024;
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{
-            @"rootCid": reader.rootCID.stringValue ?: @"",
+            @"rootCid": stream.rootCID.stringValue ?: @"",
             @"rev": commit.rev ?: @"",
             @"recordCount": @(validatedRecords.count),
-            @"skippedCount": @((NSInteger)records.count - (NSInteger)validatedRecords.count)
+            @"skippedCount": @((NSInteger)records.count - (NSInteger)validatedRecords.count),
+            @"addedCount": @(addedCount),
+            @"updatedCount": @(updatedCount),
+            @"deletedCount": @(deletedCount)
         }];
     }];
 }

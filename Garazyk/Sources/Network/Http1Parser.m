@@ -187,6 +187,25 @@
     return NO;
 }
 
+- (NSUInteger)effectiveMaxBodyBytes {
+    NSUInteger limit = self.maxBodyBytes;
+    if (self.bodySizeLimitProvider) {
+        NSString *path = nil;
+        CFURLRef urlRef = CFHTTPMessageCopyRequestURL(self.message);
+        if (urlRef) {
+            NSURL *url = CFBridgingRelease(urlRef);
+            path = url.path;
+        }
+        if (path.length > 0) {
+            NSUInteger override = self.bodySizeLimitProvider(path);
+            if (override > 0) {
+                limit = override;
+            }
+        }
+    }
+    return limit;
+}
+
 - (void)setErrorWithStatusCode:(NSUInteger)statusCode errorCode:(NSString *)errorCode message:(NSString *)message {
     self.state = Http1ParserStateError;
     self.currentError = [[ATProtoHttp1ParserError alloc] initWithStatusCode:statusCode errorCode:errorCode message:message];
@@ -250,12 +269,13 @@
 
         self.isChunkedEncoding = [transferEncoding containsString:@"chunked"];
 
+        NSUInteger effectiveMaxBodyBytes = [self effectiveMaxBodyBytes];
         if (self.isChunkedEncoding) {
-            self.chunkedBodyParser = [[ATProtoHttpChunkedBodyParser alloc] initWithMaxSize:self.maxBodyBytes];
+            self.chunkedBodyParser = [[ATProtoHttpChunkedBodyParser alloc] initWithMaxSize:effectiveMaxBodyBytes];
             self.expectedBodyLength = 0;
             self.state = Http1ParserStateReadingChunkedBody;
         } else {
-            if (self.expectedBodyLength > self.maxBodyBytes) {
+            if (self.expectedBodyLength > effectiveMaxBodyBytes) {
                 [self setErrorWithStatusCode:413 errorCode:@"RequestTooLarge" message:@"Request body too large"];
                 return YES;
             }
@@ -599,6 +619,17 @@
     return NO;
 }
 
+- (NSUInteger)effectiveMaxBodyBytes {
+    NSUInteger limit = self.maxBodyBytes;
+    if (self.bodySizeLimitProvider && self.requestPath.length > 0) {
+        NSUInteger override = self.bodySizeLimitProvider(self.requestPath);
+        if (override > 0) {
+            limit = override;
+        }
+    }
+    return limit;
+}
+
 - (void)setErrorWithStatusCode:(NSUInteger)statusCode errorCode:(NSString *)errorCode message:(NSString *)message {
     self.state = Http1ParserStateError;
     self.currentError = [[ATProtoHttp1ParserError alloc] initWithStatusCode:statusCode errorCode:errorCode message:message];
@@ -659,12 +690,13 @@
 
         self.isChunkedEncoding = [transferEncoding containsString:@"chunked"];
 
+        NSUInteger effectiveMaxBodyBytes = [self effectiveMaxBodyBytes];
         if (self.isChunkedEncoding) {
-            self.chunkedBodyParser = [[ATProtoHttpChunkedBodyParser alloc] initWithMaxSize:self.maxBodyBytes];
+            self.chunkedBodyParser = [[ATProtoHttpChunkedBodyParser alloc] initWithMaxSize:effectiveMaxBodyBytes];
             self.expectedBodyLength = 0;
             self.state = Http1ParserStateReadingChunkedBody;
         } else {
-            if (self.expectedBodyLength > self.maxBodyBytes) {
+            if (self.expectedBodyLength > effectiveMaxBodyBytes) {
                 [self setErrorWithStatusCode:413 errorCode:@"RequestTooLarge" message:@"Request body too large"];
                 return YES;
             }

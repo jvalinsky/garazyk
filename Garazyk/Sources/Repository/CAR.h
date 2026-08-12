@@ -190,6 +190,107 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
+ @class ATProtoCARStreamReader
+
+ @abstract Incremental, block-at-a-time CAR reader.
+
+ @discussion Parses the CAR header up front and then yields blocks one at a
+ time from the body without materializing a full block array. In strict mode
+ each block's ATProtoCID is verified against a SHA-256 of its payload as it
+ is read, and every declared root must be present in the body by the time
+ the stream is exhausted. A CID-to-block index is maintained as blocks
+ stream so callers that need random access (e.g. an MST walk) can look up
+ blocks already seen; blocks not yet streamed are simply not present yet.
+
+ Memory is bounded by the index rather than by the archive: the underlying
+ NSData is retained (the blocks are subdata ranges into it), but no
+ additional full-size copy is made. Suitable for reading large
+ repositories (multi-hundred-MB CARs) with a single pass.
+ */
+@interface ATProtoCARStreamReader : NSObject
+
+/*! All root CIDs declared in the CAR header. */
+@property (nonatomic, copy, readonly, nullable) NSArray<ATProtoCID *> *roots;
+
+/*! The first root ATProtoCID, equivalent to @c roots.firstObject. */
+@property (nonatomic, strong, readonly, nullable) ATProtoCID *rootCID;
+
+/*! The complete DRISL metadata map from the CAR header. */
+@property (nonatomic, copy, readonly, nullable) NSDictionary *metadata;
+
+/*! The header metadata as a validated MASL document, when it is valid MASL. */
+@property (nonatomic, strong, readonly, nullable) ATProtoMASLDocument *maslDocument;
+
+/*!
+ @method initWithData:strict:error:
+
+ @abstract Parses the CAR header, leaving the body ready to be streamed.
+
+ @param data The CAR-encoded data. Retained for the lifetime of the reader.
+ @param strict When YES, enforce DASL CAR rules: canonical DRISL header,
+ conformant CIDs, per-block SHA-256 digest verification, and root presence
+ in the body (checked when the stream is exhausted).
+ @param error On return, contains an error if the header could not be parsed.
+ @return An initialized reader, or nil on header failure.
+ */
+- (nullable instancetype)initWithData:(NSData *)data
+                               strict:(BOOL)strict
+                                error:(NSError **)error;
+
+/*!
+ @method nextBlockWithError:
+
+ @abstract Returns the next block in the archive, or nil at the end.
+
+ @param error On return, contains an error if the block could not be parsed
+ or (in strict mode) failed verification. At natural exhaustion the error is
+ left nil and the reader reports finished.
+ @return The next ATProtoCARBlock, or nil when the archive is exhausted or
+ parsing failed.
+ */
+- (nullable ATProtoCARBlock *)nextBlockWithError:(NSError **)error;
+
+/*!
+ @method enumerateBlocksWithError:handler:
+
+ @abstract Streams every block through a handler.
+
+ @param error On return, contains an error if streaming failed.
+ @param handler Invoked once per block. Return NO to stop early; set
+ *stopError to report a reason, in which case enumerate returns NO with that
+ error. In strict mode root presence is verified after the last block.
+ @return YES if every block was delivered (or the handler stopped with a
+ nil stopError), NO on parse/verification failure.
+ */
+- (BOOL)enumerateBlocksWithError:(NSError **)error
+                         handler:(BOOL (^)(ATProtoCARBlock *block, NSError **stopError))handler;
+
+/*!
+ @method blockWithCID:
+
+ @abstract Returns a block already streamed by this reader, or nil if it has
+ not been seen yet (or is absent from the archive).
+ */
+- (nullable ATProtoCARBlock *)blockWithCID:(ATProtoCID *)cid;
+
+/*!
+ @method reset
+
+ @abstract Rewinds the stream to the first block. The block index is cleared
+ and rebuilt as blocks are re-read. Header parsing is not repeated.
+ */
+- (void)reset;
+
+/*!
+ @method isFinished
+
+ @abstract YES once the stream has reached the end of the archive.
+ */
+@property (nonatomic, readonly) BOOL isFinished;
+
+@end
+
+/*!
  @class ATProtoCARWriter
  
  @abstract Creates and writes CAR archives.

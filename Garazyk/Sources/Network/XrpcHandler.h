@@ -128,6 +128,28 @@ typedef BOOL (^XrpcRequestInterceptor)(ATProtoHttpRequest *request,
  */
 - (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler;
 
+/*!
+ @method registerMethod:maxBodyBytes:handler:
+
+ @abstract Registers a handler with a route-specific HTTP body-size cap.
+
+ @discussion The cap overrides the generic HTTP parser body limit for this
+ method only (e.g. com.atproto.repo.importRepo admitting multi-hundred-MB
+ bodies while every other XRPC endpoint keeps the small default). The HTTP
+ layer consults it through the per-path provider installed on the server.
+ A value of 0 means "no override; use the generic parser limit".
+
+ @param methodId The method NSID.
+ @param maxBodyBytes Route-specific maximum request body size in bytes, or 0.
+ @param handler The handler to invoke for this method.
+ */
+- (void)registerMethod:(NSString *)methodId
+          maxBodyBytes:(NSUInteger)maxBodyBytes
+               handler:(XrpcMethodHandler)handler;
+
+/*! Returns the route-specific body cap registered for methodId, or 0 when none. */
+- (NSUInteger)maxBodyBytesForMethod:(NSString *)methodId;
+
 /*! Returns YES when a handler has already been registered for methodId. */
 - (BOOL)hasRegisteredMethod:(NSString *)methodId;
 

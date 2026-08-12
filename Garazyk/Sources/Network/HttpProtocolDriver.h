@@ -52,6 +52,15 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
 @property (nonatomic, readonly) ATProtoHttpProtocolSession *session;
 
 /*!
+ @property bodySizeLimitProvider
+
+ @abstract Per-path body-size override forwarded to the session's parser.
+ @discussion Returns a route-specific cap in bytes for a request path, or 0
+ to fall back to the parser's generic maxBodyBytes. Installed by the server.
+ */
+@property (nonatomic, copy, nullable) NSUInteger (^bodySizeLimitProvider)(NSString *path);
+
+/*!
  @method feedData:
 
  @abstract Feeds raw bytes from the network into the protocol state machine.

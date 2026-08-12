@@ -81,6 +81,17 @@ extern const NSUInteger kHttpServerDefaultMaxConcurrentRequests;
 @property (nonatomic, readonly) NSUInteger maxConcurrentRequests;
 
 /*!
+ Optional per-path request-body size override consulted by the parser before
+ the body is read. Returns a route-specific cap in bytes, or 0 to fall back
+ to the generic parser limit. Installed by ATProtoHttpXrpcRoutePack from the
+ XRPC dispatcher's per-method caps so that routes like
+ com.atproto.repo.importRepo can admit large bodies without raising the
+ generic cap for all routes. Must be set before the server starts accepting
+ connections.
+ */
+@property (nonatomic, readwrite, copy, nullable) NSUInteger (^bodySizeLimitProvider)(NSString *path);
+
+/*!
  @method serverWithPort:
 
  @abstract Creates a server instance for the specified port.

@@ -19,6 +19,7 @@
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, XrpcMethodHandler> *methodHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, XrpcMethodHandler> *internalHandlers;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *maxBodyBytesByMethod;
 @property (nonatomic, strong) NSSet<NSString *> *protectedMethods;
 
 - (BOOL)validateHTTPMethodForMethodId:(NSString *)methodId
@@ -51,6 +52,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     if (self) {
         _methodHandlers = [NSMutableDictionary dictionary];
         _internalHandlers = [NSMutableDictionary dictionary];
+        _maxBodyBytesByMethod = [NSMutableDictionary dictionary];
         
         // Methods that MUST be handled locally by the PDS
         _protectedMethods = [NSSet setWithArray:@[
@@ -99,6 +101,12 @@ static XrpcDispatcher *_sharedInstance = nil;
 }
 
 - (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler {
+    [self registerMethod:methodId maxBodyBytes:0 handler:handler];
+}
+
+- (void)registerMethod:(NSString *)methodId
+          maxBodyBytes:(NSUInteger)maxBodyBytes
+               handler:(XrpcMethodHandler)handler {
     NSMutableDictionary<NSString *, XrpcMethodHandler> *handlers =
         [methodId hasPrefix:@"_"] ? self.internalHandlers : self.methodHandlers;
     if (handlers[methodId] != nil) {
@@ -106,6 +114,14 @@ static XrpcDispatcher *_sharedInstance = nil;
                     format:@"Duplicate XRPC handler registration for %@", methodId];
     }
     handlers[methodId] = [handler copy];
+    if (maxBodyBytes > 0) {
+        self.maxBodyBytesByMethod[methodId] = @(maxBodyBytes);
+    }
+}
+
+- (NSUInteger)maxBodyBytesForMethod:(NSString *)methodId {
+    NSNumber *capped = self.maxBodyBytesByMethod[methodId];
+    return capped ? capped.unsignedIntegerValue : 0;
 }
 
 - (BOOL)hasRegisteredMethod:(NSString *)methodId {
@@ -118,6 +134,7 @@ static XrpcDispatcher *_sharedInstance = nil;
 - (void)resetRegisteredMethods {
     [self.methodHandlers removeAllObjects];
     [self.internalHandlers removeAllObjects];
+    [self.maxBodyBytesByMethod removeAllObjects];
 }
 
 - (void)registerMethod:(NSString *)methodId

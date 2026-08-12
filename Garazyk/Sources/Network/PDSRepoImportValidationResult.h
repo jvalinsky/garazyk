@@ -8,7 +8,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface PDSRepoImportValidationResult : NSObject
-@property (nonatomic, strong) NSArray<PDSDatabaseBlock *> *blocks;
 @property (nonatomic, strong) NSArray<PDSDatabaseRecord *> *records;
 @end
 
