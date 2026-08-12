@@ -96,7 +96,7 @@ GZAdminUIHost * _Nullable PDSAdminUIStartHost(NSUInteger protocolPort,
     adminConfig.pdsAdminPassword = password;
     // UIServiceConfig -init already probes Assets/ next to the executable.
     // Allow an explicit override for packaged layouts (systemd cwd ≠ bin dir).
-    NSString *assetsOverride = PDSAdminUIEnv(@"GARAZYK_UI_ASSETS_DIR")
+    NSString *assetsOverride = PDSAdminUIEnv(@"GARAZYK_ADMIN_UI_ASSETS_DIR")
         ?: PDSAdminUIEnv(@"PDS_ADMIN_UI_ASSETS_DIR");
     if (assetsOverride.length > 0) {
         adminConfig.assetsDirectory = assetsOverride;
@@ -107,6 +107,10 @@ GZAdminUIHost * _Nullable PDSAdminUIStartHost(NSUInteger protocolPort,
             adminConfig.assetsDirectory = cwdAssets;
         }
     }
+
+    // Plain configured sibling links only — no polling or health claims.
+    GZAdminUIServiceConfig *envPeers = [GZAdminUIServiceConfig configurationFromEnvironment];
+    adminConfig.peerLinks = envPeers.peerLinks;
 
     NSArray<Class> *packs = @[
         GZAdminUIPDSPack.class,

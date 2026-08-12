@@ -276,57 +276,84 @@ CID assignment or existing blob path was changed.
 - Rollback: remove the additive MASL path/CAR metadata APIs and focused tests; existing root-only
   CAR serialization and blob upload behavior remain unchanged.
 
-**Phase 8 — PFP — PARTIAL (strict identifier format).** `Core/ATProtoPFP` implements the
-registered PDQ (`0x01`, 32-byte inline hash) and TMK+PDQF (`0x02`, 36-byte strict base-DASL CID)
-forms. It enforces the lowercase `p` prefix, lowercase RFC4648 base32 with zero trailing padding
-bits, canonical unsigned varints, exact algorithm-specific lengths, no trailing bytes, and strict
-CID validation. It also exposes the exact `{"__pfp": "p…"}` JSON pseudo-type boundary. No PDQ or
-TMK+PDQF producer, perceptual comparison metric, or Ozone storage integration is invented here.
+**Phase 8 — PFP — PARTIAL (identifier + PDQ Hamming comparator).** `Core/ATProtoPFP`
+implements the registered PDQ (`0x01`, 32-byte inline hash) and TMK+PDQF (`0x02`,
+36-byte strict base-DASL CID) forms, plus PDQ Hamming-distance comparison with
+the ThreatExchange recommended match threshold (≤ 31). It enforces the lowercase
+`p` prefix, lowercase RFC4648 base32 with zero trailing padding bits, canonical
+unsigned varints, exact algorithm-specific lengths, no trailing bytes, and
+strict CID validation. It also exposes the exact `{"__pfp": "p…"}` JSON
+pseudo-type boundary. No PDQ/TMK producer or Ozone storage integration is
+invented here.
 
-- Owner boundary: `Garazyk/Sources/Core` for the immutable identifier and JSON boundary; future
-  comparison/storage integration belongs to Ozone moderation only after a producer/metric contract
-  is selected.
-- Evidence: `ATProtoPFPTests` covers PDQ and TMK+PDQF byte/string round-trips, exact pseudo-type
-  parsing, unknown algorithms, length/truncation/trailing-data failures, non-canonical varints,
-  strict CID rejection, and lowercase/padding base32 rejection. Registered in `Tests/test_main.m`.
-- Explicit remainder: no perceptual-hash producer, similarity comparator, or moderation database
-  column is wired by this bounded slice.
-- Rollback: additive identifier type and test registration; no existing moderation or media caller depends on PFP.
+- Owner boundary: `Garazyk/Sources/Core` for the immutable identifier, JSON
+  boundary, and PDQ distance metric; future producer/storage integration belongs
+  to Ozone moderation only after a producer contract is selected.
+- Evidence: `ATProtoPFPTests` covers PDQ and TMK+PDQF byte/string round-trips,
+  exact pseudo-type parsing, Hamming distance (identity / one-bit / TMK reject),
+  unknown algorithms, length/truncation/trailing-data failures, non-canonical
+  varints, strict CID rejection, and lowercase/padding base32 rejection.
+  Registered in `Tests/test_main.m`.
+- Explicit remainder: no perceptual-hash producer and no Ozone moderation
+  database column are wired by this slice.
+- Rollback: additive identifier/comparator APIs and test registration; no
+  existing moderation or media caller depends on PFP.
 
-**Phase 9 — MUXL — PARTIAL (catalog atom and opaque fragment envelope).**
-`MediaCore/ATProtoMUXLBox` validates a canonical single-track video or audio catalog, encodes and
-decodes the normative fixed `uuid-muxl` BMFF atom with DRISL bytes, and composes
-`[uuid-muxl][moof][mdat]...` segments while preserving each opaque fragment byte-for-byte. It
-requires each supplied fragment to be exactly one standard-size `moof` followed by one `mdat`, but
-does not reinterpret their sample tables.
+**Phase 9 — MUXL — PARTIAL (catalog + fragments + fMP4 + flat MP4).**
+`MediaCore/ATProtoMUXLBox` validates a canonical single-track video or audio
+catalog, encodes and decodes the normative fixed `uuid-muxl` BMFF atom with
+DRISL bytes, and composes `[uuid-muxl][moof][mdat]...` segments.
+`MediaCore/ATProtoMUXLFragment` mints one-sample `[moof][mdat]` fragments with
+normative `mfhd`/`tfhd`/`tfdt`/`trun`/`mdat` layout (1-based sequence,
+`default-base-is-moof`, sync/non-sync sample flags, optional composition-time
+offset) and validates that nested structure.
+`Video/ATProtoMUXLFMP4` synthesizes both presentation headers from catalogs /
+canonical segments:
+- fMP4 init (`ftyp` brands `muxl`/`isom`/`iso2` + `moov` with empty sample
+  tables, sorted `trak`, and `mvex`/`trex`), prepended without altering
+  segment bytes;
+- Flat MP4 (`ftyp` + populated `moov` without `mvex` + 64-bit outer `mdat`
+  envelope). Sample tables include `stts`/`ctts`/`stsz`/`stsc`/`co64`/`stss`
+  as specified; `co64` points at sample payloads inside the verbatim envelope.
 
-- Owner boundary: `Garazyk/Sources/MediaCore` for catalog/box primitives; future sample minting
-  belongs in `Garazyk/Sources/Video`. Existing HLS/transcoder paths are unchanged.
-- Evidence: `ATProtoMUXLBoxTests` covers deterministic catalog round-trip, fixed UUID/type bytes,
-  single-track/rendition and catalog-field validation, opaque fragment preservation, and malformed
-  box/fragment rejection. Registered in `Tests/test_main.m`.
-- Explicit remainder: fragment minting (`mfhd`/`traf`/`trun`), fMP4 init-header synthesis, flat-MP4
-  indexing, and playback sanity remain open; this slice does not claim to be a complete muxer.
-- Rollback: additive MediaCore primitive and test registration; existing HLS/transcoder output is untouched.
+- Owner boundary: `Garazyk/Sources/MediaCore` for catalog/box/fragment primitives;
+  presentation-header synthesis lives in `Garazyk/Sources/Video`. Existing
+  HLS/transcoder paths are unchanged.
+- Evidence: `ATProtoMUXLBoxTests`, `ATProtoMUXLFragmentTests`, and
+  `ATProtoMUXLFMP4Tests` (init determinism/ordering/prepend; flat determinism,
+  verbatim envelope, `stss`/`ctts` presence, no `mvex`). All registered in
+  `Tests/test_main.m`.
+- Explicit remainder: `elst` for non-zero presentation offset, playback sanity,
+  and transcoder wiring remain open.
+- Rollback: additive MediaCore/Video primitives and test registration; existing
+  HLS/transcoder output is untouched.
 
-**Phase 10 — S2PA — PARTIAL (strict COSE_Sign1 ES256K core).**
+**Phase 10 — S2PA — PARTIAL (COSE_Sign1 ES256K + self-signed leaf).**
 `Security/S2PA/ATProtoS2PACOSE` implements an attached COSE_Sign1 envelope with the normative
 ES256K algorithm (`-47`), canonical protected header `{1: -47}`, empty unprotected headers, the
 COSE `Sig_structure`, and 64-byte low-S secp256k1 signatures through the existing primitive. It
 rejects alternate CBOR encodings, unsupported algorithms, malformed fields, and signature/payload
 mismatch. Verification consumes a supplied public key and intentionally does not consult X.509
 trust anchors, matching S2PA's self-certifying trust model.
+`Security/S2PA/ATProtoS2PALeafCertificate` mints and verifies the deterministic self-issued X.509
+v3 leaf: DID in `commonName`, secp256k1 SPKI, normative extensions (basicConstraints cA=FALSE,
+digitalSignature keyUsage, emailProtection EKU, matching SKI/AKI), and self-signature over TBS.
+No trust-anchor chaining is performed.
 
-- Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope; it consumes
-  `Auth/Crypto/Secp256k1` read-only and does not alter repository signatures or auth JWTs.
+- Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope and leaf certificate; it
+  consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository signatures or auth JWTs.
 - Evidence: `ATProtoS2PACOSETests` covers exact protected-header bytes, Sig_structure shape,
   deterministic signing, attached-payload extraction, payload/key tampering, unsupported
   algorithms, non-canonical CBOR rejection, and explicit no-trust-anchor verification.
-- Explicit remainder: the C2PA claim/manifest-store schema, JUMBF embedding, S2PA deterministic
-  self-signed secp256k1 X.509 leaf, DID-to-certificate identity binding, and video integration
-  remain open. This slice is a cryptographic COSE core, not a complete C2PA/S2PA asset manifest.
+  `ATProtoS2PALeafCertificateTests` covers deterministic minting, default `did:key` and explicit
+  DID binding, self-signature verification, SKI embedding, and validity-window rejection.
+- Explicit remainder: the C2PA claim/manifest-store schema, JUMBF embedding, and video integration
+  remain open. This slice is cryptographic COSE + leaf identity, not a complete C2PA/S2PA asset
+  manifest.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
-  paths are unchanged.**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (data protocol and execution policy).**
+  paths are unchanged.
+
+**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (data protocol and execution policy).**
 `AdminUIServer/UITileDataProtocol` serves the reserved `/.well-known/web-tiles/data.js` module with
 `addDataHandler`, `removeDataHandler`, `listen`, and `sendData`, using the normative
 `tiles-protocol-up-data-ready`, `tiles-protocol-up-data-payload`, and

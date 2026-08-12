@@ -95,7 +95,7 @@ this against the real binary (green), and the OAuth consent-focus check —
 previously a soft warning in the smoke test's own comments describing it
 as a known gap — is now a hard assertion. Manual keyboard pass: covered by
 Area 3 (tab order) plus Area 5's `ArrowRight`/`Home`/`End` tab-navigation
-assertions, both against a live browser and the real `garazyk-ui` binary.
+assertions, both against a live browser and the real the former monolithic admin UI binary.
 
 ## U5. Visual conformance
 
@@ -122,7 +122,7 @@ against primary/tertiary light and dark surfaces and every on-fill text pair
 at WCAG AA's 4.5:1 threshold. Zoom/reflow, focus, touch-target, and narrow
 keyboard-order verification remain.
 
-**Progress (2026-07-22):** The `garazyk-ui` asset copy is now a file-dependent
+**Progress (2026-07-22):** The the former monolithic admin UI asset copy is now a file-dependent
 build target rather than a `POST_BUILD` side effect. Every change, addition,
 or deletion under `AdminUIServer/Assets` rebuilds `build/bin/Assets`; the
 build target replaces the managed output directory so removed source assets
@@ -137,7 +137,7 @@ equivalent for a 1280px desktop layout). The remaining U5 verification is the
 same live reflow, focus, and target-size coverage for the Admin UI.
 
 **Progress (2026-07-22): U5 complete.** The new focused live-browser smoke
-starts the built `garazyk-ui` binary and validates its login page at the same
+starts the built the former monolithic admin UI binary and validates its login page at the same
 640px / 200%-zoom-equivalent viewport: no page-level horizontal overflow,
 44×44 CSS-pixel password and sign-in targets, a keyboard-visible password
 focus indicator, and suppressed transitions under `prefers-reduced-motion`.
@@ -171,7 +171,7 @@ pages — core, ~1840 lines), `UIServerRuntime+StaticAssets.m` (the
 render methods). The 6 file-scope helper functions (`UIEscaped`, `UISafe`,
 etc.) lost their `static` linkage and moved to the shared private header so
 all three files can use them. `CMakeLists.txt` updated in both places that
-listed `UIServerRuntime.m` (the `garazyk-ui` executable and the `AllTests`
+listed `UIServerRuntime.m` (the former monolithic admin UI executable and the `AllTests`
 source list). Verified behavior-preserving: `UIServerRuntimeTests` 23/23
 green, and a full `admin_ui_browser_smoke_test.ts` run (real binary, real
 browser) green end to end, including the new Area 5 accessibility checks.
@@ -276,7 +276,7 @@ deployments and the OAuth consent page renders unstyled there. That is a
 packaging bug rather than CSS drift, and it needs a working Docker daemon to
 verify, so it is filed separately rather than guessed at.
 
-Also noted, not fixed: the `garazyk-ui` CMake target's `Assets/`
+Also noted, not fixed: the former monolithic admin UI CMake target's `Assets/`
 POST_BUILD copy only re-runs when the target itself rebuilds (source
 `.m` changes), not on Assets-only edits — an incremental-build reliability
 gap unrelated to source-content correctness, filed as a follow-up rather

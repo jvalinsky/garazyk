@@ -300,6 +300,46 @@ export function createTopologyManifest(
     }
   }
 
+  // PDS embeds its admin UI on port 2590. Expose a synthetic `ui` role so
+  // scenario capability checks and PDS_ADMIN_UI_URL keep working without a
+  // separate admin process.
+  if (serviceUrls.pds && !serviceUrls.ui) {
+    const pdsAdapter = preset.roles.pds as ServiceAdapter;
+    const adminPort = String(
+      pdsAdapter.env?.PDS_ADMIN_UI_PORT ||
+        defaultRolePort("ui") ||
+        "2590",
+    );
+    const uiOverride = options.hostPortOverrides?.ui;
+    const pubUrl = uiOverride !== undefined
+      ? `http://127.0.0.1:${uiOverride}`
+      : `http://localhost:${adminPort}`;
+    const pdsServiceName = serviceNames.pds || serviceNameForRole("pds", pdsAdapter);
+    const intUrl = `http://${pdsServiceName}:${adminPort}`;
+    const uiCaps = [
+      "admin",
+      "login",
+      "oauth",
+      "smoke",
+    ];
+    serviceUrls.ui = pubUrl;
+    internalUrls.ui = intUrl;
+    serviceNames.ui = pdsServiceName;
+    hostRunnerEnv[roleToEnvKey("ui")] = pubUrl;
+    dockerRunnerEnv[roleToEnvKey("ui")] = intUrl;
+    scenarioEnv[roleToEnvKey("ui")] = pubUrl;
+    capabilitiesByRole.ui = uiCaps;
+    for (const cap of uiCaps) capabilitySet.add(cap);
+    services.ui = {
+      role: "ui",
+      name: pdsAdapter.name,
+      serviceName: pdsServiceName,
+      capabilities: uiCaps,
+      dependencies: { requested: [], composeServiceNames: [] },
+      secrets: [],
+    };
+  }
+
   scenarioEnv.ATPROTO_TOPOLOGY = preset.name;
   scenarioEnv.ATPROTO_TOPOLOGY_CAPABILITIES = [...capabilitySet].sort().join(
     ",",

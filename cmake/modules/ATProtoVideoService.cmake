@@ -2,6 +2,7 @@
 # Entries are repository-relative; CMake validates existence, ownership, and
 # build-host independence before resolving them into target source lists.
 set(ATPROTO_VIDEO_MANIFEST
+  "Garazyk/Sources/Video/ATProtoMUXLFMP4.m"
   "Garazyk/Sources/Video/ATProtoVideoProcessor.m"
   "Garazyk/Sources/Video/AVFoundationTranscoder.m"
   "Garazyk/Sources/Video/FFmpegTranscoder.m"

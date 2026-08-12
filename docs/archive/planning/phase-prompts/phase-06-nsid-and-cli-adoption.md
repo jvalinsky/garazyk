@@ -11,12 +11,12 @@ last_updated: 2026-07-19
 
 ## Current slice (2026-07-19)
 
-Phase 6 is complete. All scope items (NSID constants generation/migration and CLI/lifecycle adoption for `garazyk-ui`, `jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`) are implemented and verified across native macOS and GNUstep/Linux environments.
+Phase 6 is complete. All scope items (NSID constants generation/migration and CLI/lifecycle adoption for the former monolithic admin UI, `jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`) are implemented and verified across native macOS and GNUstep/Linux environments.
 
 ## Progress (2026-07-19)
 
-- `garazyk-ui` characterization completed (`5e51b09a`) and lifecycle adoption completed (`2026-07-19`).
-- `garazyk-ui` is fully ported to `GZCommandLineOptions` and `GZServiceLifecycle` with `announceSignals:NO` and `GZCrashReporter` preserving its silent signal behavior and `/tmp/garazyk-ui-crash.log` crash-diagnostic contract. Verified via `GarazykUICommandTests` (7/7 pass natively) and `docker run ... garazyk-gnustep help/version/serve --help` across GNUstep/Linux.
+- the former monolithic admin UI characterization completed (`5e51b09a`) and lifecycle adoption completed (`2026-07-19`).
+- the former monolithic admin UI is fully ported to `GZCommandLineOptions` and `GZServiceLifecycle` with `announceSignals:NO` and `GZCrashReporter` preserving its silent signal behavior and `/tmp/the former monolithic admin UI-crash.log` crash-diagnostic contract. Verified via `GarazykUICommandTests` (7/7 pass natively) and `docker run ... garazyk-gnustep help/version/serve --help` across GNUstep/Linux.
 - All remaining binaries (`jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`) have been characterized (`JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) and ported to `GZCommandLineOptions` and `GZServiceLifecycle`. Verified natively and across GNUstep/Linux, preserving option parsing grammars, signal behavior, and `/tmp/<binary>-crash.log` contracts. Committed one binary per commit (`f35f32b5`, `2788d723`, `83c14795`, `dd5d4d4d`, `0401964f`, `c71068e3`). Phase 6 is now complete.
 
 ## Progress (2026-07-17)
@@ -57,10 +57,10 @@ Phase 6 is complete. All scope items (NSID constants generation/migration and CL
   the unrelated Gruszka checked-in-artifact mismatch; neither is changed by
   this lint slice. The focused lint test, source scan, and generator drift
   check all pass.
-- A read-only architecture audit selects `garazyk-ui` as the safest next
+- A read-only architecture audit selects the former monolithic admin UI as the safest next
   lifecycle adopter, subject to first characterizing its CLI grammar, silent
   shutdown behavior, dedicated crash-log contract, and GNUstep category load.
-- `garazyk-ui` now has six bounded executable characterization tests covering
+- the former monolithic admin UI now has six bounded executable characterization tests covering
   no-argument/help/version/unknown-command behavior, five invalid `serve`
   inputs, and a deterministic loopback bind failure. `AllTests` depends on the
   sibling binary so the tests do not rely on a stale executable. The focused
@@ -69,9 +69,9 @@ Phase 6 is complete. All scope items (NSID constants generation/migration and CL
   the current CLI grammar and exit behavior only, leaving silent shutdown, the
   dedicated crash log, GNUstep category loading, and the actual lifecycle port
   for the next one-binary slice.
-- `garazyk-ui` and `jelcz` are fully migrated to `GZCommandLineOptions` and
+- the former monolithic admin UI and `jelcz` are fully migrated to `GZCommandLineOptions` and
   `GZServiceLifecycle`. Both maintain their exact CLI grammar, return codes,
-  and dedicated crash log contracts (`/tmp/garazyk-ui-crash.log` and
+  and dedicated crash log contracts (`/tmp/the former monolithic admin UI-crash.log` and
   `/tmp/jelcz-crash.log` via `GZCrashReporter`). Both have bounded executable
   characterization test suites (`GarazykUICommandTests` and
   `JelczCommandTests`) registered in `test_main.m` and verified natively on

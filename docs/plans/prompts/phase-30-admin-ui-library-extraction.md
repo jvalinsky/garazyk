@@ -11,13 +11,13 @@ depends_on: []
 ## Mission
 
 Turn `Garazyk/Sources/AdminUIServer/` — 6,152 lines that belong to no static
-library and compile straight into the `garazyk-ui` executable — into an
+library and compile straight into the former monolithic admin UI executable — into an
 `ATProtoAdminUI` library that depends on `ATProtoTransport` and `ATProtoCore`
 only, and replace its hardcoded per-service route registration with a pack
 protocol that services implement.
 
 **This phase touches no service binary.** Its acceptance gate is that
-`garazyk-ui` is rebuilt as the library's first consumer, composing every pack,
+the former monolithic admin UI is rebuilt as the library's first consumer, composing every pack,
 and behaves identically. The extraction is proven by the existing application
 before anything embeds. Embedding happens in a later phase (WS11 M3, the PLC
 pilot).
@@ -27,7 +27,7 @@ pilot).
 The remaining acceptance prerequisites now pass: `cmake --build build --target
 AllTests --parallel 4` followed by `./build/tests/AllTests --gated=run`
 completed 5,004 tests with zero failures (506.708s); the live browser and
-visual smokes passed against the rebuilt `garazyk-ui`; `AdminUIAssetsSync` and
+visual smokes passed against the rebuilt the former monolithic admin UI; `AdminUIAssetsSync` and
 `scripts/test/check_ui_design_system.sh` passed. The retired legacy page-load
 scripts are not acceptance gates.
 
@@ -42,12 +42,12 @@ scripts are not acceptance gates.
 - [`docs/adr/0031-module-boundary-link-time-gate.md`](../../adr/0031-module-boundary-link-time-gate.md)
   — how the link-time gate resolves symbols; you are adding a module to it.
 - `Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md` — current architecture; must
-  be updated by this phase, since it describes `garazyk-ui` as the only UI.
+  be updated by this phase, since it describes the former monolithic admin UI as the only UI.
 - `.agents/skills/garazyk-admin-ui` — design-system, auth-boundary, and
   accessibility rules for this surface. Load it before touching markup.
 - Sources: `UIServerRuntime.m` (`-registerRoutes`), `UIServerRuntime+Private.h`,
   `UIBackendClient.{h,m}`, `UIBackendClient_Internal.h`, `UITemplateEngine.m`,
-  `Assets/html/shell.html`, and `CMakeLists.txt` (the `add_executable(garazyk-ui …)`
+  `Assets/html/shell.html`, and `CMakeLists.txt` (the `add_executable(<retired admin UI> …)`
   block, the `ADMIN_UI_ASSET_STAMP` block, and the `AdminUIAssetsSync` test).
 
 ## What is already correct — do not "fix" it
@@ -200,7 +200,7 @@ files.
 
 ## Acceptance gate
 
-1. **`garazyk-ui` links `ATProtoAdminUI`, `ATProtoTransport`, and
+1. **the former monolithic admin UI links `ATProtoAdminUI`, `ATProtoTransport`, and
    `ATProtoCore` only.** The dropped links to `ATProtoRuntime`,
    `ATProtoStorage`, `ATProtoServices`, `ATProtoSync`, and
    `ATProtoAppViewServer` are the measurable proof the extraction is real. An
@@ -229,7 +229,7 @@ keep that gate green.
 ## Out of scope
 
 - Embedding a UI in any service binary. That is M3 (PLC pilot) and M4.
-- Deleting `garazyk-ui`, dropping the Overview and Connections tabs, or
+- Deleting the former monolithic admin UI, dropping the Overview and Connections tabs, or
   touching `packages/schemat` / `packages/hamownia` / `docker/`. That is M5.
 - Introducing `GARAZYK_PLC_ADMIN_PASSWORD` or any per-service credential.
   That is M3.
@@ -288,13 +288,13 @@ keep that gate green.
   method on the host — the real per-service code stays where it is until
   slices 2–3 move it into these same pack files. `GZAdminUIDefaultPacks()`
   (`GZAdminUIDefaultPacks.{h,m}`) is the one file allowed to name every
-  service, used by `garazyk-ui`'s `main.m` and the three tests that construct
+  service, used by the former monolithic admin UI's `main.m` and the three tests that construct
   a full-surface host (`UIServerRuntimeTests`, `UILabAuthTests`,
   `UILabIntegrationTests`); `GZAdminUIHost` itself holds no compile-time
   knowledge of any service. `CMakeLists.txt` updated in both the
-  `garazyk-ui` executable's source list and `AllTests`' explicit admin-UI
+  the former monolithic admin UI executable's source list and `AllTests`' explicit admin-UI
   source list (not glob-covered).
-  - Both `AllTests` and `garazyk-ui` build cleanly (only the pre-existing,
+  - Both `AllTests` and the former monolithic admin UI build cleanly (only the pre-existing,
     expected `-Wincomplete-implementation` warnings noted in Slice 2's
     section — unrelated to this slice, unchanged by it).
   - All eight acceptance-gate suites pass with counts matching the recorded
@@ -308,7 +308,7 @@ keep that gate green.
 
 - Renamed `UIBackendClient` and its internal header to `GZAdminUIBackendClient`; moved all ten service category pairs under `AdminUIServer/Packs/` and updated their category declarations, consumers, CMake source lists, test stubs, and registered test class. The PDS category retains `serviceProbeSpecifications`, which is required by the existing Overview surface and is not a shared transport primitive.
 - Classified the seven untracked files inherited with this slice as migration scratch only: `rename_backend_clients.sh` performed the `git mv` loop; `move_probe.py` and `tmp_pds_inject.m` were incomplete relocation experiments; `GZAdminUIBackendClient+PDS_header.m`, `tmp_probe.m`, `tmp_probeurl.m`, and `tmp_spec.m` were extracted source fragments. None is a production source or test and none is included in CMake.
-- Validation (2026-08-08): with Homebrew OpenSSL 3.6.3 restored, `cmake -S . -B build` and `cmake --build build --target garazyk-ui AllTests --parallel 4` passed. The registration audit passed. `GZAdminUIBackendClientTests` passed (52 tests, 0 failures) and `UIServerRuntimeTests` passed (26 tests, 0 failures), both with `--gated=run`. `git diff --check`, `scripts/test/check_ui_design_system.sh`, `scripts/dev/check_module_boundaries.sh .`, `scripts/check_module_boundaries.sh build` (0 current leaks, 0 baselined), `scripts/check_namespace.sh build` (214 baselined), and `scripts/check-recursive-setters.sh` passed. After integration with current `main`, `deno run -A scripts/docs/repo_docs.ts validate --internal-strict` passed. Browser smoke was not run for this backend-only slice. M2.1–M2.3 are complete; M2.4–M2.6 remain.
+- Validation (2026-08-08): with Homebrew OpenSSL 3.6.3 restored, `cmake -S . -B build` and `cmake --build build --target the former monolithic admin UI AllTests --parallel 4` passed. The registration audit passed. `GZAdminUIBackendClientTests` passed (52 tests, 0 failures) and `UIServerRuntimeTests` passed (26 tests, 0 failures), both with `--gated=run`. `git diff --check`, `scripts/test/check_ui_design_system.sh`, `scripts/dev/check_module_boundaries.sh .`, `scripts/check_module_boundaries.sh build` (0 current leaks, 0 baselined), `scripts/check_namespace.sh build` (214 baselined), and `scripts/check-recursive-setters.sh` passed. After integration with current `main`, `deno run -A scripts/docs/repo_docs.ts validate --internal-strict` passed. Browser smoke was not run for this backend-only slice. M2.1–M2.3 are complete; M2.4–M2.6 remain.
 
 ### 2026-08-08 — Slice 4 composable shell implementation awaiting native verification
 
@@ -345,7 +345,7 @@ keep that gate green.
 ### 2026-08-08 — Slice 6 library registration and closeout evidence
 
 - `ATProtoAdminUI` is now a static library with only `ATProtoTransport` and
-  `ATProtoCore` dependencies. `garazyk-ui` links that library with those two
+  `ATProtoCore` dependencies. the former monolithic admin UI links that library with those two
   targets and its small CLI parser source; it no longer links Runtime,
   Storage, Services, Sync, or AppViewServer. The Transport rate limiter's
   fallback database configuration is local so this narrowed consumer does not

@@ -34,11 +34,44 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     return url;
 }
 
+/** Parse "Relay=http://127.0.0.1:2591,PLC=http://127.0.0.1:2592" into peer link dicts. */
+static NSArray<NSDictionary<NSString *, NSString *> *> *UIPeerLinksFromString(NSString *raw) {
+    if (raw.length == 0) {
+        return @[];
+    }
+    NSMutableArray<NSDictionary<NSString *, NSString *> *> *links = [NSMutableArray array];
+    NSArray<NSString *> *entries = [raw componentsSeparatedByString:@","];
+    for (NSString *entry in entries) {
+        NSString *trimmed = [entry stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (trimmed.length == 0) {
+            continue;
+        }
+        NSRange sep = [trimmed rangeOfString:@"="];
+        if (sep.location == NSNotFound || sep.location == 0) {
+            continue;
+        }
+        NSString *name = [[trimmed substringToIndex:sep.location]
+            stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        NSString *urlString = [[trimmed substringFromIndex:NSMaxRange(sep)]
+            stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        NSURL *url = [NSURL URLWithString:urlString ?: @""];
+        if (name.length == 0 || url.scheme.length == 0 || url.host.length == 0) {
+            continue;
+        }
+        if (![url.scheme isEqualToString:@"http"] && ![url.scheme isEqualToString:@"https"]) {
+            continue;
+        }
+        [links addObject:@{@"displayName": name, @"url": url.absoluteString}];
+    }
+    return [links copy];
+}
+
 @implementation GZAdminUIServiceConfig
 
 - (instancetype)init {
     self = [super init];
     if (self) {
+        _peerLinks = @[];
         // Auto-detect Assets/ directory next to the binary so embedded
         // admin hosts (PLC, Beskid, Mikrus, relay, etc.) that create
         // the config with plain -init still find their static assets.
@@ -62,17 +95,17 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     NSDictionary<NSString *, NSString *> *env = [[NSProcessInfo processInfo] environment];
 
     GZAdminUIServiceConfig *config = [[GZAdminUIServiceConfig alloc] init];
-    config.host = UIEnvString(env, @"GARAZYK_UI_HOST", @"127.0.0.1");
-    config.port = UIEnvUnsigned(env, @"GARAZYK_UI_PORT", 2590);
-    config.adminPassword = UIEnvString(env, @"GARAZYK_UI_ADMIN_PASSWORD", @"changeme");
+    config.host = UIEnvString(env, @"GARAZYK_ADMIN_UI_HOST", @"127.0.0.1");
+    config.port = UIEnvUnsigned(env, @"GARAZYK_ADMIN_UI_PORT", 2590);
+    config.adminPassword = UIEnvString(env, @"GARAZYK_ADMIN_UI_ADMIN_PASSWORD", @"changeme");
 
-    NSString *pdsURL = UIEnvString(env, @"GARAZYK_UI_PDS_URL", @"http://127.0.0.1:2583");
-    NSString *plcURL = UIEnvString(env, @"GARAZYK_UI_PLC_URL", @"http://127.0.0.1:2582");
-    NSString *relayURL = UIEnvString(env, @"GARAZYK_UI_RELAY_URL", @"http://127.0.0.1:2584");
-    NSString *appViewURL = UIEnvString(env, @"GARAZYK_UI_APPVIEW_URL", @"http://127.0.0.1:3200");
-    NSString *chatURL = UIEnvString(env, @"GARAZYK_UI_CHAT_URL", appViewURL);
-    NSString *videoURL = UIEnvString(env, @"GARAZYK_UI_VIDEO_URL", @"http://127.0.0.1:2586");
-    NSString *germURL = UIEnvString(env, @"GARAZYK_UI_GERM_URL", @"http://127.0.0.1:8082");
+    NSString *pdsURL = UIEnvString(env, @"GARAZYK_ADMIN_UI_PDS_URL", @"http://127.0.0.1:2583");
+    NSString *plcURL = UIEnvString(env, @"GARAZYK_ADMIN_UI_PLC_URL", @"http://127.0.0.1:2582");
+    NSString *relayURL = UIEnvString(env, @"GARAZYK_ADMIN_UI_RELAY_URL", @"http://127.0.0.1:2584");
+    NSString *appViewURL = UIEnvString(env, @"GARAZYK_ADMIN_UI_APPVIEW_URL", @"http://127.0.0.1:3200");
+    NSString *chatURL = UIEnvString(env, @"GARAZYK_ADMIN_UI_CHAT_URL", appViewURL);
+    NSString *videoURL = UIEnvString(env, @"GARAZYK_ADMIN_UI_VIDEO_URL", @"http://127.0.0.1:2586");
+    NSString *germURL = UIEnvString(env, @"GARAZYK_ADMIN_UI_GERM_URL", @"http://127.0.0.1:8082");
 
     config.pdsBaseURL = UIURLFromString(pdsURL, @"http://127.0.0.1:2583");
     config.plcBaseURL = UIURLFromString(plcURL, @"http://127.0.0.1:2582");
@@ -82,20 +115,26 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     config.videoBaseURL = UIURLFromString(videoURL, @"http://127.0.0.1:2586");
     config.germBaseURL = UIURLFromString(germURL, @"http://127.0.0.1:8082");
 
-    config.pdsAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_PDS_TOKEN");
-    config.pdsAdminPassword = UIEnvOptionalString(env, @"GARAZYK_UI_PDS_PASSWORD");
-    config.plcAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_PLC_TOKEN");
-    config.relayAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_RELAY_TOKEN");
-    config.appViewAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_APPVIEW_TOKEN");
-    config.chatAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_CHAT_TOKEN");
-    config.videoAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_VIDEO_TOKEN");
-    config.germAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_GERM_TOKEN");
+    config.pdsAdminToken = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_PDS_TOKEN");
+    config.pdsAdminPassword = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_PDS_PASSWORD");
+    config.plcAdminToken = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_PLC_TOKEN");
+    config.relayAdminToken = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_RELAY_TOKEN");
+    config.appViewAdminToken = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_APPVIEW_TOKEN");
+    config.chatAdminToken = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_CHAT_TOKEN");
+    config.videoAdminToken = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_VIDEO_TOKEN");
+    config.germAdminToken = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_GERM_TOKEN");
 
     // Assets directory: env var overrides the auto-detected default from -init
-    NSString *assetsDir = UIEnvOptionalString(env, @"GARAZYK_UI_ASSETS_DIR");
+    NSString *assetsDir = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_ASSETS_DIR");
     if (assetsDir) {
         config.assetsDirectory = assetsDir;
     }
+
+    NSString *peers = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_PEERS");
+    if (!peers) {
+        peers = UIEnvOptionalString(env, @"PDS_ADMIN_UI_PEERS");
+    }
+    config.peerLinks = UIPeerLinksFromString(peers);
 
     return config;
 }

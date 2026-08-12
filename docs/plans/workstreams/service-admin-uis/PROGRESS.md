@@ -80,7 +80,8 @@ last_verified: 2026-08-11
 | jelcz (Video) | 2586 | 2597 |
 | syrena-chat | 2585 | 2598 |
 | germ | 8082 | 2599 |
-| garazyk-ui (centralized) | 2590 | — |
+
+Port `2590` is the embedded PDS admin UI on `kaszlak` (not a separate binary).
 
 ## Remaining work
 
@@ -93,11 +94,11 @@ last_verified: 2026-08-11
 | Mikrus / Beskid | Pack completion vs brief acceptance (see briefs) |
 | Relay | Fresh GNUstep binary gate evidence; optional live-event inspector fields |
 | Ozone | Embedded listener only if a standalone Ozone binary is created (not in current fleet) |
-| Fleet | M5 `garazyk-ui` retirement after every brief meets acceptance |
+| Fleet | **M5 complete (2026-08-12):** standalone admin binary retired; Overview/Connections dropped; peer switcher + schemat/hamownia retarget landed |
 
 ## Build & test status
 
-- **AllTests**: builds clean, 43/43 admin pack tests pass
-- **All binaries**: germ, jelcz, syrena-chat, garazyk-ui all build clean
+- **AllTests**: builds clean; Admin UI suites (`UIServerRuntimeTests` 29, `GZAdminUIBackendClientTests` 52, `KaszlakAdminUICompositionTests` 3) pass
+- **All binaries**: germ, jelcz, syrena-chat, kaszlak (embedded admin) build clean
 - **NixOS modules**: all 7 service modules pass `nix-instantiate --parse`
 - **Deployment examples**: all 5 examples pass `nix-instantiate --parse`

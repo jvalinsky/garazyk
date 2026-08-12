@@ -5,7 +5,7 @@
  * There are two independently served bundles:
  *
  *   1. `AdminUIServer/Assets/library/css/system.css` — served flat at
- *      `/css/system.css` to the admin shell (`garazyk-ui`). It *inlines* its
+ *      `/css/system.css` to the admin shell (`admin UI`). It *inlines* its
  *      modules for single-file serving.
  *   2. `Shared/DesignSystem/css/system.css` — served at `/css/shared/system.css`
  *      to the standalone pages (OAuth authorize, PLC index, MST viewer, OAuth

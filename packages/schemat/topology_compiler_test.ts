@@ -220,7 +220,7 @@ Deno.test("compileTopology: writes compose file and returns URLs", async () => {
   }
 });
 
-Deno.test("compileTopology: garazyk-default includes cache services and garazyk-ui", async () => {
+Deno.test("compileTopology: garazyk-default includes cache services and PDS admin port", async () => {
   const runDir = await Deno.makeTempDir({ prefix: "topology-test-" });
   try {
     const result = await compileTopology({
@@ -233,7 +233,7 @@ Deno.test("compileTopology: garazyk-default includes cache services and garazyk-
     const parsed = parse(
       await Deno.readTextFile(result.composeFile),
     ) as ComposeObject;
-    const ui = parsed.services["local-ui"];
+    const pds = parsed.services["local-pds"];
     const mikrus = parsed.services["local-mikrus"];
     const beskid = parsed.services["local-beskid"];
     assertEquals(result.serviceUrls.mikrus, "http://localhost:3210");
@@ -249,7 +249,7 @@ Deno.test("compileTopology: garazyk-default includes cache services and garazyk-
       true,
     );
     assertEquals(result.serviceUrls.ui, "http://localhost:2590");
-    assertEquals(result.internalUrls.ui, "http://local-ui:2590");
+    assertEquals(result.internalUrls.ui, "http://local-pds:2590");
     assertEquals(
       result.manifest.env?.hostRunner.MIKRUS_URL,
       "http://localhost:3210",
@@ -259,28 +259,19 @@ Deno.test("compileTopology: garazyk-default includes cache services and garazyk-
       "http://localhost:8085",
     );
     assertEquals(
-      result.manifest.env?.hostRunner.GARAZYK_UI_URL,
+      result.manifest.env?.hostRunner.PDS_ADMIN_UI_URL,
       "http://localhost:2590",
     );
-    assertEquals(
-      result.manifest.env?.scenario.GARAZYK_UI_ADMIN_PASSWORD,
-      Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
-        Deno.env.get("UI_ADMIN_PASSWORD") ??
-        DEFAULT_ADMIN_PASSWORD,
-    );
+    assertEquals(result.capabilitiesByRole.ui.includes("admin"), true);
     assertEquals(mikrus.entrypoint, ["/usr/local/bin/mikrus"]);
     assertEquals(mikrus.ports!.includes("3210:3210"), true);
     assertEquals(beskid.entrypoint, ["/usr/local/bin/beskid"]);
     assertEquals(beskid.ports!.includes("8085:8085"), true);
     assertEquals(beskid.environment!.BESKID_PDS_URL, "http://local-pds:2583");
-    assertEquals(ui.entrypoint, ["/usr/local/bin/garazyk-ui"]);
-    assertEquals(ui.ports!.includes("2590:2590"), true);
-    assertEquals(
-      ui.healthcheck!.test.includes("http://localhost:2590/lab"),
-      true,
-    );
-    assertEquals(ui.depends_on!["local-pds"].condition, "service_healthy");
-    assertEquals(ui.depends_on!["local-appview"].condition, "service_healthy");
+    assertEquals(pds.ports!.includes("2583:2583"), true);
+    assertEquals(pds.ports!.includes("2590:2590"), true);
+    assertEquals(pds.environment!.PDS_ADMIN_UI_PORT, "2590");
+    assertEquals(parsed.services["local-ui"], undefined);
   } finally {
     await Deno.remove(runDir, { recursive: true });
   }

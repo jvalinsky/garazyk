@@ -2,9 +2,9 @@
 
 `ATProtoAdminUI` is the reusable, server-rendered admin UI library. It depends
 only on `ATProtoTransport` and `ATProtoCore`; it does not open service
-databases or embed a service runtime. `garazyk-ui` remains the compatibility
-consumer and supplies the command-line entry point and the shared `Assets/`
-directory.
+databases or embed a service runtime. Each service binary embeds
+`GZAdminUIHost` on a dedicated loopback listener (for example `kaszlak` on
+`127.0.0.1:2590`) and composes the packs it owns.
 
 ## Source
 
@@ -23,9 +23,9 @@ Garazyk/Sources/AdminUIServer/
 
 The host and shared UI primitives are compiled into `ATProtoAdminUI`. Service
 and feature route composition lives in `Packs/`, where each pack is linked into
-the same library. Add new library sources to the `ATProtoAdminUI` target; the
-compatibility executable should continue to contain only its entry point and
-small command-line adapter sources.
+the same library. Add new library sources to the `ATProtoAdminUI` target.
+Service binaries supply only a small bootstrap that builds config, selects
+packs, and starts the host.
 
 ## Request flow
 
@@ -41,6 +41,10 @@ Returned HTML is inserted into the relevant result container.
 
 The `/lab` page is a small OAuth client used to exercise the PDS authorization
 flow. Its OAuth session is separate from admin authentication.
+
+Single-surface shells render a peer switcher of plain configured links
+(`GARAZYK_ADMIN_UI_PEERS` / `PDS_ADMIN_UI_PEERS` as `Name=URL` entries). Links
+are presentation-only: no polling, credentials, or health claims.
 
 ## Rendering and assets
 
@@ -93,9 +97,9 @@ the page heading order intact.
 2. Register its partial route.
 3. Add the tab and panel markup.
 4. Add delegated JavaScript only when the shared behavior is insufficient.
-5. Build `garazyk-ui` and `AllTests`.
+5. Build the owning service binary and `AllTests`.
 6. Extend the browser smoke test or `UIServerRuntimeTests`.
 
 ```sh
-cmake --build build --target garazyk-ui AllTests --parallel 4
+cmake --build build --target kaszlak AllTests --parallel 4
 ```

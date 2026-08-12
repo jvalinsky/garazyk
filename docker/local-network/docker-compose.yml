@@ -41,6 +41,7 @@ services:
       - "--foreground"
     ports:
       - "2583:2583"
+      - "2590:2590"
     volumes:
       - local_pds_data:/var/lib/atprotopds
       - ./pds-config.json:/var/lib/atprotopds/config.json:ro
@@ -64,6 +65,9 @@ services:
       - PDS_RUNNING_TESTS=1
       - PDS_USE_KEYCHAIN=false
       - PDS_ADMIN_PASSWORD=admin-localdev
+      - PDS_ADMIN_UI_HOST=0.0.0.0
+      - PDS_ADMIN_UI_PORT=2590
+      - PDS_ADMIN_UI_PUBLIC_URL=http://127.0.0.1:2590/admin
       - GARAZYK_OAUTH_HOST_MAP=http://127.0.0.1:8080=http://oauth-client:8080
       - PDS_PHONE_VERIFICATION_PROVIDER=twilio
       - TWILIO_ACCOUNT_SID=AC00000000000000000000000000000000
@@ -368,44 +372,6 @@ services:
     networks:
       - local_net
 
-  local-ui:
-    build:
-      context: .
-      dockerfile: Dockerfile.local
-    entrypoint: ["/usr/local/bin/garazyk-ui"]
-    command:
-      - "serve"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "2590"
-    ports:
-      - "2590:2590"
-    environment:
-      - TZ=UTC
-      - GARAZYK_UI_PORT=2590
-      - GARAZYK_UI_ADMIN_PASSWORD=admin-localdev
-      - GARAZYK_UI_PDS_URL=http://local-pds:2583
-      - GARAZYK_UI_PDS_PASSWORD=admin-localdev
-      - GARAZYK_UI_PLC_URL=http://local-plc:2582
-      - GARAZYK_UI_RELAY_URL=http://local-relay:2584
-      - GARAZYK_UI_APPVIEW_URL=http://local-appview:3200
-      - GARAZYK_UI_APPVIEW_TOKEN=localdevadmin
-      - GARAZYK_UI_CHAT_URL=http://local-chat:2585
-      - GARAZYK_UI_VIDEO_URL=http://local-video:2586
-    depends_on:
-      local-pds:
-        condition: service_healthy
-      local-appview:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2590/lab"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
-    networks:
-      - local_net
 
   oauth-client:
     build:
@@ -457,7 +423,7 @@ services:
       - PLC_PORT=2582
       - GERM_HOST=local-germ
       - GERM_PORT=8082
-      - UI_HOST=local-ui
+      - UI_HOST=local-pds
       - UI_PORT=2590
     depends_on:
       - local-pds

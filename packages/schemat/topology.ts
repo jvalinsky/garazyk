@@ -377,7 +377,7 @@ function defaultServiceUrls(
     beskid: readEnv("BESKID_URL") || "http://localhost:8085",
     chat: readEnv("CHAT_URL") || "http://localhost:2585",
     video: readEnv("VIDEO_URL") || "http://localhost:2586",
-    ui: readEnv("GARAZYK_UI_URL") || "http://localhost:2590",
+    ui: readEnv("PDS_ADMIN_UI_URL") || "http://localhost:2590",
     backfill: readEnv("BACKFILL_URL") || "http://localhost:2480",
     oauthClient: oauthClientUrl || webClient?.publicUrl ||
       "http://localhost:8080",

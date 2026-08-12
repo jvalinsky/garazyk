@@ -39,9 +39,12 @@ Storage slice is now landed: 17 higher-consumer Storage classes are prefixed;
 its Core HTTP slice is also landed: six Core-owned HTTP classes are prefixed.
 The namespace baseline is 283 → … → 175 → **0** (2026-08-12). Batches 4–7
 (PLC/Sync/Services/XRPC/VideoService/Runtime/Core/AppView/Beskid/Mikrus) are
-complete; **M5.4 passes on macOS**. M6.1 started: build-tree `Garazyk::`
-aliases and `BUILD_INTERFACE`/`INSTALL_INTERFACE` include paths on module
-targets (2026-08-12); install/export rules and consumer tests remain open.
+complete; **M5.4 passes on macOS**. **M6.1–M6.5 pass on macOS (2026-08-12):**
+build-tree `Garazyk::` aliases, curated header install, exported
+`GarazykConfig.cmake` (ZLIB + ZSTD::zstd discovery; Apple frameworks reattached
+post-import), and `scripts/test/package-consumer-smoke.sh` (relocated prefix,
+core-only, full-graph, private-header-denied). GNUstep/Linux consumer CI
+remains open.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -830,7 +833,7 @@ builds) satisfies this requirement.
 to get first-ever full GNUstep build/test evidence.** Built
 `docker/Dockerfile.gnustep --target builder` fresh (`docker build`, not just
 `docker exec` reproduction) against current `main` — all binaries
-(`kaszlak`, `garazyk-ui`, `jelcz`, `syrena-chat`, `germ`, etc.) link cleanly.
+(`kaszlak`, the former monolithic admin UI, `jelcz`, `syrena-chat`, `germ`, etc.) link cleanly.
 Reconfiguring the same built image with `-DBUILD_TESTS=ON` and building
 `AllTests` also links cleanly (997/997 targets, only pre-existing
 `-Wincomplete-implementation` warnings, no errors) — this is the first time
@@ -1807,13 +1810,15 @@ missing generated registry. The applicable GNUstep Docker builder was also
 attempted, but OrbStack ran out of storage while copying the source context
 (`no space left on device`) before configure or compilation. Batches 4–7 and
 M5.4 namespace closure landed 2026-08-12 (0 unprefixed classes on macOS).
-M6.1 build-tree aliases landed; **M6.2–M6.4 pass on macOS (2026-08-12)** via
+M6.1–M6.5 pass on macOS (2026-08-12) via
 `scripts/test/package-consumer-smoke.sh` (relocated prefix, core-only,
 full-graph, and private-header-denied consumers). Curated header install uses
 `scripts/cmake/collect_public_headers.py` and repaired umbrellas (including
 `ATProtoStorage.h` dropping internal `DatabasePool.h`). `GarazykConfig.cmake`
-bundles vendored `secp256k1`, records `@GARAZYK_WITH_OPENSSL@`, and discovers
-Apple platform libraries. GNUstep/Linux consumer CI remains open.
+bundles vendored `secp256k1`, records `@GARAZYK_WITH_OPENSSL@`, discovers
+ZLIB/`ZSTD::zstd`, and reattaches Apple frameworks after import (CMake cannot
+reliably export `-framework` flags). Absolute host library paths are absent
+from installed `GarazykTargets.cmake`. GNUstep/Linux consumer CI remains open.
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are

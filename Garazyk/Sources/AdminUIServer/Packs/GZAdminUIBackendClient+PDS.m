@@ -5,21 +5,26 @@
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
-@interface GZAdminUIBackendClient (PDS_Private)
-- (NSArray<NSDictionary *> *)serviceProbeSpecifications;
-@end
-
 @implementation GZAdminUIBackendClient (PDS)
 
-- (NSArray<NSDictionary *> *)serviceProbeSpecifications {
-    return @[
-        @{@"name": @"pds", @"baseURL": self.configuration.pdsBaseURL ?: [NSNull null], @"xrpcPath": @"/xrpc/com.atproto.server.describeServer", @"token": self.configuration.pdsAdminToken ?: [NSNull null]},
-        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.plcAdminToken ?: [NSNull null]},
-        @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL ?: [NSNull null], @"xrpcPath": @"/api/relay/health", @"token": self.configuration.relayAdminToken ?: [NSNull null]},
-        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL ?: [NSNull null], @"xrpcPath": @"/admin/ingest/health", @"token": self.configuration.appViewAdminToken ?: [NSNull null]},
-        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.chatAdminToken ?: [NSNull null]},
-        @{@"name": @"video", @"baseURL": self.configuration.videoBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.videoAdminToken ?: [NSNull null]}
-    ];
+static NSString *GZAdminUIProbePathForService(NSString *normalized) {
+    if ([normalized isEqualToString:@"pds"]) {
+        return @"/xrpc/com.atproto.server.describeServer";
+    }
+    if ([normalized isEqualToString:@"plc"]) {
+        return @"/_health";
+    }
+    if ([normalized isEqualToString:@"relay"]) {
+        return @"/api/relay/health";
+    }
+    if ([normalized isEqualToString:@"appview"]) {
+        return @"/admin/ingest/health";
+    }
+    if ([normalized isEqualToString:@"chat"] || [normalized isEqualToString:@"video"] ||
+        [normalized isEqualToString:@"germ"]) {
+        return @"/_health";
+    }
+    return nil;
 }
 
 - (BOOL)refreshPDSAdminToken {
@@ -47,73 +52,18 @@
     return NO;
 }
 
-- (NSDictionary *)fetchServiceOverview {
-    dispatch_group_t group = dispatch_group_create();
-    dispatch_queue_t queue = dispatch_queue_create("com.garazyk.service.probes", DISPATCH_QUEUE_CONCURRENT);
-
-    NSMutableArray<NSDictionary *> *services = [NSMutableArray array];
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(1);
-
-    NSArray<NSDictionary *> *probeSpecs = [self serviceProbeSpecifications];
-
-    for (NSDictionary *spec in probeSpecs) {
-        dispatch_group_enter(group);
-        dispatch_async(queue, ^{
-            NSString *name = spec[@"name"];
-            id baseURLValue = spec[@"baseURL"];
-            NSURL *baseURL = [baseURLValue isKindOfClass:[NSURL class]] ? baseURLValue : nil;
-            id xrpcPath = spec[@"xrpcPath"];
-            id tokenValue = spec[@"token"];
-            NSString *token = [tokenValue isKindOfClass:[NSNull class]] ? nil : tokenValue;
-
-            NSDictionary *result = [self probeServiceNamed:name
-                                                   baseURL:baseURL
-                                                 xrpcPath:[xrpcPath isKindOfClass:[NSNull class]] ? nil : xrpcPath
-                                             bearerToken:token];
-
-            dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 35 * NSEC_PER_SEC));
-            [services addObject:result];
-            dispatch_semaphore_signal(semaphore);
-
-            dispatch_group_leave(group);
-        });
-    }
-
-    dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(50.0 * NSEC_PER_SEC)));
-
-    NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
-    NSString *generatedAt = [formatter stringFromDate:[NSDate date]];
-    return @{@"services": services, @"generatedAt": generatedAt ?: @""};
-}
-
-- (NSDictionary *)testConnectionForService:(NSString *)serviceName {
-    NSString *normalized = [[serviceName ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
-    for (NSDictionary *spec in [self serviceProbeSpecifications]) {
-        if ([[spec[@"name"] lowercaseString] isEqualToString:normalized]) {
-            id tokenValue = spec[@"token"];
-            NSString *token = [tokenValue isKindOfClass:[NSNull class]] ? nil : tokenValue;
-            return [self probeServiceNamed:spec[@"name"]
-                                   baseURL:spec[@"baseURL"]
-                                  xrpcPath:spec[@"xrpcPath"]
-                               bearerToken:token];
-        }
-    }
-    return @{@"name": normalized ?: @"", @"status": @"error", @"error": @"Unknown service"};
-}
-
 - (NSDictionary *)testConnectionForService:(NSString *)serviceName
                                    baseURL:(NSURL *)baseURL
                                 adminToken:(nullable NSString *)adminToken {
     NSString *normalized = [[serviceName ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
-    for (NSDictionary *spec in [self serviceProbeSpecifications]) {
-        if ([[spec[@"name"] lowercaseString] isEqualToString:normalized]) {
-            return [self probeServiceNamed:spec[@"name"]
-                                   baseURL:baseURL
-                                  xrpcPath:spec[@"xrpcPath"]
-                               bearerToken:adminToken];
-        }
+    NSString *path = GZAdminUIProbePathForService(normalized);
+    if (path.length == 0) {
+        return @{@"name": normalized ?: @"", @"status": @"error", @"error": @"Unknown service"};
     }
-    return @{@"name": normalized ?: @"", @"status": @"error", @"error": @"Unknown service"};
+    return [self probeServiceNamed:normalized
+                           baseURL:baseURL
+                          xrpcPath:path
+                       bearerToken:adminToken];
 }
 
 - (NSDictionary *)searchAccountsWithQuery:(NSString *)query {

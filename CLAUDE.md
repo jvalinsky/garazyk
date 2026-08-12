@@ -111,12 +111,11 @@ names are Polish-vehicle codenames, so the mapping is not guessable:
 
 | Binary | Role |
 | --- | --- |
-| `kaszlak` | PDS server + CLI |
+| `kaszlak` | PDS server + CLI (+ embedded admin UI) |
 | `zuk` | Relay |
 | `campagnola` | PLC directory |
 | `syrena` | AppView |
 | `syrena-chat` | Chat service |
-| `garazyk-ui` | Administration UI |
 | `jelcz` | Video processing |
 | `beskid`, `mikrus`, `germ` | Supporting services (indexing, caches) |
 

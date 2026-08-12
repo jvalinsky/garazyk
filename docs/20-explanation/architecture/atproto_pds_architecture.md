@@ -26,7 +26,7 @@ flowchart LR
 | `zuk`         | Relay                                 |
 | `campagnola`  | PLC directory                         |
 | `syrena`      | AppView                               |
-| `garazyk-ui`  | Administration UI                     |
+| `kaszlak` admin | Embedded PDS Admin UI (`:2590`) |
 | `syrena-chat` | Chat service                          |
 | `jelcz`       | Video processing                      |
 

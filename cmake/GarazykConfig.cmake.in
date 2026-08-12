@@ -5,6 +5,28 @@ include(CMakeFindDependencyMacro)
 set(GARAZYK_INCLUDE_SOURCES "${PACKAGE_PREFIX_DIR}/@GARAZYK_INSTALL_INCLUDEDIR@/garazyk/Sources")
 set(GARAZYK_INCLUDE_FRAMEWORKS "${PACKAGE_PREFIX_DIR}/@GARAZYK_INSTALL_INCLUDEDIR@/garazyk/Frameworks")
 
+find_dependency(ZLIB)
+
+# Recreate the ZSTD::zstd imported target expected by Garazyk::ATProtoTransport.
+find_path(ZSTD_INCLUDE_DIR NAMES zstd.h
+  HINTS ENV ZSTD_ROOT PATH_SUFFIXES include
+  PATHS /opt/homebrew/opt/zstd/include /usr/local/opt/zstd/include /usr/include)
+find_library(ZSTD_LIBRARY NAMES zstd
+  HINTS ENV ZSTD_ROOT PATH_SUFFIXES lib
+  PATHS /opt/homebrew/opt/zstd/lib /usr/local/opt/zstd/lib /usr/lib /usr/lib/x86_64-linux-gnu)
+if(NOT ZSTD_INCLUDE_DIR OR NOT ZSTD_LIBRARY)
+  set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+    "Garazyk requires libzstd (set ZSTD_ROOT or install zstd / libzstd-dev)")
+  set(${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+  return()
+endif()
+if(NOT TARGET ZSTD::zstd)
+  add_library(ZSTD::zstd UNKNOWN IMPORTED)
+  set_target_properties(ZSTD::zstd PROPERTIES
+    IMPORTED_LOCATION "${ZSTD_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${ZSTD_INCLUDE_DIR}")
+endif()
+
 if(@GARAZYK_WITH_OPENSSL@)
   find_dependency(OpenSSL)
 endif()
@@ -70,6 +92,24 @@ if(APPLE AND TARGET Garazyk::ATProtoRuntime)
     list(APPEND _gz_runtime_extra ${GARAZYK_Readline})
   endif()
   target_link_libraries(Garazyk::ATProtoRuntime INTERFACE ${_gz_runtime_extra})
+endif()
+
+# Frameworks cannot be exported as "-framework Foo" through CMake's target export
+# (the flag is split into a bare library name). Reattach them here instead.
+if(APPLE)
+  if(TARGET Garazyk::ATProtoServices)
+    target_link_libraries(Garazyk::ATProtoServices INTERFACE
+      "-framework CoreMedia" "-framework AVFoundation")
+  endif()
+  if(TARGET Garazyk::ATProtoVideoService)
+    target_link_libraries(Garazyk::ATProtoVideoService INTERFACE
+      "-framework CoreMedia" "-framework AVFoundation"
+      "-framework ImageIO" "-framework CoreServices")
+  endif()
+  if(TARGET Garazyk::ATProtoMediaCore)
+    target_link_libraries(Garazyk::ATProtoMediaCore INTERFACE
+      "-framework Foundation")
+  endif()
 endif()
 
 check_required_components(Garazyk)

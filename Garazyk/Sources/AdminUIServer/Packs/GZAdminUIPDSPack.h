@@ -24,10 +24,6 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSString *)renderAuditLogPartial:(NSDictionary *)result;
 /** @abstract Renders PDS moderation reports. */
 + (NSString *)renderPDSReportsPartial:(NSDictionary *)result;
-/** @abstract Renders configured backend connection status. */
-+ (NSString *)renderConnectionsPartialWithConfiguration:(GZAdminUIServiceConfig *)configuration;
-/** @abstract Renders the server overview result. */
-+ (NSString *)renderOverviewPartial:(NSDictionary *)result;
 
 @end
 

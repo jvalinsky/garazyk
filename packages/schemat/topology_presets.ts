@@ -92,30 +92,6 @@ function health(url: string) {
 
 const BUILTIN_WEB_CLIENTS: WebClientTopology[] = [
   {
-    name: "garazyk-ui",
-    source: "local://garazyk-ui",
-    ref: readEnv("GARAZYK_WEB_CLIENT_REF") || "workspace",
-    buildPreset: "garazyk-ui",
-    serveCommand: ["garazyk-ui", "serve", "--port", "2590"],
-    publicUrl: publicWebUrl,
-    internalUrl: internalWebUrl,
-    env: {
-      GARAZYK_UI_PDS_URL: "http://local-pds:2583",
-      GARAZYK_UI_PLC_URL: "http://local-plc:2582",
-      GARAZYK_UI_RELAY_URL: "http://local-relay:2584",
-      GARAZYK_UI_APPVIEW_URL: "http://local-appview:3200",
-      GARAZYK_UI_ADMIN_PASSWORD: "changeme",
-    },
-    healthCheck: health(`${internalWebUrl}/lab`),
-    oauthRedirects: [`${publicWebUrl}/lab/callback`],
-    capabilities: ["smoke", "login", "oauth", "admin"],
-    browserFlow: {
-      smoke: "scripts/scenarios/browser/garazyk-ui_smoke.ts",
-      login: "scripts/scenarios/browser/garazyk-ui_login.ts",
-      deep: "scripts/scenarios/browser/garazyk-ui_deep.ts",
-    },
-  },
-  {
     name: "skylab",
     source: "https://github.com/bluesky-social/social-app.git",
     ref: readEnv("SKYLAB_WEB_CLIENT_REF") || "main",
@@ -339,13 +315,6 @@ const beskidCaps = [
   Cap.beskid.identityCache,
 ] as const;
 
-const uiBasicCaps = [
-  Cap.ui.admin,
-  Cap.ui.login,
-  Cap.ui.oauth,
-  Cap.ui.smoke,
-] as const;
-
 function pdsVolumes(name: string, config: string) {
   return [
     volume.named(`${name}_data`, "/var/lib/atprotopds"),
@@ -369,7 +338,8 @@ const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") ??
   DEFAULT_ADMIN_PASSWORD;
 const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ??
   "localdevadmin";
-const UI_ADMIN_PASSWORD = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
+const UI_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_UI_PASSWORD") ??
+  Deno.env.get("PDS_ADMIN_PASSWORD") ??
   Deno.env.get("UI_ADMIN_PASSWORD") ??
   DEFAULT_ADMIN_PASSWORD;
 
@@ -383,6 +353,10 @@ function localPdsEnv() {
     PDS_RATELIMIT_ENABLED: "false",
     PDS_MASTER_SECRET,
     PDS_ADMIN_PASSWORD,
+    PDS_ADMIN_UI_HOST: "0.0.0.0",
+    PDS_ADMIN_UI_PORT: "2590",
+    PDS_ADMIN_UI_PASSWORD: UI_ADMIN_PASSWORD,
+    PDS_ADMIN_UI_PUBLIC_URL: "http://127.0.0.1:2590/admin",
     PDS_PHONE_VERIFICATION_PROVIDER: "twilio",
     TWILIO_ACCOUNT_SID: "AC00000000000000000000000000000000",
     TWILIO_AUTH_TOKEN: "SK00000000000000000000000000000000",
@@ -430,7 +404,7 @@ const GARAZYK_DEFAULT = defineTopology({
         "--foreground",
       ],
       env: localPdsEnv(),
-      ports: [port(2583)],
+      ports: [port(2583), port(2590)],
       volumes: pdsVolumes("local_pds", "./pds-config.json"),
       health: topologyHealth.http("/xrpc/com.atproto.server.describeServer"),
       capabilities: pdsCoreCaps,
@@ -625,38 +599,6 @@ const GARAZYK_DEFAULT = defineTopology({
       health: topologyHealth.http("/_health"),
       capabilities: [Cap.video.uploadVideo, Cap.video.getVideoStatus],
       dependsOnRoles: [Role.pds],
-    }),
-    [Role.ui]: role.ui({
-      name: "garazyk-ui",
-      source: localBuild,
-      entrypoint: ["/usr/local/bin/garazyk-ui"],
-      command: [
-        "serve",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "2590",
-      ],
-      env: {
-        TZ: "UTC",
-        GARAZYK_UI_PORT: "2590",
-        GARAZYK_UI_ADMIN_PASSWORD: UI_ADMIN_PASSWORD,
-        GARAZYK_UI_PDS_URL: "http://local-pds:2583",
-        GARAZYK_UI_PDS_PASSWORD: PDS_ADMIN_PASSWORD,
-        GARAZYK_UI_PLC_URL: "http://local-plc:2582",
-        GARAZYK_UI_RELAY_URL: "http://local-relay:2584",
-        GARAZYK_UI_APPVIEW_URL: "http://local-appview:3200",
-        GARAZYK_UI_APPVIEW_TOKEN: APPVIEW_ADMIN_SECRET,
-        GARAZYK_UI_CHAT_URL: "http://local-chat:2585",
-        GARAZYK_UI_VIDEO_URL: "http://local-video:2586",
-      },
-      ports: [port(2590)],
-      health: topologyHealth.http("/lab"),
-      capabilities: uiBasicCaps,
-      dependsOnRoles: [Role.pds, Role.appview],
-      scenarioEnv: {
-        GARAZYK_UI_ADMIN_PASSWORD: UI_ADMIN_PASSWORD,
-      },
     }),
   },
   networkAliases: {

@@ -490,7 +490,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 - (void)testGetAdminPartialHTMXWithoutAuthReturns401 {
     NSURLResponse *response = nil;
     NSError *error = nil;
-    NSData *data = [self sendRequestToPath:@"/admin/partials/overview"
+    NSData *data = [self sendRequestToPath:@"/admin/partials/accounts"
                                     method:@"GET"
                                    headers:@{@"HX-Request": @"true"}
                                       body:nil

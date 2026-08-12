@@ -146,5 +146,5 @@ protocol listener on 2583 is unchanged.
 | `PDS_ADMIN_UI_PASSWORD` / `_FILE` | Optional UI-only override |
 | `PDS_ADMIN_UI_HOST` / `PORT` | Bind (default `127.0.0.1` / `2590`) |
 | `PDS_ADMIN_UI_PUBLIC_URL` | Admin sign-in link on public `GET /` |
-| `GARAZYK_UI_ASSETS_DIR` | Optional Assets override |
+| `GARAZYK_ADMIN_UI_ASSETS_DIR` | Optional Assets override |
 

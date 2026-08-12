@@ -6,6 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
+#import "Video/ATProtoMUXLFMP4.h"
 #import "Video/ATProtoVideoProcessor.h"
 #import "Video/VideoHLSGenerator.h"
 #import "Video/VideoWorker.h"

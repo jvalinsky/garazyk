@@ -14,21 +14,6 @@
 - (void)registerPDSRoutes {
     __weak typeof(self) weakSelf = self;
 
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/overview" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        AUTH_GUARD(weakSelf, request, response);
-        NSDictionary *overview = [weakSelf.backendClient fetchServiceOverview];
-        response.statusCode = 200;
-        response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[GZAdminUIPDSPack renderOverviewPartial:overview]];
-    }];
-
-    [self.httpServer addRoute:@"GET" path:@"/admin/partials/connections" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        AUTH_GUARD(weakSelf, request, response);
-        response.statusCode = 200;
-        response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[GZAdminUIPDSPack renderConnectionsPartialWithConfiguration:weakSelf.configuration]];
-    }];
-
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/accounts" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
         NSString *query = [request queryParamForKey:@"q"] ?: @"";
@@ -176,28 +161,6 @@
         NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Report resolved.";
         NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
         [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, GZAdminUIEscaped(msg)]];
-    }];
-
-    // Connections: Update service URLs and tokens
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-connections" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        AUTH_GUARD(weakSelf, request, response);
-        NSDictionary *body = request.jsonBody;
-        if (![body isKindOfClass:[NSDictionary class]]) {
-            response.statusCode = 400;
-            response.contentType = @"text/html; charset=utf-8";
-            [response setBodyString:@"<div class=\"alert alert-destructive\">Invalid request body.</div>"];
-            return;
-        }
-        BOOL valid = [weakSelf.configuration updateWithDictionary:body];
-        response.statusCode = 200;
-        response.contentType = @"text/html; charset=utf-8";
-        if (valid) {
-            [response setBodyString:@"<div class=\"alert alert-success\">Connections updated. Changes apply immediately but are not persisted across restarts.</div>"];
-        } else {
-            [response setBodyString:@"<div class=\"alert alert-destructive\">Some URLs were invalid and could not be applied. Other values were saved.</div>"];
-        }
-        // Re-render the form with updated values
-        [response setBodyString:[response.bodyString stringByAppendingString:[GZAdminUIPDSPack renderConnectionsPartialWithConfiguration:weakSelf.configuration]]];
     }];
 }
 

@@ -34,7 +34,7 @@ Complementary to `atproto-scenario-testing` — that skill runs pre-written Deno
 | Video | 2586 | `http://127.0.0.1:2586` | `jelcz` |
 | **PDS 2** | **2587** | `http://127.0.0.1:2587` | `kaszlak` |
 | AppView | 3200 | `http://127.0.0.1:3200` | `syrena` |
-| UI | 2590 | `http://127.0.0.1:2590` | `garazyk-ui` |
+| UI | 2590 | `http://127.0.0.1:2590` | `kaszlak` (embedded admin) |
 
 Ports are overridable via env vars: `PLC_PORT`, `PDS_PORT`, `PDS2_PORT`, `RELAY_PORT`, `APPVIEW_PORT`.
 

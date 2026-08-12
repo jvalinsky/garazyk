@@ -181,7 +181,7 @@ typedef void (^UILabRouteHandler)(ATProtoHttpRequest *request, ATProtoHttpRespon
  */
 - (void)testAdminHTMXPartialReturns401 {
     NSDictionary *headers = @{@"HX-Request": @"true"};
-    ATProtoHttpRequest *request = [self requestWithPath:@"/admin/partials/overview" headers:headers];
+    ATProtoHttpRequest *request = [self requestWithPath:@"/admin/partials/accounts" headers:headers];
     ATProtoHttpResponse *response = [ATProtoHttpResponse response];
 
     BOOL authorized = [self invokeEnsureAuthorizedForRequest:request response:response];

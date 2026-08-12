@@ -43,6 +43,13 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property(nonatomic, copy, nullable) NSString *assetsDirectory;
 
+/**
+ * @abstract Configured peer admin UI links (displayName + url). Presentation only.
+ * @discussion Populated from GARAZYK_ADMIN_UI_PEERS as comma-separated Name=URL
+ *             entries. No health checks or credentials are attached.
+ */
+@property(nonatomic, copy) NSArray<NSDictionary<NSString *, NSString *> *> *peerLinks;
+
 + (instancetype)configurationFromEnvironment;
 
 /**

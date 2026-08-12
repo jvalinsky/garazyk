@@ -56,7 +56,7 @@ const expectedDefaultServiceNames = {
   beskid: "local-beskid",
   chat: "local-chat",
   video: "local-video",
-  ui: "local-ui",
+  ui: "local-pds",
   backfill: "local-backfill",
 };
 
@@ -86,7 +86,7 @@ const expectedRoleEnvRegistry = {
   beskid: "BESKID_URL",
   chat: "CHAT_URL",
   video: "VIDEO_URL",
-  ui: "GARAZYK_UI_URL",
+  ui: "PDS_ADMIN_UI_URL",
   backfill: "BACKFILL_URL",
 };
 

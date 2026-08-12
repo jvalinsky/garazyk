@@ -222,6 +222,42 @@ static NSUInteger PFPExpectedLength(ATProtoPFPAlgorithm algorithm) {
     return @{@"__pfp": self.stringValue};
 }
 
++ (NSUInteger)recommendedPDQMatchDistance {
+    return 31;
+}
+
++ (BOOL)hammingDistanceBetweenPDQ:(ATProtoPFP *)left
+                            andPDQ:(ATProtoPFP *)right
+                          distance:(NSUInteger *)outDistance
+                             error:(NSError **)error {
+    if (![left isKindOfClass:[ATProtoPFP class]] ||
+        ![right isKindOfClass:[ATProtoPFP class]] ||
+        left.algorithm != ATProtoPFPAlgorithmPDQ ||
+        right.algorithm != ATProtoPFPAlgorithmPDQ ||
+        left.data.length != kPFPInlineHashLength ||
+        right.data.length != kPFPInlineHashLength) {
+        PFPSetError(error, ATProtoPFPErrorUnsupportedAlgorithm,
+                    @"PDQ Hamming distance requires two PDQ PFPs with 32-byte hashes");
+        return NO;
+    }
+    const uint8_t *a = left.data.bytes;
+    const uint8_t *b = right.data.bytes;
+    NSUInteger distance = 0;
+    for (NSUInteger i = 0; i < kPFPInlineHashLength; i++) {
+        uint8_t x = (uint8_t)(a[i] ^ b[i]);
+#if defined(__GNUC__) || defined(__clang__)
+        distance += (NSUInteger)__builtin_popcount(x);
+#else
+        while (x) {
+            distance += x & 1U;
+            x >>= 1;
+        }
+#endif
+    }
+    if (outDistance) *outDistance = distance;
+    return YES;
+}
+
 - (id)copyWithZone:(NSZone *)zone {
     return self;
 }

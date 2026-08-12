@@ -146,34 +146,8 @@ async function render(args: Args): Promise<string> {
     ...dnsAliases.map((alias) => `          - ${alias}`),
   ].join("\n");
 
-  let webClientService: string;
-  if (client.buildPreset === "garazyk-ui") {
-    webClientService = `  web-client:
-    build:
-      context: ${q(join(args.repoRoot, "docker/local-network"))}
-      dockerfile: Dockerfile.local
-    entrypoint: ["/usr/local/bin/garazyk-ui"]
-    command: ["serve", "--port", "2590"]
-    ports:
-      - "2591:2590"
-    environment:
-${yamlMap(client.env, "      ")}
-    depends_on:
-      local-pds:
-        condition: service_healthy
-      local-appview:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2590/lab"]
-      interval: ${client.healthCheck.intervalSeconds}s
-      timeout: ${client.healthCheck.timeoutSeconds}s
-      retries: ${client.healthCheck.retries}
-      start_period: ${client.healthCheck.startPeriodSeconds}s
-    networks:
-      - ${args.network}`;
-  } else {
-    const buildContext = await writeSourceDockerfile(client, args.runDir);
-    webClientService = `  web-client:
+  const buildContext = await writeSourceDockerfile(client, args.runDir);
+  const webClientService = `  web-client:
     build:
       context: ${q(buildContext)}
     ports:
@@ -193,7 +167,6 @@ ${yamlMap(client.env, "      ")}
       start_period: ${client.healthCheck.startPeriodSeconds}s
     networks:
       - ${args.network}`;
-  }
 
   const blockedHosts = args.allowHybrid || client.allowHybridNetwork
     ? []

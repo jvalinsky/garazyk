@@ -102,7 +102,7 @@ Deno.test("getRequires: returns multiple requirements for scenario 09", () => {
   assertEquals(reqs.length >= 3, true);
 });
 
-Deno.test("getRequires: scenario 11 requires the garazyk-ui role", () => {
+Deno.test("getRequires: scenario 11 requires the ui/admin role", () => {
   const reqs = getRequires("11");
   assertEquals(reqs, [
     requires(Role.ui, Cap.ui.smoke),

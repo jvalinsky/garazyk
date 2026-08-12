@@ -45,7 +45,7 @@ sign-in paths (previously stranded focus on the now-hidden sign-in
 button); `#auth-error` gets `role="alert"`.
 
 `scripts/admin_ui_browser_smoke_test.ts` gets a new Area 5 asserting all
-of the above against the real built `garazyk-ui` binary (heading count/
+of the above against the real built the former monolithic admin UI binary (heading count/
 order, tablist roles, `aria-selected` + roving `tabindex` after
 `ArrowRight`, unbound-label count), and the pre-existing OAuth
 consent-focus check is promoted from a soft `warn()` to a hard `fail()`
@@ -88,7 +88,7 @@ and tertiary surfaces in light and dark themes, plus every action-fill text
 pair.
 
 **Slice 5 in progress (2026-07-22): asset build reliability.** The old
-`garazyk-ui` `POST_BUILD` asset copy did not run for CSS/JS/template-only
+the former monolithic admin UI `POST_BUILD` asset copy did not run for CSS/JS/template-only
 changes, so incremental builds could serve stale UI files. It is replaced by
 an asset-file-dependent custom target that recreates `build/bin/Assets` and a
 CTest assertion that the complete built asset inventory and hashes match the
@@ -109,7 +109,7 @@ CSS layout width of a 1280px viewport at 200% zoom). The remaining U5 work is
 the equivalent live Admin UI verification.
 
 **Slice 8 complete (2026-07-22): Admin UI U5 visual validation.** The new
-`scripts/admin_ui_visual_smoke_test.ts` starts the built `garazyk-ui` binary
+`scripts/admin_ui_visual_smoke_test.ts` starts the built the former monolithic admin UI binary
 and verifies the login page in Chromium at a 640px viewport (the 200%-zoom
 equivalent): no document-level horizontal overflow, at least 44×44 CSS-pixel
 password and sign-in targets, a keyboard-visible password focus indicator,
