@@ -430,6 +430,20 @@ Inbound links: **14**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/adr/0034-star-lite-v0-interop-export.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/adr/0035-account-migration-bring-your-own-did.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md`
 
 Inbound links: **2**
@@ -1108,7 +1122,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **353**
+Inbound links: **359**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -1586,6 +1600,13 @@ Inbound links: **2**
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/reports/2026-08-11T0139Z-relay-crawl-cloudflare-findings.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/reports/2026-08-11T2245Z-hubble-star-lite-sync.md`
 
 Inbound links: **2**
 

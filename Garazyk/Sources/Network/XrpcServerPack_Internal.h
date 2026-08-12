@@ -9,10 +9,10 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Auth/Crypto/JWT.h"
 
-BOOL validateDidWebServiceAuthForAccountCreation(ATProtoHttpRequest * _Nonnull request,
-                                                        ATProtoHttpResponse * _Nonnull response,
-                                                        NSString *did,
-                                                        ATProtoServiceConfiguration *config);
+BOOL validateDidServiceAuthForAccountCreation(ATProtoHttpRequest * _Nonnull request,
+                                                      ATProtoHttpResponse * _Nonnull response,
+                                                      NSString *did,
+                                                      ATProtoServiceConfiguration *config);
 BOOL createInviteCodeInDatabase(PDSServiceDatabases *serviceDatabases,
                                        NSString *accountDid,
                                        NSInteger maxUses,
