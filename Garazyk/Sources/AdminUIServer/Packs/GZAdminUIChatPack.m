@@ -27,36 +27,40 @@
     NSMutableDictionary *ctx = [result mutableCopy];
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
     if (result[@"convos"]) {
+        // Allowlisted metadata keys — no backend dictionary pass-through
+        NSSet<NSString *> *allowlist = [NSSet setWithArray:@[
+            @"id", @"mode", @"memberCount", @"locked", @"lastActivity",
+            @"unreadCount", @"lastMessage"
+        ]];
         NSMutableArray *mapped = [NSMutableArray array];
         for (NSDictionary *convo in result[@"convos"]) {
-            NSMutableDictionary *mc = [convo mutableCopy];
-            NSString *mode = convo[@"mode"] ?: @"plaintext";
-            mc[@"modeDisplay"] = [mode isEqualToString:@"e2ee"] ? @"<span title=\"End-to-end encrypted\">&#128274; E2EE</span>" : @"<span class=\"text-secondary\">plaintext</span>";
-            if (convo[@"memberCount"]) {
-                mc[@"memberCountStr"] = [convo[@"memberCount"] stringValue];
-            } else {
-                NSArray *members = convo[@"members"];
-                mc[@"memberCountStr"] = members ? [NSString stringWithFormat:@"%lu", (unsigned long)members.count] : @"0";
-            }
-            id lastMsgObj = convo[@"lastMessage"];
-            NSString *lastMsg = @"(none)";
-            if ([lastMsgObj isKindOfClass:[NSDictionary class]]) {
-                if ([((NSDictionary *)lastMsgObj)[@"mode"] isEqualToString:@"e2ee"] || ((NSDictionary *)lastMsgObj)[@"ciphertext"] != nil) {
-                    lastMsg = @"<em class=\"text-secondary\">&#128274; encrypted</em>";
-                } else {
-                    lastMsg = ((NSDictionary *)lastMsgObj)[@"text"] ?: @"(none)";
-                    if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
-                    lastMsg = GZAdminUIEscaped(lastMsg);
+            NSMutableDictionary *mc = [NSMutableDictionary dictionary];
+            for (NSString *key in allowlist) {
+                id val = convo[key];
+                if (val && ![val isKindOfClass:[NSNull class]]) {
+                    mc[key] = val;
                 }
-            } else if ([lastMsgObj isKindOfClass:[NSString class]]) {
-                lastMsg = lastMsgObj;
-                if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
-                lastMsg = GZAdminUIEscaped(lastMsg);
             }
-            // lastMsg is either one of the two literal HTML fragments above
-            // (encrypted placeholder) or GZAdminUIEscaped user message text — the
-            // template renders this field raw ({{{lastMsg}}}), so anything
-            // reaching here must already be safe HTML.
+            NSString *mode = mc[@"mode"] ?: @"plaintext";
+            mc[@"modeDisplay"] = [mode isEqualToString:@"e2ee"] ? @"<span title=\"End-to-end encrypted\">&#128274; E2EE</span>" : @"<span class=\"text-secondary\">plaintext</span>";
+            NSNumber *memberCount = mc[@"memberCount"];
+            mc[@"memberCountStr"] = memberCount ? [memberCount stringValue] : @"0";
+
+            // Last message: never render plaintext body by default — brief says
+            // "remove default plaintext previews". Show only metadata.
+            id lastMsgObj = mc[@"lastMessage"];
+            NSString *lastMsg = @"<em class=\"text-secondary\">—</em>";
+            if ([lastMsgObj isKindOfClass:[NSDictionary class]]) {
+                NSDictionary *lm = lastMsgObj;
+                if ([lm[@"mode"] isEqualToString:@"e2ee"] || lm[@"ciphertext"] != nil) {
+                    lastMsg = @"<em class=\"text-secondary\">&#128274; encrypted</em>";
+                } else if (lm[@"sentAt"]) {
+                    // Show timestamp but not body content
+                    NSString *at = lm[@"sentAt"];
+                    if (at.length > 19) at = [at substringToIndex:19];
+                    lastMsg = [NSString stringWithFormat:@"<span class=\"text-secondary\">message at %@</span>", GZAdminUIEscaped(at)];
+                }
+            }
             mc[@"lastMsg"] = lastMsg;
             [mapped addObject:mc];
         }
@@ -103,6 +107,26 @@
         ctx[@"messages"] = mapped;
     }
     return [GZAdminUITemplateEngine renderTemplate:@"chat-messages" context:ctx];
+}
+
++ (NSString *)renderChatOverviewHTML {
+    return @"<div class=\"metric-row\">"
+        @"<div class=\"metric\"><span class=\"metric-label\">Privacy</span>"
+        @"<span class=\"metric-value\">No message content displayed</span></div>"
+        @"<div class=\"metric\"><span class=\"metric-label\">Encryption</span>"
+        @"<span class=\"metric-value\">E2EE + plaintext supported</span></div>"
+        @"</div>"
+
+        @"<section class=\"mt-lg\"><h3 class=\"section-title\">Conversations</h3>"
+        @"<div id=\"chat-convos\" hx-get=\"/admin/partials/chat-convos\" hx-trigger=\"revealed\"></div></section>"
+
+        @"<section class=\"mt-lg\"><h3 class=\"section-title\">Messages</h3>"
+        @"<div class=\"search-row\">"
+        @"<form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/chat-messages\" hx-target=\"#chat-messages\">"
+        @"<input type=\"text\" name=\"convoID\" placeholder=\"Conversation ID\" class=\"form-input flex-1\"/>"
+        @"<button type=\"submit\" class=\"btn btn-primary btn-sm\">View</button>"
+        @"</form></div>"
+        @"<div id=\"chat-messages\"></div></section>";
 }
 
 @end

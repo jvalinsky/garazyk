@@ -8,7 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Admin UI pack for the Chat surface. */
 @interface GZAdminUIChatPack : NSObject <GZAdminUIPack>
 
-/** @abstract Renders chat-conversation results. */
+/** @abstract Renders the Chat overview dashboard with privacy-safe summary counters. */
++ (NSString *)renderChatOverviewHTML;
+/** @abstract Renders chat-conversation results with allowlisted metadata. */
 + (NSString *)renderChatConvosPartial:(NSDictionary *)result;
 /** @abstract Renders chat-message results. */
 + (NSString *)renderChatMessagesPartial:(NSDictionary *)result;

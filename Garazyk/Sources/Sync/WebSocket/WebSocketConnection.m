@@ -354,7 +354,21 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     NSData *keyData = [NSData dataWithBytes:randomBytes length:16];
     NSString *key = [keyData base64EncodedStringWithOptions:0];
     _handshakeKey = key;
-    
+
+    NSString *handshake = [self handshakeRequestStringWithKey:key];
+
+    GZ_LOG_SYNC_DEBUG(@"WebSocket: Sending handshake to %@:%u", self.host, self.port);
+
+    NSData *data = [handshake dataUsingEncoding:NSUTF8StringEncoding];
+    [self writeData:data];
+
+    // We expect a 101 response next.
+    // For simplicity, we'll reuse handleReceivedData but we need to know we're waiting for a handshake.
+    _waitingForHandshakeResponse = YES;
+    [self startReading];
+}
+
+- (NSString *)handshakeRequestStringWithKey:(NSString *)key {
     NSMutableString *handshake = [NSMutableString string];
     [handshake appendFormat:@"GET %@ HTTP/1.1\r\n", self.path];
 
@@ -380,16 +394,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                                 self.authorizationHeader];
     }
     [handshake appendString:@"\r\n"];
-    
-    GZ_LOG_SYNC_DEBUG(@"WebSocket: Sending handshake to %@:%u", self.host, self.port);
-    
-    NSData *data = [handshake dataUsingEncoding:NSUTF8StringEncoding];
-    [self writeData:data];
-    
-    // We expect a 101 response next.
-    // For simplicity, we'll reuse handleReceivedData but we need to know we're waiting for a handshake.
-    _waitingForHandshakeResponse = YES;
-    [self startReading];
+    return handshake;
 }
 
 - (void)handleReceivedData:(NSData *)data {
