@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @abstract XRPC dispatcher for ATProto RPC methods.
  
- @discussion This header defines the XrpcDispatcher class for handling
+ @discussion This header defines the ATProtoXrpcDispatcher class for handling
  ATProto XRPC method calls. XRPC is the remote procedure call protocol
  used by ATProto for API requests.
  
@@ -48,16 +48,16 @@ typedef BOOL (^XrpcRequestInterceptor)(ATProtoHttpRequest *request,
                                        BOOL hasLocalHandler);
 
 /*!
- @class XrpcDispatcher
+ @class ATProtoXrpcDispatcher
  
  @abstract Dispatches XRPC method calls to handlers.
  
- @discussion XrpcDispatcher routes incoming XRPC requests to registered
+ @discussion ATProtoXrpcDispatcher routes incoming XRPC requests to registered
  handlers based on the method NSID. Use registerMethod:handler: with
  generated NSID constants (GZXrpcNSID.h) for type-safe registration.
  
  @code
- XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
+ ATProtoXrpcDispatcher *dispatcher = [ATProtoXrpcDispatcher sharedDispatcher];
  
  [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createSession handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
      // Handle createSession call
@@ -66,7 +66,7 @@ typedef BOOL (^XrpcRequestInterceptor)(ATProtoHttpRequest *request,
  [dispatcher handleRequest:request response:response];
  @endcode
  */
-@interface XrpcDispatcher : NSObject
+@interface ATProtoXrpcDispatcher : NSObject
 
 /*! Default handler for unrecognized methods. */
 @property (nonatomic, copy) void (^defaultHandler)(ATProtoHttpRequest *, ATProtoHttpResponse *);
@@ -103,7 +103,7 @@ typedef BOOL (^XrpcRequestInterceptor)(ATProtoHttpRequest *request,
   
  @abstract Returns the shared dispatcher instance.
   
- @return The singleton XrpcDispatcher.
+ @return The singleton ATProtoXrpcDispatcher.
  */
 + (instancetype)sharedDispatcher;
 

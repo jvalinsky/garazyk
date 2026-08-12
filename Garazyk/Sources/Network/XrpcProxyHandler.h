@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 typedef _Nullable id<PDSActorKeyManager> (^ServiceAuthSigningKeyResolver)(NSString *userDID, NSError **error);
 
 /*!
- @class XrpcProxyHandler
+ @class ATProtoXrpcProxyHandler
  
  @abstract Handles proxying XRPC requests to an upstream service.
  
@@ -33,7 +33,7 @@ typedef _Nullable id<PDSActorKeyManager> (^ServiceAuthSigningKeyResolver)(NSStri
  per the AT Protocol XRPC spec: signed with the user's repo signing key,
  with iss=userDID, aud=serviceDID#fragment, lxm=method, exp=60s, jti=nonce.
  */
-@interface XrpcProxyHandler : NSObject
+@interface ATProtoXrpcProxyHandler : NSObject
 
 /*! Upstream service URL (e.g., AppView URL). */
 @property (nonatomic, readonly, copy) NSURL *proxyURL;

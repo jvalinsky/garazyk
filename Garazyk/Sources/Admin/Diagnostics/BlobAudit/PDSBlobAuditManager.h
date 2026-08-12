@@ -4,7 +4,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class BlobStorage;
+@class PDSBlobStorage;
 @class PDSServiceDatabases;
 
 /**
@@ -34,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param serviceDatabases Service database instance for job persistence
  * @return Initialized manager
  */
-- (instancetype)initWithBlobStorage:(BlobStorage *)blobStorage
+- (instancetype)initWithBlobStorage:(PDSBlobStorage *)blobStorage
                  serviceDatabases:(PDSServiceDatabases *)serviceDatabases;
 
 /**

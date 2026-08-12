@@ -7,7 +7,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
-@implementation OAuth2Handler (Helpers)
+@implementation ATProtoOAuth2Handler (Helpers)
 
 #pragma mark - JSON Parsing
 - (NSDictionary *)parseJSONBody:(NSData *)data {

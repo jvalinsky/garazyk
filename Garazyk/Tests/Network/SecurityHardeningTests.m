@@ -20,7 +20,7 @@
 
 @interface NetworkSecurityHardeningTests : XCTestCase
 @property (nonatomic, strong) PDSController *controller;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, strong) NSURL *tempURL;
 @property (nonatomic, copy) NSString *did;
 @property (nonatomic, copy) NSString *accessJwt;
@@ -37,8 +37,8 @@
 
     PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
     self.controller = app.legacyController;
-    self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
 
     NSError *error = nil;
     NSDictionary *account = [self.controller createAccountForEmail:@"test@example.com"
@@ -309,8 +309,8 @@
         PDSController *controller = app.legacyController;
         XCTAssertNotNil(controller);
 
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         NSError *error = nil;
         NSDictionary *account = [controller createAccountForEmail:@"nonce@example.com"
@@ -340,7 +340,7 @@
 
         // Real signed DPoP proof — without a nonce — so the verifier
         // reaches the *nonce* check rather than the parse/signature pipeline.
-        DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"GET"
+        ATProtoDPoPToken *proof = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                                      uri:dpopURLString
                                                   nonce:nil
                                                     key:privateKey
@@ -441,8 +441,8 @@
         PDSController *controller = app.legacyController;
         XCTAssertNotNil(controller);
 
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         NSError *error = nil;
         NSDictionary *account = [controller createAccountForEmail:@"nonce-retry@example.com"
@@ -473,7 +473,7 @@
         // Initial proof carries no nonce — the verifier trips the
         // `requireNonce && !proofNonce` branch and emits the challenge.
         error = nil;
-        DPoPToken *initialProof = [DPoPUtil createDPoPForMethod:@"GET"
+        ATProtoDPoPToken *initialProof = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                                              uri:dpopURLString
                                                           nonce:nil
                                                             key:privateKey
@@ -507,7 +507,7 @@
         // the RFC 9449 `ath` claim. Rebuild the initial proof now that the
         // token is available, retaining the same key and nonce-less state.
         error = nil;
-        initialProof = [DPoPUtil createDPoPForMethod:@"GET"
+        initialProof = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                                  uri:dpopURLString
                                                nonce:nil
                                          accessToken:encodedAccessToken
@@ -546,7 +546,7 @@
         // the `dpop-nonce` HTTP header. Both paths are equivalent to the
         // verifier; setting both is defensive across server variants.
         error = nil;
-        DPoPToken *retryProof = [DPoPUtil createDPoPForMethod:@"GET"
+        ATProtoDPoPToken *retryProof = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                                          uri:dpopURLString
                                                       nonce:challengeNonce
                                                 accessToken:encodedAccessToken
@@ -745,7 +745,7 @@
 }
 
 // Extract the RFC 7638 thumbprint from the public JWK embedded in a signed DPoP
-// proof ATProtoJWT. `DPoPToken.header` returns a placeholder JWK (empty x/y coordinates);
+// proof ATProtoJWT. `ATProtoDPoPToken.header` returns a placeholder JWK (empty x/y coordinates);
 // the real coordinates live in the ATProtoJWT's signed header. Decoding the header
 // directly ensures the access token's `cnf.jkt` claim matches the JWK the auth
 // helper's DPoP verifier actually saw — otherwise it rejects the bound token with

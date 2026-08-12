@@ -25,7 +25,7 @@
                    configuration:(nullable ATProtoServiceConfiguration *)configuration
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller {
-  NodeInfoHandler *nodeInfoHandler = [NodeInfoHandler sharedHandler];
+  GZNodeInfoHandler *nodeInfoHandler = [GZNodeInfoHandler sharedHandler];
 
   NSString *resolvedIssuer = issuer;
   if (resolvedIssuer.length == 0 && configuration) {

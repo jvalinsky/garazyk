@@ -12,26 +12,26 @@ NSInteger const FirehoseErrorCodeSubscriptionFailed = 6000;
 NSInteger const FirehoseErrorCodeEventEncodingFailed = 6001;
 NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 
-@interface FirehoseSubscription ()
+@interface ATProtoFirehoseSubscription ()
 @property (nonatomic, assign, readwrite) int64_t cursor;
 @property (nonatomic, copy, readwrite, nullable) NSArray<NSString *> *collections;
 @property (nonatomic, assign, readwrite) BOOL isActive;
 @property (nonatomic, weak, readwrite, nullable) id<FirehoseSubscriptionDelegate> delegate;
 @end
 
-@interface Firehose () <WebSocketConnectionDelegate>
+@interface ATProtoFirehose () <WebSocketConnectionDelegate>
 @property (nonatomic, strong, readwrite) NSURL *serverURL;
 @property (nonatomic, assign, readwrite) int64_t cursor;
 @property (nonatomic, assign, readwrite) BOOL isConnected;
-@property (nonatomic, strong, readwrite, nullable) WebSocketConnection *connection;
-@property (nonatomic, strong, readwrite) NSMutableSet<FirehoseSubscription *> *subscriptions;
-@property (nonatomic, strong, readwrite) EventFormatter *eventFormatter;
+@property (nonatomic, strong, readwrite, nullable) ATProtoWebSocketConnection *connection;
+@property (nonatomic, strong, readwrite) NSMutableSet<ATProtoFirehoseSubscription *> *subscriptions;
+@property (nonatomic, strong, readwrite) ATProtoEventFormatter *eventFormatter;
 @end
 
-@implementation FirehoseRawEvent
+@implementation ATProtoFirehoseRawEvent
 @end
 
-@implementation Firehose
+@implementation ATProtoFirehose
 
 - (instancetype)initWithServerURL:(NSURL *)serverURL {
     self = [super init];
@@ -39,16 +39,16 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
         _serverURL = serverURL;
         _isConnected = NO;
         _subscriptions = [NSMutableSet set];
-        _eventFormatter = [[EventFormatter alloc] init];
+        _eventFormatter = [[ATProtoEventFormatter alloc] init];
     }
     return self;
 }
 
-- (FirehoseSubscription *)subscribeWithCursor:(int64_t)cursor
+- (ATProtoFirehoseSubscription *)subscribeWithCursor:(int64_t)cursor
                                    collections:(nullable NSArray<NSString *> *)collections
                                      delegate:(nullable id<FirehoseSubscriptionDelegate>)delegate {
     self.cursor = cursor;
-    FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:cursor
+    ATProtoFirehoseSubscription *subscription = [[ATProtoFirehoseSubscription alloc] initWithCursor:cursor
                                                                            collections:collections];
     subscription.delegate = delegate;
 
@@ -79,7 +79,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 
     GZ_LOG_SYNC_INFO(@"Firehose: Connecting to %@:%u%@ (scheme: %@)", host, port, path, self.serverURL.scheme);
 
-    self.connection = [[WebSocketConnection alloc] initWithHost:host
+    self.connection = [[ATProtoWebSocketConnection alloc] initWithHost:host
                                                           port:port
                                                           path:path
                                                      secureTLS:secureTLS];
@@ -127,7 +127,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 }
 
 - (void)sendEventToSubscriptions:(id)event kind:(FirehoseEventKind)kind {
-    for (FirehoseSubscription *subscription in self.subscriptions) {
+    for (ATProtoFirehoseSubscription *subscription in self.subscriptions) {
         if (!subscription.isActive) continue;
 
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -182,7 +182,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
     GZ_LOG_SYNC_DEBUG(@"Decoded firehose frame: op=%ld type=%@", (long)op, msgType);
 
     if (op == -1) { // Error frame
-        FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];
+        ATProtoFirehoseErrorEvent *event = [[ATProtoFirehoseErrorEvent alloc] init];
         event.error = payload[@"error"];
         event.message = payload[@"message"];
         [self sendEventToSubscriptions:event kind:FirehoseEventKindError];
@@ -190,7 +190,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
     }
 
     if ([msgType isEqualToString:@"#commit"]) {
-        FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+        ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
         event.seq = [payload[@"seq"] longLongValue];
         event.rebase = [payload[@"rebase"] boolValue];
         event.tooBig = [payload[@"tooBig"] boolValue];
@@ -207,7 +207,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
         [self sendEventToSubscriptions:event kind:FirehoseEventKindCommit];
 
     } else if ([msgType isEqualToString:@"#identity"]) {
-        FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+        ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
         event.did = payload[@"did"];
         event.seq = [payload[@"seq"] longLongValue];
         event.time = payload[@"time"];
@@ -216,7 +216,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
         [self sendEventToSubscriptions:event kind:FirehoseEventKindIdentity];
 
     } else if ([msgType isEqualToString:@"#account"]) {
-        FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+        ATProtoFirehoseAccountEvent *event = [[ATProtoFirehoseAccountEvent alloc] init];
         event.did = payload[@"did"];
         event.seq = [payload[@"seq"] longLongValue];
         event.active = [payload[@"active"] boolValue];
@@ -226,7 +226,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
         [self sendEventToSubscriptions:event kind:FirehoseEventKindAccount];
 
     } else if ([msgType isEqualToString:@"#sync"]) {
-        FirehoseSyncEvent *event = [[FirehoseSyncEvent alloc] init];
+        ATProtoFirehoseSyncEvent *event = [[ATProtoFirehoseSyncEvent alloc] init];
         event.did = payload[@"did"];
         event.seq = [payload[@"seq"] longLongValue];
         event.blocks = payload[@"blocks"];
@@ -236,17 +236,17 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
         [self sendEventToSubscriptions:event kind:FirehoseEventKindSync];
 
     } else if ([msgType isEqualToString:@"#info"]) {
-        FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
+        ATProtoFirehoseInfoEvent *event = [[ATProtoFirehoseInfoEvent alloc] init];
         event.kind = payload[@"kind"] ?: payload[@"name"];
         event.message = payload[@"message"];
 
         [self sendEventToSubscriptions:event kind:FirehoseEventKindInfo];
     } else {
-        FirehoseRawEvent *event = [[FirehoseRawEvent alloc] init];
+        ATProtoFirehoseRawEvent *event = [[ATProtoFirehoseRawEvent alloc] init];
         event.messageType = msgType ?: @"";
         event.frameData = [data copy];
         event.payload = payload;
-        for (FirehoseSubscription *subscription in self.subscriptions) {
+        for (ATProtoFirehoseSubscription *subscription in self.subscriptions) {
             if (!subscription.isActive) continue;
             id<FirehoseSubscriptionDelegate> delegate = subscription.delegate;
             if ([delegate respondsToSelector:@selector(firehoseSubscription:didReceiveRawEvent:)]) {
@@ -259,7 +259,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 }
 
 - (void)notifyConnectionError:(NSError *)error {
-    for (FirehoseSubscription *subscription in self.subscriptions) {
+    for (ATProtoFirehoseSubscription *subscription in self.subscriptions) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if ([subscription.delegate respondsToSelector:@selector(firehoseSubscription:didCloseWithError:)]) {
                 [subscription.delegate firehoseSubscription:subscription didCloseWithError:error];
@@ -270,19 +270,19 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 
 #pragma mark - WebSocketConnectionDelegate
 
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveMessage:(NSData *)message {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveMessage:(NSData *)message {
     [self handleMessage:message];
 }
 
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveText:(NSString *)text {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveText:(NSString *)text {
     NSData *data = [text dataUsingEncoding:NSUTF8StringEncoding];
     [self handleMessage:data];
 }
 
-- (void)webSocketConnection:(WebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
     self.isConnected = NO;
 
-    for (FirehoseSubscription *subscription in self.subscriptions) {
+    for (ATProtoFirehoseSubscription *subscription in self.subscriptions) {
         NSError *error = nil;
         if (code != 1000) {
             error = [NSError errorWithDomain:FirehoseErrorDomain
@@ -297,16 +297,16 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
     }
 }
 
-- (void)webSocketConnection:(WebSocketConnection *)connection didFailWithError:(NSError *)error {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didFailWithError:(NSError *)error {
     [self notifyConnectionError:error];
 }
 
-- (void)webSocketConnectionStateDidChange:(WebSocketConnection *)connection {
+- (void)webSocketConnectionStateDidChange:(ATProtoWebSocketConnection *)connection {
     GZ_LOG_DEBUG(@"Firehose: WebSocket state changed to %d", (int)connection.state);
     if (connection.state == WebSocketConnectionStateConnected) {
         self.isConnected = YES;
 
-        for (FirehoseSubscription *subscription in self.subscriptions) {
+        for (ATProtoFirehoseSubscription *subscription in self.subscriptions) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 GZ_LOG_DEBUG(@"Firehose: Notifying subscription delegate of connect");
                 if ([subscription.delegate respondsToSelector:@selector(firehoseSubscriptionDidConnect:)]) {
@@ -319,7 +319,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 
 @end
 
-@implementation FirehoseSubscription
+@implementation ATProtoFirehoseSubscription
 
 - (instancetype)initWithCursor:(int64_t)cursor collections:(nullable NSArray<NSString *> *)collections {
     self = [super init];
@@ -337,9 +337,9 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 
 @end
 
-@implementation FirehoseCommitEvent
+@implementation ATProtoFirehoseCommitEvent
 + (instancetype)eventWithRepo:(NSString *)repo commit:(ATProtoCID *)commit ops:(NSArray<NSDictionary *> *)ops {
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.repo = repo;
     event.commit = commit;
     event.ops = ops;
@@ -347,11 +347,11 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 }
 @end
 
-@implementation FirehoseSyncEvent
+@implementation ATProtoFirehoseSyncEvent
 + (instancetype)eventWithDid:(NSString *)did
                          rev:(NSString *)rev
                       blocks:(NSData *)blocks {
-    FirehoseSyncEvent *event = [[FirehoseSyncEvent alloc] init];
+    ATProtoFirehoseSyncEvent *event = [[ATProtoFirehoseSyncEvent alloc] init];
     event.did = did;
     event.rev = rev;
     event.blocks = blocks;
@@ -359,19 +359,19 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 }
 @end
 
-@implementation FirehoseIdentityEvent
+@implementation ATProtoFirehoseIdentityEvent
 + (instancetype)eventWithDid:(NSString *)did {
-    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
     event.did = did;
     return event;
 }
 @end
 
-@implementation FirehoseAccountEvent
+@implementation ATProtoFirehoseAccountEvent
 + (instancetype)eventWithDid:(NSString *)did
                       active:(BOOL)active
                       status:(nullable NSString *)status {
-    FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+    ATProtoFirehoseAccountEvent *event = [[ATProtoFirehoseAccountEvent alloc] init];
     event.did = did;
     event.active = active;
     event.status = status;
@@ -379,21 +379,21 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 }
 @end
 
-@implementation FirehoseInfoEvent
+@implementation ATProtoFirehoseInfoEvent
 + (instancetype)eventWithKind:(NSString *)kind message:(NSString *)message {
-    FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
+    ATProtoFirehoseInfoEvent *event = [[ATProtoFirehoseInfoEvent alloc] init];
     event.kind = kind;
     event.message = message;
     return event;
 }
 @end
 
-@implementation FirehoseErrorEvent
+@implementation ATProtoFirehoseErrorEvent
 + (instancetype)eventWithMessage:(NSString *)message {
     return [self eventWithError:@"Error" message:message];
 }
 + (instancetype)eventWithError:(NSString *)error message:(nullable NSString *)message {
-    FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];
+    ATProtoFirehoseErrorEvent *event = [[ATProtoFirehoseErrorEvent alloc] init];
     event.error = error;
     event.message = message;
     return event;

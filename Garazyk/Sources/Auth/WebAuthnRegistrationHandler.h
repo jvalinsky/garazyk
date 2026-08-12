@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file WebAuthnRegistrationHandler.h
+ @file ATProtoWebAuthnRegistrationHandler.h
 
  @abstract WebAuthn credential registration and authentication handler.
 
@@ -19,14 +19,14 @@
 @class ATProtoHttpServer;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
-@class Session;
+@class PDSSession;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Handles WebAuthn registration and assertion HTTP endpoints.
  */
-@interface WebAuthnRegistrationHandler : NSObject
+@interface ATProtoWebAuthnRegistrationHandler : NSObject
 
 /** Database used to store and load WebAuthn credentials. */
 @property (nonatomic, strong) PDSDatabase *database;

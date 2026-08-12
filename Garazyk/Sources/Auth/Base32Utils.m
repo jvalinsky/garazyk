@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Auth/Base32Utils.h"
 
-@implementation Base32Utils
+@implementation ATProtoBase32Utils
 
 + (nullable NSData *)dataFromBase32String:(NSString *)base32String {
     if (!base32String) return nil;

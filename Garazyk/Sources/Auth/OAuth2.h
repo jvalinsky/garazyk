@@ -27,8 +27,8 @@ extern NSString * const OAuth2ErrorDomain;
  */
 @protocol PDSKeyManager;
 @class ATProtoDIDResolver;
-@class HandleResolver;
-@class Session;
+@class ATProtoHandleResolver;
+@class PDSSession;
 @class PDSDatabase;
 
 /*!
@@ -131,7 +131,7 @@ typedef void (^OAuth2AuthorizationCompletion)(NSURL * _Nullable authorizationURL
  @param session The created session with tokens.
  @param error An error if the request failed.
  */
-typedef void (^OAuth2TokenCompletion)(Session * _Nullable session, NSError * _Nullable error);
+typedef void (^OAuth2TokenCompletion)(PDSSession * _Nullable session, NSError * _Nullable error);
 
 /*!
  
@@ -143,14 +143,14 @@ typedef void (^OAuth2TokenCompletion)(Session * _Nullable session, NSError * _Nu
 typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSError * _Nullable error);
 
 /*!
- @class OAuth2AuthorizationRequest
+ @class ATProtoOAuth2AuthorizationRequest
  
  @abstract Represents an OAuth 2.0 authorization request.
  
  @discussion This class encapsulates all parameters for an authorization
  request including client ID, redirect URI, scope, and PKCE parameters.
  */
-@interface OAuth2AuthorizationRequest : NSObject
+@interface ATProtoOAuth2AuthorizationRequest : NSObject
 
 /*! The client identifier for the requesting application. */
 @property (nonatomic, copy) NSString *clientID;
@@ -212,14 +212,14 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @end
 
 /*!
- @class OAuth2AuthorizationResponse
+ @class ATProtoOAuth2AuthorizationResponse
  
  @abstract Represents an OAuth 2.0 authorization response.
  
  @discussion This class parses authorization responses from redirect
  URLs and provides access to the authorization code or error details.
  */
-@interface OAuth2AuthorizationResponse : NSObject
+@interface ATProtoOAuth2AuthorizationResponse : NSObject
 
 /*! The authorization code (for successful responses). */
 @property (nonatomic, copy, nullable) NSString *code;
@@ -254,14 +254,14 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @end
 
 /*!
- @class OAuth2TokenRequest
+ @class ATProtoOAuth2TokenRequest
  
  @abstract Represents an OAuth 2.0 token request.
  
  @discussion This class encapsulates parameters for token endpoint
  requests including grant type, authorization code, and refresh tokens.
  */
-@interface OAuth2TokenRequest : NSObject
+@interface ATProtoOAuth2TokenRequest : NSObject
 
 /*! The grant type (e.g., "authorization_code", "refresh_token"). */
 @property (nonatomic, copy) NSString *grantType;
@@ -311,14 +311,14 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @end
 
 /*!
- @class OAuth2TokenResponse
+ @class ATProtoOAuth2TokenResponse
  
  @abstract Represents an OAuth 2.0 token response.
  
  @discussion This class parses token endpoint responses and provides
  access to issued tokens and their metadata.
  */
-@interface OAuth2TokenResponse : NSObject
+@interface ATProtoOAuth2TokenResponse : NSObject
 
 /*! The issued access token. */
 @property (nonatomic, copy, nullable) NSString *accessToken;
@@ -352,14 +352,14 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @end
 
 /*!
- @class OAuth2DPoPProof
+ @class ATProtoOAuth2DPoPProof
  
  @abstract Generates DPoP proof JWTs.
  
  @discussion DPoP (Demonstration of Proof-of-Possession) binds tokens
  to a public/private key pair, preventing token theft and misuse.
  */
-@interface OAuth2DPoPProof : NSObject
+@interface ATProtoOAuth2DPoPProof : NSObject
 
 /*! The JWK representing the proof key. */
 @property (nonatomic, copy) NSString *jwk;
@@ -461,16 +461,16 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @end
 
 /*!
- @class OAuth2Server
+ @class ATProtoOAuth2Server
  
  @abstract OAuth 2.0 authorization server implementation.
  
- @discussion OAuth2Server handles all authorization server operations
+ @discussion ATProtoOAuth2Server handles all authorization server operations
  including authorization requests, token issuance, and token refresh.
  It integrates with ATProtoJWT minting, key management, and identity resolution.
  
  @code
- OAuth2Server *server = [[OAuth2Server alloc] init];
+ ATProtoOAuth2Server *server = [[ATProtoOAuth2Server alloc] init];
  server.issuer = @"https://pds.example.com";
  server.authorizationEndpoint = @"https://pds.example.com/oauth/authorize";
  server.tokenEndpoint = @"https://pds.example.com/oauth/token";
@@ -481,9 +481,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
  @endcode
  */
 /**
- * @abstract Declares the OAuth2Server public API.
+ * @abstract Declares the ATProtoOAuth2Server public API.
  */
-@interface OAuth2Server : NSObject
+@interface ATProtoOAuth2Server : NSObject
 
 /*! The issuer identifier for this server. */
 @property (nonatomic, copy) NSString *issuer;
@@ -522,7 +522,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 @property (nonatomic, strong) ATProtoDIDResolver *didResolver;
 
 /*! Handle resolution service. */
-@property (nonatomic, strong) HandleResolver *handleResolver;
+@property (nonatomic, strong) ATProtoHandleResolver *handleResolver;
 
 /*! Database accessor for account verification. */
 @property (nonatomic, strong) PDSDatabase *database;
@@ -532,7 +532,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 
  @abstract Initializes a new authorization server.
 
- @return An initialized OAuth2Server instance.
+ @return An initialized ATProtoOAuth2Server instance.
  */
 - (instancetype)init;
 
@@ -542,7 +542,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
  @abstract Initializes a new authorization server with a shared database.
 
  @param database The database to use for OAuth client storage.
- @return An initialized OAuth2Server instance.
+ @return An initialized ATProtoOAuth2Server instance.
  */
 - (instancetype)initWithDatabase:(nullable PDSDatabase *)database;
 
@@ -554,7 +554,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
  @param request The authorization request parameters.
  @param completion Completion handler with URL or code.
  */
-- (void)handleAuthorizationRequest:(OAuth2AuthorizationRequest *)request
+- (void)handleAuthorizationRequest:(ATProtoOAuth2AuthorizationRequest *)request
                         completion:(OAuth2AuthorizationCompletion)completion;
 
 /*!
@@ -565,7 +565,7 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
  @param request The token request parameters.
  @param completion Completion handler with session or error.
  */
-- (void)handleTokenRequest:(OAuth2TokenRequest *)request
+- (void)handleTokenRequest:(ATProtoOAuth2TokenRequest *)request
                 completion:(OAuth2TokenCompletion)completion;
 
 /*!

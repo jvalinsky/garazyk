@@ -43,18 +43,18 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
     }
 }
 
-@implementation XrpcAppBskyUnspeccedPack
+@implementation ATProtoXrpcAppBskyUnspeccedPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.unspecced";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
 
-    AgeAssuranceService *ageAssuranceService = services.ageAssuranceService;
-    SearchIndexService *searchIndexService = services.searchIndexService;
-    FeedService *feedService = services.feedService;
+    PDSAgeAssuranceService *ageAssuranceService = services.ageAssuranceService;
+    PDSSearchIndexService *searchIndexService = services.searchIndexService;
+    PDSFeedService *feedService = services.feedService;
 
 #pragma mark - Configuration
 
@@ -160,7 +160,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        NSString *query = [request queryParamForKey:@"q"];
 
                        if (!query || query.length == 0) {
-                           [XrpcErrorHelper setValidationError:response message:@"q parameter is required"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"q parameter is required"];
                            return;
                        }
 
@@ -189,7 +189,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        NSString *query = [request queryParamForKey:@"q"];
 
                        if (!query || query.length == 0) {
-                           [XrpcErrorHelper setValidationError:response message:@"q parameter is required"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"q parameter is required"];
                            return;
                        }
 
@@ -218,7 +218,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        NSString *query = [request queryParamForKey:@"q"];
 
                        if (!query || query.length == 0) {
-                           [XrpcErrorHelper setValidationError:response message:@"q parameter is required"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"q parameter is required"];
                            return;
                        }
 
@@ -249,7 +249,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        NSString *anchor = [request queryParamForKey:@"anchor"];
 
                        if (!anchor || anchor.length == 0) {
-                           [XrpcErrorHelper setValidationError:response message:@"anchor parameter is required"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"anchor parameter is required"];
                            return;
                        }
 
@@ -264,7 +264,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                            NSError *error = nil;
                            NSDictionary *threadTree = [feedService getPostThread:anchor depth:below error:&error];
                            if (error) {
-                               [XrpcErrorHelper setNotFoundError:response message:error.localizedDescription];
+                               [ATProtoXrpcErrorHelper setNotFoundError:response message:error.localizedDescription];
                                return;
                            }
 
@@ -291,7 +291,7 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        NSString *anchor = [request queryParamForKey:@"anchor"];
 
                        if (!anchor || anchor.length == 0) {
-                           [XrpcErrorHelper setValidationError:response message:@"anchor parameter is required"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"anchor parameter is required"];
                            return;
                        }
 
@@ -310,19 +310,19 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        NSString *assurance = AuthTypedValue(body, @"assurance", [NSString class], &typeMismatch);
                        NSArray *methods = body[@"methods"];
                        if (typeMismatch) {
-                           [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
                            return;
                        }
 
                        if (!assurance || assurance.length == 0) {
-                           [XrpcErrorHelper setValidationError:response message:@"assurance parameter is required"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"assurance parameter is required"];
                            return;
                        }
 
                        // Validate assurance value
                        NSArray *validAssurances = @[@"no_verification", @"verified_by_adult", @"verified_by_method"];
                        if (![validAssurances containsObject:assurance]) {
-                           [XrpcErrorHelper setValidationError:response message:@"assurance must be one of: no_verification, verified_by_adult, verified_by_method"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"assurance must be one of: no_verification, verified_by_adult, verified_by_method"];
                            return;
                        }
 
@@ -350,12 +350,12 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                        BOOL typeMismatch = NO;
                        NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
                        if (typeMismatch) {
-                           [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
                            return;
                        }
 
                        if (!token || token.length == 0) {
-                           [XrpcErrorHelper setValidationError:response message:@"token parameter is required"];
+                           [ATProtoXrpcErrorHelper setValidationError:response message:@"token parameter is required"];
                            return;
                        }
 
@@ -366,9 +366,9 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
                                [response setJsonBody:@{}];
                            } else {
                                if (error.code == 404) {
-                                   [XrpcErrorHelper setValidationError:response message:error.localizedDescription];
+                                   [ATProtoXrpcErrorHelper setValidationError:response message:error.localizedDescription];
                                } else {
-                                   [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                                   [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
                                }
                            }
                        } else {

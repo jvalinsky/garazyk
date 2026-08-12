@@ -13,11 +13,11 @@ static const NSInteger kGermMailboxMaxClaimCount = 100;
 // Address length in bytes (before base64 encoding)
 static const NSInteger kGermAddressByteLength = 32;
 
-@interface GermMailboxService ()
+@interface PDSGermMailboxService ()
 @property (nonatomic, unsafe_unretained) id<PDSQueryDatabase> database;
 @end
 
-@implementation GermMailboxService
+@implementation PDSGermMailboxService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];

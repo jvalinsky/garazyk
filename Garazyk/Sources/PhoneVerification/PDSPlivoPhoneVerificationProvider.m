@@ -132,7 +132,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
 
     GZ_LOG_INFO(@"[Plivo] Sending verification to: %@", [GZLogRedactor maskToken:phoneNumber]);
 
-    // POST /Verify/Session/ with JSON body
+    // POST /Verify/PDSSession/ with JSON body
     NSDictionary *body = @{
         @"recipient": phoneNumber,
         @"channel": @"sms"
@@ -214,7 +214,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
 
     GZ_LOG_INFO(@"[Plivo] Checking verification code for: %@ (session_uuid: %@)", [GZLogRedactor maskToken:phoneNumber], sessionID);
 
-    // POST /Verify/Session/{session_uuid}/ with JSON body
+    // POST /Verify/PDSSession/{session_uuid}/ with JSON body
     NSString *path = [NSString stringWithFormat:@"/Verify/Session/%@/", sessionID];
     NSDictionary *body = @{
         @"otp": code

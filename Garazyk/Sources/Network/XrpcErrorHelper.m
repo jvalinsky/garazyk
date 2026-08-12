@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcErrorHelper.m
+//  ATProtoXrpcErrorHelper.m
 //  ATProtoPDS
 //
 //  Error response helper implementation for XRPC endpoints.
@@ -9,7 +9,7 @@
 
 #import "Network/XrpcErrorHelper.h"
 
-@implementation XrpcErrorHelper
+@implementation ATProtoXrpcErrorHelper
 
 #pragma mark - Standard Error Responses
 

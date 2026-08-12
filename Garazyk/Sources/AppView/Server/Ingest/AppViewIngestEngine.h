@@ -7,7 +7,7 @@
  persists raw events idempotently, and dispatches to the materialization layer.
 
  @discussion The ingest engine owns the single global stream. It:
-  1. Connects to each configured relay URL via RelayClient.
+  1. Connects to each configured relay URL via ATProtoRelayClient.
   2. Persists a raw event log entry per event (idempotent by did+rev+cid).
   3. Checkpoints the cursor every `checkpointIntervalMs` milliseconds.
   4. For commit events: checks repo sync status and either materializes
@@ -24,9 +24,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class FirehoseCommitEvent;
-@class FirehoseIdentityEvent;
-@class FirehoseAccountEvent;
+@class ATProtoFirehoseCommitEvent;
+@class ATProtoFirehoseIdentityEvent;
+@class ATProtoFirehoseAccountEvent;
 @class AppViewDatabase;
 @class AppViewIngestEngine;
 @class AppViewIngestEvent;
@@ -205,12 +205,12 @@ didReceiveAccountEvent:(AppViewIngestEvent *)event;
 // Internal methods (for delegate callbacks)
 // ---------------------------------------------------------------------------
 
-- (void)_handleCommitEvent:(FirehoseCommitEvent *)event fromRelay:(NSString *)relayURL;
-- (void)_handleIdentityEvent:(FirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL;
+- (void)_handleCommitEvent:(ATProtoFirehoseCommitEvent *)event fromRelay:(NSString *)relayURL;
+- (void)_handleIdentityEvent:(ATProtoFirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL;
 /**
  * @abstract Handles an account event from the relay firehose.
  */
-- (void)_handleAccountEvent:(FirehoseAccountEvent *)event fromRelay:(NSString *)relayURL;
+- (void)_handleAccountEvent:(ATProtoFirehoseAccountEvent *)event fromRelay:(NSString *)relayURL;
 - (void)_relayConnection:(id)connection didConnectAtSeq:(int64_t)seq;
 
 @end

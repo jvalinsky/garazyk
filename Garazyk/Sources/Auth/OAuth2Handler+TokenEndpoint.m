@@ -8,7 +8,7 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
-@implementation OAuth2Handler (TokenEndpoint)
+@implementation ATProtoOAuth2Handler (TokenEndpoint)
 
 - (void)handleTokenRequest:(ATProtoHttpRequest *)request
                   response:(ATProtoHttpResponse *)response {
@@ -124,7 +124,7 @@
   } else {
     // Traditional client_secret authentication (constant-time comparison)
     if (clientSecret && expectedSecret &&
-        ![OAuthClientAuthPolicy validateClientSecret:clientSecret againstExpected:expectedSecret]) {
+        ![ATProtoOAuthClientAuthPolicy validateClientSecret:clientSecret againstExpected:expectedSecret]) {
       response.statusCode = 401;
       [response setJsonBody:@{
         @"error" : @"invalid_client",
@@ -180,7 +180,7 @@
     return;
   }
 
-  OAuth2TokenRequest *tokenRequest = [[OAuth2TokenRequest alloc] init];
+  ATProtoOAuth2TokenRequest *tokenRequest = [[ATProtoOAuth2TokenRequest alloc] init];
   tokenRequest.grantType = params[@"grant_type"];
   tokenRequest.code = params[@"code"];
   tokenRequest.redirectURI = params[@"redirect_uri"];
@@ -194,7 +194,7 @@
 
   [self.oauthServer
       handleTokenRequest:tokenRequest
-              completion:^(Session *_Nullable session,
+              completion:^(PDSSession *_Nullable session,
                            NSError *_Nullable error) {
                 if (error) {
                   response.statusCode = 400;

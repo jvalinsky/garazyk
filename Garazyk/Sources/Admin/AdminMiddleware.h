@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AdminMiddleware.h
+ @file PDSAdminMiddleware.h
 
  @abstract Admin authentication middleware for protected endpoints.
 
@@ -25,7 +25,7 @@ extern NSString * const AdminMiddlewareErrorDomain;
  @constant AdminMiddlewareErrorNoAuthHeader Missing Authorization header.
  @constant AdminMiddlewareErrorInvalidToken Token is invalid.
  @constant AdminMiddlewareErrorNotAdmin User is not an admin.
- @constant AdminMiddlewareErrorSessionExpired Session has expired.
+ @constant AdminMiddlewareErrorSessionExpired PDSSession has expired.
  */
 typedef NS_ENUM(NSInteger, AdminMiddlewareError) {
     AdminMiddlewareErrorNoAuthHeader = 1000,
@@ -36,17 +36,17 @@ typedef NS_ENUM(NSInteger, AdminMiddlewareError) {
 
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
-@class Session;
+@class PDSSession;
 
 /*! Block type for custom admin authorization checks. */
-typedef BOOL (^AdminAuthCheckBlock)(Session *session);
+typedef BOOL (^AdminAuthCheckBlock)(PDSSession *session);
 
 /*!
- @class AdminMiddleware
+ @class PDSAdminMiddleware
 
  @abstract Middleware for admin endpoint protection.
  */
-@interface AdminMiddleware : NSObject
+@interface PDSAdminMiddleware : NSObject
 
 /*! Custom block for additional admin checks. */
 @property (nonatomic, copy, nullable) AdminAuthCheckBlock customAdminCheck;
@@ -63,7 +63,7 @@ typedef BOOL (^AdminAuthCheckBlock)(Session *session);
                               error:(NSError **)error;
 
 /*! Extracts session from request authorization header. */
-- (nullable Session *)extractSessionFromRequest:(ATProtoHttpRequest *)request
+- (nullable PDSSession *)extractSessionFromRequest:(ATProtoHttpRequest *)request
                                          error:(NSError **)error;
 
 /*! Sets the list of admin DIDs. */

@@ -74,8 +74,8 @@
     // process. Using the singleton meant a second start (or a second
     // runtime) in the same process — as XCTest does — hit "Duplicate XRPC
     // handler registration".
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-    XrpcRoutePackServiceBag *routeServices = [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    ATProtoXrpcRoutePackServiceBag *routeServices = [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                                                        jwtMinter:nil
                                                                                  adminController:nil
                                                                                     configuration:nil

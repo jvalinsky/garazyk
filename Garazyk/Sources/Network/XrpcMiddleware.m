@@ -19,13 +19,13 @@
 
 NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
-#pragma mark - XrpcMiddlewareChain
+#pragma mark - ATProtoXrpcMiddlewareChain
 
-@interface XrpcMiddlewareChain ()
+@interface ATProtoXrpcMiddlewareChain ()
 @property (nonatomic, strong) NSMutableArray<id<XrpcMiddleware>> *middlewares;
 @end
 
-@implementation XrpcMiddlewareChain
+@implementation ATProtoXrpcMiddlewareChain
 
 - (instancetype)init {
     if ((self = [super init])) {
@@ -72,9 +72,9 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
 @end
 
-#pragma mark - AuthMiddleware
+#pragma mark - ATProtoAuthMiddleware
 
-@interface AuthMiddleware ()
+@interface ATProtoAuthMiddleware ()
 @property (nonatomic, strong, nullable) PDSController *controller;
 @property (nonatomic, strong, nullable) ATProtoJWTMinter *jwtMinter;
 @property (nonatomic, strong, nullable) id<PDSAdminController> adminController;
@@ -82,14 +82,14 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 @property (nonatomic, assign) BOOL requireAdmin;
 @end
 
-@implementation AuthMiddleware
+@implementation ATProtoAuthMiddleware
 
 - (NSString *)middlewareName {
     return self.requireAdmin ? @"AdminAuth" : @"UserAuth";
 }
 
 + (instancetype)userAuthWithController:(PDSController *)controller {
-    AuthMiddleware *middleware = [[AuthMiddleware alloc] init];
+    ATProtoAuthMiddleware *middleware = [[ATProtoAuthMiddleware alloc] init];
     middleware.controller = controller;
     middleware.requireAdmin = NO;
     return middleware;
@@ -97,7 +97,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
 + (instancetype)adminAuthWithController:(PDSController *)controller
                         serviceDatabases:(id)serviceDatabases {
-    AuthMiddleware *middleware = [[AuthMiddleware alloc] init];
+    ATProtoAuthMiddleware *middleware = [[ATProtoAuthMiddleware alloc] init];
     middleware.controller = controller;
     middleware.serviceDatabases = serviceDatabases;
     middleware.requireAdmin = YES;
@@ -106,7 +106,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
 + (instancetype)userAuthWithJwtMinter:(ATProtoJWTMinter *)jwtMinter
                      adminController:(id<PDSAdminController>)adminController {
-    AuthMiddleware *middleware = [[AuthMiddleware alloc] init];
+    ATProtoAuthMiddleware *middleware = [[ATProtoAuthMiddleware alloc] init];
     middleware.jwtMinter = jwtMinter;
     middleware.adminController = adminController;
     middleware.requireAdmin = NO;
@@ -134,7 +134,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
     if (self.requireAdmin) {
         // Admin auth: validate ATProtoJWT + check admin privileges
-        BOOL authorized = [XrpcAuthHelper authorizeAdminRequest:request
+        BOOL authorized = [ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                                        response:response
                                                serviceDatabases:self.serviceDatabases
                                                       jwtMinter:jwtMinter
@@ -149,7 +149,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
         }
 
         // Extract DID for downstream use
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                        jwtMinter:jwtMinter
                                                  adminController:adminController
                                                          request:request
@@ -162,7 +162,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
         return YES;
     } else {
         // User auth: validate ATProtoJWT, extract DID
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                        jwtMinter:jwtMinter
                                                  adminController:adminController
                                                          request:request
@@ -188,23 +188,23 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
 @end
 
-#pragma mark - RateLimitMiddleware
+#pragma mark - ATProtoRateLimitMiddleware
 
-@interface RateLimitMiddleware ()
+@interface ATProtoRateLimitMiddleware ()
 @property (nonatomic, assign) NSInteger limit;
 @property (nonatomic, assign) NSTimeInterval windowSeconds;
 @property (nonatomic, assign) BOOL perUser; // NO = per IP
 @property (nonatomic, strong) ATProtoRateLimiter *limiter;
 @end
 
-@implementation RateLimitMiddleware
+@implementation ATProtoRateLimitMiddleware
 
 - (NSString *)middlewareName {
     return self.perUser ? @"RateLimitPerUser" : @"RateLimitPerIP";
 }
 
 + (instancetype)perUser:(NSInteger)limit perWindow:(NSTimeInterval)windowSeconds {
-    RateLimitMiddleware *middleware = [[RateLimitMiddleware alloc] init];
+    ATProtoRateLimitMiddleware *middleware = [[ATProtoRateLimitMiddleware alloc] init];
     middleware.limit = limit;
     middleware.windowSeconds = windowSeconds;
     middleware.perUser = YES;
@@ -213,7 +213,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 }
 
 + (instancetype)perIP:(NSInteger)limit perWindow:(NSTimeInterval)windowSeconds {
-    RateLimitMiddleware *middleware = [[RateLimitMiddleware alloc] init];
+    ATProtoRateLimitMiddleware *middleware = [[ATProtoRateLimitMiddleware alloc] init];
     middleware.limit = limit;
     middleware.windowSeconds = windowSeconds;
     middleware.perUser = NO;
@@ -228,7 +228,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
     NSString *identifier = nil;
 
     if (self.perUser) {
-        // Get authenticated DID from middleware context (injected by AuthMiddleware)
+        // Get authenticated DID from middleware context (injected by ATProtoAuthMiddleware)
         identifier = request.authenticatedDid;
         if (!identifier) {
             // No authenticated user - can't rate limit per user
@@ -271,22 +271,22 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
 @end
 
-#pragma mark - ResourceOwnershipMiddleware
+#pragma mark - ATProtoResourceOwnershipMiddleware
 
-@interface ResourceOwnershipMiddleware ()
+@interface ATProtoResourceOwnershipMiddleware ()
 @property (nonatomic, copy) NSString *paramName;
 @property (nonatomic, assign) BOOL fromBody;
 @property (nonatomic, assign) BOOL isRecord; // NO = repo, YES = record
 @end
 
-@implementation ResourceOwnershipMiddleware
+@implementation ATProtoResourceOwnershipMiddleware
 
 - (NSString *)middlewareName {
     return self.isRecord ? @"ResourceOwnership(Record)" : @"ResourceOwnership(Repo)";
 }
 
 + (instancetype)ownsRepoFromParam:(NSString *)paramName fromBody:(BOOL)fromBody {
-    ResourceOwnershipMiddleware *middleware = [[ResourceOwnershipMiddleware alloc] init];
+    ATProtoResourceOwnershipMiddleware *middleware = [[ATProtoResourceOwnershipMiddleware alloc] init];
     middleware.paramName = paramName;
     middleware.fromBody = fromBody;
     middleware.isRecord = NO;
@@ -294,7 +294,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 }
 
 + (instancetype)ownsRecordFromParam:(NSString *)paramName {
-    ResourceOwnershipMiddleware *middleware = [[ResourceOwnershipMiddleware alloc] init];
+    ATProtoResourceOwnershipMiddleware *middleware = [[ATProtoResourceOwnershipMiddleware alloc] init];
     middleware.paramName = paramName;
     middleware.fromBody = YES;
     middleware.isRecord = YES;
@@ -376,21 +376,21 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
 @end
 
-#pragma mark - XrpcMiddlewarePresets
+#pragma mark - ATProtoXrpcMiddlewarePresets
 
-@implementation XrpcMiddlewarePresets
+@implementation ATProtoXrpcMiddlewarePresets
 
 + (NSArray<id<XrpcMiddleware>> *)protectedEndpointWithController:(PDSController *)controller
                                                        rateLimit:(NSInteger)rateLimit {
     NSMutableArray<id<XrpcMiddleware>> *middlewares = [NSMutableArray array];
     
     // Auth required
-    [middlewares addObject:[AuthMiddleware userAuthWithController:controller]];
+    [middlewares addObject:[ATProtoAuthMiddleware userAuthWithController:controller]];
     
     // Optional rate limit
     if (rateLimit > 0) {
         NSTimeInterval window = 60.0; // 1 minute window
-        [middlewares addObject:[RateLimitMiddleware perUser:rateLimit perWindow:window]];
+        [middlewares addObject:[ATProtoRateLimitMiddleware perUser:rateLimit perWindow:window]];
     }
     
     return [middlewares copy];
@@ -398,7 +398,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
 + (NSArray<id<XrpcMiddleware>> *)adminEndpointWithController:(PDSController *)controller
                                              serviceDatabases:(id)serviceDatabases {
-    return @[[AuthMiddleware adminAuthWithController:controller
+    return @[[ATProtoAuthMiddleware adminAuthWithController:controller
                                      serviceDatabases:serviceDatabases]];
 }
 
@@ -407,7 +407,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
         return @[];
     }
     NSTimeInterval window = 60.0; // 1 minute window
-    return @[[RateLimitMiddleware perIP:limit perWindow:window]];
+    return @[[ATProtoRateLimitMiddleware perIP:limit perWindow:window]];
 }
 
 @end

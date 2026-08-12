@@ -35,17 +35,17 @@
 }
 
 - (void)testControlRequiresBothExplicitTestGates {
-  XCTAssertFalse([XrpcSpaceRecoveryTestPack isEnabledForEnvironment:@{}]);
+  XCTAssertFalse([ATProtoXrpcSpaceRecoveryTestPack isEnabledForEnvironment:@{}]);
   NSDictionary *testsOnly = @{
       @"PDS_RUNNING_TESTS" : @"true",
   };
-  XCTAssertFalse([XrpcSpaceRecoveryTestPack isEnabledForEnvironment:testsOnly]);
+  XCTAssertFalse([ATProtoXrpcSpaceRecoveryTestPack isEnabledForEnvironment:testsOnly]);
   NSDictionary *controlOnly = @{
       @"PDS_SPACE_RECOVERY_TEST_CONTROL" : @"true",
   };
-  XCTAssertFalse([XrpcSpaceRecoveryTestPack isEnabledForEnvironment:controlOnly]);
+  XCTAssertFalse([ATProtoXrpcSpaceRecoveryTestPack isEnabledForEnvironment:controlOnly]);
   NSDictionary *enabled = [self enabledEnvironment];
-  XCTAssertTrue([XrpcSpaceRecoveryTestPack isEnabledForEnvironment:enabled]);
+  XCTAssertTrue([ATProtoXrpcSpaceRecoveryTestPack isEnabledForEnvironment:enabled]);
 }
 
 - (void)testProductionEnvironmentAlwaysVetoesControlRegistration {
@@ -54,38 +54,38 @@
       @"PDS_SPACE_RECOVERY_TEST_CONTROL" : @"true",
       @"PDS_ENV" : @"production",
   };
-  XCTAssertFalse([XrpcSpaceRecoveryTestPack isEnabledForEnvironment:production]);
+  XCTAssertFalse([ATProtoXrpcSpaceRecoveryTestPack isEnabledForEnvironment:production]);
 }
 
 - (void)testIssuerRequiredEnvironmentAlwaysVetoesControlRegistration {
   NSMutableDictionary *issuerRequired = [[self enabledEnvironment] mutableCopy];
   issuerRequired[@"PDS_REQUIRE_ISSUER"] = @"true";
-  XCTAssertFalse([XrpcSpaceRecoveryTestPack isEnabledForEnvironment:issuerRequired]);
+  XCTAssertFalse([ATProtoXrpcSpaceRecoveryTestPack isEnabledForEnvironment:issuerRequired]);
 }
 
 - (void)testControlRequiresLoopbackBearerToken {
   NSDictionary *environment = [self enabledEnvironment];
   NSString *token = environment[@"PDS_SPACE_RECOVERY_TEST_CONTROL_TOKEN"];
-  XCTAssertTrue([XrpcSpaceRecoveryTestPack
+  XCTAssertTrue([ATProtoXrpcSpaceRecoveryTestPack
       isAuthorizedRequest:[self requestWithAuthorization:[@"Bearer " stringByAppendingString:token]
                                             remoteAddress:@"127.0.0.1"]
       environment:environment]);
-  XCTAssertFalse([XrpcSpaceRecoveryTestPack
+  XCTAssertFalse([ATProtoXrpcSpaceRecoveryTestPack
       isAuthorizedRequest:[self requestWithAuthorization:nil remoteAddress:@"127.0.0.1"]
       environment:environment]);
-  XCTAssertFalse([XrpcSpaceRecoveryTestPack
+  XCTAssertFalse([ATProtoXrpcSpaceRecoveryTestPack
       isAuthorizedRequest:[self requestWithAuthorization:@"Bearer wrong" remoteAddress:@"127.0.0.1"]
       environment:environment]);
-  XCTAssertFalse([XrpcSpaceRecoveryTestPack
+  XCTAssertFalse([ATProtoXrpcSpaceRecoveryTestPack
       isAuthorizedRequest:[self requestWithAuthorization:[@"Bearer " stringByAppendingString:token]
                                             remoteAddress:@"203.0.113.7"]
       environment:environment]);
 }
 
 - (void)testControlAcceptsOnlyRecoveryFixtureSpaces {
-  XCTAssertTrue([XrpcSpaceRecoveryTestPack
+  XCTAssertTrue([ATProtoXrpcSpaceRecoveryTestPack
       isFixtureSpaceURI:@"at://did:plc:authority/space/com.garazyk.permissioned/recovery-lightweight"]);
-  XCTAssertFalse([XrpcSpaceRecoveryTestPack
+  XCTAssertFalse([ATProtoXrpcSpaceRecoveryTestPack
       isFixtureSpaceURI:@"at://did:plc:authority/space/com.garazyk.permissioned/ordinary-space"]);
 }
 

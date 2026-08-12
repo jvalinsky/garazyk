@@ -187,7 +187,7 @@ static NSString * const kTestDID2 = @"did:plc:bbbbbbbbbbbbbbbbbbbbbbbb";
     XCTAssertEqualObjects(found.handle, @"updated.test");
 }
 
-#pragma mark - Session Repository
+#pragma mark - PDSSession Repository
 
 - (void)testSessionStoreAndLookup {
     NSString *token = @"refresh-token-abc";

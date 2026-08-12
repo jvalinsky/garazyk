@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file SecItemLinuxStore.m
+ * @file ATProtoSecItemLinuxStore.m
  *
  * @brief Persistent SQLite-backed keychain storage for Linux SecItem implementation.
  *
@@ -122,13 +122,13 @@ static NSData *PDSSecItemLinuxStoreResolveKey(void) {
     return nil;
 }
 
-@implementation SecItemLinuxStore
+@implementation ATProtoSecItemLinuxStore
 
 + (instancetype)sharedStore {
-    static SecItemLinuxStore *instance = nil;
+    static ATProtoSecItemLinuxStore *instance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        instance = [[SecItemLinuxStore alloc] init];
+        instance = [[ATProtoSecItemLinuxStore alloc] init];
     });
     return instance;
 }

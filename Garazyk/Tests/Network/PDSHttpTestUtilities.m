@@ -11,12 +11,12 @@
 
 @implementation PDSHttpTestUtilities
 
-+ (nullable ATProtoHttpServer *)startSocketServerWithDispatcher:(XrpcDispatcher *)dispatcher error:(NSError **)error {
++ (nullable ATProtoHttpServer *)startSocketServerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher error:(NSError **)error {
     ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
-    __weak XrpcDispatcher *weakDispatcher = dispatcher;
+    __weak ATProtoXrpcDispatcher *weakDispatcher = dispatcher;
     
     [server setValue:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        __strong XrpcDispatcher *strongDispatcher = weakDispatcher;
+        __strong ATProtoXrpcDispatcher *strongDispatcher = weakDispatcher;
         if (!strongDispatcher) {
             response.statusCode = 500;
             [response setJsonBody:@{@"error": @"InternalServerError"}];

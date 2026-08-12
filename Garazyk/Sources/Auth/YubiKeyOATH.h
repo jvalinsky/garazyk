@@ -97,7 +97,7 @@ typedef NS_ENUM(NSInteger, YubiKeyOATHError) {
 @end
 
 /*!
- @class YubiKeyOATHManager
+ @class ATProtoYubiKeyOATHManager
 
  @abstract Manager for software-only OATH compatibility operations.
 
@@ -107,7 +107,7 @@ typedef NS_ENUM(NSInteger, YubiKeyOATHError) {
 
  @warning Hardware YubiKey operations are **not implemented**. The manager
           runs in software-only mode: TOTP generation falls back to the
-          software TOTPGenerator, and all hardware operations (setOATHSecret,
+          software ATProtoTOTPGenerator, and all hardware operations (setOATHSecret,
           listCredentials, deleteCredential, resetAllCredentials) fail with
           YubiKeyOATHErrorNotImplemented. Use WebAuthn for YubiKey security-key
           authentication.
@@ -115,9 +115,9 @@ typedef NS_ENUM(NSInteger, YubiKeyOATHError) {
  Thread-safety: Methods are not thread-safe. Use from main thread only.
  */
 /**
- * @abstract Declares the YubiKeyOATHManager public API.
+ * @abstract Declares the ATProtoYubiKeyOATHManager public API.
  */
-@interface YubiKeyOATHManager : NSObject <YubiKeyOATH>
+@interface ATProtoYubiKeyOATHManager : NSObject <YubiKeyOATH>
 
 /*! Delegate for connection events. */
 @property (nonatomic, weak, nullable) id<YubiKeyOATHManagerDelegate> delegate;

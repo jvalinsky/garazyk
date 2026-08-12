@@ -10,7 +10,7 @@
 @implementation RelayConfigurationTests
 
 - (void)testDefaultConfiguration {
-    RelayConfiguration *config = [[RelayConfiguration alloc] initWithUpstreamURLs:@[@"pds1.example.com"]
+    ATProtoRelayConfiguration *config = [[ATProtoRelayConfiguration alloc] initWithUpstreamURLs:@[@"pds1.example.com"]
                                                                      downstreamPort:2584
                                                                       retentionHours:72
                                                                     validationMode:RelayValidationModeLogOnly];
@@ -22,7 +22,7 @@
 }
 
 - (void)testCustomConfiguration {
-    RelayConfiguration *config = [[RelayConfiguration alloc] initWithUpstreamURLs:@[@"p1.com", @"p2.com"]
+    ATProtoRelayConfiguration *config = [[ATProtoRelayConfiguration alloc] initWithUpstreamURLs:@[@"p1.com", @"p2.com"]
                                                                      downstreamPort:3000
                                                                       retentionHours:24
                                                                     validationMode:RelayValidationModeStrict];
@@ -35,19 +35,19 @@
 }
 
 - (void)testValidationModes {
-    RelayConfiguration *lenient = [[RelayConfiguration alloc] initWithUpstreamURLs:@[@"a.com"]
+    ATProtoRelayConfiguration *lenient = [[ATProtoRelayConfiguration alloc] initWithUpstreamURLs:@[@"a.com"]
                                                                       downstreamPort:0
                                                                        retentionHours:0
                                                                      validationMode:RelayValidationModeLenient];
     XCTAssertEqual(lenient.validationMode, RelayValidationModeLenient);
     
-    RelayConfiguration *strict = [[RelayConfiguration alloc] initWithUpstreamURLs:@[@"a.com"]
+    ATProtoRelayConfiguration *strict = [[ATProtoRelayConfiguration alloc] initWithUpstreamURLs:@[@"a.com"]
                                                                       downstreamPort:0
                                                                        retentionHours:0
                                                                      validationMode:RelayValidationModeStrict];
     XCTAssertEqual(strict.validationMode, RelayValidationModeStrict);
     
-    RelayConfiguration *logOnly = [[RelayConfiguration alloc] initWithUpstreamURLs:@[@"a.com"]
+    ATProtoRelayConfiguration *logOnly = [[ATProtoRelayConfiguration alloc] initWithUpstreamURLs:@[@"a.com"]
                                                                      downstreamPort:0
                                                                       retentionHours:0
                                                                     validationMode:RelayValidationModeLogOnly];

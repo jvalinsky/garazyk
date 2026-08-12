@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayConfiguration.h
+ @file ATProtoRelayConfiguration.h
 
  @abstract Configuration for ATProto Relay (Sync v1.1)
 
  @discussion
-    RelayConfiguration manages settings for the relay including:
+    ATProtoRelayConfiguration manages settings for the relay including:
     - Upstream PDS URLs to subscribe to
     - Downstream consumer port
     - Event retention window (default 72 hours per Sync v1.1)
@@ -29,9 +29,9 @@ typedef NS_ENUM(NSInteger, RelayValidationMode) {
 };
 
 /**
- * @abstract Declares the RelayConfiguration public API.
+ * @abstract Declares the ATProtoRelayConfiguration public API.
  */
-@interface RelayConfiguration : NSObject
+@interface ATProtoRelayConfiguration : NSObject
 
 /**
  * @abstract Exposes the upstream urls value.

@@ -67,7 +67,7 @@
 @property (nonatomic, strong) NSURL *testDBURL;
 @property (nonatomic, strong) NSURL *testStorageURL;
 @property (nonatomic, strong) PDSDatabasePool *databasePool;
-@property (nonatomic, strong) BlobStorage *blobStorage;
+@property (nonatomic, strong) PDSBlobStorage *blobStorage;
 @property (nonatomic, strong) PDSBlobService *blobService;
 @property (nonatomic, strong) PDSRecordService *recordService;
 @property (nonatomic, strong) FakeRASLAccountService *accountService;
@@ -86,7 +86,7 @@
 
     self.databasePool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDBURL.path maxSize:5];
     PDSDiskBlobProvider *provider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:self.testStorageURL];
-    self.blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.databasePool provider:provider];
+    self.blobStorage = [[PDSBlobStorage alloc] initWithDatabasePool:self.databasePool provider:provider];
     self.blobService = [[PDSBlobService alloc] initWithDatabasePool:self.databasePool storage:self.blobStorage];
     self.recordService = [[PDSRecordService alloc] initWithDatabasePool:self.databasePool];
     self.accountService = [[FakeRASLAccountService alloc] init];
@@ -104,7 +104,7 @@
 
 /// Blobs stay in the "temporary" lifecycle state (see Schema.m /
 /// docs/plans/prompts/phase-15-blob-lifecycle.md) until a record references
-/// them, and BlobStorage's own read path refuses to serve unreferenced
+/// them, and PDSBlobStorage's own read path refuses to serve unreferenced
 /// blobs. Match that by writing a referencing record, the same way
 /// PDSBlobServiceTests does.
 - (void)referenceBlobWithCIDString:(NSString *)cidString forDid:(NSString *)did {

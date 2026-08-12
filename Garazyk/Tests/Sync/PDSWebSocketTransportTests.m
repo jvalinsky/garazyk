@@ -83,7 +83,7 @@
 @interface PDSWebSocketTransportTests : XCTestCase
 @property (nonatomic, strong) PDSWebSocketNetworkAdapter *adapter;
 @property (nonatomic, strong) MockNetworkConnection *mockConnection;
-@property (nonatomic, strong) WebSocketCodec *codec;
+@property (nonatomic, strong) ATProtoWebSocketCodec *codec;
 @end
 
 @implementation PDSWebSocketTransportTests
@@ -92,7 +92,7 @@
     [super setUp];
     self.mockConnection = [[MockNetworkConnection alloc] init];
     self.adapter = [[PDSWebSocketNetworkAdapter alloc] initWithConnection:self.mockConnection];
-    self.codec = [[WebSocketCodec alloc] init];
+    self.codec = [[ATProtoWebSocketCodec alloc] init];
     // self.adapter's own codec is server role (default), requiring masked
     // incoming frames. self.codec here only builds frames "sent by a
     // client" for injection, so it must mask its own output to match.

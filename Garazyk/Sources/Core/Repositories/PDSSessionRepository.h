@@ -32,7 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
  * - Rate limiting on lookups
  *
  * @see PDSAccountService
- * @see Session
+ * @see PDSSession
  */
 /**
  * @abstract Defines the PDSSessionRepository protocol contract.

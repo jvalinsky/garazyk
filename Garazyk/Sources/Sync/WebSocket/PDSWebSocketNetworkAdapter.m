@@ -15,7 +15,7 @@
 
 @interface PDSWebSocketNetworkAdapter ()
 @property (nonatomic, strong) id<ATProtoNetworkConnection> connection;
-@property (nonatomic, strong) WebSocketCodec *codec;
+@property (nonatomic, strong) ATProtoWebSocketCodec *codec;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) BOOL isRunning;
 @property (nonatomic, assign) BOOL isClosed;
@@ -58,7 +58,7 @@
     self = [super init];
     if (self) {
         _connection = connection;
-        _codec = [[WebSocketCodec alloc] init];
+        _codec = [[ATProtoWebSocketCodec alloc] init];
         _eventQueue = dispatch_queue_create("com.pds.websocket.adapter", DISPATCH_QUEUE_SERIAL);
         _isRunning = NO;
         _isClosed = NO;
@@ -106,8 +106,8 @@
 
         // Feed data to codec and process events
         dispatch_async(strongSelf.eventQueue, ^{
-            NSArray<WSCodecEvent *> *events = [strongSelf.codec feedData:data];
-            for (WSCodecEvent *event in events) {
+            NSArray<ATProtoWSCodecEvent *> *events = [strongSelf.codec feedData:data];
+            for (ATProtoWSCodecEvent *event in events) {
                 [strongSelf _handleCodecEvent:event];
             }
 
@@ -119,7 +119,7 @@
     }];
 }
 
-- (void)_handleCodecEvent:(WSCodecEvent *)event {
+- (void)_handleCodecEvent:(ATProtoWSCodecEvent *)event {
     switch (event.type) {
         case WSCodecEventTextMessage:
         case WSCodecEventBinaryMessage:

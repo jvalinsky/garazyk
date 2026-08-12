@@ -14,9 +14,9 @@ typedef NS_ENUM(NSInteger, WSHeartbeatAction) {
 };
 
 /**
- * @abstract Declares the WebSocketHeartbeatPolicy public API.
+ * @abstract Declares the ATProtoWebSocketHeartbeatPolicy public API.
  */
-@interface WebSocketHeartbeatPolicy : NSObject
+@interface ATProtoWebSocketHeartbeatPolicy : NSObject
 
 /**
  * @abstract Exposes the heartbeat interval value.

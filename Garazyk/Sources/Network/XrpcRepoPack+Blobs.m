@@ -127,9 +127,9 @@ static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHt
     return NO;
 }
 
-@implementation XrpcRepoPack (Blobs)
+@implementation ATProtoXrpcRepoPack (Blobs)
 
-+ (void)registerBlobRoutesWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerBlobRoutesWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                 services:(id<XrpcRoutePackServices>)services {
     id<PDSAdminController> adminController = services.adminController;
     PDSBlobService *blobService = services.blobService;
@@ -139,7 +139,7 @@ static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHt
 #pragma mark - com.atproto.repo.uploadBlob
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_uploadBlob handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -260,7 +260,7 @@ static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHt
     // it is an operator/migration endpoint, not a hot path.
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_listMissingBlobs handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -392,7 +392,7 @@ static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHt
 #pragma mark - com.atproto.repo.getBlob
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_getBlob handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -486,7 +486,7 @@ static BOOL authorizeRepositoryBlobUpload(ATProtoHttpRequest *request, ATProtoHt
 #pragma mark - com.atproto.repo.deleteBlob
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_deleteBlob handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;

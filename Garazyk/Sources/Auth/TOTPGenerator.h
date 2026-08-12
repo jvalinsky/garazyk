@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file TOTPGenerator.h
+ @file ATProtoTOTPGenerator.h
 
  @abstract Time-based One-Time Password (TOTP) generation for 2FA.
 
@@ -16,14 +16,14 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class TOTPGenerator
+ @class ATProtoTOTPGenerator
 
  @abstract Generates TOTP codes for two-factor authentication.
 
  @discussion Creates time-based one-time passwords using HMAC-SHA algorithms.
  Default configuration: 6 digits, 30-second period, SHA-256.
  */
-@interface TOTPGenerator : NSObject
+@interface ATProtoTOTPGenerator : NSObject
 
 /*!
  @method initWithSecret:digits:period:algorithm:

@@ -18,8 +18,8 @@
 static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                                    ATProtoHttpResponse *response,
                                                    id<XrpcRoutePackServices> services) {
-  XrpcHandlerContext *context =
-      [[XrpcHandlerContext alloc] initWithRequest:request
+  ATProtoXrpcHandlerContext *context =
+      [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                          response:response
                                          services:services];
   NSString *actorDID = nil;
@@ -29,18 +29,18 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
   return actorDID;
 }
 
-@implementation XrpcChatBskyGroupPack
+@implementation ATProtoXrpcChatBskyGroupPack
 
 + (NSString *)routePackIdentifier {
   return @"chat.bsky.group";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
               adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -52,7 +52,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
   [self registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
   id<PDSQueryDatabase> appViewDatabase = services.appViewDatabase;
   if (!appViewDatabase) {
@@ -60,8 +60,8 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
   }
 
   id<XrpcRoutePackServices> resolvedServices = services;
-  GroupService *groupService = [[GroupService alloc] initWithDatabase:appViewDatabase];
-  (void)[[ActorService alloc] initWithDatabase:appViewDatabase];
+  PDSGroupService *groupService = [[PDSGroupService alloc] initWithDatabase:appViewDatabase];
+  (void)[[PDSActorService alloc] initWithDatabase:appViewDatabase];
 
     // chat.bsky.group.createGroup - Create new group
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_group_createGroup
@@ -76,12 +76,12 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *privacy = AuthTypedValue(body, @"privacy", [NSString class], &typeMismatch) ?: @"private";
         NSString *joinability = AuthTypedValue(body, @"joinability", [NSString class], &typeMismatch) ?: @"invite_only";
         if (typeMismatch) {
-            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
             return;
         }
 
         if (![name isKindOfClass:[NSString class]] || name.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"name is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"name is required"];
             return;
         }
 
@@ -93,7 +93,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                                     joinability:joinability
                                                           error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -108,7 +108,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         if (!actorDID) return;
 
         if (![[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
             return;
         }
 
@@ -116,13 +116,13 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *groupUri = body[@"groupUri"];
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri is required"];
             return;
         }
 
         NSError *error = nil;
         if (![groupService deleteGroup:groupUri error:&error]) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -143,12 +143,12 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *newDescription = AuthTypedValue(body, @"description", [NSString class], &typeMismatch);
         NSString *newPrivacy = AuthTypedValue(body, @"privacy", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
             return;
         }
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri is required"];
             return;
         }
 
@@ -156,7 +156,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSError *permError = nil;
         BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
         if (!isAdmin) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Only group admins can edit group"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Only group admins can edit group"];
             return;
         }
 
@@ -167,7 +167,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                     newPrivacy:newPrivacy
                                          error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to edit group"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to edit group"];
             return;
         }
 
@@ -181,7 +181,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *groupUri = [request queryParamForKey:@"groupUri"];
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
             return;
         }
 
@@ -189,9 +189,9 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSDictionary *group = [groupService getGroupPublicInfo:groupUri error:&error];
         if (error) {
             if (error.code == 404) {
-                [XrpcErrorHelper setValidationError:response message:@"Group not found"];
+                [ATProtoXrpcErrorHelper setValidationError:response message:@"Group not found"];
             } else {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             }
             return;
         }
@@ -211,11 +211,11 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSArray *memberDids = body[@"members"];
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri is required"];
             return;
         }
         if (![memberDids isKindOfClass:[NSArray class]] || memberDids.count == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"members must be an array with at least 1 DID"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"members must be an array with at least 1 DID"];
             return;
         }
 
@@ -223,7 +223,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSError *permError = nil;
         BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
         if (!isAdmin) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Only group admins/moderators can add members"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Only group admins/moderators can add members"];
             return;
         }
 
@@ -233,7 +233,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                              invitedBy:actorDID
                                                 error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to add members"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to add members"];
             return;
         }
 
@@ -252,11 +252,11 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSArray *memberDids = body[@"members"];
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri is required"];
             return;
         }
         if (![memberDids isKindOfClass:[NSArray class]] || memberDids.count == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"members must be an array with at least 1 DID"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"members must be an array with at least 1 DID"];
             return;
         }
 
@@ -264,7 +264,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSError *permError = nil;
         BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
         if (!isAdmin) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Only group admins can remove members"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Only group admins can remove members"];
             return;
         }
 
@@ -273,7 +273,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                                     members:memberDids
                                                       error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to remove members"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to remove members"];
             return;
         }
 
@@ -289,7 +289,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
             return;
         }
 
@@ -300,7 +300,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *members = [groupService listGroupMembers:groupUri limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -315,7 +315,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         if (!actorDID) return;
 
         if (![[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
             return;
         }
 
@@ -327,7 +327,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *groups = [groupService listAllGroupsWithLimit:limit cursor:cursor query:query error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -342,7 +342,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         if (!actorDID) return;
 
         if (![[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
             return;
         }
 
@@ -354,7 +354,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *links = [groupService listAllInviteLinksWithLimit:limit cursor:cursor query:query error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -371,19 +371,19 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSDictionary *body = request.jsonBody;
         NSString *groupUri = body[@"groupUri"];
         // expiresAt is passed straight through to a SQL bind parameter
-        // (GroupService.m's createInviteLinkForGroup:...) without ever being
+        // (PDSGroupService.m's createInviteLinkForGroup:...) without ever being
         // messaged as a string, so it accepts either an ISO8601 string or a
         // numeric epoch timestamp — no type guard needed here.
         NSString *expiresAt = body[@"expiresAt"];
         BOOL typeMismatch = NO;
         NSNumber *maxUses = AuthTypedValue(body, @"maxUses", [NSNumber class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
             return;
         }
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri is required"];
             return;
         }
 
@@ -391,7 +391,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSError *permError = nil;
         BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
         if (!isAdmin) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Only group admins can create invite links"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Only group admins can create invite links"];
             return;
         }
 
@@ -402,7 +402,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                                           maxUses:maxUses
                                                             error:&error];
         if (error || !linkId) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to create invite link"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to create invite link"];
             return;
         }
 
@@ -421,18 +421,18 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         BOOL typeMismatch = NO;
         NSNumber *enabled = AuthTypedValue(body, @"enabled", [NSNumber class], &typeMismatch);
         // expiresAt is passed straight through to a SQL bind parameter
-        // (GroupService.m's editInviteLink:...) without ever being messaged
+        // (PDSGroupService.m's editInviteLink:...) without ever being messaged
         // as a string, so it accepts either an ISO8601 string or a numeric
         // epoch timestamp — no type guard needed here.
         NSString *expiresAt = body[@"expiresAt"];
         NSNumber *maxUses = AuthTypedValue(body, @"maxUses", [NSNumber class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
             return;
         }
 
         if (![linkId isKindOfClass:[NSString class]] || linkId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"linkId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"linkId is required"];
             return;
         }
 
@@ -443,7 +443,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                              maxUses:maxUses
                                                error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to edit invite link"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to edit invite link"];
             return;
         }
 
@@ -461,14 +461,14 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *linkId = body[@"linkId"];
 
         if (![linkId isKindOfClass:[NSString class]] || linkId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"linkId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"linkId is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [groupService disableInviteLink:linkId error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to disable invite link"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to disable invite link"];
             return;
         }
 
@@ -486,7 +486,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *groupUri = body[@"groupUri"];
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri is required"];
             return;
         }
 
@@ -495,7 +495,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                                 requesterDid:actorDID
                                                       error:&error];
         if (error || !requestId) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to request join"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to request join"];
             return;
         }
 
@@ -513,7 +513,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *requestId = body[@"requestId"];
 
         if (![requestId isKindOfClass:[NSString class]] || requestId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"requestId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"requestId is required"];
             return;
         }
 
@@ -522,7 +522,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                           approvingDid:actorDID
                                                 error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to approve join request"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to approve join request"];
             return;
         }
 
@@ -540,7 +540,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *requestId = body[@"requestId"];
 
         if (![requestId isKindOfClass:[NSString class]] || requestId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"requestId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"requestId is required"];
             return;
         }
 
@@ -549,7 +549,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                          rejectingDid:actorDID
                                                error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to reject join request"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to reject join request"];
             return;
         }
 
@@ -565,7 +565,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
 
         NSString *groupUri = [request queryParamForKey:@"groupUri"];
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
             return;
         }
 
@@ -573,14 +573,14 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSError *permError = nil;
         BOOL isAdmin = [groupService isUserAdmin:actorDID inGroup:groupUri error:&permError];
         if (!isAdmin) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Only group admins can list join requests"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Only group admins can list join requests"];
             return;
         }
 
         NSError *error = nil;
         NSArray *requests = [groupService listJoinRequestsForGroup:groupUri error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -598,7 +598,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *groupUri = body[@"groupUri"];
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri is required"];
             return;
         }
 
@@ -606,9 +606,9 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         BOOL success = [groupService leaveGroup:groupUri memberDid:actorDID error:&error];
         if (error) {
             if (error.code == 403) {
-                [XrpcErrorHelper setAuthenticationError:response message:error.localizedDescription];
+                [ATProtoXrpcErrorHelper setAuthenticationError:response message:error.localizedDescription];
             } else {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             }
             return;
         }
@@ -629,16 +629,16 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         BOOL typeMismatch = NO;
         NSString *embed = AuthTypedValue(body, @"embed", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
             return;
         }
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri is required"];
             return;
         }
         if (![text isKindOfClass:[NSString class]] || text.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"text is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"text is required"];
             return;
         }
 
@@ -650,9 +650,9 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                                         error:&error];
         if (error) {
             if (error.code == 403) {
-                [XrpcErrorHelper setAuthenticationError:response message:error.localizedDescription];
+                [ATProtoXrpcErrorHelper setAuthenticationError:response message:error.localizedDescription];
             } else {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             }
             return;
         }
@@ -669,7 +669,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
         if (![groupUri isKindOfClass:[NSString class]] || groupUri.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"groupUri parameter is required"];
             return;
         }
 
@@ -680,7 +680,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *messages = [groupService getMessagesForGroup:groupUri limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -699,11 +699,11 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *emoji = body[@"emoji"];
 
         if (![messageId isKindOfClass:[NSString class]] || messageId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"messageId is required"];
             return;
         }
         if (![emoji isKindOfClass:[NSString class]] || emoji.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"emoji is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"emoji is required"];
             return;
         }
 
@@ -713,7 +713,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                                        emoji:emoji
                                                        error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to add reaction"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to add reaction"];
             return;
         }
 
@@ -732,11 +732,11 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *emoji = body[@"emoji"];
 
         if (![messageId isKindOfClass:[NSString class]] || messageId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"messageId is required"];
             return;
         }
         if (![emoji isKindOfClass:[NSString class]] || emoji.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"emoji is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"emoji is required"];
             return;
         }
 
@@ -746,7 +746,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
                                                             emoji:emoji
                                                             error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to remove reaction"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to remove reaction"];
             return;
         }
 
@@ -764,14 +764,14 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSString *messageId = body[@"messageId"];
 
         if (![messageId isKindOfClass:[NSString class]] || messageId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"messageId is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [groupService deleteGroupMessageForSelf:messageId memberDid:actorDID error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to delete message"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to delete message"];
             return;
         }
 
@@ -788,7 +788,7 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(ATProtoHttpRequest *request,
         NSDictionary *body = request.jsonBody;
         NSString *linkId = body[@"linkId"];
         if (![linkId isKindOfClass:[NSString class]] || linkId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"linkId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"linkId is required"];
             return;
         }
 

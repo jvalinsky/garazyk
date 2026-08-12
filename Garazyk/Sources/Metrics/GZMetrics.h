@@ -137,7 +137,7 @@ NS_ASSUME_NONNULL_BEGIN
                       endpoint:(NSString *)endpoint
                         status:(NSInteger)status;
 
-#pragma mark - Firehose Metrics
+#pragma mark - ATProtoFirehose Metrics
 
 /**
  * @brief Sets the current number of firehose subscribers.

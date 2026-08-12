@@ -8,7 +8,7 @@
 #import "AppView/Server/WriteProxy/AppViewWriteProxy.h"
 #import "Database/PDSQueryDatabase.h"
 
-@implementation AppViewXRpcRoutePack (Identity)
+@implementation ATProtoAppViewXRpcRoutePack (Identity)
 
 - (void)handleResolveHandle:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {

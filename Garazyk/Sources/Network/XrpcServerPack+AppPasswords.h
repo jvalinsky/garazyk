@@ -8,8 +8,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcServerPack (AppPasswords)
-+ (void)registerAppPasswordEndpoints:(XrpcDispatcher *)dispatcher
+@interface ATProtoXrpcServerPack (AppPasswords)
++ (void)registerAppPasswordEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                              services:(id<XrpcRoutePackServices>)services;
 @end
 

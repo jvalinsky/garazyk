@@ -9,15 +9,15 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
-@interface XrpcGermIdentityPack ()
-@property (nonatomic, strong) GermIdentityService *identityService;
-@property (nonatomic, strong) ChatAuthManager *authManager;
+@interface PDSXrpcGermIdentityPack ()
+@property (nonatomic, strong) PDSGermIdentityService *identityService;
+@property (nonatomic, strong) PDSChatAuthManager *authManager;
 @end
 
-@implementation XrpcGermIdentityPack
+@implementation PDSXrpcGermIdentityPack
 
-- (instancetype)initWithIdentityService:(GermIdentityService *)identityService
-                            authManager:(ChatAuthManager *)authManager {
+- (instancetype)initWithIdentityService:(PDSGermIdentityService *)identityService
+                            authManager:(PDSChatAuthManager *)authManager {
     self = [super init];
     if (self) {
         _identityService = identityService;
@@ -26,7 +26,7 @@
     return self;
 }
 
-- (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher {
+- (void)registerHandlersWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher {
     // com.germnetwork.identity.getAnchorKey
     [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_identity_getAnchorKey
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {

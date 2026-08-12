@@ -6,31 +6,31 @@
 #import "Network/HttpServer.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 
-@class DIDPLCResolver;
-@class XrpcIdentityHelper;
+@class ATProtoDIDPLCResolver;
+@class ATProtoXrpcIdentityHelper;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Registers relay HTTP and XRPC routes.
  */
-@interface RelayXrpcRoutePack : NSObject
+@interface ATProtoRelayXrpcRoutePack : NSObject
 
 /** PLC resolver used for relay identity lookups. */
-@property (nonatomic, strong, nullable) DIDPLCResolver *plcResolver;
+@property (nonatomic, strong, nullable) ATProtoDIDPLCResolver *plcResolver;
 /** PLC service URL used when constructing resolver helpers. */
 @property (nonatomic, copy, nullable) NSString *plcUrl;
 /** Upstream manager used for relay synchronization routes. */
-@property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
+@property (nonatomic, strong, nullable) ATProtoRelayUpstreamManager *upstreamManager;
 
 /** Initializes the route pack without a custom PLC resolver. */
-- (instancetype)initWithRepoStateManager:(RelayRepoStateManager *)repoStateManager
-                  subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler;
+- (instancetype)initWithRepoStateManager:(ATProtoRelayRepoStateManager *)repoStateManager
+                  subscribeReposHandler:(nullable ATProtoSubscribeReposHandler *)subscribeReposHandler;
 
 /** Initializes the route pack with repository state, firehose, and PLC dependencies. */
-- (instancetype)initWithRepoStateManager:(RelayRepoStateManager *)repoStateManager
-                  subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
-                              plcResolver:(nullable DIDPLCResolver *)plcResolver NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithRepoStateManager:(ATProtoRelayRepoStateManager *)repoStateManager
+                  subscribeReposHandler:(nullable ATProtoSubscribeReposHandler *)subscribeReposHandler
+                              plcResolver:(nullable ATProtoDIDPLCResolver *)plcResolver NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)init NS_UNAVAILABLE;
 

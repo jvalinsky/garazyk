@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract FFmpeg-based video transcoder implementation.
  */
-@interface FFmpegTranscoder : NSObject <VideoTranscoderBackend>
+@interface GZFFmpegTranscoder : NSObject <VideoTranscoderBackend>
 
 /**
  * @abstract Path to the ffmpeg binary.

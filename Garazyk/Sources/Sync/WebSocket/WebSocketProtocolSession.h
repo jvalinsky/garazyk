@@ -33,9 +33,9 @@ typedef NS_ENUM(NSInteger, WSSessionActionType) {
 };
 
 /**
- * @abstract Driver action produced by WebSocketProtocolSession.
+ * @abstract Driver action produced by ATProtoWebSocketProtocolSession.
  */
-@interface WSSessionAction : NSObject
+@interface ATProtoWSSessionAction : NSObject
 /** Action kind. */
 @property(nonatomic, assign) WSSessionActionType type;
 /** Optional action payload, such as message bytes or close metadata. */
@@ -47,12 +47,12 @@ typedef NS_ENUM(NSInteger, WSSessionActionType) {
 /**
  * @abstract Coordinates WebSocket framing, heartbeat, and backpressure without owning socket I/O.
  */
-@interface WebSocketProtocolSession : NSObject
+@interface ATProtoWebSocketProtocolSession : NSObject
 
 /** Frame codec used to parse inbound bytes and build outbound frames. */
-@property(nonatomic, readonly) WebSocketCodec *codec;
+@property(nonatomic, readonly) ATProtoWebSocketCodec *codec;
 /** Heartbeat policy used to decide ping and timeout actions. */
-@property(nonatomic, readonly) WebSocketHeartbeatPolicy *heartbeatPolicy;
+@property(nonatomic, readonly) ATProtoWebSocketHeartbeatPolicy *heartbeatPolicy;
 
 /** Maximum outbound queue size before backpressure actions become critical. */
 @property(nonatomic, assign) NSUInteger maxOutboundQueueBytes;
@@ -62,18 +62,18 @@ typedef NS_ENUM(NSInteger, WSSessionActionType) {
 @property(nonatomic, assign) double backpressureCriticalThreshold;
 
 /** Feeds inbound bytes using the current time for liveness bookkeeping. */
-- (NSArray<WSSessionAction *> *)feedData:(NSData *)data;
+- (NSArray<ATProtoWSSessionAction *> *)feedData:(NSData *)data;
 /** Feeds inbound bytes and records the supplied receive timestamp. */
-- (NSArray<WSSessionAction *> *)feedData:(NSData *)data
+- (NSArray<ATProtoWSSessionAction *> *)feedData:(NSData *)data
                               receivedAt:(NSTimeInterval)receivedAt;
 /** Advances heartbeat and timeout state for the supplied timestamp. */
-- (NSArray<WSSessionAction *> *)tick:(NSTimeInterval)now;
+- (NSArray<ATProtoWSSessionAction *> *)tick:(NSTimeInterval)now;
 
 /** Records an outbound frame enqueue and emits any resulting backpressure action. */
-- (NSArray<WSSessionAction *> *)didEnqueueFrameOfSize:(NSUInteger)size
+- (NSArray<ATProtoWSSessionAction *> *)didEnqueueFrameOfSize:(NSUInteger)size
                                      currentQueueSize:(NSUInteger)currentSize;
 /** Records an outbound frame dequeue and emits any resulting pressure-clear action. */
-- (NSArray<WSSessionAction *> *)didDequeueFrameOfSize:(NSUInteger)size
+- (NSArray<ATProtoWSSessionAction *> *)didDequeueFrameOfSize:(NSUInteger)size
                                      currentQueueSize:(NSUInteger)currentSize;
 
 @end

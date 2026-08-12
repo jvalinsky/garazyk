@@ -7,7 +7,7 @@
 @interface ModerationServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *tempDir;
 @property (nonatomic, strong) PDSDatabase *db;
-@property (nonatomic, strong) ModerationService *service;
+@property (nonatomic, strong) PDSModerationService *service;
 @end
 
 @implementation ModerationServiceTests
@@ -27,7 +27,7 @@
     [self.db executeUnsafeRawSQL:@"CREATE TABLE admin_audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_did TEXT NOT NULL, action TEXT NOT NULL, subject_type TEXT NOT NULL, subject_id TEXT NOT NULL, details TEXT, created_at REAL NOT NULL)" error:nil];
     [self.db executeUnsafeRawSQL:@"CREATE TABLE moderation_safelinks (url TEXT NOT NULL, pattern TEXT NOT NULL, action TEXT NOT NULL, created_at REAL NOT NULL, updated_at REAL NOT NULL, PRIMARY KEY(url, pattern))" error:nil];
     
-    self.service = [[ModerationService alloc] initWithDatabase:self.db];
+    self.service = [[PDSModerationService alloc] initWithDatabase:self.db];
 }
 
 - (void)tearDown {

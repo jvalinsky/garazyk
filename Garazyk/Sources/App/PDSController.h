@@ -30,8 +30,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabasePool;
 @class PDSActorStore;
 @class ATProtoMST;
-@class BlobStorage;
-@class SubscribeReposHandler;
+@class PDSBlobStorage;
+@class ATProtoSubscribeReposHandler;
 @class PDSDatabaseAccount;
 @class PDSDatabaseRepo;
 @class PDSDatabaseRecord;
@@ -118,7 +118,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong, readonly) ATProtoJWTMinter *jwtMinter;
 
 /*! Handler for the subscribeRepos firehose. */
-@property(nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;
+@property(nonatomic, strong, readonly) ATProtoSubscribeReposHandler *subscribeReposHandler;
 
 /*! Port for the HTTP XRPC server (default 2583). */
 @property(nonatomic, assign) NSUInteger httpPort;

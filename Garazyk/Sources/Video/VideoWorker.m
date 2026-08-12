@@ -296,7 +296,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
             }
 #else
             // FFmpeg-based metadata extraction for Linux/GNUstep
-            FFmpegTranscoder *probe = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil ffprobePath:nil];
+            GZFFmpegTranscoder *probe = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil ffprobePath:nil];
 
             CGSize dimensions = [probe probeDimensionsForVideoAtURL:inputURL];
             if (dimensions.width > 0 && dimensions.height > 0) {
@@ -375,7 +375,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                         NSString *blobCidStr = job[@"blob_cid"];
                         if (did && blobCidStr) {
                             NSError *hlsError = nil;
-                            VideoHLSResult *hlsResult = [self.hlsGenerator generateHLSFromVideoAtURL:transcodedURL
+                            GZVideoHLSResult *hlsResult = [self.hlsGenerator generateHLSFromVideoAtURL:transcodedURL
                                                                                                  did:did
                                                                                                  cid:blobCidStr
                                                                                        thumbnailData:thumbnailData

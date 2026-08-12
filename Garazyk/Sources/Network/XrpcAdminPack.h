@@ -6,12 +6,12 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * XrpcAdminPack registers all com.atproto.admin.* endpoint handlers.
+ * ATProtoXrpcAdminPack registers all com.atproto.admin.* endpoint handlers.
  */
 /**
- * @abstract Declares the XrpcAdminPack public API.
+ * @abstract Declares the ATProtoXrpcAdminPack public API.
  */
-@interface XrpcAdminPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcAdminPack : NSObject <XrpcRoutePack>
 
 @end
 

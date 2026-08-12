@@ -4,12 +4,12 @@
 #import "Database/PDSQueryDatabase.h"
 #import "Email/PDSEmailProvider.h"
 
-@interface AgeAssuranceService ()
+@interface PDSAgeAssuranceService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
 @property (nonatomic, strong, nullable) id<PDSEmailProvider> emailProvider;
 @end
 
-@implementation AgeAssuranceService
+@implementation PDSAgeAssuranceService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database
                    emailProvider:(nullable id<PDSEmailProvider>)emailProvider {

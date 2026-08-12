@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file OAuth2Handler.h
+ @file ATProtoOAuth2Handler.h
 
  @abstract HTTP handler for OAuth 2.0 endpoints.
 
  @discussion
     Provides HTTP request handlers for standard OAuth 2.0 endpoints including
     authorization, token exchange, and token revocation. Integrates with
-    OAuth2Server for processing authorization requests and issuing tokens.
+    ATProtoOAuth2Server for processing authorization requests and issuing tokens.
 
     Supports the AT Protocol OAuth profile with PKCE, DPoP, and PAR.
 
@@ -18,7 +18,7 @@
 #import <Foundation/Foundation.h>
 #import "Auth/Crypto/JWT.h"
 
-@class OAuth2Server;
+@class ATProtoOAuth2Server;
 @class ATProtoHttpServer;
 @class PDSDatabase;
 @class ATProtoHttpRequest;
@@ -33,13 +33,13 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class OAuth2Handler
+ @class ATProtoOAuth2Handler
 
  @abstract HTTP handler for OAuth 2.0 endpoints.
 
  @discussion
     This class provides HTTP request handlers for the standard OAuth 2.0
-    endpoints: authorize, token, and revoke. It integrates with the OAuth2Server
+    endpoints: authorize, token, and revoke. It integrates with the ATProtoOAuth2Server
     class to process authorization requests and issue tokens.
 
     Endpoints handled:
@@ -54,15 +54,15 @@ NS_ASSUME_NONNULL_BEGIN
     - POST /oauth/introspect - Token introspection (RFC 7662)
 
     Thread Safety: Each request is handled independently. The underlying
-    OAuth2Server uses appropriate synchronization for shared state.
+    ATProtoOAuth2Server uses appropriate synchronization for shared state.
  */
 /**
- * @abstract Declares the OAuth2Handler public API.
+ * @abstract Declares the ATProtoOAuth2Handler public API.
  */
-@interface OAuth2Handler : NSObject
+@interface ATProtoOAuth2Handler : NSObject
 
 /*! The underlying OAuth 2.0 server implementation. */
-@property (nonatomic, strong) OAuth2Server *oauthServer;
+@property (nonatomic, strong) ATProtoOAuth2Server *oauthServer;
 
 /*! ATProtoJWT minting service for token generation. */
 @property (nonatomic, strong, nullable) ATProtoJWTMinter *minter;
@@ -83,7 +83,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param database The database to use for client and token storage.
 
- @return An initialized OAuth2Handler instance.
+ @return An initialized ATProtoOAuth2Handler instance.
  */
 /** Initializes the OAuth handler with persistent OAuth storage. */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;

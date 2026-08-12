@@ -4,7 +4,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface OAuth2Handler (Helpers)
+@interface ATProtoOAuth2Handler (Helpers)
 - (NSDictionary *)parseJSONBody:(NSData *)data;
 - (NSDictionary *)parseFormUrlEncodedString:(NSString *)input;
 - (NSString *)iso8601StringFromDate:(NSDate *)date;

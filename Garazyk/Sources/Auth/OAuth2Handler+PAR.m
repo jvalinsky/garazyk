@@ -12,7 +12,7 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
-@implementation OAuth2Handler (PAR)
+@implementation ATProtoOAuth2Handler (PAR)
 
 - (void)handlePARRequest:(ATProtoHttpRequest *)request
                 response:(ATProtoHttpResponse *)response {
@@ -129,7 +129,7 @@
 
   } else {
     // Traditional client_secret authentication (constant-time comparison)
-    if (expectedSecret && ![OAuthClientAuthPolicy validateClientSecret:clientSecret againstExpected:expectedSecret]) {
+    if (expectedSecret && ![ATProtoOAuthClientAuthPolicy validateClientSecret:clientSecret againstExpected:expectedSecret]) {
       response.statusCode = 401;
       [response setJsonBody:@{
         @"error" : @"invalid_client",

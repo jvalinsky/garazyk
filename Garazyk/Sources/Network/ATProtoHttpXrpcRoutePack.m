@@ -16,27 +16,27 @@
 @implementation ATProtoHttpXrpcRoutePack
 
 + (void)registerRoutesWithServer:(ATProtoHttpServer *)server
-                      dispatcher:(nullable XrpcDispatcher *)dispatcher
+                      dispatcher:(nullable ATProtoXrpcDispatcher *)dispatcher
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller
-           subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
+           subscribeReposHandler:(nullable ATProtoSubscribeReposHandler *)subscribeReposHandler
                   setCorsHeaders:(ATProtoHttpSetCorsHeadersBlock)setCorsHeaders {
-  XrpcDispatcher *resolvedDispatcher = dispatcher;
+  ATProtoXrpcDispatcher *resolvedDispatcher = dispatcher;
   if (!resolvedDispatcher) {
-    resolvedDispatcher = [[XrpcDispatcher alloc] init];
+    resolvedDispatcher = [[ATProtoXrpcDispatcher alloc] init];
   }
 
   if (application) {
-    [XrpcMethodRegistry registerMethodsWithDispatcher:resolvedDispatcher
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:resolvedDispatcher
                                           application:application];
   } else if (controller) {
-    [XrpcMethodRegistry registerMethodsWithDispatcher:resolvedDispatcher
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:resolvedDispatcher
                                            controller:controller];
   } else {
     GZ_LOG_ERROR(@"No application/controller available for XRPC registration");
   }
 
-  __weak SubscribeReposHandler *weakSubscribeReposHandler = subscribeReposHandler;
+  __weak ATProtoSubscribeReposHandler *weakSubscribeReposHandler = subscribeReposHandler;
   RequestHandler xrpcDispatchHandler = ^(ATProtoHttpRequest *request,
                                          ATProtoHttpResponse *response) {
     if ([request.methodString isEqualToString:@"OPTIONS"]) {
@@ -105,7 +105,7 @@
     [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                 id<ATProtoNetworkConnection> connection) {
-                        SubscribeReposHandler *strongSubscribeReposHandler =
+                        ATProtoSubscribeReposHandler *strongSubscribeReposHandler =
                             weakSubscribeReposHandler;
                         if (!strongSubscribeReposHandler) {
                           [connection cancel];
@@ -121,9 +121,9 @@
   // can admit large bodies for routes that registered an override (e.g.
   // com.atproto.repo.importRepo with maxImportSize) while every other XRPC
   // endpoint keeps the generic parser limit. 0 means "no override".
-  __weak XrpcDispatcher *weakDispatcher = resolvedDispatcher;
+  __weak ATProtoXrpcDispatcher *weakDispatcher = resolvedDispatcher;
   server.bodySizeLimitProvider = ^NSUInteger(NSString *path) {
-    XrpcDispatcher *strongDispatcher = weakDispatcher;
+    ATProtoXrpcDispatcher *strongDispatcher = weakDispatcher;
     if (!strongDispatcher || ![path hasPrefix:@"/xrpc/"]) {
       return 0;
     }

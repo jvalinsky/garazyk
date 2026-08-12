@@ -235,7 +235,7 @@
                 NSString *hlsCid = self.blobCid ?: processedCidStr;
 
                 NSError *hlsError = nil;
-                VideoHLSResult *hlsResult = [hlsGenerator generateHLSFromVideoAtURL:transcodedURL
+                GZVideoHLSResult *hlsResult = [hlsGenerator generateHLSFromVideoAtURL:transcodedURL
                                                                                  did:hlsDid
                                                                                  cid:hlsCid
                                                                        thumbnailData:thumbnailData
@@ -302,7 +302,7 @@
 
     return info.count > 0 ? info : nil;
 #else
-    FFmpegTranscoder *probe = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil ffprobePath:nil];
+    GZFFmpegTranscoder *probe = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil ffprobePath:nil];
     NSMutableDictionary *info = [NSMutableDictionary dictionary];
 
     CGSize dims = [probe probeDimensionsForVideoAtURL:videoURL];

@@ -26,9 +26,9 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcServerPack (InviteCodes)
+@implementation ATProtoXrpcServerPack (InviteCodes)
 
-+ (void)registerInviteCodeEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerInviteCodeEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                            services:(id<XrpcRoutePackServices>)services {
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
@@ -36,7 +36,7 @@
 #pragma mark - com.atproto.server.inviteCodes.*
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createInviteCode handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -70,7 +70,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createInviteCodes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -126,7 +126,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getAccountInviteCodes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -151,7 +151,7 @@
                 @"disabled": @NO,
                 @"forAccount": did,
                 @"createdBy": did,
-                @"createdAt": [XrpcIdentityHelper currentISO8601String],
+                @"createdAt": [ATProtoXrpcIdentityHelper currentISO8601String],
                 @"uses": @[]
             }];
         }

@@ -14,7 +14,7 @@
 @interface GermIdentityServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *db;
-@property (nonatomic, strong) GermIdentityService *service;
+@property (nonatomic, strong) PDSGermIdentityService *service;
 @end
 
 @implementation GermIdentityServiceTests
@@ -32,7 +32,7 @@
     self.db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
     [self.db openWithError:nil];
 
-    self.service = [[GermIdentityService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
+    self.service = [[PDSGermIdentityService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
 }
 
 - (void)tearDown {

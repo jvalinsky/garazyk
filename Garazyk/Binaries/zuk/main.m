@@ -68,10 +68,10 @@ static NSString *ZukRelayAdminPassword(void) {
 
 @interface ZukRuntimeComposite : NSObject <GZServiceRuntimeProtocol>
 @property (nonatomic, strong) ATProtoHttpServer *server;
-@property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
+@property (nonatomic, strong, nullable) ATProtoRelayUpstreamManager *upstreamManager;
 @property (nonatomic, strong) NSArray<NSString *> *upstreamURLs;
 @property (nonatomic, assign) BOOL noUpstream;
-@property (nonatomic, strong, nullable) RelayRepoStateManager *repoStateManager;
+@property (nonatomic, strong, nullable) ATProtoRelayRepoStateManager *repoStateManager;
 @property (nonatomic, strong, nullable) GZAdminUIHost *adminUIHost;
 @end
 
@@ -356,22 +356,22 @@ int main(int argc, const char * argv[]) {
             }
         }
 
-        // Initialize relay metrics (use shared singleton so RelayUpstreamManager
+        // Initialize relay metrics (use shared singleton so ATProtoRelayUpstreamManager
         // and all other components share the same instance)
-        RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+        ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
 
         // Initialize event buffer (72hr retention per Sync v1.1)
-        RelayEventBuffer *eventBuffer = [RelayEventBuffer bufferWithDefaultRetention];
+        ATProtoRelayEventBuffer *eventBuffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
 
-        // Initialize SubscribeReposHandler for downstream WebSocket connections
+        // Initialize ATProtoSubscribeReposHandler for downstream WebSocket connections
         // Persistence disabled in Relay for performance/stability in scenario tests
-        SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:nil];
+        ATProtoSubscribeReposHandler *subscribeReposHandler = [[ATProtoSubscribeReposHandler alloc] initWithServiceDatabases:nil];
         subscribeReposHandler.relayMetrics = metrics;
         subscribeReposHandler.eventBuffer = eventBuffer;
 
 
         // Initialize downstream handler (bridges upstream events to downstream)
-        RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+        ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
             initWithEventBuffer:eventBuffer
             subscribeReposHandler:subscribeReposHandler];
         downstreamHandler.metrics = metrics;
@@ -384,8 +384,8 @@ int main(int argc, const char * argv[]) {
         downstreamHandler.chainValidationMode = validationMode;
 
         // The resolver is shared by ingress signature validation and Relay XRPC.
-        DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:@"https://plc.directory"];
-        RelayEventValidator *eventValidator = [[RelayEventValidator alloc]
+        ATProtoDIDPLCResolver *plcResolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:@"https://plc.directory"];
+        ATProtoRelayEventValidator *eventValidator = [[ATProtoRelayEventValidator alloc]
             initWithValidationMode:validationMode];
         eventValidator.plcResolver = plcResolver;
         downstreamHandler.eventValidator = eventValidator;
@@ -393,8 +393,8 @@ int main(int argc, const char * argv[]) {
         // Initialize repo state manager for XRPC queries (with SQLite persistence)
         NSString *relayStatePath = [dataDir stringByAppendingPathComponent:@"relay_state.db"];
         NSError *relayStateError = nil;
-        RelayRepoStateManager *repoStateManager =
-            [[RelayRepoStateManager alloc] initWithDataDir:relayStatePath
+        ATProtoRelayRepoStateManager *repoStateManager =
+            [[ATProtoRelayRepoStateManager alloc] initWithDataDir:relayStatePath
                                                     error:&relayStateError];
         if (!repoStateManager) {
             GZ_LOG_CORE_ERROR(@"Failed to open relay state database: %@",
@@ -408,11 +408,11 @@ int main(int argc, const char * argv[]) {
         downstreamHandler.repoStateManager = repoStateManager;
 
         // Initialize upstream manager with configured upstreams
-        RelayUpstreamManager *upstreamManager = [[RelayUpstreamManager alloc] initWithInitialURLs:upstreamURLs];
+        ATProtoRelayUpstreamManager *upstreamManager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:upstreamURLs];
         upstreamManager.delegate = downstreamHandler;
 
         // Configure relay API handler
-        RelayAPIHandler *relayAPIHandler = [RelayAPIHandler sharedHandler];
+        ATProtoRelayAPIHandler *relayAPIHandler = [ATProtoRelayAPIHandler sharedHandler];
         [relayAPIHandler setMetrics:metrics];
         [relayAPIHandler setUpstreamManager:upstreamManager];
 
@@ -451,11 +451,11 @@ int main(int argc, const char * argv[]) {
                  }];
 
         // WebSocket upgrade path for downstream subscribers
-        __weak SubscribeReposHandler *weakSubscribeReposHandler = subscribeReposHandler;
+        __weak ATProtoSubscribeReposHandler *weakSubscribeReposHandler = subscribeReposHandler;
         [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
                            handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                      id<ATProtoNetworkConnection> connection) {
-            SubscribeReposHandler *strongHandler = weakSubscribeReposHandler;
+            ATProtoSubscribeReposHandler *strongHandler = weakSubscribeReposHandler;
             if (!strongHandler) {
                 [connection cancel];
                 return;
@@ -466,7 +466,7 @@ int main(int argc, const char * argv[]) {
         // Register XRPC sync endpoints (listRepos, getHead, getRepo, getLatestCommit,
         // getRepoStatus, getHostStatus, requestCrawl)
         // Reuse the ingress resolver for getRepo redirect functionality.
-        RelayXrpcRoutePack *xrpcRoutePack = [[RelayXrpcRoutePack alloc]
+        ATProtoRelayXrpcRoutePack *xrpcRoutePack = [[ATProtoRelayXrpcRoutePack alloc]
             initWithRepoStateManager:repoStateManager
                subscribeReposHandler:subscribeReposHandler
                        plcResolver:plcResolver];

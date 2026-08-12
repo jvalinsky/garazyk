@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file OAuthServerMetadata.h
+ @file ATProtoOAuthServerMetadata.h
 
  @abstract OAuth 2.0 Authorization Server Metadata.
 
@@ -16,14 +16,14 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class OAuthServerMetadata
+ @class ATProtoOAuthServerMetadata
 
  @abstract OAuth 2.0 server metadata provider.
 
  @discussion Generates .well-known/oauth-authorization-server metadata
  for OAuth 2.0 client discovery per RFC 8414.
  */
-@interface OAuthServerMetadata : NSObject
+@interface ATProtoOAuthServerMetadata : NSObject
 
 /*! OAuth server metadata dictionary. */
 @property (nonatomic, readonly) NSDictionary *metadata;

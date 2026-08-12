@@ -9,7 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Implementation of VideoBlobUploader for local PDS blob storage.
  */
-@interface VideoLocalBlobUploader : NSObject <VideoBlobUploader>
+@interface GZVideoLocalBlobUploader : NSObject <VideoBlobUploader>
 
 /**
  * @abstract The local blob provider instance.

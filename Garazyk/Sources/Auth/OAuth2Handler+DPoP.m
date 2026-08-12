@@ -7,7 +7,7 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
-@implementation OAuth2Handler (DPoP)
+@implementation ATProtoOAuth2Handler (DPoP)
 
 #pragma mark - Forwarded Header Trust
 - (BOOL)requestShouldTrustForwardedHeaders:(ATProtoHttpRequest *)request {
@@ -232,7 +232,7 @@
     requestedNonce = nil;
   }
 
-  if (![OAuth2DPoPProof verifyProof:dpopProof
+  if (![ATProtoOAuth2DPoPProof verifyProof:dpopProof
                              method:request.methodString
                                 url:dpopURL
                               nonce:requestedNonce

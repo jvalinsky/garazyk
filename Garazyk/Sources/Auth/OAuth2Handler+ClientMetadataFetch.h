@@ -4,7 +4,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface OAuth2Handler (ClientMetadataFetch)
+@interface ATProtoOAuth2Handler (ClientMetadataFetch)
 - (void)fetchClientMetadataFromURL:(NSString *)url
                         completion:(void (^)(NSDictionary *_Nullable metadata,
                                              NSError *_Nullable error))completion;

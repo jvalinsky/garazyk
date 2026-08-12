@@ -46,7 +46,7 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
   return [ATProtoPermissionScopeEvaluator validateOAuthScopeString:scope];
 }
 
-@implementation OAuth2Handler {
+@implementation ATProtoOAuth2Handler {
   ATProtoJWTMinter *_minter;
 }
 
@@ -85,7 +85,7 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
       sClientMetadataQueue = dispatch_queue_create(
           "com.atproto.oauth2.client.metadata", DISPATCH_QUEUE_SERIAL);
     });
-    self.oauthServer = [[OAuth2Server alloc] initWithDatabase:database];
+    self.oauthServer = [[ATProtoOAuth2Server alloc] initWithDatabase:database];
     self.oauthServer.jwtMinter = self.minter;
 
     // Keep env override behavior for tests/runtime while canonicalizing issuer

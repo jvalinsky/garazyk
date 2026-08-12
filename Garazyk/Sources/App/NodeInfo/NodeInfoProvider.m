@@ -4,7 +4,7 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "NodeInfoSchemas.h"
 
-@implementation NodeInfoProvider {
+@implementation GZNodeInfoProvider {
     NSString *_baseURL;
     ATProtoServiceConfiguration *_configuration;
     NSDictionary *_nodeInfo20;

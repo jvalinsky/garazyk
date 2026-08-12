@@ -41,9 +41,9 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
     return NO;
 }
 
-@implementation XrpcServerPack (AccountManagement)
+@implementation ATProtoXrpcServerPack (AccountManagement)
 
-+ (void)registerEmailAndAccountEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerEmailAndAccountEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                                  services:(id<XrpcRoutePackServices>)services {
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
@@ -54,7 +54,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
 #pragma mark - com.atproto.server.accountManagement.*
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestEmailConfirmation handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -118,7 +118,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestEmailUpdate handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -134,7 +134,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_confirmEmail handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -149,7 +149,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
         NSString *email = AuthTypedValue(body, @"email", [NSString class], &typeMismatch);
         NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         if (email.length == 0 || token.length == 0) {
@@ -230,7 +230,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_updateEmail handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -244,7 +244,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
         BOOL typeMismatch = NO;
         NSString *email = AuthTypedValue(body, @"email", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         if (email.length == 0 || !isLikelyEmail(email)) {
@@ -266,7 +266,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_requestAccountDelete handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -343,7 +343,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
         BOOL typeMismatch = NO;
         NSString *email = AuthTypedValue(body, @"email", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         if (email.length == 0 || !isLikelyEmail(email)) {
@@ -417,7 +417,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
         NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
         NSString *password = AuthTypedValue(body, @"password", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         if (token.length == 0 || password.length == 0) {
@@ -533,7 +533,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
         BOOL typeMismatch = NO;
         NSString *did = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         NSString *signingKey = nil;
@@ -631,7 +631,7 @@ static BOOL XrpcAccountAllowsEmailManagement(ATProtoHttpRequest *request, ATProt
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;

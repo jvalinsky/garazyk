@@ -32,7 +32,7 @@ typedef NS_ENUM(NSInteger, PDSErrorCode) {
     PDSErrorInvalidSignature = 1003,
     PDSErrorDPoPVerificationFailed = 1004,
     
-    // Account/Session Errors (2000-2999)
+    // Account/PDSSession Errors (2000-2999)
     PDSErrorAccountNotFound = 2000,
     PDSErrorInvalidCredentials = 2001,
     PDSErrorAccountDisabled = 2002,

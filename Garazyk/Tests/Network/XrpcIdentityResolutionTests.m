@@ -18,7 +18,7 @@
 - (void)testExperimentalSpaceHostIsPublishedWithConfiguredPeerEndpoint {
     ATProtoServiceConfiguration *configuration =
         [self configurationWithSpaceHostEndpoint:@"http://spaces.internal:2583"];
-    NSDictionary *services = [XrpcIdentityHelper defaultPdsServiceForConfig:configuration];
+    NSDictionary *services = [ATProtoXrpcIdentityHelper defaultPdsServiceForConfig:configuration];
 
     XCTAssertEqualObjects(services[@"atproto_pds"][@"endpoint"], @"https://pds.public.example");
     XCTAssertEqualObjects(services[@"atproto_space_host"][@"endpoint"],
@@ -28,7 +28,7 @@
 - (void)testExperimentalSpaceHostRejectsUnsafeConfiguredEndpoint {
     ATProtoServiceConfiguration *configuration =
         [self configurationWithSpaceHostEndpoint:@"https://user@spaces.internal:2583/?token=secret"];
-    NSDictionary *services = [XrpcIdentityHelper defaultPdsServiceForConfig:configuration];
+    NSDictionary *services = [ATProtoXrpcIdentityHelper defaultPdsServiceForConfig:configuration];
 
     XCTAssertEqualObjects(services[@"atproto_space_host"][@"endpoint"],
                           @"https://pds.public.example");

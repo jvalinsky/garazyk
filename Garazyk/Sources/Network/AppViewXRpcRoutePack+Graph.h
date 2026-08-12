@@ -10,7 +10,7 @@
  * requiring the caller's graph state authenticate through `requireAuth:response:`; service
  * failures produce 500 JSON error responses unless a handler documents a 404 result.
  */
-@interface AppViewXRpcRoutePack (Graph)
+@interface ATProtoAppViewXRpcRoutePack (Graph)
 
 /** @abstract Returns one actor's follows after validating `actor`, with cursor pagination. */
 - (void)handleGetFollows:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

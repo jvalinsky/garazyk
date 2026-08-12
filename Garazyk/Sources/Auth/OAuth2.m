@@ -94,10 +94,10 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 
 
-@interface OAuth2Server ()
+@interface ATProtoOAuth2Server ()
 @end
 
-@implementation OAuth2AuthorizationRequest
+@implementation ATProtoOAuth2AuthorizationRequest
 
 #pragma mark - Authorization Request Model
 - (NSURL *)authorizationURL {
@@ -133,11 +133,11 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 @end
 
-@implementation OAuth2AuthorizationResponse
+@implementation ATProtoOAuth2AuthorizationResponse
 
 #pragma mark - Authorization Response Model
 + (nullable instancetype)responseFromURL:(NSURL *)url expectedState:(nullable NSString *)state error:(NSError **)error {
-    OAuth2AuthorizationResponse *response = [[OAuth2AuthorizationResponse alloc] init];
+    ATProtoOAuth2AuthorizationResponse *response = [[ATProtoOAuth2AuthorizationResponse alloc] init];
     NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
     NSMutableDictionary<NSString *, NSString *> *params = [NSMutableDictionary dictionary];
     for (NSURLQueryItem *item in components.queryItems) {
@@ -197,7 +197,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 @end
 
-@implementation OAuth2TokenRequest
+@implementation ATProtoOAuth2TokenRequest
 
 - (NSDictionary *)toFormData {
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
@@ -216,10 +216,10 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 @end
 
-@implementation OAuth2TokenResponse
+@implementation ATProtoOAuth2TokenResponse
 
 + (nullable instancetype)responseFromDictionary:(NSDictionary *)dictionary error:(NSError **)error {
-    OAuth2TokenResponse *response = [[OAuth2TokenResponse alloc] init];
+    ATProtoOAuth2TokenResponse *response = [[ATProtoOAuth2TokenResponse alloc] init];
     response.accessToken = dictionary[@"access_token"];
     response.tokenType = dictionary[@"token_type"] ?: @"Bearer";
     response.refreshToken = dictionary[@"refresh_token"];
@@ -250,7 +250,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 @end
 
-@implementation OAuth2DPoPProof
+@implementation ATProtoOAuth2DPoPProof
 
 + (nullable NSData *)decodeBase64URL:(NSString *)value error:(NSError **)error {
     return [ATProtoJWT base64URLDecode:value error:error];
@@ -491,7 +491,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 @end
 
-@implementation OAuth2Server
+@implementation ATProtoOAuth2Server
 
 - (void)setIssuer:(NSString *)issuer {
     _issuer = [issuer copy];
@@ -518,7 +518,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         _jwtMinter.audience = self.issuer;
         _didResolver = [[ATProtoDIDResolver alloc] init];
         _didResolver.plcURL = [ATProtoServiceConfiguration sharedConfiguration].plcURL;
-        _handleResolver = [[HandleResolver alloc] init];
+        _handleResolver = [[ATProtoHandleResolver alloc] init];
         _database = database;
 
         BOOL hasProvisionedSigningKey = NO;
@@ -598,7 +598,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     });
 }
 
-- (void)handleAuthorizationRequest:(OAuth2AuthorizationRequest *)request
+- (void)handleAuthorizationRequest:(ATProtoOAuth2AuthorizationRequest *)request
                         completion:(OAuth2AuthorizationCompletion)completion {
     if (!request.clientID || !request.redirectURI || !request.responseType) {
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
@@ -693,7 +693,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     completion(redirectComponents.URL, code, nil);
 }
 
-- (void)handleTokenRequest:(OAuth2TokenRequest *)request
+- (void)handleTokenRequest:(ATProtoOAuth2TokenRequest *)request
                 completion:(OAuth2TokenCompletion)completion {
     if ([request.grantType isEqualToString:@"authorization_code"]) {
         [self processAuthorizationCodeGrant:request completion:completion];
@@ -709,7 +709,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     }
 }
 
-- (void)processAuthorizationCodeGrant:(OAuth2TokenRequest *)request
+- (void)processAuthorizationCodeGrant:(ATProtoOAuth2TokenRequest *)request
                           completion:(OAuth2TokenCompletion)completion {
     NSDictionary *codeData = [self getAuthorizationCodeData:request.code];
     if (!codeData) {
@@ -812,8 +812,8 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         }
         
         // Verify Code
-        NSString *secret = [Base32Utils base32StringFromData:account.tfaSecret];
-        BOOL valid = [TOTPService verifyCode:request.tfaCode secret:secret];
+        NSString *secret = [ATProtoBase32Utils base32StringFromData:account.tfaSecret];
+        BOOL valid = [ATProtoTOTPService verifyCode:request.tfaCode secret:secret];
         if (!valid) {
             NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                                   code:OAuth2ErrorInvalidGrant
@@ -862,7 +862,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
             uint32_t storedSignCount = [cred[@"signCount"] unsignedIntValue];
             uint32_t newCount = 0;
 
-            verified = [WebAuthnVerifier verifyAssertionResponse:request.webauthnAssertion
+            verified = [ATProtoWebAuthnVerifier verifyAssertionResponse:request.webauthnAssertion
                                                challenge:webauthnChallenge
                                                   origin:origin
                                                publicKey:cred[@"publicKey"]
@@ -943,7 +943,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         return;
     }
 
-    Session *session = [self createSessionForDID:did
+    PDSSession *session = [self createSessionForDID:did
                                           handle:handle
                                            scope:effectiveScope
                                dpopKeyThumbprint:request.dpopKeyThumbprint];
@@ -966,11 +966,11 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     completion(session, nil);
 }
 
-- (void)processRefreshTokenGrant:(OAuth2TokenRequest *)request
+- (void)processRefreshTokenGrant:(ATProtoOAuth2TokenRequest *)request
                       completion:(OAuth2TokenCompletion)completion {
     // 1. Try to find active session in memory
-    Session *existingSession = nil;
-    for (Session *session in self.activeSessions.allValues) {
+    PDSSession *existingSession = nil;
+    for (PDSSession *session in self.activeSessions.allValues) {
         if ([PDSSecurityCompare constantTimeEqualString:session.refreshToken string:request.refreshToken]) {
             existingSession = session;
             break;
@@ -1030,7 +1030,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     }
 
     NSString *newScope = request.scope ?: (existingSession ? existingSession.scope : OAuth2ScopeAtproto);
-    Session *newSession = [self createSessionForDID:did
+    PDSSession *newSession = [self createSessionForDID:did
                                              handle:account.handle
                                               scope:newScope
                                   dpopKeyThumbprint:nil];
@@ -1053,9 +1053,9 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     completion(newSession, nil);
 }
 
-- (void)processDPoPGrant:(OAuth2TokenRequest *)request
+- (void)processDPoPGrant:(ATProtoOAuth2TokenRequest *)request
               completion:(OAuth2TokenCompletion)completion {
-    Session *existingSession = [self getSessionByAccessToken:request.accessToken];
+    PDSSession *existingSession = [self getSessionByAccessToken:request.accessToken];
     if (!existingSession) {
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidGrant
@@ -1072,8 +1072,8 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     completion(existingSession, nil);
 }
 
-- (nullable Session *)getSessionByAccessToken:(NSString *)accessToken {
-    for (Session *session in self.activeSessions.allValues) {
+- (nullable PDSSession *)getSessionByAccessToken:(NSString *)accessToken {
+    for (PDSSession *session in self.activeSessions.allValues) {
         if ([PDSSecurityCompare constantTimeEqualString:session.accessToken string:accessToken]) {
             return session;
         }
@@ -1081,11 +1081,11 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     return nil;
 }
 
-- (Session *)createSessionForDID:(NSString *)did
+- (PDSSession *)createSessionForDID:(NSString *)did
                           handle:(NSString *)handle
                            scope:(NSString *)scope
                dpopKeyThumbprint:(nullable NSString *)dpopKeyThumbprint {
-    Session *session = [[Session alloc] initWithDID:did
+    PDSSession *session = [[PDSSession alloc] initWithDID:did
                                              handle:handle
                                               scope:scope
                                              minter:self.jwtMinter
@@ -1122,8 +1122,8 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                    dpopJWK:(nullable NSDictionary *)dpopJWK
                 completion:(OAuth2RefreshCompletion)completion {
     // Find session with this refresh token
-    Session *foundSession = nil;
-    for (Session *session in self.activeSessions.allValues) {
+    PDSSession *foundSession = nil;
+    for (PDSSession *session in self.activeSessions.allValues) {
         if ([PDSSecurityCompare constantTimeEqualString:session.refreshToken string:refreshToken]) {
             foundSession = session;
             break;
@@ -1167,7 +1167,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     // Revoke in memory if present
     dispatch_sync(self.sessionQueue, ^{
         NSString *foundSessionId = nil;
-        for (Session *session in self.activeSessions.allValues) {
+        for (PDSSession *session in self.activeSessions.allValues) {
             if ([PDSSecurityCompare constantTimeEqualString:session.refreshToken string:token]) {
                 foundSessionId = session.sessionID;
                 break;
@@ -1185,7 +1185,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     // Revoke in memory
     dispatch_sync(self.sessionQueue, ^{
         NSMutableArray *toRemove = [NSMutableArray array];
-        for (Session *session in self.activeSessions.allValues) {
+        for (PDSSession *session in self.activeSessions.allValues) {
             if ([session.did isEqualToString:did]) {
                 [toRemove addObject:session.sessionID];
             }

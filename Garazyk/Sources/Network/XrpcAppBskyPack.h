@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcAppBskyPack.h
+//  ATProtoXrpcAppBskyPack.h
 //  ATProtoPDS
 //
 //  Domain module for app.bsky.* XRPC endpoints.
@@ -12,7 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class RecordLifecycleHandler;
+@class PDSRecordLifecycleHandler;
 
 /**
  @brief Domain module for app.bsky.* endpoints.
@@ -26,26 +26,26 @@ NS_ASSUME_NONNULL_BEGIN
  These endpoints integrate with AppView services and support optional authentication.
  */
 /**
- * @abstract Declares the XrpcAppBskyPack public API.
+ * @abstract Declares the ATProtoXrpcAppBskyPack public API.
  */
-@interface XrpcAppBskyPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcAppBskyPack : NSObject <XrpcRoutePack>
 
 /**
  @brief Register only the PDS-level app.bsky.* methods.
  */
-+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerPDSLevelMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                      services:(id<XrpcRoutePackServices>)services;
 
 /**
  @brief Register all app.bsky.* endpoint handlers (full AppView).
  */
-+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerAppViewMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                     services:(id<XrpcRoutePackServices>)services;
 
 /**
- @brief Store the RecordLifecycleHandler for the process lifetime.
+ @brief Store the PDSRecordLifecycleHandler for the process lifetime.
  */
-+ (void)setRetainedLifecycleHandler:(nullable RecordLifecycleHandler *)handler;
++ (void)setRetainedLifecycleHandler:(nullable PDSRecordLifecycleHandler *)handler;
 
 @end
 

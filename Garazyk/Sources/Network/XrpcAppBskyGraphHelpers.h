@@ -5,12 +5,12 @@
 //  ATProtoPDS
 //
 //  Helper functions for app.bsky.graph.* XRPC endpoint implementations.
-//  Shared between XrpcAppBskyPack and XrpcAppBskyGraphPack.
+//  Shared between ATProtoXrpcAppBskyPack and ATProtoXrpcAppBskyGraphPack.
 //
 
 #import <Foundation/Foundation.h>
 
-@class ActorService;
+@class PDSActorService;
 @class PDSDatabase;
 @class PDSDatabasePool;
 @class PDSServiceDatabases;
@@ -43,7 +43,7 @@ NSMutableArray<NSString *> *XrpcNormalizedUniqueStringArray(id rawValue);
 NSMutableDictionary *XrpcGraphMuteStateFromPreferences(NSArray<NSDictionary *> *preferences, NSUInteger *_Nullable outIndex);
 
 /// Persists graph mute state back to preferences.
-BOOL XrpcPersistGraphMuteState(ActorService *actorService, NSString *actorDID, NSMutableArray<NSDictionary *> *preferences, NSMutableDictionary *state, NSUInteger existingIndex, NSError **error);
+BOOL XrpcPersistGraphMuteState(PDSActorService *actorService, NSString *actorDID, NSMutableArray<NSDictionary *> *preferences, NSMutableDictionary *state, NSUInteger existingIndex, NSError **error);
 
 /// Normalizes a list purpose string to full Lexicon URI.
 NSString *_Nullable XrpcNormalizeListPurpose(NSString *purpose);
@@ -56,9 +56,9 @@ NSString *_Nullable XrpcResolveActorIdentifierToDid(PDSServiceDatabases *service
 #pragma mark - List View Helpers
 
 /// Loads a list item view for a specific list and subject.
-NSDictionary *_Nullable XrpcLoadListItemViewForListAndSubject(PDSDatabase *appViewDatabase, ActorService *actorService, NSString *creatorDid, NSString *listURI, NSString *subjectDid);
+NSDictionary *_Nullable XrpcLoadListItemViewForListAndSubject(PDSDatabase *appViewDatabase, PDSActorService *actorService, NSString *creatorDid, NSString *listURI, NSString *subjectDid);
 
 /// Loads a list view from URI.
-NSDictionary *_Nullable XrpcLoadListViewForURI(PDSDatabase *appViewDatabase, ActorService *actorService, NSString *listURI);
+NSDictionary *_Nullable XrpcLoadListViewForURI(PDSDatabase *appViewDatabase, PDSActorService *actorService, NSString *listURI);
 
 NS_ASSUME_NONNULL_END

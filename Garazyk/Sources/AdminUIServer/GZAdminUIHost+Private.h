@@ -59,7 +59,7 @@ void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSSt
 @property(nonatomic, strong, readwrite) GZAdminUIServiceConfig *configuration;
 /** @abstract Backing storage for the composed pack list. */
 @property(nonatomic, copy, readwrite) NSArray<Class> *packs;
-/** @abstract Session and credential authority used by `ensureAuthorized:response:`. */
+/** @abstract PDSSession and credential authority used by `ensureAuthorized:response:`. */
 @property(nonatomic, strong) GZAdminUIAuthManager *authManager;
 /** @abstract Synchronous proxy for configured PDS, AppView, and Ozone operations. */
 @property(nonatomic, strong) GZAdminUIBackendClient *backendClient;

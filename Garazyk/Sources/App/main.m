@@ -18,7 +18,7 @@
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
         NSApplication *application = [NSApplication sharedApplication];
-        AppDelegate *delegate = [[AppDelegate alloc] init];
+        GZAppDelegate *delegate = [[GZAppDelegate alloc] init];
         application.delegate = delegate;
         return NSApplicationMain(argc, argv);
     }

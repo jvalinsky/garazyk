@@ -7,7 +7,7 @@
 
  @discussion Iterates all loaded schemas in the ATProtoLexiconRegistry
  and registers dynamic XRPC endpoints for query and procedure definitions.
- Domain-specific routes (app.bsky.*) registered by AppViewXRpcRoutePack
+ Domain-specific routes (app.bsky.*) registered by ATProtoAppViewXRpcRoutePack
  take priority via the ATProtoHttpRouteTrie's exact-match-first behavior.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky

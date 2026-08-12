@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Provides authentication using ATProtoJWT (JSON Web Tokens) for video services.
  */
-@interface VideoJWTAuthProvider : NSObject <VideoAuthProvider>
+@interface GZVideoJWTAuthProvider : NSObject <VideoAuthProvider>
 
 /**
  * @abstract The expected audience (aud) claim for validated JWTs.

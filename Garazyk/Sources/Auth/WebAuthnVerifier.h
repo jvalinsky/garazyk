@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file WebAuthnVerifier.h
+ @file ATProtoWebAuthnVerifier.h
 
  @abstract WebAuthn credential verification.
 
@@ -17,7 +17,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class WebAuthnVerifier
+ @class ATProtoWebAuthnVerifier
 
  @abstract WebAuthn response verification utilities.
 
@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
  (attestation) and authentication (assertion) responses. Validates challenge,
  origin, signature, and sign count.
  */
-@interface WebAuthnVerifier : NSObject
+@interface ATProtoWebAuthnVerifier : NSObject
 
 /*!
  @method verifyRegistrationResponse:challenge:origin:error:

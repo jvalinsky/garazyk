@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Exposes the blob storage value.
  */
-@property (nonatomic, strong, readonly) BlobStorage *blobStorage;
+@property (nonatomic, strong, readonly) PDSBlobStorage *blobStorage;
 
 /// Service databases for account lookups
 @property (nonatomic, strong, readonly) PDSServiceDatabases *serviceDatabases;

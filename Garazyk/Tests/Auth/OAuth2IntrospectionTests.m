@@ -17,7 +17,7 @@
 
 @interface OAuth2IntrospectionTests : XCTestCase
 
-@property (nonatomic, strong) OAuth2Handler *handler;
+@property (nonatomic, strong) ATProtoOAuth2Handler *handler;
 @property (nonatomic, strong) PDSDatabase *database;
 
 @end
@@ -35,7 +35,7 @@
     XCTAssertNil(dbError);
     XCTAssertNotNil(self.database);
 
-    self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+    self.handler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.database];
     XCTAssertNotNil(self.handler);
 
     // Set up OAuth2 server

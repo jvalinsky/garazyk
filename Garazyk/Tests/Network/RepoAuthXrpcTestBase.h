@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, strong) PDSApplication *application;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, strong) NSURL *tempURL;
 @property (nonatomic, copy) NSString *did1;
 @property (nonatomic, copy) NSString *did2;

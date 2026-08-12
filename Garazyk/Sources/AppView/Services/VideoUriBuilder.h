@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Constructs AppView playlist and thumbnail URLs for video embeds.
  * @discussion Self-hosted deployments typically point these URLs at the configured Jelcz video service.
  */
-@interface AppViewVideoUriBuilder : NSObject
+@interface PDSAppViewVideoUriBuilder : NSObject
 
 /** Base URL of the video service, such as http://localhost:2586 for Jelcz. */
 @property (nonatomic, copy) NSString *videoServiceURL;

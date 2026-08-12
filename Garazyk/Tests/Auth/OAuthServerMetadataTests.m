@@ -10,8 +10,8 @@
 
 - (void)testMetadataInitialization {
   NSString *baseURL = @"https://pds.example.com";
-  OAuthServerMetadata *metadata =
-      [[OAuthServerMetadata alloc] initWithBaseURL:baseURL];
+  ATProtoOAuthServerMetadata *metadata =
+      [[ATProtoOAuthServerMetadata alloc] initWithBaseURL:baseURL];
 
   XCTAssertNotNil(metadata);
   NSDictionary *dict = metadata.metadata;
@@ -49,10 +49,10 @@
 
 - (void)testMetadataInvalidURL {
   XCTAssertNil(
-      [[OAuthServerMetadata alloc] initWithBaseURL:@"http://insecure.com"]);
-  XCTAssertNil([[OAuthServerMetadata alloc] initWithBaseURL:@""]);
-  XCTAssertNil([[OAuthServerMetadata alloc] initWithBaseURL:nil]);
-  XCTAssertNil([[OAuthServerMetadata alloc] initWithBaseURL:@"not-a-url"]);
+      [[ATProtoOAuthServerMetadata alloc] initWithBaseURL:@"http://insecure.com"]);
+  XCTAssertNil([[ATProtoOAuthServerMetadata alloc] initWithBaseURL:@""]);
+  XCTAssertNil([[ATProtoOAuthServerMetadata alloc] initWithBaseURL:nil]);
+  XCTAssertNil([[ATProtoOAuthServerMetadata alloc] initWithBaseURL:@"not-a-url"]);
 }
 
 @end

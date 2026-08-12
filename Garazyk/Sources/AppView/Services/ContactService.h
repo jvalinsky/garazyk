@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file ContactService.h
+ @file PDSContactService.h
 
  @abstract Contact import and matching service.
 
@@ -17,18 +17,18 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class ActorService;
+@class PDSActorService;
 
 /*!
- @class ContactService
+ @class PDSContactService
 
  @abstract Service for contact import and matching.
  */
-@interface ContactService : NSObject
+@interface PDSContactService : NSObject
 
 /*! Initialize with database connection and actor service. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database
-                    actorService:(nullable ActorService *)actorService;
+                    actorService:(nullable PDSActorService *)actorService;
 
 /*! Database connection. */
 @property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;

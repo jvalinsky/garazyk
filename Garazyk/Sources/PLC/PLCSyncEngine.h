@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file PLCSyncEngine.h
+ * @file ATProtoPLCSyncEngine.h
  * @abstract Sync orchestration engine for PLC replica.
- * @discussion PLCSyncEngine manages the complete sync lifecycle for a PLC read replica,
+ * @discussion ATProtoPLCSyncEngine manages the complete sync lifecycle for a PLC read replica,
  * including initial backfill from /export endpoint, live sync via polling, parallel
  * operation validation, and error recovery with exponential backoff.
  */
@@ -66,7 +66,7 @@ typedef NS_ENUM(NSInteger, PLCSyncState) {
 /**
  * @abstract Orchestrates synchronization lifecycle for a PLC replica.
  */
-@interface PLCSyncEngine : NSObject
+@interface ATProtoPLCSyncEngine : NSObject
 
 /** @abstract Delegate for notifications. */
 @property (nonatomic, weak, nullable) id<PLCSyncEngineDelegate> delegate;
@@ -99,9 +99,9 @@ typedef NS_ENUM(NSInteger, PLCSyncState) {
  * @param auditor The PLC auditor.
  * @return An initialized engine instance.
  */
-- (instancetype)initWithStore:(PLCReplicaStore *)store
-                       client:(PLCSyncClient *)client
-                      auditor:(PLCAuditor *)auditor NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithStore:(ATProtoPLCReplicaStore *)store
+                       client:(ATProtoPLCSyncClient *)client
+                      auditor:(ATProtoPLCAuditor *)auditor NS_DESIGNATED_INITIALIZER;
 
 /** @abstract Unavailable initializer. */
 - (instancetype)init NS_UNAVAILABLE;

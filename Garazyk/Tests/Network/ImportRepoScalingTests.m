@@ -5,6 +5,7 @@
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
+#import "Repository/MST.h"
 
 @interface ATProtoServiceConfiguration (Test)
 - (void)applyConfig:(NSDictionary *)config;
@@ -16,11 +17,21 @@
 // entirely — both mirroring the reference PDS. These tests pin that behavior
 // through the XRPC layer.
 @interface ImportRepoScalingTests : RepoAuthXrpcTestBase
+@property(nonatomic, assign) BOOL originalStreamableCARBlockOrderingEnabled;
 @end
 
 @implementation ImportRepoScalingTests
 
+- (void)setUp {
+    [super setUp];
+    // Sync 1.1 streamable CAR block ordering is gated behind a
+    // process-global flag; these import scaling tests depend on it.
+    self.originalStreamableCARBlockOrderingEnabled = [ATProtoMST streamableCARBlockOrderingEnabled];
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:YES];
+}
+
 - (void)tearDown {
+    [ATProtoMST setStreamableCARBlockOrderingEnabled:self.originalStreamableCARBlockOrderingEnabled];
     // The configuration singleton is process-global; restore the default
     // service posture so later suites (e.g. under --shuffle) never observe
     // a small cap or a disabled-imports flag left behind by these tests.

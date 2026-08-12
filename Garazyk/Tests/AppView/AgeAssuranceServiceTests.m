@@ -7,7 +7,7 @@
 @interface AgeAssuranceServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) AgeAssuranceService *service;
+@property (nonatomic, strong) PDSAgeAssuranceService *service;
 @end
 
 @implementation AgeAssuranceServiceTests
@@ -27,7 +27,7 @@
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
 
     [self setupSchema];
-    self.service = [[AgeAssuranceService alloc] initWithDatabase:self.database emailProvider:nil];
+    self.service = [[PDSAgeAssuranceService alloc] initWithDatabase:self.database emailProvider:nil];
 }
 
 - (void)setupSchema {
@@ -53,7 +53,7 @@
 }
 
 - (void)testService_InitWithNilDatabase_ReturnsNil {
-    AgeAssuranceService *svc = [[AgeAssuranceService alloc] initWithDatabase:nil emailProvider:nil];
+    PDSAgeAssuranceService *svc = [[PDSAgeAssuranceService alloc] initWithDatabase:nil emailProvider:nil];
     // Should still return an instance since no nil check in init
     XCTAssertNotNil(svc);
 }

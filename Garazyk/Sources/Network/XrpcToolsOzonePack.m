@@ -14,7 +14,7 @@
 #import "Database/PDSDatabase.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcToolsOzonePack
+@implementation ATProtoXrpcToolsOzonePack
 
 + (NSString *)routePackIdentifier {
   return @"tools.ozone";
@@ -24,7 +24,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
                                  ATProtoHttpResponse *response,
                                  id<XrpcRoutePackServices> services) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+    NSString *adminDid = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
     if (!adminDid) return nil;
 
     if (![[PDSAdminAuth sharedAuth] isAdminDid:adminDid]) {
@@ -37,7 +37,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
     }
 
     // Enforce minimumTokenIssuedAt freshness floor and admin-scope tokens.
-    // The canonical authorizeAdminRequest: path at XrpcAuthHelper.m:519-549
+    // The canonical authorizeAdminRequest: path at ATProtoXrpcAuthHelper.m:519-549
     // calls isAuthenticatedWithRequest: internally; ExtractAdminDid was missing
     // it, allowing stale admin tokens to remain valid on tools.ozone.* after
     // the operator bumps the freshness floor.
@@ -53,10 +53,10 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
     return adminDid;
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
 
-    ModerationService *moderationService = [[ModerationService alloc] initWithDatabase:services.appViewDatabase];
+    PDSModerationService *moderationService = [[PDSModerationService alloc] initWithDatabase:services.appViewDatabase];
 
 #pragma mark - Moderation Core Endpoints (15)
 
@@ -68,20 +68,20 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSDictionary *event = [request arrayBodyForKey:@"event"] ? nil : request.jsonBody[@"event"];
         if (!event) {
-            [XrpcErrorHelper setValidationError:response message:@"event is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"event is required"];
             return;
         }
 
         NSError *error = nil;
         NSDictionary *result = [moderationService emitModerationEvent:event createdBy:adminDid error:&error];
         if (error) {
-            // Validation errors (domain=ModerationService, code=400) from
+            // Validation errors (domain=PDSModerationService, code=400) from
             // input guards (missing fields, unknown $type) surface as 400
             // to the caller. All other errors are 500.
             if ([error.domain isEqualToString:@"ModerationService"] && error.code == 400) {
-                [XrpcErrorHelper setValidationError:response message:error.localizedDescription];
+                [ATProtoXrpcErrorHelper setValidationError:response message:error.localizedDescription];
             } else {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             }
             return;
         }
@@ -105,7 +105,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSDictionary *result = [moderationService queryModerationStatuses:@{} limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -127,7 +127,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSDictionary *result = [moderationService queryModerationEvents:@{} limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -143,14 +143,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *eventId = [request queryParamForKey:@"id"];
         if (!eventId) {
-            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
         }
 
         NSError *error = nil;
         NSDictionary *event = [moderationService getModerationEvent:eventId error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -166,14 +166,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
-            [XrpcErrorHelper setValidationError:response message:@"uri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"uri is required"];
             return;
         }
 
         NSError *error = nil;
         NSDictionary *record = [moderationService getModerationRecord:uri error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -189,14 +189,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSArray *uris = [request arrayBodyForKey:@"uris"];
         if (!uris || uris.count == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"uris is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"uris is required"];
             return;
         }
 
         NSError *error = nil;
         NSArray *records = [moderationService getModerationRecords:uris error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -212,14 +212,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *did = [request queryParamForKey:@"did"];
         if (!did) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
         NSError *error = nil;
         NSDictionary *repo = [moderationService getModerationRepo:did error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -235,14 +235,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSArray *dids = [request arrayBodyForKey:@"dids"];
         if (!dids || dids.count == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"dids is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"dids is required"];
             return;
         }
 
         NSError *error = nil;
         NSArray *repos = [moderationService getModerationRepos:dids error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -263,7 +263,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSDictionary *result = [moderationService searchModerationRepos:@{} limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -282,14 +282,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
             subject = [request queryParamForKey:@"uri"];
         }
         if (!subject) {
-            [XrpcErrorHelper setValidationError:response message:@"did or uri is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did or uri is required"];
             return;
         }
 
         NSError *error = nil;
         NSDictionary *status = [moderationService getSubjectStatus:subject error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -305,14 +305,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *did = [request queryParamForKey:@"did"];
         if (!did) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
         NSError *error = nil;
         NSDictionary *stats = [moderationService getReporterStats:did error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -328,7 +328,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *did = [request queryParamForKey:@"did"];
         if (!did) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
@@ -339,7 +339,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSDictionary *timeline = [moderationService getAccountTimeline:did limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -356,14 +356,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSDictionary *action = [request arrayBodyForKey:@"action"] ? nil : request.jsonBody[@"action"];
         NSArray *subjects = [request arrayBodyForKey:@"subjects"];
         if (!action || !subjects) {
-            [XrpcErrorHelper setValidationError:response message:@"action and subjects are required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"action and subjects are required"];
             return;
         }
 
         NSError *error = nil;
         NSDictionary *results = [moderationService scheduleAction:request.jsonBody createdBy:adminDid error:&error];
         if (error || !results) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -380,7 +380,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *actions = [moderationService listScheduledActions:@{} error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -396,14 +396,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *actionId = [request stringBodyForKey:@"id"];
         if (!actionId) {
-            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [moderationService cancelScheduledAction:actionId cancelledBy:adminDid error:&error];
         if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to cancel action"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to cancel action"];
             return;
         }
 
@@ -420,7 +420,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSArray *subjects = [request arrayBodyForKey:@"subjects"];
         NSString *comment = [request stringBodyForKey:@"comment"];
         if (!subjects || subjects.count == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"subjects is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"subjects is required"];
             return;
         }
 
@@ -430,7 +430,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
                                                               cancelledBy:adminDid
                                                                     error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -450,14 +450,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
             subjects = [subjectsParam componentsSeparatedByString:@","];
         }
         if (!subjects || subjects.count == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"subjects is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"subjects is required"];
             return;
         }
 
         NSError *error = nil;
         NSArray *subjectViews = [moderationService getSubjects:subjects error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -475,14 +475,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *did = [request stringBodyForKey:@"did"];
         if (!did || did.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
         NSError *error = nil;
         NSString *memberId = [moderationService addTeamMember:request.jsonBody createdBy:adminDid error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -499,7 +499,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *did = [request stringBodyForKey:@"did"];
         NSString *role = [request stringBodyForKey:@"role"];
         if (!did || did.length == 0 || !role) {
-            [XrpcErrorHelper setValidationError:response message:@"did and role are required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did and role are required"];
             return;
         }
 
@@ -509,7 +509,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
                                                  updatedBy:adminDid
                                                      error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -525,14 +525,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *did = [request stringBodyForKey:@"did"];
         if (!did || did.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [moderationService removeTeamMember:did removedBy:adminDid error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -549,7 +549,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *members = [moderationService listTeamMembers:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -567,7 +567,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *name = [request stringBodyForKey:@"name"];
         if (!name) {
-            [XrpcErrorHelper setValidationError:response message:@"name is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"name is required"];
             return;
         }
 
@@ -581,7 +581,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
                                              updatedBy:adminDid
                                                  error:&error];
             if (!success) {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
                 return;
             }
             response.statusCode = 200;
@@ -590,7 +590,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
             // Create new set
             NSString *newSetId = [moderationService createSet:request.jsonBody createdBy:adminDid error:&error];
             if (error) {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
                 return;
             }
             response.statusCode = 200;
@@ -606,14 +606,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *setId = [request stringBodyForKey:@"id"];
         if (!setId) {
-            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [moderationService deleteSet:setId deletedBy:adminDid error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -629,7 +629,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *setId = [request queryParamForKey:@"id"];
         if (!setId) {
-            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
         }
 
@@ -645,7 +645,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSDictionary *result = [moderationService getSetValues:setId limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -672,7 +672,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSDictionary *result = [moderationService querySets:limit cursor:cursor namePrefix:namePrefix error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -689,14 +689,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *setId = [request stringBodyForKey:@"id"];
         NSArray *values = [request arrayBodyForKey:@"values"];
         if (!setId || !values) {
-            [XrpcErrorHelper setValidationError:response message:@"id and values are required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id and values are required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [moderationService addSetValues:setId values:values addedBy:adminDid error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -713,14 +713,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *setId = [request stringBodyForKey:@"id"];
         NSArray *values = [request arrayBodyForKey:@"values"];
         if (!setId || !values) {
-            [XrpcErrorHelper setValidationError:response message:@"id and values are required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id and values are required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [moderationService deleteSetValues:setId values:values deletedBy:adminDid error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -739,7 +739,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *templateName = [request stringBodyForKey:@"name"];
         NSString *templateContent = [request stringBodyForKey:@"contentMarkdown"];
         if (!templateName || !templateContent) {
-            [XrpcErrorHelper setValidationError:response message:@"name and contentMarkdown are required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"name and contentMarkdown are required"];
             return;
         }
 
@@ -752,7 +752,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSString *templateId = [moderationService createCommunicationTemplate:templateInput createdBy:adminDid error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -768,7 +768,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *templateId = [request stringBodyForKey:@"id"];
         if (!templateId) {
-            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
         }
 
@@ -779,7 +779,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
                                                           updatedBy:adminDid
                                                                 error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -795,14 +795,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *templateId = [request stringBodyForKey:@"id"];
         if (!templateId) {
-            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [moderationService deleteCommunicationTemplate:templateId deletedBy:adminDid error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -819,7 +819,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *templates = [moderationService listCommunicationTemplates:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -837,14 +837,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *did = [request stringBodyForKey:@"did"];
         if (!did) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
         NSError *error = nil;
         NSString *verificationId = [moderationService grantVerification:did grantedBy:adminDid error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -860,14 +860,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
 
         NSString *did = [request stringBodyForKey:@"did"];
         if (!did) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [moderationService revokeVerification:did revokedBy:adminDid error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -884,7 +884,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *verifications = [moderationService listVerifications:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -909,7 +909,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *rules = [moderationService listSafelinks:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -943,19 +943,19 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *action = [request stringBodyForKey:@"action"];
 
         if (!url || url.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"url is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"url is required"];
             return;
         }
 
         if (!action || action.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"action is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"action is required"];
             return;
         }
 
         NSError *error = nil;
         NSString *ruleId = [moderationService createSafelink:request.jsonBody createdBy:adminDid error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -974,14 +974,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *action = [request stringBodyForKey:@"action"];
 
         if (!ruleId || ruleId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [moderationService updateSafelink:ruleId newUrl:url newAction:action updatedBy:adminDid error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -998,14 +998,14 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *ruleId = [request stringBodyForKey:@"id"];
 
         if (!ruleId || ruleId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"id is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [moderationService deleteSafelink:ruleId deletedBy:adminDid error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -1026,12 +1026,12 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *scope = [request stringBodyForKey:@"scope"] ?: @"global";
 
         if (!key || key.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"key is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"key is required"];
             return;
         }
 
         if (!value) {
-            [XrpcErrorHelper setValidationError:response message:@"value is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"value is required"];
             return;
         }
 
@@ -1072,7 +1072,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSArray *keys = [request arrayBodyForKey:@"keys"];
 
         if (!keys || keys.count == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"keys array is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"keys array is required"];
             return;
         }
 
@@ -1091,7 +1091,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *did = [request stringBodyForKey:@"did"];
 
         if (!did || did.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
@@ -1118,12 +1118,12 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *did2 = [request stringBodyForKey:@"did2"];
 
         if (!did1 || did1.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"did1 is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did1 is required"];
             return;
         }
 
         if (!did2 || did2.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"did2 is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did2 is required"];
             return;
         }
 
@@ -1146,7 +1146,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
         if (!query || query.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"query is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"query is required"];
             return;
         }
 
@@ -1174,7 +1174,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
         if (!did || did.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
@@ -1185,7 +1185,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSArray *history = [moderationService getAccountHostingHistory:did limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -1207,7 +1207,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         NSDictionary *config = [moderationService getServerConfig:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -1224,7 +1224,7 @@ static NSString *ExtractAdminDid(ATProtoHttpRequest *request,
         NSError *error = nil;
         BOOL success = [moderationService updateServerSettings:request.jsonBody updatedBy:adminDid error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 

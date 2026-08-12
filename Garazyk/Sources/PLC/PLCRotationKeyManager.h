@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PLCRotationKeyManager.h
+ @file ATProtoPLCRotationKeyManager.h
 
  @abstract Management of rotation keys for PLC operations.
 
@@ -39,7 +39,7 @@ typedef NS_ENUM(NSInteger, PLCRotationKeyManagerError) {
 };
 
 /*!
- @class PLCRotationKeyManager
+ @class ATProtoPLCRotationKeyManager
 
  @abstract Manages rotation keys for signing PLC operations.
 
@@ -52,15 +52,15 @@ typedef NS_ENUM(NSInteger, PLCRotationKeyManagerError) {
     generation and loading should be performed during initialization.
 
  @code
-    PLCRotationKeyManager *manager = [[PLCRotationKeyManager alloc] initWithStoragePath:@"/path/to/keys"];
+    ATProtoPLCRotationKeyManager *manager = [[ATProtoPLCRotationKeyManager alloc] initWithStoragePath:@"/path/to/keys"];
     [manager loadOrGenerateKeyWithError:&error];
     NSString *didKey = manager.rotationKeyDidKey;
  @endcode
  */
 /**
- * @abstract Declares the PLCRotationKeyManager public API.
+ * @abstract Declares the ATProtoPLCRotationKeyManager public API.
  */
-@interface PLCRotationKeyManager : NSObject
+@interface ATProtoPLCRotationKeyManager : NSObject
 
 /*! Path where the key pair is stored on disk (nil for in-memory only). */
 @property (nonatomic, copy, readonly, nullable) NSString *keyStoragePath;
@@ -87,7 +87,7 @@ typedef NS_ENUM(NSInteger, PLCRotationKeyManagerError) {
 
  @abstract Returns the shared singleton manager.
 
- @return The shared PLCRotationKeyManager instance.
+ @return The shared ATProtoPLCRotationKeyManager instance.
  */
 + (instancetype)sharedManager;
 

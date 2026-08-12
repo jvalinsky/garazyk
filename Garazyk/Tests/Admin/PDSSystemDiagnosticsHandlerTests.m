@@ -44,7 +44,7 @@
 
     NSURL *blobURL = [NSURL fileURLWithPath:[self.tempDirectory stringByAppendingPathComponent:@"blobs"]];
     PDSDiskBlobProvider *provider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
-    BlobStorage *blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.userDatabasePool
+    PDSBlobStorage *blobStorage = [[PDSBlobStorage alloc] initWithDatabasePool:self.userDatabasePool
                                                                 provider:provider];
     self.auditManager = [[PDSBlobAuditManager alloc] initWithBlobStorage:blobStorage
                                                         serviceDatabases:self.serviceDatabases];

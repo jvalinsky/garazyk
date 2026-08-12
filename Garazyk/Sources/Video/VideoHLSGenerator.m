@@ -18,7 +18,7 @@
 
 NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
 
-@implementation VideoHLSResult
+@implementation GZVideoHLSResult
 @end
 
 @implementation ATProtoVideoHLSGenerator
@@ -75,7 +75,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
 
 #pragma mark - HLS Generation
 
-- (nullable VideoHLSResult *)generateHLSFromVideoAtURL:(NSURL *)inputURL
+- (nullable GZVideoHLSResult *)generateHLSFromVideoAtURL:(NSURL *)inputURL
                                                     did:(NSString *)did
                                                     cid:(NSString *)cid
                                           thumbnailData:(nullable NSData *)thumbnailData
@@ -315,7 +315,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
     }
 
     // Build result
-    VideoHLSResult *result = [[VideoHLSResult alloc] init];
+    GZVideoHLSResult *result = [[GZVideoHLSResult alloc] init];
     result.masterPlaylistPath = masterPlaylistPath;
     result.masterPlaylistRelativePath = [NSString stringWithFormat:@"/watch/%@/%@/playlist.m3u8",
                                           [did stringByReplacingOccurrencesOfString:@":" withString:@"_"],

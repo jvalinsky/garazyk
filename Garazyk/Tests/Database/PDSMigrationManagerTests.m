@@ -274,7 +274,7 @@ static BOOL PDSMigrationTestQueryPlanUsesIndex(sqlite3 *db, const char *sql, con
         XCTAssertNotEqual([schema rangeOfString:@"WITHOUT ROWID" options:NSCaseInsensitiveSearch].location,
                           NSNotFound, @"Fresh schema must use WITHOUT ROWID: %@", schema);
     }
-    ChatSchemaManager *chatSchema = [ChatSchemaManager sharedManager];
+    PDSChatSchemaManager *chatSchema = [PDSChatSchemaManager sharedManager];
     XCTAssertNotEqual([[chatSchema conversationMembersTableSchema] rangeOfString:@"WITHOUT ROWID"].location, NSNotFound);
     XCTAssertNotEqual([[chatSchema messageReactionsTableSchema] rangeOfString:@"WITHOUT ROWID"].location, NSNotFound);
 }
@@ -553,7 +553,7 @@ static NSString *PDSMigrationTestHexLiteral(NSData *data) {
 // Phase 15 slice 2: apply/rollback/re-apply coverage for V7AccountUsageTriggers.
 // Verifies that account_usage is created, all six triggers fire, and the
 // backfill aggregates existing blobs/ipld_blocks/records into account_usage
-// so consumers (XrpcVendorPack, XrpcAdminPack+AccountInfo) see non-zero
+// so consumers (ATProtoXrpcVendorPack, ATProtoXrpcAdminPack+AccountInfo) see non-zero
 // values immediately after migration.
 - (void)testAccountUsageTriggersMigrationRoundTripBackfillsAndInstallsTriggers {
     sqlite3 *db = NULL;

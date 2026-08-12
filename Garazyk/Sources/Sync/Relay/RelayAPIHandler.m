@@ -8,18 +8,18 @@
 #import "Debug/GZLogger.h"
 #import <Foundation/Foundation.h>
 
-@interface RelayAPIHandler ()
-@property (nonatomic, strong) RelayUpstreamManager *upstreamManager;
-@property (nonatomic, strong) RelayMetrics *metrics;
+@interface ATProtoRelayAPIHandler ()
+@property (nonatomic, strong) ATProtoRelayUpstreamManager *upstreamManager;
+@property (nonatomic, strong) ATProtoRelayMetrics *metrics;
 @end
 
-@implementation RelayAPIHandler
+@implementation ATProtoRelayAPIHandler
 
 + (instancetype)sharedHandler {
-    static RelayAPIHandler *instance = nil;
+    static ATProtoRelayAPIHandler *instance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        instance = [[RelayAPIHandler alloc] init];
+        instance = [[ATProtoRelayAPIHandler alloc] init];
     });
     return instance;
 }
@@ -34,11 +34,11 @@
     return self;
 }
 
-- (void)setMetrics:(RelayMetrics *)metrics {
+- (void)setMetrics:(ATProtoRelayMetrics *)metrics {
     _metrics = metrics;
 }
 
-- (void)setUpstreamManager:(RelayUpstreamManager *)manager {
+- (void)setUpstreamManager:(ATProtoRelayUpstreamManager *)manager {
     _upstreamManager = manager;
 }
 
@@ -104,7 +104,7 @@
     }
 
     // Get metrics snapshot - use stored instance or fallback to shared
-    RelayMetrics *metricsSource = self.metrics ?: [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metricsSource = self.metrics ?: [ATProtoRelayMetrics sharedMetrics];
     NSDictionary *metrics = [metricsSource snapshotDictionary];
 
     response.statusCode = HttpStatusOK;
@@ -433,7 +433,7 @@
 - (void)handleHealthRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     // Simple health check
     BOOL isHealthy = YES;
-    RelayMetrics *metricsSource = self.metrics ?: [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metricsSource = self.metrics ?: [ATProtoRelayMetrics sharedMetrics];
     NSDictionary *metrics = [metricsSource snapshotDictionary];
 
     // Consider unhealthy if no upstreams connected and reconnection count > 0

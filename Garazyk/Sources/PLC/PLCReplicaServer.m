@@ -6,30 +6,30 @@
 #import "Network/HttpResponse.h"
 #import "PLC/PLCMetrics.h"
 
-@interface PLCReplicaServer ()
+@interface ATProtoPLCReplicaServer ()
 
 @property (nonatomic, assign, readwrite, getter=isReadOnlyMode) BOOL readOnlyMode;
 
 @end
 
-@implementation PLCReplicaServer
+@implementation ATProtoPLCReplicaServer
 
 - (instancetype)initWithStore:(id<PLCStore>)store
-                      auditor:(PLCAuditor *)auditor
+                      auditor:(ATProtoPLCAuditor *)auditor
                          port:(NSUInteger)port {
     [self doesNotRecognizeSelector:_cmd];
     return nil;
 }
 
 - (instancetype)initWithStore:(id<PLCStore>)store
-                      auditor:(PLCAuditor *)auditor
+                      auditor:(ATProtoPLCAuditor *)auditor
                          port:(NSUInteger)port
                  readOnlyMode:(BOOL)readOnly {
     return [self initWithStore:store auditor:auditor host:@"127.0.0.1" port:port readOnlyMode:readOnly];
 }
 
 - (instancetype)initWithStore:(id<PLCStore>)store
-                      auditor:(PLCAuditor *)auditor
+                      auditor:(ATProtoPLCAuditor *)auditor
                          host:(NSString *)host
                          port:(NSUInteger)port
                  readOnlyMode:(BOOL)readOnly {
@@ -51,7 +51,7 @@
     for (NSString *method in @[@"POST", @"PUT", @"DELETE"]) {
         [self.httpServer addRoute:method path:@"/:did" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
             [weakSelf setCorsHeaders:resp forRequest:req];
-            [[PLCMetrics sharedMetrics] recordRequest];
+            [[ATProtoPLCMetrics sharedMetrics] recordRequest];
             resp.statusCode = 405;
             [resp setJsonBody:@{
                 @"error": @"Method not allowed",

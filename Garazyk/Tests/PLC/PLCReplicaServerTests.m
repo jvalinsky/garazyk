@@ -11,16 +11,16 @@
 #import "Network/HttpResponse.h"
 
 @interface PLCReplicaServerTests : XCTestCase
-@property (nonatomic, strong) PLCMockStore *store;
-@property (nonatomic, strong) PLCAuditor *auditor;
-@property (nonatomic, strong) PLCReplicaServer *replicaServer;
+@property (nonatomic, strong) ATProtoPLCMockStore *store;
+@property (nonatomic, strong) ATProtoPLCAuditor *auditor;
+@property (nonatomic, strong) ATProtoPLCReplicaServer *replicaServer;
 @end
 
-@interface PLCReplicaServer (TestAccess)
+@interface ATProtoPLCReplicaServer (TestAccess)
 - (void)handleGetHealth:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
 @end
 
-@interface PLCServer (ReplicaTestAccess)
+@interface ATProtoPLCServer (ReplicaTestAccess)
 - (void)handleGetDID:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
 - (void)handleGetData:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
 @end
@@ -48,16 +48,16 @@
 
 - (void)setUp {
     [super setUp];
-    self.store = [[PLCMockStore alloc] init];
-    self.auditor = [[PLCAuditor alloc] initWithStore:self.store];
-    self.replicaServer = [[PLCReplicaServer alloc] initWithStore:self.store
+    self.store = [[ATProtoPLCMockStore alloc] init];
+    self.auditor = [[ATProtoPLCAuditor alloc] initWithStore:self.store];
+    self.replicaServer = [[ATProtoPLCReplicaServer alloc] initWithStore:self.store
                                                          auditor:self.auditor
                                                             port:0
                                                     readOnlyMode:YES];
 }
 
 - (void)testReplicaHostAwareInitializer {
-    PLCReplicaServer *server = [[PLCReplicaServer alloc] initWithStore:self.store
+    ATProtoPLCReplicaServer *server = [[ATProtoPLCReplicaServer alloc] initWithStore:self.store
                                                                auditor:self.auditor
                                                                   host:@"127.0.0.1"
                                                                   port:0
@@ -80,7 +80,7 @@
     return base64;
 }
 
-- (PLCOperation *)insertTestOperation {
+- (ATProtoPLCOperation *)insertTestOperation {
     ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
@@ -95,9 +95,9 @@
 
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForSignedOperation:payload];
+    NSString *did = [ATProtoPLCOperation calculateDIDForSignedOperation:payload];
 
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.did = did;
     op.sig = payload[@"sig"];
     op.data = opData;
@@ -111,7 +111,7 @@
 #pragma mark - Read-only rejection
 
 - (void)testReplicaRejectsPostWith405 {
-    PLCOperation *op = [self insertTestOperation];
+    ATProtoPLCOperation *op = [self insertTestOperation];
     NSString *did = op.did;
 
     NSData *body = [NSJSONSerialization dataWithJSONObject:@{} options:0 error:nil];
@@ -145,7 +145,7 @@
 }
 
 - (void)testReplicaRejectsPutWith405 {
-    PLCOperation *op = [self insertTestOperation];
+    ATProtoPLCOperation *op = [self insertTestOperation];
     NSString *did = op.did;
 
     NSError *startError = nil;
@@ -167,7 +167,7 @@
 }
 
 - (void)testReplicaRejectsDeleteWith405 {
-    PLCOperation *op = [self insertTestOperation];
+    ATProtoPLCOperation *op = [self insertTestOperation];
     NSString *did = op.did;
 
     NSError *startError = nil;
@@ -222,7 +222,7 @@
 
     XCTAssertEqual(resp.statusCode, 200);
     NSDictionary *json = (NSDictionary *)resp.jsonBody;
-    // PLCMockStore may or may not implement totalOperationCountWithError:
+    // ATProtoPLCMockStore may or may not implement totalOperationCountWithError:
     // Just verify the required fields are present
     XCTAssertNotNil(json[@"status"]);
     XCTAssertNotNil(json[@"mode"]);
@@ -232,7 +232,7 @@
 #pragma mark - Read operations still work
 
 - (void)testReplicaGetDidStillWorks {
-    PLCOperation *op = [self insertTestOperation];
+    ATProtoPLCOperation *op = [self insertTestOperation];
     NSString *did = op.did;
 
     ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
@@ -243,7 +243,7 @@
                                           body:nil];
     ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
 
-    // Use the inherited PLCServer handler
+    // Use the inherited ATProtoPLCServer handler
     [self.replicaServer handleGetDID:req response:resp];
 
     XCTAssertEqual(resp.statusCode, 200);
@@ -252,7 +252,7 @@
 }
 
 - (void)testReplicaGetDataStillWorks {
-    PLCOperation *op = [self insertTestOperation];
+    ATProtoPLCOperation *op = [self insertTestOperation];
     NSString *did = op.did;
 
     ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
@@ -276,12 +276,12 @@
 #pragma mark - Non-replica mode
 
 - (void)testNonReplicaServerDoesNotRejectPost {
-    PLCReplicaServer *writableServer = [[PLCReplicaServer alloc] initWithStore:self.store
+    ATProtoPLCReplicaServer *writableServer = [[ATProtoPLCReplicaServer alloc] initWithStore:self.store
                                                                        auditor:self.auditor
                                                                           port:0
                                                                   readOnlyMode:NO];
     // In non-replica mode, setupReplicaRoutes should not add 405 handlers
-    // The inherited PLCServer POST handler should still work
+    // The inherited ATProtoPLCServer POST handler should still work
     XCTAssertFalse(writableServer.readOnlyMode);
 }
 

@@ -51,11 +51,11 @@ static const NSInteger kSuccessionProofSize = 33 + 65;
 // AnchorSuccession discriminator (from AC Protocol spec)
 static NSString *const kAnchorSuccessionDiscriminator = @"AnchorSuccession";
 
-@interface GermIdentityService ()
+@interface PDSGermIdentityService ()
 @property (nonatomic, unsafe_unretained) id<PDSQueryDatabase> database;
 @end
 
-@implementation GermIdentityService
+@implementation PDSGermIdentityService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];

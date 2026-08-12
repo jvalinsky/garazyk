@@ -15,7 +15,7 @@
 #import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonDigest.h>
 
-@implementation OAuth2Handler (ClientValidation)
+@implementation ATProtoOAuth2Handler (ClientValidation)
 
 #pragma mark - Client Validation
 - (NSDictionary *)sanitizeClientMetadataIfNeeded:(NSDictionary *)validatedClient

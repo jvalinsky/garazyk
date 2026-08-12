@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcErrorHelper.h
+//  ATProtoXrpcErrorHelper.h
 //  ATProtoPDS
 //
 //  Error response helper for XRPC endpoints.
@@ -14,7 +14,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * XrpcErrorHelper provides standardized error response construction for XRPC endpoints.
+ * ATProtoXrpcErrorHelper provides standardized error response construction for XRPC endpoints.
  *
  * Responsibilities:
  * - Construct standard XRPC error responses with consistent JSON format
@@ -36,9 +36,9 @@ NS_ASSUME_NONNULL_BEGIN
  * - MethodNotAllowed: HTTP method not allowed (405)
  */
 /**
- * @abstract Declares the XrpcErrorHelper public API.
+ * @abstract Declares the ATProtoXrpcErrorHelper public API.
  */
-@interface XrpcErrorHelper : NSObject
+@interface ATProtoXrpcErrorHelper : NSObject
 
 #pragma mark - Standard Error Responses
 

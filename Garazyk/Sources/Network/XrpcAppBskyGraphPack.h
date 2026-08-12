@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcAppBskyGraphPack.h
+//  ATProtoXrpcAppBskyGraphPack.h
 //  ATProtoPDS
 //
 //  Namespace pack for app.bsky.graph.* XRPC endpoints.
@@ -16,9 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
  @brief Namespace pack for app.bsky.graph.* endpoints.
  */
 /**
- * @abstract Declares the XrpcAppBskyGraphPack public API.
+ * @abstract Declares the ATProtoXrpcAppBskyGraphPack public API.
  */
-@interface XrpcAppBskyGraphPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcAppBskyGraphPack : NSObject <XrpcRoutePack>
 
 @end
 

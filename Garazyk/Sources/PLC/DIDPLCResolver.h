@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file DIDPLCResolver.h
+ @file ATProtoDIDPLCResolver.h
 
  @abstract DID PLC resolution client for the AT Protocol.
 
@@ -36,7 +36,7 @@ typedef NS_ENUM(NSInteger, DIDPLCResolverErrorCode) {
 };
 
 /*!
- @class DIDPLCResolver
+ @class ATProtoDIDPLCResolver
 
  @abstract A robust DID PLC Resolver with configurable timeouts and caching.
 
@@ -46,7 +46,7 @@ typedef NS_ENUM(NSInteger, DIDPLCResolverErrorCode) {
 
     Thread Safety: All methods are thread-safe and can be called from any queue.
  */
-@interface DIDPLCResolver : NSObject <DIDResolving>
+@interface ATProtoDIDPLCResolver : NSObject <DIDResolving>
 
 /*! The base URL of the PLC server (e.g., https://plc.directory). */
 @property (nonatomic, copy, readonly) NSString *plcUrl;

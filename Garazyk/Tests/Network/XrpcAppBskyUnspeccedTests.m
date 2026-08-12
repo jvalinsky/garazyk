@@ -250,7 +250,7 @@
                                              queryString:@"anchor=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fabc123"
                                              queryParams:@{@"anchor": @"at://did:plc:test/app.bsky.feed.post/abc123"}
                                                  headers:@{}];
-    // V2 thread returns 404 for non-existent post (delegates to FeedService)
+    // V2 thread returns 404 for non-existent post (delegates to PDSFeedService)
     XCTAssertTrue(response.statusCode == 200 || response.statusCode == 404,
                   @"Expected 200 or 404, got %ld", (long)response.statusCode);
 }

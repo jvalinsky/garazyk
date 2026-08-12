@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewIdentityHelper.m
+ @file PDSAppViewIdentityHelper.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -14,10 +14,10 @@ static NSCache<NSString *, NSString *> *s_handleCache = nil;
 static NSString *s_plcURL = @"https://plc.directory";
 static NSTimeInterval s_cacheTTL = 300; // 5 minutes
 
-@implementation AppViewIdentityHelper
+@implementation PDSAppViewIdentityHelper
 
 + (void)initialize {
-    if (self == [AppViewIdentityHelper class]) {
+    if (self == [PDSAppViewIdentityHelper class]) {
         s_handleCache = [[NSCache alloc] init];
     }
 }

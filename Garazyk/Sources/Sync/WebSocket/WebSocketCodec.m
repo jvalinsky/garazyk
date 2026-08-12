@@ -12,7 +12,7 @@ static const uint8_t WS_OPCODE_PONG = 0xA;
 static const uint8_t WS_FLAG_FIN = 0x80;
 static const uint8_t WS_MASK = 0x80;
 
-@implementation WSCodecEvent
+@implementation ATProtoWSCodecEvent
 
 - (instancetype)initWithType:(WSCodecEventType)type
                      payload:(nullable NSData *)payload
@@ -32,7 +32,7 @@ static const uint8_t WS_MASK = 0x80;
 
 @end
 
-@interface WebSocketCodec ()
+@interface ATProtoWebSocketCodec ()
 @property (nonatomic, strong) NSMutableData *readBuffer;
 @property (nonatomic, strong) NSMutableArray<NSData *> *fragments;
 @property (nonatomic, assign) uint8_t fragmentOpcode;
@@ -40,7 +40,7 @@ static const uint8_t WS_MASK = 0x80;
 @property (nonatomic, assign) NSUInteger readOffset;
 @end
 
-@implementation WebSocketCodec
+@implementation ATProtoWebSocketCodec
 
 - (instancetype)init {
     self = [super init];
@@ -67,8 +67,8 @@ static const uint8_t WS_MASK = 0x80;
     return YES;
 }
 
-- (WSCodecEvent *)protocolErrorEventWithCloseCode:(NSInteger)closeCode closeReason:(NSString *)closeReason {
-    return [[WSCodecEvent alloc] initWithType:WSCodecEventProtocolError
+- (ATProtoWSCodecEvent *)protocolErrorEventWithCloseCode:(NSInteger)closeCode closeReason:(NSString *)closeReason {
+    return [[ATProtoWSCodecEvent alloc] initWithType:WSCodecEventProtocolError
                                        payload:nil
                                      closeCode:closeCode
                                    closeReason:closeReason
@@ -83,12 +83,12 @@ static const uint8_t WS_MASK = 0x80;
     self.fragmentsTotalLength = 0;
 }
 
-- (NSArray<WSCodecEvent *> *)feedData:(NSData *)data {
+- (NSArray<ATProtoWSCodecEvent *> *)feedData:(NSData *)data {
     if (data.length > 0) {
         [self.readBuffer appendData:data];
     }
 
-    NSMutableArray<WSCodecEvent *> *events = [NSMutableArray array];
+    NSMutableArray<ATProtoWSCodecEvent *> *events = [NSMutableArray array];
     NSUInteger offset = self.readOffset;
 
     while (self.readBuffer.length - offset >= 2) {
@@ -207,7 +207,7 @@ static const uint8_t WS_MASK = 0x80;
 
         if (opcode >= WS_OPCODE_CLOSE) {
             // Control frames can be interleaved and are always complete
-            WSCodecEvent *event = [self eventForOpcode:opcode payload:payload];
+            ATProtoWSCodecEvent *event = [self eventForOpcode:opcode payload:payload];
             if (event) {
                 [events addObject:event];
             }
@@ -232,7 +232,7 @@ static const uint8_t WS_MASK = 0x80;
                         return events;
                     }
                 } else {
-                    WSCodecEvent *event = [self eventForOpcode:opcode payload:payload];
+                    ATProtoWSCodecEvent *event = [self eventForOpcode:opcode payload:payload];
                     if (event) {
                         [events addObject:event];
                     }
@@ -262,7 +262,7 @@ static const uint8_t WS_MASK = 0x80;
                     for (NSData *frag in self.fragments) {
                         [reassembled appendData:frag];
                     }
-                    WSCodecEvent *event = [self eventForOpcode:self.fragmentOpcode payload:reassembled];
+                    ATProtoWSCodecEvent *event = [self eventForOpcode:self.fragmentOpcode payload:reassembled];
                     if (event) {
                         [events addObject:event];
                     }
@@ -292,18 +292,18 @@ static const uint8_t WS_MASK = 0x80;
     return events;
 }
 
-- (nullable WSCodecEvent *)eventForOpcode:(uint8_t)opcode payload:(NSData *)payload {
+- (nullable ATProtoWSCodecEvent *)eventForOpcode:(uint8_t)opcode payload:(NSData *)payload {
     switch (opcode) {
         case WS_OPCODE_TEXT: {
             NSString *text = [[NSString alloc] initWithData:payload encoding:NSUTF8StringEncoding];
-            return [[WSCodecEvent alloc] initWithType:WSCodecEventTextMessage
+            return [[ATProtoWSCodecEvent alloc] initWithType:WSCodecEventTextMessage
                                               payload:nil
                                             closeCode:0
                                           closeReason:nil
                                                  text:text];
         }
         case WS_OPCODE_BINARY:
-            return [[WSCodecEvent alloc] initWithType:WSCodecEventBinaryMessage
+            return [[ATProtoWSCodecEvent alloc] initWithType:WSCodecEventBinaryMessage
                                               payload:payload
                                             closeCode:0
                                           closeReason:nil
@@ -324,20 +324,20 @@ static const uint8_t WS_MASK = 0x80;
                                                    encoding:NSUTF8StringEncoding];
                 }
             }
-            return [[WSCodecEvent alloc] initWithType:WSCodecEventClose
+            return [[ATProtoWSCodecEvent alloc] initWithType:WSCodecEventClose
                                               payload:payload
                                             closeCode:code
                                           closeReason:reason
                                                  text:nil];
         }
         case WS_OPCODE_PING:
-            return [[WSCodecEvent alloc] initWithType:WSCodecEventPing
+            return [[ATProtoWSCodecEvent alloc] initWithType:WSCodecEventPing
                                               payload:payload
                                             closeCode:0
                                           closeReason:nil
                                                  text:nil];
         case WS_OPCODE_PONG:
-            return [[WSCodecEvent alloc] initWithType:WSCodecEventPong
+            return [[ATProtoWSCodecEvent alloc] initWithType:WSCodecEventPong
                                               payload:payload
                                             closeCode:0
                                           closeReason:nil

@@ -17,11 +17,11 @@
 
 @interface XrpcMethodRegistryCharacterizationTests : CharacterizationTestBase
 
-@property (nonatomic, strong) XrpcMethodRegistry *subject;
+@property (nonatomic, strong) ATProtoXrpcMethodRegistry *subject;
 
 @end
 
-static ATProtoHttpResponse *XrpcCharacterizationDispatchRequest(XrpcDispatcher *dispatcher,
+static ATProtoHttpResponse *XrpcCharacterizationDispatchRequest(ATProtoXrpcDispatcher *dispatcher,
                                                           NSString *methodId) {
     ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
                                                    methodString:@"GET"
@@ -37,14 +37,14 @@ static ATProtoHttpResponse *XrpcCharacterizationDispatchRequest(XrpcDispatcher *
     return response;
 }
 
-static void XrpcCharacterizationRegisterFirstFixturePack(XrpcDispatcher *dispatcher) {
+static void XrpcCharacterizationRegisterFirstFixturePack(ATProtoXrpcDispatcher *dispatcher) {
     [dispatcher registerMethod:@"test.xrpc.fixture.crossPack"
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = HttpStatusOK;
                        }];
 }
 
-static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispatcher) {
+static void XrpcCharacterizationRegisterSecondFixturePack(ATProtoXrpcDispatcher *dispatcher) {
     [dispatcher registerMethod:@"test.xrpc.fixture.crossPack"
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = HttpStatusNoContent;
@@ -55,7 +55,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
 
 - (void)setUp {
     [super setUp];
-    self.subject = [[XrpcMethodRegistry alloc] init];
+    self.subject = [[ATProtoXrpcMethodRegistry alloc] init];
 }
 
 - (void)tearDown {
@@ -64,17 +64,17 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
 }
 
 /*
- * Characterization Tests for XrpcMethodRegistry
+ * Characterization Tests for ATProtoXrpcMethodRegistry
  * Generated automatically. Please implement specific scenarios.
  */
 
 - (void)testCharacterization_Class_registerMethodsWithDispatcher {
     /* Target Method:
-     + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+     + (void)registerMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                            application:(PDSApplication *)application;
     */
     
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
     NSURL *tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
     tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];
@@ -82,7 +82,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
     PDSApplication *app = nil;
     @try {
         app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
     } @finally {
         [app stop];
         [[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
@@ -121,18 +121,18 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
     NSString *multibase = [NSString stringWithFormat:@"z%@", [ATProtoCID base58btcEncode:multicodec]];
 
     NSError *decodeError = nil;
-    NSData *decoded = [XrpcIdentityHelper publicKeyBytesFromMultibase:multibase error:&decodeError];
+    NSData *decoded = [ATProtoXrpcIdentityHelper publicKeyBytesFromMultibase:multibase error:&decodeError];
     XCTAssertNotNil(decoded);
     XCTAssertNil(decodeError);
     XCTAssertEqualObjects(decoded, keyPair.compressedPublicKey);
 
     NSError *invalidError = nil;
-    XCTAssertNil([XrpcIdentityHelper publicKeyBytesFromMultibase:@"xnot-supported" error:&invalidError]);
+    XCTAssertNil([ATProtoXrpcIdentityHelper publicKeyBytesFromMultibase:@"xnot-supported" error:&invalidError]);
     XCTAssertNotNil(invalidError);
 }
 
 - (void)testCharacterization_DuplicateRegistrationWithinOnePackIsRejected {
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
     [dispatcher registerMethod:@"test.xrpc.fixture.samePack"
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                          response.statusCode = HttpStatusOK;
@@ -153,7 +153,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
 }
 
 - (void)testCharacterization_DuplicateRegistrationAcrossPacksIsRejected {
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
     XrpcCharacterizationRegisterFirstFixturePack(dispatcher);
 
     NSException *exception = nil;
@@ -168,9 +168,9 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
 }
 
 - (void)testCharacterization_RetainedGraphListRoutesRequireAuthentication {
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-    XrpcRoutePackServiceBag *services =
-        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    ATProtoXrpcRoutePackServiceBag *services =
+        [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                   jwtMinter:nil
                                             adminController:nil
                                                configuration:nil
@@ -178,7 +178,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
                                            serviceDatabases:nil
                                            userDatabasePool:nil
                                                  rateLimiter:nil];
-    [XrpcAppBskyGraphPack registerWithDispatcher:dispatcher services:services];
+    [ATProtoXrpcAppBskyGraphPack registerWithDispatcher:dispatcher services:services];
 
     for (NSString *methodId in @[
              @"app.bsky.graph.getListMutes",
@@ -191,9 +191,9 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
 }
 
 - (void)testCharacterization_MissingVideoStoreSkipsOnlyVideoRoutes {
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-    XrpcRoutePackServiceBag *services =
-        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    ATProtoXrpcRoutePackServiceBag *services =
+        [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                   jwtMinter:nil
                                             adminController:nil
                                                configuration:nil
@@ -202,16 +202,16 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
                                            userDatabasePool:nil
                                                  rateLimiter:nil];
 
-    [XrpcAppBskyPack registerAppViewMethodsWithDispatcher:dispatcher services:services];
+    [ATProtoXrpcAppBskyPack registerAppViewMethodsWithDispatcher:dispatcher services:services];
 
     XCTAssertFalse([dispatcher hasRegisteredMethod:@"app.bsky.video.getJobStatus"]);
     XCTAssertTrue([dispatcher hasRegisteredMethod:@"app.bsky.unspecced.getConfig"]);
 }
 
 - (void)testCharacterization_RetainedLabelerRouteIsOwnedByAppBskyPack {
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-    XrpcRoutePackServiceBag *services =
-        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    ATProtoXrpcRoutePackServiceBag *services =
+        [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                   jwtMinter:nil
                                             adminController:nil
                                                configuration:nil
@@ -219,7 +219,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
                                            serviceDatabases:nil
                                            userDatabasePool:nil
                                                  rateLimiter:nil];
-    [XrpcAppBskyPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+    [ATProtoXrpcAppBskyPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
 
     ATProtoHttpResponse *response =
         XrpcCharacterizationDispatchRequest(dispatcher, @"app.bsky.labeler.getServices");
@@ -242,7 +242,7 @@ static void XrpcCharacterizationRegisterSecondFixturePack(XrpcDispatcher *dispat
                                                     error:nil];
 
     @try {
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
         PDSApplication *firstApplication = [[PDSApplication alloc] initWithDataDirectory:firstDataURL.path];
         PDSApplication *secondApplication = [[PDSApplication alloc] initWithDataDirectory:secondDataURL.path];
 

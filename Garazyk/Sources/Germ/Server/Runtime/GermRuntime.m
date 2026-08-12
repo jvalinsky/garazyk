@@ -16,23 +16,23 @@
 
 static const uint16_t kGermDefaultPort = 8082;
 
-@interface GermRuntime ()
+@interface GZGermRuntime ()
 @property (nonatomic, strong) PDSDatabase *db;
-@property (nonatomic, strong) GermMailboxService *mailboxService;
-@property (nonatomic, strong) GermIdentityService *identityService;
-@property (nonatomic, strong) ChatAuthManager *authManager;
+@property (nonatomic, strong) PDSGermMailboxService *mailboxService;
+@property (nonatomic, strong) PDSGermIdentityService *identityService;
+@property (nonatomic, strong) PDSChatAuthManager *authManager;
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
 
-@implementation GermRuntime
+@implementation GZGermRuntime
 
 + (instancetype)sharedRuntime {
-    static GermRuntime *shared = nil;
+    static GZGermRuntime *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[GermRuntime alloc] init];
+        shared = [[GZGermRuntime alloc] init];
     });
     return shared;
 }
@@ -72,26 +72,26 @@ static const uint16_t kGermDefaultPort = 8082;
     if (![self.db openWithError:error]) return NO;
 
     // Apply schema
-    NSString *schemaSQL = [[GermMailboxSchemaManager sharedManager] mailboxSchemaSQL];
+    NSString *schemaSQL = [[PDSGermMailboxSchemaManager sharedManager] mailboxSchemaSQL];
     if (![self.db executeUnsafeRawSQL:schemaSQL error:error]) {
         return NO;
     }
 
     // 3. Initialize services
-    self.mailboxService = [[GermMailboxService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
-    self.identityService = [[GermIdentityService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
-    self.authManager = [ChatAuthManager sharedManager];
+    self.mailboxService = [[PDSGermMailboxService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
+    self.identityService = [[PDSGermIdentityService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
+    self.authManager = [PDSChatAuthManager sharedManager];
 
     // 4. Initialize networking
-    self.dispatcher = [[XrpcDispatcher alloc] init];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
 
     // Register XRPC handlers
-    XrpcGermMailboxPack *mailboxPack = [[XrpcGermMailboxPack alloc]
+    PDSXrpcGermMailboxPack *mailboxPack = [[PDSXrpcGermMailboxPack alloc]
         initWithMailboxService:self.mailboxService
                    authManager:self.authManager];
     [mailboxPack registerHandlersWithDispatcher:self.dispatcher];
 
-    XrpcGermIdentityPack *identityPack = [[XrpcGermIdentityPack alloc]
+    PDSXrpcGermIdentityPack *identityPack = [[PDSXrpcGermIdentityPack alloc]
         initWithIdentityService:self.identityService
                    authManager:self.authManager];
     [identityPack registerHandlersWithDispatcher:self.dispatcher];

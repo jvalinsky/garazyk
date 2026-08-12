@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
-@class RelayMetrics;
-@class RelayUpstreamManager;
+@class ATProtoRelayMetrics;
+@class ATProtoRelayUpstreamManager;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -13,8 +13,8 @@ FOUNDATION_EXPORT NSString * _Nullable GZRelayAdminPasswordFromFile(NSString *pa
 
 /** Bounded, synchronized Relay operations view for the embedded Admin UI. */
 @interface GZRelayAdminSnapshot : NSObject
-- (instancetype)initWithMetrics:(RelayMetrics *)metrics
-                 upstreamManager:(RelayUpstreamManager *)upstreamManager NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithMetrics:(ATProtoRelayMetrics *)metrics
+                 upstreamManager:(ATProtoRelayUpstreamManager *)upstreamManager NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 - (NSDictionary<NSString *, id> *)snapshot;
 - (NSDictionary<NSString *, id> *)performAction:(NSString *)action

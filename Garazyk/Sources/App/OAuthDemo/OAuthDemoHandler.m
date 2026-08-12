@@ -7,17 +7,17 @@
 #import "Debug/GZLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
 
-@interface OAuthDemoHandler ()
+@interface GZOAuthDemoHandler ()
 @property (nonatomic, copy) NSString *dataDirectory;
 @end
 
-@implementation OAuthDemoHandler
+@implementation GZOAuthDemoHandler
 
 + (instancetype)sharedHandler {
-    static OAuthDemoHandler *instance = nil;
+    static GZOAuthDemoHandler *instance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        instance = [[OAuthDemoHandler alloc] init];
+        instance = [[GZOAuthDemoHandler alloc] init];
     });
     return instance;
 }

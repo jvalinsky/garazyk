@@ -14,7 +14,7 @@
 @interface XrpcProxyTests : XCTestCase
 @property (nonatomic, strong) PDSApplication *application;
 @property (nonatomic, strong) PDSController *controller;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, strong) NSURL *tempURL;
 @property (nonatomic, strong) ATProtoHttpServer *upstreamServer;
 @property (nonatomic, copy, nullable) NSString *savedAppViewProxyURL;
@@ -42,9 +42,9 @@
 
     self.application = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
     self.controller = self.application.legacyController;
-    self.dispatcher = [[XrpcDispatcher alloc] init];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
     self.dispatcher.jwtMinter = self.controller.jwtMinter;
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:self.application];
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:self.application];
 
     NSError *error = nil;
     NSDictionary *account = [self.controller createAccountForEmail:@"proxytest@example.com"

@@ -3,7 +3,7 @@
 #import "Video/VideoLocalBlobUploader.h"
 #import "Core/CID.h"
 
-@implementation VideoLocalBlobUploader
+@implementation GZVideoLocalBlobUploader
 
 - (instancetype)initWithBlobProvider:(id<PDSBlobProvider>)blobProvider {
     self = [super init];

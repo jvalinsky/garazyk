@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file EventFormatter.h
+ @file ATProtoEventFormatter.h
 
- @abstract Event encoding/decoding for Firehose protocol.
+ @abstract Event encoding/decoding for ATProtoFirehose protocol.
 
- @discussion Encodes and decodes Firehose events (commits, identity, error)
+ @discussion Encodes and decodes ATProtoFirehose events (commits, identity, error)
  using CBOR format for transmission over WebSocket connections.
  Supports the XRPC streaming event protocol with EventHeader + message body format.
 
@@ -14,12 +14,12 @@
 
 #import <Foundation/Foundation.h>
 
-@class FirehoseCommitEvent;
-@class FirehoseSyncEvent;
-@class FirehoseIdentityEvent;
-@class FirehoseAccountEvent;
-@class FirehoseInfoEvent;
-@class FirehoseErrorEvent;
+@class ATProtoFirehoseCommitEvent;
+@class ATProtoFirehoseSyncEvent;
+@class ATProtoFirehoseIdentityEvent;
+@class ATProtoFirehoseAccountEvent;
+@class ATProtoFirehoseInfoEvent;
+@class ATProtoFirehoseErrorEvent;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -42,9 +42,9 @@ typedef NS_ENUM(NSInteger, XRPCStreamOpKind) {
 };
 
 /*!
- @class EventFormatter
+ @class ATProtoEventFormatter
 
- @abstract Encodes and decodes Firehose events using XRPC streaming protocol.
+ @abstract Encodes and decodes ATProtoFirehose events using XRPC streaming protocol.
 
  @discussion Events are encoded with an EventHeader followed by the message body:
  1. EventHeader (CBOR): { "op": <int>, "t": <string> }
@@ -58,32 +58,32 @@ typedef NS_ENUM(NSInteger, XRPCStreamOpKind) {
  - "#info": Informational message
  */
 /**
- * @abstract Declares the EventFormatter public API.
+ * @abstract Declares the ATProtoEventFormatter public API.
  */
-@interface EventFormatter : NSObject
+@interface ATProtoEventFormatter : NSObject
 
 /*! Encodes a commit event with proper XRPC streaming header. */
-- (nullable NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event
+- (nullable NSData *)encodeCommitEvent:(ATProtoFirehoseCommitEvent *)event
                                  error:(NSError **)error;
 
 /*! Encodes a sync event with proper XRPC streaming header. */
-- (nullable NSData *)encodeSyncEvent:(FirehoseSyncEvent *)event
+- (nullable NSData *)encodeSyncEvent:(ATProtoFirehoseSyncEvent *)event
                                 error:(NSError **)error;
 
 /*! Encodes an identity event with proper XRPC streaming header. */
-- (nullable NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event
+- (nullable NSData *)encodeIdentityEvent:(ATProtoFirehoseIdentityEvent *)event
                                     error:(NSError **)error;
 
 /*! Encodes an account event with proper XRPC streaming header. */
-- (nullable NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event
+- (nullable NSData *)encodeAccountEvent:(ATProtoFirehoseAccountEvent *)event
                                    error:(NSError **)error;
 
 /*! Encodes an info event with proper XRPC streaming header. */
-- (nullable NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event
+- (nullable NSData *)encodeInfoEvent:(ATProtoFirehoseInfoEvent *)event
                                error:(NSError **)error;
 
 /*! Encodes an error frame with proper XRPC streaming header. */
-- (nullable NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event
+- (nullable NSData *)encodeErrorEvent:(ATProtoFirehoseErrorEvent *)event
                                 error:(NSError **)error;
 
 /*! Encodes a stream event with a given type and payload dictionary. */

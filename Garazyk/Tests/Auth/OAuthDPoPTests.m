@@ -34,7 +34,7 @@
 
 - (void)testDPoPProofStructure {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/tokens" nonce:nil key:_privateKey error:&error];
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/tokens" nonce:nil key:_privateKey error:&error];
     
     XCTAssertNotNil(token, @"Should create token");
     XCTAssertNil(error, @"Should be no error");
@@ -57,10 +57,10 @@
 
 - (void)testDPoPHtmBinding {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://resource.example.org/protected" nonce:nil key:_privateKey error:&error];
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"GET" uri:@"https://resource.example.org/protected" nonce:nil key:_privateKey error:&error];
     XCTAssertNotNil(token);
     
-    BOOL valid = [DPoPUtil verifyDPoP:token.jwt
+    BOOL valid = [ATProtoDPoPUtil verifyDPoP:token.jwt
                         withPublicKey:_publicKey
                                method:@"GET"
                                   uri:@"https://resource.example.org/protected"
@@ -69,7 +69,7 @@
     XCTAssertTrue(valid, @"Matching method should pass");
     
     error = nil;
-    valid = [DPoPUtil verifyDPoP:token.jwt
+    valid = [ATProtoDPoPUtil verifyDPoP:token.jwt
                    withPublicKey:NULL
                           method:@"POST"
                              uri:@"https://resource.example.org/protected"
@@ -82,9 +82,9 @@
 
 - (void)testVerifyDPoPFalseMismatchingUriForHtuBinding {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/a" nonce:nil key:_privateKey error:&error];
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/a" nonce:nil key:_privateKey error:&error];
     
-    BOOL valid = [DPoPUtil verifyDPoP:token.jwt
+    BOOL valid = [ATProtoDPoPUtil verifyDPoP:token.jwt
                         withPublicKey:_publicKey
                                method:@"POST"
                                   uri:@"https://server.example.com/b"
@@ -95,7 +95,7 @@
 
 - (void)testDPoPHtuCanonicalizationExcludesQueryAndFragment {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET"
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                                   uri:@"https://server.example.com/resource?id=123#frag"
                                                nonce:nil
                                                  key:_privateKey
@@ -104,7 +104,7 @@
     XCTAssertNil(error);
     XCTAssertEqualObjects(token.htu, @"https://server.example.com/resource");
 
-    BOOL valid = [DPoPUtil verifyDPoP:token.jwt
+    BOOL valid = [ATProtoDPoPUtil verifyDPoP:token.jwt
                         withPublicKey:_publicKey
                                method:@"GET"
                                   uri:@"https://server.example.com/resource?other=1"
@@ -116,11 +116,11 @@
 - (void)testDPoPNonceChallenge {
     NSError *error = nil;
     NSString *nonce = @"random-nonce-value";
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.com" nonce:nonce key:_privateKey error:&error];
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.com" nonce:nonce key:_privateKey error:&error];
     
     XCTAssertNotNil(token);
     
-    BOOL valid = [DPoPUtil verifyDPoP:token.jwt
+    BOOL valid = [ATProtoDPoPUtil verifyDPoP:token.jwt
                         withPublicKey:_publicKey
                                method:@"POST"
                                   uri:@"https://server.com"
@@ -129,7 +129,7 @@
     XCTAssertTrue(valid, @"Correct nonce should pass");
     
     error = nil;
-    valid = [DPoPUtil verifyDPoP:token.jwt
+    valid = [ATProtoDPoPUtil verifyDPoP:token.jwt
                    withPublicKey:NULL
                           method:@"POST"
                              uri:@"https://server.com"
@@ -140,18 +140,18 @@
 
 - (void)testDPoPInvalidFormat {
     NSError *error = nil;
-    BOOL valid = [DPoPUtil verifyDPoP:@"not-a-jwt" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    BOOL valid = [ATProtoDPoPUtil verifyDPoP:@"not-a-jwt" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
     XCTAssertFalse(valid);
     XCTAssertNotNil(error);
     XCTAssertEqual(error.code, -1);
     
-    valid = [DPoPUtil verifyDPoP:@"a.b" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    valid = [ATProtoDPoPUtil verifyDPoP:@"a.b" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
     XCTAssertFalse(valid);
 }
 
 - (void)testDPoPTokenProperties {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"PUT" uri:@"https://api.example.com/resource/123" nonce:@"test-nonce" key:_privateKey error:&error];
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"PUT" uri:@"https://api.example.com/resource/123" nonce:@"test-nonce" key:_privateKey error:&error];
     
     XCTAssertNotNil(token);
     XCTAssertEqualObjects(token.htm, @"PUT");
@@ -164,7 +164,7 @@
 
 - (void)testDPoPPayloadClaims {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"DELETE" uri:@"https://server.com/item/1" nonce:nil key:_privateKey error:&error];
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"DELETE" uri:@"https://server.com/item/1" nonce:nil key:_privateKey error:&error];
     
     NSDictionary *payload = [token payload];
     XCTAssertEqualObjects(payload[@"htm"], @"DELETE");
@@ -175,7 +175,7 @@
 }
 
 - (void)testDPoPHeaderClaims {
-    DPoPToken *token = [[DPoPToken alloc] init];
+    ATProtoDPoPToken *token = [[ATProtoDPoPToken alloc] init];
     NSDictionary *header = [token header];
     
     XCTAssertEqualObjects(header[@"typ"], @"dpop+jwt");
@@ -187,7 +187,7 @@
 
 - (void)testDPoPWithAthClaim {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil key:_privateKey error:&error];
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil key:_privateKey error:&error];
     token.ath = @"access-token-hash";
     
     NSDictionary *payload = [token payload];
@@ -196,7 +196,7 @@
 
 - (void)testDPoPNoNonce {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil key:_privateKey error:&error];
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"GET" uri:@"https://example.com" nonce:nil key:_privateKey error:&error];
     
     XCTAssertNotNil(token);
     XCTAssertNil(token.nonce);
@@ -207,7 +207,7 @@
 
 - (void)testVerifyDPoPFalseForEmptyJWTParts {
     NSError *error = nil;
-    BOOL valid = [DPoPUtil verifyDPoP:@"a..c" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
+    BOOL valid = [ATProtoDPoPUtil verifyDPoP:@"a..c" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
     XCTAssertFalse(valid);
     XCTAssertNotNil(error);
 }
@@ -290,7 +290,7 @@
 
 - (void)testDPoPReplayDetection {
     NSError *error = nil;
-    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST"
+    ATProtoDPoPToken *token = [ATProtoDPoPUtil createDPoPForMethod:@"POST"
                                                   uri:@"https://server.example.com/tokens"
                                                nonce:nil
                                                  key:_privateKey
@@ -298,7 +298,7 @@
     XCTAssertNotNil(token, @"Should create DPoP token for replay test");
 
     // First verification should succeed
-    BOOL firstValid = [DPoPUtil verifyDPoP:token.jwt
+    BOOL firstValid = [ATProtoDPoPUtil verifyDPoP:token.jwt
                               withPublicKey:_publicKey
                                      method:@"POST"
                                         uri:@"https://server.example.com/tokens"
@@ -308,7 +308,7 @@
 
     // Second verification of the same ATProtoJWT should fail (replay detected)
     error = nil;
-    BOOL replayValid = [DPoPUtil verifyDPoP:token.jwt
+    BOOL replayValid = [ATProtoDPoPUtil verifyDPoP:token.jwt
                               withPublicKey:_publicKey
                                      method:@"POST"
                                         uri:@"https://server.example.com/tokens"

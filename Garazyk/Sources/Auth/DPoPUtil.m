@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  DPoPUtil.m
+//  ATProtoDPoPUtil.m
 //  ATProtoPDS
 //
 //  DPoP utility wrapper. This file uses SecKeyRef which is only available on macOS.
@@ -26,7 +26,7 @@
 NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
 
-@implementation DPoPToken
+@implementation ATProtoDPoPToken
 
 + (nullable instancetype)createWithMethod:(NSString *)htm
                                       uri:(NSString *)htu
@@ -41,7 +41,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         }
         return nil;
     }
-    DPoPToken *token = [[DPoPToken alloc] init];
+    ATProtoDPoPToken *token = [[ATProtoDPoPToken alloc] init];
     token.htm = htm;
     token.htu = canonicalHTU;
     token.iat = [NSDate date];
@@ -53,7 +53,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
 - (NSDictionary *)header {
     // Note: This returns a dummy JWK as coordinates are normally added during signing.
-    // DPoPUtil clients expect this structure.
+    // ATProtoDPoPUtil clients expect this structure.
     return @{
         @"typ": @"dpop+jwt",
         @"alg": @"ES256",
@@ -90,9 +90,9 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
 @end
 
-@implementation DPoPUtil
+@implementation ATProtoDPoPUtil
 
-+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
++ (nullable ATProtoDPoPToken *)createDPoPForMethod:(NSString *)htm
                                          uri:(NSString *)htu
                                        nonce:(nullable NSString *)nonce
                                          key:(SecKeyRef)privateKey
@@ -105,7 +105,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
                                error:error];
 }
 
-+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
++ (nullable ATProtoDPoPToken *)createDPoPForMethod:(NSString *)htm
                                          uri:(NSString *)htu
                                        nonce:(nullable NSString *)nonce
                                  accessToken:(nullable NSString *)accessToken
@@ -130,12 +130,12 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     // However, ATProtoAuthCryptoDPoP's createProofForURL currently expects a jwk dictionary
     // and handles SecKey creation internally from it.
 
-    // To maintain DPoPUtil's API (which takes SecKeyRef), we'll do a slightly different path
+    // To maintain ATProtoDPoPUtil's API (which takes SecKeyRef), we'll do a slightly different path
     // or update ATProtoAuthCryptoDPoP to be more flexible.
     // For now, let's use the underlying components.
 
     NSString *canonicalHTU = [ATProtoAuthCryptoDPoP canonicalHTUFromURL:url];
-    DPoPToken *token = [[DPoPToken alloc] init];
+    ATProtoDPoPToken *token = [[ATProtoDPoPToken alloc] init];
     token.htm = htm;
     token.htu = canonicalHTU;
     token.iat = [NSDate date];
@@ -249,7 +249,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 #else // GNUstep
 
 // Stub implementations for GNUstep
-// DPoPUtil uses SecKeyRef from compat headers on GNUstep.
+// ATProtoDPoPUtil uses SecKeyRef from compat headers on GNUstep.
 // Use ATProtoAuthCryptoDPoP directly with the protocol-based key interfaces.
 
 #import "Auth/DPoPUtil.h"
@@ -257,7 +257,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
 NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
-@implementation DPoPToken
+@implementation ATProtoDPoPToken
 
 + (nullable instancetype)createWithMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce error:(NSError **)error {
     return nil; // Not available on GNUstep
@@ -268,9 +268,9 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
 @end
 
-@implementation DPoPUtil
+@implementation ATProtoDPoPUtil
 
-+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce key:(SecKeyRef)privateKey error:(NSError **)error {
++ (nullable ATProtoDPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce key:(SecKeyRef)privateKey error:(NSError **)error {
     if (error) {
         *error = [NSError errorWithDomain:DPoPErrorDomain
                                      code:-99
@@ -279,7 +279,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     return nil;
 }
 
-+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce accessToken:(nullable NSString *)accessToken key:(SecKeyRef)privateKey error:(NSError **)error {
++ (nullable ATProtoDPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce accessToken:(nullable NSString *)accessToken key:(SecKeyRef)privateKey error:(NSError **)error {
     if (error) {
         *error = [NSError errorWithDomain:DPoPErrorDomain
                                      code:-99

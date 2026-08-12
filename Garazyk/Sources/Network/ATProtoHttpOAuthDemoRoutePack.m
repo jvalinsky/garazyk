@@ -28,7 +28,7 @@
     return;
   }
 
-  OAuthDemoHandler *oauthDemoHandler = [OAuthDemoHandler sharedHandler];
+  GZOAuthDemoHandler *oauthDemoHandler = [GZOAuthDemoHandler sharedHandler];
   if (dataDirectory.length > 0) {
     [oauthDemoHandler setDataDirectory:dataDirectory];
   } else {

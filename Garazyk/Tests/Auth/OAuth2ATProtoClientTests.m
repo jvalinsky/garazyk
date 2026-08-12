@@ -22,7 +22,7 @@
  * After the fix is implemented, this same test will pass, validating the fix.
  */
 @interface OAuth2ATProtoClientTests : XCTestCase
-@property (nonatomic, strong) OAuth2Handler *handler;
+@property (nonatomic, strong) ATProtoOAuth2Handler *handler;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, copy) NSString *databasePath;
 @end
@@ -41,7 +41,7 @@
     // NOTE: We intentionally DO NOT register bsky.app or witchsky.app in the database
     // This is the bug condition - ATProto clients should work without pre-registration
     
-    self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+    self.handler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.database];
 }
 
 - (void)tearDown {

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcIdentityHelper.m
+//  ATProtoXrpcIdentityHelper.m
 //  ATProtoPDS
 //
 //  Identity resolution helper implementation for XRPC endpoints.
@@ -82,12 +82,12 @@ static NSArray<NSDictionary *> *servicesForConfiguration(ATProtoServiceConfigura
     return services;
 }
 
-@implementation XrpcIdentityHelper
+@implementation ATProtoXrpcIdentityHelper
 
 #pragma mark - Public Methods
 
 + (NSString *)resolveHandleToDid:(NSString *)handle
-                  handleResolver:(HandleResolver *)resolver
+                  handleResolver:(ATProtoHandleResolver *)resolver
                            error:(NSError **)error {
     if (!handle || handle.length == 0) {
         if (error) {
@@ -107,7 +107,7 @@ static NSArray<NSDictionary *> *servicesForConfiguration(ATProtoServiceConfigura
         return nil;
     }
     
-    // Use synchronous wrapper around async HandleResolver
+    // Use synchronous wrapper around async ATProtoHandleResolver
     __block NSString *resolvedDid = nil;
     __block NSError *resolveError = nil;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
@@ -236,7 +236,7 @@ static NSArray<NSDictionary *> *servicesForConfiguration(ATProtoServiceConfigura
                 return localDoc;
             }
 
-            DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+            ATProtoDIDPLCResolver *plcResolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:plcUrl];
             plcResolver.timeout = 10.0;
 
             NSError *plcError = nil;
@@ -343,7 +343,7 @@ static NSArray<NSDictionary *> *servicesForConfiguration(ATProtoServiceConfigura
         };
     }
 
-    HandleResolver *handleResolver = [[HandleResolver alloc] init];
+    ATProtoHandleResolver *handleResolver = [[ATProtoHandleResolver alloc] init];
     __block NSString *did = nil;
     __block NSError *capturedError = nil;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);

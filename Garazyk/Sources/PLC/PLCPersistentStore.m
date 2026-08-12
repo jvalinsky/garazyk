@@ -118,10 +118,10 @@ static NSString * const kSelectExportOperationsBySeqSQL =
 static NSString * const kSelectAllDIDsSQL =
     @"SELECT DISTINCT did FROM plc_operations ORDER BY did ASC;";
 
-@implementation PLCPersistentStore
+@implementation ATProtoPLCPersistentStore
 
 + (nullable instancetype)storeWithPath:(NSString *)dbPath error:(NSError **)error {
-    PLCPersistentStore *store = [[PLCPersistentStore alloc] initWithPath:dbPath];
+    ATProtoPLCPersistentStore *store = [[ATProtoPLCPersistentStore alloc] initWithPath:dbPath];
     if (![store openWithError:error]) {
         return nil;
     }
@@ -345,7 +345,7 @@ static NSString * const kSelectAllDIDsSQL =
 
 #pragma mark - PLCStore Protocol
 
-- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
+- (nullable NSArray<ATProtoPLCOperation *> *)getHistoryForDID:(NSString *)did
                                       includeNullified:(BOOL)includeNullified
                                                  error:(NSError **)error {
     if (!self.open) {
@@ -357,7 +357,7 @@ static NSString * const kSelectAllDIDsSQL =
         return nil;
     }
     
-    __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
+    __block NSMutableArray<ATProtoPLCOperation *> *operations = [NSMutableArray array];
     __block NSError *blockError = nil;
     
     [self.connectionManager execute:^(sqlite3 *db) {
@@ -374,7 +374,7 @@ static NSString * const kSelectAllDIDsSQL =
         sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
-            PLCOperation *op = [self operationFromStatement:stmt];
+            ATProtoPLCOperation *op = [self operationFromStatement:stmt];
             if (op) {
                 [operations addObject:op];
             }
@@ -389,15 +389,15 @@ static NSString * const kSelectAllDIDsSQL =
     
     // Instrument metrics
     if (operations.count > 0) {
-        [[PLCMetrics sharedMetrics] recordCacheHit];
+        [[ATProtoPLCMetrics sharedMetrics] recordCacheHit];
     } else {
-        [[PLCMetrics sharedMetrics] recordCacheMiss];
+        [[ATProtoPLCMetrics sharedMetrics] recordCacheMiss];
     }
     
     return operations;
 }
 
-- (BOOL)appendOperation:(PLCOperation *)op
+- (BOOL)appendOperation:(ATProtoPLCOperation *)op
            nullifyCIDs:(NSArray<NSString *> *)nullified
                  error:(NSError **)error {
     if (!self.open) {
@@ -468,7 +468,7 @@ static NSString * const kSelectAllDIDsSQL =
         NSError *cidError = nil;
         NSString *cidString = op.cid;
         if (!cidString) {
-            cidString = [PLCOperation calculateCIDForOperation:[op toDictionary] error:&cidError];
+            cidString = [ATProtoPLCOperation calculateCIDForOperation:[op toDictionary] error:&cidError];
             op.cid = cidString;
         }
         if (!cidString) {
@@ -577,7 +577,7 @@ static NSString * const kSelectAllDIDsSQL =
 
 #pragma mark - Helper Methods
 
-- (PLCOperation *)operationFromStatement:(sqlite3_stmt *)stmt {
+- (ATProtoPLCOperation *)operationFromStatement:(sqlite3_stmt *)stmt {
     const unsigned char *didText = sqlite3_column_text(stmt, 1);
     const unsigned char *prevText = sqlite3_column_text(stmt, 2);
     const unsigned char *sigText = sqlite3_column_text(stmt, 3);
@@ -600,7 +600,7 @@ static NSString * const kSelectAllDIDsSQL =
         return nil;
     }
     
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.did = [NSString stringWithUTF8String:(const char *)didText];
     op.sig = [NSString stringWithUTF8String:(const char *)sigText];
     op.data = dataDict;
@@ -729,7 +729,7 @@ static NSString * const kSelectAllDIDsSQL =
     return success;
 }
 
-- (nullable PLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error {
+- (nullable ATProtoPLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error {
     if (!self.open) {
         if (error) {
             *error = [NSError errorWithDomain:PLCPersistentStoreErrorDomain
@@ -739,7 +739,7 @@ static NSString * const kSelectAllDIDsSQL =
         return nil;
     }
 
-    __block PLCOperation *operation = nil;
+    __block ATProtoPLCOperation *operation = nil;
     __block NSError *blockError = nil;
 
     [self.connectionManager execute:^(sqlite3 *db) {
@@ -768,7 +768,7 @@ static NSString * const kSelectAllDIDsSQL =
     return operation;
 }
 
-- (nullable NSArray<PLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
+- (nullable NSArray<ATProtoPLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
                                                       count:(NSUInteger)count
                                                       error:(NSError **)error {
     if (!self.open) {
@@ -780,7 +780,7 @@ static NSString * const kSelectAllDIDsSQL =
         return nil;
     }
 
-    __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
+    __block NSMutableArray<ATProtoPLCOperation *> *operations = [NSMutableArray array];
     __block NSError *blockError = nil;
 
     [self.connectionManager execute:^(sqlite3 *db) {
@@ -802,7 +802,7 @@ static NSString * const kSelectAllDIDsSQL =
         sqlite3_bind_int(stmt, 2, (int)count);
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
-            PLCOperation *op = [self operationFromStatement:stmt];
+            ATProtoPLCOperation *op = [self operationFromStatement:stmt];
             if (op) {
                 [operations addObject:op];
             }
@@ -818,7 +818,7 @@ static NSString * const kSelectAllDIDsSQL =
     return operations;
 }
 
-- (nullable NSArray<PLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
+- (nullable NSArray<ATProtoPLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
                                                               count:(NSUInteger)count
                                                               error:(NSError **)error {
     if (!self.open) {
@@ -830,7 +830,7 @@ static NSString * const kSelectAllDIDsSQL =
         return nil;
     }
 
-    __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
+    __block NSMutableArray<ATProtoPLCOperation *> *operations = [NSMutableArray array];
     __block NSError *blockError = nil;
 
     [self.connectionManager execute:^(sqlite3 *db) {
@@ -847,7 +847,7 @@ static NSString * const kSelectAllDIDsSQL =
         sqlite3_bind_int(stmt, 2, (int)count);
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
-            PLCOperation *op = [self operationFromStatement:stmt];
+            ATProtoPLCOperation *op = [self operationFromStatement:stmt];
             if (op) {
                 [operations addObject:op];
             }

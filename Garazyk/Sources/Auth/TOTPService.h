@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file TOTPService.h
+ @file ATProtoTOTPService.h
 
  @abstract TOTP service for two-factor authentication management.
 
@@ -19,7 +19,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class TOTPService
+ @class ATProtoTOTPService
 
  @abstract Manages TOTP-based two-factor authentication.
 
@@ -27,10 +27,10 @@ NS_ASSUME_NONNULL_BEGIN
  store the same TOTP secret in YubiKey Authenticator, but the PDS verifies only
  the submitted code and does not communicate with local YubiKey hardware.
  */
-@interface TOTPService : NSObject
+@interface ATProtoTOTPService : NSObject
 
 /*! Software-only OATH helper retained for compatibility with existing tests. */
-@property (nonatomic, strong, readonly) YubiKeyOATHManager *yubiKeyManager;
+@property (nonatomic, strong, readonly) ATProtoYubiKeyOATHManager *yubiKeyManager;
 
 /*! The shared secret for TOTP generation. */
 @property (nonatomic, copy) NSData *secret;

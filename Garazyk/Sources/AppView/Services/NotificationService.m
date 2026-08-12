@@ -6,15 +6,15 @@
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 
-@interface NotificationService ()
+@interface PDSNotificationService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
-@property (nonatomic, strong) ActorService *actorService;
+@property (nonatomic, strong) PDSActorService *actorService;
 @end
 
-@implementation NotificationService
+@implementation PDSNotificationService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database
-                    actorService:(nullable ActorService *)actorService {
+                    actorService:(nullable PDSActorService *)actorService {
     self = [super init];
     if (self) {
         _database = database;

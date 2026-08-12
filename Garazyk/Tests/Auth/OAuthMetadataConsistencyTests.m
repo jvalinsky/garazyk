@@ -37,7 +37,7 @@
     // We want to see if 'resource' matches 'issuer' exactly.
     // In many ATProto scenarios, the PDS is the resource.
     
-    // This is hard to unit test without a full OAuth2Handler setup,
+    // This is hard to unit test without a full ATProtoOAuth2Handler setup,
     // so we'll rely on the E2E diagnostics which already showed a mismatch
     // in the trailing slash (or lack thereof).
 }

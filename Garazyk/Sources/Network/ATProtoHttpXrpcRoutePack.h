@@ -14,8 +14,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoHttpServer;
 @class PDSApplication;
 @class PDSController;
-@class SubscribeReposHandler;
-@class XrpcDispatcher;
+@class ATProtoSubscribeReposHandler;
+@class ATProtoXrpcDispatcher;
 
 @interface ATProtoHttpXrpcRoutePack : NSObject
 
@@ -23,10 +23,10 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Performs the registerRoutesWithServer operation.
  */
 + (void)registerRoutesWithServer:(ATProtoHttpServer *)server
-                      dispatcher:(nullable XrpcDispatcher *)dispatcher
+                      dispatcher:(nullable ATProtoXrpcDispatcher *)dispatcher
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller
-           subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
+           subscribeReposHandler:(nullable ATProtoSubscribeReposHandler *)subscribeReposHandler
                   setCorsHeaders:(ATProtoHttpSetCorsHeadersBlock)setCorsHeaders;
 
 @end

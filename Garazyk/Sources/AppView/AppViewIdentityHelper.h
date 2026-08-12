@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewIdentityHelper.h
+ @file PDSAppViewIdentityHelper.h
 
  @abstract Identity helper for AppView administration.
 
@@ -16,11 +16,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class AppViewIdentityHelper
+ @class PDSAppViewIdentityHelper
  
  @abstract Caching DID-to-handle resolver for AppView.
  */
-@interface AppViewIdentityHelper : NSObject
+@interface PDSAppViewIdentityHelper : NSObject
 
 /*!
  @method configureWithPlcURL:cacheTTLSeconds:

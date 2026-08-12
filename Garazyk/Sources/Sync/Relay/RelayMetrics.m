@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Relay/RelayMetrics.h"
 
-@interface RelayMetrics ()
+@interface ATProtoRelayMetrics ()
 
 @property (nonatomic, assign, readwrite) int64_t upstreamConnections;
 @property (nonatomic, assign, readwrite) int64_t downstreamConnections;
@@ -24,15 +24,15 @@
 
 @end
 
-@implementation RelayMetrics {
+@implementation ATProtoRelayMetrics {
     dispatch_queue_t _metricsQueue;
 }
 
 + (instancetype)sharedMetrics {
-    static RelayMetrics *instance = nil;
+    static ATProtoRelayMetrics *instance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        instance = [[RelayMetrics alloc] init];
+        instance = [[ATProtoRelayMetrics alloc] init];
     });
     return instance;
 }

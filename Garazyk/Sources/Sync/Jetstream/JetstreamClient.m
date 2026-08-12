@@ -244,8 +244,8 @@ static NSString * const kJetstreamKeyHandle = @"handle";
         record = nil;
     }
 
-    // Build a FirehoseCommitEvent-compatible object.
-    FirehoseCommitEvent *commitEvent = [[FirehoseCommitEvent alloc] init];
+    // Build a ATProtoFirehoseCommitEvent-compatible object.
+    ATProtoFirehoseCommitEvent *commitEvent = [[ATProtoFirehoseCommitEvent alloc] init];
     commitEvent.seq = _currentCursor;
     commitEvent.repo = did;
     commitEvent.rev = rev;
@@ -286,7 +286,7 @@ static NSString * const kJetstreamKeyHandle = @"handle";
 
     NSString *handle = identity[kJetstreamKeyHandle];
 
-    FirehoseIdentityEvent *identityEvent = [[FirehoseIdentityEvent alloc] init];
+    ATProtoFirehoseIdentityEvent *identityEvent = [[ATProtoFirehoseIdentityEvent alloc] init];
     identityEvent.seq = _currentCursor;
     identityEvent.did = did;
     identityEvent.handle = handle;

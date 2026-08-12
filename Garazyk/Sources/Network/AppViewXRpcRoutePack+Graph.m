@@ -6,7 +6,7 @@
 #import "Network/HttpResponse.h"
 #import "AppView/Services/GraphService.h"
 
-@implementation AppViewXRpcRoutePack (Graph)
+@implementation ATProtoAppViewXRpcRoutePack (Graph)
 
 - (void)handleGetFollows:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {

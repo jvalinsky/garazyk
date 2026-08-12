@@ -136,7 +136,7 @@
 @property (nonatomic, strong) XrpcTestClient *client;
 @property (nonatomic, strong) MockExternalServer *plcServer;
 @property (nonatomic, strong) MockExternalServer *handleServer;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, copy) NSString *baseURL;
 
 @end
@@ -154,7 +154,7 @@
     // re-registers these mock routes before every test method, and the
     // singleton doesn't forget a prior test's registrations, so the
     // second method onward hit "Duplicate XRPC handler registration".
-    self.dispatcher = [[XrpcDispatcher alloc] init];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
 
     [self setupMockHandlers];
 

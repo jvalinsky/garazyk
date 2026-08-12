@@ -12,18 +12,18 @@
 #import "Network/Generated/GZXrpcNSID.h"
 #import "Auth/AuthClaimTypeCheck.h"
 
-@implementation XrpcAppBskyDraftsPack
+@implementation ATProtoXrpcAppBskyDraftsPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.draft";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                  draftService:(DraftService *)draftService
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
+                  draftService:(PDSDraftService *)draftService
                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -35,9 +35,9 @@
   [self registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
-  DraftService *draftService = services.draftService;
+  PDSDraftService *draftService = services.draftService;
   if (!draftService) {
     return;
   }
@@ -46,8 +46,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_createDraft
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -59,7 +59,7 @@
                        BOOL typeMismatch = NO;
                        NSDictionary *content = AuthTypedValue(body, @"content", [NSDictionary class], &typeMismatch) ?: @{};
                        if (typeMismatch) {
-                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
                          return;
                        }
 
@@ -68,7 +68,7 @@
                                                                       content:content
                                                                         error:&error];
                        if (error) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription
                                                                    ?: @"Failed to create draft"];
                          return;
@@ -79,8 +79,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_updateDraft
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -93,11 +93,11 @@
                        NSString *draftID = AuthTypedValue(body, @"id", [NSString class], &typeMismatch);
                        NSDictionary *content = AuthTypedValue(body, @"content", [NSDictionary class], &typeMismatch) ?: @{};
                        if (typeMismatch) {
-                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
                          return;
                        }
                        if (!draftID) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"Missing draft id"];
                          return;
                        }
@@ -108,7 +108,7 @@
                                                              content:content
                                                                error:&error];
                        if (!success) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription
                                                                    ?: @"Failed to update draft"];
                          return;
@@ -119,8 +119,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_getDrafts
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -131,7 +131,7 @@
                        NSError *error = nil;
                        NSArray *drafts = [draftService getDraftsForDID:actorDID error:&error];
                        if (error) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription
                                                                    ?: @"Failed to get drafts"];
                          return;
@@ -142,8 +142,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_draft_deleteDraft
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -156,11 +156,11 @@
                        NSString *draftID = AuthTypedValue(body, @"id", [NSString class], &typeMismatch)
                            ?: AuthTypedValue(body, @"uri", [NSString class], &typeMismatch);
                        if (typeMismatch) {
-                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
                          return;
                        }
                        if (!draftID) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"Missing draft id parameter"];
                          return;
                        }
@@ -170,7 +170,7 @@
                                                              draftID:draftID
                                                                error:&error];
                        if (!success) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription
                                                                    ?: @"Failed to delete draft"];
                          return;

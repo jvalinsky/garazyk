@@ -4,14 +4,14 @@
 #import "Sync/WebSocket/WebSocketHeartbeatPolicy.h"
 
 @interface WebSocketHeartbeatPolicyTests : XCTestCase
-@property (nonatomic, strong) WebSocketHeartbeatPolicy *policy;
+@property (nonatomic, strong) ATProtoWebSocketHeartbeatPolicy *policy;
 @end
 
 @implementation WebSocketHeartbeatPolicyTests
 
 - (void)setUp {
     [super setUp];
-    self.policy = [[WebSocketHeartbeatPolicy alloc] init];
+    self.policy = [[ATProtoWebSocketHeartbeatPolicy alloc] init];
     // Default: interval=30, timeout=10
 }
 

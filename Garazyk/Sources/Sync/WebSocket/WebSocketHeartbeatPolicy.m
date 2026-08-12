@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/WebSocket/WebSocketHeartbeatPolicy.h"
 
-@interface WebSocketHeartbeatPolicy ()
+@interface ATProtoWebSocketHeartbeatPolicy ()
 @property (nonatomic, assign) NSTimeInterval lastPingSentTime;
 @property (nonatomic, assign) NSTimeInterval lastPongReceivedTime;
 @property (nonatomic, assign) BOOL waitingForPong;
 @end
 
-@implementation WebSocketHeartbeatPolicy
+@implementation ATProtoWebSocketHeartbeatPolicy
 
 - (instancetype)init {
     self = [super init];

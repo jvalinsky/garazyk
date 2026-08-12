@@ -41,9 +41,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Underlying storage mechanism.
  */
-@property (nonatomic, strong) BlobStorage *blobStorage;
+@property (nonatomic, strong) PDSBlobStorage *blobStorage;
 
-- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool storage:(BlobStorage *)storage;
+- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool storage:(PDSBlobStorage *)storage;
 
 #pragma mark - Blob Operations
 

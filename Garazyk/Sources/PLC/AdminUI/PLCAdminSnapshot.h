@@ -5,7 +5,7 @@
 #import <Foundation/Foundation.h>
 
 @protocol PLCStore;
-@class PLCSyncEngine;
+@class ATProtoPLCSyncEngine;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, readonly, getter=isReplica) BOOL replica;
 
 - (instancetype)initWithStore:(id<PLCStore>)store
-                    syncEngine:(nullable PLCSyncEngine *)syncEngine NS_DESIGNATED_INITIALIZER;
+                    syncEngine:(nullable ATProtoPLCSyncEngine *)syncEngine NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
 /** Returns a point-in-time overview using constant-size store count queries. */

@@ -4,7 +4,7 @@
 #import "App/AppDelegate.h"
 #import <objc/runtime.h>
 
-@interface AppDelegate (TestHooks)
+@interface GZAppDelegate (TestHooks)
 - (void)applicationDidFinishLaunching:(NSNotification *)notification;
 - (void)applicationWillTerminate:(NSNotification *)notification;
 - (void)startServer:(id)sender;
@@ -84,7 +84,7 @@ static void StubAppDelegateSetupStatusBar(id self, SEL _cmd) {
     method_setImplementation(startMethod, (IMP)StubPDSControllerStartServerWithError);
 #if TARGET_OS_OSX || defined(__APPLE__)
     gStubSetupStatusBarCallCount = 0;
-    Method setupMethod = class_getInstanceMethod([AppDelegate class], @selector(setupStatusBar));
+    Method setupMethod = class_getInstanceMethod([GZAppDelegate class], @selector(setupStatusBar));
     if (setupMethod) {
         gOriginalSetupStatusBarIMP = method_getImplementation(setupMethod);
         method_setImplementation(setupMethod, (IMP)StubAppDelegateSetupStatusBar);
@@ -98,7 +98,7 @@ static void StubAppDelegateSetupStatusBar(id self, SEL _cmd) {
         method_setImplementation(startMethod, gOriginalPDSStartIMP);
     }
 #if TARGET_OS_OSX || defined(__APPLE__)
-    Method setupMethod = class_getInstanceMethod([AppDelegate class], @selector(setupStatusBar));
+    Method setupMethod = class_getInstanceMethod([GZAppDelegate class], @selector(setupStatusBar));
     if (setupMethod && gOriginalSetupStatusBarIMP) {
         method_setImplementation(setupMethod, gOriginalSetupStatusBarIMP);
     }
@@ -107,7 +107,7 @@ static void StubAppDelegateSetupStatusBar(id self, SEL _cmd) {
 }
 
 - (void)testStartServerInvokesController {
-    AppDelegate *delegate = [[AppDelegate alloc] init];
+    GZAppDelegate *delegate = [[GZAppDelegate alloc] init];
     AppDelegateMockController *mock = [[AppDelegateMockController alloc] init];
     mock.startShouldSucceed = YES;
     delegate.pdsController = (id)mock;
@@ -117,7 +117,7 @@ static void StubAppDelegateSetupStatusBar(id self, SEL _cmd) {
 }
 
 - (void)testStartServerFailureStillInvokesController {
-    AppDelegate *delegate = [[AppDelegate alloc] init];
+    GZAppDelegate *delegate = [[GZAppDelegate alloc] init];
     AppDelegateMockController *mock = [[AppDelegateMockController alloc] init];
     mock.startShouldSucceed = NO;
     delegate.pdsController = (id)mock;
@@ -127,7 +127,7 @@ static void StubAppDelegateSetupStatusBar(id self, SEL _cmd) {
 }
 
 - (void)testStopServerInvokesController {
-    AppDelegate *delegate = [[AppDelegate alloc] init];
+    GZAppDelegate *delegate = [[GZAppDelegate alloc] init];
     AppDelegateMockController *mock = [[AppDelegateMockController alloc] init];
     delegate.pdsController = (id)mock;
 
@@ -136,7 +136,7 @@ static void StubAppDelegateSetupStatusBar(id self, SEL _cmd) {
 }
 
 - (void)testApplicationWillTerminateIncrementsStopCalls {
-    AppDelegate *delegate = [[AppDelegate alloc] init];
+    GZAppDelegate *delegate = [[GZAppDelegate alloc] init];
     AppDelegateMockController *mock = [[AppDelegateMockController alloc] init];
     delegate.pdsController = (id)mock;
 
@@ -145,7 +145,7 @@ static void StubAppDelegateSetupStatusBar(id self, SEL _cmd) {
 }
 
 - (void)testApplicationDidFinishLaunchingInitializesControllerAndStartsServer {
-    AppDelegate *delegate = [[AppDelegate alloc] init];
+    GZAppDelegate *delegate = [[GZAppDelegate alloc] init];
     gStubStartReturn = YES;
 
     [delegate applicationDidFinishLaunching:nil];
@@ -158,7 +158,7 @@ static void StubAppDelegateSetupStatusBar(id self, SEL _cmd) {
 }
 
 - (void)testApplicationDidFinishLaunchingStillSetsControllerWhenStartFails {
-    AppDelegate *delegate = [[AppDelegate alloc] init];
+    GZAppDelegate *delegate = [[GZAppDelegate alloc] init];
     gStubStartReturn = NO;
 
     [delegate applicationDidFinishLaunching:nil];

@@ -28,9 +28,9 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAdminPack (Moderation)
+@implementation ATProtoXrpcAdminPack (Moderation)
 
-+ (void)registerModerationEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerModerationEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                 services:(id<XrpcRoutePackServices>)services {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;

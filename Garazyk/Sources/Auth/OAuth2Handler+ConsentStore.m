@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Auth/OAuth2Handler+ConsentStore.h"
 
-@implementation OAuth2Handler (ConsentStore)
+@implementation ATProtoOAuth2Handler (ConsentStore)
 
 - (NSString *)createPendingConsentSessionForDid:(NSString *)did
                                          handle:(NSString *)handle {

@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Returns whether scope is valid under this authorization server's supported scope policy. */
 BOOL OAuthHandlerScopeIsValid(NSString *scope);
 
-#pragma mark - Shared State (defined in OAuth2Handler.m)
+#pragma mark - Shared State (defined in ATProtoOAuth2Handler.m)
 /** @abstract Pending-consent state, accessed only while holding sAuthGlobalsQueue. */
 extern NSMutableDictionary *sPendingConsents;
 /** @abstract Passkey challenges, accessed only while holding sPasskeyChallengeQueue. */
@@ -34,11 +34,11 @@ extern dispatch_once_t sClientCacheOnceToken;
 
 #pragma mark - Private Interface
 /**
- * @abstract Declares OAuth2Handler's private endpoint and security helpers.
+ * @abstract Declares ATProtoOAuth2Handler's private endpoint and security helpers.
  * @discussion Route methods validate untrusted HTTP input and write protocol responses. Shared
  * session state is confined to the queues documented above.
  */
-@interface OAuth2Handler ()
+@interface ATProtoOAuth2Handler ()
 
 /** @abstract Database used to resolve accounts, consents, and token state for OAuth flows. */
 @property (nonatomic, strong) PDSDatabase *database;
@@ -106,7 +106,7 @@ extern dispatch_once_t sClientCacheOnceToken;
                   forClient:(NSDictionary *)client
                       error:(NSError **)error;
 
-#pragma mark - Consent & Passkey Session Store
+#pragma mark - Consent & Passkey PDSSession Store
 /** @abstract Creates a bounded, expiring consent session while holding the authorization-state lock. */
 - (NSString *)createPendingConsentSessionForDid:(NSString *)did
                                          handle:(NSString *)handle;

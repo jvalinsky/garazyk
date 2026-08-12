@@ -5,7 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @category XrpcLexiconResolver (Testing)
+ @category ATProtoXrpcLexiconResolver (Testing)
  @abstract Exposes internal methods for unit testing.
 
  @discussion
@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
  parsing, endpoint extraction, URL construction) without requiring a live
  network, DNS resolver, or PLC directory.
  */
-@interface XrpcLexiconResolver (Testing)
+@interface ATProtoXrpcLexiconResolver (Testing)
 
 + (nullable NSString *)authorityDomainForNSID:(NSString *)nsid error:(NSError **)error;
 + (nullable NSString *)pdsEndpointFromDidDocument:(ATProtoDIDDocument *)document error:(NSError **)error;

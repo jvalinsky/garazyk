@@ -7,15 +7,15 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface RelayClient (Testing)
-- (void)firehoseSubscriptionDidConnect:(FirehoseSubscription *)subscription;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveCommitEvent:(FirehoseCommitEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveSyncEvent:(FirehoseSyncEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(NSError * _Nullable)error;
+@interface ATProtoRelayClient (Testing)
+- (void)firehoseSubscriptionDidConnect:(ATProtoFirehoseSubscription *)subscription;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveSyncEvent:(ATProtoFirehoseSyncEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didCloseWithError:(NSError * _Nullable)error;
 - (NSURL *)buildWebSocketURL;
-- (Firehose *)configuredFirehoseForWebSocketURL:(NSURL *)webSocketURL;
+- (ATProtoFirehose *)configuredFirehoseForWebSocketURL:(NSURL *)webSocketURL;
 - (void)scheduleReconnect;
 @end
 
@@ -27,46 +27,46 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) XCTestExpectation *errorExpectation;
 @property (nonatomic, strong, nullable) XCTestExpectation *disconnectExpectation;
 @property (nonatomic, strong, nullable) XCTestExpectation *cursorExpectation;
-@property (nonatomic, strong, nullable) FirehoseCommitEvent *commitEvent;
-@property (nonatomic, strong, nullable) FirehoseIdentityEvent *identityEvent;
-@property (nonatomic, strong, nullable) FirehoseSyncEvent *syncEvent;
-@property (nonatomic, strong, nullable) FirehoseErrorEvent *errorEvent;
+@property (nonatomic, strong, nullable) ATProtoFirehoseCommitEvent *commitEvent;
+@property (nonatomic, strong, nullable) ATProtoFirehoseIdentityEvent *identityEvent;
+@property (nonatomic, strong, nullable) ATProtoFirehoseSyncEvent *syncEvent;
+@property (nonatomic, strong, nullable) ATProtoFirehoseErrorEvent *errorEvent;
 @property (nonatomic, strong, nullable) NSError *disconnectError;
 @property (nonatomic, assign) int64_t receivedCursor;
 @end
 
 @implementation RelayClientTestDelegate
 
-- (void)relayClientDidConnect:(RelayClient *)client {
+- (void)relayClientDidConnect:(ATProtoRelayClient *)client {
     [self.connectExpectation fulfill];
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event {
     self.commitEvent = event;
     [self.commitExpectation fulfill];
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event {
     self.identityEvent = event;
     [self.identityExpectation fulfill];
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveSyncEvent:(FirehoseSyncEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveSyncEvent:(ATProtoFirehoseSyncEvent *)event {
     self.syncEvent = event;
     [self.syncExpectation fulfill];
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event {
     self.errorEvent = event;
     [self.errorExpectation fulfill];
 }
 
-- (void)relayClient:(RelayClient *)client didDisconnectWithError:(NSError * _Nullable)error {
+- (void)relayClient:(ATProtoRelayClient *)client didDisconnectWithError:(NSError * _Nullable)error {
     self.disconnectError = error;
     [self.disconnectExpectation fulfill];
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveCursor:(int64_t)cursor {
     self.receivedCursor = cursor;
     [self.cursorExpectation fulfill];
 }
@@ -78,7 +78,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation RelayClientTests
 
-- (BOOL)waitForCursorInClient:(RelayClient *)client repo:(NSString *)repo expected:(int64_t)expected {
+- (BOOL)waitForCursorInClient:(ATProtoRelayClient *)client repo:(NSString *)repo expected:(int64_t)expected {
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:0.5];
     while ([[NSDate date] compare:deadline] == NSOrderedAscending) {
         int64_t cursor = [client getStoredCursorForRepo:repo];
@@ -91,30 +91,30 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testStoreAndGetCursor {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     [client storeCursor:123 forRepo:@"did:plc:alice"];
     XCTAssertTrue([self waitForCursorInClient:client repo:@"did:plc:alice" expected:123]);
 }
 
 - (void)testSetAccessTokenDoesNotReenterSetter {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     XCTAssertNoThrow([client setAccessToken:@"test-token"]);
     XCTAssertEqualObjects([client valueForKey:@"accessToken"], @"test-token");
-    Firehose *firehose =
+    ATProtoFirehose *firehose =
         [client configuredFirehoseForWebSocketURL:
             [NSURL URLWithString:@"wss://example.com/xrpc/com.atproto.sync.subscribeRepos"]];
     XCTAssertEqualObjects(firehose.accessToken, @"test-token");
 }
 
 - (void)testStoredCursorDoesNotRegress {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     [client storeCursor:200 forRepo:@"did:plc:alice"];
     [client storeCursor:199 forRepo:@"did:plc:alice"];
     XCTAssertTrue([self waitForCursorInClient:client repo:@"did:plc:alice" expected:200]);
 }
 
 - (void)testBuildWebSocketURLDefaultPortAndPath {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://relay.example.com"]];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://relay.example.com"]];
     NSURL *url = [client buildWebSocketURL];
     XCTAssertEqualObjects(url.scheme, @"wss");
     XCTAssertEqualObjects(url.host, @"relay.example.com");
@@ -124,7 +124,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testBuildWebSocketURLIncludesCursorWhenPresent {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://relay.example.com:8443"]];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://relay.example.com:8443"]];
     [client setValue:@(98765) forKey:@"currentSeq"];
     NSURL *url = [client buildWebSocketURL];
     XCTAssertEqualObjects(url.port, @(8443));
@@ -132,14 +132,14 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testCloseWithNilErrorStillReportsCursor {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     RelayClientTestDelegate *delegate = [[RelayClientTestDelegate alloc] init];
     delegate.cursorExpectation = [self expectationWithDescription:@"cursor"];
     [client setValue:delegate forKey:@"delegate"];
     [client setValue:@(321) forKey:@"currentSeq"];
     [client setValue:@YES forKey:@"isConnected"];
 
-    FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    ATProtoFirehoseSubscription *subscription = [[ATProtoFirehoseSubscription alloc] initWithCursor:0 collections:nil];
     [client firehoseSubscription:subscription didCloseWithError:nil];
     // The delegate will call [expectation fulfill]
 
@@ -149,7 +149,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testCloseWithErrorSchedulesReconnectAtLimitReportsDisconnect {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     RelayClientTestDelegate *delegate = [[RelayClientTestDelegate alloc] init];
     delegate.cursorExpectation = [self expectationWithDescription:@"cursor"];
     delegate.disconnectExpectation = [self expectationWithDescription:@"disconnect"];
@@ -161,7 +161,7 @@ NS_ASSUME_NONNULL_BEGIN
     [client setValue:@(10) forKey:@"reconnectAttempts"];
 
 
-    FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    ATProtoFirehoseSubscription *subscription = [[ATProtoFirehoseSubscription alloc] initWithCursor:0 collections:nil];
     NSError *closeError = [NSError errorWithDomain:@"test" code:9 userInfo:nil];
     [client firehoseSubscription:subscription didCloseWithError:closeError];
     // The delegate will call [expectation fulfill]
@@ -172,15 +172,15 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testIdentityAndErrorEventsForwardToDelegate {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     RelayClientTestDelegate *delegate = [[RelayClientTestDelegate alloc] init];
     delegate.identityExpectation = [self expectationWithDescription:@"identity"];
     delegate.errorExpectation = [self expectationWithDescription:@"error"];
     [client setValue:delegate forKey:@"delegate"];
 
-    FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
-    FirehoseIdentityEvent *identity = [FirehoseIdentityEvent eventWithDid:@"did:plc:alice"];
-    FirehoseErrorEvent *errorEvent = [FirehoseErrorEvent eventWithError:@"FutureCursor" message:@"cursor ahead"];
+    ATProtoFirehoseSubscription *subscription = [[ATProtoFirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    ATProtoFirehoseIdentityEvent *identity = [ATProtoFirehoseIdentityEvent eventWithDid:@"did:plc:alice"];
+    ATProtoFirehoseErrorEvent *errorEvent = [ATProtoFirehoseErrorEvent eventWithError:@"FutureCursor" message:@"cursor ahead"];
     [client firehoseSubscription:subscription didReceiveIdentityEvent:identity];
     [client firehoseSubscription:subscription didReceiveErrorEvent:errorEvent];
     // The delegate will call [expectation fulfill]
@@ -191,16 +191,16 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testSyncEventForwardsToDelegateAndAdvancesCursor {
-    RelayClient *client = [[RelayClient alloc]
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc]
         initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     RelayClientTestDelegate *delegate = [[RelayClientTestDelegate alloc] init];
     delegate.syncExpectation = [self expectationWithDescription:@"sync"];
     [client setValue:delegate forKey:@"delegate"];
 
-    FirehoseSubscription *subscription =
-        [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
-    FirehoseSyncEvent *sync =
-        [FirehoseSyncEvent eventWithDid:@"did:plc:alice"
+    ATProtoFirehoseSubscription *subscription =
+        [[ATProtoFirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    ATProtoFirehoseSyncEvent *sync =
+        [ATProtoFirehoseSyncEvent eventWithDid:@"did:plc:alice"
                                     rev:@"3mrogbz3mwr2t"
                                  blocks:[NSData dataWithBytes:"car" length:3]];
     sync.seq = 456;
@@ -213,13 +213,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 #ifndef GNUSTEP
 - (void)testConnectAndCommitDispatch {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
     RelayClientTestDelegate *delegate = [[RelayClientTestDelegate alloc] init];
     delegate.connectExpectation = [self expectationWithDescription:@"connect"];
     delegate.commitExpectation = [self expectationWithDescription:@"commit"];
     [client setValue:delegate forKey:@"delegate"];
 
-    FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    ATProtoFirehoseSubscription *subscription = [[ATProtoFirehoseSubscription alloc] initWithCursor:0 collections:nil];
     [client firehoseSubscriptionDidConnect:subscription];
     [self waitForExpectations:@[delegate.connectExpectation] timeout:1.0];
     XCTAssertTrue(client.isConnected);
@@ -228,7 +228,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSData *digest = [@"cursor2" dataUsingEncoding:NSUTF8StringEncoding];
     ATProtoCID *commitCID = [ATProtoCID cidWithDigest:digest codec:0x71];
     
-    FirehoseCommitEvent *event = [FirehoseCommitEvent eventWithRepo:@"did:plc:alice"
+    ATProtoFirehoseCommitEvent *event = [ATProtoFirehoseCommitEvent eventWithRepo:@"did:plc:alice"
                                                               commit:commitCID
                                                                  ops:@[@{@"action": @"create"}]];
     event.seq = 456;
@@ -242,18 +242,18 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testOutOfOrderCommitDoesNotRegressReconnectCursor {
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
-    FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoFirehoseSubscription *subscription = [[ATProtoFirehoseSubscription alloc] initWithCursor:0 collections:nil];
     ATProtoCID *commitCID = [ATProtoCID cidWithDigest:[@"monotonic" dataUsingEncoding:NSUTF8StringEncoding]
                                   codec:0x71];
 
-    FirehoseCommitEvent *newer = [FirehoseCommitEvent eventWithRepo:@"did:plc:alice"
+    ATProtoFirehoseCommitEvent *newer = [ATProtoFirehoseCommitEvent eventWithRepo:@"did:plc:alice"
                                                              commit:commitCID
                                                                 ops:@[]];
     newer.seq = 200;
     [client firehoseSubscription:subscription didReceiveCommitEvent:newer];
 
-    FirehoseCommitEvent *older = [FirehoseCommitEvent eventWithRepo:@"did:plc:alice"
+    ATProtoFirehoseCommitEvent *older = [ATProtoFirehoseCommitEvent eventWithRepo:@"did:plc:alice"
                                                              commit:commitCID
                                                                 ops:@[]];
     older.seq = 199;

@@ -8,7 +8,7 @@
 @interface ChatServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *tempDir;
 @property (nonatomic, strong) PDSDatabase *db;
-@property (nonatomic, strong) ChatService *service;
+@property (nonatomic, strong) PDSChatService *service;
 @end
 
 @implementation ChatServiceTests
@@ -27,7 +27,7 @@
     [self.db executeUnsafeRawSQL:kPDSConversationMembersTableCreateSQL error:nil];
     [self.db executeUnsafeRawSQL:kPDSMessagesTableCreateSQL error:nil];
     
-    self.service = [[ChatService alloc] initWithDatabase:self.db];
+    self.service = [[PDSChatService alloc] initWithDatabase:self.db];
 }
 
 - (void)tearDown {

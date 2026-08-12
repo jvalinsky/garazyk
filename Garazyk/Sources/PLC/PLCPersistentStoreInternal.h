@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file PLCPersistentStoreInternal.h
- @abstract Internal interface for PLCPersistentStore and subclasses.
+ @abstract Internal interface for ATProtoPLCPersistentStore and subclasses.
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
@@ -15,7 +15,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface PLCPersistentStore ()
+@interface ATProtoPLCPersistentStore ()
 
 /**
  * @abstract Exposes the db path value.

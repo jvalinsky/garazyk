@@ -54,7 +54,7 @@ static NSTimeInterval const PDSSecondFactorProofTTL = 300.0;
 
     if (account.tfaEnabled && [self isSixDigitCode:authFactorToken]) {
         NSString *secret = [self totpSecretStringForAccount:account];
-        if (secret.length > 0 && [TOTPService verifyCode:authFactorToken secret:secret]) {
+        if (secret.length > 0 && [ATProtoTOTPService verifyCode:authFactorToken secret:secret]) {
             return YES;
         }
     }
@@ -161,7 +161,7 @@ static NSTimeInterval const PDSSecondFactorProofTTL = 300.0;
 
         uint32_t storedSignCount = [credential[@"signCount"] unsignedIntValue];
         uint32_t candidateSignCount = 0;
-        verified = [WebAuthnVerifier verifyAssertionResponse:assertion
+        verified = [ATProtoWebAuthnVerifier verifyAssertionResponse:assertion
                                                    challenge:challenge
                                                       origin:self.origin
                                                    publicKey:publicKey
@@ -320,10 +320,10 @@ static NSTimeInterval const PDSSecondFactorProofTTL = 300.0;
     if (account.tfaSecret.length == 0) return nil;
 
     NSString *stored = [[NSString alloc] initWithData:account.tfaSecret encoding:NSUTF8StringEncoding];
-    if (stored.length > 0 && [Base32Utils dataFromBase32String:stored]) {
+    if (stored.length > 0 && [ATProtoBase32Utils dataFromBase32String:stored]) {
         return stored;
     }
-    return [Base32Utils base32StringFromData:account.tfaSecret];
+    return [ATProtoBase32Utils base32StringFromData:account.tfaSecret];
 }
 
 - (NSString *)rpID {

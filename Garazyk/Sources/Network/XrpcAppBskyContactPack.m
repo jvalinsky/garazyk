@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcAppBskyContactPack.m
+ @file ATProtoXrpcAppBskyContactPack.m
 
  @abstract XRPC route pack for app.bsky.contact endpoints.
  */
@@ -18,18 +18,18 @@
 #import "Network/Generated/GZXrpcNSID.h"
 #import "Auth/AuthClaimTypeCheck.h"
 
-@implementation XrpcAppBskyContactPack
+@implementation ATProtoXrpcAppBskyContactPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.contact";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 contactService:(ContactService *)contactService
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
+                 contactService:(PDSContactService *)contactService
                       jwtMinter:(ATProtoJWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -41,9 +41,9 @@
   [self registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
-  ContactService *contactService = services.contactService;
+  PDSContactService *contactService = services.contactService;
   if (!contactService) {
     return;
   }
@@ -52,8 +52,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_startPhoneVerification
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -65,12 +65,12 @@
                        BOOL typeMismatch = NO;
                        NSString *phoneNumber = AuthTypedValue(body, @"phoneNumber", [NSString class], &typeMismatch);
                        if (typeMismatch) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"Request field has wrong type"];
                          return;
                        }
                        if (!phoneNumber || phoneNumber.length == 0) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"phoneNumber is required"];
                          return;
                        }
@@ -81,7 +81,7 @@
                                                             actor:actorDID
                                                             error:&error];
                        if (error || !verificationId) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription
                                                                    ?: @"Failed to start verification"];
                          return;
@@ -93,8 +93,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_verifyPhone
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -107,12 +107,12 @@
                        NSString *phoneNumber = AuthTypedValue(body, @"phoneNumber", [NSString class], &typeMismatch);
                        NSString *code = AuthTypedValue(body, @"code", [NSString class], &typeMismatch);
                        if (typeMismatch) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"Request field has wrong type"];
                          return;
                        }
                        if (!phoneNumber || !code) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"phoneNumber and code are required"];
                          return;
                        }
@@ -137,8 +137,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_importContacts
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -151,12 +151,12 @@
                        NSString *token = AuthTypedValue(body, @"token", [NSString class], &typeMismatch);
                        NSArray *contacts = AuthTypedValue(body, @"contacts", [NSArray class], &typeMismatch);
                        if (typeMismatch) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"Request field has wrong type"];
                          return;
                        }
                        if (!token || !contacts) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"token and contacts are required"];
                          return;
                        }
@@ -167,7 +167,7 @@
                                                                        actor:actorDID
                                                                        error:&error];
                        if (error || !result) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription
                                                                    ?: @"Failed to import contacts"];
                          return;
@@ -179,8 +179,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_getMatches
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -191,7 +191,7 @@
                        NSError *error = nil;
                        NSArray *matches = [contactService getMatchesForActor:actorDID error:&error];
                        if (error) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription];
                          return;
                        }
@@ -202,8 +202,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_dismissMatch
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -215,11 +215,11 @@
                        BOOL typeMismatch = NO;
                        NSString *matchDID = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
                        if (typeMismatch) {
-                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
                          return;
                        }
                        if (!matchDID) {
-                         [XrpcErrorHelper setValidationError:response message:@"did is required"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
                          return;
                        }
 
@@ -228,7 +228,7 @@
                                                                actor:actorDID
                                                                error:&error];
                        if (!success) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription];
                          return;
                        }
@@ -239,8 +239,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_getSyncStatus
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -252,7 +252,7 @@
                        NSDictionary *status =
                            [contactService getSyncStatusForActor:actorDID error:&error];
                        if (error) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription];
                          return;
                        }
@@ -263,8 +263,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_removeData
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -275,7 +275,7 @@
                        NSError *error = nil;
                        BOOL success = [contactService removeDataForActor:actorDID error:&error];
                        if (!success) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription];
                          return;
                        }
@@ -286,8 +286,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_contact_sendNotification
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        if (![context requireAuthentication]) {
@@ -299,12 +299,12 @@
                        NSString *fromDID = AuthTypedValue(body, @"from", [NSString class], &typeMismatch);
                        NSString *toDID = AuthTypedValue(body, @"to", [NSString class], &typeMismatch);
                        if (typeMismatch) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"Request field has wrong type"];
                          return;
                        }
                        if (!fromDID || !toDID) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"from and to are required"];
                          return;
                        }
@@ -314,7 +314,7 @@
                                                                         to:toDID
                                                                      error:&error];
                        if (!success) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription];
                          return;
                        }

@@ -29,9 +29,9 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAdminPack (AccountLookup)
+@implementation ATProtoXrpcAdminPack (AccountLookup)
 
-+ (void)registerAccountLookupEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerAccountLookupEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                 services:(id<XrpcRoutePackServices>)services {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
@@ -41,7 +41,7 @@
 
     // Register com.atproto.admin.searchAccounts
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_searchAccounts handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -109,7 +109,7 @@
 
     // Register com.atproto.admin.sendEmail
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_sendEmail handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -161,7 +161,7 @@
 
     // Register com.atproto.admin.updateAccountEmail
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountEmail handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -222,7 +222,7 @@
 
     // Register com.atproto.admin.updateAccountHandle
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountHandle handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -263,7 +263,7 @@
         }
 
         NSError *updateError = nil;
-        if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
+        if (![ATProtoXrpcIdentityHelper updateAccountHandle:serviceDatabases
                                                  did:did
                                               handle:normalizedHandle
                                                error:&updateError]) {
@@ -283,7 +283,7 @@
 
     // Register com.atproto.admin.updateAccountPassword
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountPassword handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter

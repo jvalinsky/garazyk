@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file DPoPUtil.h
+ @file ATProtoDPoPUtil.h
 
  @abstract DPoP (Demonstration of Proof-of-Possession) token utilities.
 
@@ -28,13 +28,13 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class DPoPToken
+ @class ATProtoDPoPToken
 
  @abstract Represents a DPoP proof ATProtoJWT.
 
  @discussion Contains the proof components for binding a request to a key pair.
  */
-@interface DPoPToken : NSObject
+@interface ATProtoDPoPToken : NSObject
 
 /*! The signed DPoP proof ATProtoJWT. */
 @property (nonatomic, copy) NSString *jwt;
@@ -75,14 +75,14 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class DPoPUtil
+ @class ATProtoDPoPUtil
 
  @abstract Utility class for DPoP proof creation and verification.
 
  @discussion NOTE: This class is only available on macOS. On GNUstep,
  use ATProtoAuthCryptoDPoP directly with protocol-based key interfaces.
  */
-@interface DPoPUtil : NSObject
+@interface ATProtoDPoPUtil : NSObject
 
 /*!
  @brief Creates a DPoP proof for a request.
@@ -92,14 +92,14 @@ NS_ASSUME_NONNULL_BEGIN
  @param nonce Server nonce (optional)
  @param privateKey SecKeyRef private key (macOS only)
  @param error Error output
- @return DPoPToken or nil on error
+ @return ATProtoDPoPToken or nil on error
 
  @discussion On GNUstep, this always returns nil. Use ATProtoAuthCryptoDPoP instead.
  */
 /**
  * @abstract Performs the createDPoPForMethod operation.
  */
-+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
++ (nullable ATProtoDPoPToken *)createDPoPForMethod:(NSString *)htm
                                          uri:(NSString *)htu
                                        nonce:(nullable NSString *)nonce
                                          key:(SecKeyRef)privateKey
@@ -113,7 +113,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Use this overload for resource-server requests authenticated with a
  DPoP-bound access token, as required by RFC 9449 section 4.3.
  */
-+ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
++ (nullable ATProtoDPoPToken *)createDPoPForMethod:(NSString *)htm
                                          uri:(NSString *)htu
                                        nonce:(nullable NSString *)nonce
                                  accessToken:(nullable NSString *)accessToken

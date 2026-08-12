@@ -17,7 +17,7 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcRepoPack (Records)
+@implementation ATProtoXrpcRepoPack (Records)
 
 static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                      NSString *collection, NSString *action) {
@@ -34,7 +34,7 @@ static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpRes
     return NO;
 }
 
-+ (void)registerRecordRoutesWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerRecordRoutesWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                   services:(id<XrpcRoutePackServices>)services {
     id<PDSAdminController> adminController = services.adminController;
     PDSRecordService *recordService = services.recordService;
@@ -67,7 +67,7 @@ static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpRes
             if (account) {
                 did = account.did;
             } else {
-                HandleResolver *handleResolver = [[HandleResolver alloc] init];
+                ATProtoHandleResolver *handleResolver = [[ATProtoHandleResolver alloc] init];
                 __block NSString *resolvedDid = nil;
                 dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
                 [handleResolver resolveHandle:repo completion:^(NSString * _Nullable resolved, NSError * _Nullable error) {
@@ -131,7 +131,7 @@ static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpRes
             if (account) {
                 did = account.did;
             } else {
-                HandleResolver *handleResolver = [[HandleResolver alloc] init];
+                ATProtoHandleResolver *handleResolver = [[ATProtoHandleResolver alloc] init];
                 __block NSString *resolvedDid = nil;
                 dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
                 [handleResolver resolveHandle:repo completion:^(NSString * _Nullable resolved, NSError * _Nullable error) {
@@ -175,7 +175,7 @@ static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpRes
 #pragma mark - com.atproto.repo.createRecord
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_createRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -248,7 +248,7 @@ static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpRes
 #pragma mark - com.atproto.repo.deleteRecord
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_repo_deleteRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -309,7 +309,7 @@ static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpRes
 #pragma mark - com.atproto.repo.putRecord / updateRecord (shared upsert handler)
     XrpcMethodHandler upsertRecordHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -430,7 +430,7 @@ static BOOL authorizeRepositoryWrite(ATProtoHttpRequest *request, ATProtoHttpRes
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;

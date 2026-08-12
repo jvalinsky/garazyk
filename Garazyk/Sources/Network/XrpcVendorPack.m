@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcVendorPack.m
+//  ATProtoXrpcVendorPack.m
 //  ATProtoPDS
 //
 //  Domain module for tools.garazyk.* vendor XRPC endpoints.
@@ -26,13 +26,13 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcVendorPack
+@implementation ATProtoXrpcVendorPack
 
 + (NSString *)routePackIdentifier {
   return @"tools.garazyk";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
@@ -44,14 +44,14 @@
     [dispatcher registerMethod:kGZXrpcNSID_tools_garazyk_sync_getRepoFiltered
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         if (request.method != HttpMethodGET) {
-            [XrpcErrorHelper setMethodNotAllowedError:response
+            [ATProtoXrpcErrorHelper setMethodNotAllowedError:response
                                        allowedMethod:@"GET"
                                              message:@"Expected GET"];
             return;
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *authenticatedDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *authenticatedDid = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!authenticatedDid) {
             return;
         }
@@ -64,14 +64,14 @@
             since = nil;
         }
         if (did.length == 0 || collections.count == 0) {
-            [XrpcErrorHelper setInvalidRequestError:response
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response
                                             message:@"Missing did or collections parameter"];
             return;
         }
 
         NSError *didError = nil;
         if (![ATProtoValidator validateDID:did error:&didError]) {
-            [XrpcErrorHelper setInvalidRequestError:response
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response
                                             message:didError.localizedDescription ?: @"Invalid DID format"];
             return;
         }
@@ -79,14 +79,14 @@
         NSMutableArray<NSString *> *validatedCollections = [NSMutableArray arrayWithCapacity:collections.count];
         for (NSString *collection in collections) {
             if (![collection isKindOfClass:[NSString class]] || collection.length == 0) {
-                [XrpcErrorHelper setInvalidRequestError:response
+                [ATProtoXrpcErrorHelper setInvalidRequestError:response
                                                 message:@"Each collections parameter must be a non-empty NSID"];
                 return;
             }
 
             NSError *collectionError = nil;
             if (![ATProtoValidator validateNSID:collection error:&collectionError]) {
-                [XrpcErrorHelper setInvalidRequestError:response
+                [ATProtoXrpcErrorHelper setInvalidRequestError:response
                                                 message:collectionError.localizedDescription ?: [NSString stringWithFormat:@"Invalid collection NSID: %@", collection]];
                 return;
             }
@@ -115,7 +115,7 @@
     // POST action=prune → triggers stale-entry cleanup
     [dispatcher registerMethod:kGZXrpcNSID_tools_garazyk_admin_getCollectionMembershipStats
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -127,7 +127,7 @@
 
         if ([action isEqualToString:@"stats"]) {
             if (request.method != HttpMethodGET) {
-                [XrpcErrorHelper setMethodNotAllowedError:response
+                [ATProtoXrpcErrorHelper setMethodNotAllowedError:response
                                            allowedMethod:@"GET"
                                                  message:@"Expected GET for stats"];
                 return;
@@ -146,7 +146,7 @@
             [response setJsonBody:@{@"count": @(count)}];
         } else if ([action isEqualToString:@"prune"]) {
             if (request.method != HttpMethodPOST) {
-                [XrpcErrorHelper setMethodNotAllowedError:response
+                [ATProtoXrpcErrorHelper setMethodNotAllowedError:response
                                            allowedMethod:@"POST"
                                                  message:@"Expected POST for prune"];
                 return;
@@ -179,7 +179,7 @@
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         // Require authenticated user
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == 0) {
                 response.statusCode = 401;

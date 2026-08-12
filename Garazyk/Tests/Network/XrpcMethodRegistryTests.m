@@ -22,7 +22,7 @@ static SecKeyRef xrpcCreateFixedP256PrivateKey(NSError **error) {
     return PDSTestCreateFixedP256PrivateKey(error);
 }
 
-static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
+static ATProtoHttpResponse *xrpcDispatchRequest(ATProtoXrpcDispatcher *dispatcher,
                                          NSString *path,
                                          NSDictionary<NSString *, NSString *> *headers) {
     ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
@@ -59,7 +59,7 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
 - (void)testPublicKeyBytesFromMultibaseDecodesBase58 {
     NSError *error = nil;
     NSString *key = @"zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N";
-    NSData *bytes = [XrpcIdentityHelper publicKeyBytesFromMultibase:key error:&error];
+    NSData *bytes = [ATProtoXrpcIdentityHelper publicKeyBytesFromMultibase:key error:&error];
 
     XCTAssertNotNil(bytes, @"Decoded bytes should exist for a valid base58 publicKeyMultibase");
     XCTAssertNil(error, @"No error should be produced for valid input");
@@ -78,8 +78,8 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         app.configuration.requireDPoPNonce = YES;
         PDSController *controller = app.legacyController;
         XCTAssertNotNil(controller);
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         NSError *error = nil;
         NSDictionary *account = [controller createAccountForEmail:@"nonce@example.com"
@@ -109,7 +109,7 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         NSString *dpopURLString = [controller.jwtMinter.issuer stringByAppendingString:@"/xrpc/com.atproto.server.getSession"];
         NSURL *dpopURL = [NSURL URLWithString:dpopURLString];
 
-        DPoPToken *initialProof = [DPoPUtil createDPoPForMethod:@"GET"
+        ATProtoDPoPToken *initialProof = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                                              uri:dpopURLString
                                                           nonce:nil
                                                             key:privateKey
@@ -121,7 +121,7 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertNil(error);
 
         NSString *thumbprint = nil;
-        BOOL initialProofValid = [OAuth2DPoPProof verifyProof:initialProof.jwt
+        BOOL initialProofValid = [ATProtoOAuth2DPoPProof verifyProof:initialProof.jwt
                                                        method:@"GET"
                                                           url:dpopURL
                                                         nonce:nil
@@ -150,7 +150,7 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         // token through its RFC 9449 `ath` claim. The unsigned-key proof above
         // is only used to derive the JWK thumbprint needed to mint the token.
         error = nil;
-        initialProof = [DPoPUtil createDPoPForMethod:@"GET"
+        initialProof = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                                  uri:dpopURLString
                                                nonce:nil
                                          accessToken:encodedAccessToken
@@ -182,7 +182,7 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertEqualObjects([firstResponse headerForKey:@"Pragma"], @"no-cache");
         XCTAssertEqualObjects(firstResponse.jsonBody[@"message"], @"DPoP nonce required");
 
-        DPoPToken *retryProof = [DPoPUtil createDPoPForMethod:@"GET"
+        ATProtoDPoPToken *retryProof = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                                            uri:dpopURLString
                                                         nonce:challengeNonce
                                                   accessToken:encodedAccessToken
@@ -244,7 +244,7 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     }
 }
 
-- (void)testOAuth2DPoPProofVerifyUsesProvidedNonceParameter {
+- (void)testATProtoOAuth2DPoPProofVerifyUsesProvidedNonceParameter {
     NSError *keyError = nil;
     SecKeyRef privateKey = xrpcCreateFixedP256PrivateKey(&keyError);
     if (privateKey == NULL) {
@@ -258,7 +258,7 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertTrue(nonce.length > 0);
 
         NSError *error = nil;
-        DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"GET"
+        ATProtoDPoPToken *proof = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                                       uri:urlString
                                                    nonce:nonce
                                                      key:privateKey
@@ -267,7 +267,7 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         XCTAssertNil(error);
 
         NSString *thumbprint = nil;
-        BOOL valid = [OAuth2DPoPProof verifyProof:proof.jwt
+        BOOL valid = [ATProtoOAuth2DPoPProof verifyProof:proof.jwt
                                            method:@"GET"
                                               url:url
                                             nonce:@"different-nonce"
@@ -278,7 +278,7 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
 
         error = nil;
         thumbprint = nil;
-        valid = [OAuth2DPoPProof verifyProof:proof.jwt
+        valid = [ATProtoOAuth2DPoPProof verifyProof:proof.jwt
                                       method:@"GET"
                                          url:url
                                        nonce:nonce
@@ -300,8 +300,8 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     PDSApplication *app = nil;
     @try {
         app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         NSArray<NSString *> *paths = @[
             @"/xrpc/com.atproto.server.describeServer",
@@ -331,8 +331,8 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     PDSApplication *app = nil;
     @try {
         app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         ATProtoHttpResponse *response = xrpcDispatchRequest(dispatcher,
                                                      @"/xrpc/com.atproto.thisEndpointDoesNotExist",
@@ -354,8 +354,8 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
         XCTAssertNotNil(app.legacyController);
 
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
                                                controller:app.legacyController];
 
         ATProtoHttpResponse *response = xrpcDispatchRequest(dispatcher,

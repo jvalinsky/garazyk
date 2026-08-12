@@ -6,14 +6,14 @@
 #import <arpa/inet.h>
 
 @interface HandleResolverSecurityTests : XCTestCase
-@property (nonatomic, strong) HandleResolver *resolver;
+@property (nonatomic, strong) ATProtoHandleResolver *resolver;
 @end
 
 @implementation HandleResolverSecurityTests
 
 - (void)setUp {
     [super setUp];
-    self.resolver = [[HandleResolver alloc] init];
+    self.resolver = [[ATProtoHandleResolver alloc] init];
 }
 
 - (void)testPrivateIPv4Ranges {

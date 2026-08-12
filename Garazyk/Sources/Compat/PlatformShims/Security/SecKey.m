@@ -283,8 +283,8 @@ void SecKeyRelease(SecKeyRef key) {
 
 #endif // !__APPLE__
 
-// Placeholder for SecKeyWrapper implementation (Stub for now, or use C functions)
-@implementation SecKeyWrapper
+// Placeholder for ATProtoSecKeyWrapper implementation (Stub for now, or use C functions)
+@implementation ATProtoSecKeyWrapper
 
 + (nullable NSData *)publicKeyFromData:(NSData *)keyData error:(NSError **)error {
     // Implement using SecKeyCreateWithData and SecKeyCopyPublicKey

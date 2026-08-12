@@ -56,7 +56,7 @@ OSStatus SecItemAdd(CFDictionaryRef attributes, CFTypeRef *result) {
     }
 
     NSError *error = nil;
-    BOOL success = [[SecItemLinuxStore sharedStore] addItemWithService:service
+    BOOL success = [[ATProtoSecItemLinuxStore sharedStore] addItemWithService:service
                                                                account:account
                                                             attributes:attrs
                                                                  error:&error];
@@ -81,7 +81,7 @@ OSStatus SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result) {
     }
 
     NSError *error = nil;
-    NSDictionary *item = [[SecItemLinuxStore sharedStore] itemWithService:service
+    NSDictionary *item = [[ATProtoSecItemLinuxStore sharedStore] itemWithService:service
                                                                   account:account
                                                                     error:&error];
     if (!item) {
@@ -113,7 +113,7 @@ OSStatus SecItemUpdate(CFDictionaryRef query, CFDictionaryRef attributesToUpdate
     if (!service || !account) return -25300;
 
     NSError *error = nil;
-    BOOL success = [[SecItemLinuxStore sharedStore] updateItemWithService:service
+    BOOL success = [[ATProtoSecItemLinuxStore sharedStore] updateItemWithService:service
                                                                   account:account
                                                         attributesToUpdate:update
                                                                     error:&error];
@@ -129,7 +129,7 @@ OSStatus SecItemDelete(CFDictionaryRef query) {
     if (!service || !account) return -25300;
 
     NSError *error = nil;
-    BOOL success = [[SecItemLinuxStore sharedStore] deleteItemWithService:service
+    BOOL success = [[ATProtoSecItemLinuxStore sharedStore] deleteItemWithService:service
                                                                   account:account
                                                                     error:&error];
     return success ? 0 : -25300;

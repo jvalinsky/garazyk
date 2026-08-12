@@ -22,7 +22,7 @@
                        [self base64UrlEncode:header],
                        [self base64UrlEncode:payload]];
 
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc]
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc]
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
@@ -51,7 +51,7 @@
                        [self base64UrlEncode:header],
                        [self base64UrlEncode:payload]];
 
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc]
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc]
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
@@ -81,7 +81,7 @@
                        [self base64UrlEncode:header],
                        [self base64UrlEncode:payload]];
 
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc]
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc]
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
@@ -113,7 +113,7 @@
                        [self base64UrlEncode:header],
                        [self base64UrlEncode:payload]];
 
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc]
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc]
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
@@ -144,7 +144,7 @@
                        [self base64UrlEncode:header],
                        [self base64UrlEncode:payload]];
 
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc]
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc]
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
@@ -174,7 +174,7 @@
                        [self base64UrlEncode:header],
                        [self base64UrlEncode:payload]];
 
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc]
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc]
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 
@@ -207,7 +207,7 @@
                        [self base64UrlEncode:header],
                        [self base64UrlEncode:payload]];
 
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc]
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc]
         initWithExpectedAudience:@"did:plc:testaud"
                      signingKeyJWK:nil];
 

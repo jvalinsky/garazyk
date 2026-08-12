@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-// Unit tests for ChatService group/conversation lifecycle and e2ee state machine (P2 gap).
+// Unit tests for PDSChatService group/conversation lifecycle and e2ee state machine (P2 gap).
 // Gap: 1 unit test file vs. 3 e2e scenarios — group lifecycle, member management,
 //   and e2ee state are untested at the unit tier.
-// Note: ChatService has no addMember/rotateKey methods. Member management uses
+// Note: PDSChatService has no addMember/rotateKey methods. Member management uses
 //   createConversationWithMembers:mode: (set at creation) and leaveConversation:memberDid:.
 //   E2EE state is toggled via setConversationMode:mode: (@"e2ee" / @"plaintext").
 #import <XCTest/XCTest.h>
@@ -14,7 +14,7 @@
 @interface ChatGroupLifecycleTests : XCTestCase
 @property (nonatomic, strong) NSString *tempDir;
 @property (nonatomic, strong) PDSDatabase *db;
-@property (nonatomic, strong) ChatService *service;
+@property (nonatomic, strong) PDSChatService *service;
 @end
 
 @implementation ChatGroupLifecycleTests
@@ -41,13 +41,13 @@
     [self.db executeUnsafeRawSQL:kPDSIndexConversationMembersActorSQL    error:nil];
     [self.db executeUnsafeRawSQL:kPDSIndexMessagesConvoSQL               error:nil];
     [self.db executeUnsafeRawSQL:kPDSIndexMessagesCreatedSQL             error:nil];
-    // Group tables (used by XrpcChatBskyGroupPack, included for completeness)
+    // Group tables (used by ATProtoXrpcChatBskyGroupPack, included for completeness)
     [self.db executeUnsafeRawSQL:kPDSGroupsTableCreateSQL                error:nil];
     [self.db executeUnsafeRawSQL:kPDSGroupMembersTableCreateSQL          error:nil];
     [self.db executeUnsafeRawSQL:kPDSGroupMessagesTableCreateSQL         error:nil];
     [self.db executeUnsafeRawSQL:kPDSGroupMessageReactionsTableCreateSQL error:nil];
 
-    self.service = [[ChatService alloc] initWithDatabase:self.db];
+    self.service = [[PDSChatService alloc] initWithDatabase:self.db];
 }
 
 - (void)tearDown {
@@ -72,7 +72,7 @@
 
 - (void)testCreateGroupWithSingleMemberIsRejected {
     // A conversation requires at least two distinct participants.
-    // If ChatService does not enforce this yet, this test will fail and document the gap.
+    // If PDSChatService does not enforce this yet, this test will fail and document the gap.
     NSError *error = nil;
     NSDictionary *convo = [self.service
         createConversationWithMembers:@[@"did:plc:alice"]
@@ -104,7 +104,7 @@
 // MARK: - Member management
 
 - (void)testAddMemberToExistingGroup {
-    // ChatService has no addMember method — members are specified at creation time.
+    // PDSChatService has no addMember method — members are specified at creation time.
     // This test verifies that a 3-member conversation is created correctly (equivalent semantics).
     NSError *error = nil;
     NSDictionary *convo = [self.service
@@ -160,7 +160,7 @@
 // MARK: - E2EE state machine
 
 - (void)testGroupKeyRotationIncreasesKeyVersion {
-    // ChatService has no explicit key rotation. E2EE is toggled via setConversationMode:mode:.
+    // PDSChatService has no explicit key rotation. E2EE is toggled via setConversationMode:mode:.
     // This test verifies that a conversation can transition to e2ee mode.
     NSError *error = nil;
     NSDictionary *convo = [self.service
@@ -181,7 +181,7 @@
 
 - (void)testNewMemberReceivesCurrentGroupKey {
     // In e2ee mode, messages must be retrievable by members of the conversation.
-    // (ChatService does not manage per-member key material — this tests delivery, not encryption.)
+    // (PDSChatService does not manage per-member key material — this tests delivery, not encryption.)
     NSError *error = nil;
     NSDictionary *convo = [self.service
         createConversationWithMembers:@[@"did:plc:alice", @"did:plc:bob"]

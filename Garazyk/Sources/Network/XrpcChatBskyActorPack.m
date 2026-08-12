@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcChatBskyActorPack.m
+ @file ATProtoXrpcChatBskyActorPack.m
 
  @abstract XRPC route pack for chat.bsky.actor and chat.bsky.moderation endpoints.
  */
@@ -19,15 +19,15 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcChatBskyActorPack
+@implementation ATProtoXrpcChatBskyActorPack
 
 + (NSString *)routePackIdentifier {
   return @"chat.bsky.actor";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher {
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:dispatcher.jwtMinter
                                           adminController:nil
                                              configuration:nil
@@ -38,12 +38,12 @@
   [self registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
   id<XrpcRoutePackServices> resolvedServices = services;
   if (!resolvedServices) {
     resolvedServices =
-        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+        [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                   jwtMinter:dispatcher.jwtMinter
                                             adminController:nil
                                                configuration:nil
@@ -55,8 +55,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_actor_deleteAccount
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        if (![context requireAuthentication]) {
@@ -68,8 +68,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_actor_exportAccountData
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        if (![context requireAuthentication]) {
@@ -88,8 +88,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_moderation_getActorMetadata
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        if (![context requireAuthentication]) {
@@ -98,7 +98,7 @@
 
                        NSString *actor = [request queryParamForKey:@"actor"];
                        if (!actor) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"actor is required"];
                          return;
                        }
@@ -115,8 +115,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_moderation_getMessageContext
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        if (![context requireAuthentication]) {
@@ -125,7 +125,7 @@
 
                        NSString *messageId = [request queryParamForKey:@"messageId"];
                        if (!messageId) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"messageId is required"];
                          return;
                        }
@@ -139,8 +139,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_moderation_updateActorAccess
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        if (![context requireAuthentication]) {
@@ -150,7 +150,7 @@
                        NSDictionary *body = request.jsonBody;
                        NSString *actor = [body[@"actor"] isKindOfClass:[NSString class]] ? body[@"actor"] : nil;
                        if (!actor) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"actor is required"];
                          return;
                        }

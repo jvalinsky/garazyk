@@ -4,14 +4,14 @@
 #import "AppView/Services/VideoUriBuilder.h"
 
 @interface AppViewVideoUriBuilderTests : XCTestCase
-@property (nonatomic, strong) AppViewVideoUriBuilder *builder;
+@property (nonatomic, strong) PDSAppViewVideoUriBuilder *builder;
 @end
 
 @implementation AppViewVideoUriBuilderTests
 
 - (void)setUp {
     [super setUp];
-    self.builder = [AppViewVideoUriBuilder builderWithVideoServiceURL:@"http://localhost:2586"];
+    self.builder = [PDSAppViewVideoUriBuilder builderWithVideoServiceURL:@"http://localhost:2586"];
 }
 
 #pragma mark - URL Construction
@@ -93,7 +93,7 @@
 #pragma mark - Builder Factory
 
 - (void)testBuilderWithVideoServiceURL {
-    AppViewVideoUriBuilder *b = [AppViewVideoUriBuilder builderWithVideoServiceURL:@"https://video.example.com"];
+    PDSAppViewVideoUriBuilder *b = [PDSAppViewVideoUriBuilder builderWithVideoServiceURL:@"https://video.example.com"];
     XCTAssertEqualObjects(b.videoServiceURL, @"https://video.example.com");
     XCTAssertNotNil(b.playlistUrlPattern);
     XCTAssertNotNil(b.thumbnailUrlPattern);

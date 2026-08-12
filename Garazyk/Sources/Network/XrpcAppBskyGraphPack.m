@@ -21,24 +21,24 @@
 #import "Services/PDS/PDSRecordService.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAppBskyGraphPack
+@implementation ATProtoXrpcAppBskyGraphPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.graph";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
 
-    GraphService *graphService = [[GraphService alloc] initWithDatabase:services.appViewDatabase];
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:services.appViewDatabase];
+    PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:services.appViewDatabase];
+    PDSActorService *actorService = [[PDSActorService alloc] initWithDatabase:services.appViewDatabase];
 
     // app.bsky.graph.getMutes - Get muted actors
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getMutes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSInteger limit = 50;
@@ -46,7 +46,7 @@
         NSError *error = nil;
         NSDictionary *result = [graphService getMutesForActor:actorDID limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load mutes"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load mutes"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -56,9 +56,9 @@
     // app.bsky.graph.getBlocks - Get blocked actors
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getBlocks handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSInteger limit = 50;
@@ -66,7 +66,7 @@
         NSError *error = nil;
         NSDictionary *result = [graphService getBlocksForActor:actorDID limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -76,9 +76,9 @@
     // app.bsky.graph.getListMutes - Get muted lists
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getListMutes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSInteger limit = 50;
@@ -91,7 +91,7 @@
         NSError *prefsError = nil;
         NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
         if (prefsError) {
-            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
             return;
         }
         NSMutableArray<NSDictionary *> *prefsList = XrpcMutablePreferenceEntries(currentPrefs);
@@ -125,9 +125,9 @@
     // app.bsky.graph.getListBlocks - Get blocked lists
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getListBlocks handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSInteger limit = 50;
@@ -152,7 +152,7 @@
 
         NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -194,7 +194,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getFollowers handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -205,7 +205,7 @@
         NSError *error = nil;
         NSDictionary *result = [graphService getFollowersForActor:actor limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -216,7 +216,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getFollows handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -227,7 +227,7 @@
         NSError *error = nil;
         NSDictionary *result = [graphService getFollowsForActor:actor limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -238,26 +238,26 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_muteActor handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) return;
         NSDictionary *body = request.jsonBody;
         BOOL typeMismatch = NO;
         NSString *targetDID = AuthTypedValue(body, @"actor", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
             return;
         }
         if (!targetDID) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor in body"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor in body"];
             return;
         }
         NSError *error = nil;
         BOOL success = [graphService muteActor:targetDID forActor:actorDID error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -268,26 +268,26 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_unmuteActor handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) return;
         NSDictionary *body = request.jsonBody;
         BOOL typeMismatch = NO;
         NSString *targetDID = AuthTypedValue(body, @"actor", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
             return;
         }
         if (!targetDID) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor in body"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor in body"];
             return;
         }
         NSError *error = nil;
         BOOL success = [graphService unmuteActor:targetDID forActor:actorDID error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -305,12 +305,12 @@
             others = @[othersParam];
         }
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *viewerDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *viewerDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         NSMutableArray *relationships = [NSMutableArray array];
         for (NSString *otherDID in others) {
             NSError *error = nil;
@@ -328,7 +328,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getLists handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -365,12 +365,12 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getList handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *list = [request queryParamForKey:@"list"];
         if (!list) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing list parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing list parameter"];
             return;
         }
         NSArray *components = [list componentsSeparatedByString:@"/"];
         if (components.count < 5) {
-            [XrpcErrorHelper setValidationError:response message:@"Invalid list URI"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid list URI"];
             return;
         }
         NSString *did = components[2];
@@ -413,7 +413,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getKnownFollowers handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
         NSDictionary *subject = [actorService getProfileForActor:actor error:nil] ?: @{@"did": actor};
@@ -430,22 +430,22 @@
     // app.bsky.graph.muteActorList - Mute a list
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_muteActorList handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSDictionary *body = request.jsonBody;
         NSString *listURI = [body[@"list"] isKindOfClass:[NSString class]] ? body[@"list"] : nil;
         NSString *did = nil, *collection = nil, *rkey = nil;
         if (listURI.length == 0 || !XrpcParseAtURI(listURI, &did, &collection, &rkey) || ![collection isEqualToString:@"app.bsky.graph.list"]) {
-            [XrpcErrorHelper setValidationError:response message:@"Invalid list URI"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid list URI"];
             return;
         }
         NSError *prefsError = nil;
         NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
         if (prefsError) {
-            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
             return;
         }
         NSMutableArray<NSDictionary *> *prefsList = XrpcMutablePreferenceEntries(currentPrefs);
@@ -458,7 +458,7 @@
         muteState[@"mutedLists"] = mutedLists;
         NSError *saveError = nil;
         if (!XrpcPersistGraphMuteState(actorService, actorDID, prefsList, muteState, existingIndex, &saveError)) {
-            [XrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist list mute"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist list mute"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -468,22 +468,22 @@
     // app.bsky.graph.unmuteActorList - Unmute a list
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_unmuteActorList handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSDictionary *body = request.jsonBody;
         NSString *listURI = [body[@"list"] isKindOfClass:[NSString class]] ? body[@"list"] : nil;
         NSString *did = nil, *collection = nil, *rkey = nil;
         if (listURI.length == 0 || !XrpcParseAtURI(listURI, &did, &collection, &rkey) || ![collection isEqualToString:@"app.bsky.graph.list"]) {
-            [XrpcErrorHelper setValidationError:response message:@"Invalid list URI"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid list URI"];
             return;
         }
         NSError *prefsError = nil;
         NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
         if (prefsError) {
-            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
             return;
         }
         NSMutableArray<NSDictionary *> *prefsList = XrpcMutablePreferenceEntries(currentPrefs);
@@ -494,7 +494,7 @@
         muteState[@"mutedLists"] = mutedLists;
         NSError *saveError = nil;
         if (!XrpcPersistGraphMuteState(actorService, actorDID, prefsList, muteState, existingIndex, &saveError)) {
-            [XrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist list mute"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist list mute"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -504,22 +504,22 @@
     // app.bsky.graph.muteThread - Mute a thread
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_muteThread handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSDictionary *body = request.jsonBody;
         NSString *rootURI = [body[@"root"] isKindOfClass:[NSString class]] ? body[@"root"] : nil;
         NSString *did = nil, *collection = nil, *rkey = nil;
         if (rootURI.length == 0 || !XrpcParseAtURI(rootURI, &did, &collection, &rkey)) {
-            [XrpcErrorHelper setValidationError:response message:@"Invalid root URI"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid root URI"];
             return;
         }
         NSError *prefsError = nil;
         NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
         if (prefsError) {
-            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
             return;
         }
         NSMutableArray<NSDictionary *> *prefsList = XrpcMutablePreferenceEntries(currentPrefs);
@@ -532,7 +532,7 @@
         muteState[@"mutedThreads"] = mutedThreads;
         NSError *saveError = nil;
         if (!XrpcPersistGraphMuteState(actorService, actorDID, prefsList, muteState, existingIndex, &saveError)) {
-            [XrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist thread mute"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist thread mute"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -542,22 +542,22 @@
     // app.bsky.graph.unmuteThread - Unmute a thread
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_unmuteThread handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSDictionary *body = request.jsonBody;
         NSString *rootURI = [body[@"root"] isKindOfClass:[NSString class]] ? body[@"root"] : nil;
         NSString *did = nil, *collection = nil, *rkey = nil;
         if (rootURI.length == 0 || !XrpcParseAtURI(rootURI, &did, &collection, &rkey)) {
-            [XrpcErrorHelper setValidationError:response message:@"Invalid root URI"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid root URI"];
             return;
         }
         NSError *prefsError = nil;
         NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
         if (prefsError) {
-            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
             return;
         }
         NSMutableArray<NSDictionary *> *prefsList = XrpcMutablePreferenceEntries(currentPrefs);
@@ -568,7 +568,7 @@
         muteState[@"mutedThreads"] = mutedThreads;
         NSError *saveError = nil;
         if (!XrpcPersistGraphMuteState(actorService, actorDID, prefsList, muteState, existingIndex, &saveError)) {
-            [XrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist thread mute"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist thread mute"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -587,7 +587,7 @@
         NSError *error = nil;
         NSDictionary *result = [graphService searchStarterPacks:q limit:limit cursor:nil error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to search starter packs"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to search starter packs"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -598,14 +598,14 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getStarterPack handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
             return;
         }
 
         NSError *error = nil;
         NSDictionary *starterPack = [graphService getStarterPack:uri error:&error];
         if (!starterPack) {
-            [XrpcErrorHelper setNotFoundError:response message:@"Starter pack not found"];
+            [ATProtoXrpcErrorHelper setNotFoundError:response message:@"Starter pack not found"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -616,7 +616,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getActorStarterPacks handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
 
@@ -638,7 +638,7 @@
         NSError *error = nil;
         NSDictionary *result = [graphService getStarterPacksForActor:actorDID limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load actor starter packs"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load actor starter packs"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -666,15 +666,15 @@
     // app.bsky.graph.getStarterPacksWithMembership - List starter packs and viewer membership
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getStarterPacksWithMembership handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *viewerDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *viewerDid = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!viewerDid) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
 
         NSString *actor = [request queryParamForKey:@"actor"];
         if (actor.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
 
@@ -690,7 +690,7 @@
                                                       params:@[@"app.bsky.graph.starterpack", @(limit)]
                                                        error:&dbError];
         if (!rows) {
-            [XrpcErrorHelper setInternalServerError:response message:dbError.localizedDescription ?: @"Failed to load starter packs"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:dbError.localizedDescription ?: @"Failed to load starter packs"];
             return;
         }
 
@@ -725,7 +725,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_getListsWithMembership handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -736,7 +736,7 @@
         if (![actor hasPrefix:@"did:"]) {
             NSDictionary *actorProfile = [actorService getProfileForActor:actor error:nil];
             if (!actorProfile || !actorProfile[@"did"]) {
-                [XrpcErrorHelper setValidationError:response message:@"Actor not found"];
+                [ATProtoXrpcErrorHelper setValidationError:response message:@"Actor not found"];
                 return;
             }
             targetDID = actorProfile[@"did"];
@@ -755,7 +755,7 @@
         NSError *error = nil;
         NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load lists"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load lists"];
             return;
         }
 
@@ -794,9 +794,9 @@
     // app.bsky.graph.verification.createVerification
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_verification_createVerification handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
 
@@ -804,11 +804,11 @@
         BOOL typeMismatch = NO;
         NSString *subject = AuthTypedValue(body, @"subject", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
             return;
         }
         if (!subject) {
-            [XrpcErrorHelper setValidationError:response message:@"subject is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"subject is required"];
             return;
         }
 
@@ -826,7 +826,7 @@
                                value:record
                               forDid:actorDID
                                error:&error]) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -837,9 +837,9 @@
     // app.bsky.graph.verification.deleteVerification
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_graph_verification_deleteVerification handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
 
@@ -847,11 +847,11 @@
         BOOL typeMismatch = NO;
         NSString *subject = AuthTypedValue(body, @"subject", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
             return;
         }
         if (!subject) {
-            [XrpcErrorHelper setValidationError:response message:@"subject is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"subject is required"];
             return;
         }
 
@@ -863,7 +863,7 @@
                                                cursor:nil
                                                 error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
@@ -888,7 +888,7 @@
                                    rkey:foundRKey
                                  forDid:actorDID
                                   error:&error]) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 

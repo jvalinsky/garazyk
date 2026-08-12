@@ -8,7 +8,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@implementation GermAdminUIPack
+@implementation GZGermAdminUIPack
 
 + (NSString *)packIdentifier { return @"germ"; }
 + (NSString *)displayName { return @"Germ"; }

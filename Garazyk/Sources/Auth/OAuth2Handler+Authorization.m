@@ -13,7 +13,7 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
-@implementation OAuth2Handler (Authorization)
+@implementation ATProtoOAuth2Handler (Authorization)
 
 - (void)handleAuthorizeRequest:(ATProtoHttpRequest *)request
                       response:(ATProtoHttpResponse *)response {
@@ -140,8 +140,8 @@
     return;
   }
 
-  OAuth2AuthorizationRequest *authRequest =
-      [[OAuth2AuthorizationRequest alloc] init];
+  ATProtoOAuth2AuthorizationRequest *authRequest =
+      [[ATProtoOAuth2AuthorizationRequest alloc] init];
   authRequest.clientID = clientID;
   authRequest.redirectURI = params[@"redirect_uri"];
   authRequest.responseType = params[@"response_type"];
@@ -417,8 +417,8 @@
   }
 
   // Proceed with authorization
-  OAuth2AuthorizationRequest *authRequest =
-      [[OAuth2AuthorizationRequest alloc] init];
+  ATProtoOAuth2AuthorizationRequest *authRequest =
+      [[ATProtoOAuth2AuthorizationRequest alloc] init];
   authRequest.clientID = clientID;
   authRequest.state = state;
   authRequest.scope = scope;

@@ -5,7 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSServiceDatabases;
-@class BlobStorage;
+@class PDSBlobStorage;
 
 /**
  * @class PDSBlobAuditOperation
@@ -58,7 +58,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)initWithJobId:(NSString *)jobId
                     auditType:(NSString *)auditType
-                  blobStorage:(BlobStorage *)blobStorage
+                  blobStorage:(PDSBlobStorage *)blobStorage
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                        dryRun:(BOOL)dryRun;
 

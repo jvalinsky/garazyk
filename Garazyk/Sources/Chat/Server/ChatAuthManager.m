@@ -11,18 +11,18 @@
 #import "Compat/PDSTypes.h"
 #import <CommonCrypto/CommonDigest.h>
 
-@interface ChatAuthManager ()
+@interface PDSChatAuthManager ()
 @property (nonatomic, strong) ATProtoDIDResolver *didResolver;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t verificationQueue;
 @end
 
-@implementation ChatAuthManager
+@implementation PDSChatAuthManager
 
 + (instancetype)sharedManager {
-    static ChatAuthManager *shared = nil;
+    static PDSChatAuthManager *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[ChatAuthManager alloc] init];
+        shared = [[PDSChatAuthManager alloc] init];
         shared->_didResolver = [ATProtoDIDResolver sharedResolver];
         shared->_verificationQueue = dispatch_queue_create("com.atproto.chat.auth.verification", DISPATCH_QUEUE_SERIAL);
     });
@@ -325,7 +325,7 @@
     return nil;
 }
 
-#pragma mark - PDS Session Verification (Legacy Fallback)
+#pragma mark - PDS PDSSession Verification (Legacy Fallback)
 
 /*! Validate a token by calling the PDS's com.atproto.server.getSession.
     Returns the DID on success, nil on failure. */

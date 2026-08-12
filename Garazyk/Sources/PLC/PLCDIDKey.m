@@ -33,12 +33,12 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
     return 0;
 }
 
-@interface PLCDIDKey ()
+@interface ATProtoPLCDIDKey ()
 @property (nonatomic, assign, readwrite) PLCDIDKeyType type;
 @property (nonatomic, copy, readwrite) NSData *publicKeyBytes;
 @end
 
-@implementation PLCDIDKey
+@implementation ATProtoPLCDIDKey
 
 + (nullable NSData *)compressP256PublicKey:(NSData *)uncompressedKey {
     if (uncompressedKey.length != 65 || ((const uint8_t *)uncompressedKey.bytes)[0] != 0x04) {
@@ -176,7 +176,7 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
         return nil;
     }
 
-    PLCDIDKey *key = [[PLCDIDKey alloc] init];
+    ATProtoPLCDIDKey *key = [[ATProtoPLCDIDKey alloc] init];
     key.type = type;
     key.publicKeyBytes = publicKeyBytes;
     return key;

@@ -9,7 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Client identifiers, metadata, and assertions remain untrusted until these methods
  * return successfully.
  */
-@interface OAuth2Handler (ClientValidation)
+@interface ATProtoOAuth2Handler (ClientValidation)
 /** @abstract Resolves and validates a client identifier asynchronously. */
 - (void)validateClient:(NSString *)clientID
             completion:(void (^)(NSDictionary *_Nullable client,

@@ -10,7 +10,7 @@
 
 static NSString *const kChatServiceBase = @"http://127.0.0.1:2585";
 
-@implementation ChatAdminUIPack
+@implementation GZChatAdminUIPack
 
 + (NSString *)packIdentifier { return @"chat"; }
 + (NSString *)displayName { return @"Chat"; }

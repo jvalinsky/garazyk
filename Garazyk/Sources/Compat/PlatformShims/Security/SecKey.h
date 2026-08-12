@@ -55,14 +55,14 @@ void SecKeyRelease(SecKeyRef _Nullable key);
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class SecKeyWrapper
+ @class ATProtoSecKeyWrapper
  
  @abstract Cross-platform public key operations.
  
  @discussion Provides unified interface for public key operations
  across macOS (Security framework) and Linux (OpenSSL).
  */
-@interface SecKeyWrapper : NSObject
+@interface ATProtoSecKeyWrapper : NSObject
 
 /*! Extract public key from key data. */
 + (nullable NSData *)publicKeyFromData:(NSData *)keyData error:(NSError **)error;

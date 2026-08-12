@@ -55,7 +55,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Executes a sequence of middleware in insertion order.
  */
-@interface XrpcMiddlewareChain : NSObject <XrpcMiddleware>
+@interface ATProtoXrpcMiddlewareChain : NSObject <XrpcMiddleware>
 
 /** Adds middleware to the end of the chain. */
 - (void)addMiddleware:(id<XrpcMiddleware>)middleware;
@@ -73,7 +73,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Authenticates user and admin requests before endpoint dispatch.
  */
-@interface AuthMiddleware : NSObject <XrpcMiddleware>
+@interface ATProtoAuthMiddleware : NSObject <XrpcMiddleware>
 
 /** Human-readable middleware name. */
 @property (nonatomic, copy, readonly) NSString *middlewareName;
@@ -117,7 +117,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Applies request rate limits per authenticated user or source IP.
  */
-@interface RateLimitMiddleware : NSObject <XrpcMiddleware>
+@interface ATProtoRateLimitMiddleware : NSObject <XrpcMiddleware>
 
 /** Human-readable middleware name. */
 @property (nonatomic, copy, readonly) NSString *middlewareName;
@@ -149,7 +149,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Validates that the authenticated actor owns a requested repository or record.
  */
-@interface ResourceOwnershipMiddleware : NSObject <XrpcMiddleware>
+@interface ATProtoResourceOwnershipMiddleware : NSObject <XrpcMiddleware>
 
 /** Human-readable middleware name. */
 @property (nonatomic, copy, readonly) NSString *middlewareName;
@@ -206,7 +206,7 @@ typedef NS_ENUM(NSInteger, XrpcMiddlewareError) {
 /**
  * @abstract Builds common XRPC middleware chains for endpoint registration.
  */
-@interface XrpcMiddlewarePresets : NSObject
+@interface ATProtoXrpcMiddlewarePresets : NSObject
 
 /**
  * Protected endpoint: user authentication with optional rate limiting.

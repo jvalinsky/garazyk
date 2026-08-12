@@ -20,7 +20,7 @@
   return @"app.bsky.video";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
   id<VideoJobStore> jobStore = services.videoJobStore;
   id<VideoAuthProvider> authProvider = services.videoAuthProvider;
@@ -30,14 +30,14 @@
                       handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *jobId = [request queryParamForKey:@"jobId"];
     if (!jobId) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing jobId parameter"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing jobId parameter"];
       return;
     }
 
     NSError *error = nil;
     NSDictionary *job = [jobStore getVideoJobById:jobId error:&error];
     if (!job) {
-      [XrpcErrorHelper setNotFoundError:response message:@"Job not found"];
+      [ATProtoXrpcErrorHelper setNotFoundError:response message:@"Job not found"];
       return;
     }
 
@@ -60,12 +60,12 @@
     }
 
     if (request.body.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing request body"];
       return;
     }
 
     if (request.body.length > 100 * 1024 * 1024) {
-      [XrpcErrorHelper setValidationError:response message:@"File exceeds 100MB limit"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"File exceeds 100MB limit"];
       return;
     }
 
@@ -76,12 +76,12 @@
 
     // Content type sniffing: verify the blob is actually video data
     if (![self validateVideoContentType:request.body declaredMimeType:mimeType]) {
-      [XrpcErrorHelper setValidationError:response message:@"Invalid video content: file does not appear to be a valid video"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid video content: file does not appear to be a valid video"];
       return;
     }
 
     if (!blobProvider) {
-      [XrpcErrorHelper setInternalServerError:response message:@"Blob provider not configured"];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:@"Blob provider not configured"];
       return;
     }
 
@@ -95,7 +95,7 @@
     BOOL stored = [blobProvider storeBlobData:request.body forCID:cid error:&error];
     if (!stored) {
       GZ_LOG_ERROR(@"Failed to store video blob: %@", error);
-      [XrpcErrorHelper setInternalServerError:response message:@"Failed to store video"];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:@"Failed to store video"];
       return;
     }
 
@@ -123,7 +123,7 @@
                                               error:&error];
     if (!created) {
       GZ_LOG_ERROR(@"Failed to create video job: %@", error);
-      [XrpcErrorHelper setInternalServerError:response message:@"Failed to create job"];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:@"Failed to create job"];
       return;
     }
 

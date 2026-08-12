@@ -31,19 +31,19 @@ static inline int set_reuseaddr(int fd) {
     return setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 }
 
-@interface WebSocketServer () <WebSocketConnectionDelegate>
+@interface ATProtoWebSocketServer () <WebSocketConnectionDelegate>
 @property(nonatomic, readwrite) uint16_t port;
 @property(nonatomic, readwrite) WebSocketServerState state;
 @property(nonatomic, assign) int serverSocket;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_source_t acceptSource;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t listenerQueue;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionsQueue;
-@property(nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
+@property(nonatomic, strong) NSMutableSet<ATProtoWebSocketConnection *> *mutableConnections;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_semaphore_t stopSemaphore;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_group_t taskGroup;
 @end
 
-@implementation WebSocketServer
+@implementation ATProtoWebSocketServer
 
 - (instancetype)initWithHost:(NSString *)host port:(uint16_t)port {
     self = [super init];
@@ -63,8 +63,8 @@ static inline int set_reuseaddr(int fd) {
     return self;
 }
 
-- (NSSet<WebSocketConnection *> *)connections {
-    __block NSSet<WebSocketConnection *> *snapshot;
+- (NSSet<ATProtoWebSocketConnection *> *)connections {
+    __block NSSet<ATProtoWebSocketConnection *> *snapshot;
     dispatch_sync(self.connectionsQueue, ^{
         snapshot = [self.mutableConnections copy];
     });
@@ -157,13 +157,13 @@ static inline int set_reuseaddr(int fd) {
 
     self.state = WebSocketServerStateStopping;
 
-    __block NSSet<WebSocketConnection *> *connectionsSnapshot = nil;
+    __block NSSet<ATProtoWebSocketConnection *> *connectionsSnapshot = nil;
     dispatch_barrier_sync(self.connectionsQueue, ^{
         connectionsSnapshot = [self.mutableConnections copy];
         [self.mutableConnections removeAllObjects];
     });
 
-    for (WebSocketConnection *connection in connectionsSnapshot) {
+    for (ATProtoWebSocketConnection *connection in connectionsSnapshot) {
         [connection close];
     }
 
@@ -176,29 +176,29 @@ static inline int set_reuseaddr(int fd) {
     self.state = WebSocketServerStateIdle;
 }
 
-- (void)addConnection:(WebSocketConnection *)connection {
+- (void)addConnection:(ATProtoWebSocketConnection *)connection {
     connection.delegate = self;
     dispatch_barrier_async(self.connectionsQueue, ^{
         [self.mutableConnections addObject:connection];
     });
 }
 
-- (void)removeConnection:(WebSocketConnection *)connection {
+- (void)removeConnection:(ATProtoWebSocketConnection *)connection {
     dispatch_barrier_async(self.connectionsQueue, ^{
         [self.mutableConnections removeObject:connection];
     });
 }
 
 - (void)broadcastMessage:(NSData *)message toConnectionsMatching:(NSPredicate *)predicate {
-    __block NSSet<WebSocketConnection *> *snapshot = nil;
+    __block NSSet<ATProtoWebSocketConnection *> *snapshot = nil;
     dispatch_sync(self.connectionsQueue, ^{
         snapshot = [self.mutableConnections copy];
     });
 
-    NSSet<WebSocketConnection *> *targets =
+    NSSet<ATProtoWebSocketConnection *> *targets =
         predicate ? [snapshot filteredSetUsingPredicate:predicate] : snapshot;
 
-    for (WebSocketConnection *connection in targets) {
+    for (ATProtoWebSocketConnection *connection in targets) {
         [connection sendMessage:message];
     }
 }
@@ -215,7 +215,7 @@ static inline int set_reuseaddr(int fd) {
     }
 }
 
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
            didCloseWithCode:(NSInteger)code
                      reason:(NSString *)reason {
     (void)code;
@@ -229,7 +229,7 @@ static inline int set_reuseaddr(int fd) {
     }
 }
 
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
            didFailWithError:(NSError *)error {
     [self removeConnection:connection];
     id<WebSocketServerDelegate> delegate = self.delegate;
@@ -246,18 +246,18 @@ static inline int set_reuseaddr(int fd) {
 
 #import <Network/Network.h>
 
-@interface WebSocketServer () <WebSocketConnectionDelegate>
+@interface ATProtoWebSocketServer () <WebSocketConnectionDelegate>
 @property(nonatomic, readwrite) uint16_t port;
 @property(nonatomic, readwrite) WebSocketServerState state;
 @property(nonatomic, strong) nw_listener_t listener;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t listenerQueue;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionsQueue;
-@property(nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
+@property(nonatomic, strong) NSMutableSet<ATProtoWebSocketConnection *> *mutableConnections;
 @property(nonatomic, PDS_GCD_STRONG) dispatch_semaphore_t stopSemaphore;
 @property(nonatomic, PDS_GCD_STRONG) dispatch_group_t taskGroup;
 @end
 
-@implementation WebSocketServer
+@implementation ATProtoWebSocketServer
 
 - (instancetype)initWithHost:(NSString *)host port:(uint16_t)port {
     self = [super init];
@@ -274,8 +274,8 @@ static inline int set_reuseaddr(int fd) {
     return self;
 }
 
-- (NSSet<WebSocketConnection *> *)connections {
-    __block NSSet<WebSocketConnection *> *snapshot;
+- (NSSet<ATProtoWebSocketConnection *> *)connections {
+    __block NSSet<ATProtoWebSocketConnection *> *snapshot;
     dispatch_sync(self.connectionsQueue, ^{
         snapshot = [self.mutableConnections copy];
     });
@@ -350,7 +350,7 @@ static inline int set_reuseaddr(int fd) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
         ATProtoNetworkConnectionMac *adapter = [[ATProtoNetworkConnectionMac alloc] initWithConnection:connection];
-        WebSocketConnection *webSocketConnection = [[WebSocketConnection alloc] initWithConnection:adapter];
+        ATProtoWebSocketConnection *webSocketConnection = [[ATProtoWebSocketConnection alloc] initWithConnection:adapter];
         [strongSelf addConnection:webSocketConnection];
         webSocketConnection.delegate = strongSelf;
         if ([strongSelf.delegate respondsToSelector:@selector(webSocketServer:didAcceptConnection:)]) {
@@ -393,13 +393,13 @@ static inline int set_reuseaddr(int fd) {
 
     self.state = WebSocketServerStateStopping;
 
-    __block NSSet<WebSocketConnection *> *connectionsSnapshot = nil;
+    __block NSSet<ATProtoWebSocketConnection *> *connectionsSnapshot = nil;
     dispatch_barrier_sync(self.connectionsQueue, ^{
         connectionsSnapshot = [self.mutableConnections copy];
         [self.mutableConnections removeAllObjects];
     });
 
-    for (WebSocketConnection *connection in connectionsSnapshot) {
+    for (ATProtoWebSocketConnection *connection in connectionsSnapshot) {
         [connection close];
     }
 
@@ -414,29 +414,29 @@ static inline int set_reuseaddr(int fd) {
     self.state = WebSocketServerStateIdle;
 }
 
-- (void)addConnection:(WebSocketConnection *)connection {
+- (void)addConnection:(ATProtoWebSocketConnection *)connection {
     connection.delegate = self;
     dispatch_barrier_async(self.connectionsQueue, ^{
         [self.mutableConnections addObject:connection];
     });
 }
 
-- (void)removeConnection:(WebSocketConnection *)connection {
+- (void)removeConnection:(ATProtoWebSocketConnection *)connection {
     dispatch_barrier_async(self.connectionsQueue, ^{
         [self.mutableConnections removeObject:connection];
     });
 }
 
 - (void)broadcastMessage:(NSData *)message toConnectionsMatching:(NSPredicate *)predicate {
-    __block NSSet<WebSocketConnection *> *snapshot = nil;
+    __block NSSet<ATProtoWebSocketConnection *> *snapshot = nil;
     dispatch_sync(self.connectionsQueue, ^{
         snapshot = [self.mutableConnections copy];
     });
 
-    NSSet<WebSocketConnection *> *targets =
+    NSSet<ATProtoWebSocketConnection *> *targets =
         predicate ? [snapshot filteredSetUsingPredicate:predicate] : snapshot;
 
-    for (WebSocketConnection *connection in targets) {
+    for (ATProtoWebSocketConnection *connection in targets) {
         [connection sendMessage:message];
     }
 }
@@ -453,7 +453,7 @@ static inline int set_reuseaddr(int fd) {
     }
 }
 
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
            didCloseWithCode:(NSInteger)code
                      reason:(NSString *)reason {
     (void)code;
@@ -467,7 +467,7 @@ static inline int set_reuseaddr(int fd) {
     }
 }
 
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
            didFailWithError:(NSError *)error {
     [self removeConnection:connection];
     id<WebSocketServerDelegate> delegate = self.delegate;

@@ -84,10 +84,10 @@ static NSURL *didWebDocumentURL(NSString *did) {
     return components.URL;
 }
 
-@implementation RelayXrpcRoutePack
+@implementation ATProtoRelayXrpcRoutePack
 {
-    RelayRepoStateManager *_repoStateManager;
-    SubscribeReposHandler *_subscribeReposHandler;
+    ATProtoRelayRepoStateManager *_repoStateManager;
+    ATProtoSubscribeReposHandler *_subscribeReposHandler;
 }
 
 - (instancetype)init {
@@ -95,17 +95,17 @@ static NSURL *didWebDocumentURL(NSString *did) {
     return nil;
 }
 
-- (instancetype)initWithRepoStateManager:(RelayRepoStateManager *)repoStateManager
-                  subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
+- (instancetype)initWithRepoStateManager:(ATProtoRelayRepoStateManager *)repoStateManager
+                  subscribeReposHandler:(nullable ATProtoSubscribeReposHandler *)subscribeReposHandler
 {
     return [self initWithRepoStateManager:repoStateManager
                      subscribeReposHandler:subscribeReposHandler
                                  plcResolver:nil];
 }
 
-- (instancetype)initWithRepoStateManager:(RelayRepoStateManager *)repoStateManager
-                  subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
-                              plcResolver:(nullable DIDPLCResolver *)plcResolver
+- (instancetype)initWithRepoStateManager:(ATProtoRelayRepoStateManager *)repoStateManager
+                  subscribeReposHandler:(nullable ATProtoSubscribeReposHandler *)subscribeReposHandler
+                              plcResolver:(nullable ATProtoDIDPLCResolver *)plcResolver
 {
     self = [super init];
     if (self)
@@ -1017,7 +1017,7 @@ static NSURL *didWebDocumentURL(NSString *did) {
 
     // Extract PDS endpoint from DID document
     NSError *endpointError = nil;
-    NSString *pdsEndpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:didDocument error:&endpointError];
+    NSString *pdsEndpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:didDocument error:&endpointError];
 
     if (!pdsEndpoint || pdsEndpoint.length == 0)
     {

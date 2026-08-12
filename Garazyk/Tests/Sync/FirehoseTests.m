@@ -9,9 +9,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface Firehose (Testing)
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveMessage:(NSData *)message;
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveText:(NSString *)text;
+@interface ATProtoFirehose (Testing)
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveMessage:(NSData *)message;
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveText:(NSString *)text;
 @end
 
 @interface FirehoseTestDelegate : NSObject <FirehoseSubscriptionDelegate>
@@ -19,30 +19,30 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) XCTestExpectation *identityExpectation;
 @property (nonatomic, strong) XCTestExpectation *errorExpectation;
 @property (nonatomic, strong) XCTestExpectation *rawExpectation;
-@property (nonatomic, strong, nullable) FirehoseRawEvent *rawEvent;
-@property (nonatomic, strong, nullable) FirehoseCommitEvent *commitEvent;
-@property (nonatomic, strong, nullable) FirehoseIdentityEvent *identityEvent;
-@property (nonatomic, strong, nullable) FirehoseErrorEvent *errorEvent;
+@property (nonatomic, strong, nullable) ATProtoFirehoseRawEvent *rawEvent;
+@property (nonatomic, strong, nullable) ATProtoFirehoseCommitEvent *commitEvent;
+@property (nonatomic, strong, nullable) ATProtoFirehoseIdentityEvent *identityEvent;
+@property (nonatomic, strong, nullable) ATProtoFirehoseErrorEvent *errorEvent;
 @end
 
 @implementation FirehoseTestDelegate
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveCommitEvent:(FirehoseCommitEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event {
     self.commitEvent = event;
     [self.commitExpectation fulfill];
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event {
     self.identityEvent = event;
     [self.identityExpectation fulfill];
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event {
     self.errorEvent = event;
     [self.errorExpectation fulfill];
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveRawEvent:(FirehoseRawEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveRawEvent:(ATProtoFirehoseRawEvent *)event {
     self.rawEvent = event;
     [self.rawExpectation fulfill];
 }
@@ -56,14 +56,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 #ifndef GNUSTEP
 - (void)testCommitEventDispatch {
-    Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
+    ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
     delegate.commitExpectation = [self expectationWithDescription:@"commit"];
     [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
-    // Create commit event using EventFormatter for proper XRPC stream frame encoding
-    EventFormatter *formatter = [[EventFormatter alloc] init];
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    // Create commit event using ATProtoEventFormatter for proper XRPC stream frame encoding
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 1;
     event.repo = @"did:plc:alice";
     event.commit = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
@@ -79,7 +79,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertNil(error);
     XCTAssertNotNil(data);
 
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
 
     [self waitForExpectations:@[delegate.commitExpectation] timeout:1.0];
@@ -91,14 +91,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 #ifndef GNUSTEP
 - (void)testIdentityEventDispatch {
-    Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
+    ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
     delegate.identityExpectation = [self expectationWithDescription:@"identity"];
     [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
-    // Create identity event using EventFormatter for proper XRPC stream frame encoding
-    EventFormatter *formatter = [[EventFormatter alloc] init];
-    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    // Create identity event using ATProtoEventFormatter for proper XRPC stream frame encoding
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
     event.seq = 1;
     event.did = @"did:plc:bob";
     event.time = @"2024-01-01T00:00:00Z";
@@ -108,7 +108,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertNil(error);
     XCTAssertNotNil(data);
 
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
 
     [self waitForExpectations:@[delegate.identityExpectation] timeout:1.0];
@@ -118,14 +118,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 #ifndef GNUSTEP
 - (void)testErrorEventDispatch {
-    Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
+    ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
     delegate.errorExpectation = [self expectationWithDescription:@"error"];
     [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
-    // Create error frame using EventFormatter
-    EventFormatter *formatter = [[EventFormatter alloc] init];
-    FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];
+    // Create error frame using ATProtoEventFormatter
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    ATProtoFirehoseErrorEvent *event = [[ATProtoFirehoseErrorEvent alloc] init];
     event.error = @"ServerError";
     event.message = @"oops";
 
@@ -134,7 +134,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertNil(error);
     XCTAssertNotNil(data);
 
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
 
     [self waitForExpectations:@[delegate.errorExpectation] timeout:1.0];
@@ -143,12 +143,12 @@ NS_ASSUME_NONNULL_BEGIN
 #endif
 
 - (void)testUnknownWellFormedEventIsDeliveredByteForByte {
-    Firehose *firehose = [[Firehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
+    ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
     FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
     delegate.rawExpectation = [self expectationWithDescription:@"raw event"];
     [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     NSError *error = nil;
     NSData *frame = [formatter encodeStreamEventWithType:@"#futureEvent"
                                                   payload:@{@"x": @1}
@@ -156,7 +156,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertNotNil(frame);
     XCTAssertNil(error);
 
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:frame];
     [self waitForExpectations:@[delegate.rawExpectation] timeout:1.0];
 

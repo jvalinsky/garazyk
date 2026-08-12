@@ -4,9 +4,9 @@
 #import "PDSActorStoreInternal.h"
 #import "Database/PDSDatabase.h"
 
-@implementation PDSActorStore (Session)
+@implementation PDSActorStore (PDSSession)
 
-#pragma mark - Session Operations (Reader)
+#pragma mark - PDSSession Operations (Reader)
 
 - (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)token error:(NSError **)error {
     if (!token) return nil;
@@ -35,7 +35,7 @@
     return results.count > 0;
 }
 
-#pragma mark - Session Operations (Transactor)
+#pragma mark - PDSSession Operations (Transactor)
 
 - (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid expiresAt:(NSDate *)expiresAt error:(NSError **)error {
     if (!token || !sessionID || !accountDid || !expiresAt) return NO;

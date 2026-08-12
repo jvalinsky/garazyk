@@ -19,11 +19,8 @@
 }
 
 + (NSArray<NSDictionary<NSString *, id> *> *)sidebarSections {
-    return @[
-        @{@"tabIdentifier": @"video-metrics",  @"displayName": @"Overview"},
-        @{@"tabIdentifier": @"video-jobs",     @"displayName": @"Jobs"},
-        @{@"tabIdentifier": @"video-capacity", @"displayName": @"Capacity"},
-    ];
+    // The admin shell expects a single "video" surface tab.
+    return @[@{@"tabIdentifier": @"video", @"displayName": @"Video"}];
 }
 
 + (void)registerRoutesWithHost:(GZAdminUIHost *)host {
@@ -147,8 +144,8 @@
     if (!ctx[@"message"]) ctx[@"message"] = result[@"error"] ?: @"";
 
     if (result[@"job"]) {
-        NSSet<NSString *> *allowlist = [JelczAdminSnapshot jobDetailAllowlist];
-        NSSet<NSString *> *sensitive = [JelczAdminSnapshot sensitiveKeys];
+        NSSet<NSString *> *allowlist = [GZJelczAdminSnapshot jobDetailAllowlist];
+        NSSet<NSString *> *sensitive = [GZJelczAdminSnapshot sensitiveKeys];
 
         NSMutableArray *pairs = [NSMutableArray array];
         NSDictionary *job = result[@"job"];

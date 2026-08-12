@@ -3,9 +3,9 @@
 /*!
  @file PLCReplicaStoreTests.m
 
- @brief Characterization tests for PLCReplicaStore (PLC replica sync-state + counts).
+ @brief Characterization tests for ATProtoPLCReplicaStore (PLC replica sync-state + counts).
 
- @discussion PLCReplicaStore shipped with no tests. These pin down its current observable
+ @discussion ATProtoPLCReplicaStore shipped with no tests. These pin down its current observable
  behaviour through the public interface — the sync-state get/set round-trips (backed by an
  upserting key/value table) and the operation / unique-DID counts over the inherited
  plc_operations table — as the prerequisite for a future QueryRunner migration (the store
@@ -20,7 +20,7 @@
 #import "PLC/PLCOperation.h"
 
 @interface PLCReplicaStoreTests : XCTestCase
-@property (nonatomic, strong) PLCReplicaStore *store;
+@property (nonatomic, strong) ATProtoPLCReplicaStore *store;
 @property (nonatomic, copy) NSString *dbPath;
 @end
 
@@ -30,7 +30,7 @@
     [super setUp];
     self.dbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:
                    [NSString stringWithFormat:@"plc_replica_test_%@.db", [[NSUUID UUID] UUIDString]]];
-    self.store = [[PLCReplicaStore alloc] initWithPath:self.dbPath];
+    self.store = [[ATProtoPLCReplicaStore alloc] initWithPath:self.dbPath];
     NSError *error = nil;
     XCTAssertTrue([self.store openWithError:&error], @"open replica store: %@", error);
 }
@@ -48,7 +48,7 @@
 #pragma mark - Helpers
 
 - (void)appendOpForDID:(NSString *)did sig:(NSString *)sig prev:(nullable NSString *)prev {
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.did = did;
     op.sig = sig;
     op.prev = prev;
@@ -145,7 +145,7 @@
     NSError *error = nil;
     BOOL ok = [self.store updateSyncCursor:1 error:&error];
     XCTAssertFalse(ok);
-    // The guard reports the *persistent* store's domain/code; PLCReplicaStore's own
+    // The guard reports the *persistent* store's domain/code; ATProtoPLCReplicaStore's own
     // PLCReplicaStoreErrorDomain (declared in its header) is unused by the implementation.
     XCTAssertEqualObjects(error.domain, PLCPersistentStoreErrorDomain);
     XCTAssertEqual(error.code, PLCPersistentStoreErrorDatabaseClosed);

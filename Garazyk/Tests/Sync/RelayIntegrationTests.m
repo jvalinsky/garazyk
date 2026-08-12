@@ -16,7 +16,7 @@
 
 - (void)testFullRelayPipeline {
     NSArray *upstreamURLs = @[@"pds1.example.com", @"pds2.example.com"];
-    RelayConfiguration *config = [[RelayConfiguration alloc] initWithUpstreamURLs:upstreamURLs
+    ATProtoRelayConfiguration *config = [[ATProtoRelayConfiguration alloc] initWithUpstreamURLs:upstreamURLs
                                                                       downstreamPort:2584
                                                                        retentionHours:72
                                                                      validationMode:RelayValidationModeLogOnly];
@@ -28,7 +28,7 @@
 
 - (void)testUpstreamManagerWithMultipleURLs {
     NSArray *urls = @[@"pds1.example.com", @"pds2.example.com", @"pds3.example.com"];
-    RelayUpstreamManager *mgr = [[RelayUpstreamManager alloc] initWithInitialURLs:urls];
+    ATProtoRelayUpstreamManager *mgr = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:urls];
     
     XCTAssertEqual([mgr allUpstreams].count, 3);
     
@@ -37,7 +37,7 @@
 }
 
 - (void)testMetricsRecording {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     
     [metrics recordEventReceived];
     [metrics recordEventValidated];
@@ -59,7 +59,7 @@
 }
 
 - (void)testEventFilterCombinations {
-    RelayEventFilter *filter = [[RelayEventFilter alloc] initWithAllowedCollections:@[@"app.bsky.feed.post"]
+    ATProtoRelayEventFilter *filter = [[ATProtoRelayEventFilter alloc] initWithAllowedCollections:@[@"app.bsky.feed.post"]
                                                                    allowedRepos:nil
                                                                    blockedActors:nil];
     
@@ -68,14 +68,14 @@
 }
 
 - (void)testEventBufferWithRetention {
-    RelayEventBuffer *buffer = [[RelayEventBuffer alloc] initWithRetentionHours:24 maxEvents:1000];
+    ATProtoRelayEventBuffer *buffer = [[ATProtoRelayEventBuffer alloc] initWithRetentionHours:24 maxEvents:1000];
     
     XCTAssertEqual(buffer.retentionSeconds, 86400);
     XCTAssertEqual(buffer.maxEvents, 1000);
 }
 
 - (void)testRepoStateManagerWorkflow {
-    RelayRepoStateManager *mgr = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *mgr = [[ATProtoRelayRepoStateManager alloc] init];
     
     [mgr handleCommitForRepo:@"did:plc:abc" root:@"bafyre1" rev:@"1" seq:1];
     [mgr handleCommitForRepo:@"did:plc:abc" root:@"bafyre2" rev:@"2" seq:2];
@@ -90,7 +90,7 @@
 }
 
 - (void)testMetricsPrometheusOutput {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     
     [metrics recordUpstreamConnected];
     [metrics recordEventReceived];

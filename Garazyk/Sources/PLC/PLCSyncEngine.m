@@ -11,11 +11,11 @@ NSString * const PLCSyncEngineErrorDomain = @"com.atproto.pds.plc.syncengine";
 static const NSUInteger kDefaultMaxRetries = 3;
 static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 
-@interface PLCSyncEngine ()
+@interface ATProtoPLCSyncEngine ()
 
-@property (nonatomic, strong) PLCReplicaStore *store;
-@property (nonatomic, strong) PLCSyncClient *client;
-@property (nonatomic, strong) PLCAuditor *auditor;
+@property (nonatomic, strong) ATProtoPLCReplicaStore *store;
+@property (nonatomic, strong) ATProtoPLCSyncClient *client;
+@property (nonatomic, strong) ATProtoPLCAuditor *auditor;
 @property (nonatomic, assign, readwrite) PLCSyncState state;
 @property (nonatomic, assign, readwrite) NSUInteger totalOperationsIngested;
 @property (nonatomic, assign, readwrite) NSUInteger totalOperationsFailed;
@@ -29,7 +29,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 
 @end
 
-@implementation PLCSyncEngine {
+@implementation ATProtoPLCSyncEngine {
     dispatch_queue_t _syncQueue;
 }
 
@@ -38,9 +38,9 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     return nil;
 }
 
-- (instancetype)initWithStore:(PLCReplicaStore *)store
-                       client:(PLCSyncClient *)client
-                      auditor:(PLCAuditor *)auditor {
+- (instancetype)initWithStore:(ATProtoPLCReplicaStore *)store
+                       client:(ATProtoPLCSyncClient *)client
+                      auditor:(ATProtoPLCAuditor *)auditor {
     self = [super init];
     if (self) {
         _store = store;
@@ -187,7 +187,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
             return;
         }
         
-        NSArray<PLCOperation *> *ops = [self.client fetchOperationsAfterCursorSync:self.currentCursor count:self.batchSize error:&error];
+        NSArray<ATProtoPLCOperation *> *ops = [self.client fetchOperationsAfterCursorSync:self.currentCursor count:self.batchSize error:&error];
         
         if (error) {
             [self handleSyncError:error];
@@ -208,7 +208,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         }
         ingestedCount += validCount;
         
-        PLCOperation *lastOp = ops.lastObject;
+        ATProtoPLCOperation *lastOp = ops.lastObject;
         if (lastOp.sequence) {
             self.currentCursor = lastOp.sequence.integerValue;
             [self.store updateSyncCursor:self.currentCursor error:nil];
@@ -268,7 +268,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     }
     
     NSError *error = nil;
-    NSArray<PLCOperation *> *ops = [self.client fetchOperationsAfterCursorSync:self.currentCursor count:self.batchSize error:&error];
+    NSArray<ATProtoPLCOperation *> *ops = [self.client fetchOperationsAfterCursorSync:self.currentCursor count:self.batchSize error:&error];
     
     if (error) {
         [self handleSyncError:error];
@@ -288,7 +288,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     }
     self.totalOperationsIngested += validCount;
     
-    PLCOperation *lastOp = ops.lastObject;
+    ATProtoPLCOperation *lastOp = ops.lastObject;
     if (lastOp.sequence) {
         self.currentCursor = lastOp.sequence.integerValue;
         [self.store updateSyncCursor:self.currentCursor error:nil];
@@ -310,7 +310,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 }
 
 - (BOOL)syncBatchWithError:(NSError **)error {
-    NSArray<PLCOperation *> *ops = [self.client fetchOperationsAfterCursorSync:self.currentCursor count:self.batchSize error:error];
+    NSArray<ATProtoPLCOperation *> *ops = [self.client fetchOperationsAfterCursorSync:self.currentCursor count:self.batchSize error:error];
     
     if (!ops || ops.count == 0) {
         return YES;
@@ -326,7 +326,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         return NO;
     }
     
-    PLCOperation *lastOp = ops.lastObject;
+    ATProtoPLCOperation *lastOp = ops.lastObject;
     if (lastOp.sequence) {
         self.currentCursor = lastOp.sequence.integerValue;
         [self.store updateSyncCursor:self.currentCursor error:nil];
@@ -338,7 +338,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     return YES;
 }
 
-- (NSUInteger)validateAndIngestOperations:(NSArray<PLCOperation *> *)operations {
+- (NSUInteger)validateAndIngestOperations:(NSArray<ATProtoPLCOperation *> *)operations {
     NSUInteger validCount = 0;
     NSUInteger failedCount = 0;
     
@@ -347,7 +347,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     // operations from this batch.  Concurrent validation caused
     // non-genesis operations to fail because their predecessors
     // (in the same batch) had not been stored yet.
-    for (PLCOperation *op in operations) {
+    for (ATProtoPLCOperation *op in operations) {
         if (!op.sequence || op.sequence.integerValue <= self.currentCursor) {
             failedCount++;
             GZ_LOG_CORE_ERROR(@"PLC replica: non-monotonic sequence for DID %@ seq %@", op.did, op.sequence);
@@ -433,9 +433,9 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 }
 
 - (void)updateSyncMetrics {
-    [[PLCMetrics sharedMetrics] setGauge:@"plc_replica_operations_ingested_total" value:self.totalOperationsIngested];
-    [[PLCMetrics sharedMetrics] setGauge:@"plc_replica_operations_failed_total" value:self.totalOperationsFailed];
-    [[PLCMetrics sharedMetrics] setGauge:@"plc_replica_cursor" value:self.currentCursor];
+    [[ATProtoPLCMetrics sharedMetrics] setGauge:@"plc_replica_operations_ingested_total" value:self.totalOperationsIngested];
+    [[ATProtoPLCMetrics sharedMetrics] setGauge:@"plc_replica_operations_failed_total" value:self.totalOperationsFailed];
+    [[ATProtoPLCMetrics sharedMetrics] setGauge:@"plc_replica_cursor" value:self.currentCursor];
 }
 
 @end

@@ -51,7 +51,7 @@ int main(int argc, const char * argv[]) {
             return 2;
         }
 
-        GermRuntime *runtime = [GermRuntime sharedRuntime];
+        GZGermRuntime *runtime = [GZGermRuntime sharedRuntime];
         GZCommandLineOptions *optionsParser = [[GZCommandLineOptions alloc] init];
         NSArray<GZCommandLineOption *> *options = @[
             [GZCommandLineOption optionWithLongName:@"port" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
@@ -109,7 +109,7 @@ int main(int argc, const char * argv[]) {
             adminConfig.adminPassword = adminPassword;
             adminConfig.serviceIdentifier = @"germ";
             GZAdminUIHost *adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig
-                                                                                  packs:@[GermAdminUIPack.class]];
+                                                                                  packs:@[GZGermAdminUIPack.class]];
             NSError *adminErr = nil;
             if (![adminUIHost startWithError:&adminErr]) {
                 GZ_LOG_WARN(@"Germ admin UI failed to start: %@", adminErr.localizedDescription);

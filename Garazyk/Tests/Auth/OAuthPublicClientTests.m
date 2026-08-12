@@ -10,7 +10,7 @@
 #import <XCTest/XCTest.h>
 
 @interface OAuthPublicClientTests : XCTestCase
-@property(nonatomic, strong) OAuth2Handler *handler;
+@property(nonatomic, strong) ATProtoOAuth2Handler *handler;
 @property(nonatomic, strong) PDSDatabase *database;
 @property(nonatomic, strong) ATProtoJWTMinter *minter;
 @end
@@ -49,7 +49,7 @@
               error:&error];
   XCTAssertTrue(success, @"Failed to create part requests table: %@", error);
 
-  self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+  self.handler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.database];
   self.minter = [[ATProtoJWTMinter alloc] init];
 
   // Seed a public client (no secret)

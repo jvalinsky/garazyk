@@ -16,12 +16,12 @@
 }
 
 - (void)testSingletonExists {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     XCTAssertNotNil(metrics);
 }
 
 - (void)testConnectionMetrics {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     
     [metrics recordUpstreamConnected];
     [self waitForMetricsQueue];
@@ -37,7 +37,7 @@
 }
 
 - (void)testEventMetrics {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     
     [metrics recordEventReceived];
     [self waitForMetricsQueue];
@@ -49,7 +49,7 @@
 }
 
 - (void)testValidationMetrics {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     
     [metrics recordMSTValidationSuccess];
     [self waitForMetricsQueue];
@@ -62,7 +62,7 @@
 }
 
 - (void)testContinuityMetrics {
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
 
     [metrics recordContinuityBaseline];
     [metrics recordContinuityVerified];
@@ -85,7 +85,7 @@
 }
 
 - (void)testPrometheusOutput {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     
     [metrics recordUpstreamConnected];
     [metrics recordDownstreamConnected];
@@ -100,7 +100,7 @@
 }
 
 - (void)testEventDroppedMetric {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     
     [metrics recordEventDropped];
     [self waitForMetricsQueue];
@@ -108,7 +108,7 @@
 }
 
 - (void)testInvalidatedEventMetric {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     
     [metrics recordEventInvalidated:@"test"];
     [self waitForMetricsQueue];

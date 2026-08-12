@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file PLCSyncClient.h
+ * @file ATProtoPLCSyncClient.h
  * @abstract HTTP client for syncing PLC operations from upstream directory.
- * @discussion PLCSyncClient fetches PLC operations from an upstream PLC directory server
+ * @discussion ATProtoPLCSyncClient fetches PLC operations from an upstream PLC directory server
  * for use in a read replica. It supports paginated fetching via the /export endpoint,
  * cursor-based sync for resumable operations, and automatic retry with exponential backoff.
  */
@@ -39,7 +39,7 @@ typedef NS_ENUM(NSInteger, PLCSyncClientError) {
  * @param client The calling sync client.
  * @param ops Array of received operations.
  */
-- (void)syncClient:(id)client didReceiveOperations:(NSArray<PLCOperation *> *)ops;
+- (void)syncClient:(id)client didReceiveOperations:(NSArray<ATProtoPLCOperation *> *)ops;
 
 /**
  * @abstract Invoked when a synchronization error occurs.
@@ -52,7 +52,7 @@ typedef NS_ENUM(NSInteger, PLCSyncClientError) {
 /**
  * @abstract Client for fetching PLC directory operations.
  */
-@interface PLCSyncClient : NSObject
+@interface ATProtoPLCSyncClient : NSObject
 
 /** @abstract Delegate for sync notifications. */
 @property (nonatomic, weak, nullable) id<PLCSyncClientDelegate> delegate;
@@ -81,7 +81,7 @@ typedef NS_ENUM(NSInteger, PLCSyncClientError) {
  */
 - (void)fetchOperationsAfterCursor:(NSInteger)cursor
                              count:(NSUInteger)count
-                         completion:(void (^)(NSArray<PLCOperation *> * _Nullable ops, NSInteger nextCursor, NSError * _Nullable error))completion;
+                         completion:(void (^)(NSArray<ATProtoPLCOperation *> * _Nullable ops, NSInteger nextCursor, NSError * _Nullable error))completion;
 
 /**
  * @abstract Fetches operations after a given date.
@@ -91,7 +91,7 @@ typedef NS_ENUM(NSInteger, PLCSyncClientError) {
  */
 - (void)fetchOperationsAfterDate:(nullable NSDate *)afterDate
                            count:(NSUInteger)count
-                       completion:(void (^)(NSArray<PLCOperation *> * _Nullable ops, NSDate * _Nullable nextAfter, NSError * _Nullable error))completion;
+                       completion:(void (^)(NSArray<ATProtoPLCOperation *> * _Nullable ops, NSDate * _Nullable nextAfter, NSError * _Nullable error))completion;
 
 /**
  * @abstract Synchronously fetches operations after a specific cursor.
@@ -100,7 +100,7 @@ typedef NS_ENUM(NSInteger, PLCSyncClientError) {
  * @param error Receives failure details.
  * @return Array of operations, or nil on failure.
  */
-- (nullable NSArray<PLCOperation *> *)fetchOperationsAfterCursorSync:(NSInteger)cursor
+- (nullable NSArray<ATProtoPLCOperation *> *)fetchOperationsAfterCursorSync:(NSInteger)cursor
                                                                 count:(NSUInteger)count
                                                                error:(NSError **)error;
 

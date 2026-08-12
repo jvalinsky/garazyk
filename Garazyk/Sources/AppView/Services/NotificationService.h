@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file NotificationService.h
+ @file PDSNotificationService.h
 
  @abstract Push notification and notification feed service.
 
@@ -17,21 +17,21 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabase;
-@class ActorService;
+@class PDSActorService;
 
 /*!
- @class NotificationService
+ @class PDSNotificationService
  
  @abstract Service for push notifications and notification feeds.
  
  @discussion Handles push notification device registration and provides
  paginated access to notification feeds. Supports marking notifications as read.
  */
-@interface NotificationService : NSObject
+@interface PDSNotificationService : NSObject
 
 /*! Initialize with database connection and actor service for profile hydration. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database
-                    actorService:(nullable ActorService *)actorService;
+                    actorService:(nullable PDSActorService *)actorService;
 
 /*! Convenience initializer (no profile hydration). */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;

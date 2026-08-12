@@ -7,7 +7,7 @@
 
 @interface SessionCharacterizationTests : CharacterizationTestBase
 
-@property (nonatomic, strong) Session *subject;
+@property (nonatomic, strong) PDSSession *subject;
 
 @end
 
@@ -15,7 +15,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.subject = [Session sessionWithDID:@"did:plc:test"
+    self.subject = [PDSSession sessionWithDID:@"did:plc:test"
                                     handle:@"test.example"
                                      scope:@"atproto"];
 }
@@ -26,7 +26,7 @@
 }
 
 /*
- * Characterization Tests for Session
+ * Characterization Tests for PDSSession
  * Generated automatically. Please implement specific scenarios.
  */
 
@@ -37,7 +37,7 @@
                                   scope:(NSString *)scope;
     */
     
-    Session *session = [Session sessionWithDID:@"did:plc:char1"
+    PDSSession *session = [PDSSession sessionWithDID:@"did:plc:char1"
                                         handle:@"alice.example"
                                          scope:@"atproto"];
 
@@ -68,7 +68,7 @@
     minter.privateKey = keyPair.privateKey;
     minter.publicKey = keyPair.publicKey;
 
-    Session *session = [Session sessionWithDID:@"did:plc:char2"
+    PDSSession *session = [PDSSession sessionWithDID:@"did:plc:char2"
                                         handle:@"bob.example"
                                          scope:@"read write"
                                         minter:minter];
@@ -95,7 +95,7 @@
                      scope:(NSString *)scope;
     */
     
-    Session *session = [[Session alloc] initWithDID:@"did:plc:char3"
+    PDSSession *session = [[PDSSession alloc] initWithDID:@"did:plc:char3"
                                             handle:@"carol.example"
                                              scope:@"atproto"];
 
@@ -123,7 +123,7 @@
     minter.privateKey = keyPair.privateKey;
     minter.publicKey = keyPair.publicKey;
 
-    Session *session = [[Session alloc] initWithDID:@"did:plc:char4"
+    PDSSession *session = [[PDSSession alloc] initWithDID:@"did:plc:char4"
                                             handle:@"dave.example"
                                              scope:@"read"
                                             minter:minter];

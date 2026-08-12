@@ -11,7 +11,7 @@
 #import "Admin/PDSAdminController.h"
 #import "Chat/Server/ChatAuthManager.h"
 
-@implementation XrpcHandlerContext
+@implementation ATProtoXrpcHandlerContext
 
 - (instancetype)initWithRequest:(ATProtoHttpRequest *)request
                        response:(ATProtoHttpResponse *)response
@@ -32,7 +32,7 @@
 - (BOOL)requireAuthenticatedDID:(NSString **)did {
   NSString *authHeader = [_request headerForKey:@"Authorization"];
   if (authHeader.length == 0) {
-    [XrpcErrorHelper setAuthenticationError:_response
+    [ATProtoXrpcErrorHelper setAuthenticationError:_response
                                     message:@"Authentication required"];
     return NO;
   }
@@ -41,7 +41,7 @@
   id<PDSAdminController> adminController = _services.adminController;
   if (jwtMinter && adminController) {
     NSString *resolvedDID =
-        [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+        [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                        jwtMinter:jwtMinter
                                  adminController:adminController
                                          request:_request
@@ -57,9 +57,9 @@
   }
 
   // No jwtMinter/adminController — this is a standalone service (e.g., chat).
-  // Use ChatAuthManager to validate the service auth ATProtoJWT.
+  // Use PDSChatAuthManager to validate the service auth ATProtoJWT.
   NSString *methodNSID = _request.pathParameters[@"method"] ?: @"";
-  NSString *resolvedDID = [[ChatAuthManager sharedManager] authenticateRequest:_request
+  NSString *resolvedDID = [[PDSChatAuthManager sharedManager] authenticateRequest:_request
                                                                       response:_response
                                                                  expectedMethod:methodNSID.length > 0 ? methodNSID : nil];
   if (!resolvedDID) {

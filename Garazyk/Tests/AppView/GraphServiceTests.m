@@ -9,7 +9,7 @@
 @interface GraphServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) GraphService *service;
+@property (nonatomic, strong) PDSGraphService *service;
 @end
 
 @implementation GraphServiceTests
@@ -26,7 +26,7 @@
     NSError *error = nil;
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     [self setupSchema];
-    self.service = [[GraphService alloc] initWithDatabase:self.database];
+    self.service = [[PDSGraphService alloc] initWithDatabase:self.database];
 }
 
 - (void)setupSchema {

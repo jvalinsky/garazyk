@@ -12,7 +12,7 @@
 @property (nonatomic, strong) PDSDatabasePool *databasePool;
 @property (nonatomic, strong) PDSRecordService *recordService;
 @property (nonatomic, strong) PDSDatabase *serviceDatabase;
-@property (nonatomic, strong) ActorService *actorService;
+@property (nonatomic, strong) PDSActorService *actorService;
 @end
 
 @implementation FollowersCountIntegrationTests
@@ -30,7 +30,7 @@
     self.serviceDatabase = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:serviceDbPath]];
     NSError *dbError = nil;
     XCTAssertTrue([self.serviceDatabase openWithError:&dbError], @"Failed to open service database: %@", dbError);
-    self.actorService = [[ActorService alloc] initWithDatabase:self.serviceDatabase];
+    self.actorService = [[PDSActorService alloc] initWithDatabase:self.serviceDatabase];
 }
 
 - (void)tearDown {

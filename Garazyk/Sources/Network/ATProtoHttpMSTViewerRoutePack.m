@@ -27,7 +27,7 @@
     return;
   }
 
-  MSTViewerHandler *mstViewerHandler = [MSTViewerHandler sharedHandler];
+  GZMSTViewerHandler *mstViewerHandler = [GZMSTViewerHandler sharedHandler];
   [mstViewerHandler setController:controller];
 
   [server addHandlerForPath:@"/mst-viewer"

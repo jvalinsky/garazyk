@@ -7,7 +7,7 @@
 @interface DraftServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) DraftService *service;
+@property (nonatomic, strong) PDSDraftService *service;
 @end
 
 @implementation DraftServiceTests
@@ -24,7 +24,7 @@
     NSError *error = nil;
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     [self setupSchema];
-    self.service = [[DraftService alloc] initWithDatabase:self.database];
+    self.service = [[PDSDraftService alloc] initWithDatabase:self.database];
 }
 
 - (void)setupSchema {

@@ -17,7 +17,7 @@
     return @"com.atproto.mediacore";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     // Legacy: instantiate with defaults; callers using parameterized mapping
     // should alloc/init and call registerWithDispatcher:services: directly.
@@ -25,7 +25,7 @@
     [pack registerWithDispatcher:dispatcher services:services];
 }
 
-- (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+- (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     id<ATProtoMediaJobStore> jobStore = (id<ATProtoMediaJobStore>)services.videoJobStore;
     id<PDSBlobProvider> blobProvider = services.blobProvider;
@@ -45,13 +45,13 @@
         [dispatcher registerMethod:getJobStatusNSID handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             NSString *jobId = [request queryParamForKey:@"jobId"];
             if (!jobId) {
-                [XrpcErrorHelper setValidationError:response message:@"Missing jobId parameter"];
+                [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing jobId parameter"];
                 return;
             }
             NSError *error = nil;
             NSDictionary *job = [jobStore getJobById:jobId error:&error];
             if (!job) {
-                [XrpcErrorHelper setNotFoundError:response message:@"Job not found"];
+                [ATProtoXrpcErrorHelper setNotFoundError:response message:@"Job not found"];
                 return;
             }
             response.statusCode = HttpStatusOK;
@@ -63,11 +63,11 @@
     if (uploadNSID.length > 0) {
         [dispatcher registerMethod:uploadNSID handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             if (request.body.length == 0) {
-                [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+                [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing request body"];
                 return;
             }
             if (request.body.length > 100 * 1024 * 1024) {
-                [XrpcErrorHelper setValidationError:response message:@"File exceeds 100MB limit"];
+                [ATProtoXrpcErrorHelper setValidationError:response message:@"File exceeds 100MB limit"];
                 return;
             }
 
@@ -75,12 +75,12 @@
 
             // Content type sniffing
             if (self.contentValidator && !self.contentValidator(request.body, mimeType)) {
-                [XrpcErrorHelper setValidationError:response message:@"Invalid content: file does not appear to be valid media"];
+                [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid content: file does not appear to be valid media"];
                 return;
             }
 
             if (!blobProvider) {
-                [XrpcErrorHelper setInternalServerError:response message:@"Blob provider not configured"];
+                [ATProtoXrpcErrorHelper setInternalServerError:response message:@"Blob provider not configured"];
                 return;
             }
 
@@ -93,7 +93,7 @@
             BOOL stored = [blobProvider storeBlobData:request.body forCID:cid error:&error];
             if (!stored) {
                 GZ_LOG_ERROR(@"Failed to store media blob: %@", error);
-                [XrpcErrorHelper setInternalServerError:response message:@"Failed to store media"];
+                [ATProtoXrpcErrorHelper setInternalServerError:response message:@"Failed to store media"];
                 return;
             }
 
@@ -111,7 +111,7 @@
             BOOL created = [jobStore createJobWithId:jobId did:did blobCid:blobCid mimeType:mimeType fileSize:fileSize serviceAuthToken:workerToken error:&error];
             if (!created) {
                 GZ_LOG_ERROR(@"Failed to create media job: %@", error);
-                [XrpcErrorHelper setInternalServerError:response message:@"Failed to create job"];
+                [ATProtoXrpcErrorHelper setInternalServerError:response message:@"Failed to create job"];
                 return;
             }
             GZ_LOG_INFO(@"Created media job %@ for did %@", jobId, did);

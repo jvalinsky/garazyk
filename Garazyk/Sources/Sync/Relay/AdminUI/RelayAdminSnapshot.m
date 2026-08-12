@@ -24,14 +24,14 @@ NSString *GZRelayAdminPasswordFromFile(NSString *path, NSError **error) {
 }
 
 @interface GZRelayAdminSnapshot ()
-@property(nonatomic, strong) RelayMetrics *metrics;
-@property(nonatomic, strong) RelayUpstreamManager *upstreamManager;
+@property(nonatomic, strong) ATProtoRelayMetrics *metrics;
+@property(nonatomic, strong) ATProtoRelayUpstreamManager *upstreamManager;
 @property(nonatomic, strong) NSMutableArray<NSDictionary<NSString *, id> *> *adminAudit;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @end
 
 @implementation GZRelayAdminSnapshot
-- (instancetype)initWithMetrics:(RelayMetrics *)metrics upstreamManager:(RelayUpstreamManager *)upstreamManager {
+- (instancetype)initWithMetrics:(ATProtoRelayMetrics *)metrics upstreamManager:(ATProtoRelayUpstreamManager *)upstreamManager {
     self = [super init];
     if (self) {
         _metrics = metrics;

@@ -19,7 +19,7 @@
     NSString *didKey = [keyPair didKeyString];
     XCTAssertTrue([didKey hasPrefix:@"did:key:z"]);
 
-    PLCDIDKey *parsed = [PLCDIDKey parseFromString:didKey error:&error];
+    ATProtoPLCDIDKey *parsed = [ATProtoPLCDIDKey parseFromString:didKey error:&error];
     XCTAssertNotNil(parsed);
     XCTAssertNil(error);
     XCTAssertEqual(parsed.type, PLCDIDKeyTypeSecp256k1);
@@ -31,7 +31,7 @@
     NSString *didKey = @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX";
 
     NSError *error = nil;
-    PLCDIDKey *parsed = [PLCDIDKey parseFromString:didKey error:&error];
+    ATProtoPLCDIDKey *parsed = [ATProtoPLCDIDKey parseFromString:didKey error:&error];
     XCTAssertNotNil(parsed);
     XCTAssertNil(error);
     XCTAssertEqual(parsed.type, PLCDIDKeyTypeP256);
@@ -43,7 +43,7 @@
 
 - (void)testParseReturnsErrorForUnsupportedMultibasePrefix {
     NSError *error = nil;
-    PLCDIDKey *parsed = [PLCDIDKey parseFromString:@"did:key:babc" error:&error];
+    ATProtoPLCDIDKey *parsed = [ATProtoPLCDIDKey parseFromString:@"did:key:babc" error:&error];
     XCTAssertNil(parsed);
     XCTAssertNotNil(error);
 }
@@ -56,7 +56,7 @@
     NSString *didKey = [NSString stringWithFormat:@"did:key:z%@", payload];
 
     NSError *error = nil;
-    PLCDIDKey *parsed = [PLCDIDKey parseFromString:didKey error:&error];
+    ATProtoPLCDIDKey *parsed = [ATProtoPLCDIDKey parseFromString:didKey error:&error];
     XCTAssertNil(parsed);
     XCTAssertNotNil(error);
 }

@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Provides PDS-based authentication for video services.
  */
-@interface VideoPDSAuthProvider : NSObject <VideoAuthProvider>
+@interface ATProtoVideoPDSAuthProvider : NSObject <VideoAuthProvider>
 
 /**
  * @abstract The ATProtoJWT minter instance for issuing tokens.

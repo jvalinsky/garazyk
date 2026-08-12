@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcAppBskyActorPack.m
+ @file ATProtoXrpcAppBskyActorPack.m
 
  @abstract XRPC route pack for app.bsky.actor endpoints.
  */
@@ -18,32 +18,32 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAppBskyActorPack
+@implementation ATProtoXrpcAppBskyActorPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.actor";
 }
 
-+ (nullable ActorService *)actorServiceForServices:(id<XrpcRoutePackServices>)services {
++ (nullable PDSActorService *)actorServiceForServices:(id<XrpcRoutePackServices>)services {
   id<PDSQueryDatabase> database = services.appViewDatabase;
   if (!database) {
     return nil;
   }
-  return [[ActorService alloc] initWithDatabase:database];
+  return [[PDSActorService alloc] initWithDatabase:database];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
   [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
   [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerPDSLevelMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                                adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -55,12 +55,12 @@
   [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerAppViewMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
                               adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -72,12 +72,12 @@
   [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -89,9 +89,9 @@
   [self registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerPDSLevelMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                      services:(id<XrpcRoutePackServices>)services {
-  ActorService *actorService = [self actorServiceForServices:services];
+  PDSActorService *actorService = [self actorServiceForServices:services];
   if (!actorService) {
     return;
   }
@@ -99,8 +99,8 @@
   id<XrpcRoutePackServices> resolvedServices = services;
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getPreferences handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-    XrpcHandlerContext *context =
-        [[XrpcHandlerContext alloc] initWithRequest:request
+    ATProtoXrpcHandlerContext *context =
+        [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                            response:response
                                            services:resolvedServices];
     NSString *actorDID = nil;
@@ -111,7 +111,7 @@
     NSError *error = nil;
     NSDictionary *preferences = [actorService getPreferencesForActor:actorDID error:&error];
     if (error) {
-      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 
@@ -120,8 +120,8 @@
   }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_putPreferences handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-    XrpcHandlerContext *context =
-        [[XrpcHandlerContext alloc] initWithRequest:request
+    ATProtoXrpcHandlerContext *context =
+        [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                            response:response
                                            services:resolvedServices];
     NSString *actorDID = nil;
@@ -132,7 +132,7 @@
     NSDictionary *body = request.jsonBody;
     NSArray *preferences = body[@"preferences"];
     if (!preferences || ![preferences isKindOfClass:[NSArray class]]) {
-      [XrpcErrorHelper setValidationError:response
+      [ATProtoXrpcErrorHelper setValidationError:response
                                   message:@"Invalid preferences JSON (expected array under 'preferences' key)"];
       return;
     }
@@ -140,7 +140,7 @@
     NSError *error = nil;
     BOOL success = [actorService putPreferencesForActor:actorDID preferences:preferences error:&error];
     if (error || !success) {
-      [XrpcErrorHelper setInternalServerError:response
+      [ATProtoXrpcErrorHelper setInternalServerError:response
                                       message:error.localizedDescription ?: @"Failed to store preferences"];
       return;
     }
@@ -150,9 +150,9 @@
   }];
 }
 
-+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerAppViewMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                     services:(id<XrpcRoutePackServices>)services {
-  ActorService *actorService = [self actorServiceForServices:services];
+  PDSActorService *actorService = [self actorServiceForServices:services];
   if (!actorService) {
     return;
   }
@@ -162,14 +162,14 @@
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getProfile handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *actor = [request queryParamForKey:@"actor"];
     if (!actor) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
       return;
     }
 
     NSError *error = nil;
     NSDictionary *profile = [actorService getProfileForActor:actor error:&error];
     if (error) {
-      [XrpcErrorHelper setNotFoundError:response message:error.localizedDescription];
+      [ATProtoXrpcErrorHelper setNotFoundError:response message:error.localizedDescription];
       return;
     }
 
@@ -186,19 +186,19 @@
     } else if ([actorsParam isKindOfClass:[NSString class]]) {
       actors = @[actorsParam];
     } else {
-      [XrpcErrorHelper setValidationError:response message:@"Missing actors parameter"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actors parameter"];
       return;
     }
 
     if (actors.count == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing actors parameter"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actors parameter"];
       return;
     }
 
     NSError *error = nil;
     NSArray<NSDictionary *> *profiles = [actorService getProfilesForActors:actors error:&error];
     if (error) {
-      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 
@@ -209,7 +209,7 @@
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_searchActors handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *term = [request queryParamForKey:@"q"];
     if (!term || term.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing search term (q parameter)"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing search term (q parameter)"];
       response.statusCode = HttpStatusBadRequest;
       return;
     }
@@ -224,7 +224,7 @@
     NSError *error = nil;
     NSDictionary *result = [actorService searchActors:term limit:limit cursor:cursor error:&error];
     if (error) {
-      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 
@@ -235,7 +235,7 @@
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_searchActorsTypeahead handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     NSString *term = [request queryParamForKey:@"q"];
     if (!term || term.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing search term (q parameter)"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing search term (q parameter)"];
       response.statusCode = HttpStatusBadRequest;
       return;
     }
@@ -248,7 +248,7 @@
     NSError *error = nil;
     NSArray<NSDictionary *> *actors = [actorService searchActorsTypeahead:term limit:limit error:&error];
     if (error) {
-      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 
@@ -258,8 +258,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_actor_getSuggestions
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -279,7 +279,7 @@
                                                                           cursor:cursor
                                                                            error:&error];
                        if (error) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription
                                                                    ?: @"Failed to get suggestions"];
                          return;

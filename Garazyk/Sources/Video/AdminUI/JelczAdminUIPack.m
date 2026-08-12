@@ -11,39 +11,39 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@implementation JelczAdminUIPack
+@implementation GZJelczAdminUIPack
 
-+ (NSMapTable<GZAdminUIHost *, JelczAdminSnapshot *> *)snapshots {
-    static NSMapTable<GZAdminUIHost *, JelczAdminSnapshot *> *snapshots;
++ (NSMapTable<GZAdminUIHost *, GZJelczAdminSnapshot *> *)snapshots {
+    static NSMapTable<GZAdminUIHost *, GZJelczAdminSnapshot *> *snapshots;
     static dispatch_once_t once;
     dispatch_once(&once, ^{ snapshots = [NSMapTable weakToStrongObjectsMapTable]; });
     return snapshots;
 }
 
-+ (NSMapTable<GZAdminUIHost *, JelczAdminEmbedContext *> *)embedContexts {
-    static NSMapTable<GZAdminUIHost *, JelczAdminEmbedContext *> *contexts;
++ (NSMapTable<GZAdminUIHost *, GZJelczAdminEmbedContext *> *)embedContexts {
+    static NSMapTable<GZAdminUIHost *, GZJelczAdminEmbedContext *> *contexts;
     static dispatch_once_t once;
     dispatch_once(&once, ^{ contexts = [NSMapTable weakToStrongObjectsMapTable]; });
     return contexts;
 }
 
-+ (void)configureHost:(GZAdminUIHost *)host snapshot:(JelczAdminSnapshot *)snapshot {
++ (void)configureHost:(GZAdminUIHost *)host snapshot:(GZJelczAdminSnapshot *)snapshot {
     @synchronized(self) { [[self snapshots] setObject:snapshot forKey:host]; }
 }
 
-+ (void)configureHost:(GZAdminUIHost *)host embedContext:(JelczAdminEmbedContext *)context {
++ (void)configureHost:(GZAdminUIHost *)host embedContext:(GZJelczAdminEmbedContext *)context {
     @synchronized(self) { [[self embedContexts] setObject:context forKey:host]; }
 }
 
-+ (JelczAdminEmbedContext *)embedContextForHost:(GZAdminUIHost *)host {
++ (GZJelczAdminEmbedContext *)embedContextForHost:(GZAdminUIHost *)host {
     @synchronized(self) { return [[self embedContexts] objectForKey:host]; }
 }
 
-+ (JelczAdminSnapshot *)snapshotForHost:(GZAdminUIHost *)host {
-    JelczAdminEmbedContext *context = nil;
++ (GZJelczAdminSnapshot *)snapshotForHost:(GZAdminUIHost *)host {
+    GZJelczAdminEmbedContext *context = nil;
     @synchronized(self) { context = [[self embedContexts] objectForKey:host]; }
     if (context) {
-        return [[JelczAdminSnapshot alloc] initWithWorker:context.worker
+        return [[GZJelczAdminSnapshot alloc] initWithWorker:context.worker
                                                  jobStore:context.jobStore
                                                    config:context.config
                                              uptimeSeconds:context.uptimeSeconds];
@@ -75,7 +75,7 @@
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-metrics" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
-        JelczAdminSnapshot *snapshot = [JelczAdminUIPack snapshotForHost:weakHost];
+        GZJelczAdminSnapshot *snapshot = [GZJelczAdminUIPack snapshotForHost:weakHost];
         if (!snapshot) {
             [res setBodyString:[self errorUnavailableHTML]];
             return;
@@ -93,8 +93,8 @@
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-jobs" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
-        JelczAdminSnapshot *snapshot = [JelczAdminUIPack snapshotForHost:weakHost];
-        JelczAdminEmbedContext *context = [JelczAdminUIPack embedContextForHost:weakHost];
+        GZJelczAdminSnapshot *snapshot = [GZJelczAdminUIPack snapshotForHost:weakHost];
+        GZJelczAdminEmbedContext *context = [GZJelczAdminUIPack embedContextForHost:weakHost];
         if (!snapshot || !context) {
             [res setBodyString:[self errorUnavailableHTML]];
             return;
@@ -115,7 +115,7 @@
         [html appendString:[self jobsEmbeddedHTML:countRows]];
 
         NSString *stateFilter = [req queryParamForKey:@"state"];
-        NSArray *jobs = [JelczAdminSnapshot recentJobDTOsFromStore:context.jobStore
+        NSArray *jobs = [GZJelczAdminSnapshot recentJobDTOsFromStore:context.jobStore
                                                              limit:25
                                                        stateFilter:stateFilter];
         [html appendString:[GZHTML sectionTitle:@"Recent jobs"]];
@@ -127,13 +127,13 @@
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-job-detail" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
-        JelczAdminEmbedContext *context = [JelczAdminUIPack embedContextForHost:weakHost];
+        GZJelczAdminEmbedContext *context = [GZJelczAdminUIPack embedContextForHost:weakHost];
         if (!context) {
             [res setBodyString:[self errorUnavailableHTML]];
             return;
         }
         NSString *jobId = [req queryParamForKey:@"jobId"];
-        NSDictionary *dto = [JelczAdminSnapshot jobDTOForId:jobId jobStore:context.jobStore];
+        NSDictionary *dto = [GZJelczAdminSnapshot jobDTOForId:jobId jobStore:context.jobStore];
         if (!dto) {
             [res setBodyString:[GZAdminUIVideoPack renderVideoJobDetailPartial:@{
                 @"error": @YES,
@@ -154,7 +154,7 @@
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-capacity" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
-        JelczAdminSnapshot *snapshot = [JelczAdminUIPack snapshotForHost:weakHost];
+        GZJelczAdminSnapshot *snapshot = [GZJelczAdminUIPack snapshotForHost:weakHost];
         if (snapshot) {
             [res setBodyString:[GZAdminUIVideoPack renderVideoCapacityPartial:snapshot.snapshot]];
         } else {
@@ -170,7 +170,7 @@
             [res setBodyString:[GZHTML alertWithType:@"destructive" message:@"Job ID required."]];
             return;
         }
-        JelczAdminEmbedContext *context = [JelczAdminUIPack embedContextForHost:weakHost];
+        GZJelczAdminEmbedContext *context = [GZJelczAdminUIPack embedContextForHost:weakHost];
         id jobStore = context.jobStore;
         SEL retrySel = NSSelectorFromString(@"incrementJobRetry:error:");
         BOOL ok = NO;

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file OAuthSession.h
+ @file ATProtoOAuthSession.h
 
  @abstract OAuth 2.0 session and flow management.
 
@@ -40,14 +40,14 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 };
 
 /*!
- @class OAuthSession
+ @class ATProtoOAuthSession
 
  @abstract OAuth authorization session state.
 
  @discussion Tracks OAuth flow state including PKCE challenge, DPoP binding,
  and authorization codes. Sessions expire after 10 minutes if not completed.
  */
-@interface OAuthSession : NSObject
+@interface ATProtoOAuthSession : NSObject
 
 /*! Unique session identifier. */
 @property (nonatomic, copy) NSString *sessionId;
@@ -94,7 +94,7 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 /*! Associated account DID after authentication. */
 @property (nonatomic, copy, nullable) NSString *accountDid;
 
-/*! Session creation timestamp. */
+/*! PDSSession creation timestamp. */
 @property (nonatomic, strong) NSDate *createdAt;
 
 /*! Whether user has authenticated. */
@@ -115,7 +115,7 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 @end
 
 /*!
- @class OAuthPARRequest
+ @class ATProtoOAuthPARRequest
 
  @abstract Pushed Authorization Request per RFC 9126.
 
@@ -123,7 +123,7 @@ typedef NS_ENUM(NSInteger, OAuthError) {
  to token endpoint before redirecting user. Returns request_uri for use
  in authorization endpoint.
  */
-@interface OAuthPARRequest : NSObject
+@interface ATProtoOAuthPARRequest : NSObject
 
 /*! OAuth client ID. */
 @property (nonatomic, copy) NSString *clientId;
@@ -164,14 +164,14 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 @end
 
 /*!
- @class OAuthTokenRequest
+ @class ATProtoOAuthTokenRequest
 
  @abstract Token endpoint request per RFC 6749.
 
  @discussion Exchanges authorization code for access/refresh tokens.
  Supports authorization_code and refresh_token grant types.
  */
-@interface OAuthTokenRequest : NSObject
+@interface ATProtoOAuthTokenRequest : NSObject
 
 /*! Grant type (authorization_code or refresh_token). */
 @property (nonatomic, copy) NSString *grantType;
@@ -203,39 +203,39 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 @end
 
 /*!
- @class OAuthPARService
+ @class ATProtoOAuthPARService
 
  @abstract Service for Pushed Authorization Requests.
 
  @discussion Handles PAR endpoint, creates sessions, issues request_uri
  tokens, and generates authorization codes.
  */
-@interface OAuthPARService : NSObject
+@interface ATProtoOAuthPARService : NSObject
 
 /*! Process PAR request and create session. */
-- (nullable OAuthSession *)handlePARRequest:(OAuthPARRequest *)request error:(NSError **)error;
+- (nullable ATProtoOAuthSession *)handlePARRequest:(ATProtoOAuthPARRequest *)request error:(NSError **)error;
 
 /*! Retrieve session by request_uri. */
-- (nullable OAuthSession *)getSessionByRequestUri:(NSString *)requestUri error:(NSError **)error;
+- (nullable ATProtoOAuthSession *)getSessionByRequestUri:(NSString *)requestUri error:(NSError **)error;
 
 /*! Generate authorization code for authenticated session. */
-- (nullable NSString *)createAuthorizationCodeForSession:(OAuthSession *)session error:(NSError **)error;
+- (nullable NSString *)createAuthorizationCodeForSession:(ATProtoOAuthSession *)session error:(NSError **)error;
 
 @end
 
 /*!
- @class OAuthTokenService
+ @class ATProtoOAuthTokenService
 
  @abstract Service for token endpoint operations.
 
  @discussion Exchanges authorization codes for tokens, validates PKCE and
  DPoP, issues access/refresh tokens, and handles token refresh.
  */
-@interface OAuthTokenService : NSObject
+@interface ATProtoOAuthTokenService : NSObject
 
 /*! Process token request and issue tokens. */
-- (NSDictionary *)handleTokenRequest:(OAuthTokenRequest *)request
-                        session:(nullable OAuthSession *)session
+- (NSDictionary *)handleTokenRequest:(ATProtoOAuthTokenRequest *)request
+                        session:(nullable ATProtoOAuthSession *)session
                           error:(NSError **)error;
 
 @end

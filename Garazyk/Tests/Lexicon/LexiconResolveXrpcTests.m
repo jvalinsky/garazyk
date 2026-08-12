@@ -12,7 +12,7 @@
 @interface LexiconResolveXrpcTests : XCTestCase
 @end
 
-static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
+static ATProtoHttpResponse *xrpcDispatchRequest(ATProtoXrpcDispatcher *dispatcher,
                                          NSString *path,
                                          NSDictionary<NSString *, NSString *> *headers) {
     ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
@@ -39,8 +39,8 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     PDSApplication *app = nil;
     @try {
         app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         // Get all registered method IDs from the dispatcher's methodHandlers dictionary
         // We need to access the private property, so we'll use KVC or test via reflection
@@ -143,8 +143,8 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     PDSApplication *app = nil;
     @try {
         app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         NSString *path = @"/xrpc/com.atproto.lexicon.resolveLexicon?def=com.atproto.server.describeServer";
         ATProtoHttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": kPDSTestPDSHostHeader});
@@ -186,8 +186,8 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     PDSApplication *app = nil;
     @try {
         app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         // Test a few representative methods from different namespaces
         NSArray<NSString *> *testMethods = @[
@@ -234,8 +234,8 @@ static ATProtoHttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     PDSApplication *app = nil;
     @try {
         app = [[PDSApplication alloc] initWithDataDirectory:tempURL.path];
-        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-        [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
+        ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher application:app];
 
         NSString *path = @"/xrpc/com.atproto.lexicon.resolveLexicon?def=com.atproto.nonexistent.method";
         ATProtoHttpResponse *response = xrpcDispatchRequest(dispatcher, path, @{@"host": kPDSTestPDSHostHeader});

@@ -9,15 +9,15 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
-@interface XrpcGermMailboxPack ()
-@property (nonatomic, strong) GermMailboxService *mailboxService;
-@property (nonatomic, strong) ChatAuthManager *authManager;
+@interface PDSXrpcGermMailboxPack ()
+@property (nonatomic, strong) PDSGermMailboxService *mailboxService;
+@property (nonatomic, strong) PDSChatAuthManager *authManager;
 @end
 
-@implementation XrpcGermMailboxPack
+@implementation PDSXrpcGermMailboxPack
 
-- (instancetype)initWithMailboxService:(GermMailboxService *)mailboxService
-                          authManager:(ChatAuthManager *)authManager {
+- (instancetype)initWithMailboxService:(PDSGermMailboxService *)mailboxService
+                          authManager:(PDSChatAuthManager *)authManager {
     self = [super init];
     if (self) {
         _mailboxService = mailboxService;
@@ -26,7 +26,7 @@
     return self;
 }
 
-- (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher {
+- (void)registerHandlersWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher {
     // com.germnetwork.mailbox.claimAddresses
     [dispatcher registerMethod:kGZXrpcNSID_com_germnetwork_mailbox_claimAddresses
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -64,11 +64,11 @@
 
 - (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
                                   response:(ATProtoHttpResponse *)response {
-    // Reuse ChatAuthManager for ATProtoJWT verification — Germ mailbox
+    // Reuse PDSChatAuthManager for ATProtoJWT verification — Germ mailbox
     // uses the same auth infrastructure as chat.bsky.*
     NSString *did = [self.authManager authenticateRequest:request response:response];
     if (!did) {
-        // ChatAuthManager already set the error response
+        // PDSChatAuthManager already set the error response
         return nil;
     }
     return did;

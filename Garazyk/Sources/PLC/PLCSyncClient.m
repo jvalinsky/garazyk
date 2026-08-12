@@ -8,7 +8,7 @@
 
 NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 
-@interface PLCSyncClient ()
+@interface ATProtoPLCSyncClient ()
 
 @property (nonatomic, copy) NSString *upstreamURL;
 @property (nonatomic, strong) ATProtoHttpRetryPolicy *retryPolicy;
@@ -21,14 +21,14 @@ static NSError *PLCSyncParseError(NSString *message) {
                            userInfo:@{NSLocalizedDescriptionKey: message ?: @"Failed to parse PLC export"}];
 }
 
-static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError **error) {
+static NSArray<ATProtoPLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError **error) {
     NSString *jsonStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     if (!jsonStr) {
         if (error) *error = PLCSyncParseError(@"Export response is not UTF-8");
         return nil;
     }
 
-    NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
+    NSMutableArray<ATProtoPLCOperation *> *operations = [NSMutableArray array];
     NSArray<NSString *> *lines = [jsonStr componentsSeparatedByString:@"\n"];
     NSInteger previousSeq = -1;
     for (NSString *line in lines) {
@@ -60,7 +60,7 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
         previousSeq = seq;
 
         NSError *opError = nil;
-        PLCOperation *op = [PLCOperation operationFromDictionary:entry[@"operation"] error:&opError];
+        ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:entry[@"operation"] error:&opError];
         if (!op) {
             if (error) *error = opError ?: PLCSyncParseError(@"Invalid operation in export line");
             return nil;
@@ -78,7 +78,7 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
     return operations;
 }
 
-@implementation PLCSyncClient {
+@implementation ATProtoPLCSyncClient {
     dispatch_queue_t _syncQueue;
 }
 
@@ -110,14 +110,14 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
 
 - (void)fetchOperationsAfterCursor:(NSInteger)cursor
                              count:(NSUInteger)count
-                         completion:(void (^)(NSArray<PLCOperation *> * _Nullable, NSInteger, NSError * _Nullable))completion {
+                         completion:(void (^)(NSArray<ATProtoPLCOperation *> * _Nullable, NSInteger, NSError * _Nullable))completion {
     dispatch_async(_syncQueue, ^{
         NSError *error = nil;
-        NSArray<PLCOperation *> *ops = [self fetchOperationsAfterCursorSync:cursor count:count error:&error];
+        NSArray<ATProtoPLCOperation *> *ops = [self fetchOperationsAfterCursorSync:cursor count:count error:&error];
         
         NSInteger nextCursor = cursor;
         if (ops.count > 0) {
-            PLCOperation *lastOp = ops.lastObject;
+            ATProtoPLCOperation *lastOp = ops.lastObject;
             nextCursor = lastOp.sequence.integerValue;
         }
         
@@ -129,7 +129,7 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
 
 - (void)fetchOperationsAfterDate:(nullable NSDate *)afterDate
                            count:(NSUInteger)count
-                       completion:(void (^)(NSArray<PLCOperation *> * _Nullable, NSDate * _Nullable, NSError * _Nullable))completion {
+                       completion:(void (^)(NSArray<ATProtoPLCOperation *> * _Nullable, NSDate * _Nullable, NSError * _Nullable))completion {
     dispatch_async(_syncQueue, ^{
         NSError *error = nil;
         
@@ -192,7 +192,7 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
             }
             
             NSError *parseError = nil;
-            NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
+            NSMutableArray<ATProtoPLCOperation *> *operations = [NSMutableArray array];
             NSDate *lastDate = nil;
             
             NSString *jsonStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
@@ -213,7 +213,7 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
                 NSDictionary *opDict = entry[@"operation"];
                 if (!opDict) continue;
                 
-                PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:&parseError];
+                ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:opDict error:&parseError];
                 if (!op) continue;
                 
                 op.did = entry[@"did"];
@@ -239,7 +239,7 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
     });
 }
 
-- (nullable NSArray<PLCOperation *> *)fetchOperationsAfterCursorSync:(NSInteger)cursor
+- (nullable NSArray<ATProtoPLCOperation *> *)fetchOperationsAfterCursorSync:(NSInteger)cursor
                                                                 count:(NSUInteger)count
                                                                error:(NSError **)error {
     NSString *urlString = [NSString stringWithFormat:@"%@/export?count=%lu&after=%ld",
@@ -263,7 +263,7 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
     
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     
-    __block NSArray<PLCOperation *> *resultOps = nil;
+    __block NSArray<ATProtoPLCOperation *> *resultOps = nil;
     __block NSError *resultError = nil;
     
     ATProtoSafeHTTPClientOptions *syncOptions = [[ATProtoSafeHTTPClientOptions defaultOptions] copy];
@@ -318,12 +318,12 @@ static NSArray<PLCOperation *> *PLCSyncParseSequencedJSONL(NSData *data, NSError
 }
 
 - (NSInteger)getLatestCursorWithError:(NSError **)error {
-    NSArray<PLCOperation *> *ops = [self fetchOperationsAfterCursorSync:0 count:1 error:error];
+    NSArray<ATProtoPLCOperation *> *ops = [self fetchOperationsAfterCursorSync:0 count:1 error:error];
     if (!ops || ops.count == 0) {
         return 0;
     }
     
-    PLCOperation *latestOp = ops.firstObject;
+    ATProtoPLCOperation *latestOp = ops.firstObject;
     return latestOp.sequence.integerValue;
 }
 

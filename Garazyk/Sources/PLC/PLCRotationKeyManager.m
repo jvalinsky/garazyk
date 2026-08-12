@@ -15,7 +15,7 @@
 NSString * const PLCRotationKeyManagerErrorDomain = @"com.atproto.plc.rotation";
 
 static NSString *const kRotationKeyFileName = @"plc_rotation_key.bin";
-static PLCRotationKeyManager *_sharedManager = nil;
+static ATProtoPLCRotationKeyManager *_sharedManager = nil;
 
 static NSString *PDSDefaultDataDirectory(void) {
     NSString *envDataDirectory = NSProcessInfo.processInfo.environment[@"PDS_DATA_DIR"];
@@ -52,7 +52,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
     return paths.keysDirectory;
 }
 
-@interface PLCRotationKeyManager ()
+@interface ATProtoPLCRotationKeyManager ()
 
 @property (nonatomic, copy, readwrite, nullable) NSString *keyStoragePath;
 @property (nonatomic, strong, readwrite, nullable) ATProtoSecp256k1KeyPair *rotationKeyPair;
@@ -63,13 +63,13 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
 
 @end
 
-@implementation PLCRotationKeyManager
+@implementation ATProtoPLCRotationKeyManager
 
 + (instancetype)sharedManager {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSString *keysDir = PLCRotationKeyStorageDirectory();
-        _sharedManager = [[PLCRotationKeyManager alloc] initWithStoragePath:keysDir];
+        _sharedManager = [[ATProtoPLCRotationKeyManager alloc] initWithStoragePath:keysDir];
     });
     return _sharedManager;
 }

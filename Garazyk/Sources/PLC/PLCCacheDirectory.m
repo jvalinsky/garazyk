@@ -6,24 +6,24 @@
 NSTimeInterval const PLCCacheDefaultTTL = 300.0;
 NSUInteger const PLCCacheDefaultCapacity = 1000;
 
-@interface PLCCacheEntry : NSObject
-@property (nonatomic, strong) NSArray<PLCOperation *> *operations;
+@interface ATProtoPLCCacheEntry : NSObject
+@property (nonatomic, strong) NSArray<ATProtoPLCOperation *> *operations;
 @property (nonatomic, strong) NSDate *createdAt;
 @end
 
-@implementation PLCCacheEntry
+@implementation ATProtoPLCCacheEntry
 @end
 
-@interface PLCCacheDirectory ()
+@interface ATProtoPLCCacheDirectory ()
 @property (nonatomic, strong, readwrite) id<PLCStore> innerStore;
-@property (nonatomic, strong) NSCache<NSString *, PLCCacheEntry *> *operationCache;
+@property (nonatomic, strong) NSCache<NSString *, ATProtoPLCCacheEntry *> *operationCache;
 @property (nonatomic, strong) NSMutableSet<NSString *> *cachedDIDs;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t cacheQueue;
 @property (nonatomic, assign) NSUInteger hitCount;
 @property (nonatomic, assign) NSUInteger missCount;
 @end
 
-@implementation PLCCacheDirectory
+@implementation ATProtoPLCCacheDirectory
 
 - (instancetype)initWithStore:(id<PLCStore>)store {
     self = [super init];
@@ -54,7 +54,7 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
     return [self.innerStore getAllDIDsWithError:error];
 }
 
-- (nullable PLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error {
+- (nullable ATProtoPLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error {
     return [self.innerStore getLatestOperationForDID:did error:error];
 }
 
@@ -74,31 +74,31 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
     return [self.innerStore totalOperationCountWithError:error];
 }
 
-- (nullable NSArray<PLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
+- (nullable NSArray<ATProtoPLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
                                                       count:(NSUInteger)count
                                                       error:(NSError **)error {
     return [self.innerStore exportOperationsAfter:after count:count error:error];
 }
 
-- (nullable NSArray<PLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
+- (nullable NSArray<ATProtoPLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
                                                               count:(NSUInteger)count
                                                               error:(NSError **)error {
     return [self.innerStore exportOperationsAfterSequence:sequence count:count error:error];
 }
 
-- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
+- (nullable NSArray<ATProtoPLCOperation *> *)getHistoryForDID:(NSString *)did
                                       includeNullified:(BOOL)includeNullified
                                                  error:(NSError **)error {
     if (includeNullified) {
         return [self.innerStore getHistoryForDID:did includeNullified:YES error:error];
     }
 
-    __block NSArray<PLCOperation *> *result = nil;
+    __block NSArray<ATProtoPLCOperation *> *result = nil;
     __block BOOL isStale = NO;
     __block NSError *blockError = nil;
     
     dispatch_sync(self.cacheQueue, ^{
-        PLCCacheEntry *cached = [self.operationCache objectForKey:did];
+        ATProtoPLCCacheEntry *cached = [self.operationCache objectForKey:did];
         
         if (cached) {
             NSTimeInterval age = [[NSDate date] timeIntervalSinceDate:cached.createdAt];
@@ -114,7 +114,7 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
         
         result = [self.innerStore getHistoryForDID:did includeNullified:NO error:&blockError];
         
-        PLCCacheEntry *entry = [[PLCCacheEntry alloc] init];
+        ATProtoPLCCacheEntry *entry = [[ATProtoPLCCacheEntry alloc] init];
         entry.operations = result ?: @[];
         entry.createdAt = [NSDate date];
         
@@ -128,7 +128,7 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
     
     if (isStale && result) {
         dispatch_async(self.cacheQueue, ^{
-            PLCCacheEntry *entry = [[PLCCacheEntry alloc] init];
+            ATProtoPLCCacheEntry *entry = [[ATProtoPLCCacheEntry alloc] init];
             entry.operations = result;
             entry.createdAt = [NSDate date];
             [self.operationCache setObject:entry forKey:did];
@@ -138,7 +138,7 @@ NSUInteger const PLCCacheDefaultCapacity = 1000;
     return result;
 }
 
-- (BOOL)appendOperation:(PLCOperation *)op
+- (BOOL)appendOperation:(ATProtoPLCOperation *)op
            nullifyCIDs:(NSArray<NSString *> *)nullified
                  error:(NSError **)error {
     BOOL success = [self.innerStore appendOperation:op nullifyCIDs:nullified error:error];

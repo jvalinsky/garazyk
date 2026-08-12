@@ -7,7 +7,7 @@
 #import "AppView/Services/DraftService.h"
 #import "AppView/Services/BookmarkService.h"
 
-@implementation AppViewXRpcRoutePack (DraftsAndBookmarks)
+@implementation ATProtoAppViewXRpcRoutePack (DraftsAndBookmarks)
 
 - (void)handleGetDrafts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {

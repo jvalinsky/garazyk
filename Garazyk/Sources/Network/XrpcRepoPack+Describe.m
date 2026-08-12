@@ -15,9 +15,9 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcRepoPack (Describe)
+@implementation ATProtoXrpcRepoPack (Describe)
 
-+ (void)registerDescribeRoutesWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerDescribeRoutesWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                    services:(id<XrpcRoutePackServices>)services {
     PDSRecordService *recordService = services.recordService;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;

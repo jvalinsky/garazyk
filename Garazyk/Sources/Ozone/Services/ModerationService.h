@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Service layer for Ozone moderation events, subject state, team data, and settings.
  */
-@interface ModerationService : NSObject
+@interface PDSModerationService : NSObject
 
 /**
  * @abstract Creates a moderation service backed by a query database.

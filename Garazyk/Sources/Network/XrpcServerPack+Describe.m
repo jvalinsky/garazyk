@@ -26,9 +26,9 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcServerPack (Describe)
+@implementation ATProtoXrpcServerPack (Describe)
 
-+ (void)registerDescribeServerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerDescribeServerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                configuration:(ATProtoServiceConfiguration *)config
                             registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
 #pragma mark - com.atproto.server.describeServer

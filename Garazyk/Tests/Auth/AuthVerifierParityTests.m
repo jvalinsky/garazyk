@@ -153,7 +153,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
 }
 
 - (NSString *)legacyDIDForAuthorization:(NSString *)authorization request:(ATProtoHttpRequest *)request {
-    return [XrpcAuthHelper extractDIDFromAuthHeader:authorization
+    return [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authorization
                                           jwtMinter:self.minter
                                     adminController:(id)self.adminController
                                   sessionRepository:(id)self.sessionRepository
@@ -302,7 +302,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
         XCTSkip(@"Fixed P-256 key unavailable: %@", error);
     }
     NSString *url = @"https://pds.example.com/xrpc/com.atproto.server.getSession";
-    DPoPToken *legacyProof = [DPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
+    ATProtoDPoPToken *legacyProof = [ATProtoDPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
     NSString *thumbprint = [self thumbprintFromProof:legacyProof.jwt error:&error];
     ATProtoJWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
                                              handle:@"alice.example.com"
@@ -312,7 +312,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
     XCTAssertNotNil(token, @"Token minting failed: %@", error);
 
     NSString *authorization = [@"DPoP " stringByAppendingString:token.encodedToken];
-    legacyProof = [DPoPUtil createDPoPForMethod:@"GET"
+    legacyProof = [ATProtoDPoPUtil createDPoPForMethod:@"GET"
                                             uri:url
                                           nonce:nil
                                     accessToken:token.encodedToken
@@ -380,7 +380,7 @@ static NSDictionary *PDSTestPublicJWKFromSecKey(SecKeyRef key, NSError **error) 
         XCTSkip(@"Fixed P-256 key unavailable: %@", error);
     }
     NSString *url = @"https://pds.example.com/xrpc/com.atproto.server.getSession";
-    DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
+    ATProtoDPoPToken *proof = [ATProtoDPoPUtil createDPoPForMethod:@"GET" uri:url nonce:nil key:key error:&error];
     ATProtoJWT *token = [self.minter mintAccessTokenForDID:@"did:plc:alice"
                                              handle:@"alice.example.com"
                                              scopes:@[]

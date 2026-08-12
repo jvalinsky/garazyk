@@ -42,7 +42,7 @@
 #import "Network/XrpcToolsOzonePack.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
+static PDSRecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
 static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
   if (!database) {
@@ -72,22 +72,22 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
   }
 }
 
-@implementation XrpcAppBskyPack
+@implementation ATProtoXrpcAppBskyPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky";
 }
 
-+ (void)setRetainedLifecycleHandler:(RecordLifecycleHandler *)handler {
++ (void)setRetainedLifecycleHandler:(PDSRecordLifecycleHandler *)handler {
     _retainedLifecycleHandler = handler;
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
   [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerPDSLevelMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                      services:(id<XrpcRoutePackServices>)services {
   PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
   
@@ -99,13 +99,13 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
                  appViewDbError.localizedDescription ?: @"unknown error");
   }
 
-  if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
-    XrpcRoutePackServiceBag *mutableServices = (XrpcRoutePackServiceBag *)services;
+  if ([services isKindOfClass:[ATProtoXrpcRoutePackServiceBag class]]) {
+    ATProtoXrpcRoutePackServiceBag *mutableServices = (ATProtoXrpcRoutePackServiceBag *)services;
     mutableServices.appViewDatabase = appViewDatabase;
   }
 
-  [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
-  [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_labeler_getServices
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                        id didsParam = request.queryParams[@"dids"];
@@ -128,31 +128,31 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
                      }];
 
   // Bookmarks, chat, and Ozone are PDS-side concerns
-  BookmarkService *bookmarkService = [[BookmarkService alloc] initWithDatabase:appViewDatabase];
-  if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
-    XrpcRoutePackServiceBag *mutableServices = (XrpcRoutePackServiceBag *)services;
+  PDSBookmarkService *bookmarkService = [[PDSBookmarkService alloc] initWithDatabase:appViewDatabase];
+  if ([services isKindOfClass:[ATProtoXrpcRoutePackServiceBag class]]) {
+    ATProtoXrpcRoutePackServiceBag *mutableServices = (ATProtoXrpcRoutePackServiceBag *)services;
     mutableServices.bookmarkService = bookmarkService;
   }
 
-  [XrpcAppBskyBookmarksPack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyBookmarksPack registerWithDispatcher:dispatcher services:services];
 
   // Only register local chat handlers if a remote chat service is not configured
   if (!dispatcher.chatURL) {
-      [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher services:services];
-      [XrpcChatBskyActorPack registerWithDispatcher:dispatcher services:services];
-      [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher services:services];
+      [ATProtoXrpcChatBskyGroupPack registerWithDispatcher:dispatcher services:services];
+      [ATProtoXrpcChatBskyActorPack registerWithDispatcher:dispatcher services:services];
+      [ATProtoXrpcChatBskyConvoPack registerWithDispatcher:dispatcher services:services];
   }
 
-  [XrpcToolsOzonePack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcToolsOzonePack registerWithDispatcher:dispatcher services:services];
 
-  DraftService *draftService = [[DraftService alloc] initWithDatabase:appViewDatabase];
-  if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
-    ((XrpcRoutePackServiceBag *)services).draftService = draftService;
+  PDSDraftService *draftService = [[PDSDraftService alloc] initWithDatabase:appViewDatabase];
+  if ([services isKindOfClass:[ATProtoXrpcRoutePackServiceBag class]]) {
+    ((ATProtoXrpcRoutePackServiceBag *)services).draftService = draftService;
   }
-  [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyDraftsPack registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerAppViewMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                     services:(id<XrpcRoutePackServices>)services {
   [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
 
@@ -163,54 +163,54 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
 
   if ([ATProtoServiceConfiguration sharedConfiguration].appViewURL.length > 0) {
     GZ_LOG_INFO(@"Local AppView disabled; only registering proxy and PDS-side handlers.");
-    [XrpcAppBskyProxyMethodPack registerWithDispatcher:dispatcher services:services];
+    [ATProtoXrpcAppBskyProxyMethodPack registerWithDispatcher:dispatcher services:services];
     return;
   }
 
   GZ_LOG_INFO(@"Local AppView enabled; registering full suite of app.bsky.* handlers.");
   
-  if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
-    XrpcRoutePackServiceBag *mutableServices = (XrpcRoutePackServiceBag *)services;
+  if ([services isKindOfClass:[ATProtoXrpcRoutePackServiceBag class]]) {
+    ATProtoXrpcRoutePackServiceBag *mutableServices = (ATProtoXrpcRoutePackServiceBag *)services;
     mutableServices.appViewDatabase = appViewDatabase;
   }
-  [XrpcAppBskyActorPack registerAppViewMethodsWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyActorPack registerAppViewMethodsWithDispatcher:dispatcher services:services];
 
-  ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
-  NotificationService *notificationService =
-      [[NotificationService alloc] initWithDatabase:appViewDatabase actorService:actorService];
-  GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
-  FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
-  ContactService *contactService = [[ContactService alloc] initWithDatabase:appViewDatabase
+  PDSActorService *actorService = [[PDSActorService alloc] initWithDatabase:appViewDatabase];
+  PDSNotificationService *notificationService =
+      [[PDSNotificationService alloc] initWithDatabase:appViewDatabase actorService:actorService];
+  PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:appViewDatabase];
+  PDSFeedService *feedService = [[PDSFeedService alloc] initWithDatabase:appViewDatabase];
+  PDSContactService *contactService = [[PDSContactService alloc] initWithDatabase:appViewDatabase
                                                                 actorService:actorService];
-  AgeAssuranceService *ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:appViewDatabase
+  PDSAgeAssuranceService *ageAssuranceService = [[PDSAgeAssuranceService alloc] initWithDatabase:appViewDatabase
                                                                              emailProvider:services.emailProvider];
   
-  BookmarkService *bookmarkService = [[BookmarkService alloc] initWithDatabase:appViewDatabase];
+  PDSBookmarkService *bookmarkService = [[PDSBookmarkService alloc] initWithDatabase:appViewDatabase];
 
-  RecordLifecycleHandler *lifecycleHandler =
-      [[RecordLifecycleHandler alloc] initWithNotificationService:notificationService
+  PDSRecordLifecycleHandler *lifecycleHandler =
+      [[PDSRecordLifecycleHandler alloc] initWithNotificationService:notificationService
                                                    bookmarkService:bookmarkService
                                                       graphService:graphService
                                                        feedService:feedService
                                                           database:appViewDatabase];
 
-  [XrpcAppBskyPack setRetainedLifecycleHandler:lifecycleHandler];
+  [ATProtoXrpcAppBskyPack setRetainedLifecycleHandler:lifecycleHandler];
 
-  [XrpcAppBskyFeedPack registerWithDispatcher:dispatcher services:services];
-  [XrpcAppBskyGraphPack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyFeedPack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyGraphPack registerWithDispatcher:dispatcher services:services];
 
-  if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
-    XrpcRoutePackServiceBag *mutableServices = (XrpcRoutePackServiceBag *)services;
+  if ([services isKindOfClass:[ATProtoXrpcRoutePackServiceBag class]]) {
+    ATProtoXrpcRoutePackServiceBag *mutableServices = (ATProtoXrpcRoutePackServiceBag *)services;
     mutableServices.notificationService = notificationService;
   }
-  [XrpcAppBskyNotificationPack registerAppViewMethodsWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyNotificationPack registerAppViewMethodsWithDispatcher:dispatcher services:services];
 
-  if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
-    ((XrpcRoutePackServiceBag *)services).ageAssuranceService = ageAssuranceService;
-    ((XrpcRoutePackServiceBag *)services).contactService = contactService;
+  if ([services isKindOfClass:[ATProtoXrpcRoutePackServiceBag class]]) {
+    ((ATProtoXrpcRoutePackServiceBag *)services).ageAssuranceService = ageAssuranceService;
+    ((ATProtoXrpcRoutePackServiceBag *)services).contactService = contactService;
   }
-  [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher services:services];
-  [XrpcAppBskyContactPack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyContactPack registerWithDispatcher:dispatcher services:services];
   
   // Register video XRPC endpoints (only in internal mode)
   NSString *videoMode = [[[NSProcessInfo processInfo] environment] objectForKey:@"PDS_VIDEO_MODE"];
@@ -220,10 +220,10 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
       if (!jobStore) {
         GZ_LOG_WARN(@"Video XRPC routes not registered: no video job store is configured");
       } else {
-        id<VideoAuthProvider> authProvider = [[VideoPDSAuthProvider alloc] initWithJwtMinter:services.jwtMinter
+        id<VideoAuthProvider> authProvider = [[ATProtoVideoPDSAuthProvider alloc] initWithJwtMinter:services.jwtMinter
                                                                                  adminController:services.adminController];
-        if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
-          XrpcRoutePackServiceBag *bag = (XrpcRoutePackServiceBag *)services;
+        if ([services isKindOfClass:[ATProtoXrpcRoutePackServiceBag class]]) {
+          ATProtoXrpcRoutePackServiceBag *bag = (ATProtoXrpcRoutePackServiceBag *)services;
           bag.videoJobStore = jobStore;
           bag.videoAuthProvider = authProvider;
         }
@@ -232,16 +232,16 @@ static void XrpcEnsureLocalAppBskyStateTables(PDSDatabase *database) {
   }
   
   // Create and populate search index service
-  SearchIndexService *searchIndexService = [[SearchIndexService alloc] initWithDatabase:appViewDatabase];
+  PDSSearchIndexService *searchIndexService = [[PDSSearchIndexService alloc] initWithDatabase:appViewDatabase];
   [searchIndexService populateIndexIfEmptyWithError:nil];
-  if ([services isKindOfClass:[XrpcRoutePackServiceBag class]]) {
-    XrpcRoutePackServiceBag *mutableServices = (XrpcRoutePackServiceBag *)services;
+  if ([services isKindOfClass:[ATProtoXrpcRoutePackServiceBag class]]) {
+    ATProtoXrpcRoutePackServiceBag *mutableServices = (ATProtoXrpcRoutePackServiceBag *)services;
     mutableServices.feedService = feedService;
     mutableServices.searchIndexService = searchIndexService;
   }
 
-  [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher services:services];
-  [XrpcAppBskyProxyMethodPack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcAppBskyProxyMethodPack registerWithDispatcher:dispatcher services:services];
 }
 
 @end

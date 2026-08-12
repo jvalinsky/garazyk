@@ -7,7 +7,7 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
-@implementation OAuth2Handler (Metadata)
+@implementation ATProtoOAuth2Handler (Metadata)
 
 - (void)handleAuthorizationServerMetadata:(ATProtoHttpRequest *)request
                                  response:(ATProtoHttpResponse *)response {
@@ -26,8 +26,8 @@
     return;
   }
 
-  OAuthServerMetadata *metadata =
-      [[OAuthServerMetadata alloc] initWithBaseURL:issuer];
+  ATProtoOAuthServerMetadata *metadata =
+      [[ATProtoOAuthServerMetadata alloc] initWithBaseURL:issuer];
   if (!metadata) {
     response.statusCode = 500;
     [response setJsonBody:@{

@@ -7,8 +7,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcRepoPack (Blobs)
-+ (void)registerBlobRoutesWithDispatcher:(XrpcDispatcher *)dispatcher
+@interface ATProtoXrpcRepoPack (Blobs)
++ (void)registerBlobRoutesWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                 services:(id<XrpcRoutePackServices>)services;
 @end
 

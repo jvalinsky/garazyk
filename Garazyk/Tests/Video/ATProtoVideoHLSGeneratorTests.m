@@ -67,7 +67,7 @@
 
 - (void)testGenerateHLSWithNilURLReturnsError {
     NSError *error = nil;
-    VideoHLSResult *result = [self.generator generateHLSFromVideoAtURL:nil
+    GZVideoHLSResult *result = [self.generator generateHLSFromVideoAtURL:nil
                                                                    did:@"did:plc:abc"
                                                                    cid:@"bafyrei123"
                                                          thumbnailData:nil
@@ -80,7 +80,7 @@
 - (void)testGenerateHLSWithNilDIDReturnsError {
     NSURL *url = [NSURL fileURLWithPath:@"/tmp/nonexistent.mp4"];
     NSError *error = nil;
-    VideoHLSResult *result = [self.generator generateHLSFromVideoAtURL:url
+    GZVideoHLSResult *result = [self.generator generateHLSFromVideoAtURL:url
                                                                    did:nil
                                                                    cid:@"bafyrei123"
                                                          thumbnailData:nil
@@ -93,7 +93,7 @@
 - (void)testGenerateHLSWithNilCIDReturnsError {
     NSURL *url = [NSURL fileURLWithPath:@"/tmp/nonexistent.mp4"];
     NSError *error = nil;
-    VideoHLSResult *result = [self.generator generateHLSFromVideoAtURL:url
+    GZVideoHLSResult *result = [self.generator generateHLSFromVideoAtURL:url
                                                                    did:@"did:plc:abc"
                                                                    cid:nil
                                                          thumbnailData:nil
@@ -127,10 +127,10 @@
     XCTAssertTrue(self.generator.include1080p);
 }
 
-#pragma mark - VideoHLSResult
+#pragma mark - GZVideoHLSResult
 
 - (void)testVideoHLSResultProperties {
-    VideoHLSResult *result = [[VideoHLSResult alloc] init];
+    GZVideoHLSResult *result = [[GZVideoHLSResult alloc] init];
     result.masterPlaylistPath = @"/tmp/hls/test/playlist.m3u8";
     result.masterPlaylistRelativePath = @"/watch/did_plc_abc/bafyrei123/playlist.m3u8";
     result.variants = @[@{@"resolution": @"640x360", @"bandwidth": @"688540"}];

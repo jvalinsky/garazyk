@@ -8,14 +8,14 @@
 
 NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 
-@interface YubiKeyOATHManager ()
+@interface ATProtoYubiKeyOATHManager ()
 
 @property (nonatomic, assign, readwrite) YubiKeyConnectionState connectionState;
 @property (nonatomic, copy, readwrite, nullable) NSString *connectedKeySerial;
 
 @end
 
-@implementation YubiKeyOATHManager
+@implementation ATProtoYubiKeyOATHManager
 
 - (instancetype)init {
     self = [super init];
@@ -95,7 +95,7 @@ NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 #pragma mark - Software Fallback
 
 - (nullable NSString *)generateSoftwareTOTPToken:(NSData *)secret counter:(uint64_t)counter error:(NSError **)error {
-    TOTPGenerator *generator = [[TOTPGenerator alloc] initWithSecret:secret];
+    ATProtoTOTPGenerator *generator = [[ATProtoTOTPGenerator alloc] initWithSecret:secret];
     NSString *token = [generator generateOTP];
     if (token) {
         return token;

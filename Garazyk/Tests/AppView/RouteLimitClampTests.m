@@ -10,9 +10,9 @@
 
 @interface RouteLimitClampTests : XCTestCase
 @property (nonatomic, strong) AppViewDatabase *database;
-@property (nonatomic, strong) FeedService *feedService;
-@property (nonatomic, strong) ActorService *actorService;
-@property (nonatomic, strong) GraphService *graphService;
+@property (nonatomic, strong) PDSFeedService *feedService;
+@property (nonatomic, strong) PDSActorService *actorService;
+@property (nonatomic, strong) PDSGraphService *graphService;
 @end
 
 @implementation RouteLimitClampTests
@@ -23,9 +23,9 @@
     self.database = [[AppViewDatabase alloc] initInMemoryWithError:&error];
     XCTAssertNotNil(self.database, @"Failed to create database: %@", error);
     XCTAssertTrue([self.database runMigrations:&error], @"Migrations failed: %@", error);
-    self.feedService = [[FeedService alloc] initWithDatabase:self.database];
-    self.actorService = [[ActorService alloc] initWithDatabase:self.database];
-    self.graphService = [[GraphService alloc] initWithDatabase:self.database];
+    self.feedService = [[PDSFeedService alloc] initWithDatabase:self.database];
+    self.actorService = [[PDSActorService alloc] initWithDatabase:self.database];
+    self.graphService = [[PDSGraphService alloc] initWithDatabase:self.database];
 }
 
 - (void)tearDown {

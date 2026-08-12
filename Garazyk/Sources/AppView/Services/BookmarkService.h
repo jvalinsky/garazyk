@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Reads and maintains AppView bookmark index rows.
  */
-@interface BookmarkService : NSObject
+@interface PDSBookmarkService : NSObject
 
 /**
  * @abstract Initializes the service with a query database.

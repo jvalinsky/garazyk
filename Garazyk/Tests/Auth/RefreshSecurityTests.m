@@ -9,15 +9,15 @@
 #import "Debug/GZLogger.h"
 #import "App/ATProtoServiceConfiguration.h"
 
-@interface OAuth2Server (Testing)
-- (Session *)createSessionForDID:(NSString *)did
+@interface ATProtoOAuth2Server (Testing)
+- (PDSSession *)createSessionForDID:(NSString *)did
                           handle:(NSString *)handle
                            scope:(NSString *)scope
                dpopKeyThumbprint:(nullable NSString *)jkt;
 @end
 
 @interface RefreshSecurityTests : XCTestCase
-@property (nonatomic, strong) OAuth2Server *server;
+@property (nonatomic, strong) ATProtoOAuth2Server *server;
 @property (nonatomic, strong) PDSDatabase *database;
 @end
 
@@ -32,7 +32,7 @@
     if (![self.database openWithError:&error]) {
         XCTFail(@"Failed to open database: %@", error);
     }
-    self.server = [[OAuth2Server alloc] initWithDatabase:self.database];
+    self.server = [[ATProtoOAuth2Server alloc] initWithDatabase:self.database];
     self.server.issuer = @"https://pds.test";
     
     // Configure minter for ATProtoJWT generation
@@ -58,7 +58,7 @@
     [self.database createAccount:acc error:nil];
 
     // 1. Create a session
-    Session *session = [self.server createSessionForDID:@"did:plc:test" 
+    PDSSession *session = [self.server createSessionForDID:@"did:plc:test" 
                                           handle:@"test.user" 
                                            scope:@"atproto" 
                                dpopKeyThumbprint:@"key1"];
@@ -78,14 +78,14 @@
     XCTAssertEqualObjects(did, @"did:plc:test");
     
     // 3. Perform refresh
-    OAuth2TokenRequest *req = [[OAuth2TokenRequest alloc] init];
+    ATProtoOAuth2TokenRequest *req = [[ATProtoOAuth2TokenRequest alloc] init];
     req.grantType = @"refresh_token";
     req.refreshToken = session.refreshToken;
     req.clientID = @"https://app.test";
     
-    __block Session *refreshedSession = nil;
+    __block PDSSession *refreshedSession = nil;
     __block NSError *refreshError = nil;
-    [self.server handleTokenRequest:req completion:^(Session *s, NSError *error) {
+    [self.server handleTokenRequest:req completion:^(PDSSession *s, NSError *error) {
         refreshedSession = s;
         refreshError = error;
     }];
@@ -127,13 +127,13 @@
                               error:nil];
     
     // 2. Try to refresh with it
-    OAuth2TokenRequest *req = [[OAuth2TokenRequest alloc] init];
+    ATProtoOAuth2TokenRequest *req = [[ATProtoOAuth2TokenRequest alloc] init];
     req.grantType = @"refresh_token";
     req.refreshToken = [accessToken encodedToken];
     req.clientID = @"https://app.test";
     
     __block NSError *refreshError = nil;
-    [self.server handleTokenRequest:req completion:^(Session *s, NSError *error) {
+    [self.server handleTokenRequest:req completion:^(PDSSession *s, NSError *error) {
         refreshError = error;
     }];
     
@@ -151,7 +151,7 @@
     [self.database createAccount:acc error:nil];
 
     // 1. Create a session and store it with an expired date
-    Session *session = [self.server createSessionForDID:@"did:plc:test" 
+    PDSSession *session = [self.server createSessionForDID:@"did:plc:test" 
                                           handle:@"test.user" 
                                            scope:@"atproto" 
                                dpopKeyThumbprint:@"key1"];
@@ -163,18 +163,18 @@
                               error:nil];
     
     // 2. Use a new server instance to ensure we test the database check (not in-memory)
-    OAuth2Server *newServer = [[OAuth2Server alloc] initWithDatabase:self.database];
+    ATProtoOAuth2Server *newServer = [[ATProtoOAuth2Server alloc] initWithDatabase:self.database];
     newServer.issuer = self.server.issuer;
     newServer.jwtMinter.privateKey = self.server.jwtMinter.privateKey; // Use same key for signature verification
     
     // 3. Try to refresh
-    OAuth2TokenRequest *req = [[OAuth2TokenRequest alloc] init];
+    ATProtoOAuth2TokenRequest *req = [[ATProtoOAuth2TokenRequest alloc] init];
     req.grantType = @"refresh_token";
     req.refreshToken = session.refreshToken;
     req.clientID = @"https://app.test";
     
     __block NSError *refreshError = nil;
-    [newServer handleTokenRequest:req completion:^(Session *s, NSError *error) {
+    [newServer handleTokenRequest:req completion:^(PDSSession *s, NSError *error) {
         refreshError = error;
     }];
     

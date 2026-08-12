@@ -3,7 +3,7 @@
 /*!
  @file Phase2SecurityIntegrationTests.m
  @brief Tests for Phase 2 security integration: ATProtoSafeHTTPClient, GZLogRedactor,
-        PDSSecurityCompare, OAuthClientAuthPolicy, PDSKeyEnvelope, GZAdminUIAuthManager rework,
+        PDSSecurityCompare, ATProtoOAuthClientAuthPolicy, PDSKeyEnvelope, GZAdminUIAuthManager rework,
         and SQL hardening.
 
  @discussion Verifies that all Phase 1 security primitives are correctly integrated
@@ -171,10 +171,10 @@
                   @"The env-var name in a length-only log should be preserved");
 }
 
-#pragma mark - OAuthClientAuthPolicy Integration
+#pragma mark - ATProtoOAuthClientAuthPolicy Integration
 
 - (void)testClientAuthPolicySupportedMethods {
-    NSArray *methods = [OAuthClientAuthPolicy supportedTokenEndpointAuthMethods];
+    NSArray *methods = [ATProtoOAuthClientAuthPolicy supportedTokenEndpointAuthMethods];
     XCTAssertTrue([methods containsObject:@"none"], @"'none' should be supported");
     XCTAssertTrue([methods containsObject:@"client_secret_post"], @"client_secret_post should be supported");
     XCTAssertTrue([methods containsObject:@"client_secret_basic"], @"client_secret_basic should be supported");
@@ -182,7 +182,7 @@
 }
 
 - (void)testClientAuthPolicySupportedGrantTypes {
-    NSArray *types = [OAuthClientAuthPolicy supportedGrantTypes];
+    NSArray *types = [ATProtoOAuthClientAuthPolicy supportedGrantTypes];
     XCTAssertTrue([types containsObject:@"authorization_code"], @"authorization_code should be supported");
     XCTAssertTrue([types containsObject:@"refresh_token"], @"refresh_token should be supported");
 }
@@ -190,27 +190,27 @@
 - (void)testClientAuthPolicyValidateSecret {
     NSString *secret = @"my-secret-value";
     NSString *expected = @"my-secret-value";
-    XCTAssertTrue([OAuthClientAuthPolicy validateClientSecret:secret againstExpected:expected],
+    XCTAssertTrue([ATProtoOAuthClientAuthPolicy validateClientSecret:secret againstExpected:expected],
                   @"Matching secrets should validate");
 
     NSString *wrong = @"wrong-secret";
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:wrong againstExpected:expected],
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:wrong againstExpected:expected],
                    @"Non-matching secrets should fail");
 }
 
 - (void)testClientAuthPolicyValidateSecretNilHandling {
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:nil againstExpected:@"secret"],
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:nil againstExpected:@"secret"],
                    @"nil provided secret should fail");
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:@"secret" againstExpected:nil],
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:@"secret" againstExpected:nil],
                    @"nil expected secret should fail");
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:nil againstExpected:nil],
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:nil againstExpected:nil],
                    @"Both nil should fail");
 }
 
 - (void)testClientAuthPolicyValidateSecretEmptyHandling {
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:@"" againstExpected:@"secret"],
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:@"" againstExpected:@"secret"],
                    @"Empty provided secret should fail");
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:@"secret" againstExpected:@""],
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:@"secret" againstExpected:@""],
                    @"Empty expected secret should fail");
 }
 
@@ -268,7 +268,7 @@
 
 - (void)testKeyEnvelopeLegacyFallback {
     // Legacy CBC-encrypted data should NOT be detected as a versioned envelope
-    // so the fallback path in ActorStore/PLCRotationKeyManager works correctly
+    // so the fallback path in ActorStore/ATProtoPLCRotationKeyManager works correctly
     NSData *legacyData = [NSData dataWithBytes:"\x00\x01\x02\x03" length:4];
     XCTAssertFalse([PDSKeyEnvelope isVersionedEnvelope:legacyData],
                    @"Short random data should not be mistaken for envelope");

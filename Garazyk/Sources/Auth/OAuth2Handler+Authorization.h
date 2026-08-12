@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @category Authorization
  * @abstract Implements the PAR-only authorization, consent, and password sign-in HTTP flows.
  */
-@interface OAuth2Handler (Authorization)
+@interface ATProtoOAuth2Handler (Authorization)
 /**
  * @abstract Validates a pushed authorization request and renders its consent page.
  * @discussion Direct authorization parameters are rejected: the request must contain only a

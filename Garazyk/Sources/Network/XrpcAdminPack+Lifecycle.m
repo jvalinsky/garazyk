@@ -28,9 +28,9 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAdminPack (Lifecycle)
+@implementation ATProtoXrpcAdminPack (Lifecycle)
 
-+ (void)registerLifecycleEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerLifecycleEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                 services:(id<XrpcRoutePackServices>)services {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
@@ -41,7 +41,7 @@
 
     // Register com.atproto.admin.updateSubjectStatus
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateSubjectStatus handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -101,7 +101,7 @@
     // extensions (e.g., additional output fields) should use the tools.garazyk.* namespace
     // rather than extending this endpoint.
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getRecord handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -145,7 +145,7 @@
 
     // Register com.atproto.admin.getSubjectStatus
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getSubjectStatus handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -194,7 +194,7 @@
 
     // Register com.atproto.admin.deleteAccount
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_deleteAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -241,7 +241,7 @@
 
     // Register com.atproto.admin.disableInviteCodes
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_disableInviteCodes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -288,7 +288,7 @@
 
     // Register com.atproto.admin.updateAccountSigningKey
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_updateAccountSigningKey handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter

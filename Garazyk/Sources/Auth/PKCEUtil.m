@@ -8,7 +8,7 @@
 
 static NSString * const kBase64URLAlphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
-@implementation PKCEUtil
+@implementation ATProtoPKCEUtil
 
 + (NSString *)generateCodeVerifier {
     NSData *randomData = [ATProtoCryptoUtils randomBytes:32];

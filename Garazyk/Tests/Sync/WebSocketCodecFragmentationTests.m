@@ -4,14 +4,14 @@
 #import "Sync/WebSocket/WebSocketCodec.h"
 
 @interface WebSocketCodecFragmentationTests : XCTestCase
-@property (nonatomic, strong) WebSocketCodec *codec;
+@property (nonatomic, strong) ATProtoWebSocketCodec *codec;
 @end
 
 @implementation WebSocketCodecFragmentationTests
 
 - (void)setUp {
     [super setUp];
-    self.codec = [[WebSocketCodec alloc] init];
+    self.codec = [[ATProtoWebSocketCodec alloc] init];
     // These fixtures hand-build unmasked frames, simulating what a real
     // server legitimately sends. maskOutgoingFrames=YES puts the codec in
     // client role, which requires unmasked incoming frames per RFC 6455 §5.1.
@@ -29,10 +29,10 @@
     // Opcode 0 (Continuation), FIN 1
     uint8_t frame2[] = {0x80, 0x03, 'l', 'l', 'o'};
     
-    NSArray<WSCodecEvent *> *events1 = [self.codec feedData:[NSData dataWithBytes:frame1 length:sizeof(frame1)]];
+    NSArray<ATProtoWSCodecEvent *> *events1 = [self.codec feedData:[NSData dataWithBytes:frame1 length:sizeof(frame1)]];
     XCTAssertEqual(events1.count, 0, @"Should not emit event on incomplete fragment");
     
-    NSArray<WSCodecEvent *> *events2 = [self.codec feedData:[NSData dataWithBytes:frame2 length:sizeof(frame2)]];
+    NSArray<ATProtoWSCodecEvent *> *events2 = [self.codec feedData:[NSData dataWithBytes:frame2 length:sizeof(frame2)]];
     XCTAssertEqual(events2.count, 1, @"Should emit event after final fragment");
     XCTAssertEqual(events2.firstObject.type, WSCodecEventTextMessage);
     XCTAssertEqualObjects(events2.firstObject.text, @"Hello");
@@ -48,7 +48,7 @@
     
     [self.codec feedData:[NSData dataWithBytes:frame1 length:sizeof(frame1)]];
     [self.codec feedData:[NSData dataWithBytes:frame2 length:sizeof(frame2)]];
-    NSArray<WSCodecEvent *> *events3 = [self.codec feedData:[NSData dataWithBytes:frame3 length:sizeof(frame3)]];
+    NSArray<ATProtoWSCodecEvent *> *events3 = [self.codec feedData:[NSData dataWithBytes:frame3 length:sizeof(frame3)]];
     
     XCTAssertEqual(events3.count, 1);
     XCTAssertEqual(events3.firstObject.type, WSCodecEventBinaryMessage);
@@ -68,11 +68,11 @@
     
     [self.codec feedData:[NSData dataWithBytes:frame1 length:sizeof(frame1)]];
     
-    NSArray<WSCodecEvent *> *pingEvents = [self.codec feedData:[NSData dataWithBytes:ping length:sizeof(ping)]];
+    NSArray<ATProtoWSCodecEvent *> *pingEvents = [self.codec feedData:[NSData dataWithBytes:ping length:sizeof(ping)]];
     XCTAssertEqual(pingEvents.count, 1);
     XCTAssertEqual(pingEvents.firstObject.type, WSCodecEventPing, @"Control frame should be processed immediately");
     
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:[NSData dataWithBytes:frame2 length:sizeof(frame2)]];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:[NSData dataWithBytes:frame2 length:sizeof(frame2)]];
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventTextMessage);
     XCTAssertEqualObjects(events.firstObject.text, @"Hi!");

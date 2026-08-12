@@ -7,7 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Installs and migrates the chat service database schema.
  */
-@interface ChatSchemaManager : NSObject
+@interface PDSChatSchemaManager : NSObject
 
 + (instancetype)sharedManager;
 

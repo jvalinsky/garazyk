@@ -67,7 +67,7 @@ NS_ASSUME_NONNULL_BEGIN
     return session;
 }
 
-#pragma mark - Test 1: Complete Session Lifecycle
+#pragma mark - Test 1: Complete PDSSession Lifecycle
 
 - (void)testCompleteSessionLifecycle {
     NSLog(@"=== TEST: Complete Session Lifecycle ===");
@@ -106,7 +106,7 @@ NS_ASSUME_NONNULL_BEGIN
     
     NSLog(@"  Login successful, new access token generated");
     
-    // Step 3: Refresh Session
+    // Step 3: Refresh PDSSession
     __autoreleasing NSError *refreshError = nil;
     NSDictionary *refreshResult = [self.controller refreshAccessToken:refreshToken error:&refreshError];
     XCTAssertNotNil(refreshResult, @"Token refresh should succeed: %@", refreshError);
@@ -372,7 +372,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSLog(@"=== TEST PASSED: Token Validation ===\n");
 }
 
-#pragma mark - Test 5: Session Persistence
+#pragma mark - Test 5: PDSSession Persistence
 
 - (void)testSessionPersistenceLimitation {
     NSLog(@"=== TEST: Session Persistence Limitation ===");
@@ -505,7 +505,7 @@ NS_ASSUME_NONNULL_BEGIN
                         error:&createError];
     
     // Note: These tests verify the controller-level authentication
-    // In a real XRPC endpoint, the AuthMiddleware would enforce this
+    // In a real XRPC endpoint, the ATProtoAuthMiddleware would enforce this
     
     NSLog(@"  Record created with authentication");
     
@@ -518,7 +518,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(parts.count, 3, @"Access token should be JWT");
     NSLog(@"  Token is JWT format: YES");
     
-    // Session store maps ATProtoJWT to session with DID
+    // PDSSession store maps ATProtoJWT to session with DID
     // The DID is stored in the session and also encoded in the token
     XCTAssertEqualObjects(account[@"did"], did, @"Account DID should match");
     NSLog(@"  Account DID stored in session: %@", did);

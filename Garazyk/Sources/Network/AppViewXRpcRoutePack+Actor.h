@@ -10,7 +10,7 @@
  * caller, validate required JSON bodies, and return 400 for malformed input or 500 on storage
  * failure. Paginated actor search clamps `limit` to 1...100.
  */
-@interface AppViewXRpcRoutePack (Actor)
+@interface ATProtoAppViewXRpcRoutePack (Actor)
 
 /** @abstract Returns the profile for required `actor`, or 404 when the actor is absent. */
 - (void)handleGetProfile:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

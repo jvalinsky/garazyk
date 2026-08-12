@@ -30,7 +30,7 @@
  **Validates: Requirements 2.1, 2.2, 2.3, 2.4**
  */
 @interface ATProtoOAuthClientMetadataTests : XCTestCase
-@property(nonatomic, strong) OAuth2Handler *handler;
+@property(nonatomic, strong) ATProtoOAuth2Handler *handler;
 @property(nonatomic, strong) PDSDatabase *database;
 @end
 
@@ -69,7 +69,7 @@
               error:&error];
   XCTAssertTrue(success, @"Failed to create par requests table: %@", error);
 
-  self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+  self.handler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.database];
 
   // Seed a test user
   PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];

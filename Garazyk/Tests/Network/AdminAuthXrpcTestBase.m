@@ -38,8 +38,8 @@
     XCTAssertNil(dirError, @"Failed to create temp directory: %@", dirError);
 
     self.application = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
-    self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:self.application];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:self.application];
 
     NSError *error = nil;
     NSDictionary *adminAccount = [self.application.legacyController createAccountForEmail:@"admin-app@example.com"

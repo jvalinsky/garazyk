@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file DraftService.m
+ @file PDSDraftService.m
 
  @abstract Draft storage service implementation.
 
@@ -11,11 +11,11 @@
 #import "AppView/Services/DraftService.h"
 #import "Core/TID.h"
 
-@interface DraftService ()
+@interface PDSDraftService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
 @end
 
-@implementation DraftService
+@implementation PDSDraftService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];

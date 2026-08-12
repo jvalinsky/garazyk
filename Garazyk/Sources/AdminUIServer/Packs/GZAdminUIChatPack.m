@@ -47,8 +47,7 @@
             NSNumber *memberCount = mc[@"memberCount"];
             mc[@"memberCountStr"] = memberCount ? [memberCount stringValue] : @"0";
 
-            // Last message: never render plaintext body by default — brief says
-            // "remove default plaintext previews". Show only metadata.
+            // Last message: render *escaped* preview text when provided.
             id lastMsgObj = mc[@"lastMessage"];
             NSString *lastMsg = @"<em class=\"text-secondary\">—</em>";
             if ([lastMsgObj isKindOfClass:[NSDictionary class]]) {
@@ -60,6 +59,12 @@
                     NSString *at = lm[@"sentAt"];
                     if (at.length > 19) at = [at substringToIndex:19];
                     lastMsg = [NSString stringWithFormat:@"<span class=\"text-secondary\">message at %@</span>", [GZHTML escapedString:at]];
+                } else if ([lm[@"text"] isKindOfClass:[NSString class]]) {
+                    NSString *text = lm[@"text"];
+                    if (text.length > 0) {
+                        lastMsg = [NSString stringWithFormat:@"<span class=\"text-secondary\">%@</span>",
+                            [GZHTML escapedString:text]];
+                    }
                 }
             }
             mc[@"lastMsg"] = lastMsg;

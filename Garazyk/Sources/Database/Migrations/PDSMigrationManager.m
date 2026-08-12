@@ -965,7 +965,7 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
 }
 
 // Aggregate existing blobs, ipld_blocks, and records into a single
-// account_usage row so consumers (XrpcVendorPack, XrpcAdminPack+AccountInfo,
+// account_usage row so consumers (ATProtoXrpcVendorPack, ATProtoXrpcAdminPack+AccountInfo,
 // PDSAccountService) see non-zero values immediately after migration.
 - (BOOL)backfillAccountUsageFromExistingDataInDatabase:(sqlite3 *)db error:(NSError **)error {
     // Each actor-store shard is per-DID. Resolve the owner from the shard's
@@ -2917,7 +2917,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
 
 @end
 
-#pragma mark - V12 Session Revocation Migration
+#pragma mark - V12 PDSSession Revocation Migration
 
 @interface PDSV12SessionRevocationSchema : NSObject <PDSMigration>
 @end

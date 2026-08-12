@@ -539,7 +539,7 @@ static NSString *sMissingRkey = nil;
 - (void)testGraphIndexerListRejectsEmptyRkey {
     // handleIngestEvent: passes @"" when a commit op path carries no rkey; an
     // empty rkey would store "at://<did>/app.bsky.graph.list/" which no delete matches.
-    GraphService *graphService = [[GraphService alloc] initWithDatabase:self.database];
+    PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:self.database];
     AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:graphService];
@@ -556,7 +556,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGraphIndexerListitemRejectsNilRkey {
-    GraphService *graphService = [[GraphService alloc] initWithDatabase:self.database];
+    PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:self.database];
     AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:graphService];
@@ -575,7 +575,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGraphIndexerDeleteListRejectsEmptyRkey {
-    GraphService *graphService = [[GraphService alloc] initWithDatabase:self.database];
+    PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:self.database];
     AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:graphService];
@@ -844,7 +844,7 @@ static NSString *sMissingRkey = nil;
 - (void)testBookmarkIndexerKeepsOneRowPerRkey {
     // bookmarks.uri is UNIQUE, so ignoring rkey collapsed every bookmark a DID
     // owns onto a single row that INSERT OR REPLACE silently overwrote.
-    BookmarkService *service = [[BookmarkService alloc] initWithDatabase:self.database];
+    PDSBookmarkService *service = [[PDSBookmarkService alloc] initWithDatabase:self.database];
     AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
                                                                       bookmarkService:service];
     NSError *error = nil;
@@ -868,7 +868,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testBookmarkIndexerDeleteRemovesRowIndexedUnderSameRkey {
-    BookmarkService *service = [[BookmarkService alloc] initWithDatabase:self.database];
+    PDSBookmarkService *service = [[PDSBookmarkService alloc] initWithDatabase:self.database];
     AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
                                                                       bookmarkService:service];
     NSError *error = nil;
@@ -889,7 +889,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testBookmarkIndexerRejectsEmptyRkey {
-    BookmarkService *service = [[BookmarkService alloc] initWithDatabase:self.database];
+    PDSBookmarkService *service = [[PDSBookmarkService alloc] initWithDatabase:self.database];
     AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
                                                                       bookmarkService:service];
     NSError *error = nil;

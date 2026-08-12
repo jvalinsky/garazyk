@@ -10,7 +10,7 @@
 #import <stdlib.h>
 #import "Sync/Firehose/SubscribeReposHandler.h"
 
-@interface SubscribeReposHandler (EnvLimitsTestAccess)
+@interface ATProtoSubscribeReposHandler (EnvLimitsTestAccess)
 @property (nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
 @property (nonatomic, assign) NSUInteger maxPendingBytesPerConnection;
 @end
@@ -29,7 +29,7 @@
 - (void)testInvalidMaxPendingSendsKeepsDefaultRatherThanZero {
     setenv("PDS_FIREHOSE_MAX_PENDING_SENDS", "not-a-number", 1);
 
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
 
     XCTAssertGreaterThan(handler.maxPendingSendsPerConnection, (NSUInteger)0,
                           @"a typo'd env override must not silently become 0");
@@ -38,7 +38,7 @@
 - (void)testInvalidMaxPendingBytesKeepsDefaultRatherThanZero {
     setenv("PDS_FIREHOSE_MAX_PENDING_BYTES", "not-a-number", 1);
 
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
 
     XCTAssertGreaterThan(handler.maxPendingBytesPerConnection, (NSUInteger)0,
                           @"a typo'd env override must not silently become 0");
@@ -50,7 +50,7 @@
     // it falls back to the default rather than disabling the connection.
     setenv("PDS_FIREHOSE_MAX_PENDING_SENDS", "0", 1);
 
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
 
     XCTAssertGreaterThan(handler.maxPendingSendsPerConnection, (NSUInteger)0);
 }
@@ -58,7 +58,7 @@
 - (void)testValidMaxPendingSendsOverrideApplies {
     setenv("PDS_FIREHOSE_MAX_PENDING_SENDS", "777", 1);
 
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
 
     XCTAssertEqual(handler.maxPendingSendsPerConnection, (NSUInteger)777);
 }
@@ -66,7 +66,7 @@
 - (void)testValidMaxPendingBytesOverrideApplies {
     setenv("PDS_FIREHOSE_MAX_PENDING_BYTES", "123456", 1);
 
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
 
     XCTAssertEqual(handler.maxPendingBytesPerConnection, (NSUInteger)123456);
 }

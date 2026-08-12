@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcRoutePackRegistrar.h
+ @file ATProtoXrpcRoutePackRegistrar.h
 
  @abstract Registers conforming XRPC route packs on a dispatcher.
  */
@@ -10,17 +10,17 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class XrpcDispatcher;
+@class ATProtoXrpcDispatcher;
 @protocol XrpcRoutePack;
 @protocol XrpcRoutePackServices;
 
-@interface XrpcRoutePackRegistrar : NSObject
+@interface ATProtoXrpcRoutePackRegistrar : NSObject
 
 /**
  * @abstract Performs the registerRoutePacks operation.
  */
 + (void)registerRoutePacks:(NSArray<Class> *)routePackClasses
-                dispatcher:(XrpcDispatcher *)dispatcher
+                dispatcher:(ATProtoXrpcDispatcher *)dispatcher
                   services:(id<XrpcRoutePackServices>)services;
 
 @end

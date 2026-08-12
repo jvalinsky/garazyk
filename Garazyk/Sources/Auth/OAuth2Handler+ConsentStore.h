@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @category ConsentStore
  * @abstract Manages the bounded, process-local pending-consent session store.
  */
-@interface OAuth2Handler (ConsentStore)
+@interface ATProtoOAuth2Handler (ConsentStore)
 /**
  * @abstract Creates an opaque, bounded pending-consent session for an authenticated DID.
  * @discussion The session is process-local state protected by sAuthGlobalsQueue and expires after

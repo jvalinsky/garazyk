@@ -26,13 +26,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class AppViewDatabase;
 @class AppViewRelevanceSet;
-@class GraphService;
+@class PDSGraphService;
 
 @interface AppViewGraphIndexer : NSObject <AppViewIndexer>
 
 - (instancetype)initWithDatabase:(AppViewDatabase *)database
                     relevanceSet:(nullable AppViewRelevanceSet *)relevanceSet
-                    graphService:(nullable GraphService *)graphService;
+                    graphService:(nullable PDSGraphService *)graphService;
 
 @end
 

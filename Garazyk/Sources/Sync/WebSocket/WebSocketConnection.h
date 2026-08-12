@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file WebSocketConnection.h
+ @file ATProtoWebSocketConnection.h
 
  @abstract WebSocket client connection for real-time communication.
 
@@ -15,7 +15,7 @@
 #import <Foundation/Foundation.h>
 #import <stdint.h>
 
-@class WebSocketConnection;
+@class ATProtoWebSocketConnection;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -54,44 +54,44 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
  */
 @protocol WebSocketConnectionDelegate <NSObject>
 @optional
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
           didReceiveMessage:(NSData *)message;
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
              didReceiveText:(NSString *)text;
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
            didCloseWithCode:(NSInteger)code
                      reason:(NSString *)reason;
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
            didFailWithError:(NSError *)error;
-- (void)webSocketConnectionStateDidChange:(WebSocketConnection *)connection;
+- (void)webSocketConnectionStateDidChange:(ATProtoWebSocketConnection *)connection;
 
 /*! Called when backpressure warning threshold is reached. */
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
     didReachBackpressureWarning:(double)fillPercentage
                      queueBytes:(NSUInteger)bytes;
 
 /*! Called when backpressure critical threshold is reached. */
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
     didReachBackpressureCritical:(double)fillPercentage
                       queueBytes:(NSUInteger)bytes;
 
 /*! Called when backpressure is cleared (queue drops below warning threshold). */
-- (void)webSocketConnectionDidClearBackpressure:(WebSocketConnection *)connection;
+- (void)webSocketConnectionDidClearBackpressure:(ATProtoWebSocketConnection *)connection;
 
 /*! Called when connection is about to be closed due to queue overflow. */
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
     willCloseForQueueOverflow:(NSUInteger)bytes
                         limit:(NSUInteger)limit;
 @end
 
 /*!
- @class WebSocketConnection
+ @class ATProtoWebSocketConnection
 
  @abstract WebSocket client connection.
 
  @discussion Provides WebSocket client functionality with delegate callbacks.
  */
-@interface WebSocketConnection : NSObject
+@interface ATProtoWebSocketConnection : NSObject
 
 /*! Remote host address. */
 @property(nonatomic, readonly) NSString *host;

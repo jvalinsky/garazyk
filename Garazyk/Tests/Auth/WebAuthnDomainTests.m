@@ -9,25 +9,25 @@
 
 @implementation WebAuthnDomainTests
 
-- (WebAuthnRegistrationOptions *)sampleRegistrationOptions {
-    WebAuthnRelyingParty *rp = [[WebAuthnRelyingParty alloc] init];
+- (ATProtoWebAuthnRegistrationOptions *)sampleRegistrationOptions {
+    ATProtoWebAuthnRelyingParty *rp = [[ATProtoWebAuthnRelyingParty alloc] init];
     rp.name = @"Test RP";
     rp.identifier = @"example.com";
 
-    WebAuthnUser *user = [[WebAuthnUser alloc] init];
+    ATProtoWebAuthnUser *user = [[ATProtoWebAuthnUser alloc] init];
     user.identifier = [@"user-id" dataUsingEncoding:NSUTF8StringEncoding];
     user.name = @"user@example.com";
     user.displayName = @"User Name";
 
-    WebAuthnPubKeyCredParam *param1 = [[WebAuthnPubKeyCredParam alloc] init];
+    ATProtoWebAuthnPubKeyCredParam *param1 = [[ATProtoWebAuthnPubKeyCredParam alloc] init];
     param1.type = @"public-key";
     param1.alg = -7;
 
-    WebAuthnPubKeyCredParam *param2 = [[WebAuthnPubKeyCredParam alloc] init];
+    ATProtoWebAuthnPubKeyCredParam *param2 = [[ATProtoWebAuthnPubKeyCredParam alloc] init];
     param2.type = @"public-key";
     param2.alg = -8;
 
-    WebAuthnRegistrationOptions *options = [[WebAuthnRegistrationOptions alloc] init];
+    ATProtoWebAuthnRegistrationOptions *options = [[ATProtoWebAuthnRegistrationOptions alloc] init];
     options.challenge = [@"challenge-bytes" dataUsingEncoding:NSUTF8StringEncoding];
     options.rp = rp;
     options.user = user;
@@ -38,13 +38,13 @@
 }
 
 - (void)testDictionaryFromRegistrationOptionsIncludesAllFields {
-    WebAuthnRegistrationOptions *options = [self sampleRegistrationOptions];
-    NSDictionary *dict = [WebAuthnDomain dictionaryFromRegistrationOptions:options];
+    ATProtoWebAuthnRegistrationOptions *options = [self sampleRegistrationOptions];
+    NSDictionary *dict = [ATProtoWebAuthnDomain dictionaryFromRegistrationOptions:options];
 
-    XCTAssertEqualObjects(dict[@"challenge"], [Base32Utils base32StringFromData:options.challenge]);
+    XCTAssertEqualObjects(dict[@"challenge"], [ATProtoBase32Utils base32StringFromData:options.challenge]);
     XCTAssertEqualObjects(dict[@"rp"][@"name"], @"Test RP");
     XCTAssertEqualObjects(dict[@"rp"][@"id"], @"example.com");
-    XCTAssertEqualObjects(dict[@"user"][@"id"], [Base32Utils base32StringFromData:options.user.identifier]);
+    XCTAssertEqualObjects(dict[@"user"][@"id"], [ATProtoBase32Utils base32StringFromData:options.user.identifier]);
     XCTAssertEqualObjects(dict[@"user"][@"name"], @"user@example.com");
     XCTAssertEqualObjects(dict[@"user"][@"displayName"], @"User Name");
     XCTAssertEqualObjects(dict[@"attestation"], @"direct");
@@ -56,29 +56,29 @@
 }
 
 - (void)testDictionaryFromRegistrationOptionsDefaultsAttestationToNone {
-    WebAuthnRegistrationOptions *options = [self sampleRegistrationOptions];
+    ATProtoWebAuthnRegistrationOptions *options = [self sampleRegistrationOptions];
     options.attestation = nil;
 
-    NSDictionary *dict = [WebAuthnDomain dictionaryFromRegistrationOptions:options];
+    NSDictionary *dict = [ATProtoWebAuthnDomain dictionaryFromRegistrationOptions:options];
     XCTAssertEqualObjects(dict[@"attestation"], @"none");
 }
 
 - (void)testDictionaryFromAssertionOptionsWithAllowCredentialsAndTransports {
-    WebAuthnCredentialDescriptor *descriptor = [[WebAuthnCredentialDescriptor alloc] init];
+    ATProtoWebAuthnCredentialDescriptor *descriptor = [[ATProtoWebAuthnCredentialDescriptor alloc] init];
     descriptor.type = @"public-key";
     descriptor.credentialId = [@"cred-id" dataUsingEncoding:NSUTF8StringEncoding];
     descriptor.transports = @[ @"usb", @"internal" ];
 
-    WebAuthnAssertionOptions *options = [[WebAuthnAssertionOptions alloc] init];
+    ATProtoWebAuthnAssertionOptions *options = [[ATProtoWebAuthnAssertionOptions alloc] init];
     options.challenge = [@"assertion-challenge" dataUsingEncoding:NSUTF8StringEncoding];
     options.timeout = 3.2;
     options.rpId = @"example.com";
     options.allowCredentials = @[ descriptor ];
     options.userVerification = @"required";
 
-    NSDictionary *dict = [WebAuthnDomain dictionaryFromAssertionOptions:options];
+    NSDictionary *dict = [ATProtoWebAuthnDomain dictionaryFromAssertionOptions:options];
 
-    XCTAssertEqualObjects(dict[@"challenge"], [Base32Utils base32StringFromData:options.challenge]);
+    XCTAssertEqualObjects(dict[@"challenge"], [ATProtoBase32Utils base32StringFromData:options.challenge]);
     XCTAssertEqualObjects(dict[@"timeout"], @(3200));
     XCTAssertEqualObjects(dict[@"rpId"], @"example.com");
     XCTAssertEqualObjects(dict[@"userVerification"], @"required");
@@ -86,38 +86,38 @@
     XCTAssertEqual([dict[@"allowCredentials"] count], 1);
     XCTAssertEqualObjects(dict[@"allowCredentials"][0][@"type"], @"public-key");
     XCTAssertEqualObjects(dict[@"allowCredentials"][0][@"id"],
-                          [Base32Utils base32StringFromData:descriptor.credentialId]);
+                          [ATProtoBase32Utils base32StringFromData:descriptor.credentialId]);
     XCTAssertEqualObjects(dict[@"allowCredentials"][0][@"transports"], descriptor.transports);
 }
 
 - (void)testDictionaryFromAssertionOptionsDefaultsAndSkipsEmptyAllowCredentials {
-    WebAuthnAssertionOptions *options = [[WebAuthnAssertionOptions alloc] init];
+    ATProtoWebAuthnAssertionOptions *options = [[ATProtoWebAuthnAssertionOptions alloc] init];
     options.challenge = [@"abc" dataUsingEncoding:NSUTF8StringEncoding];
     options.timeout = 1.0;
     options.rpId = @"example.com";
     options.allowCredentials = @[];
     options.userVerification = nil;
 
-    NSDictionary *dict = [WebAuthnDomain dictionaryFromAssertionOptions:options];
+    NSDictionary *dict = [ATProtoWebAuthnDomain dictionaryFromAssertionOptions:options];
 
     XCTAssertEqualObjects(dict[@"userVerification"], @"preferred");
     XCTAssertNil(dict[@"allowCredentials"]);
 }
 
 - (void)testDictionaryFromAssertionOptionsOmitsTransportsWhenNil {
-    WebAuthnCredentialDescriptor *descriptor = [[WebAuthnCredentialDescriptor alloc] init];
+    ATProtoWebAuthnCredentialDescriptor *descriptor = [[ATProtoWebAuthnCredentialDescriptor alloc] init];
     descriptor.type = @"public-key";
     descriptor.credentialId = [@"cred-id-2" dataUsingEncoding:NSUTF8StringEncoding];
     descriptor.transports = nil;
 
-    WebAuthnAssertionOptions *options = [[WebAuthnAssertionOptions alloc] init];
+    ATProtoWebAuthnAssertionOptions *options = [[ATProtoWebAuthnAssertionOptions alloc] init];
     options.challenge = [@"challenge" dataUsingEncoding:NSUTF8StringEncoding];
     options.timeout = 1.5;
     options.rpId = @"example.com";
     options.allowCredentials = @[ descriptor ];
     options.userVerification = @"discouraged";
 
-    NSDictionary *dict = [WebAuthnDomain dictionaryFromAssertionOptions:options];
+    NSDictionary *dict = [ATProtoWebAuthnDomain dictionaryFromAssertionOptions:options];
     NSDictionary *credDict = dict[@"allowCredentials"][0];
     XCTAssertNil(credDict[@"transports"]);
 }

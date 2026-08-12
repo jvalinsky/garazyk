@@ -3,16 +3,16 @@
 #import "AppViewIndexer.h"
 
 @class AppViewDatabase;
-@class BookmarkService;
+@class PDSBookmarkService;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class BookmarkService;
+@class PDSBookmarkService;
 
 @interface AppViewBookmarkIndexer : NSObject <AppViewIndexer>
 
 - (instancetype)initWithDatabase:(AppViewDatabase *)database
-               bookmarkService:(BookmarkService *)bookmarkService;
+               bookmarkService:(PDSBookmarkService *)bookmarkService;
 
 @end
 

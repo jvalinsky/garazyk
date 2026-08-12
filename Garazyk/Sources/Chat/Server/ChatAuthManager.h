@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoHttpResponse;
 
 /*!
- @class ChatAuthManager
+ @class PDSChatAuthManager
  
  @abstract Validates service auth JWTs for the chat service.
  
@@ -40,9 +40,9 @@ NS_ASSUME_NONNULL_BEGIN
  10. Extract user DID from iss claim
  */
 /**
- * @abstract Declares the ChatAuthManager public API.
+ * @abstract Declares the PDSChatAuthManager public API.
  */
-@interface ChatAuthManager : NSObject
+@interface PDSChatAuthManager : NSObject
 
 /*! The PDS URL for fallback session verification. */
 @property (nonatomic, copy) NSString *pdsUrl;

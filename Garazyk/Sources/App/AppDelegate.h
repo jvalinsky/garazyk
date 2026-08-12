@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppDelegate.h
+ @file GZAppDelegate.h
 
  @abstract Application delegate for macOS PDS application.
 
@@ -25,7 +25,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class AppDelegate
+ @class GZAppDelegate
 
  @abstract Manages PDS application lifecycle and UI on macOS.
 
@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
  menu bar status item. On Linux/GNUstep, provides basic initialization without
  AppKit dependencies.
  */
-@interface AppDelegate : NSObject PDS_NS_APPLICATION_DELEGATE
+@interface GZAppDelegate : NSObject PDS_NS_APPLICATION_DELEGATE
 
 /*! Main PDS controller managing server and services. */
 @property (strong, nonatomic) PDSController *pdsController;

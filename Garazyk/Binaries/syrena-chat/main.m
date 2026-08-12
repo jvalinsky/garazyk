@@ -57,7 +57,7 @@ int main(int argc, const char * argv[]) {
             return 0;
         }
 
-        ChatRuntime *runtime = [ChatRuntime sharedRuntime];
+        GZChatRuntime *runtime = [GZChatRuntime sharedRuntime];
         [runtime loadConfigurationFromEnvironment];
 
         if ([command isEqualToString:@"serve"]) {
@@ -127,7 +127,7 @@ int main(int argc, const char * argv[]) {
                 adminConfig.adminPassword = adminPassword;
                 adminConfig.serviceIdentifier = @"chat";
                 adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig
-                                                                      packs:@[ChatAdminUIPack.class]];
+                                                                      packs:@[GZChatAdminUIPack.class]];
                 NSError *adminErr = nil;
                 if (![adminUIHost startWithError:&adminErr]) {
                     GZ_LOG_WARN(@"Chat admin UI failed to start: %@", adminErr.localizedDescription);

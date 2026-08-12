@@ -8,13 +8,13 @@
 #import "Sync/WebSocket/WebSocketServer.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
 
-@interface WebSocketServer (Testing)
-- (void)addConnection:(WebSocketConnection *)connection;
-- (void)removeConnection:(WebSocketConnection *)connection;
+@interface ATProtoWebSocketServer (Testing)
+- (void)addConnection:(ATProtoWebSocketConnection *)connection;
+- (void)removeConnection:(ATProtoWebSocketConnection *)connection;
 - (void)setState:(WebSocketServerState)state;
 @end
 
-@interface TestWebSocketConnection : WebSocketConnection
+@interface TestWebSocketConnection : ATProtoWebSocketConnection
 @property (atomic, assign) NSUInteger sentMessageCount;
 @property (nonatomic, assign) NSInteger tag;
 @end
@@ -41,7 +41,7 @@
 
 @implementation WebSocketServerDelegateSpy
 
-- (void)webSocketServer:(WebSocketServer *)server stateDidChange:(WebSocketServerState)state {
+- (void)webSocketServer:(ATProtoWebSocketServer *)server stateDidChange:(WebSocketServerState)state {
     (void)server;
     self.lastState = state;
     self.callbackCount += 1;
@@ -50,14 +50,14 @@
 @end
 
 @interface WebSocketServerTests : XCTestCase
-@property (nonatomic, strong) WebSocketServer *server;
+@property (nonatomic, strong) ATProtoWebSocketServer *server;
 @end
 
 @implementation WebSocketServerTests
 
 - (void)setUp {
     [super setUp];
-    self.server = [[WebSocketServer alloc] initWithHost:@"localhost" port:9999];
+    self.server = [[ATProtoWebSocketServer alloc] initWithHost:@"localhost" port:9999];
 }
 
 - (void)tearDown {
@@ -91,7 +91,7 @@
 }
 
 - (void)testConnectionsSnapshotReturnsSet {
-    NSSet<WebSocketConnection *> *snapshot = self.server.connections;
+    NSSet<ATProtoWebSocketConnection *> *snapshot = self.server.connections;
     XCTAssertNotNil(snapshot);
     XCTAssertEqual(snapshot.count, 0);
 }

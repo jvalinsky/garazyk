@@ -106,7 +106,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 
 @interface AppViewRelayConnection : NSObject <RelayClientDelegate>
 
-@property (nonatomic, strong) RelayClient *client;
+@property (nonatomic, strong) ATProtoRelayClient *client;
 @property (nonatomic, copy)   NSString *relayURL;
 @property (nonatomic, assign) int64_t lastCheckpointSeq;
 @property (nonatomic, assign) int64_t currentSeq;
@@ -137,7 +137,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     _owner = owner;
 
     NSURL *nsurl = [NSURL URLWithString:url];
-    _client = [[RelayClient alloc] initWithServerURL:nsurl];
+    _client = [[ATProtoRelayClient alloc] initWithServerURL:nsurl];
     _client.delegate = self;
 
     if (startingSeq > 0) {
@@ -149,35 +149,35 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 
 #pragma mark - RelayClientDelegate
 
-- (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event {
     AppViewIngestEngine *engine = self.owner;
     if (!engine) return;
     [engine _handleCommitEvent:event fromRelay:self.relayURL];
     self.currentSeq = event.seq;
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event {
     AppViewIngestEngine *engine = self.owner;
     if (!engine) return;
     [engine _handleIdentityEvent:event fromRelay:self.relayURL];
     self.currentSeq = event.seq;
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveAccountEvent:(FirehoseAccountEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveAccountEvent:(ATProtoFirehoseAccountEvent *)event {
     AppViewIngestEngine *engine = self.owner;
     if (!engine) return;
     [engine _handleAccountEvent:event fromRelay:self.relayURL];
     self.currentSeq = event.seq;
 }
 
-- (void)relayClientDidConnect:(RelayClient *)client {
+- (void)relayClientDidConnect:(ATProtoRelayClient *)client {
     AppViewIngestEngine *engine = self.owner;
     if (!engine) return;
     GZ_LOG_INFO(@"[AppView Ingest] Connected to relay %@", self.relayURL);
     [engine _relayConnection:self didConnectAtSeq:self.currentSeq];
 }
 
-- (void)relayClient:(RelayClient *)client didDisconnectWithError:(nullable NSError *)error {
+- (void)relayClient:(ATProtoRelayClient *)client didDisconnectWithError:(nullable NSError *)error {
     if (error) {
         GZ_LOG_WARN(@"[AppView Ingest] Disconnected from relay %@: %@",
                      self.relayURL, error.localizedDescription);
@@ -186,14 +186,14 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     }
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event {
     GZ_LOG_WARN(@"[AppView Ingest] Relay %@ sent error %@: %@",
                  self.relayURL,
                  event.error ?: @"unknown",
                  event.message ?: @"");
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveCursor:(int64_t)cursor {
     self.currentSeq = cursor;
 }
 
@@ -222,7 +222,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 @property (nonatomic, assign) BOOL indexDrainRequested;
 @property (nonatomic, copy) NSString *indexWorkerID;
 @property (atomic, assign) BOOL acceptingIndexWork;
-@property (nonatomic, strong) RelayRepoStateManager *repoStateManager;
+@property (nonatomic, strong) ATProtoRelayRepoStateManager *repoStateManager;
 
 - (void)_persistDirtyRepairMarkerForDID:(NSString *)did
                                     seq:(int64_t)seq
@@ -230,12 +230,12 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
                                     cid:(nullable NSString *)cid
                                relayURL:(NSString *)relayURL
                                  reason:(NSString *)reason;
-- (BOOL)_processCommitEvent:(FirehoseCommitEvent *)event
+- (BOOL)_processCommitEvent:(ATProtoFirehoseCommitEvent *)event
                   fromRelay:(NSString *)relayURL
                 rawEnvelope:(NSData *)rawEnvelope
                 outputEvent:(AppViewIngestEvent **)outputEvent
               failureReason:(NSString **)failureReason;
-- (void)_handleCommitEventOnIngestQueue:(FirehoseCommitEvent *)event
+- (void)_handleCommitEventOnIngestQueue:(ATProtoFirehoseCommitEvent *)event
                               fromRelay:(NSString *)relayURL;
 @end
 
@@ -266,7 +266,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
                                                    DISPATCH_QUEUE_SERIAL);
     _indexWorkerID        = [[NSProcessInfo processInfo].globallyUniqueString copy];
     _acceptingIndexWork   = YES;
-    _repoStateManager     = [[RelayRepoStateManager alloc] init];
+    _repoStateManager     = [[ATProtoRelayRepoStateManager alloc] init];
     _indexQueueHighWatermarkEvents = 100000;
     _indexQueueHighWatermarkBytes = UINT64_C(2) * 1024 * 1024 * 1024;
     _relayHeartbeatTimeout = 10.0;
@@ -530,10 +530,10 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 }
 
 // ---------------------------------------------------------------------------
-// Event handlers (called from RelayClient delegate — already on a BG thread)
+// Event handlers (called from ATProtoRelayClient delegate — already on a BG thread)
 // ---------------------------------------------------------------------------
 
-- (void)_handleCommitEvent:(FirehoseCommitEvent *)event fromRelay:(NSString *)relayURL {
+- (void)_handleCommitEvent:(ATProtoFirehoseCommitEvent *)event fromRelay:(NSString *)relayURL {
     // Relay callbacks can arrive concurrently. Serialize persistence before
     // touching SQLite instead of making every callback contend for the
     // database's single writer slot.
@@ -542,7 +542,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     });
 }
 
-- (void)_handleCommitEventOnIngestQueue:(FirehoseCommitEvent *)event
+- (void)_handleCommitEventOnIngestQueue:(ATProtoFirehoseCommitEvent *)event
                               fromRelay:(NSString *)relayURL {
     @autoreleasepool {
     NSString *did = event.repo;
@@ -582,7 +582,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     // Persist the spec-shaped stream envelope. This is both the replay record
     // and the durable handoff payload for the index worker.
     NSError *encodeError = nil;
-    NSData *rawEnvelope = [[[EventFormatter alloc] init] encodeCommitEvent:event error:&encodeError];
+    NSData *rawEnvelope = [[[ATProtoEventFormatter alloc] init] encodeCommitEvent:event error:&encodeError];
     if (!rawEnvelope) {
         GZ_LOG_WARN(@"[AppView Ingest] Failed to encode commit seq=%lld: %@",
                      (long long)seq, encodeError.localizedDescription);
@@ -650,7 +650,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
             finishDrain(0);
             return;
         }
-        EventFormatter *formatter = [[EventFormatter alloc] init];
+        ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
         for (NSDictionary *stored in events) {
             NSString *relayURL = stored[@"relay_url"];
             int64_t seq = [stored[@"seq"] longLongValue];
@@ -667,7 +667,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
                                                            dbError:nil];
                 continue;
             }
-            FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+            ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
             event.seq = [payload[@"seq"] longLongValue];
             event.rebase = [payload[@"rebase"] boolValue];
             event.tooBig = [payload[@"tooBig"] boolValue];
@@ -771,7 +771,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     });
 }
 
-- (BOOL)_processCommitEvent:(FirehoseCommitEvent *)event
+- (BOOL)_processCommitEvent:(ATProtoFirehoseCommitEvent *)event
                   fromRelay:(NSString *)relayURL
                rawEnvelope:(NSData *)rawEnvelope
                outputEvent:(AppViewIngestEvent **)outputEvent
@@ -1065,9 +1065,9 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     return YES;
 }
 
-- (void)_handleIdentityEvent:(FirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL {
+- (void)_handleIdentityEvent:(ATProtoFirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL {
     @autoreleasepool {
-    // FIXME: replace with actual envelope from FirehoseIdentityEvent; dummy is a placeholder
+    // FIXME: replace with actual envelope from ATProtoFirehoseIdentityEvent; dummy is a placeholder
     NSData *dummy = [NSData data];
     NSError *storeError = nil;
     if (![_database appendStoredEventWithType:@"identity"
@@ -1107,7 +1107,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     } // @autoreleasepool
 }
 
-- (void)_handleAccountEvent:(FirehoseAccountEvent *)event fromRelay:(NSString *)relayURL {
+- (void)_handleAccountEvent:(ATProtoFirehoseAccountEvent *)event fromRelay:(NSString *)relayURL {
     @autoreleasepool {
     NSData *dummy = [NSData data];
     NSError *storeError = nil;

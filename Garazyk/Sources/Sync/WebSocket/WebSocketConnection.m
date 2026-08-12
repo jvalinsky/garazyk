@@ -19,7 +19,7 @@ NSInteger const WebSocketConnectionErrorCodeConnectionClosed = 2000;
 NSInteger const WebSocketConnectionErrorCodeInvalidFrame = 2001;
 NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
-@interface WebSocketConnection () {
+@interface ATProtoWebSocketConnection () {
     NSString *_handshakeKey;
     BOOL _waitingForHandshakeResponse;
     BOOL _isReading;
@@ -41,11 +41,11 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG, nullable)
     dispatch_source_t heartbeatTimer;
 
-@property(nonatomic, strong) WebSocketProtocolSession *session;
+@property(nonatomic, strong) ATProtoWebSocketProtocolSession *session;
 
 @end
 
-@implementation WebSocketConnection
+@implementation ATProtoWebSocketConnection
 
 - (instancetype)initWithHost:(NSString *)host
                         port:(uint16_t)port
@@ -103,7 +103,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                                       DISPATCH_QUEUE_SERIAL);
   _connectionQueue = dispatch_queue_create(
       "com.atproto.pds.websocket.connection", DISPATCH_QUEUE_SERIAL);
-  _session = [[WebSocketProtocolSession alloc] init];
+  _session = [[ATProtoWebSocketProtocolSession alloc] init];
 }
 
 - (NSTimeInterval)heartbeatInterval {
@@ -225,7 +225,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 - (void)setupInitialState {
 }
 
-- (WebSocketHeartbeatPolicy *)heartbeatPolicy {
+- (ATProtoWebSocketHeartbeatPolicy *)heartbeatPolicy {
   return self.session.heartbeatPolicy;
 }
 
@@ -404,10 +404,10 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     }
     
     GZ_LOG_SYNC_DEBUG(@"WebSocket received %lu bytes from wire", (unsigned long)data.length);
-    NSArray<WSSessionAction *> *actions = [self.session
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session
       feedData:data
       receivedAt:[[NSDate date] timeIntervalSince1970]];
-    for (WSSessionAction *action in actions) {
+    for (ATProtoWSSessionAction *action in actions) {
         [self processAction:action];
     }
 }
@@ -482,7 +482,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     }
 }
 
-- (void)processAction:(WSSessionAction *)action {
+- (void)processAction:(ATProtoWSSessionAction *)action {
   switch (action.type) {
     case WSSessionActionTypeNotifyTextMessage:
       [self notifyTextMessage:(NSString *)action.data];
@@ -497,7 +497,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
       [self handlePongFrame:(NSData *)action.data];
       break;
     case WSSessionActionTypeClose: {
-      WSCodecEvent *event = (WSCodecEvent *)action.data;
+      ATProtoWSCodecEvent *event = (ATProtoWSCodecEvent *)action.data;
       BOOL ackingOurClose = (self.state == WebSocketConnectionStateClosing);
       [self closeWithCode:event.closeCode reason:event.closeReason];
       if (ackingOurClose && self.state != WebSocketConnectionStateClosed) {
@@ -600,7 +600,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     }
 
     NSUInteger newQueueSize = self.queuedSendBytes + frame.length;
-    NSArray<WSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:frame.length
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:frame.length
                                                            currentQueueSize:newQueueSize];
     
     // Check overflow
@@ -614,7 +614,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
       return;
     }
 
-    for (WSSessionAction *action in actions) {
+    for (ATProtoWSSessionAction *action in actions) {
       dispatch_async(dispatch_get_main_queue(), ^{
         [self processAction:action];
       });
@@ -686,11 +686,11 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                         strongSelf.queuedSendBytes -= sentFrame.length;
                       }
 
-                      NSArray<WSSessionAction *> *actions =
+                      NSArray<ATProtoWSSessionAction *> *actions =
                           [strongSelf.session
                               didDequeueFrameOfSize:sentFrame.length
                                    currentQueueSize:strongSelf.queuedSendBytes];
-                      for (WSSessionAction *action in actions) {
+                      for (ATProtoWSSessionAction *action in actions) {
                         dispatch_async(dispatch_get_main_queue(), ^{
                           [strongSelf processAction:action];
                         });
@@ -728,8 +728,8 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
 - (void)tickHeartbeat {
   NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-  NSArray<WSSessionAction *> *actions = [self.session tick:now];
-  for (WSSessionAction *action in actions) {
+  NSArray<ATProtoWSSessionAction *> *actions = [self.session tick:now];
+  for (ATProtoWSSessionAction *action in actions) {
     [self processAction:action];
   }
 }

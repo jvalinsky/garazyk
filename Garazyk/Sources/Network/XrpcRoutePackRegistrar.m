@@ -7,10 +7,10 @@
 #import "Network/XrpcRoutePack.h"
 #import "Network/XrpcRoutePackServices.h"
 
-@implementation XrpcRoutePackRegistrar
+@implementation ATProtoXrpcRoutePackRegistrar
 
 + (void)registerRoutePacks:(NSArray<Class> *)routePackClasses
-                dispatcher:(XrpcDispatcher *)dispatcher
+                dispatcher:(ATProtoXrpcDispatcher *)dispatcher
                   services:(id<XrpcRoutePackServices>)services {
   for (Class routePackClass in routePackClasses) {
     if (![(id)routePackClass conformsToProtocol:@protocol(XrpcRoutePack)]) {

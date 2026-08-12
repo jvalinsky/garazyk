@@ -89,7 +89,7 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
         }
     }
 
-    NSString *handle = [AppViewIdentityHelper resolveHandleForDID:did error:nil];
+    NSString *handle = [PDSAppViewIdentityHelper resolveHandleForDID:did error:nil];
     // The rkey column must agree with the rkey embedded in the uri above, so both
     // come from effectiveRkey; rkey itself may be nil, which the parameter array
     // below cannot hold.

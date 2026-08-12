@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @category PasskeyAuth
  * @abstract Implements WebAuthn challenge issuance and assertion verification for consent sign-in.
  */
-@interface OAuth2Handler (PasskeyAuth)
+@interface ATProtoOAuth2Handler (PasskeyAuth)
 /**
  * @abstract Issues a short-lived WebAuthn challenge bound to a submitted DID.
  * @discussion Validates the JSON body and configured relying-party origin, creates 32 random

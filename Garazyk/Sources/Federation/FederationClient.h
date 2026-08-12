@@ -22,9 +22,9 @@ typedef NS_ENUM(NSInteger, FederationErrorCode) {
 
 /// Client for forwarding requests to remote PDS instances
 /**
- * @abstract Declares the FederationClient public API.
+ * @abstract Declares the ATProtoFederationClient public API.
  */
-@interface FederationClient : NSObject
+@interface ATProtoFederationClient : NSObject
 
 /**
  * @abstract Exposes the did resolver value.

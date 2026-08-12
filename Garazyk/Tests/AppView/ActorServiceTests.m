@@ -8,7 +8,7 @@
 @interface ActorServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) ActorService *service;
+@property (nonatomic, strong) PDSActorService *service;
 @end
 
 @implementation ActorServiceTests
@@ -26,7 +26,7 @@
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     
     [self setupSchema];
-    self.service = [[ActorService alloc] initWithDatabase:self.database];
+    self.service = [[PDSActorService alloc] initWithDatabase:self.database];
 }
 
 - (void)setupSchema {

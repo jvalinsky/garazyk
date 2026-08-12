@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file GraphService.h
+ @file PDSGraphService.h
 
  @abstract Social graph service for follows, blocks, mutes, and relationships.
 
@@ -24,14 +24,14 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabase;
 
 /*!
- @class GraphService
+ @class PDSGraphService
  
  @abstract Service for social graph operations.
  
  @discussion Queries follow, block, and mute records to provide paginated
- social graph views. Uses the same record/block storage pattern as FeedService.
+ social graph views. Uses the same record/block storage pattern as PDSFeedService.
  */
-@interface GraphService : NSObject
+@interface PDSGraphService : NSObject
 
 /*! Initialize with database connection. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;

@@ -61,12 +61,12 @@
 @end
 
 @interface PLCServerTests : XCTestCase
-@property (nonatomic, strong) PLCMockStore *store;
-@property (nonatomic, strong) PLCAuditor *auditor;
-@property (nonatomic, strong) PLCServer *server;
+@property (nonatomic, strong) ATProtoPLCMockStore *store;
+@property (nonatomic, strong) ATProtoPLCAuditor *auditor;
+@property (nonatomic, strong) ATProtoPLCServer *server;
 @end
 
-@interface PLCServer (TestAccess)
+@interface ATProtoPLCServer (TestAccess)
 - (void)handleGetDID:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
 - (void)handlePostDID:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
 - (void)handleGetData:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp;
@@ -98,9 +98,9 @@
 
 - (void)setUp {
     [super setUp];
-    self.store = [[PLCMockStore alloc] init];
-    self.auditor = [[PLCAuditor alloc] initWithStore:self.store];
-    self.server = [[PLCServer alloc] initWithStore:self.store auditor:self.auditor port:0];
+    self.store = [[ATProtoPLCMockStore alloc] init];
+    self.auditor = [[ATProtoPLCAuditor alloc] initWithStore:self.store];
+    self.server = [[ATProtoPLCServer alloc] initWithStore:self.store auditor:self.auditor port:0];
 }
 
 - (NSString *)base64URLEncode:(NSData *)data {
@@ -221,9 +221,9 @@
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForSignedOperation:payload];
+    NSString *did = [ATProtoPLCOperation calculateDIDForSignedOperation:payload];
 
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.did = did;
     op.sig = payload[@"sig"];
     op.data = opData;
@@ -261,7 +261,7 @@
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForSignedOperation:payload];
+    NSString *did = [ATProtoPLCOperation calculateDIDForSignedOperation:payload];
 
     NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
     ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodPOST
@@ -282,7 +282,7 @@
 }
 
 - (void)testSequenceExportAfterZero {
-    PLCOperation *op = [self insertTestOperationForDID:nil];
+    ATProtoPLCOperation *op = [self insertTestOperationForDID:nil];
     XCTAssertNotNil(op.sequence);
 
     ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
@@ -323,7 +323,7 @@
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForSignedOperation:payload];
+    NSString *did = [ATProtoPLCOperation calculateDIDForSignedOperation:payload];
 
     NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
     ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodPOST
@@ -391,7 +391,7 @@
 
 #pragma mark - /:did/data endpoint
 
-- (PLCOperation *)insertTestOperationForDID:(NSString *)did {
+- (ATProtoPLCOperation *)insertTestOperationForDID:(NSString *)did {
     ATProtoSecp256k1KeyPair *keyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:nil];
     NSDictionary *opData = @{
         @"type": @"plc_operation",
@@ -406,9 +406,9 @@
 
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *calculatedDid = [PLCOperation calculateDIDForSignedOperation:payload];
+    NSString *calculatedDid = [ATProtoPLCOperation calculateDIDForSignedOperation:payload];
 
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.did = calculatedDid;
     op.sig = payload[@"sig"];
     op.data = opData;
@@ -420,7 +420,7 @@
 }
 
 - (void)testGetDataReturnsDidStateWithoutSigPrevType {
-    PLCOperation *op = [self insertTestOperationForDID:@"any"];
+    ATProtoPLCOperation *op = [self insertTestOperationForDID:@"any"];
     NSString *did = op.did;
 
     ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
@@ -467,7 +467,7 @@
 #pragma mark - /:did/log endpoint
 
 - (void)testGetLogReturnsFlatOperations {
-    PLCOperation *op = [self insertTestOperationForDID:@"any"];
+    ATProtoPLCOperation *op = [self insertTestOperationForDID:@"any"];
     NSString *did = op.did;
 
     ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
@@ -498,7 +498,7 @@
 }
 
 - (void)testGetLogReturns404ForUnknownDID {
-    // PLCMockStore returns empty array for unknown DIDs (not nil),
+    // ATProtoPLCMockStore returns empty array for unknown DIDs (not nil),
     // so the server returns 200 with [] rather than 404.
     // This matches upstream plc.directory behavior for unknown DIDs.
     ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET
@@ -595,7 +595,7 @@
 
     XCTAssertEqual(conn.sentFrames.count, 1, @"Invalid cursor should send exactly one close frame and nothing else");
 
-    // WebSocketCodec's decode side (feedData:) is hardwired to the server
+    // ATProtoWebSocketCodec's decode side (feedData:) is hardwired to the server
     // role, which requires masked input (RFC 6455 client->server framing).
     // The frame under test is the reverse direction (server->client, always
     // unmasked), so it's parsed by hand rather than fed back through the
@@ -618,7 +618,7 @@
 // deliberately NOT covered here. It spins up a real dispatch_source timer
 // (PLCReplicaDefaultPollInterval) that only stops when the connection
 // closes; a unit test can't trigger that closure deterministically without
-// reaching into PLCServer's private adapter, and leaving the timer running
+// reaching into ATProtoPLCServer's private adapter, and leaving the timer running
 // would leak a background poll across the rest of the test suite. That
 // streaming behavior is better exercised by the Deno scenario framework
 // against a live server (see docs/plans/workstreams/08 for the follow-up).
@@ -635,7 +635,7 @@
     ATProtoHttpResponse *resp = [ATProtoHttpResponse response];
 
     // The _health handler is registered on the httpServer, not directly callable.
-    // Test via the PLCServer's internal handler approach.
+    // Test via the ATProtoPLCServer's internal handler approach.
     // Since _health is on the server object, we test the response shape.
     resp.statusCode = 200;
     [resp setJsonBody:@{@"status": @"ok"}];
@@ -648,7 +648,7 @@
 #pragma mark - DID document publicKeyMultibase
 
 - (void)testDIDDocumentStripsDidKeyPrefix {
-    PLCOperation *op = [self insertTestOperationForDID:@"any"];
+    ATProtoPLCOperation *op = [self insertTestOperationForDID:@"any"];
     NSString *did = op.did;
 
     ATProtoHttpRequest *req = [self requestWithMethod:HttpMethodGET

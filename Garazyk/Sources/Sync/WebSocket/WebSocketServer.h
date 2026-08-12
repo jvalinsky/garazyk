@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file WebSocketServer.h
+ @file ATProtoWebSocketServer.h
 
  @abstract WebSocket server for real-time communication.
 
  @discussion Implements WebSocket protocol (RFC 6455) for bidirectional
- communication. Used by the Firehose and other streaming endpoints.
+ communication. Used by the ATProtoFirehose and other streaming endpoints.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>
 
-@class WebSocketConnection;
-@class WebSocketServer;
+@class ATProtoWebSocketConnection;
+@class ATProtoWebSocketServer;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -55,20 +55,20 @@ typedef NS_ENUM(NSInteger, WebSocketServerState) {
  */
 @protocol WebSocketServerDelegate <NSObject>
 @optional
-- (void)webSocketServer:(WebSocketServer *)server didAcceptConnection:(WebSocketConnection *)connection;
-- (void)webSocketServer:(WebSocketServer *)server didCloseConnection:(WebSocketConnection *)connection;
-- (void)webSocketServer:(WebSocketServer *)server didFailWithError:(NSError *)error;
-- (void)webSocketServer:(WebSocketServer *)server stateDidChange:(WebSocketServerState)state;
+- (void)webSocketServer:(ATProtoWebSocketServer *)server didAcceptConnection:(ATProtoWebSocketConnection *)connection;
+- (void)webSocketServer:(ATProtoWebSocketServer *)server didCloseConnection:(ATProtoWebSocketConnection *)connection;
+- (void)webSocketServer:(ATProtoWebSocketServer *)server didFailWithError:(NSError *)error;
+- (void)webSocketServer:(ATProtoWebSocketServer *)server stateDidChange:(WebSocketServerState)state;
 @end
 
 /*!
- @class WebSocketServer
+ @class ATProtoWebSocketServer
 
  @abstract WebSocket server for streaming connections.
 
  @discussion Manages WebSocket connections and broadcasts messages to clients.
  */
-@interface WebSocketServer : NSObject
+@interface ATProtoWebSocketServer : NSObject
 
 /*! The host address to listen on. */
 @property (nonatomic, readonly) NSString *host;
@@ -83,7 +83,7 @@ typedef NS_ENUM(NSInteger, WebSocketServerState) {
 @property (nonatomic, weak, nullable) id<WebSocketServerDelegate> delegate;
 
 /*! Currently active connections. */
-@property (nonatomic, readonly) NSSet<WebSocketConnection *> *connections;
+@property (nonatomic, readonly) NSSet<ATProtoWebSocketConnection *> *connections;
 
 /*! WebSocket subprotocol to use. */
 @property (nonatomic, copy, nullable) NSString *subprotocol;

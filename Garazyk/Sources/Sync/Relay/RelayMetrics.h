@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayMetrics.h
+ @file ATProtoRelayMetrics.h
 
  @abstract Metrics collection for ATProto Relay (Sync v1.1)
 
  @discussion
-    RelayMetrics tracks:
+    ATProtoRelayMetrics tracks:
     - Upstream connections (PDS subscriptions)
     - Downstream connections (consumer subscriptions)
     - Events received, validated, forwarded, dropped
@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Collects counters and gauges for relay health and throughput.
  */
-@interface RelayMetrics : NSObject
+@interface ATProtoRelayMetrics : NSObject
 
 /**
  * @abstract Returns the process-wide relay metrics registry.

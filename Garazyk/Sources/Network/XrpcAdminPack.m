@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcAdminPack.m
+//  ATProtoXrpcAdminPack.m
 //  ATProtoPDS
 //
 //  Domain module for com.atproto.admin.* XRPC endpoints.
@@ -81,13 +81,13 @@ NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
                                                                      NSString *fieldName,
                                                                      NSError **error);
 
-@implementation XrpcAdminPack
+@implementation ATProtoXrpcAdminPack
 
 + (NSString *)routePackIdentifier {
   return @"com.atproto.admin";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     // Account Lookup, Search & Email
     [self registerAccountLookupEndpoints:dispatcher services:services];
@@ -489,7 +489,7 @@ BOOL resolveAccountIdentifierToDid(PDSServiceDatabases *serviceDatabases,
                                           NSString *accountIdentifier,
                                           NSString **outDid,
                                           NSError **error) {
-    return [XrpcIdentityHelper resolveAccountIdentifierToDid:accountIdentifier
+    return [ATProtoXrpcIdentityHelper resolveAccountIdentifierToDid:accountIdentifier
                                             serviceDatabases:serviceDatabases
                                                       outDid:outDid
                                                        error:error];

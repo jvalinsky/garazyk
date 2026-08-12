@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcAppBskyAgeAssurancePack.m
+ @file ATProtoXrpcAppBskyAgeAssurancePack.m
 
  @abstract XRPC route pack for app.bsky.ageassurance endpoints.
  */
@@ -18,16 +18,16 @@
 #import "Auth/AuthClaimTypeCheck.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAppBskyAgeAssurancePack
+@implementation ATProtoXrpcAppBskyAgeAssurancePack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.ageassurance";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-           ageAssuranceService:(AgeAssuranceService *)ageAssuranceService {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
+           ageAssuranceService:(PDSAgeAssuranceService *)ageAssuranceService {
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:dispatcher.jwtMinter
                                           adminController:nil
                                              configuration:nil
@@ -39,9 +39,9 @@
   [self registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
-  AgeAssuranceService *ageAssuranceService = nil;
+  PDSAgeAssuranceService *ageAssuranceService = nil;
   if ([services respondsToSelector:@selector(ageAssuranceService)]) {
     ageAssuranceService = services.ageAssuranceService;
   }
@@ -49,7 +49,7 @@
   id<XrpcRoutePackServices> resolvedServices = services;
   if (!resolvedServices) {
     resolvedServices =
-        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+        [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                   jwtMinter:dispatcher.jwtMinter
                                             adminController:nil
                                                configuration:nil
@@ -61,8 +61,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_ageassurance_begin
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *did = nil;
@@ -77,13 +77,13 @@
                        NSString *countryCode = AuthTypedValue(body, @"countryCode", [NSString class], &typeMismatch);
                        NSString *regionCode = AuthTypedValue(body, @"regionCode", [NSString class], &typeMismatch);
                        if (typeMismatch) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"Request field has wrong type"];
                          return;
                        }
 
                        if (!email || !language || !countryCode) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"email, language, and countryCode are required"];
                          return;
                        }
@@ -98,7 +98,7 @@
                                                          regionCode:regionCode
                                                               error:&error];
                          if (error) {
-                           [XrpcErrorHelper setInternalServerError:response
+                           [ATProtoXrpcErrorHelper setInternalServerError:response
                                                            message:error.localizedDescription];
                            return;
                          }
@@ -124,7 +124,7 @@
                          NSError *error = nil;
                          NSDictionary *config = [ageAssuranceService getAgeAssuranceConfig:&error];
                          if (error) {
-                           [XrpcErrorHelper setInternalServerError:response
+                           [ATProtoXrpcErrorHelper setInternalServerError:response
                                                            message:error.localizedDescription];
                            return;
                          }
@@ -147,8 +147,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_ageassurance_getState
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *did = nil;
@@ -159,7 +159,7 @@
                        NSString *countryCode = [request queryParamForKey:@"countryCode"];
                        NSString *regionCode = [request queryParamForKey:@"regionCode"];
                        if (!countryCode) {
-                         [XrpcErrorHelper setValidationError:response
+                         [ATProtoXrpcErrorHelper setValidationError:response
                                                      message:@"countryCode is required"];
                          return;
                        }
@@ -171,7 +171,7 @@
                                                                               regionCode:regionCode
                                                                                    error:&error];
                          if (error) {
-                           [XrpcErrorHelper setInternalServerError:response
+                           [ATProtoXrpcErrorHelper setInternalServerError:response
                                                            message:error.localizedDescription];
                            return;
                          }

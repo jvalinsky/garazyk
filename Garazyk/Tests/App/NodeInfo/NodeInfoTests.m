@@ -24,7 +24,7 @@
     XCTAssertNotNil(config);
 
     NSString *baseURL = @"https://pds.example.com";
-    NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:baseURL configuration:config];
+    GZNodeInfoProvider *provider = [[GZNodeInfoProvider alloc] initWithBaseURL:baseURL configuration:config];
 
     XCTAssertNotNil(provider);
     XCTAssertTrue([provider.nodeInfo20 isKindOfClass:[NSDictionary class]]);
@@ -33,7 +33,7 @@
 
 - (void)testProviderVersionFieldsMatchExpected {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-    NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
+    GZNodeInfoProvider *provider = [[GZNodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo20 = provider.nodeInfo20;
     XCTAssertEqualObjects(nodeInfo20[@"version"], @"2.0");
@@ -44,7 +44,7 @@
 
 - (void)testProviderSoftwareFields {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-    NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
+    GZNodeInfoProvider *provider = [[GZNodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
     NSDictionary *software = nodeInfo21[@"software"];
@@ -55,7 +55,7 @@
 
 - (void)testProviderProtocolsFieldContainsAtproto {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-    NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
+    GZNodeInfoProvider *provider = [[GZNodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
     NSArray *protocols = nodeInfo21[@"protocols"];
@@ -65,7 +65,7 @@
 
 - (void)testProviderServicesField {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-    NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
+    GZNodeInfoProvider *provider = [[GZNodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
     NSDictionary *services = nodeInfo21[@"services"];
@@ -76,7 +76,7 @@
 
 - (void)testProviderOpenRegistrations {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-    NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
+    GZNodeInfoProvider *provider = [[GZNodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
     XCTAssertTrue([nodeInfo21[@"openRegistrations"] isKindOfClass:[NSNumber class]]);
@@ -84,7 +84,7 @@
 
 - (void)testProviderUsageField {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-    NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
+    GZNodeInfoProvider *provider = [[GZNodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
     NSDictionary *usage = nodeInfo21[@"usage"];
@@ -99,7 +99,7 @@
 
 - (void)testProviderMetadataField {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-    NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
+    GZNodeInfoProvider *provider = [[GZNodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
     XCTAssertTrue([nodeInfo21[@"metadata"] isKindOfClass:[NSDictionary class]]);
@@ -107,7 +107,7 @@
 
 - (void)testProviderDiscoveryDocument {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
-    NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
+    GZNodeInfoProvider *provider = [[GZNodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *discovery21 = provider.discoveryDocument21;
     XCTAssertNotNil(discovery21);
@@ -123,13 +123,13 @@
 - (void)testProviderInvalidBaseURL {
     ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
 
-    XCTAssertNil([[NodeInfoProvider alloc] initWithBaseURL:nil configuration:config]);
-    XCTAssertNil([[NodeInfoProvider alloc] initWithBaseURL:@"" configuration:config]);
-    XCTAssertNil([[NodeInfoProvider alloc] initWithBaseURL:@"not-a-url" configuration:config]);
+    XCTAssertNil([[GZNodeInfoProvider alloc] initWithBaseURL:nil configuration:config]);
+    XCTAssertNil([[GZNodeInfoProvider alloc] initWithBaseURL:@"" configuration:config]);
+    XCTAssertNil([[GZNodeInfoProvider alloc] initWithBaseURL:@"not-a-url" configuration:config]);
 }
 
 - (void)testProviderNilConfiguration {
-    XCTAssertNil([[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:nil]);
+    XCTAssertNil([[GZNodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:nil]);
 }
 
 - (void)testSchemaConstants {
@@ -143,8 +143,8 @@
 }
 
 - (void)testHandlerSingleton {
-    NodeInfoHandler *handler1 = [NodeInfoHandler sharedHandler];
-    NodeInfoHandler *handler2 = [NodeInfoHandler sharedHandler];
+    GZNodeInfoHandler *handler1 = [GZNodeInfoHandler sharedHandler];
+    GZNodeInfoHandler *handler2 = [GZNodeInfoHandler sharedHandler];
     XCTAssertEqualObjects(handler1, handler2);
 }
 

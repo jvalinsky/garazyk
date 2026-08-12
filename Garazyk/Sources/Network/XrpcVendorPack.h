@@ -6,12 +6,12 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * XrpcVendorPack registers all tools.garazyk.* endpoint handlers.
+ * ATProtoXrpcVendorPack registers all tools.garazyk.* endpoint handlers.
  */
 /**
- * @abstract Declares the XrpcVendorPack public API.
+ * @abstract Declares the ATProtoXrpcVendorPack public API.
  */
-@interface XrpcVendorPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcVendorPack : NSObject <XrpcRoutePack>
 
 @end
 

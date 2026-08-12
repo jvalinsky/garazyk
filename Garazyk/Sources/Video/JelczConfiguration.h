@@ -7,7 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Configuration parameters for the Jelcz video service.
  */
-@interface JelczConfiguration : NSObject
+@interface GZJelczConfiguration : NSObject
 
 /** @abstract Server listening port. */
 @property (nonatomic, assign) NSUInteger port;

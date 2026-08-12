@@ -6,7 +6,7 @@
 #import "Network/HttpResponse.h"
 #import "AppView/Services/ActorService.h"
 
-@implementation AppViewXRpcRoutePack (Actor)
+@implementation ATProtoAppViewXRpcRoutePack (Actor)
 
 - (void)handleGetProfile:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {

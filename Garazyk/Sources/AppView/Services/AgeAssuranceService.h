@@ -11,10 +11,10 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class AgeAssuranceService
+ @class PDSAgeAssuranceService
  @abstract Service for managing user age assurance (begin flow, config, state).
  */
-@interface AgeAssuranceService : NSObject
+@interface PDSAgeAssuranceService : NSObject
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database
                    emailProvider:(nullable id<PDSEmailProvider>)emailProvider;

@@ -19,7 +19,7 @@
 #import "Network/HttpRequest.h"
 #import <sqlite3.h>
 
-@interface MockWebSocketConnection : WebSocketConnection
+@interface MockWebSocketConnection : ATProtoWebSocketConnection
 @property (nonatomic, strong) NSMutableArray *sentMessages;
 @property (nonatomic, copy) NSDictionary *mockQueryParams;
 @property (nonatomic, assign) BOOL didClose;
@@ -32,7 +32,7 @@
 @implementation MockWebSocketConnection
 - (instancetype)init {
     // Skip super init if it requires args we don't have, or just use performSelector
-    // WebSocketConnection init is likely just NSObject init + property setup
+    // ATProtoWebSocketConnection init is likely just NSObject init + property setup
     self = [super init];
     if (self) {
         _sentMessages = [NSMutableArray array];
@@ -61,15 +61,15 @@
 }
 @end
 
-@interface SubscribeReposHandler (TestAccess)
-- (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection cursor:(nullable NSString *)cursor;
+@interface ATProtoSubscribeReposHandler (TestAccess)
+- (void)sendInitialRepositoryStateToConnection:(ATProtoWebSocketConnection *)connection cursor:(nullable NSString *)cursor;
 @property (nonatomic, assign) NSUInteger maxReplayEventsPerConnection;
 @property (nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
 @property (nonatomic, assign) NSUInteger maxPendingBytesPerConnection;
 @end
 
 @interface SubscribeReposHandlerTests : XCTestCase
-@property (nonatomic, strong) SubscribeReposHandler *handler;
+@property (nonatomic, strong) ATProtoSubscribeReposHandler *handler;
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, copy) NSString *tempDir;
 @end
@@ -93,7 +93,7 @@
     // double-write the same sequencer rows during tests.
     [self.controller.subscribeReposHandler stop];
     
-    self.handler = [[SubscribeReposHandler alloc]
+    self.handler = [[ATProtoSubscribeReposHandler alloc]
         initWithServiceDatabases:self.controller.serviceDatabases
                 userDatabasePool:self.controller.userDatabasePool];
     [self.handler startObservingNotifications];
@@ -103,7 +103,7 @@
     [self waitForHandlerIdle];
     [self.handler stop];
     [self.controller stopServer];
-    [XrpcDispatcher resetSharedDispatcher];
+    [ATProtoXrpcDispatcher resetSharedDispatcher];
     self.handler = nil;
     self.controller = nil;
     @autoreleasepool { }  // Drain to ensure deallocs before file deletion
@@ -115,18 +115,18 @@
     [self waitForHandler:self.handler idleWithTimeout:1.0];
 }
 
-- (void)waitForHandler:(SubscribeReposHandler *)handler idleWithTimeout:(NSTimeInterval)timeout {
+- (void)waitForHandler:(ATProtoSubscribeReposHandler *)handler idleWithTimeout:(NSTimeInterval)timeout {
     if (!handler) {
         return;
     }
     XCTAssertTrue([handler waitForIdleWithTimeout:timeout], @"Timed out waiting for subscribeRepos queues to drain");
 }
 
-- (FirehoseCommitEvent *)relayTestCommitEventWithRepo:(NSString *)repo {
+- (ATProtoFirehoseCommitEvent *)relayTestCommitEventWithRepo:(NSString *)repo {
     ATProtoCID *commitCID = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     ATProtoCID *recordCID = [ATProtoCID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 42;
     event.rebase = NO;
     event.tooBig = NO;
@@ -147,9 +147,9 @@
     return event;
 }
 
-- (void)waitForRelayBuffer:(RelayEventBuffer *)buffer
+- (void)waitForRelayBuffer:(ATProtoRelayEventBuffer *)buffer
                 eventCount:(NSUInteger)eventCount
-                   handler:(SubscribeReposHandler *)handler {
+                   handler:(ATProtoSubscribeReposHandler *)handler {
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:2.0];
     while (buffer.eventCount < eventCount &&
            [deadline timeIntervalSinceNow] > 0) {
@@ -242,7 +242,7 @@
     NSDictionary *stored = events.lastObject;
     XCTAssertEqualObjects(stored[@"type"], @"commit");
 
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     NSInteger op = 0;
     NSString *type = nil;
     NSDictionary *payload =
@@ -287,7 +287,7 @@
     NSDictionary *stored = events.lastObject;
     XCTAssertEqualObjects(stored[@"type"], @"sync");
 
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     NSInteger op = 0;
     NSString *type = nil;
     NSDictionary *payload =
@@ -346,7 +346,7 @@
 
 #ifndef GNUSTEP
 - (void)testBroadcastPersistsEvent {
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     
     [self.handler broadcastIdentityChange:@"did:plc:test_persist" handle:@"test.bsky.social"];
     [self waitForHandlerIdle];
@@ -379,7 +379,7 @@
 
 #ifndef GNUSTEP
 - (void)testReplayWithCursor {
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     
     // 1. Create some persisted events (identity events are persisted, info events are not)
     [self.handler broadcastIdentityChange:@"did:plc:replay1" handle:@"replay1.bsky.social"];
@@ -420,14 +420,14 @@
 
 #ifndef GNUSTEP
 - (void)testRelayReplayUsesBroadcastFrameWithoutAdvancingSequence {
-    EventFormatter *formatter = [[EventFormatter alloc] init];
-    RelayEventBuffer *buffer =
-        [[RelayEventBuffer alloc] initWithRetentionHours:1 maxEvents:10];
-    SubscribeReposHandler *relayHandler =
-        [[SubscribeReposHandler alloc] initWithServiceDatabases:nil];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    ATProtoRelayEventBuffer *buffer =
+        [[ATProtoRelayEventBuffer alloc] initWithRetentionHours:1 maxEvents:10];
+    ATProtoSubscribeReposHandler *relayHandler =
+        [[ATProtoSubscribeReposHandler alloc] initWithServiceDatabases:nil];
     relayHandler.eventBuffer = buffer;
-    RelayDownstreamHandler *downstreamHandler =
-        [[RelayDownstreamHandler alloc] initWithEventBuffer:buffer
+    ATProtoRelayDownstreamHandler *downstreamHandler =
+        [[ATProtoRelayDownstreamHandler alloc] initWithEventBuffer:buffer
                                       subscribeReposHandler:relayHandler];
     MockWebSocketConnection *liveConn =
         [[MockWebSocketConnection alloc] init];
@@ -435,10 +435,10 @@
     [attached addObject:liveConn];
 
     @try {
-        FirehoseCommitEvent *commitEvent =
+        ATProtoFirehoseCommitEvent *commitEvent =
             [self relayTestCommitEventWithRepo:@"did:plc:relay-replay"];
-        RelayUpstreamManager *manager =
-            [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds.example"]];
+        ATProtoRelayUpstreamManager *manager =
+            [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"pds.example"]];
 
         [downstreamHandler upstreamManager:manager
                            didReceiveEvent:commitEvent
@@ -511,7 +511,7 @@
 
 #ifndef GNUSTEP
 - (void)testReplayWithFutureCursorSendsOutdatedCursorInfo {
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     // Seed a persisted event so the session has a non-zero sequence
     [self.handler broadcastIdentityChange:@"did:plc:future_cursor_test" handle:@"future.bsky.social"];
 
@@ -540,7 +540,7 @@
 
 #ifndef GNUSTEP
 - (void)testUpdateCommitIncludesPreviousRecordCIDInRepoOp {
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     NSError *error = nil;
 
     NSDictionary *account = [self.controller createAccountForEmail:@"prev-op@test.com"
@@ -643,7 +643,7 @@
 #ifndef GNUSTEP
 - (void)testReplayWithLargeBacklogSendsOutdatedCursorInfoAndContinues {
     self.handler.maxReplayEventsPerConnection = 1;
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
 
     // Create persisted events (identity events are persisted, info events are ephemeral)
     [self.handler broadcastIdentityChange:@"did:plc:backlog1" handle:@"backlog1.bsky.social"];
@@ -689,7 +689,7 @@
 #ifndef GNUSTEP
 - (void)testBroadcastDetachesConnectionWhenPendingQueueTooLarge {
     self.handler.maxPendingSendsPerConnection = 0;
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
 
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
     conn.simulatedPendingSendCount = 1;
@@ -752,7 +752,7 @@
 
 #ifndef GNUSTEP
 - (void)testReplayWithPrunedEventsHandlesGap {
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     
     // 1. Broadcast two persisted events (Seq 1, 2)
     [self.handler broadcastIdentityChange:@"did:plc:prune1" handle:@"prune1.bsky.social"];
@@ -819,8 +819,8 @@
     self.handler = nil;
     
     // 3. Create NEW handler with SAME controller (same DB)
-    SubscribeReposHandler *newHandler =
-        [[SubscribeReposHandler alloc]
+    ATProtoSubscribeReposHandler *newHandler =
+        [[ATProtoSubscribeReposHandler alloc]
             initWithServiceDatabases:self.controller.serviceDatabases
                     userDatabasePool:self.controller.userDatabasePool];
     

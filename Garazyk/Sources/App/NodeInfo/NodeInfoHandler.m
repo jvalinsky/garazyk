@@ -10,20 +10,20 @@
 #import "Debug/GZLogger.h"
 #import "Services/PDS/PDSAccountService.h"
 
-@interface NodeInfoHandler ()
-@property (nonatomic, strong) NodeInfoProvider *provider;
+@interface GZNodeInfoHandler ()
+@property (nonatomic, strong) GZNodeInfoProvider *provider;
 @property (nonatomic, copy) NSString *issuer;
 @property (nonatomic, weak) id<PDSAccountService> accountService;
 @property (nonatomic, assign) BOOL configured;
 @end
 
-@implementation NodeInfoHandler
+@implementation GZNodeInfoHandler
 
 + (instancetype)sharedHandler {
-    static NodeInfoHandler *shared = nil;
+    static GZNodeInfoHandler *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[NodeInfoHandler alloc] init];
+        shared = [[GZNodeInfoHandler alloc] init];
     });
     return shared;
 }
@@ -68,7 +68,7 @@
         return;
     }
 
-    _provider = [[NodeInfoProvider alloc] initWithBaseURL:effectiveIssuer configuration:config];
+    _provider = [[GZNodeInfoProvider alloc] initWithBaseURL:effectiveIssuer configuration:config];
     
     // Fetch stats if account service is available.
     if (self.accountService) {

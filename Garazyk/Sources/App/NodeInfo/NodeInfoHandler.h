@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file NodeInfoHandler.h
+ @file GZNodeInfoHandler.h
 
  @abstract NodeInfo HTTP request handler.
 
@@ -23,7 +23,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class NodeInfoHandler
+ @class GZNodeInfoHandler
 
  @abstract HTTP request handler for NodeInfo endpoints.
 
@@ -32,7 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
  - /nodeinfo/2.0 (schema 2.0)
  - /nodeinfo/2.1 (schema 2.1)
  */
-@interface NodeInfoHandler : NSObject
+@interface GZNodeInfoHandler : NSObject
 
 /*! Shared singleton instance. */
 + (instancetype)sharedHandler;

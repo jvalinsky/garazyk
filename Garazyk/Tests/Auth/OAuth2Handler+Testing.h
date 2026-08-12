@@ -6,7 +6,7 @@
  * Test-only category that exposes private methods for unit testing.
  * This header should only be imported by test files.
  */
-@interface OAuth2Handler (Testing)
+@interface ATProtoOAuth2Handler (Testing)
 
 /**
  * Validates client metadata provided during OAuth authorization.

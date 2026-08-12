@@ -16,7 +16,7 @@
 @interface GermMailboxServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *db;
-@property (nonatomic, strong) GermMailboxService *service;
+@property (nonatomic, strong) PDSGermMailboxService *service;
 @end
 
 @implementation GermMailboxServiceTests
@@ -35,10 +35,10 @@
     [self.db openWithError:nil];
 
     // Apply schema
-    NSString *schemaSQL = [[GermMailboxSchemaManager sharedManager] mailboxSchemaSQL];
+    NSString *schemaSQL = [[PDSGermMailboxSchemaManager sharedManager] mailboxSchemaSQL];
     [self.db executeUnsafeRawSQL:schemaSQL error:nil];
 
-    self.service = [[GermMailboxService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
+    self.service = [[PDSGermMailboxService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
 }
 
 - (void)tearDown {

@@ -7,9 +7,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Actor store operations for session records.
  */
-@interface PDSActorStore (Session)
+@interface PDSActorStore (PDSSession)
 
-#pragma mark - Session Operations (Reader)
+#pragma mark - PDSSession Operations (Reader)
 
 /**
  * @abstract Retrieves session details for a specific refresh token.
@@ -26,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSString *)accountDidForRefreshToken:(NSString *)token error:(NSError **)error;
 - (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error;
 
-#pragma mark - Session Operations (Transactor)
+#pragma mark - PDSSession Operations (Transactor)
 
 - (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid expiresAt:(NSDate *)expiresAt error:(NSError **)error;
 - (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid expiresAt:(NSDate *)expiresAt error:(NSError **)error;

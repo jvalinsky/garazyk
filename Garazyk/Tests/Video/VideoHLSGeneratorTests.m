@@ -129,9 +129,9 @@
 
 // Runs the generator under test. Records a failure and returns nil when
 // generation fails, so each test body can bail without repeating the assert.
-- (nullable VideoHLSResult *)generateHLS {
+- (nullable GZVideoHLSResult *)generateHLS {
     NSError *error = nil;
-    VideoHLSResult *result = [self.generator generateHLSFromVideoAtURL:self.fixtureURL
+    GZVideoHLSResult *result = [self.generator generateHLSFromVideoAtURL:self.fixtureURL
                                                                    did:@"did:plc:hlstest"
                                                                    cid:@"bafyreihlstest"
                                                          thumbnailData:nil
@@ -165,7 +165,7 @@
     if ([self prerequisitesMissing]) {
         XCTSkip(@"ffmpeg unavailable or fixture generation failed");
     }
-    VideoHLSResult *result = [self generateHLS];
+    GZVideoHLSResult *result = [self generateHLS];
     if (!result) {
         return;
     }
@@ -189,7 +189,7 @@
     if ([self prerequisitesMissing]) {
         XCTSkip(@"ffmpeg unavailable or fixture generation failed");
     }
-    VideoHLSResult *result = [self generateHLS];
+    GZVideoHLSResult *result = [self generateHLS];
     if (!result) {
         return;
     }
@@ -217,7 +217,7 @@
     if ([self prerequisitesMissing]) {
         XCTSkip(@"ffmpeg unavailable or fixture generation failed");
     }
-    VideoHLSResult *result = [self generateHLS];
+    GZVideoHLSResult *result = [self generateHLS];
     if (!result) {
         return;
     }
@@ -245,7 +245,7 @@
     if ([self prerequisitesMissing]) {
         XCTSkip(@"ffmpeg unavailable or fixture generation failed");
     }
-    VideoHLSResult *result = [self generateHLS];
+    GZVideoHLSResult *result = [self generateHLS];
     if (!result) {
         return;
     }
@@ -274,7 +274,7 @@
     if ([self prerequisitesMissing]) {
         XCTSkip(@"ffmpeg unavailable or fixture generation failed");
     }
-    VideoHLSResult *result = [self generateHLS];
+    GZVideoHLSResult *result = [self generateHLS];
     if (!result) {
         return;
     }
@@ -297,7 +297,7 @@
     if ([self prerequisitesMissing]) {
         XCTSkip(@"ffmpeg unavailable or fixture generation failed");
     }
-    VideoHLSResult *result = [self generateHLS];
+    GZVideoHLSResult *result = [self generateHLS];
     if (!result) {
         return;
     }

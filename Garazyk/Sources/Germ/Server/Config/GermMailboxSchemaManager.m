@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "GermMailboxSchemaManager.h"
 
-@implementation GermMailboxSchemaManager
+@implementation PDSGermMailboxSchemaManager
 
 + (instancetype)sharedManager {
-    static GermMailboxSchemaManager *shared = nil;
+    static PDSGermMailboxSchemaManager *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[GermMailboxSchemaManager alloc] init];
+        shared = [[PDSGermMailboxSchemaManager alloc] init];
     });
     return shared;
 }

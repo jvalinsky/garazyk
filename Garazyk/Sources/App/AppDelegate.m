@@ -6,11 +6,11 @@
 #import "Database/PDSDatabase.h"
 #import "Debug/GZLogger.h"
 
-@interface AppDelegate ()
+@interface GZAppDelegate ()
 
 @end
 
-@implementation AppDelegate
+@implementation GZAppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
 #if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))

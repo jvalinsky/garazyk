@@ -52,7 +52,7 @@
 @end
 
 @interface OAuth2PreservationTests : XCTestCase
-@property (nonatomic, strong) OAuth2Handler *handler;
+@property (nonatomic, strong) ATProtoOAuth2Handler *handler;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) TestAccountServicePreservation *accountService;
 @property (nonatomic, copy) NSString *databasePath;
@@ -99,7 +99,7 @@
     self.accountService.mockUser = @{@"did": @"did:plc:test-user", @"handle": @"test-user.test"};
     
     // Setup OAuth handler
-    self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+    self.handler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.database];
     self.handler.accountService = self.accountService;
     
 }
@@ -203,8 +203,8 @@
                 }
                 
                 // Generate PKCE parameters
-                NSString *codeVerifier = [PKCEUtil generateCodeVerifier];
-                NSString *codeChallenge = [PKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
+                NSString *codeVerifier = [ATProtoPKCEUtil generateCodeVerifier];
+                NSString *codeChallenge = [ATProtoPKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
                 
                 NSMutableDictionary *queryParams = [@{
                     @"client_id": clientID,
@@ -261,8 +261,8 @@
                          @"Should return invalid_request error");
     
     // Test 2: S256 method should be supported
-    NSString *codeVerifier = [PKCEUtil generateCodeVerifier];
-    NSString *codeChallenge = [PKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
+    NSString *codeVerifier = [ATProtoPKCEUtil generateCodeVerifier];
+    NSString *codeChallenge = [ATProtoPKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
     
     queryParams[@"code_challenge"] = codeChallenge;
     queryParams[@"code_challenge_method"] = @"S256";
@@ -275,8 +275,8 @@
     
     // Test 3: Generate multiple PKCE scenarios
     for (int i = 0; i < 10; i++) {
-        NSString *verifier = [PKCEUtil generateCodeVerifier];
-        NSString *challenge = [PKCEUtil generateCodeChallengeWithVerifier:verifier];
+        NSString *verifier = [ATProtoPKCEUtil generateCodeVerifier];
+        NSString *challenge = [ATProtoPKCEUtil generateCodeChallengeWithVerifier:verifier];
         
         queryParams[@"code_challenge"] = challenge;
         queryParams[@"state"] = [NSString stringWithFormat:@"state-%d", i];
@@ -299,8 +299,8 @@
  */
 - (void)testProperty_CSRFProtectionPreserved {
     // Test: Missing state parameter should fail
-    NSString *codeVerifier = [PKCEUtil generateCodeVerifier];
-    NSString *codeChallenge = [PKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
+    NSString *codeVerifier = [ATProtoPKCEUtil generateCodeVerifier];
+    NSString *codeChallenge = [ATProtoPKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
     
     NSMutableDictionary *queryParams = [@{
         @"client_id": @"test-public-client",
@@ -350,8 +350,8 @@
  * - Invalid redirect URIs rejected
  */
 - (void)testProperty_RedirectURIValidationPreserved {
-    NSString *codeVerifier = [PKCEUtil generateCodeVerifier];
-    NSString *codeChallenge = [PKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
+    NSString *codeVerifier = [ATProtoPKCEUtil generateCodeVerifier];
+    NSString *codeChallenge = [ATProtoPKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
     
     // Test 1: Valid registered redirect URI should succeed
     NSArray *validRedirectURIs = @[
@@ -409,8 +409,8 @@
  */
 - (void)testClientSecretValidationPreserved {
     // Test client validation through authorization endpoint
-    NSString *codeVerifier = [PKCEUtil generateCodeVerifier];
-    NSString *codeChallenge = [PKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
+    NSString *codeVerifier = [ATProtoPKCEUtil generateCodeVerifier];
+    NSString *codeChallenge = [ATProtoPKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
     
     // Test: Valid confidential client should succeed
     NSMutableDictionary *queryParams = [@{
@@ -446,7 +446,7 @@
  * **Validates: Requirement 3.4**
  * 
  * OAuth metadata endpoints should continue to return correct structure.
- * This is tested through the OAuth2Server's metadata property.
+ * This is tested through the ATProtoOAuth2Server's metadata property.
  */
 - (void)testOAuthMetadataEndpointsPreserved {
     // Test: OAuth server should have issuer configured
@@ -482,8 +482,8 @@
     ];
     
     for (NSDictionary *clientInfo in clients) {
-        NSString *codeVerifier = [PKCEUtil generateCodeVerifier];
-        NSString *codeChallenge = [PKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
+        NSString *codeVerifier = [ATProtoPKCEUtil generateCodeVerifier];
+        NSString *codeChallenge = [ATProtoPKCEUtil generateCodeChallengeWithVerifier:codeVerifier];
         
         NSMutableDictionary *queryParams = [@{
             @"client_id": clientInfo[@"client_id"],

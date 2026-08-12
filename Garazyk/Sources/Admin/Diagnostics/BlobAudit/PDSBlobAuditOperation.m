@@ -12,7 +12,7 @@
 @property (nonatomic, copy, readwrite) NSString *jobId;
 @property (nonatomic, copy, readwrite) NSString *auditType;
 // Redeclare protected properties as readwrite for internal use
-@property (nonatomic, strong, readwrite) BlobStorage *blobStorage;
+@property (nonatomic, strong, readwrite) PDSBlobStorage *blobStorage;
 @property (nonatomic, strong, readwrite) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readwrite) dispatch_queue_t queue;
 // Redeclare readonly properties as readwrite for internal use
@@ -25,7 +25,7 @@
 
 - (instancetype)initWithJobId:(NSString *)jobId
                     auditType:(NSString *)auditType
-                  blobStorage:(BlobStorage *)blobStorage
+                  blobStorage:(PDSBlobStorage *)blobStorage
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                        dryRun:(BOOL)dryRun {
     if ((self = [super init])) {

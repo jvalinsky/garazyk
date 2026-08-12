@@ -25,55 +25,55 @@
 @implementation XrpcRoutePackTests
 
 - (void)testChatBskyActorPackConformsToProtocol {
-  XCTAssertTrue([XrpcChatBskyActorPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-  XCTAssertEqualObjects([XrpcChatBskyActorPack routePackIdentifier], @"chat.bsky.actor");
+  XCTAssertTrue([ATProtoXrpcChatBskyActorPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([ATProtoXrpcChatBskyActorPack routePackIdentifier], @"chat.bsky.actor");
 }
 
 - (void)testAppBskyProxyPackConformsToProtocol {
-  XCTAssertTrue([XrpcAppBskyProxyMethodPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-  XCTAssertEqualObjects([XrpcAppBskyProxyMethodPack routePackIdentifier], @"app.bsky.proxy");
+  XCTAssertTrue([ATProtoXrpcAppBskyProxyMethodPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([ATProtoXrpcAppBskyProxyMethodPack routePackIdentifier], @"app.bsky.proxy");
 }
 
 - (void)testAppBskyAgeAssurancePackConformsToProtocol {
-  XCTAssertTrue([XrpcAppBskyAgeAssurancePack conformsToProtocol:@protocol(XrpcRoutePack)]);
-  XCTAssertEqualObjects([XrpcAppBskyAgeAssurancePack routePackIdentifier],
+  XCTAssertTrue([ATProtoXrpcAppBskyAgeAssurancePack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([ATProtoXrpcAppBskyAgeAssurancePack routePackIdentifier],
                         @"app.bsky.ageassurance");
 }
 
 - (void)testAppBskyBookmarksPackConformsToProtocol {
-  XCTAssertTrue([XrpcAppBskyBookmarksPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-  XCTAssertEqualObjects([XrpcAppBskyBookmarksPack routePackIdentifier], @"app.bsky.bookmark");
+  XCTAssertTrue([ATProtoXrpcAppBskyBookmarksPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([ATProtoXrpcAppBskyBookmarksPack routePackIdentifier], @"app.bsky.bookmark");
 }
 
 - (void)testAppBskyDraftsPackConformsToProtocol {
-  XCTAssertTrue([XrpcAppBskyDraftsPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-  XCTAssertEqualObjects([XrpcAppBskyDraftsPack routePackIdentifier], @"app.bsky.draft");
+  XCTAssertTrue([ATProtoXrpcAppBskyDraftsPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([ATProtoXrpcAppBskyDraftsPack routePackIdentifier], @"app.bsky.draft");
 }
 
 - (void)testChatBskyGroupPackConformsToProtocol {
-  XCTAssertTrue([XrpcChatBskyGroupPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-  XCTAssertEqualObjects([XrpcChatBskyGroupPack routePackIdentifier], @"chat.bsky.group");
+  XCTAssertTrue([ATProtoXrpcChatBskyGroupPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([ATProtoXrpcChatBskyGroupPack routePackIdentifier], @"chat.bsky.group");
 }
 
 - (void)testAppBskyContactPackConformsToProtocol {
-  XCTAssertTrue([XrpcAppBskyContactPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-  XCTAssertEqualObjects([XrpcAppBskyContactPack routePackIdentifier], @"app.bsky.contact");
+  XCTAssertTrue([ATProtoXrpcAppBskyContactPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([ATProtoXrpcAppBskyContactPack routePackIdentifier], @"app.bsky.contact");
 }
 
 - (void)testAppBskyActorPackConformsToProtocol {
-  XCTAssertTrue([XrpcAppBskyActorPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-  XCTAssertEqualObjects([XrpcAppBskyActorPack routePackIdentifier], @"app.bsky.actor");
+  XCTAssertTrue([ATProtoXrpcAppBskyActorPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([ATProtoXrpcAppBskyActorPack routePackIdentifier], @"app.bsky.actor");
 }
 
 - (void)testAppBskyNotificationPackConformsToProtocol {
-  XCTAssertTrue([XrpcAppBskyNotificationPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-  XCTAssertEqualObjects([XrpcAppBskyNotificationPack routePackIdentifier], @"app.bsky.notification");
+  XCTAssertTrue([ATProtoXrpcAppBskyNotificationPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([ATProtoXrpcAppBskyNotificationPack routePackIdentifier], @"app.bsky.notification");
 }
 
 - (void)testRegistrarRegistersConformingPack {
-  XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+  ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
   id<XrpcRoutePackServices> services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:nil
                                           adminController:nil
                                              configuration:nil
@@ -82,7 +82,7 @@
                                          userDatabasePool:nil
                                                rateLimiter:nil];
 
-  [XrpcRoutePackRegistrar registerRoutePacks:@[ [XrpcChatBskyActorPack class] ]
+  [ATProtoXrpcRoutePackRegistrar registerRoutePacks:@[ [ATProtoXrpcChatBskyActorPack class] ]
                                   dispatcher:dispatcher
                                     services:services];
 
@@ -103,7 +103,7 @@
                               remoteAddress:@"127.0.0.1"];
   ATProtoHttpResponse *response = [[ATProtoHttpResponse alloc] init];
   id<XrpcRoutePackServices> services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:nil
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:nil
                                                 jwtMinter:nil
                                           adminController:nil
                                              configuration:nil
@@ -111,8 +111,8 @@
                                          serviceDatabases:nil
                                          userDatabasePool:nil
                                                rateLimiter:nil];
-  XrpcHandlerContext *context =
-      [[XrpcHandlerContext alloc] initWithRequest:request
+  ATProtoXrpcHandlerContext *context =
+      [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                          response:response
                                          services:services];
 

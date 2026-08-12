@@ -6,7 +6,7 @@
 #import "Network/HttpResponse.h"
 #import "AppView/Services/ContactService.h"
 
-@implementation AppViewXRpcRoutePack (Contact)
+@implementation ATProtoAppViewXRpcRoutePack (Contact)
 
 - (void)handleStartPhoneVerification:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {

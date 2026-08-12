@@ -8,7 +8,7 @@
 
 // Wraps AppViewDatabase to count every SELECT issued through the shared
 // query path, so tests can assert query counts rather than merely observe
-// them once. All ActorService reads flow through this single override.
+// them once. All PDSActorService reads flow through this single override.
 @interface AppViewQueryCountingDatabase : AppViewDatabase
 @property (nonatomic, assign) NSUInteger queryCount;
 @end
@@ -26,7 +26,7 @@
 
 @interface ActorServiceBatchHydrationTests : XCTestCase
 @property (nonatomic, strong) AppViewQueryCountingDatabase *database;
-@property (nonatomic, strong) ActorService *service;
+@property (nonatomic, strong) PDSActorService *service;
 @end
 
 @implementation ActorServiceBatchHydrationTests
@@ -37,7 +37,7 @@
     self.database = [[AppViewQueryCountingDatabase alloc] initInMemoryWithError:&error];
     XCTAssertNotNil(self.database, @"Failed to create in-memory AppViewDatabase: %@", error);
     XCTAssertTrue([self.database runMigrations:&error], @"Failed to run migrations: %@", error);
-    self.service = [[ActorService alloc] initWithDatabase:self.database];
+    self.service = [[PDSActorService alloc] initWithDatabase:self.database];
 }
 
 - (void)tearDown {

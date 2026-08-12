@@ -5,7 +5,7 @@
 
 @interface MimeTypeValidatorTests : XCTestCase
 
-@property (nonatomic, strong) MimeTypeValidator *validator;
+@property (nonatomic, strong) ATProtoMimeTypeValidator *validator;
 
 @end
 
@@ -13,7 +13,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.validator = [MimeTypeValidator sharedValidator];
+    self.validator = [ATProtoMimeTypeValidator sharedValidator];
 }
 
 - (void)tearDown {
@@ -97,7 +97,7 @@
 }
 
 - (void)testActiveContentMimeTypesRejected {
-    // §6.2: BlobStorage validateBlob uses isSupportedMimeType — active content
+    // §6.2: PDSBlobStorage validateBlob uses isSupportedMimeType — active content
     // must not be in the supported set even if a route denylist also exists.
     NSArray<NSString *> *active = @[
         @"image/svg+xml",

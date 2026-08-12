@@ -10,7 +10,7 @@
 
 - (void)testMetadataFields {
     NSString *baseURL = @"http://127.0.0.1:2583";
-    OAuthServerMetadata *metadata = [[OAuthServerMetadata alloc] initWithBaseURL:baseURL];
+    ATProtoOAuthServerMetadata *metadata = [[ATProtoOAuthServerMetadata alloc] initWithBaseURL:baseURL];
     XCTAssertNotNil(metadata);
     
     NSDictionary *dict = metadata.metadata;

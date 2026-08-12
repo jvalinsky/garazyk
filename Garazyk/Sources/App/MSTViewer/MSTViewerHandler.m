@@ -12,20 +12,20 @@
 #import "Compat/Foundation/NSDataCompat.h"
 #import <Foundation/Foundation.h>
 
-#pragma mark - MSTViewerHandler
+#pragma mark - GZMSTViewerHandler
 
-@interface MSTViewerHandler ()
+@interface GZMSTViewerHandler ()
 @property (nonatomic, weak) PDSController *controller;
 @property (nonatomic, strong) NSCache *cache;
 @end
 
-@implementation MSTViewerHandler
+@implementation GZMSTViewerHandler
 
 + (instancetype)sharedHandler {
-    static MSTViewerHandler *instance = nil;
+    static GZMSTViewerHandler *instance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        instance = [[MSTViewerHandler alloc] init];
+        instance = [[GZMSTViewerHandler alloc] init];
     });
     return instance;
 }

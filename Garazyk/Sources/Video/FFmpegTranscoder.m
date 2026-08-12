@@ -24,7 +24,7 @@
 
 NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ffmpeg";
 
-@implementation FFmpegTranscoder
+@implementation GZFFmpegTranscoder
 
 - (instancetype)initWithFFmpegPath:(nullable NSString *)ffmpegPath
                       ffprobePath:(nullable NSString *)ffprobePath {

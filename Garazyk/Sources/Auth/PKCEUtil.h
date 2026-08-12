@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PKCEUtil.h
+ @file ATProtoPKCEUtil.h
 
  @abstract PKCE (Proof Key for Code Exchange) utilities for OAuth 2.0.
 
@@ -16,11 +16,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class PKCEUtil
+ @class ATProtoPKCEUtil
 
  @abstract PKCE code challenge utilities.
  */
-@interface PKCEUtil : NSObject
+@interface ATProtoPKCEUtil : NSObject
 
 /*! Generates a cryptographically random code verifier (43-128 chars). */
 + (NSString *)generateCodeVerifier;

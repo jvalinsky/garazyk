@@ -51,7 +51,7 @@
 @interface FeedServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) FeedService *service;
+@property (nonatomic, strong) PDSFeedService *service;
 @property (nonatomic, strong) NSISO8601DateFormatter *isoFormatter;
 @end
 
@@ -74,7 +74,7 @@
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     
     [self setupSchema:dbPath];
-    self.service = [[FeedService alloc] initWithDatabase:self.database];
+    self.service = [[PDSFeedService alloc] initWithDatabase:self.database];
     
     self.isoFormatter = [[NSISO8601DateFormatter alloc] init];
 }
@@ -220,7 +220,7 @@
 }
 
 - (void)testAuthorFeedToleratesAppViewNullCIDAndUsesStoredValue {
-    FeedService *service = [[FeedService alloc] initWithDatabase:[[FeedServiceNullRowDatabase alloc] init]];
+    PDSFeedService *service = [[PDSFeedService alloc] initWithDatabase:[[FeedServiceNullRowDatabase alloc] init]];
 
     NSError *error = nil;
     NSDictionary *feed = [service getAuthorFeedForActor:@"did:plc:author"

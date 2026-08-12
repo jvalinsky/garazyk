@@ -17,14 +17,14 @@
   commit.rev = @"3jzfcijpj2z2a";
   commit.did = @"did:plc:test";
 
-  NSData *result = [FirehoseCARBuilder buildCARForSyncCommitOnly:commit];
+  NSData *result = [ATProtoFirehoseCARBuilder buildCARForSyncCommitOnly:commit];
   // If computeCID returns nil, result will be empty; just verify no crash
   XCTAssertNotNil(result);
 }
 
 - (void)testBuildCARForSyncCommitOnly_EmptyCommit_ReturnsNonNil {
   ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
-  NSData *result = [FirehoseCARBuilder buildCARForSyncCommitOnly:commit];
+  NSData *result = [ATProtoFirehoseCARBuilder buildCARForSyncCommitOnly:commit];
   // A bare ATProtoRepoCommit may have a valid computeCID; verify no crash and non-nil
   XCTAssertNotNil(result);
 }
@@ -34,7 +34,7 @@
 - (void)testBuildCARForCommit_EmptyCommit_ReturnsNonNil {
   ATProtoRepoCommit *commit = [[ATProtoRepoCommit alloc] init];
   PDSBlockProvider provider = ^NSData * _Nullable(NSData *cidBytes) { return nil; };
-  NSData *result = [FirehoseCARBuilder buildCARForCommit:commit
+  NSData *result = [ATProtoFirehoseCARBuilder buildCARForCommit:commit
                                                      ops:@[]
                                            blockProvider:provider
                                      revBlockListProvider:nil];
@@ -59,7 +59,7 @@
     return [NSData dataWithBytes:"\x01\x02\x03" length:3];
   };
 
-  NSData *result = [FirehoseCARBuilder buildCARForCommit:commit
+  NSData *result = [ATProtoFirehoseCARBuilder buildCARForCommit:commit
                                                      ops:@[op]
                                            blockProvider:provider
                                      revBlockListProvider:nil];
@@ -78,7 +78,7 @@
   };
 
   PDSBlockProvider provider = ^NSData * _Nullable(NSData *cidBytes) { return nil; };
-  NSData *result = [FirehoseCARBuilder buildCARForCommit:commit
+  NSData *result = [ATProtoFirehoseCARBuilder buildCARForCommit:commit
                                                      ops:@[deleteOp]
                                            blockProvider:provider
                                      revBlockListProvider:nil];
@@ -97,7 +97,7 @@
   };
 
   PDSBlockProvider provider = ^NSData * _Nullable(NSData *cidBytes) { return nil; };
-  NSData *result = [FirehoseCARBuilder buildCARForCommit:commit
+  NSData *result = [ATProtoFirehoseCARBuilder buildCARForCommit:commit
                                                      ops:@[op]
                                            blockProvider:provider
                                      revBlockListProvider:nil];
@@ -110,7 +110,7 @@
   commit.did = @"did:plc:test";
 
   PDSBlockProvider provider = ^NSData * _Nullable(NSData *cidBytes) { return nil; };
-  NSData *result = [FirehoseCARBuilder buildCARForCommit:commit
+  NSData *result = [ATProtoFirehoseCARBuilder buildCARForCommit:commit
                                                      ops:nil
                                            blockProvider:provider
                                      revBlockListProvider:nil];
@@ -133,7 +133,7 @@
   };
 
   PDSBlockProvider provider = ^NSData * _Nullable(NSData *cidBytes) { return nil; };
-  NSData *result = [FirehoseCARBuilder buildCARForCommit:commit
+  NSData *result = [ATProtoFirehoseCARBuilder buildCARForCommit:commit
                                                      ops:@[op]
                                            blockProvider:provider
                                      revBlockListProvider:nil];
@@ -153,7 +153,7 @@
     return @[[NSMutableData dataWithLength:32]];
   };
 
-  NSData *result = [FirehoseCARBuilder buildCARForCommit:commit
+  NSData *result = [ATProtoFirehoseCARBuilder buildCARForCommit:commit
                                                      ops:@[]
                                            blockProvider:blockProvider
                                      revBlockListProvider:revProvider];

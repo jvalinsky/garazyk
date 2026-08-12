@@ -7,14 +7,14 @@
 #import "Core/ATProtoDagCBOR.h"
 
 @interface FirehoseConformanceTests : XCTestCase
-@property (nonatomic, strong) EventFormatter *formatter;
+@property (nonatomic, strong) ATProtoEventFormatter *formatter;
 @end
 
 @implementation FirehoseConformanceTests
 
 - (void)setUp {
     [super setUp];
-    self.formatter = [[EventFormatter alloc] init];
+    self.formatter = [[ATProtoEventFormatter alloc] init];
 }
 
 - (void)testCommitEventRemovesRecordCBORFromOps {
@@ -31,7 +31,7 @@
         @"recordCBOR": dummyRecordData
     };
     
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 123;
     event.repo = @"did:plc:test";
     event.commit = dummyCID; // Required
@@ -52,7 +52,7 @@
     NSUInteger index = 0;
     // Helper method not exposed in header, so we rely on public decodeEventFromData if we can, 
     // or just assume standard CBOR sequence if I had a decoder handy.
-    // EventFormatter DOES have decodeEventFromData:op:msgType:error:
+    // ATProtoEventFormatter DOES have decodeEventFromData:op:msgType:error:
     
     NSInteger op = 0;
     NSString *msgType = nil;
@@ -75,7 +75,7 @@
     // Create a huge event
     NSMutableData *hugeData = [NSMutableData dataWithLength:1024 * 1024 + 100]; // > 1MB
     
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 124;
     event.repo = @"did:plc:test";
     event.commit = [ATProtoCID sha256:[@"size-test-cid" dataUsingEncoding:NSUTF8StringEncoding]];

@@ -12,30 +12,30 @@
 @end
 
 @implementation MockWebSocketDelegate
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveMessage:(NSData *)data {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveMessage:(NSData *)data {
     self.lastMessage = data;
     [self.expectation fulfill];
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveText:(NSString *)text {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveText:(NSString *)text {
     self.lastText = text;
     [self.expectation fulfill];
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
     self.lastCloseCode = code;
     [self.expectation fulfill];
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didFailWithError:(NSError *)error {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didFailWithError:(NSError *)error {
     self.lastError = error;
     [self.expectation fulfill];
 }
 @end
 
-@interface WebSocketConnection (Testing)
+@interface ATProtoWebSocketConnection (Testing)
 - (void)handleReceivedData:(NSData *)data;
 @end
 
 @interface WebSocketFrameParsingTests : XCTestCase
-@property (nonatomic, strong) WebSocketConnection *connection;
+@property (nonatomic, strong) ATProtoWebSocketConnection *connection;
 @property (nonatomic, strong) MockWebSocketDelegate *delegate;
 @end
 
@@ -43,7 +43,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.connection = [[WebSocketConnection alloc] init];
+    self.connection = [[ATProtoWebSocketConnection alloc] init];
     self.delegate = [[MockWebSocketDelegate alloc] init];
     self.connection.delegate = self.delegate;
 }

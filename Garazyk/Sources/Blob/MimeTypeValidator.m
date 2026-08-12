@@ -13,7 +13,7 @@ static const NSUInteger kMaxDocumentSize = 10 * 1024 * 1024;
 static const NSUInteger kMaxApplicationSize = 5 * 1024 * 1024;
 static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
 
-@interface MimeTypeValidator ()
+@interface ATProtoMimeTypeValidator ()
 
 @property (nonatomic, strong) NSSet<NSString *> *supportedImageTypes;
 @property (nonatomic, strong) NSSet<NSString *> *supportedVideoTypes;
@@ -31,13 +31,13 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
 
 @end
 
-@implementation MimeTypeValidator
+@implementation ATProtoMimeTypeValidator
 
 + (instancetype)sharedValidator {
-    static MimeTypeValidator *sharedInstance = nil;
+    static ATProtoMimeTypeValidator *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        sharedInstance = [[MimeTypeValidator alloc] init];
+        sharedInstance = [[ATProtoMimeTypeValidator alloc] init];
     });
     return sharedInstance;
 }
@@ -61,7 +61,7 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
         @"image/webp",
         @"image/tiff",
         @"image/bmp",
-        // image/svg+xml denied as active content (§6.2) — reject at BlobStorage validate
+        // image/svg+xml denied as active content (§6.2) — reject at PDSBlobStorage validate
         @"image/avif",
         @"image/heic",
         @"image/heif",

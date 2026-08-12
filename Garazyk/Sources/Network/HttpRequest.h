@@ -120,7 +120,7 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
  * Mutable context for middleware to inject values.
  *
  * Middleware chains can use this to pass data to downstream handlers.
- * For example, AuthMiddleware injects "authenticatedDid" here.
+ * For example, ATProtoAuthMiddleware injects "authenticatedDid" here.
  */
 /**
  * @abstract Exposes the middleware context value.

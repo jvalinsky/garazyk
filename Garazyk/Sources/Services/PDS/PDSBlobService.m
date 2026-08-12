@@ -21,7 +21,7 @@
 
 @implementation PDSBlobService
 
-- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool storage:(BlobStorage *)storage {
+- (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool storage:(PDSBlobStorage *)storage {
     if (self = [super init]) {
         self.databasePool = databasePool;
         self.blobStorage = storage;
@@ -50,7 +50,7 @@
     
     NSString *cidString = cid.stringValue;
 
-    // We no longer need to manually put block into ActorStore, BlobStorage handles generic storage.
+    // We no longer need to manually put block into ActorStore, PDSBlobStorage handles generic storage.
     // However, if the old logic put BLOBS as BLOCKS, do we need to emulate that?
     // The previous implementation put the blob as a block in the ActorStore. 
     // If the system expects blobs to be readable via `getRecord` or `getBlock`, we might break that.

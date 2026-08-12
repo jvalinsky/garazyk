@@ -213,7 +213,7 @@
   [PDSAdminAuth sharedAuth].controller = controller;
 
   // Use the handler from the controller
-  SubscribeReposHandler *subscribeReposHandler = controller.subscribeReposHandler;
+  ATProtoSubscribeReposHandler *subscribeReposHandler = controller.subscribeReposHandler;
 
   ATProtoHttpServerBuilder *serverBuilder = [[ATProtoHttpServerBuilder alloc]
       initWithConfiguration:[ATProtoServiceConfiguration sharedConfiguration]];
@@ -224,9 +224,9 @@
   serverBuilder.subscribeReposHandler = subscribeReposHandler;
 
   // Configure chat service proxy before route registration.
-  // When PDS_CHAT_URL is set, the XrpcAppBskyPack skips local chat
+  // When PDS_CHAT_URL is set, the ATProtoXrpcAppBskyPack skips local chat
   // handler registration and the XrpcHandler proxies chat.bsky.* methods.
-  XrpcDispatcher *xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
+  ATProtoXrpcDispatcher *xrpcDispatcher = [ATProtoXrpcDispatcher sharedDispatcher];
   serverBuilder.xrpcDispatcher = xrpcDispatcher;
   xrpcDispatcher.userDatabasePool = controller.serviceDatabases.userDatabasePool;
   ATProtoServiceConfiguration *chatConfig = [ATProtoServiceConfiguration sharedConfiguration];

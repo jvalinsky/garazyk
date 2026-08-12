@@ -6,10 +6,10 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class ChatModerationService
+ @class PDSChatModerationService
  @abstract Service for chat moderation tasks (metadata, context, access).
  */
-@interface ChatModerationService : NSObject
+@interface PDSChatModerationService : NSObject
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
 

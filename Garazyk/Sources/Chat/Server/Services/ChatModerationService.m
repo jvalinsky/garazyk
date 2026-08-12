@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "ChatModerationService.h"
 
-@interface ChatModerationService ()
+@interface PDSChatModerationService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
 @end
 
-@implementation ChatModerationService
+@implementation PDSChatModerationService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];

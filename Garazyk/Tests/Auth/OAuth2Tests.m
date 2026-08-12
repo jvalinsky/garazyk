@@ -5,14 +5,14 @@
 #import "Auth/Session.h"
 
 @interface OAuth2Tests : XCTestCase
-@property (nonatomic, strong) OAuth2Server *server;
+@property (nonatomic, strong) ATProtoOAuth2Server *server;
 @end
 
 @implementation OAuth2Tests
 
 - (void)setUp {
     [super setUp];
-    self.server = [[OAuth2Server alloc] init];
+    self.server = [[ATProtoOAuth2Server alloc] init];
 }
 
 - (void)tearDown {
@@ -23,7 +23,7 @@
 - (void)testAuthorizationRedirectIncludesIssuerParameter {
     self.server.issuer = @"https://pds.example.com";
 
-    OAuth2AuthorizationRequest *request = [[OAuth2AuthorizationRequest alloc] init];
+    ATProtoOAuth2AuthorizationRequest *request = [[ATProtoOAuth2AuthorizationRequest alloc] init];
     request.clientID = @"test-client";
     request.redirectURI = @"https://client.example.com/callback";
     request.responseType = @"code";
@@ -59,7 +59,7 @@
 - (void)testAuthorizationRedirectFragmentMode {
     self.server.issuer = @"https://pds.example.com";
 
-    OAuth2AuthorizationRequest *request = [[OAuth2AuthorizationRequest alloc] init];
+    ATProtoOAuth2AuthorizationRequest *request = [[ATProtoOAuth2AuthorizationRequest alloc] init];
     request.clientID = @"test-client";
     request.redirectURI = @"https://client.example.com/callback";
     request.responseType = @"code";
@@ -102,7 +102,7 @@
 - (void)testAuthorizationResponseParsesIssuerParameter {
     NSURL *url = [NSURL URLWithString:@"https://client.example.com/callback?code=abc123&state=state-xyz&iss=https%3A%2F%2Fpds.example.com"];
     NSError *error = nil;
-    OAuth2AuthorizationResponse *response = [OAuth2AuthorizationResponse responseFromURL:url
+    ATProtoOAuth2AuthorizationResponse *response = [ATProtoOAuth2AuthorizationResponse responseFromURL:url
                                                                             expectedState:@"state-xyz"
                                                                                     error:&error];
     XCTAssertNotNil(response);
@@ -114,7 +114,7 @@
 
 #ifndef GNUSTEP
 - (void)testRefreshToken {
-    Session *session = [[Session alloc] initWithDID:@"did:plc:test"
+    PDSSession *session = [[PDSSession alloc] initWithDID:@"did:plc:test"
                                              handle:@"test.bsky.social"
                                               scope:@"atproto"];
     NSLog(@"[DEBUG] Created session: %@", session);
@@ -158,7 +158,7 @@
 }
 
 - (void)testRefreshTokenRotation {
-    Session *session = [[Session alloc] initWithDID:@"did:plc:test"
+    PDSSession *session = [[PDSSession alloc] initWithDID:@"did:plc:test"
                                              handle:@"test.bsky.social"
                                               scope:@"atproto"];
     NSString *originalRefreshToken = session.refreshToken;

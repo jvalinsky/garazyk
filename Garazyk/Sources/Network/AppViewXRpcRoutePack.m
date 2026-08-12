@@ -39,30 +39,30 @@ NSInteger parseLimitParam(ATProtoHttpRequest *request, NSInteger defaultLimit, N
 
 #import "AppView/Server/WriteProxy/AppViewWriteProxy.h"
 
-@implementation AppViewXRpcRoutePack {
-    FeedService *_feedService;
-    ActorService *_actorService;
-    GraphService *_graphService;
-    NotificationService *_notificationService;
-    AgeAssuranceService *_ageAssuranceService;
-    DraftService *_draftService;
-    BookmarkService *_bookmarkService;
-    ContactService *_contactService;
-    SearchIndexService *_searchIndexService;
+@implementation ATProtoAppViewXRpcRoutePack {
+    PDSFeedService *_feedService;
+    PDSActorService *_actorService;
+    PDSGraphService *_graphService;
+    PDSNotificationService *_notificationService;
+    PDSAgeAssuranceService *_ageAssuranceService;
+    PDSDraftService *_draftService;
+    PDSBookmarkService *_bookmarkService;
+    PDSContactService *_contactService;
+    PDSSearchIndexService *_searchIndexService;
     AppViewWriteProxy *_writeProxy;
     id<PDSQueryDatabase> _database;
     ATProtoJWTMinter *_jwtMinter;
 }
 
-- (instancetype)initWithFeedService:(FeedService *)feedService
-                       actorService:(ActorService *)actorService
-                       graphService:(nullable GraphService *)graphService
-                 notificationService:(NotificationService *)notificationService
-                ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
-                        draftService:(nullable DraftService *)draftService
-                     bookmarkService:(nullable BookmarkService *)bookmarkService
-                      contactService:(nullable ContactService *)contactService
-                  searchIndexService:(nullable SearchIndexService *)searchIndexService
+- (instancetype)initWithFeedService:(PDSFeedService *)feedService
+                       actorService:(PDSActorService *)actorService
+                       graphService:(nullable PDSGraphService *)graphService
+                 notificationService:(PDSNotificationService *)notificationService
+                ageAssuranceService:(nullable PDSAgeAssuranceService *)ageAssuranceService
+                        draftService:(nullable PDSDraftService *)draftService
+                     bookmarkService:(nullable PDSBookmarkService *)bookmarkService
+                      contactService:(nullable PDSContactService *)contactService
+                  searchIndexService:(nullable PDSSearchIndexService *)searchIndexService
                          writeProxy:(nullable AppViewWriteProxy *)writeProxy
                           database:(nullable id<PDSQueryDatabase>)database
                          jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter

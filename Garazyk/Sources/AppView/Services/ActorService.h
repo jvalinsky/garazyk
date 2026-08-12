@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file ActorService.h
+ @file PDSActorService.h
 
  @abstract Actor profile and preferences service.
 
@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabase;
 
 /*!
- @class ActorService
+ @class PDSActorService
  
  @abstract Service for actor profiles and preferences.
  
@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
  Profiles include display name, avatar, description. Preferences store
  user-specific settings.
  */
-@interface ActorService : NSObject
+@interface PDSActorService : NSObject
 
 /*! Initialize with database connection. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;

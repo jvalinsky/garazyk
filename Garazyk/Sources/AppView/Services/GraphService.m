@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file GraphService.m
+ @file PDSGraphService.m
 
  @abstract Social graph service implementation.
 
@@ -31,19 +31,19 @@ static NSString *GZLikeContainsPattern(NSString *term) {
     return [NSString stringWithFormat:@"%%%@%%", escaped];
 }
 
-@interface GraphService ()
+@interface PDSGraphService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
-@property (nonatomic, strong) ActorService *actorService;
+@property (nonatomic, strong) PDSActorService *actorService;
 @end
 
-@implementation GraphService
+@implementation PDSGraphService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
 
     self = [super init];
     if (self) {
         _database = database;
-        _actorService = [[ActorService alloc] initWithDatabase:database];
+        _actorService = [[PDSActorService alloc] initWithDatabase:database];
     }
     return self;
 }
@@ -120,7 +120,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
 }
 
 // Batches the same lookup -getRecordBodyFromCID:did:error: performs for a set
-// of (cid, did) pairs, in a bounded number of queries. Unlike FeedService,
+// of (cid, did) pairs, in a bounded number of queries. Unlike PDSFeedService,
 // this keeps the repo_did check: a pair is only resolved if the block's
 // stored repo_did matches the did it was queried under, exactly as the
 // single-pair method's getBlockWithCid:repoDid: does. Results are keyed by

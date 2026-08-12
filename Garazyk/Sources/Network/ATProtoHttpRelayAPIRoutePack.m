@@ -40,7 +40,7 @@ static BOOL RelayAPIAuthorizeMutation(ATProtoHttpRequest *request,
 @implementation ATProtoHttpRelayAPIRoutePack
 
 + (void)registerRoutesWithServer:(ATProtoHttpServer *)server {
-  RelayAPIHandler *relayAPIHandler = [RelayAPIHandler sharedHandler];
+  ATProtoRelayAPIHandler *relayAPIHandler = [ATProtoRelayAPIHandler sharedHandler];
 
   [server addRoute:@"GET"
               path:@"/api/relay/metrics"

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcChatBskyConvoPack.m
+ @file ATProtoXrpcChatBskyConvoPack.m
 
  @abstract XRPC route pack for chat.bsky.convo.* endpoints.
  Implements conversation management, messaging, reactions, read state,
@@ -26,7 +26,7 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcChatBskyConvoPack
+@implementation ATProtoXrpcChatBskyConvoPack
 
 + (NSString *)routePackIdentifier {
   return @"chat.bsky.convo";
@@ -37,19 +37,19 @@ static NSString *XrpcChatActorDIDForRequest(ATProtoHttpRequest *request,
                                             id<XrpcRoutePackServices> services) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (!authHeader) {
-        [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+        [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
         return nil;
     }
 
     if (!services.jwtMinter && !services.adminController) {
         // Extract method NSID from request path for lxm validation
         NSString *methodNSID = request.pathParameters[@"method"] ?: @"";
-        return [[ChatAuthManager sharedManager] authenticateRequest:request
+        return [[PDSChatAuthManager sharedManager] authenticateRequest:request
                                                            response:response
                                                       expectedMethod:methodNSID.length > 0 ? methodNSID : nil];
     }
 
-    return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+    return [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                          jwtMinter:services.jwtMinter
                                    adminController:services.adminController
                                            request:request
@@ -77,7 +77,7 @@ static BOOL XrpcChatConversationIncludesActor(NSDictionary *convo, NSString *act
 static BOOL XrpcChatGuardConvoMembership(NSString *convoId, NSString *actorDID, id chatService, ATProtoHttpResponse *response) {
     NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
     if (!convo) {
-        [XrpcErrorHelper setNotFoundError:response message:@"Conversation not found"];
+        [ATProtoXrpcErrorHelper setNotFoundError:response message:@"Conversation not found"];
         return NO;
     }
     if (!XrpcChatConversationIncludesActor(convo, actorDID)) {
@@ -92,7 +92,7 @@ static BOOL XrpcChatGuardConvoMembership(NSString *convoId, NSString *actorDID, 
     Returns "all" (default), "none", or "following".
     On any error, returns "all" (fail-open for availability). */
 static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid, NSString *authHeader) {
-    NSString *pdsUrl = [ChatAuthManager sharedManager].pdsUrl;
+    NSString *pdsUrl = [PDSChatAuthManager sharedManager].pdsUrl;
     if (pdsUrl.length == 0) {
         pdsUrl = @"http://127.0.0.1:2583";
     }
@@ -197,7 +197,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
     return @"all";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     id<PDSQueryDatabase> appViewDatabase = services.appViewDatabase;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
@@ -205,17 +205,17 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
     // Ensure chat schema tables exist
     PDSDatabase *db = (PDSDatabase *)appViewDatabase;
-    ChatSchemaManager *schemaManager = [ChatSchemaManager sharedManager];
+    PDSChatSchemaManager *schemaManager = [PDSChatSchemaManager sharedManager];
     [db executeParameterizedUpdate:[schemaManager chatSchemaSQL] params:@[] error:nil];
 
-    ChatService *chatService = [[ChatService alloc] initWithDatabase:appViewDatabase];
+    PDSChatService *chatService = [[PDSChatService alloc] initWithDatabase:appViewDatabase];
 
     // chat.bsky.convo.getConvoForMembers
     [dispatcher registerMethod:kGZXrpcNSID_chat_bsky_convo_getConvoForMembers
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -240,7 +240,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             }
         }
         if (!members || members.count < 2) {
-            [XrpcErrorHelper setValidationError:response message:@"At least two members required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"At least two members required"];
             return;
         }
 
@@ -269,7 +269,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
             convo = [chatService createConversationWithMembers:members error:&error];
         }
         if (!convo) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to create conversation"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to create conversation"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -281,7 +281,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -290,14 +290,14 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSDictionary *body = request.jsonBody;
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
         // Verify the conversation exists and the actor is not already a member.
         NSDictionary *existingConvo = [chatService getConversationWithId:convoId error:nil];
         if (!existingConvo) {
-            [XrpcErrorHelper setNotFoundError:response message:@"Conversation not found"];
+            [ATProtoXrpcErrorHelper setNotFoundError:response message:@"Conversation not found"];
             return;
         }
         if (XrpcChatConversationIncludesActor(existingConvo, actorDID)) {
@@ -309,7 +309,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *error = nil;
         BOOL success = [chatService acceptConversation:convoId memberDid:actorDID error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to accept conversation"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to accept conversation"];
             return;
         }
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
@@ -322,7 +322,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -331,7 +331,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSDictionary *body = request.jsonBody;
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
@@ -340,7 +340,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *error = nil;
         BOOL success = [chatService leaveConversation:convoId memberDid:actorDID error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to leave conversation"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to leave conversation"];
             return;
         }
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
@@ -353,7 +353,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -370,7 +370,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
         if (!did || did.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
 
@@ -390,7 +390,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -400,7 +400,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSString *messageId = [body[@"messageId"] isKindOfClass:[NSString class]] ? body[@"messageId"] : nil;
         NSString *emoji = [body[@"emoji"] isKindOfClass:[NSString class]] ? body[@"emoji"] : nil;
         if (!messageId || !emoji) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
             return;
         }
 
@@ -408,7 +408,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *resolveError = nil;
         NSString *convoId = [chatService conversationIdForMessage:messageId error:&resolveError];
         if (!convoId) {
-            [XrpcErrorHelper setNotFoundError:response message:@"Message not found"];
+            [ATProtoXrpcErrorHelper setNotFoundError:response message:@"Message not found"];
             return;
         }
         if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
@@ -416,7 +416,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *error = nil;
         BOOL success = [chatService addReaction:messageId actorDid:actorDID emoji:emoji error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to add reaction"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to add reaction"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -428,7 +428,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -438,7 +438,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSString *messageId = [body[@"messageId"] isKindOfClass:[NSString class]] ? body[@"messageId"] : nil;
         NSString *emoji = [body[@"emoji"] isKindOfClass:[NSString class]] ? body[@"emoji"] : nil;
         if (!messageId || !emoji) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
             return;
         }
 
@@ -446,7 +446,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *resolveError = nil;
         NSString *convoId = [chatService conversationIdForMessage:messageId error:&resolveError];
         if (!convoId) {
-            [XrpcErrorHelper setNotFoundError:response message:@"Message not found"];
+            [ATProtoXrpcErrorHelper setNotFoundError:response message:@"Message not found"];
             return;
         }
         if (!XrpcChatGuardConvoMembership(convoId, actorDID, chatService, response)) return;
@@ -454,7 +454,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *error = nil;
         BOOL success = [chatService removeReaction:messageId actorDid:actorDID emoji:emoji error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to remove reaction"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to remove reaction"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -466,7 +466,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -476,7 +476,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         NSString *messageId = [body[@"messageId"] isKindOfClass:[NSString class]] ? body[@"messageId"] : nil;
         if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
@@ -488,7 +488,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                                                 messageId:messageId ?: @""
                                                     error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update read state"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update read state"];
             return;
         }
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
@@ -501,7 +501,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -510,7 +510,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSDictionary *body = request.jsonBody;
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
@@ -521,7 +521,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                                                 messageId:@""
                                                     error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update read state"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update read state"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -533,7 +533,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -542,7 +542,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSDictionary *body = request.jsonBody;
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
@@ -551,7 +551,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *error = nil;
         BOOL success = [chatService muteConversation:convoId memberDid:actorDID error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to mute conversation"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to mute conversation"];
             return;
         }
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
@@ -564,7 +564,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -573,7 +573,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSDictionary *body = request.jsonBody;
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
@@ -582,7 +582,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *error = nil;
         BOOL success = [chatService unmuteConversation:convoId memberDid:actorDID error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to unmute conversation"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to unmute conversation"];
             return;
         }
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
@@ -595,7 +595,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -605,20 +605,20 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         NSArray *messages = [body[@"messages"] isKindOfClass:[NSArray class]] ? body[@"messages"] : nil;
         if (!convoId || !messages) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId and messages are required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId and messages are required"];
             return;
         }
 
         // Validate each message element before passing to the service.
         for (id element in messages) {
             if (![element isKindOfClass:[NSDictionary class]]) {
-                [XrpcErrorHelper setValidationError:response message:@"Each message must be an object"];
+                [ATProtoXrpcErrorHelper setValidationError:response message:@"Each message must be an object"];
                 return;
             }
             NSDictionary *msg = (NSDictionary *)element;
             NSString *text = [msg[@"text"] isKindOfClass:[NSString class]] ? msg[@"text"] : nil;
             if (!text) {
-                [XrpcErrorHelper setValidationError:response message:@"Each message must have a text field"];
+                [ATProtoXrpcErrorHelper setValidationError:response message:@"Each message must have a text field"];
                 return;
             }
         }
@@ -626,7 +626,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         // Verify the conversation exists and the sender is a member
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
         if (!convo) {
-            [XrpcErrorHelper setValidationError:response message:@"Conversation not found"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Conversation not found"];
             return;
         }
         if (!XrpcChatConversationIncludesActor(convo, actorDID)) {
@@ -644,7 +644,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                                                      messages:messages
                                                         error:&error];
         if (!sentMessages) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message batch"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message batch"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -656,7 +656,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -665,7 +665,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSDictionary *body = request.jsonBody;
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
@@ -674,7 +674,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *error = nil;
         BOOL success = [chatService lockConversation:convoId error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to lock conversation"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to lock conversation"];
             return;
         }
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
@@ -687,7 +687,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -696,7 +696,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSDictionary *body = request.jsonBody;
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
@@ -705,7 +705,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSError *error = nil;
         BOOL success = [chatService unlockConversation:convoId error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to unlock conversation"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to unlock conversation"];
             return;
         }
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
@@ -718,7 +718,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -727,14 +727,14 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSDictionary *body = request.jsonBody;
         NSString *messageId = [body[@"messageId"] isKindOfClass:[NSString class]] ? body[@"messageId"] : nil;
         if (!messageId) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"messageId is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [chatService deleteMessageForSelf:messageId memberDid:actorDID error:&error];
         if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to delete message"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to delete message"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -746,7 +746,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -779,13 +779,13 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                                                              cursor:cursor
                                                               error:&error];
             } else {
-                [XrpcErrorHelper setAuthenticationError:response message:@"Invalid admin secret"];
+                [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Invalid admin secret"];
                 return;
             }
         }
 
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to list conversations"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to list conversations"];
             return;
         }
 
@@ -818,7 +818,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -826,7 +826,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
         NSString *convoId = [request queryParamForKey:@"convoId"];
         if (!convoId || convoId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
@@ -855,7 +855,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -868,14 +868,14 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                 token = [authHeader substringFromIndex:@"Bearer ".length];
             }
             if (!(adminSecret && adminSecret.length > 0 && [token isEqualToString:adminSecret])) {
-                [XrpcErrorHelper setAuthenticationError:response message:@"Invalid admin secret"];
+                [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Invalid admin secret"];
                 return;
             }
         }
 
         NSString *convoId = [request queryParamForKey:@"convoId"];
         if (!convoId || convoId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
@@ -893,7 +893,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                                                             cursor:cursor
                                                              error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to get messages"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to get messages"];
             return;
         }
 
@@ -944,7 +944,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -954,14 +954,14 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
         NSString *convoId = [body[@"convoId"] isKindOfClass:[NSString class]] ? body[@"convoId"] : nil;
         NSDictionary *message = [body[@"message"] isKindOfClass:[NSDictionary class]] ? body[@"message"] : nil;
         if (!convoId || !message) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId and message are required"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"convoId and message are required"];
             return;
         }
 
         // Verify the conversation exists and the sender is a member
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
         if (!convo) {
-            [XrpcErrorHelper setValidationError:response message:@"Conversation not found"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Conversation not found"];
             return;
         }
         if (!XrpcChatConversationIncludesActor(convo, actorDID)) {
@@ -988,7 +988,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                                                     embedJson:embedJson
                                                         error:&error];
         if (!sentMessage) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message"];
             return;
         }
 
@@ -1016,7 +1016,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
@@ -1038,7 +1038,7 @@ static NSString *XrpcChatAllowIncomingForDIDFromRepo(NSString *targetDid,
 
 + (NSDictionary *)convoViewFromInternalDict:(NSDictionary *)convo
                              handleMap:(NSDictionary<NSString *, NSString *> *)handleMap {
-    // Reshape internal ChatService dict to chat.bsky.convo.defs#convoView
+    // Reshape internal PDSChatService dict to chat.bsky.convo.defs#convoView
     // Internal: { id, createdAt, updatedAt, members: [{ did, status, muted, lastReadId, joinedAt }], memberList }
     // Lexicon:  { id, rev, members: [{ did, handle }], muted, unreadCount, status }
     NSMutableArray *memberViews = [NSMutableArray array];

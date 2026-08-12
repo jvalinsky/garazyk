@@ -10,31 +10,31 @@
 #import "Repository/RepoCommit.h"
 #import "Debug/GZLogger.h"
 
-@implementation RelayValidationOutcome
+@implementation ATProtoRelayValidationOutcome
 
 + (instancetype)validOutcome {
-    RelayValidationOutcome *outcome = [[RelayValidationOutcome alloc] init];
+    ATProtoRelayValidationOutcome *outcome = [[ATProtoRelayValidationOutcome alloc] init];
     outcome.result = RelayValidationResultValid;
     return outcome;
 }
 
 + (instancetype)invalidOutcome:(NSString *)reason {
-    RelayValidationOutcome *outcome = [[RelayValidationOutcome alloc] init];
+    ATProtoRelayValidationOutcome *outcome = [[ATProtoRelayValidationOutcome alloc] init];
     outcome.result = RelayValidationResultInvalidMST;
     outcome.errorMessage = reason;
     return outcome;
 }
 
 + (instancetype)errorOutcome:(NSString *)error {
-    RelayValidationOutcome *outcome = [[RelayValidationOutcome alloc] init];
+    ATProtoRelayValidationOutcome *outcome = [[ATProtoRelayValidationOutcome alloc] init];
     outcome.result = RelayValidationResultError;
     outcome.errorMessage = error;
     return outcome;
 }
 
 + (instancetype)invalidSignatureOutcome:(NSString *)reason {
-    [[RelayMetrics sharedMetrics] recordSignatureValidationFailure];
-    RelayValidationOutcome *outcome = [[RelayValidationOutcome alloc] init];
+    [[ATProtoRelayMetrics sharedMetrics] recordSignatureValidationFailure];
+    ATProtoRelayValidationOutcome *outcome = [[ATProtoRelayValidationOutcome alloc] init];
     outcome.result = RelayValidationResultInvalidSignature;
     outcome.errorMessage = reason;
     return outcome;
@@ -42,13 +42,13 @@
 
 @end
 
-@interface RelayEventValidator ()
+@interface ATProtoRelayEventValidator ()
 
 @property (nonatomic, assign, readwrite) RelayValidationMode validationMode;
 
 @end
 
-@implementation RelayEventValidator {
+@implementation ATProtoRelayEventValidator {
     dispatch_queue_t _validationQueue;
 }
 
@@ -74,22 +74,22 @@
 
 #pragma mark - Validation Methods
 
-- (RelayValidationOutcome *)validateCommitEvent:(id)event {
-    if (![event isKindOfClass:[FirehoseCommitEvent class]]) {
-        return [RelayValidationOutcome errorOutcome:@"event is not a FirehoseCommitEvent"];
+- (ATProtoRelayValidationOutcome *)validateCommitEvent:(id)event {
+    if (![event isKindOfClass:[ATProtoFirehoseCommitEvent class]]) {
+        return [ATProtoRelayValidationOutcome errorOutcome:@"event is not a FirehoseCommitEvent"];
     }
 
-    FirehoseCommitEvent *commitEvent = (FirehoseCommitEvent *)event;
+    ATProtoFirehoseCommitEvent *commitEvent = (ATProtoFirehoseCommitEvent *)event;
 
     if (commitEvent.repo.length == 0) {
-        return [RelayValidationOutcome invalidOutcome:@"commit event has no repo DID"];
+        return [ATProtoRelayValidationOutcome invalidOutcome:@"commit event has no repo DID"];
     }
     if (!commitEvent.commit) {
-        return [RelayValidationOutcome invalidOutcome:@"commit event has no commit CID"];
+        return [ATProtoRelayValidationOutcome invalidOutcome:@"commit event has no commit CID"];
     }
 
     if (!self.plcResolver) {
-        return [RelayValidationOutcome invalidSignatureOutcome:@"repository signing-key resolver is unavailable"];
+        return [ATProtoRelayValidationOutcome invalidSignatureOutcome:@"repository signing-key resolver is unavailable"];
     }
 
     NSError *resolveError = nil;
@@ -97,13 +97,13 @@
     if (!didJSON) {
         GZ_LOG_SYNC_WARN(@"Relay commit signature validation: DID resolution failed for %@: %@",
                          commitEvent.repo, resolveError.localizedDescription ?: @"unknown");
-        return [RelayValidationOutcome invalidSignatureOutcome:@"repository DID could not be resolved"];
+        return [ATProtoRelayValidationOutcome invalidSignatureOutcome:@"repository DID could not be resolved"];
     }
 
     NSError *documentError = nil;
     ATProtoDIDDocument *document = [ATProtoDIDDocument documentWithJSON:didJSON error:&documentError];
     if (!document || ![document.id isEqualToString:commitEvent.repo]) {
-        return [RelayValidationOutcome invalidSignatureOutcome:@"resolved DID document does not match the repository"];
+        return [ATProtoRelayValidationOutcome invalidSignatureOutcome:@"resolved DID document does not match the repository"];
     }
 
     NSError *keyError = nil;
@@ -112,7 +112,7 @@
     if (!publicKey) {
         GZ_LOG_SYNC_WARN(@"Relay commit signature validation: no usable signing key for %@: %@",
                          commitEvent.repo, keyError.localizedDescription ?: @"unknown");
-        return [RelayValidationOutcome invalidSignatureOutcome:@"repository DID has no usable secp256k1 signing key"];
+        return [ATProtoRelayValidationOutcome invalidSignatureOutcome:@"repository DID has no usable secp256k1 signing key"];
     }
 
     NSError *carError = nil;
@@ -124,59 +124,59 @@
     if (!reader || !commitBlock || ![computedCID isEqualToCID:commitEvent.commit]) {
         GZ_LOG_SYNC_WARN(@"Relay commit signature validation: missing or invalid commit block for %@: %@",
                          commitEvent.repo, carError.localizedDescription ?: @"unknown");
-        return [RelayValidationOutcome invalidSignatureOutcome:@"commit block is missing or does not match its advertised CID"];
+        return [ATProtoRelayValidationOutcome invalidSignatureOutcome:@"commit block is missing or does not match its advertised CID"];
     }
 
     NSError *commitError = nil;
     ATProtoRepoCommit *commit = [ATProtoRepoCommit fromSignedBlockData:commitBlock.data error:&commitError];
     if (!commit || ![commit.did isEqualToString:commitEvent.repo]) {
-        return [RelayValidationOutcome invalidSignatureOutcome:@"signed commit does not match the repository"];
+        return [ATProtoRelayValidationOutcome invalidSignatureOutcome:@"signed commit does not match the repository"];
     }
 
     NSError *signatureError = nil;
     if (![commit verifySignatureWithPublicKey:publicKey error:&signatureError]) {
         GZ_LOG_SYNC_WARN(@"Relay commit signature validation: signature verification failed for %@: %@",
                          commitEvent.repo, signatureError.localizedDescription ?: @"unknown");
-        return [RelayValidationOutcome invalidSignatureOutcome:@"commit signature does not verify against the repository DID key"];
+        return [ATProtoRelayValidationOutcome invalidSignatureOutcome:@"commit signature does not verify against the repository DID key"];
     }
 
-    [[RelayMetrics sharedMetrics] recordSignatureValidationSuccess];
-    return [RelayValidationOutcome validOutcome];
+    [[ATProtoRelayMetrics sharedMetrics] recordSignatureValidationSuccess];
+    return [ATProtoRelayValidationOutcome validOutcome];
 }
 
-- (RelayValidationOutcome *)validateIdentityEvent:(id)event {
-    [[RelayMetrics sharedMetrics] recordSignatureValidationSuccess];
-    return [RelayValidationOutcome validOutcome];
+- (ATProtoRelayValidationOutcome *)validateIdentityEvent:(id)event {
+    [[ATProtoRelayMetrics sharedMetrics] recordSignatureValidationSuccess];
+    return [ATProtoRelayValidationOutcome validOutcome];
 }
 
-- (RelayValidationOutcome *)validateAccountEvent:(id)event {
-    return [RelayValidationOutcome validOutcome];
+- (ATProtoRelayValidationOutcome *)validateAccountEvent:(id)event {
+    return [ATProtoRelayValidationOutcome validOutcome];
 }
 
 #pragma mark - Mode-based Forwarding
 
-- (BOOL)shouldForwardEvent:(RelayValidationOutcome *)outcome {
+- (BOOL)shouldForwardEvent:(ATProtoRelayValidationOutcome *)outcome {
     switch (self.validationMode) {
         case RelayValidationModeLenient:
             return YES;
 
         case RelayValidationModeStrict:
             if (outcome.result == RelayValidationResultValid) {
-                [[RelayMetrics sharedMetrics] recordEventForwarded];
+                [[ATProtoRelayMetrics sharedMetrics] recordEventForwarded];
                 return YES;
             } else {
-                [[RelayMetrics sharedMetrics] recordEventDropped];
+                [[ATProtoRelayMetrics sharedMetrics] recordEventDropped];
                 return NO;
             }
 
         case RelayValidationModeLogOnly:
         default:
             if (outcome.result == RelayValidationResultValid) {
-                [[RelayMetrics sharedMetrics] recordEventValidated];
-                [[RelayMetrics sharedMetrics] recordEventForwarded];
+                [[ATProtoRelayMetrics sharedMetrics] recordEventValidated];
+                [[ATProtoRelayMetrics sharedMetrics] recordEventForwarded];
             } else {
-                [[RelayMetrics sharedMetrics] recordEventInvalidated:outcome.errorMessage ?: @"unknown"];
-                [[RelayMetrics sharedMetrics] recordEventForwarded];
+                [[ATProtoRelayMetrics sharedMetrics] recordEventInvalidated:outcome.errorMessage ?: @"unknown"];
+                [[ATProtoRelayMetrics sharedMetrics] recordEventForwarded];
             }
             return YES;
     }

@@ -19,7 +19,7 @@ static NSString *const kRelayStateSchemaSQL =
     "  value TEXT"
     ");";
 
-@interface RelayRepoStateManager ()
+@interface ATProtoRelayRepoStateManager ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *repoCommitCIDs;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *repoDataCIDs;
@@ -32,7 +32,7 @@ static NSString *const kRelayStateSchemaSQL =
 
 @end
 
-@implementation RelayRepoStateManager {
+@implementation ATProtoRelayRepoStateManager {
     dispatch_queue_t _stateQueue;
     NSString *_Nullable _databasePath;
     sqlite3 *_Nullable _db;

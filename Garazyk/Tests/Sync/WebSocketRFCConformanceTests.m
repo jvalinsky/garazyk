@@ -10,14 +10,14 @@
 #import "Sync/WebSocket/WebSocketCodec.h"
 
 @interface WebSocketRFCConformanceTests : XCTestCase
-@property (nonatomic, strong) WebSocketCodec *codec;
+@property (nonatomic, strong) ATProtoWebSocketCodec *codec;
 @end
 
 @implementation WebSocketRFCConformanceTests
 
 - (void)setUp {
     [super setUp];
-    self.codec = [[WebSocketCodec alloc] init];
+    self.codec = [[ATProtoWebSocketCodec alloc] init];
     // These tests hand-build raw, unmasked frames to exercise codec
     // internals directly. Setting the client role means the codec expects
     // *unmasked* incoming frames (as a real server would legitimately send),
@@ -98,11 +98,11 @@
     self.codec.maxAggregateMessageSize = 10;
 
     NSData *first = [self frameWithFin:NO opcode:0x1 payload:[@"AAAAAA" dataUsingEncoding:NSUTF8StringEncoding]]; // 6 bytes
-    NSArray<WSCodecEvent *> *events1 = [self.codec feedData:first];
+    NSArray<ATProtoWSCodecEvent *> *events1 = [self.codec feedData:first];
     XCTAssertEqual(events1.count, 0, @"Should not emit an event on an incomplete fragment under the cap");
 
     NSData *second = [self frameWithFin:NO opcode:0x0 payload:[@"BBBBBB" dataUsingEncoding:NSUTF8StringEncoding]]; // 6 more bytes -> 12 total
-    NSArray<WSCodecEvent *> *events2 = [self.codec feedData:second];
+    NSArray<ATProtoWSCodecEvent *> *events2 = [self.codec feedData:second];
     XCTAssertEqual(events2.count, 1);
     XCTAssertEqual(events2.firstObject.type, WSCodecEventProtocolError);
     XCTAssertEqual(events2.firstObject.closeCode, 1009);
@@ -112,7 +112,7 @@
     self.codec.maxAggregateMessageSize = 4;
 
     NSData *first = [self frameWithFin:NO opcode:0x2 payload:[NSMutableData dataWithLength:10]]; // 10 > 4
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:first];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:first];
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
     XCTAssertEqual(events.firstObject.closeCode, 1009);
@@ -123,7 +123,7 @@
 - (void)testFragmentedControlFrameRejected {
     // Opcode 0x9 (Ping), FIN=0 -- control frames must never be fragmented.
     uint8_t bytes[] = {0x09, 0x04, 'p', 'i', 'n', 'g'};
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:[self rawBytes:bytes length:sizeof(bytes)]];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:[self rawBytes:bytes length:sizeof(bytes)]];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -134,7 +134,7 @@
     // Opcode 0x9 (Ping), length byte 126 -- the extended-length sentinel,
     // which a control frame (max 125 bytes) can never legitimately need.
     uint8_t bytes[] = {0x89, 0x7E};
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:[self rawBytes:bytes length:sizeof(bytes)]];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:[self rawBytes:bytes length:sizeof(bytes)]];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -144,7 +144,7 @@
 - (void)testControlFrameAt125BytesAccepted {
     NSData *payload = [NSMutableData dataWithLength:125];
     NSData *frame = [self frameWithFin:YES opcode:0x9 payload:payload];
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:frame];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:frame];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventPing);
@@ -153,9 +153,9 @@
 #pragma mark - Slice 2: masking direction (RFC 6455 §5.1)
 
 - (void)testUnmaskedClientFrameRejectedByServer {
-    WebSocketCodec *serverCodec = [[WebSocketCodec alloc] init]; // default: server role
+    ATProtoWebSocketCodec *serverCodec = [[ATProtoWebSocketCodec alloc] init]; // default: server role
     NSData *frame = [self frameWithFin:YES opcode:0x1 payload:[@"hi" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSArray<WSCodecEvent *> *events = [serverCodec feedData:frame];
+    NSArray<ATProtoWSCodecEvent *> *events = [serverCodec feedData:frame];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -166,7 +166,7 @@
     // self.codec is client role (maskOutgoingFrames=YES in setUp), so a
     // masked incoming frame simulates a non-conformant/malicious server.
     NSData *frame = [self maskedFrameWithFin:YES opcode:0x1 payload:[@"hi" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:frame];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:frame];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -178,10 +178,10 @@
 - (void)testReservedOpcodesRejected {
     uint8_t reservedOpcodes[] = {0x3, 0x4, 0x5, 0x6, 0x7, 0xB, 0xC, 0xD, 0xE, 0xF};
     for (NSUInteger i = 0; i < sizeof(reservedOpcodes); i++) {
-        WebSocketCodec *codec = [[WebSocketCodec alloc] init];
+        ATProtoWebSocketCodec *codec = [[ATProtoWebSocketCodec alloc] init];
         codec.maskOutgoingFrames = YES;
         NSData *frame = [self frameWithFin:YES opcode:reservedOpcodes[i] payload:[NSData data]];
-        NSArray<WSCodecEvent *> *events = [codec feedData:frame];
+        NSArray<ATProtoWSCodecEvent *> *events = [codec feedData:frame];
 
         XCTAssertEqual(events.count, (NSUInteger)1, @"opcode 0x%X should be rejected", reservedOpcodes[i]);
         XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError, @"opcode 0x%X should be rejected", reservedOpcodes[i]);
@@ -191,7 +191,7 @@
 
 - (void)testRSV1BitRejected {
     uint8_t bytes[] = {0xC1, 0x00}; // FIN=1, RSV1=1, opcode=1 (text), len=0
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:[self rawBytes:bytes length:sizeof(bytes)]];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:[self rawBytes:bytes length:sizeof(bytes)]];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -200,7 +200,7 @@
 
 - (void)testRSV2AndRSV3BitsRejected {
     uint8_t bytes[] = {0xB1, 0x00}; // FIN=1, RSV2=1, RSV3=1, opcode=1
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:[self rawBytes:bytes length:sizeof(bytes)]];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:[self rawBytes:bytes length:sizeof(bytes)]];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -211,7 +211,7 @@
 
 - (void)testContinuationWithNoPrecedingStartRejected {
     NSData *frame = [self frameWithFin:YES opcode:0x0 payload:[@"orphan" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:frame];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:frame];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -220,14 +220,14 @@
 
 - (void)testNewDataFrameWhileFragmentInProgressRejected {
     NSData *start = [self frameWithFin:NO opcode:0x1 payload:[@"He" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSArray<WSCodecEvent *> *startEvents = [self.codec feedData:start];
+    NSArray<ATProtoWSCodecEvent *> *startEvents = [self.codec feedData:start];
     XCTAssertEqual(startEvents.count, 0);
 
     // A second non-FIN data frame (not CONTINUE) while the first message's
     // fragmentation is still in progress must fail the connection rather
     // than silently overwrite fragmentOpcode and merge payloads.
     NSData *second = [self frameWithFin:NO opcode:0x2 payload:[@"Bi" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:second];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:second];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -236,13 +236,13 @@
 
 - (void)testCompleteDataFrameWhileFragmentInProgressRejected {
     NSData *start = [self frameWithFin:NO opcode:0x1 payload:[@"He" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSArray<WSCodecEvent *> *startEvents = [self.codec feedData:start];
+    NSArray<ATProtoWSCodecEvent *> *startEvents = [self.codec feedData:start];
     XCTAssertEqual(startEvents.count, 0);
 
     // A complete (FIN=1) new data frame while a fragmented message is
     // unfinished is equally invalid, not only a fragmented one.
     NSData *second = [self frameWithFin:YES opcode:0x2 payload:[@"Bi" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:second];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:second];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -265,7 +265,7 @@
     uint64_t netLen = CFSwapInt64HostToBig(declaredLength);
     [frame appendBytes:&netLen length:8];
 
-    NSArray<WSCodecEvent *> *events = [self.codec feedData:frame];
+    NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:frame];
 
     XCTAssertEqual(events.count, 1);
     XCTAssertEqual(events.firstObject.type, WSCodecEventProtocolError);
@@ -285,13 +285,13 @@
     [chunk1 appendData:frame2];
     [chunk1 appendData:[frame3 subdataWithRange:NSMakeRange(0, 2)]];
 
-    NSArray<WSCodecEvent *> *events1 = [self.codec feedData:chunk1];
+    NSArray<ATProtoWSCodecEvent *> *events1 = [self.codec feedData:chunk1];
     XCTAssertEqual(events1.count, (NSUInteger)2);
     XCTAssertEqualObjects(events1[0].text, @"one");
     XCTAssertEqualObjects(events1[1].text, @"two");
 
     NSData *rest = [frame3 subdataWithRange:NSMakeRange(2, frame3.length - 2)];
-    NSArray<WSCodecEvent *> *events2 = [self.codec feedData:rest];
+    NSArray<ATProtoWSCodecEvent *> *events2 = [self.codec feedData:rest];
     XCTAssertEqual(events2.count, (NSUInteger)1);
     XCTAssertEqualObjects(events2.firstObject.text, @"three");
 }
@@ -308,7 +308,7 @@
         NSData *tail = [frame subdataWithRange:NSMakeRange(1, frame.length - 1)];
 
         XCTAssertEqual([self.codec feedData:head].count, (NSUInteger)0);
-        NSArray<WSCodecEvent *> *events = [self.codec feedData:tail];
+        NSArray<ATProtoWSCodecEvent *> *events = [self.codec feedData:tail];
         XCTAssertEqual(events.count, (NSUInteger)1);
         [received addObject:events.firstObject.text];
     }

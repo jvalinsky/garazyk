@@ -155,15 +155,15 @@ static NSDictionary *labelLookupParamsFromRequest(ATProtoHttpRequest *request, N
     return params;
 }
 
-#pragma mark - XrpcLabelPack Implementation
+#pragma mark - ATProtoXrpcLabelPack Implementation
 
-@implementation XrpcLabelPack
+@implementation ATProtoXrpcLabelPack
 
 + (NSString *)routePackIdentifier {
   return @"com.atproto.label";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
@@ -200,7 +200,7 @@ static NSDictionary *labelLookupParamsFromRequest(ATProtoHttpRequest *request, N
     
     // com.atproto.label.createLabel - Admin-only label creation
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_createLabel handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                           response:response
                                   serviceDatabases:serviceDatabases
                                          jwtMinter:jwtMinter
@@ -237,7 +237,7 @@ static NSDictionary *labelLookupParamsFromRequest(ATProtoHttpRequest *request, N
     
     // com.atproto.label.getLabels - Admin-only label lookup
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_label_getLabels handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                           response:response
                                   serviceDatabases:serviceDatabases
                                          jwtMinter:jwtMinter
@@ -423,7 +423,7 @@ static NSDictionary *labelLookupParamsFromRequest(ATProtoHttpRequest *request, N
     
     // com.atproto.temp.addReservedHandle - Admin endpoint to reserve handles
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_temp_addReservedHandle handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -608,7 +608,7 @@ static NSDictionary *labelLookupParamsFromRequest(ATProtoHttpRequest *request, N
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -621,7 +621,7 @@ static NSDictionary *labelLookupParamsFromRequest(ATProtoHttpRequest *request, N
         NSString *accountIdentifier = body[@"account"];
         NSString *targetDid = nil;
         NSError *resolveError = nil;
-        if (![XrpcIdentityHelper resolveAccountIdentifierToDid:accountIdentifier
+        if (![ATProtoXrpcIdentityHelper resolveAccountIdentifierToDid:accountIdentifier
                                               serviceDatabases:serviceDatabases
                                                         outDid:&targetDid
                                                          error:&resolveError]) {

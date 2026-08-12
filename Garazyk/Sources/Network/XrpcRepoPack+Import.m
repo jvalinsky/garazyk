@@ -25,9 +25,9 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcRepoPack (Import)
+@implementation ATProtoXrpcRepoPack (Import)
 
-+ (void)registerImportRoutesWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerImportRoutesWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                   services:(id<XrpcRoutePackServices>)services {
     PDSRecordService *recordService = services.recordService;
     ATProtoServiceConfiguration *config = services.configuration;
@@ -41,7 +41,7 @@
                   maxBodyBytes:config.maxImportSize
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;

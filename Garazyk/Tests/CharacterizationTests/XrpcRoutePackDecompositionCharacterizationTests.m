@@ -26,17 +26,17 @@
 
 @implementation XrpcRoutePackDecompositionCharacterizationTests
 
-#pragma mark - XrpcServerPack
+#pragma mark - ATProtoXrpcServerPack
 
 - (void)testServerPackConformsToRoutePackProtocol {
-    XCTAssertTrue([XrpcServerPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-    XCTAssertEqualObjects([XrpcServerPack routePackIdentifier], @"com.atproto.server");
+    XCTAssertTrue([ATProtoXrpcServerPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+    XCTAssertEqualObjects([ATProtoXrpcServerPack routePackIdentifier], @"com.atproto.server");
 }
 
 - (void)testServerPackRegistersAllExpectedRoutes {
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
     id<XrpcRoutePackServices> services =
-        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+        [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                   jwtMinter:nil
                                             adminController:nil
                                              configuration:nil
@@ -45,7 +45,7 @@
                                          userDatabasePool:nil
                                                rateLimiter:nil];
 
-    [XrpcServerPack registerWithDispatcher:dispatcher services:services];
+    [ATProtoXrpcServerPack registerWithDispatcher:dispatcher services:services];
 
     // describeServer
     XCTAssertTrue([dispatcher hasRegisteredMethod:kGZXrpcNSID_com_atproto_server_describeServer]);
@@ -83,17 +83,17 @@
     XCTAssertTrue([dispatcher hasRegisteredMethod:@"_health"]);
 }
 
-#pragma mark - XrpcAdminPack
+#pragma mark - ATProtoXrpcAdminPack
 
 - (void)testAdminPackConformsToRoutePackProtocol {
-    XCTAssertTrue([XrpcAdminPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-    XCTAssertEqualObjects([XrpcAdminPack routePackIdentifier], @"com.atproto.admin");
+    XCTAssertTrue([ATProtoXrpcAdminPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+    XCTAssertEqualObjects([ATProtoXrpcAdminPack routePackIdentifier], @"com.atproto.admin");
 }
 
 - (void)testAdminPackRegistersAllExpectedRoutes {
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
     id<XrpcRoutePackServices> services =
-        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+        [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                   jwtMinter:nil
                                             adminController:nil
                                              configuration:nil
@@ -102,7 +102,7 @@
                                          userDatabasePool:nil
                                                rateLimiter:nil];
 
-    [XrpcAdminPack registerWithDispatcher:dispatcher services:services];
+    [ATProtoXrpcAdminPack registerWithDispatcher:dispatcher services:services];
 
     // Account lookup, search & email
     XCTAssertTrue([dispatcher hasRegisteredMethod:kGZXrpcNSID_com_atproto_admin_searchAccounts]);
@@ -139,17 +139,17 @@
     XCTAssertTrue([dispatcher hasRegisteredMethod:kGZXrpcNSID_com_atproto_admin_resolveReport]);
 }
 
-#pragma mark - XrpcRepoPack
+#pragma mark - ATProtoXrpcRepoPack
 
 - (void)testRepoPackConformsToRoutePackProtocol {
-    XCTAssertTrue([XrpcRepoPack conformsToProtocol:@protocol(XrpcRoutePack)]);
-    XCTAssertEqualObjects([XrpcRepoPack routePackIdentifier], @"com.atproto.repo");
+    XCTAssertTrue([ATProtoXrpcRepoPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+    XCTAssertEqualObjects([ATProtoXrpcRepoPack routePackIdentifier], @"com.atproto.repo");
 }
 
 - (void)testRepoPackRegistersAllExpectedRoutes {
-    XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+    ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
     id<XrpcRoutePackServices> services =
-        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+        [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                   jwtMinter:nil
                                             adminController:nil
                                              configuration:nil
@@ -158,7 +158,7 @@
                                          userDatabasePool:nil
                                                rateLimiter:nil];
 
-    [XrpcRepoPack registerWithDispatcher:dispatcher services:services];
+    [ATProtoXrpcRepoPack registerWithDispatcher:dispatcher services:services];
 
     // Records
     XCTAssertTrue([dispatcher hasRegisteredMethod:kGZXrpcNSID_com_atproto_repo_listRecords]);
@@ -178,16 +178,16 @@
     XCTAssertTrue([dispatcher hasRegisteredMethod:kGZXrpcNSID_com_atproto_repo_describeRepo]);
 }
 
-#pragma mark - AppViewXRpcRoutePack
+#pragma mark - ATProtoAppViewXRpcRoutePack
 
 - (void)testAppViewPackRegistersAllExpectedRoutes {
     ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:0];
     // NOTE: feedService, actorService, and notificationService are not nullable in the
-    // AppViewXRpcRoutePack init signature, but the init only stores ivars without
+    // ATProtoAppViewXRpcRoutePack init signature, but the init only stores ivars without
     // validating them. Passing nil here is intentional — it tests unconditional route
     // registration without requiring real service objects. Conditional routes (graph.*,
     // contact.*, and write-proxy) are not tested here; they require non-nil services.
-    AppViewXRpcRoutePack *pack = [[AppViewXRpcRoutePack alloc] initWithFeedService:nil
+    ATProtoAppViewXRpcRoutePack *pack = [[ATProtoAppViewXRpcRoutePack alloc] initWithFeedService:nil
                                                                       actorService:nil
                                                                       graphService:nil
                                                                 notificationService:nil

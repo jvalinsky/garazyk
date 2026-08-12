@@ -9,7 +9,7 @@
  * fields, and usually 500 for service failures. Page-based handlers clamp `limit` to 1...100
  * and forward `cursor`; timeline reads require a valid caller bearer token.
  */
-@interface AppViewXRpcRoutePack (Feed)
+@interface ATProtoAppViewXRpcRoutePack (Feed)
 
 /** @abstract Returns the authenticated actor's timeline, paginated by optional cursor. */
 - (void)handleGetTimeline:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

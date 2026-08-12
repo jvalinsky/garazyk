@@ -13,18 +13,18 @@
 #import "Network/Generated/GZXrpcNSID.h"
 #import "Auth/AuthClaimTypeCheck.h"
 
-@implementation XrpcAppBskyBookmarksPack
+@implementation ATProtoXrpcAppBskyBookmarksPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.bookmark";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               bookmarkService:(BookmarkService *)bookmarkService
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
+               bookmarkService:(PDSBookmarkService *)bookmarkService
                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -36,9 +36,9 @@
   [self registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
-  BookmarkService *bookmarkService = services.bookmarkService;
+  PDSBookmarkService *bookmarkService = services.bookmarkService;
   if (!bookmarkService) {
     return;
   }
@@ -47,8 +47,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_getBookmarks handler:^(ATProtoHttpRequest *request,
                                                     ATProtoHttpResponse *response) {
-    XrpcHandlerContext *context =
-        [[XrpcHandlerContext alloc] initWithRequest:request
+    ATProtoXrpcHandlerContext *context =
+        [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                            response:response
                                            services:resolvedServices];
     NSString *actorDID = nil;
@@ -68,7 +68,7 @@
                                                           cursor:cursor
                                                            error:&error];
     if (error) {
-      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 
@@ -78,8 +78,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_createBookmark handler:^(ATProtoHttpRequest *request,
                                                       ATProtoHttpResponse *response) {
-    XrpcHandlerContext *context =
-        [[XrpcHandlerContext alloc] initWithRequest:request
+    ATProtoXrpcHandlerContext *context =
+        [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                            response:response
                                            services:resolvedServices];
     NSString *actorDID = nil;
@@ -92,11 +92,11 @@
     NSString *subjectURI = AuthTypedValue(body, @"uri", [NSString class], &typeMismatch);
     NSString *subjectCID = AuthTypedValue(body, @"cid", [NSString class], &typeMismatch);
     if (typeMismatch) {
-      [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
       return;
     }
     if (!subjectURI) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing uri"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing uri"];
       return;
     }
 
@@ -108,7 +108,7 @@
                                                createdAt:now
                                                    error:&error];
     if (!success) {
-      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 
@@ -118,8 +118,8 @@
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_bookmark_deleteBookmark handler:^(ATProtoHttpRequest *request,
                                                       ATProtoHttpResponse *response) {
-    XrpcHandlerContext *context =
-        [[XrpcHandlerContext alloc] initWithRequest:request
+    ATProtoXrpcHandlerContext *context =
+        [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                            response:response
                                            services:resolvedServices];
     NSString *actorDID = nil;
@@ -131,11 +131,11 @@
     BOOL typeMismatch = NO;
     NSString *subjectURI = AuthTypedValue(body, @"uri", [NSString class], &typeMismatch);
     if (typeMismatch) {
-      [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
       return;
     }
     if (!subjectURI) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing uri"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing uri"];
       return;
     }
 
@@ -144,7 +144,7 @@
                                                                did:actorDID
                                                              error:&error];
     if (!success) {
-      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+      [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 

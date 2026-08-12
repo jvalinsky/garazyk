@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PLCPersistentStore.h
+ @file ATProtoPLCPersistentStore.h
 
  @abstract Persistent SQLite storage for PLC operations.
 
@@ -34,7 +34,7 @@ typedef NS_ENUM(NSInteger, PLCPersistentStoreError) {
 };
 
 /*!
- @class PLCPersistentStore
+ @class ATProtoPLCPersistentStore
 
  @abstract Persistent SQLite storage for PLC operations.
 
@@ -42,7 +42,7 @@ typedef NS_ENUM(NSInteger, PLCPersistentStoreError) {
  lookups by DID. Uses WAL mode for concurrent access and prepared statements
  for query optimization.
  */
-@interface PLCPersistentStore : NSObject <PLCStore>
+@interface ATProtoPLCPersistentStore : NSObject <PLCStore>
 
 /*! Path to the SQLite database file. */
 @property (nonatomic, copy, readonly) NSString *dbPath;

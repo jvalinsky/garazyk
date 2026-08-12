@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file PLCReplicaServer.h
+ * @file ATProtoPLCReplicaServer.h
  * @abstract Read-only PLC server for replica mode.
- * @discussion PLCReplicaServer is a variant of PLCServer that operates in read-only mode.
+ * @discussion ATProtoPLCReplicaServer is a variant of ATProtoPLCServer that operates in read-only mode.
  * It serves DID resolution and audit log queries from a local replica store, but does not
  * accept operation submissions (POST /:did).
  * This is suitable for deploying a PLC directory read replica that syncs from the
@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Read-only PLC server instance.
  */
-@interface PLCReplicaServer : PLCServer
+@interface ATProtoPLCReplicaServer : ATProtoPLCServer
 
 /**
  * @abstract Whether the server is in read-only mode.
@@ -34,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @return An initialized replica server instance.
  */
 - (instancetype)initWithStore:(id<PLCStore>)store
-                      auditor:(PLCAuditor *)auditor
+                      auditor:(ATProtoPLCAuditor *)auditor
                          port:(NSUInteger)port
                  readOnlyMode:(BOOL)readOnly;
 
@@ -42,7 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Initializes the replica server with an explicit bind host.
  */
 - (instancetype)initWithStore:(id<PLCStore>)store
-                      auditor:(PLCAuditor *)auditor
+                      auditor:(ATProtoPLCAuditor *)auditor
                          host:(NSString *)host
                          port:(NSUInteger)port
                  readOnlyMode:(BOOL)readOnly NS_DESIGNATED_INITIALIZER;
@@ -51,7 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Unavailable initializer.
  */
 - (instancetype)initWithStore:(id<PLCStore>)store
-                      auditor:(PLCAuditor *)auditor
+                      auditor:(ATProtoPLCAuditor *)auditor
                          port:(NSUInteger)port NS_UNAVAILABLE;
 
 @end

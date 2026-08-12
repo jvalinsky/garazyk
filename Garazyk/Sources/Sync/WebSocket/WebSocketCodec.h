@@ -23,9 +23,9 @@ typedef NS_ENUM(NSInteger, WSCodecEventType) {
 };
 
 /**
- * @abstract Parsed WebSocket protocol event produced by WebSocketCodec.
+ * @abstract Parsed WebSocket protocol event produced by ATProtoWebSocketCodec.
  */
-@interface WSCodecEvent : NSObject
+@interface ATProtoWSCodecEvent : NSObject
 
 /** Event kind. */
 @property (nonatomic, readonly) WSCodecEventType type;
@@ -53,7 +53,7 @@ typedef NS_ENUM(NSInteger, WSCodecEventType) {
  * @abstract Sans-I/O WebSocket frame encoder and decoder.
  * @discussion The codec accepts raw bytes and emits protocol events. It does not own socket I/O.
  */
-@interface WebSocketCodec : NSObject
+@interface ATProtoWebSocketCodec : NSObject
 
 /** Maximum accepted frame payload size in bytes. Defaults to 16 MB. */
 @property (nonatomic, assign) uint64_t maxFrameSize; // default 16MB
@@ -76,7 +76,7 @@ typedef NS_ENUM(NSInteger, WSCodecEventType) {
  * @param data Raw bytes read from the transport.
  * @return Parsed events, including protocol errors when framing is invalid.
  */
-- (NSArray<WSCodecEvent *> *)feedData:(NSData *)data;
+- (NSArray<ATProtoWSCodecEvent *> *)feedData:(NSData *)data;
 
 /** Builds a text message frame for outbound transport. */
 - (NSData *)textFrame:(NSString *)text;

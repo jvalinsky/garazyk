@@ -20,7 +20,7 @@ int main(void) {
         RemoveDatabaseArtifacts(path);
 
         NSError *error = nil;
-        PLCPersistentStore *store = [PLCPersistentStore storeWithPath:path error:&error];
+        ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:path error:&error];
         if (store == nil || !store.isOpen) {
             NSLog(@"PLCPersistentStore standalone link test failed to open: %@", error);
             RemoveDatabaseArtifacts(path);

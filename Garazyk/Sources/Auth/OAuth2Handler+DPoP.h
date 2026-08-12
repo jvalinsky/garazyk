@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @category DPoP
  * @abstract Provides request-origin derivation and DPoP proof validation for OAuth endpoints.
  */
-@interface OAuth2Handler (DPoP)
+@interface ATProtoOAuth2Handler (DPoP)
 /**
  * @abstract Validates the DPoP proof bound to an OAuth endpoint request.
  * @discussion Treats proof and request headers as untrusted; derives a canonical URL and requires a nonce.

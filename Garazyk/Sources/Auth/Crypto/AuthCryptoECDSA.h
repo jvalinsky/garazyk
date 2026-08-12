@@ -7,7 +7,7 @@
 
  @discussion Converts between ASN.1 DER and raw (r||s) ECDSA signature formats.
  DER is used by Security framework, raw is used in JWS/ATProtoJWT (RFC 7515 §A.3).
- Extracted from duplicated implementations in OAuth2DPoPProof and DPoPUtil.
+ Extracted from duplicated implementations in ATProtoOAuth2DPoPProof and ATProtoDPoPUtil.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
