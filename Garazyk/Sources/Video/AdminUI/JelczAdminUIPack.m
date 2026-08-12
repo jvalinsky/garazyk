@@ -48,11 +48,23 @@
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-metrics" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
-        if (snapshot) {
-            [res setBodyString:[GZAdminUIVideoPack renderVideoOverviewPartial:snapshot.snapshot]];
-        } else {
+        if (!snapshot) {
             [res setBodyString:[self errorUnavailableHTML]];
+            return;
         }
+        NSDictionary *snap = snapshot.snapshot;
+        if (!snap) {
+            [res setBodyString:@"<div class=\"alert alert-warning\">No snapshot data.</div>"];
+            return;
+        }
+        // Use legacy renderer for robustness
+        NSMutableDictionary *healthCtx = [NSMutableDictionary dictionary];
+        healthCtx[@"status"] = snap[@"health"] ?: @"unknown";
+        healthCtx[@"message"] = [NSString stringWithFormat:@"Jobs: %@, Workers: %@/%@",
+                                   snap[@"queue"][@"depth"] ?: @0,
+                                   snap[@"worker"][@"activeJobs"] ?: @0,
+                                   snap[@"worker"][@"maxConcurrency"] ?: @0];
+        [res setBodyString:[GZAdminUIVideoPack renderVideoHealthPartial:healthCtx]];
     }];
 
     // Jobs (delegates to centralized pack's renderer for consistency)

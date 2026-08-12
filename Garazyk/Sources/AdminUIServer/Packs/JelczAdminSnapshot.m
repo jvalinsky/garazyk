@@ -96,8 +96,12 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
 
     for (NSString *state in sKnownStates()) {
         NSArray *jobs = nil;
-        if ([jobStore respondsToSelector:@selector(listVideoJobsWithState:limit:offset:error:)]) {
-            jobs = [jobStore listVideoJobsWithState:state limit:500 offset:0 error:nil];
+        if (jobStore && [jobStore respondsToSelector:@selector(listVideoJobsWithState:limit:offset:error:)]) {
+            @try {
+                jobs = [jobStore listVideoJobsWithState:state limit:500 offset:0 error:nil];
+            } @catch (NSException *exception) {
+                jobs = nil;
+            }
         }
         if (!jobs) jobs = @[];
         counts[state] = @(jobs.count);
