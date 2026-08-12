@@ -184,6 +184,35 @@ STAR-lite v2 (same English name, different bytes and media type).
 | PDS export producers | `Garazyk/Sources/Services/PDS/PDSRepositoryService+Export.m` |
 | AppView backfill Accept preference | `Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m` |
 | Hubble smoke topology | `scripts/scenarios/topologies/hubble-star-lite.json` |
+| STAR-lite vs CAR benchmark | `scripts/test/star_lite_export_benchmark.ts` |
+
+## Benchmarking STAR-lite vs CAR
+
+`scripts/test/star_lite_export_benchmark.ts` (wrapper:
+`scripts/test/star_lite_export_benchmark.sh`) starts PLC plus one or more PDS
+binaries, seeds repos to a configurable total payload size, then exports each
+account with `com.atproto.sync.getRepo` negotiated as CAR and STAR-lite v0.
+For each export it records size, generation+transfer latency, peak RSS, average
+CPU (`ps`), and on-disk data-dir delta (`du`). Correctness is checked by
+comparing sorted post texts parsed from both archives (Garazyk `listRecords`
+does not paginate today, so cross-format agreement is the ground truth).
+
+Environment knobs:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `STAR_LITE_BENCH_TARGET_BYTES` | `10000000` (~10 MB) | Approx total repo payload across all accounts |
+| `STAR_LITE_BENCH_PDS_COUNT` | `3` | PDS instances (`pds`, `pds2`, `pds3`) |
+| `STAR_LITE_BENCH_ACCOUNTS_PER_PDS` | `5` | Accounts seeded per PDS |
+| `STAR_LITE_BENCH_QUICK` | off | When `1`, ~500 KB / 1 PDS / 2 accounts dev smoke |
+| `STAR_LITE_BENCH_JSON_OUT` | — | Optional path for machine-readable summary JSON |
+
+Example:
+
+```sh
+STAR_LITE_BENCH_QUICK=1 ./scripts/test/star_lite_export_benchmark.sh
+STAR_LITE_BENCH_TARGET_BYTES=100000000 ./scripts/test/star_lite_export_benchmark.sh
+```
 
 ## See also
 

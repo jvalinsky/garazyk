@@ -26,6 +26,7 @@
     "@modelcontextprotocol/sdk/types.js": "npm:@modelcontextprotocol/sdk@1.29.0/types.js",
     "playwright": "npm:playwright@1.52.0",
     "@ipld/dag-cbor": "npm:@ipld/dag-cbor@^9.0.0",
+    "@ipld/car": "npm:@ipld/car@^5.3.1",
     "cborg": "npm:cborg@5.1.1",
     "zod": "npm:zod@^3.22.0",
     "preact": "https://esm.sh/preact@10.22.0",
