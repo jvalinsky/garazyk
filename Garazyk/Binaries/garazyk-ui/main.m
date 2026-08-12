@@ -7,6 +7,7 @@
 #import "AdminUIServer/GZAdminUIDefaultPacks.h"
 #import "PLC/AdminUI/PLCAdminUIPack.h"
 #import "Sync/Relay/AdminUI/RelayAdminUIPack.h"
+#import "Beskid/AdminUI/BeskidAdminUIPack.h"
 #import "CLI/GZCommandLineOptions.h"
 #import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Debug/GZLogger.h"
@@ -148,8 +149,9 @@ int main(int argc, const char *argv[]) {
         NSMutableArray<Class> *packs = [GZAdminUIDefaultPacks() mutableCopy];
         // The PLC pack lives with its service, but this compatibility host keeps
         // serving that exact pack against the configured protocol endpoint.
-        [packs insertObject:GZPLCAdminUIPack.class atIndex:3];
         [packs insertObject:GZRelayAdminUIPack.class atIndex:2];
+        [packs insertObject:GZPLCAdminUIPack.class atIndex:3];
+        [packs addObject:GZBeskidAdminUIPack.class];
         GZAdminUIHost *runtime = [[GZAdminUIHost alloc] initWithConfiguration:config
                                                                           packs:packs];
         return [GZServiceLifecycle runServiceWithRuntime:runtime
