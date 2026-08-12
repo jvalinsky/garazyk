@@ -53,6 +53,19 @@ NS_ASSUME_NONNULL_BEGIN
 /// Keys that must never appear in any rendered output.
 + (NSSet<NSString *> *)sensitiveKeys;
 
+/**
+ * @abstract Create a snapshot with direct worker + database access (embedded mode).
+ *
+ * @param worker    The shared video worker singleton for active/pending/max values.
+ * @param jobStore  A VideoJobStore-conforming database for per-state counts.
+ * @param config    Media service configuration for capacity/limits.
+ * @param uptimeSeconds Seconds since the service started.
+ */
+- (instancetype)initWithWorker:(id)worker
+                      jobStore:(id)jobStore
+                        config:(NSDictionary *)config
+                  uptimeSeconds:(NSTimeInterval)uptimeSeconds;
+
 @end
 
 NS_ASSUME_NONNULL_END

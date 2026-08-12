@@ -9,7 +9,7 @@
 - (instancetype)init {
     self = [super init];
     if (!self) return nil;
-    _relayURLs = @[@"wss://bsky.network"];
+    _relayURLs = @[];
     _dataDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Mikrus"];
     _httpPort = 3210;
     _cursorCheckpointIntervalMs = 5000;
@@ -18,6 +18,20 @@
     _rateLimitIpLimit = 200;
     _rateLimitIpWindowSeconds = 60;
     return self;
+}
+
+- (void)setRelayURLs:(NSArray<NSString *> *)relayURLs {
+    NSMutableArray<NSString *> *normalized = [NSMutableArray arrayWithCapacity:relayURLs.count];
+    for (NSString *url in relayURLs) {
+        NSString *value = [url stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (value.length > 0 && [value rangeOfString:@"://"].location == NSNotFound) {
+            value = [@"wss://" stringByAppendingString:value];
+        }
+        if (value.length > 0) {
+            [normalized addObject:value];
+        }
+    }
+    _relayURLs = [normalized copy];
 }
 
 + (instancetype)defaultConfiguration {
