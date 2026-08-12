@@ -1,0 +1,37 @@
+{
+  "name": "hubble-star-lite",
+  "description": "Garazyk PDS with Hubble (Rust, microcosm.blue) backfilling directly from the PDS in its default PDS-direct upstream mode (no relay). Verifies STAR-lite v0 export interop: Hubble negotiates application/x.microcosm.star-lite for com.atproto.sync.getRepo and reports synchronized repos via blue.microcosm.hubble.getRepoInfo. Patches applied via overlayDir add HUBBLE_ALLOW_HTTP and --plc-url, both absent upstream, so Hubble can run against a local, non-TLS, non-production-PLC topology.",
+  "roles": {
+    "plc": { "inherit": "garazyk-default" },
+    "pds": { "inherit": "garazyk-default" },
+    "backfill": {
+      "name": "hubble",
+      "source": {
+        "repo": "https://tangled.org/microcosm.blue/hubble",
+        "ref": "d984a19c44d31f8e4f639dc99e910b19e39ac78e",
+        "overlayDir": "docker/hubble"
+      },
+      "entrypoint": ["hubble"],
+      "command": [
+        "--data-dir", "/data",
+        "--upstream", "local-pds:2583",
+        "--plc-url", "http://local-plc:2582",
+        "--allow-http",
+        "--contact", "@garazyk-e2e.local",
+        "--bind", "0.0.0.0:3000",
+        "--metrics-bind", "0.0.0.0:9000"
+      ],
+      "env": {
+        "RUST_LOG": "hubble=debug,hubble_sync=debug,info"
+      },
+      "ports": ["3000:3000", "9000:9000"],
+      "volumes": ["hubble_data:/data"],
+      "healthCheck": {
+        "path": null,
+        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      },
+      "capabilities": ["backfill", "repoBackfill", "repoVerification", "xrpcQueries", "healthCheck"],
+      "dependsOn": ["local-pds"]
+    }
+  }
+}

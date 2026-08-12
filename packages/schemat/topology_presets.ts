@@ -1299,6 +1299,64 @@ const HYDRANT = defineTopology({
   },
 });
 
+const HUBBLE_STAR_LITE = defineTopology({
+  name: "hubble-star-lite",
+  description:
+    "Garazyk PDS with Hubble (Rust, microcosm.blue) backfilling directly " +
+    "from the PDS in its default PDS-direct upstream mode (no relay). " +
+    "Verifies STAR-lite v0 export interop: Hubble negotiates " +
+    "application/x.microcosm.star-lite for com.atproto.sync.getRepo and " +
+    "reports synchronized repos via blue.microcosm.hubble.getRepoInfo. " +
+    "Patches applied via overlayDir add HUBBLE_ALLOW_HTTP and --plc-url, " +
+    "both absent upstream, so Hubble can run against a local, non-TLS, " +
+    "non-production-PLC topology.",
+  roles: {
+    [Role.plc]: role.inherit("garazyk-default"),
+    [Role.pds]: role.inherit("garazyk-default"),
+    [Role.backfill]: role.backfill({
+      name: "hubble",
+      source: source.git({
+        repo: "https://tangled.org/microcosm.blue/hubble",
+        ref: "d984a19c44d31f8e4f639dc99e910b19e39ac78e",
+        overlayDir: "docker/hubble",
+      }),
+      entrypoint: ["hubble"],
+      command: [
+        "--data-dir",
+        "/data",
+        "--upstream",
+        "local-pds:2583",
+        "--plc-url",
+        "http://local-plc:2582",
+        "--allow-http",
+        "--contact",
+        "@garazyk-e2e.local",
+        "--bind",
+        "0.0.0.0:3000",
+        "--metrics-bind",
+        "0.0.0.0:9000",
+      ],
+      env: {
+        RUST_LOG: "hubble=debug,hubble_sync=debug,info",
+      },
+      ports: [port(3000), port(9000)],
+      volumes: [volume.named("hubble_data", "/data")],
+      health: topologyHealth.command([
+        "CMD-SHELL",
+        "wget -qO- http://localhost:3000/ || exit 1",
+      ]),
+      capabilities: [
+        Cap.backfill.backfill,
+        Cap.backfill.repoBackfill,
+        Cap.backfill.repoVerification,
+        Cap.backfill.xrpcQueries,
+        Cap.backfill.healthCheck,
+      ],
+      dependsOnRoles: [Role.pds],
+    }),
+  },
+});
+
 const ZLAY_RELAY = defineTopology({
   name: "zlay-relay",
   description: "Garazyk PDS with zlay (Zig).",
@@ -1509,3 +1567,4 @@ TopologyRegistry.register(PARAKEET);
 TopologyRegistry.register(WINTERMUTE);
 TopologyRegistry.register(HYDRANT);
 TopologyRegistry.register(ZLAY_RELAY);
+TopologyRegistry.register(HUBBLE_STAR_LITE);
