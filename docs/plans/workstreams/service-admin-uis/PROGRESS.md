@@ -86,12 +86,14 @@ last_verified: 2026-08-11
 
 | Service | Slices remaining |
 |---|---|
-| PDS (kaszlak) | All 6 slices — largest surface, existing packs need migration |
-| Chat | Server-side admin endpoints for conversation/message data |
+| PDS (kaszlak) | Slice 4 embed **done** (`bbc84dd4`); open: bounded overview snapshot, DTO allowlists, NixOS module examples, checked-in browser/visual smoke, Lab scenario retarget |
+| Chat | Server-side admin endpoints for conversation/message data (beyond overview) |
 | Germ | Browser verification of live metrics rendering |
-| Ozone | Embedded listener if standalone Ozone binary is created |
-
-All standalone embedded services now have complete NixOS modules and deployment examples.
+| AppView | Exceptions triage / Probe / Actor dig deferred IA |
+| Mikrus / Beskid | Pack completion vs brief acceptance (see briefs) |
+| Relay | Fresh GNUstep binary gate evidence; optional live-event inspector fields |
+| Ozone | Embedded listener only if a standalone Ozone binary is created (not in current fleet) |
+| Fleet | M5 `garazyk-ui` retirement after every brief meets acceptance |
 
 ## Build & test status
 
