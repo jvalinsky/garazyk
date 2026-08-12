@@ -347,9 +347,12 @@ Mikrus until Relay's remaining M4 acceptance gates are recorded as passed or a
 named governed blocker is recorded there.
 
 On **2026-08-12**, the mandatory full `AllTests --gated=run` passed (exit 0)
-after disk space was restored (~11 GB free). Remaining M4 gates are NixOS/loopback
-smoke, sustained firehose-under-polling, and GNUstep binary gate — browser and
-visual smokes re-passed 2026-08-12 (see Relay brief).
+after disk space was restored (~11 GB free). Browser and visual smokes
+re-passed 2026-08-12 (see Relay brief). NixOS module smoke and relay
+loopback/firehose-under-polling smoke also passed 2026-08-12 via
+`scripts/test/nixos_zuk_module_smoke.sh` and
+`scripts/test/relay_admin_loopback_smoke.ts`. Remaining M4 gate: GNUstep binary
+build (host volume was ~100% full again at smoke time — ~3.9 GB free).
 
 | Binary | Execution brief |
 | --- | --- |
