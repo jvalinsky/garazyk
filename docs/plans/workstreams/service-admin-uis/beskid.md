@@ -56,6 +56,11 @@ latency counters yet.
    `BESKID_ADMIN_PASSWORD` (file wins); listener starts only when configured.
    CLI: `--admin-ui-host`, `--admin-ui-port`, `--admin-password-file`.
    NixOS module deferred to follow-up (no existing `beskid.nix`).
+   **Done 2026-08-11 (packaging):** `nixos/modules/beskid.nix` with
+   systemd-credential admin-password-file loading, loopback bind, admin port
+   option (2595), `ProtectSystem=strict`/`NoNewPrivileges`, and a
+   `flake.nix` package derivation (`beskid`); `nixos/examples/beskid.nix`
+   example wired for sops-nix/agenix.
 4. ~~Test hit/miss/expired behavior, upstream failures, rate limiting, redaction,
    empty cache, concurrent access, auth, and polling cost.~~
    **Done 2026-08-11:** `BeskidMetricsTests` (counters, bounded upstreams,
