@@ -35,6 +35,7 @@ set(ATPROTO_RUNTIME_MANIFEST
   "Garazyk/Sources/Chat/Server/ChatRuntime.m"
   "Garazyk/Sources/Chat/AdminUI/ChatAdminUIPack.m"
   "Garazyk/Sources/Germ/Server/Runtime/GermRuntime.m"
+  "Garazyk/Sources/Germ/AdminUI/GermAdminUIPack.m"
   "Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m"
   "Garazyk/Sources/MediaCore/ATProtoMediaXrpcPack.m"
   "Garazyk/Sources/Network/ATProtoHttpMSTViewerRoutePack.m"
