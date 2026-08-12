@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Implementation of VideoBlobUploader for remote PDS blob services.
  */
-@interface VideoRemoteBlobUploader : NSObject <VideoBlobUploader>
+@interface GZVideoRemoteBlobUploader : NSObject <VideoBlobUploader>
 
 /**
  * @abstract The base URL of the remote PDS blob service.

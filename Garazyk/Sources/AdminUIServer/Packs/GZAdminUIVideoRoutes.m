@@ -23,7 +23,21 @@
         NSDictionary *jobsResult = [weakSelf.backendClient fetchVideoJobsWithState:nil limit:100 cursor:nil];
         NSArray *jobs = [jobsResult[@"jobs"] isKindOfClass:[NSArray class]] ? jobsResult[@"jobs"] : @[];
         NSDictionary *quotas = [weakSelf.backendClient fetchVideoUploadLimits];
-        JelczAdminSnapshot *snap = [[JelczAdminSnapshot alloc] initWithHealth:health jobs:jobs quotas:quotas];
+        GZJelczAdminSnapshot *snap = [[GZJelczAdminSnapshot alloc] initWithHealth:health jobs:jobs quotas:quotas];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[GZAdminUIVideoPack renderVideoOverviewPartial:snap.snapshot]];
+    }];
+
+    // Video: Shell tab (admin shell requests /admin/partials/video for the
+    // top-level tab identifier "video").
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        AUTH_GUARD(weakSelf, request, response);
+        NSDictionary *health = [weakSelf.backendClient fetchVideoHealth];
+        NSDictionary *jobsResult = [weakSelf.backendClient fetchVideoJobsWithState:nil limit:100 cursor:nil];
+        NSArray *jobs = [jobsResult[@"jobs"] isKindOfClass:[NSArray class]] ? jobsResult[@"jobs"] : @[];
+        NSDictionary *quotas = [weakSelf.backendClient fetchVideoUploadLimits];
+        GZJelczAdminSnapshot *snap = [[GZJelczAdminSnapshot alloc] initWithHealth:health jobs:jobs quotas:quotas];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[GZAdminUIVideoPack renderVideoOverviewPartial:snap.snapshot]];
@@ -67,7 +81,7 @@
         NSDictionary *jobsResult = [weakSelf.backendClient fetchVideoJobsWithState:nil limit:100 cursor:nil];
         NSArray *jobs = [jobsResult[@"jobs"] isKindOfClass:[NSArray class]] ? jobsResult[@"jobs"] : @[];
         NSDictionary *quotas = [weakSelf.backendClient fetchVideoUploadLimits];
-        JelczAdminSnapshot *snap = [[JelczAdminSnapshot alloc] initWithHealth:health jobs:jobs quotas:quotas];
+        GZJelczAdminSnapshot *snap = [[GZJelczAdminSnapshot alloc] initWithHealth:health jobs:jobs quotas:quotas];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[GZAdminUIVideoPack renderVideoCapacityPartial:snap.snapshot]];

@@ -41,7 +41,7 @@
     self.config.serviceIdentifier = @"plc";
     self.config.plcBaseURL = [NSURL URLWithString:@"http://127.0.0.1:2582"];
     self.host = [[GZAdminUIHost alloc] initWithConfiguration:self.config packs:@[GZPLCAdminUIPack.class]];
-    self.snapshot = [[GZPLCAdminSnapshot alloc] initWithStore:[[PLCMockStore alloc] init] syncEngine:nil];
+    self.snapshot = [[GZPLCAdminSnapshot alloc] initWithStore:[[ATProtoPLCMockStore alloc] init] syncEngine:nil];
     [GZPLCAdminUIPack configureHost:self.host snapshot:self.snapshot];
 }
 
@@ -88,9 +88,9 @@
 }
 
 - (void)testProtocolAndAdminListenersStopCleanly {
-    PLCMockStore *store = [[PLCMockStore alloc] init];
-    PLCServer *protocolServer = [[PLCServer alloc] initWithStore:store
-                                                           auditor:[[PLCAuditor alloc] initWithStore:store]
+    ATProtoPLCMockStore *store = [[ATProtoPLCMockStore alloc] init];
+    ATProtoPLCServer *protocolServer = [[ATProtoPLCServer alloc] initWithStore:store
+                                                           auditor:[[ATProtoPLCAuditor alloc] initWithStore:store]
                                                              host:@"127.0.0.1"
                                                              port:0];
     NSError *error = nil;

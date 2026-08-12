@@ -9,7 +9,7 @@
 @implementation DIDPLCResolverTests
 
 - (void)testInvalidDIDRejection {
-    DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:@"http://localhost:2582"];
+    ATProtoDIDPLCResolver *resolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:@"http://localhost:2582"];
     NSError *error = nil;
     NSDictionary *doc = [resolver resolveDID:@"did:web:example.com" error:&error];
     
@@ -21,7 +21,7 @@
 
 - (void)testResolverReturnsErrorOnTimeout {
     // Port 1 (should fail immediately or timeout depending on system)
-    DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:@"http://localhost:1"];
+    ATProtoDIDPLCResolver *resolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:@"http://localhost:1"];
     resolver.timeout = 0.5; // Very short timeout
     
     NSError *error = nil;

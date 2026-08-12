@@ -596,7 +596,7 @@ target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoT
 target_link_libraries(ATProtoPLC PUBLIC ATProtoStorage ATProtoAdminUI ATProtoTransport ATProtoCore)
 target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService)
 target_link_libraries(ATProtoMediaCore PUBLIC ATProtoStorage ATProtoCore ATProtoTransport)
-target_link_libraries(ATProtoVideoService PUBLIC ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport)
+target_link_libraries(ATProtoVideoService PUBLIC ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport ATProtoAdminUI)
 if(APPLE)
   target_link_libraries(ATProtoVideoService PUBLIC ${COREMEDIA} ${AVFOUNDATION} ${IMAGEIO} ${CORESERVICES})
   target_link_libraries(ATProtoMediaCore PUBLIC ${FOUNDATION})

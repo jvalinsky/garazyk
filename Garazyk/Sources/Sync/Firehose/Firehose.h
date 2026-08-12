@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file Firehose.h
+ @file ATProtoFirehose.h
 
  @abstract Real-time event streaming for ATProto repositories.
 
- @discussion Implements the ATProto Firehose protocol for subscribing to
+ @discussion Implements the ATProto ATProtoFirehose protocol for subscribing to
  repository commits and identity updates. Provides WebSocket-based streaming
  with cursor-based replay support.
 
@@ -14,13 +14,13 @@
 
 #import <Foundation/Foundation.h>
 
-@class Firehose;
-@class FirehoseSubscription;
+@class ATProtoFirehose;
+@class ATProtoFirehoseSubscription;
 @class ATProtoCID;
 
 NS_ASSUME_NONNULL_BEGIN
 
-/*! Error domain for Firehose operations. */
+/*! Error domain for ATProtoFirehose operations. */
 extern NSString * const FirehoseErrorDomain;
 
 /*! Error code when subscription fails to connect. */
@@ -34,7 +34,7 @@ extern NSInteger const FirehoseErrorCodeSubscriptionClosed;
 
 /*!
 
- @abstract Types of events streamed on the Firehose.
+ @abstract Types of events streamed on the ATProtoFirehose.
 
  @constant FirehoseEventKindCommit Repository commit event.
  @constant FirehoseEventKindIdentity Identity update event.
@@ -53,13 +53,13 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 };
 
 /*!
- @class FirehoseCommitEvent
+ @class ATProtoFirehoseCommitEvent
 
  @abstract Represents a repository commit event.
  
  Per com.atproto.sync.subscribeRepos#commit lexicon.
  */
-@interface FirehoseCommitEvent : NSObject
+@interface ATProtoFirehoseCommitEvent : NSObject
 
 // Required fields
 
@@ -106,13 +106,13 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @end
 
 /*!
- @class FirehoseSyncEvent
+ @class ATProtoFirehoseSyncEvent
 
  @abstract Represents a repository sync event.
 
  @discussion Per com.atproto.sync.subscribeRepos#sync lexicon.
  */
-@interface FirehoseSyncEvent : NSObject
+@interface ATProtoFirehoseSyncEvent : NSObject
 
 /*! The stream sequence number of this message. */
 @property (nonatomic, assign) int64_t seq;
@@ -136,11 +136,11 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @end
 
 /*!
- @class FirehoseIdentityEvent
+ @class ATProtoFirehoseIdentityEvent
 
  @abstract Represents an identity update event.
  */
-@interface FirehoseIdentityEvent : NSObject
+@interface ATProtoFirehoseIdentityEvent : NSObject
 
 /*! The stream sequence number of this message. */
 @property (nonatomic, assign) int64_t seq;
@@ -159,11 +159,11 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @end
 
 /*!
- @class FirehoseAccountEvent
+ @class ATProtoFirehoseAccountEvent
 
  @abstract Represents an account status event (takedown, suspension, etc).
  */
-@interface FirehoseAccountEvent : NSObject
+@interface ATProtoFirehoseAccountEvent : NSObject
 
 /*! The stream sequence number of this message. */
 @property (nonatomic, assign) int64_t seq;
@@ -187,11 +187,11 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @end
 
 /*!
- @class FirehoseInfoEvent
+ @class ATProtoFirehoseInfoEvent
 
  @abstract Represents an informational message on the stream.
  */
-@interface FirehoseInfoEvent : NSObject
+@interface ATProtoFirehoseInfoEvent : NSObject
 
 /*! The kind of info message (e.g., OutdatedCursor, HandshakeComplete). */
 @property (nonatomic, copy) NSString *kind;
@@ -204,11 +204,11 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @end
 
 /*!
- @class FirehoseErrorEvent
+ @class ATProtoFirehoseErrorEvent
 
  @abstract Represents an error event on the stream.
  */
-@interface FirehoseErrorEvent : NSObject
+@interface ATProtoFirehoseErrorEvent : NSObject
 
 /*! Machine-readable error code (for example, "FutureCursor"). */
 @property (nonatomic, copy) NSString *error;
@@ -227,7 +227,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
  The raw frame is retained so relays can forward new event types without
  decoding and re-encoding them through a lossy model.
  */
-@interface FirehoseRawEvent : NSObject
+@interface ATProtoFirehoseRawEvent : NSObject
 @property (nonatomic, copy) NSString *messageType;
 @property (nonatomic, copy) NSData *frameData;
 @property (nonatomic, strong) NSDictionary *payload;
@@ -236,27 +236,27 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*!
  @protocol FirehoseSubscriptionDelegate
 
- @abstract Delegate for receiving Firehose events.
+ @abstract Delegate for receiving ATProtoFirehose events.
  */
 @protocol FirehoseSubscriptionDelegate <NSObject>
 @optional
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveCommitEvent:(FirehoseCommitEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveAccountEvent:(FirehoseAccountEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveSyncEvent:(FirehoseSyncEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveInfoEvent:(FirehoseInfoEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveRawEvent:(FirehoseRawEvent *)event;
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(nullable NSError *)error;
-- (void)firehoseSubscriptionDidConnect:(FirehoseSubscription *)subscription;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveAccountEvent:(ATProtoFirehoseAccountEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveSyncEvent:(ATProtoFirehoseSyncEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveInfoEvent:(ATProtoFirehoseInfoEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveRawEvent:(ATProtoFirehoseRawEvent *)event;
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didCloseWithError:(nullable NSError *)error;
+- (void)firehoseSubscriptionDidConnect:(ATProtoFirehoseSubscription *)subscription;
 @end
 
 /*!
- @class FirehoseSubscription
+ @class ATProtoFirehoseSubscription
 
- @abstract An active subscription to the Firehose.
+ @abstract An active subscription to the ATProtoFirehose.
  */
-@interface FirehoseSubscription : NSObject
+@interface ATProtoFirehoseSubscription : NSObject
 
 /*! The delegate receiving events. */
 @property (nonatomic, weak, nullable, readonly) id<FirehoseSubscriptionDelegate> delegate;
@@ -276,11 +276,11 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @end
 
 /*!
- @class Firehose
+ @class ATProtoFirehose
 
- @abstract Client for ATProto Firehose event streaming.
+ @abstract Client for ATProto ATProtoFirehose event streaming.
  */
-@interface Firehose : NSObject
+@interface ATProtoFirehose : NSObject
 
 /*! Bearer token sent during the WebSocket upgrade request. */
 @property(nonatomic, copy, nullable) NSString *accessToken;
@@ -288,7 +288,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*! Delegate for receiving events. */
 @property (nonatomic, weak, nullable, readonly) id<FirehoseSubscriptionDelegate> delegate;
 
-/*! URL of the Firehose server. */
+/*! URL of the ATProtoFirehose server. */
 @property (nonatomic, readonly) NSURL *serverURL;
 
 /*! Whether currently connected to the server. */
@@ -300,10 +300,10 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 - (instancetype)initWithServerURL:(NSURL *)serverURL;
 
 /*! Creates a new subscription with optional cursor and collection filter. */
-- (FirehoseSubscription *)subscribeWithCursor:(int64_t)cursor
+- (ATProtoFirehoseSubscription *)subscribeWithCursor:(int64_t)cursor
                                    collections:(nullable NSArray<NSString *> *)collections
                                      delegate:(nullable id<FirehoseSubscriptionDelegate>)delegate;
-/*! Connects to the Firehose server. */
+/*! Connects to the ATProtoFirehose server. */
 - (void)connect;
 
 /*! Disconnects from the server. */
@@ -312,9 +312,9 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*!
  @method suspendReading
 
- @abstract Suspends reading from the Firehose server.
+ @abstract Suspends reading from the ATProtoFirehose server.
 
- @discussion Propagates to the underlying WebSocketConnection, causing
+ @discussion Propagates to the underlying ATProtoWebSocketConnection, causing
  TCP backpressure to the server.
 */
 - (void)suspendReading;
@@ -322,7 +322,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*!
  @method resumeReading
 
- @abstract Resumes reading from the Firehose server after a suspend.
+ @abstract Resumes reading from the ATProtoFirehose server after a suspend.
 
  @discussion Restarts the WebSocket read loop.
 */

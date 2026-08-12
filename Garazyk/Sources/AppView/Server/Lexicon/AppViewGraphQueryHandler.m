@@ -15,13 +15,13 @@
 
 @interface AppViewGraphQueryHandler ()
 
-@property (nonatomic, strong) GraphService *graphService;
+@property (nonatomic, strong) PDSGraphService *graphService;
 
 @end
 
 @implementation AppViewGraphQueryHandler
 
-- (instancetype)initWithGraphService:(GraphService *)graphService {
+- (instancetype)initWithGraphService:(PDSGraphService *)graphService {
     self = [super init];
     if (self) {
         _graphService = graphService;

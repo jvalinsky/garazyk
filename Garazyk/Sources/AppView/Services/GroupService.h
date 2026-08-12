@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Service layer for group metadata, membership, invites, join requests, and messages.
  */
-@interface GroupService : NSObject
+@interface PDSGroupService : NSObject
 
 /**
  * @abstract Creates a group service backed by a query database.

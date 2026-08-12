@@ -35,9 +35,9 @@ NSString * const ATProtoVideoTranscoderErrorDomain = @"com.atproto.video.transco
 
 - (id<VideoTranscoderBackend>)createBackend {
 #if TARGET_OS_MAC
-    return [[AVFoundationTranscoder alloc] init];
+    return [[GZAVFoundationTranscoder alloc] init];
 #else
-    return [[FFmpegTranscoder alloc] initWithFFmpegPath:nil ffprobePath:nil];
+    return [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil ffprobePath:nil];
 #endif
 }
 

@@ -11,7 +11,7 @@
 #import "PLC/PLCSyncClient.h"
 #import "PLC/PLCSyncEngine.h"
 
-@interface PLCSyncEngine (PLCAdminSnapshotTestAccess)
+@interface ATProtoPLCSyncEngine (PLCAdminSnapshotTestAccess)
 @property(nonatomic, assign, readwrite) PLCSyncState state;
 @property(nonatomic, assign, readwrite) NSUInteger totalOperationsIngested;
 @property(nonatomic, assign, readwrite) NSUInteger totalOperationsFailed;
@@ -19,7 +19,7 @@
 @property(nonatomic, strong, readwrite) NSDate *lastSyncDate;
 @end
 
-@interface PLCAdminBoundedMockStore : PLCMockStore
+@interface PLCAdminBoundedMockStore : ATProtoPLCMockStore
 @property(nonatomic, assign) BOOL unboundedReadUsed;
 @end
 
@@ -30,7 +30,7 @@
     return [super getAllDIDsWithError:error];
 }
 
-- (NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
+- (NSArray<ATProtoPLCOperation *> *)getHistoryForDID:(NSString *)did
                               includeNullified:(BOOL)includeNullified
                                          error:(NSError **)error {
     self.unboundedReadUsed = YES;
@@ -45,7 +45,7 @@
 @implementation PLCAdminSnapshotTests
 
 - (void)testPrimaryEmptyStoreDoesNotInventReplicaFields {
-    GZPLCAdminSnapshot *snapshot = [[GZPLCAdminSnapshot alloc] initWithStore:[[PLCMockStore alloc] init] syncEngine:nil];
+    GZPLCAdminSnapshot *snapshot = [[GZPLCAdminSnapshot alloc] initWithStore:[[ATProtoPLCMockStore alloc] init] syncEngine:nil];
     NSDictionary *value = [snapshot snapshot];
     XCTAssertEqualObjects(value[@"mode"], @"primary");
     XCTAssertEqualObjects(value[@"health"], @"ok");
@@ -55,7 +55,7 @@
 
 - (void)testDirectoryLookupIsBoundedAndReportsOperationChain {
     PLCAdminBoundedMockStore *store = [[PLCAdminBoundedMockStore alloc] init];
-    PLCOperation *operation = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *operation = [[ATProtoPLCOperation alloc] init];
     operation.did = @"did:plc:adminsnapshot";
     operation.sig = @"fixture";
     operation.data = @{@"type": @"create"};
@@ -71,7 +71,7 @@
 - (void)testPopulatedStoreReportsExactTotalsWithoutMaterializingTheDirectory {
     PLCAdminBoundedMockStore *store = [[PLCAdminBoundedMockStore alloc] init];
     for (NSString *did in @[ @"did:plc:one", @"did:plc:two" ]) {
-        PLCOperation *operation = [[PLCOperation alloc] init];
+        ATProtoPLCOperation *operation = [[ATProtoPLCOperation alloc] init];
         operation.did = did;
         operation.sig = @"fixture";
         operation.data = @{ @"type": @"create" };
@@ -85,7 +85,7 @@
 }
 
 - (void)testMetricsSnapshotRemainsConsistentUnderConcurrentUpdates {
-    PLCMetrics *metrics = [PLCMetrics sharedMetrics];
+    ATProtoPLCMetrics *metrics = [ATProtoPLCMetrics sharedMetrics];
     int64_t before = metrics.totalRequests;
     dispatch_apply(128, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(size_t index) {
         [metrics recordRequest];
@@ -98,11 +98,11 @@
 
 - (void)testReplicaStatesAndCountersAreReported {
     NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"plc-admin-%@.sqlite", NSUUID.UUID.UUIDString]];
-    PLCReplicaStore *store = [[PLCReplicaStore alloc] initWithPath:path];
+    ATProtoPLCReplicaStore *store = [[ATProtoPLCReplicaStore alloc] initWithPath:path];
     XCTAssertTrue([store openWithError:nil]);
-    PLCSyncEngine *sync = [[PLCSyncEngine alloc] initWithStore:store
-                                                         client:[[PLCSyncClient alloc] initWithUpstreamURL:@"http://127.0.0.1:9"]
-                                                        auditor:[[PLCAuditor alloc] initWithStore:store]];
+    ATProtoPLCSyncEngine *sync = [[ATProtoPLCSyncEngine alloc] initWithStore:store
+                                                         client:[[ATProtoPLCSyncClient alloc] initWithUpstreamURL:@"http://127.0.0.1:9"]
+                                                        auditor:[[ATProtoPLCAuditor alloc] initWithStore:store]];
     sync.currentCursor = 41;
     sync.totalOperationsIngested = 9;
     sync.totalOperationsFailed = 2;
@@ -122,7 +122,7 @@
 }
 
 - (void)testPrimaryMutationIsRecordedInBoundedAudit {
-    GZPLCAdminSnapshot *snapshot = [[GZPLCAdminSnapshot alloc] initWithStore:[[PLCMockStore alloc] init] syncEngine:nil];
+    GZPLCAdminSnapshot *snapshot = [[GZPLCAdminSnapshot alloc] initWithStore:[[ATProtoPLCMockStore alloc] init] syncEngine:nil];
     NSError *error = nil;
     XCTAssertFalse([snapshot performReplicaAction:@"pause" error:&error]);
     XCTAssertNotNil(error);

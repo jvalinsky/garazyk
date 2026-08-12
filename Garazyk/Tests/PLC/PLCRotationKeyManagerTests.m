@@ -28,7 +28,7 @@
 }
 
 - (void)testLoadOrGenerateCreatesPersistedKey {
-    PLCRotationKeyManager *manager = [[PLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
+    ATProtoPLCRotationKeyManager *manager = [[ATProtoPLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
     NSError *error = nil;
     BOOL ok = [manager loadOrGenerateKeyWithError:&error];
     XCTAssertTrue(ok);
@@ -42,21 +42,21 @@
 }
 
 - (void)testLoadOrGenerateLoadsExistingKey {
-    PLCRotationKeyManager *first = [[PLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
+    ATProtoPLCRotationKeyManager *first = [[ATProtoPLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
     XCTAssertTrue([first loadOrGenerateKeyWithError:nil]);
     NSString *didKey = first.rotationKeyDidKey;
     NSData *privateKey = first.rotationKeyPair.privateKey;
     XCTAssertNotNil(didKey);
     XCTAssertEqual(privateKey.length, (NSUInteger)32);
 
-    PLCRotationKeyManager *second = [[PLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
+    ATProtoPLCRotationKeyManager *second = [[ATProtoPLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
     XCTAssertTrue([second loadOrGenerateKeyWithError:nil]);
     XCTAssertEqualObjects(second.rotationKeyDidKey, didKey);
     XCTAssertEqualObjects(second.rotationKeyPair.privateKey, privateKey);
 }
 
 - (void)testSignHashRejectsInvalidLength {
-    PLCRotationKeyManager *manager = [[PLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
+    ATProtoPLCRotationKeyManager *manager = [[ATProtoPLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
     NSData *invalidHash = [@"short" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
     NSData *signature = nil;
@@ -69,7 +69,7 @@
 }
 
 - (void)testSignHashReturnsVerifiableSignature {
-    PLCRotationKeyManager *manager = [[PLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
+    ATProtoPLCRotationKeyManager *manager = [[ATProtoPLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
     NSMutableData *hash = [NSMutableData dataWithLength:32];
     for (NSUInteger i = 0; i < 32; i++) {
         uint8_t byte = (uint8_t)(i + 1);
@@ -91,7 +91,7 @@
 }
 
 - (void)testClearKeyClearsMemoryAndFile {
-    PLCRotationKeyManager *manager = [[PLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
+    ATProtoPLCRotationKeyManager *manager = [[ATProtoPLCRotationKeyManager alloc] initWithStoragePath:self.storageDir];
     XCTAssertTrue([manager loadOrGenerateKeyWithError:nil]);
 
     NSString *keyFile = [self.storageDir stringByAppendingPathComponent:@"plc_rotation_key.bin"];

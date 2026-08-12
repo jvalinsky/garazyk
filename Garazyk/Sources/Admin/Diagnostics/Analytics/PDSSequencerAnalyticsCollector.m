@@ -10,7 +10,7 @@
 
 @interface PDSSequencerAnalyticsCollector ()
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
-@property (nonatomic, weak) SubscribeReposHandler *subscribeHandler;
+@property (nonatomic, weak) ATProtoSubscribeReposHandler *subscribeHandler;
 @property (nonatomic, PDS_GCD_STRONG) dispatch_source_t timer;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @property (nonatomic) int64_t lastSeq;
@@ -39,7 +39,7 @@
 }
 
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
-                         subscribeHandler:(SubscribeReposHandler *)subscribeHandler {
+                         subscribeHandler:(ATProtoSubscribeReposHandler *)subscribeHandler {
     if ((self = [super init])) {
         _serviceDatabases = serviceDatabases;
         _subscribeHandler = subscribeHandler;
@@ -112,7 +112,7 @@
     }
 
     // Get subscriber count - capture weak reference strongly
-    SubscribeReposHandler *strongHandler = self.subscribeHandler;
+    ATProtoSubscribeReposHandler *strongHandler = self.subscribeHandler;
     NSInteger subscriberCount = strongHandler.attachedConnections.count;
 
     // Get backpressure metrics
@@ -202,7 +202,7 @@
         int64_t currentSeq = [strongSelf.serviceDatabases getMaxEventSequence:&error];
         if (error) return;
 
-        SubscribeReposHandler *strongHandler = strongSelf.subscribeHandler;
+        ATProtoSubscribeReposHandler *strongHandler = strongSelf.subscribeHandler;
         NSInteger subscriberCount = strongHandler.attachedConnections.count;
         GZMetrics *metrics = [GZMetrics sharedMetrics];
 

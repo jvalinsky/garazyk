@@ -12,9 +12,9 @@ NSInteger const EventFormatterErrorCodeDecodingFailed = 5001;
 static const uint8_t kXRPCStreamOpMessage = 1;
 static const NSUInteger kEventFormatterMaxFrameBytes = 1024 * 1024;
 
-@implementation EventFormatter
+@implementation ATProtoEventFormatter
 
-- (NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event error:(NSError **)error {
+- (NSData *)encodeCommitEvent:(ATProtoFirehoseCommitEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
     payload[@"seq"] = @(event.seq);
     payload[@"rebase"] = @(event.rebase);
@@ -45,7 +45,7 @@ static const NSUInteger kEventFormatterMaxFrameBytes = 1024 * 1024;
     return [self encodeStreamEventWithType:@"#commit" payload:payload error:error];
 }
 
-- (NSData *)encodeSyncEvent:(FirehoseSyncEvent *)event error:(NSError **)error {
+- (NSData *)encodeSyncEvent:(ATProtoFirehoseSyncEvent *)event error:(NSError **)error {
     NSDictionary *payload = @{
         @"seq": @(event.seq),
         @"did": event.did,
@@ -56,7 +56,7 @@ static const NSUInteger kEventFormatterMaxFrameBytes = 1024 * 1024;
     return [self encodeStreamEventWithType:@"#sync" payload:payload error:error];
 }
 
-- (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event error:(NSError **)error {
+- (NSData *)encodeIdentityEvent:(ATProtoFirehoseIdentityEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
     payload[@"seq"] = @(event.seq);
     payload[@"did"] = event.did;
@@ -65,7 +65,7 @@ static const NSUInteger kEventFormatterMaxFrameBytes = 1024 * 1024;
     return [self encodeStreamEventWithType:@"#identity" payload:payload error:error];
 }
 
-- (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event error:(NSError **)error {
+- (NSData *)encodeAccountEvent:(ATProtoFirehoseAccountEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
     payload[@"seq"] = @(event.seq);
     payload[@"did"] = event.did;
@@ -75,14 +75,14 @@ static const NSUInteger kEventFormatterMaxFrameBytes = 1024 * 1024;
     return [self encodeStreamEventWithType:@"#account" payload:payload error:error];
 }
 
-- (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event error:(NSError **)error {
+- (NSData *)encodeInfoEvent:(ATProtoFirehoseInfoEvent *)event error:(NSError **)error {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];
     payload[@"name"] = event.kind ?: @"";
     if (event.message.length > 0) payload[@"message"] = event.message;
     return [self encodeStreamEventWithType:@"#info" payload:payload error:error];
 }
 
-- (NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event error:(NSError **)error {
+- (NSData *)encodeErrorEvent:(ATProtoFirehoseErrorEvent *)event error:(NSError **)error {
     NSDictionary *header = @{@"op": @(-1)};
     NSString *errorCode = event.error.length > 0 ? event.error : event.message;
     NSMutableDictionary *body = [@{

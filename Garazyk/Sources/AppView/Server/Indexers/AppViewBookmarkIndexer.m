@@ -13,13 +13,13 @@
 
 @interface AppViewBookmarkIndexer ()
 @property (nonatomic, strong) AppViewDatabase *avdb;
-@property (nonatomic, strong) BookmarkService *bookmarkService;
+@property (nonatomic, strong) PDSBookmarkService *bookmarkService;
 @end
 
 @implementation AppViewBookmarkIndexer
 
 - (instancetype)initWithDatabase:(AppViewDatabase *)database
-               bookmarkService:(BookmarkService *)bookmarkService {
+               bookmarkService:(PDSBookmarkService *)bookmarkService {
     self = [super init];
     if (!self) return nil;
     _avdb = database;

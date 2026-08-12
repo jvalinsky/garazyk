@@ -16,33 +16,33 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol PDSAdminController;
 
 /**
- @header XrpcMethodRegistry.h
+ @header ATProtoXrpcMethodRegistry.h
 
  @abstract XRPC method registration orchestration.
 
- @discussion This header defines the XrpcMethodRegistry class which orchestrates
+ @discussion This header defines the ATProtoXrpcMethodRegistry class which orchestrates
  the registration of all ATProto XRPC methods with a dispatcher by delegating to
  domain-specific modules.
  
  Architecture:
- XrpcMethodRegistry is a thin orchestration layer that:
+ ATProtoXrpcMethodRegistry is a thin orchestration layer that:
  1. Extracts services from PDSApplication or PDSController
  2. Delegates endpoint registration to namespace packs using the XrpcRoutePack protocol:
-    - XrpcServerPack: com.atproto.server.* endpoints
-    - XrpcRepoPack: com.atproto.repo.* endpoints
-    - XrpcSyncPack: com.atproto.sync.* endpoints
-    - XrpcIdentityPack: com.atproto.identity.* endpoints
-    - XrpcAdminPack: com.atproto.admin.* endpoints
-    - XrpcLabelPack: com.atproto.label.* and com.atproto.temp.* endpoints
-    - XrpcModerationPack: com.atproto.moderation.* endpoints
-    - XrpcVendorPack: tools.garazyk.* endpoints
-    - XrpcAppBskyPack: app.bsky.* endpoints
+    - ATProtoXrpcServerPack: com.atproto.server.* endpoints
+    - ATProtoXrpcRepoPack: com.atproto.repo.* endpoints
+    - ATProtoXrpcSyncPack: com.atproto.sync.* endpoints
+    - ATProtoXrpcIdentityPack: com.atproto.identity.* endpoints
+    - ATProtoXrpcAdminPack: com.atproto.admin.* endpoints
+    - ATProtoXrpcLabelPack: com.atproto.label.* and com.atproto.temp.* endpoints
+    - ATProtoXrpcModerationPack: com.atproto.moderation.* endpoints
+    - ATProtoXrpcVendorPack: tools.garazyk.* endpoints
+    - ATProtoXrpcAppBskyPack: app.bsky.* endpoints
  3. Installs proxy interceptor for request forwarding
  
  Domain modules use helper modules for shared functionality:
- - XrpcAuthHelper: ATProtoJWT and DPoP authentication
- - XrpcIdentityHelper: Handle and DID resolution
- - XrpcErrorHelper: Standardized error responses
+ - ATProtoXrpcAuthHelper: ATProtoJWT and DPoP authentication
+ - ATProtoXrpcIdentityHelper: Handle and DID resolution
+ - ATProtoXrpcErrorHelper: Standardized error responses
  
  Service Dependency Injection:
  All required services are extracted from PDSApplication and passed to domain
@@ -55,11 +55,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 /**
- @class XrpcMethodRegistry
+ @class ATProtoXrpcMethodRegistry
 
  @abstract Orchestrates registration of all ATProto XRPC methods.
 
- @discussion XrpcMethodRegistry is a thin orchestration layer (~250 lines) that
+ @discussion ATProtoXrpcMethodRegistry is a thin orchestration layer (~250 lines) that
  delegates endpoint registration to domain-specific modules. It extracts services
  from PDSApplication, passes them to domain modules via dependency injection, and
  ensures modules are registered in the correct order.
@@ -67,7 +67,7 @@ NS_ASSUME_NONNULL_BEGIN
  The registry maintains backward compatibility with the original monolithic
  implementation while providing a modular architecture for maintainability.
  */
-@interface XrpcMethodRegistry : NSObject
+@interface ATProtoXrpcMethodRegistry : NSObject
 
 /**
  @brief Register the ATProto XRPC method handlers with the dispatcher.
@@ -78,7 +78,7 @@ NS_ASSUME_NONNULL_BEGIN
  @note This method is provided for backward compatibility. For new code,
  prefer registerMethodsWithDispatcher:application: which uses services directly.
  */
-+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                            controller:(PDSController *)controller;
 
 /**
@@ -90,7 +90,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion This method registers XRPC handlers that use the application's
  services directly, without depending on PDSController.
  */
-+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                           application:(PDSApplication *)application;
 
 @end

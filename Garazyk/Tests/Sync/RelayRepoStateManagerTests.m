@@ -27,12 +27,12 @@
 #pragma mark - In-memory tests
 
 - (void)testDefaultInitializes {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     XCTAssertNotNil(manager);
 }
 
 - (void)testHandleCommitForRepo {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     [manager handleCommitForRepo:@"did:plc:test" root:@"bafyrexxx" rev:@"3" seq:100];
 
     XCTAssertEqualObjects([manager rootCIDForRepo:@"did:plc:test"], @"bafyrexxx");
@@ -41,12 +41,12 @@
 }
 
 - (void)testGetNonExistentRepoState {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     XCTAssertNil([manager rootCIDForRepo:@"did:plc:nonexistent"]);
 }
 
 - (void)testHandleTombstone {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     [manager handleCommitForRepo:@"did:plc:test" root:@"bafyrexxx" rev:@"3" seq:100];
     [manager handleTombstoneForRepo:@"did:plc:test"];
 
@@ -54,7 +54,7 @@
 }
 
 - (void)testRepoCount {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     [manager handleCommitForRepo:@"did:plc:a" root:@"bafyrea" rev:@"1" seq:1];
     [manager handleCommitForRepo:@"did:plc:b" root:@"bafyreb" rev:@"2" seq:2];
 
@@ -62,7 +62,7 @@
 }
 
 - (void)testAllRepos {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     [manager handleCommitForRepo:@"did:plc:a" root:@"bafyrea" rev:@"1" seq:1];
     [manager handleCommitForRepo:@"did:plc:b" root:@"bafyreb" rev:@"2" seq:2];
 
@@ -72,7 +72,7 @@
 }
 
 - (void)testOlderCommitDoesNotRegressRepoState {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     [manager handleCommitForRepo:@"did:plc:test" root:@"bafyre-new" rev:@"4" seq:101];
     [manager handleCommitForRepo:@"did:plc:test" root:@"bafyre-old" rev:@"3" seq:100];
 
@@ -84,7 +84,7 @@
 #pragma mark - Commit and data-root tracking
 
 - (void)testCommitAndDataCIDsRemainDistinct {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     [manager handleCommitForRepo:@"did:plc:test"
                        commitCID:@"bafyre-commit"
                          dataCID:@"bafyre-data"
@@ -100,7 +100,7 @@
 }
 
 - (void)testAdvanceRepoComparesPrevDataWithStoredDataCID {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     [manager handleCommitForRepo:@"did:plc:test"
                        commitCID:@"commit-1"
                          dataCID:@"data-1"
@@ -122,7 +122,7 @@
 }
 
 - (void)testAdvanceRepoRejectsCommitCIDUsedAsPrevData {
-    RelayRepoStateManager *manager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *manager = [[ATProtoRelayRepoStateManager alloc] init];
     [manager handleCommitForRepo:@"did:plc:test"
                        commitCID:@"commit-1"
                          dataCID:@"data-1"
@@ -151,14 +151,14 @@
     NSString *dbPath = [self tempDBPath];
     NSError *error = nil;
 
-    RelayRepoStateManager *mgr = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
+    ATProtoRelayRepoStateManager *mgr = [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                           error:&error];
     XCTAssertNotNil(mgr, @"initWithDataDir failed: %@", error);
     [mgr handleCommitForRepo:@"did:plc:alpha" root:@"bafyreA" rev:@"10" seq:100];
     [mgr handleCommitForRepo:@"did:plc:beta"  root:@"bafyreB" rev:@"20" seq:200];
     [mgr persistState];
 
-    RelayRepoStateManager *mgr2 = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
+    ATProtoRelayRepoStateManager *mgr2 = [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                            error:&error];
     XCTAssertNotNil(mgr2, @"initWithDataDir (reload) failed: %@", error);
     XCTAssertTrue([mgr2 loadState:&error], @"loadState failed: %@", error);
@@ -178,7 +178,7 @@
     NSString *dbPath = [self tempDBPath];
     NSError *error = nil;
 
-    RelayRepoStateManager *mgr = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
+    ATProtoRelayRepoStateManager *mgr = [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                           error:&error];
     XCTAssertNotNil(mgr);
     [mgr handleCommitForRepo:@"did:plc:test"
@@ -188,7 +188,7 @@
                          seq:2];
     [mgr persistState];
 
-    RelayRepoStateManager *mgr2 = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
+    ATProtoRelayRepoStateManager *mgr2 = [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                            error:&error];
     XCTAssertNotNil(mgr2);
     XCTAssertTrue([mgr2 loadState:&error]);
@@ -217,8 +217,8 @@
     sqlite3_close(db);
 
     NSError *error = nil;
-    RelayRepoStateManager *manager =
-        [[RelayRepoStateManager alloc] initWithDataDir:dbPath error:&error];
+    ATProtoRelayRepoStateManager *manager =
+        [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath error:&error];
     XCTAssertNotNil(manager, @"Migration failed: %@", error);
     XCTAssertTrue([manager loadState:&error], @"Load failed: %@", error);
     XCTAssertEqualObjects([manager commitCIDForRepo:@"did:plc:legacy"],
@@ -226,8 +226,8 @@
     XCTAssertNil([manager dataCIDForRepo:@"did:plc:legacy"],
                  @"Legacy prev_data_cid stored commit CIDs and must not seed data roots");
 
-    RelayRepoStateManager *reopened =
-        [[RelayRepoStateManager alloc] initWithDataDir:dbPath error:&error];
+    ATProtoRelayRepoStateManager *reopened =
+        [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath error:&error];
     XCTAssertNotNil(reopened, @"Idempotent migration failed: %@", error);
 
     [self removeDBAt:dbPath];
@@ -237,14 +237,14 @@
     NSString *dbPath = [self tempDBPath];
     NSError *error = nil;
 
-    RelayRepoStateManager *mgr = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
+    ATProtoRelayRepoStateManager *mgr = [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                           error:&error];
     XCTAssertNotNil(mgr);
     [mgr handleCommitForRepo:@"did:plc:test" root:@"bafyre" rev:@"1" seq:1];
     [mgr handleAccountEventForRepo:@"did:plc:test" status:RelayRepoStatusThrottled];
     [mgr persistState];
 
-    RelayRepoStateManager *mgr2 = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
+    ATProtoRelayRepoStateManager *mgr2 = [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                            error:&error];
     XCTAssertNotNil(mgr2);
     XCTAssertTrue([mgr2 loadState:&error]);
@@ -255,14 +255,14 @@
 }
 
 - (void)testPersistStateNoopForInMemoryManager {
-    RelayRepoStateManager *mgr = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *mgr = [[ATProtoRelayRepoStateManager alloc] init];
     [mgr handleCommitForRepo:@"did:plc:test" root:@"bafyre" rev:@"1" seq:1];
     [mgr persistState];
     XCTAssertEqual([mgr repoCount], 1);
 }
 
 - (void)testLoadStateNoopForInMemoryManager {
-    RelayRepoStateManager *mgr = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *mgr = [[ATProtoRelayRepoStateManager alloc] init];
     [mgr handleCommitForRepo:@"did:plc:test" root:@"bafyre" rev:@"1" seq:1];
     NSError *error = nil;
     XCTAssertTrue([mgr loadState:&error]);
@@ -274,7 +274,7 @@
     NSError *error = nil;
 
     @autoreleasepool {
-        RelayRepoStateManager *mgr = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
+        ATProtoRelayRepoStateManager *mgr = [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                               error:&error];
         [mgr handleCommitForRepo:@"did:plc:test" root:@"bafyre" rev:@"1" seq:1];
 
@@ -290,7 +290,7 @@
         XCTAssertEqualObjects([mgr rootCIDForRepo:@"did:plc:test"], @"bafyre");
     }
 
-    RelayRepoStateManager *mgr2 = [[RelayRepoStateManager alloc] initWithDataDir:dbPath
+    ATProtoRelayRepoStateManager *mgr2 = [[ATProtoRelayRepoStateManager alloc] initWithDataDir:dbPath
                                                                            error:&error];
     XCTAssertNotNil(mgr2);
     XCTAssertTrue([mgr2 loadState:&error]);

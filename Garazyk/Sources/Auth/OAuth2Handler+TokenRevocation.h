@@ -4,7 +4,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface OAuth2Handler (TokenRevocation)
+@interface ATProtoOAuth2Handler (TokenRevocation)
 - (void)handleRevokeRequest:(ATProtoHttpRequest *)request
                    response:(ATProtoHttpResponse *)response;
 - (void)handleIntrospectRequest:(ATProtoHttpRequest *)request

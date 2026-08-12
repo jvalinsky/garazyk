@@ -8,10 +8,10 @@
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
 
-@interface VideoJWTAuthProvider ()
+@interface GZVideoJWTAuthProvider ()
 @end
 
-@implementation VideoJWTAuthProvider
+@implementation GZVideoJWTAuthProvider
 
 static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
     NSRange fragmentRange = [did rangeOfString:@"#"];

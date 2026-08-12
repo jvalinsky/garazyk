@@ -12,25 +12,25 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import <Security/Security.h>
 
-// Expose private PLCAuditor methods for testing
-@interface PLCAuditor (Testing)
-- (nullable NSString *)verifySignatureForOperation:(PLCOperation *)op
+// Expose private ATProtoPLCAuditor methods for testing
+@interface ATProtoPLCAuditor (Testing)
+- (nullable NSString *)verifySignatureForOperation:(ATProtoPLCOperation *)op
                                         allowedKeys:(NSArray<NSString *> *)allowedKeys
                                               error:(NSError **)error;
-- (NSDictionary *)unsignedDataForOperation:(PLCOperation *)op;
+- (NSDictionary *)unsignedDataForOperation:(ATProtoPLCOperation *)op;
 @end
 
 @interface PLCAuditorTests : XCTestCase
-@property (nonatomic, strong) PLCMockStore *store;
-@property (nonatomic, strong) PLCAuditor *auditor;
+@property (nonatomic, strong) ATProtoPLCMockStore *store;
+@property (nonatomic, strong) ATProtoPLCAuditor *auditor;
 @end
 
 @implementation PLCAuditorTests
 
 - (void)setUp {
     [super setUp];
-    self.store = [[PLCMockStore alloc] init];
-    self.auditor = [[PLCAuditor alloc] initWithStore:self.store];
+    self.store = [[ATProtoPLCMockStore alloc] init];
+    self.auditor = [[ATProtoPLCAuditor alloc] initWithStore:self.store];
 }
 
 - (NSString *)base64URLEncode:(NSData *)data {
@@ -63,11 +63,11 @@
     };
 
     // For this test, we just provide a dummy signature
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.sig = @"invalid_signature";
     op.data = opData;
     op.prev = nil;
-    op.did = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
+    op.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op toDictionary]];
 
     [self.store appendOperation:op nullifyCIDs:@[] error:nil];
 
@@ -94,11 +94,11 @@
     NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
-    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+    op1.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
     [self.store appendOperation:op1 nullifyCIDs:@[] error:nil];
 
     // 2. Second operation with WRONG prev hash
@@ -113,7 +113,7 @@
     NSData *op2Hash = [self.auditor hashForOperationData:op2Data];
     NSData *op2Sig = [keyPair signHash:op2Hash error:nil];
 
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = op1.did;
     op2.sig = [self base64URLEncode:op2Sig];
     op2.data = op2Data;
@@ -145,15 +145,15 @@
     NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
     NSData *op1Sig = [key1 signHash:op1Hash error:nil];
 
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
-    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+    op1.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
     [self.store appendOperation:op1 nullifyCIDs:@[] error:nil];
 
     // 2. Second operation signed by key1, rotating to key2
-    NSString *prevCid1 = [PLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
+    NSString *prevCid1 = [ATProtoPLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
     NSDictionary *op2Data = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[key2Did],
@@ -165,7 +165,7 @@
     NSData *op2Hash = [self.auditor hashForOperationData:op2Data];
     NSData *op2Sig = [key1 signHash:op2Hash error:nil]; // Signed by key1 (authorized by op1)
 
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = op1.did;
     op2.sig = [self base64URLEncode:op2Sig];
     op2.data = op2Data;
@@ -173,7 +173,7 @@
     [self.store appendOperation:op2 nullifyCIDs:@[] error:nil];
 
     // 3. Third operation signed by key2
-    NSString *prevCid2 = [PLCOperation calculateCIDForOperation:[op2 toDictionary] error:nil];
+    NSString *prevCid2 = [ATProtoPLCOperation calculateCIDForOperation:[op2 toDictionary] error:nil];
     NSDictionary *op3Data = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[key2Did],
@@ -185,7 +185,7 @@
     NSData *op3Hash = [self.auditor hashForOperationData:op3Data];
     NSData *op3Sig = [key2 signHash:op3Hash error:nil]; // Signed by key2 (authorized by op2)
 
-    PLCOperation *op3 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op3 = [[ATProtoPLCOperation alloc] init];
     op3.did = op1.did;
     op3.sig = [self base64URLEncode:op3Sig];
     op3.data = op3Data;
@@ -212,14 +212,14 @@
     NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
-    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+    op1.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
     [self.store appendOperation:op1 nullifyCIDs:@[] error:nil];
 
-    NSString *prevCid = [PLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
+    NSString *prevCid = [ATProtoPLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
     NSDictionary *op2Data = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[didKey],
@@ -231,7 +231,7 @@
     NSData *op2Hash = [self.auditor hashForOperationData:op2Data];
     NSData *op2Sig = [keyPair signHash:op2Hash error:nil];
 
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = op1.did;
     op2.sig = [self base64URLEncode:op2Sig];
     op2.data = op2Data;
@@ -260,14 +260,14 @@
     NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
-    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+    op1.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
 
     NSError *error = nil;
-    BOOL success = [PLCAuditor verifyChain:@[op1] did:op1.did error:&error];
+    BOOL success = [ATProtoPLCAuditor verifyChain:@[op1] did:op1.did error:&error];
     XCTAssertTrue(success, @"verifyChain: should accept a valid single-operation chain. Error: %@", error);
 }
 
@@ -286,13 +286,13 @@
     NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
-    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+    op1.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
 
-    NSString *prevCid = [PLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
+    NSString *prevCid = [ATProtoPLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
     NSDictionary *tombstoneData = @{
         @"type": @"plc_tombstone",
         @"prev": prevCid
@@ -300,14 +300,14 @@
     NSData *tombstoneHash = [self.auditor hashForOperationData:tombstoneData];
     NSData *tombstoneSig = [keyPair signHash:tombstoneHash error:nil];
 
-    PLCOperation *tombstone = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *tombstone = [[ATProtoPLCOperation alloc] init];
     tombstone.did = op1.did;
     tombstone.sig = [self base64URLEncode:tombstoneSig];
     tombstone.data = tombstoneData;
     tombstone.prev = prevCid;
 
     NSError *error = nil;
-    BOOL success = [PLCAuditor verifyChain:@[op1, tombstone] did:op1.did error:&error];
+    BOOL success = [ATProtoPLCAuditor verifyChain:@[op1, tombstone] did:op1.did error:&error];
     XCTAssertTrue(success, @"verifyChain: should accept a chain ending in a correctly-signed tombstone. Error: %@", error);
 }
 
@@ -333,13 +333,13 @@
     NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
-    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+    op1.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
 
-    NSString *prevCid = [PLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
+    NSString *prevCid = [ATProtoPLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
     NSDictionary *tombstoneData = @{
         @"type": @"plc_tombstone",
         @"prev": prevCid
@@ -349,14 +349,14 @@
     NSData *tombstoneHash = [self.auditor hashForOperationData:tombstoneData];
     NSData *forgedSig = [attackerKeyPair signHash:tombstoneHash error:nil];
 
-    PLCOperation *forgedTombstone = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *forgedTombstone = [[ATProtoPLCOperation alloc] init];
     forgedTombstone.did = op1.did;
     forgedTombstone.sig = [self base64URLEncode:forgedSig];
     forgedTombstone.data = tombstoneData;
     forgedTombstone.prev = prevCid;
 
     NSError *error = nil;
-    BOOL success = [PLCAuditor verifyChain:@[op1, forgedTombstone] did:op1.did error:&error];
+    BOOL success = [ATProtoPLCAuditor verifyChain:@[op1, forgedTombstone] did:op1.did error:&error];
     XCTAssertFalse(success, @"verifyChain: must reject a chain-linked tombstone with an unauthorized signature");
     XCTAssertNotNil(error);
 }
@@ -376,13 +376,13 @@
     NSData *op1Hash = [self.auditor hashForOperationData:op1Data];
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
-    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
+    op1.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
 
-    NSString *prevCid1 = [PLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
+    NSString *prevCid1 = [ATProtoPLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
     NSDictionary *tombstoneData = @{
         @"type": @"plc_tombstone",
         @"prev": prevCid1
@@ -390,7 +390,7 @@
     NSData *tombstoneHash = [self.auditor hashForOperationData:tombstoneData];
     NSData *tombstoneSig = [keyPair signHash:tombstoneHash error:nil];
 
-    PLCOperation *tombstone = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *tombstone = [[ATProtoPLCOperation alloc] init];
     tombstone.did = op1.did;
     tombstone.sig = [self base64URLEncode:tombstoneSig];
     tombstone.data = tombstoneData;
@@ -398,7 +398,7 @@
 
     // A third operation appended after the tombstone — must be rejected
     // regardless of its own signature, since a tombstone must be terminal.
-    NSString *prevCid2 = [PLCOperation calculateCIDForOperation:[tombstone toDictionary] error:nil];
+    NSString *prevCid2 = [ATProtoPLCOperation calculateCIDForOperation:[tombstone toDictionary] error:nil];
     NSDictionary *op3Data = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[didKey],
@@ -410,14 +410,14 @@
     NSData *op3Hash = [self.auditor hashForOperationData:op3Data];
     NSData *op3Sig = [keyPair signHash:op3Hash error:nil];
 
-    PLCOperation *op3 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op3 = [[ATProtoPLCOperation alloc] init];
     op3.did = op1.did;
     op3.sig = [self base64URLEncode:op3Sig];
     op3.data = op3Data;
     op3.prev = prevCid2;
 
     NSError *error = nil;
-    BOOL success = [PLCAuditor verifyChain:@[op1, tombstone, op3] did:op1.did error:&error];
+    BOOL success = [ATProtoPLCAuditor verifyChain:@[op1, tombstone, op3] did:op1.did error:&error];
     XCTAssertFalse(success, @"verifyChain: must reject any operation appended after a tombstone");
     XCTAssertNotNil(error);
 }
@@ -499,11 +499,11 @@
     rawSig = [ATProtoAuthCryptoECDSA normalizeLowS:rawSig error:&normalizeError];
     XCTAssertNotNil(rawSig, @"Low-S normalization failed: %@", normalizeError);
     
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.sig = [self base64URLEncode:rawSig];
     op.data = opData;
     op.prev = nil;
-    op.did = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
+    op.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op toDictionary]];
     
     [self.store appendOperation:op nullifyCIDs:@[] error:nil];
     
@@ -519,7 +519,7 @@
     // requires low-S canonical signatures
     // (https://web.plc.directory/spec/v0.1/did-plc); ATProtoAuthCryptoJWK's shared
     // verifier accepts both forms per ADR 0007 (that fix is for DPoP/ATProtoJWT/
-    // WebAuthn callers, which must not reject high-S), so PLCAuditor must
+    // WebAuthn callers, which must not reject high-S), so ATProtoPLCAuditor must
     // enforce low-S itself rather than relying on the shared verifier.
     NSData *xData = [self dataFromHexString:@"44073c1c6da8c2c9736c011ff13a2b3602a1d819e687582bdf87262ad1b12f50" expectedLength:32];
     NSData *yData = [self dataFromHexString:@"79720e75ce2eaae05079972dd065b2eb437d9af5c9a974d3ce186525494bdc3c" expectedLength:32];
@@ -593,11 +593,11 @@
     XCTAssertNotNil(highS, @"High-S denormalization failed: %@", denormalizeError);
     XCTAssertFalse([ATProtoAuthCryptoECDSA isLowS:highS error:nil], @"sanity: signature must actually be high-S");
 
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.sig = [self base64URLEncode:highS];
     op.data = opData;
     op.prev = nil;
-    op.did = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
+    op.did = [ATProtoPLCOperation calculateDIDForSignedOperation:[op toDictionary]];
 
     [self.store appendOperation:op nullifyCIDs:@[] error:nil];
 
@@ -696,7 +696,7 @@
         @"recoveryKey": @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg"
     };
 
-    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:opDict error:nil];
     XCTAssertNotNil(op, @"operationFromDictionary should parse legacy create op");
 
     // Get unsigned data (strips sig, did, cid)
@@ -749,7 +749,7 @@
         }
     };
 
-    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:opDict error:nil];
     XCTAssertNotNil(op, @"operationFromDictionary should parse plc_operation");
 
     NSDictionary *unsignedData = [self.auditor unsignedDataForOperation:op];
@@ -787,7 +787,7 @@
         @"recoveryKey": @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg"
     };
 
-    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:opDict error:nil];
     XCTAssertNotNil(op);
 
     // Per the PLC spec, legacy create operations are signed by the signingKey.
@@ -827,7 +827,7 @@
         }
     };
 
-    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:opDict error:nil];
     XCTAssertNotNil(op);
 
     NSArray *rotationKeys = @[
@@ -852,10 +852,10 @@
         @"recoveryKey": @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg"
     };
 
-    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:opDict error:nil];
     XCTAssertNotNil(op);
 
-    NSString *derivedDID = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
+    NSString *derivedDID = [ATProtoPLCOperation calculateDIDForSignedOperation:[op toDictionary]];
     XCTAssertEqualObjects(derivedDID, @"did:plc:ragtjsm2j2vknwkz3zp4oxrd",
         @"DID derivation must match the expected DID from plc.directory");
 }

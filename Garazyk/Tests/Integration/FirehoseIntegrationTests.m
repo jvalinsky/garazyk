@@ -14,14 +14,14 @@
 #import "Admin/PDSAdminController.h" 
 
 // Expose private property for testing
-@interface SubscribeReposHandler (Testing)
-@property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *attachedConnections;
+@interface ATProtoSubscribeReposHandler (Testing)
+@property (nonatomic, strong) NSMutableSet<ATProtoWebSocketConnection *> *attachedConnections;
 - (void)ensureSequenceInitialized;
 - (void)startObservingNotifications;
 @end
 
 // Mock Connection
-@interface FirehoseIntegrationMockConnection : WebSocketConnection
+@interface FirehoseIntegrationMockConnection : ATProtoWebSocketConnection
 @property (nonatomic, strong) NSData *lastMessage;
 @property (nonatomic, assign) NSInteger messageCount;
 @end
@@ -81,7 +81,7 @@
     XCTAssertNotNil(self.did);
 
     // Create Handler using new initializer
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] initWithServiceDatabases:self.controller.serviceDatabases 
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] initWithServiceDatabases:self.controller.serviceDatabases 
                                                                            userDatabasePool:self.controller.userDatabasePool];
     handler.signingKey = [NSData dataWithBytes:"dummykey" length:32];
     
@@ -141,10 +141,10 @@
     // A firehose frame is two concatenated dag-cbor objects (header, then
     // payload) with no length prefix; ATProtoDagCBOR decodeData: rejects
     // trailing bytes after a complete item, so it can't be used to split
-    // this buffer manually. Use EventFormatter's own incremental decoder
-    // instead — the same one the real firehose consumer (Firehose.m's
+    // this buffer manually. Use ATProtoEventFormatter's own incremental decoder
+    // instead — the same one the real firehose consumer (ATProtoFirehose.m's
     // handleMessage:) uses.
-    EventFormatter *eventFormatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *eventFormatter = [[ATProtoEventFormatter alloc] init];
     NSInteger op = 0;
     NSString *msgType = nil;
     NSDictionary *payloadMap = [eventFormatter decodeEventFromData:msg op:&op msgType:&msgType error:&error];

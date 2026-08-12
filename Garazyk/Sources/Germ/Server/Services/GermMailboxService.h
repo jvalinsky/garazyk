@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file GermMailboxService.h
+ @file PDSGermMailboxService.h
 
  @abstract Service layer for Germ E2EE mailbox transport.
 
@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Stores and retrieves opaque Germ mailbox ciphertexts.
  */
-@interface GermMailboxService : NSObject
+@interface PDSGermMailboxService : NSObject
 
 /** Initializes the service with the Germ mailbox database. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;

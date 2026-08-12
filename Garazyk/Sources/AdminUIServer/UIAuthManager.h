@@ -17,7 +17,7 @@ extern const NSTimeInterval kUIAuthDefaultSessionTTL;
 @interface GZAdminUIAuthManager : NSObject
 
 /**
- * @abstract Session TTL in seconds. Default is 8 hours (28800).
+ * @abstract PDSSession TTL in seconds. Default is 8 hours (28800).
  */
 @property (nonatomic, assign) NSTimeInterval sessionTTL;
 
@@ -68,7 +68,7 @@ extern const NSTimeInterval kUIAuthDefaultSessionTTL;
 
 /**
  * @abstract Invalidate a session token by its plaintext value.
- * @param token Session token.
+ * @param token PDSSession token.
  */
 - (void)invalidateSessionToken:(NSString *)token;
 

@@ -109,7 +109,7 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
     return keys;
 }
 
-@implementation JelczAdminSnapshot {
+@implementation GZJelczAdminSnapshot {
     NSDictionary *_snapshot;
 }
 
@@ -244,7 +244,7 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
 
     _healthStatus = enabled ? @"healthy" : @"degraded";
 
-    // Per-state counts via listVideoJobsWithState: on JelczDatabase
+    // Per-state counts via listVideoJobsWithState: on GZJelczDatabase
     NSMutableDictionary *counts = [NSMutableDictionary dictionary];
     NSDate *oldestDate = nil;
     NSUInteger completed24h = 0, failed24h = 0;

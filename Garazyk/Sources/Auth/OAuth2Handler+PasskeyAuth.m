@@ -10,7 +10,7 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
-@implementation OAuth2Handler (PasskeyAuth)
+@implementation ATProtoOAuth2Handler (PasskeyAuth)
 
 - (void)handlePasskeyChallenge:(ATProtoHttpRequest *)request
                       response:(ATProtoHttpResponse *)response {
@@ -198,7 +198,7 @@
     uint32_t candidateSignCount = 0;
     NSError *candidateError = nil;
     BOOL candidateVerified =
-        [WebAuthnVerifier verifyAssertionResponse:assertion
+        [ATProtoWebAuthnVerifier verifyAssertionResponse:assertion
                                         challenge:expectedChallenge
                                            origin:self.serverOrigin
                                         publicKey:publicKey

@@ -7,7 +7,7 @@
 @interface GroupServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) GroupService *service;
+@property (nonatomic, strong) PDSGroupService *service;
 @end
 
 @implementation GroupServiceTests
@@ -28,7 +28,7 @@
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
 
     [self setupSchema];
-    self.service = [[GroupService alloc] initWithDatabase:self.database];
+    self.service = [[PDSGroupService alloc] initWithDatabase:self.database];
 }
 
 - (void)setupSchema {

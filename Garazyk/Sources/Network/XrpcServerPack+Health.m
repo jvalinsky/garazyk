@@ -26,9 +26,9 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcServerPack (Health)
+@implementation ATProtoXrpcServerPack (Health)
 
-+ (void)registerHealthEndpointWithDispatcher:(XrpcDispatcher *)dispatcher {
++ (void)registerHealthEndpointWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher {
     [dispatcher registerMethod:@"_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
         NSString *status = health[@"status"];

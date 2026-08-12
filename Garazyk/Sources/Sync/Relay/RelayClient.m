@@ -10,7 +10,7 @@ NSString * const RelayClientErrorDomain = @"com.atproto.pds.relay.client";
 NSInteger const RelayClientErrorCodeConnectionFailed = 4000;
 NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
-@interface RelayClient () <FirehoseSubscriptionDelegate> {
+@interface ATProtoRelayClient () <FirehoseSubscriptionDelegate> {
     BOOL _readingPaused;
     BOOL _shouldReconnect;
 }
@@ -21,15 +21,15 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 @property (nonatomic, assign, readwrite) NSTimeInterval reconnectInterval;
 @property (nonatomic, assign, readwrite) NSInteger maxReconnectAttempts;
 @property (nonatomic, assign, readwrite) NSInteger reconnectAttempts;
-@property (nonatomic, strong, readwrite, nullable) Firehose *firehose;
-@property (nonatomic, strong, readwrite, nullable) FirehoseSubscription *subscription;
+@property (nonatomic, strong, readwrite, nullable) ATProtoFirehose *firehose;
+@property (nonatomic, strong, readwrite, nullable) ATProtoFirehoseSubscription *subscription;
 @property (nonatomic, assign, readwrite) int64_t currentSeq;
 @property (nonatomic, strong, readwrite) NSMutableDictionary<NSString *, NSNumber *> *cursorStorage;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readwrite) dispatch_queue_t storageQueue;
 
 @end
 
-@implementation RelayClient
+@implementation ATProtoRelayClient
 
 - (instancetype)initWithServerURL:(NSURL *)serverURL {
     return [self initWithServerURL:serverURL accessToken:nil];
@@ -74,8 +74,8 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     [self.firehose connect];
 }
 
-- (Firehose *)configuredFirehoseForWebSocketURL:(NSURL *)webSocketURL {
-    Firehose *firehose = [[Firehose alloc] initWithServerURL:webSocketURL];
+- (ATProtoFirehose *)configuredFirehoseForWebSocketURL:(NSURL *)webSocketURL {
+    ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:webSocketURL];
     firehose.accessToken = self.accessToken;
     return firehose;
 }
@@ -200,7 +200,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
 #pragma mark - FirehoseSubscriptionDelegate
 
-- (void)firehoseSubscriptionDidConnect:(FirehoseSubscription *)subscription {
+- (void)firehoseSubscriptionDidConnect:(ATProtoFirehoseSubscription *)subscription {
     self.isConnected = YES;
     self.reconnectAttempts = 0;
 
@@ -212,7 +212,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     });
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveCommitEvent:(FirehoseCommitEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event {
     if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
         GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic commit sequence %lld (current=%lld)",
                          (long long)event.seq, (long long)self.currentSeq);
@@ -232,7 +232,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     });
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event {
     if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
         GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic identity sequence %lld (current=%lld)",
                          (long long)event.seq, (long long)self.currentSeq);
@@ -250,7 +250,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     });
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveAccountEvent:(FirehoseAccountEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveAccountEvent:(ATProtoFirehoseAccountEvent *)event {
     if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
         GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic account sequence %lld (current=%lld)",
                          (long long)event.seq, (long long)self.currentSeq);
@@ -268,7 +268,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     });
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveSyncEvent:(FirehoseSyncEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveSyncEvent:(ATProtoFirehoseSyncEvent *)event {
     if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
         GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic sync sequence %lld (current=%lld)",
                          (long long)event.seq, (long long)self.currentSeq);
@@ -287,7 +287,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     });
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveRawEvent:(FirehoseRawEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveRawEvent:(ATProtoFirehoseRawEvent *)event {
     if (event.payload[@"seq"] != nil) {
         int64_t sequence = [event.payload[@"seq"] longLongValue];
         if (sequence > 0 && self.currentSeq > 0 && sequence <= self.currentSeq) {
@@ -305,7 +305,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     });
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event {
     GZ_LOG_SYNC_WARN(@"RelayClient: Received error from relay: error=%@ message=%@", event.error, event.message);
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
@@ -316,7 +316,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     });
 }
 
-- (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(NSError *)error {
+- (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didCloseWithError:(NSError *)error {
     self.isConnected = NO;
 
     GZ_LOG_SYNC_WARN(@"RelayClient: Firehose closed from %@ (error=%@, currentSeq=%lld)",

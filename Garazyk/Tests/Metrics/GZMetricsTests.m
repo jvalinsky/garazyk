@@ -89,7 +89,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)testSubsystemMetricsExport {
     GZMetrics *metrics = [[GZMetrics alloc] init];
 
-    // Firehose metrics
+    // ATProtoFirehose metrics
     [metrics setFirehoseSubscribers:5];
     [metrics incrementFirehoseEvent:@"commit"];
     [metrics incrementFirehoseEvent:@"commit"];

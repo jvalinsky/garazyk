@@ -14,7 +14,7 @@
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, strong) NSURL *tempURL;
 @property (nonatomic, strong) NSURL *tempDirectoryURL;
-@property (nonatomic, strong) PLCServer *plcServer;
+@property (nonatomic, strong) ATProtoPLCServer *plcServer;
 @property (nonatomic, assign) NSUInteger plcPort;
 
 @end
@@ -24,9 +24,9 @@
 - (void)setUp {
     [super setUp];
 
-    id<PLCStore> plcStore = [[PLCMockStore alloc] init];
-    PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:plcStore];
-    self.plcServer = [[PLCServer alloc] initWithStore:plcStore auditor:auditor port:0];
+    id<PLCStore> plcStore = [[ATProtoPLCMockStore alloc] init];
+    ATProtoPLCAuditor *auditor = [[ATProtoPLCAuditor alloc] initWithStore:plcStore];
+    self.plcServer = [[ATProtoPLCServer alloc] initWithStore:plcStore auditor:auditor port:0];
     NSError *plcError = nil;
     if (![self.plcServer startWithError:&plcError]) {
         NSError *underlying = plcError.userInfo[NSUnderlyingErrorKey];

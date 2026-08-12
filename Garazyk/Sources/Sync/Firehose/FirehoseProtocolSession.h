@@ -7,24 +7,24 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Declares the FirehoseProtocolSession public API.
+ * @abstract Declares the ATProtoFirehoseProtocolSession public API.
  */
-@interface FirehoseProtocolSession : NSObject
+@interface ATProtoFirehoseProtocolSession : NSObject
 
 /**
  * @abstract Exposes the event formatter value.
  */
-@property(nonatomic, strong, readonly) EventFormatter *eventFormatter;
+@property(nonatomic, strong, readonly) ATProtoEventFormatter *eventFormatter;
 @property(nonatomic, assign, readonly) NSUInteger sequenceNumber;
 
 - (instancetype)initWithSequenceNumber:(NSUInteger)sequenceNumber;
 
-- (NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event;
-- (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event;
-- (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event;
-- (NSData *)encodeSyncEvent:(FirehoseSyncEvent *)event;
-- (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event;
-- (NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event;
+- (NSData *)encodeCommitEvent:(ATProtoFirehoseCommitEvent *)event;
+- (NSData *)encodeIdentityEvent:(ATProtoFirehoseIdentityEvent *)event;
+- (NSData *)encodeAccountEvent:(ATProtoFirehoseAccountEvent *)event;
+- (NSData *)encodeSyncEvent:(ATProtoFirehoseSyncEvent *)event;
+- (NSData *)encodeInfoEvent:(ATProtoFirehoseInfoEvent *)event;
+- (NSData *)encodeErrorEvent:(ATProtoFirehoseErrorEvent *)event;
 
 /**
  * @abstract Returns the next sequence number result.

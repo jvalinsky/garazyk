@@ -4,7 +4,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface OAuth2Handler (Metadata)
+@interface ATProtoOAuth2Handler (Metadata)
 - (void)handleAuthorizationServerMetadata:(ATProtoHttpRequest *)request
                                  response:(ATProtoHttpResponse *)response;
 - (void)handleProtectedResourceMetadata:(ATProtoHttpRequest *)request

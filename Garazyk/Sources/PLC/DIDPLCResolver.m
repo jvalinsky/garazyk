@@ -8,7 +8,7 @@
 NSString * const DIDPLCResolverErrorDomain = @"com.atproto.plc.resolver";
 static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/json";
 
-@interface DIDPLCResolver () <NSURLSessionTaskDelegate>
+@interface ATProtoDIDPLCResolver () <NSURLSessionTaskDelegate>
 
 @property (nonatomic, copy) NSString *plcUrl;
 @property (nonatomic, strong) NSCache<NSString *, NSDictionary *> *cache;
@@ -17,7 +17,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 
 @end
 
-@implementation DIDPLCResolver
+@implementation ATProtoDIDPLCResolver
 
 - (instancetype)init {
     [self doesNotRecognizeSelector:_cmd];
@@ -45,7 +45,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 }
 
 - (nullable NSDictionary *)resolveDID:(NSString *)did error:(NSError **)error {
-    if (![PLCOperation isValidDidPlc:did]) {
+    if (![ATProtoPLCOperation isValidDidPlc:did]) {
         if (error) {
             *error = [NSError errorWithDomain:DIDPLCResolverErrorDomain
                                          code:DIDPLCResolverErrorInvalidDID
@@ -91,7 +91,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 - (void)resolveDID:(NSString *)did completion:(void (^)(NSDictionary * _Nullable, NSError * _Nullable))completion {
     if (!completion) return;
     
-    if (![PLCOperation isValidDidPlc:did]) {
+    if (![ATProtoPLCOperation isValidDidPlc:did]) {
         NSError *err = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidDID userInfo:@{NSLocalizedDescriptionKey: @"Provided DID fails strictly length and character validation"}];
         completion(nil, err);
         return;
@@ -184,7 +184,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 }
 
 - (nullable NSArray *)resolveAuditLogForDID:(NSString *)did error:(NSError **)error {
-    if (![PLCOperation isValidDidPlc:did]) {
+    if (![ATProtoPLCOperation isValidDidPlc:did]) {
         if (error) {
             *error = [NSError errorWithDomain:DIDPLCResolverErrorDomain
                                          code:DIDPLCResolverErrorInvalidDID
@@ -224,7 +224,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 - (void)resolveAuditLogForDID:(NSString *)did completion:(void (^)(NSArray * _Nullable, NSError * _Nullable))completion {
     if (!completion) return;
     
-    if (![PLCOperation isValidDidPlc:did]) {
+    if (![ATProtoPLCOperation isValidDidPlc:did]) {
         NSError *err = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidDID userInfo:@{NSLocalizedDescriptionKey: @"Provided DID fails strictly length and character validation"}];
         completion(nil, err);
         return;

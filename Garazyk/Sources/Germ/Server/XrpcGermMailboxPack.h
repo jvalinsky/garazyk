@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcGermMailboxPack.h
+ @file PDSXrpcGermMailboxPack.h
 
  @abstract XRPC handler registration for Germ E2EE mailbox transport.
 
@@ -15,24 +15,24 @@
 
 #import <Foundation/Foundation.h>
 
-@class XrpcDispatcher;
-@class GermMailboxService;
-@class ChatAuthManager;
+@class ATProtoXrpcDispatcher;
+@class PDSGermMailboxService;
+@class PDSChatAuthManager;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcGermMailboxPack : NSObject
+@interface PDSXrpcGermMailboxPack : NSObject
 
 /**
  * @abstract Performs the initWithMailboxService operation.
  */
-- (instancetype)initWithMailboxService:(GermMailboxService *)mailboxService
-                          authManager:(ChatAuthManager *)authManager;
+- (instancetype)initWithMailboxService:(PDSGermMailboxService *)mailboxService
+                          authManager:(PDSChatAuthManager *)authManager;
 
 /**
  * @abstract Performs the registerHandlersWithDispatcher operation.
  */
-- (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher;
+- (void)registerHandlersWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher;
 
 @end
 

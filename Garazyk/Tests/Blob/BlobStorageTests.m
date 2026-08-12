@@ -19,7 +19,7 @@
 @interface BlobStorageTests : XCTestCase
 
 @property (nonatomic, strong) PDSDatabasePool *databasePool;
-@property (nonatomic, strong) BlobStorage *blobStorage;
+@property (nonatomic, strong) PDSBlobStorage *blobStorage;
 @property (nonatomic, strong) PDSDiskBlobProvider *blobProvider;
 @property (nonatomic, strong) NSURL *testDBURL;
 @property (nonatomic, strong) NSURL *testStorageURL;
@@ -48,7 +48,7 @@
     // Create provider
     self.blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:self.testStorageURL];
     
-    self.blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.databasePool provider:self.blobProvider];
+    self.blobStorage = [[PDSBlobStorage alloc] initWithDatabasePool:self.databasePool provider:self.blobProvider];
 
     NSString *testString = @"Hello, World! This is test blob data.";
     self.testData = [testString dataUsingEncoding:NSUTF8StringEncoding];
@@ -286,7 +286,7 @@
     // For now, if the implementation is loose, this might pass. 
     // If I want to enforce strictness, I should assert False.
     // Given the task is "Test magic bytes validation", I should expect it to fail (return NO).
-    // If it currently passes, I will have to fix MimeTypeValidator.
+    // If it currently passes, I will have to fix ATProtoMimeTypeValidator.
     XCTAssertFalse(isValid, @"Magic byte mismatch should fail validation");
     XCTAssertNotNil(error, @"Error should be set for magic byte mismatch");
 }
@@ -314,18 +314,18 @@
     // If we use getBlobWithCID:did: error:, checking for DID1 should fail because metadata is gone.
     NSData *data1 = [self.blobStorage getBlobWithCID:cid1 did:did1 error:&error];
     XCTAssertNil(data1, @"DID1 should not be able to retrieve blob after deleting it");
-    // Wait, getBlobWithCID:error: in BlobStorage.h doesn't take DID?
+    // Wait, getBlobWithCID:error: in PDSBlobStorage.h doesn't take DID?
     // - (nullable NSData *)getBlobWithCID:(ATProtoCID *)cid error:(NSError **)error;
     // If it retrieves from global storage, it might still return data if DID2 has it?
     // Implementation likely checks if file exists.
-    // If BlobStorage is just a wrapper around file system, getBlobWithCID checks if file exists.
+    // If PDSBlobStorage is just a wrapper around file system, getBlobWithCID checks if file exists.
     // If file exists (kept alive by DID2), it should return data.
     // But logically, if DID1 deleted it, should they be able to get it?
     // The method signature doesn't restrict by DID.
     // So:
     // 1. If global storage, data should still exist.
     // 2. If we want to test that DID1 *lost access* conceptually, we'd need a method like `getBlobWithCID:did:`.
-    // The current BlobStorage API `getBlobWithCID:error:` implies global access if you know the ATProtoCID.
+    // The current PDSBlobStorage API `getBlobWithCID:error:` implies global access if you know the ATProtoCID.
     // So the test should verify the DATA is still there (because DID2 has it).
     
     NSData *remainingData = [self.blobStorage getBlobWithCID:cid1 did:did2 error:&error];

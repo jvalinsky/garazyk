@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file Base32Utils.h
+ @file ATProtoBase32Utils.h
 
  @abstract Base32 encoding and decoding utilities.
 
@@ -16,11 +16,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class Base32Utils
+ @class ATProtoBase32Utils
 
  @abstract Base32 encoding and decoding.
  */
-@interface Base32Utils : NSObject
+@interface ATProtoBase32Utils : NSObject
 
 /*! Decodes a Base32 string to binary data. */
 + (nullable NSData *)dataFromBase32String:(NSString *)base32String;

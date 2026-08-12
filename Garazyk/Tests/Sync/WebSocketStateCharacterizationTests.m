@@ -34,41 +34,41 @@
     }
     return self;
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveMessage:(NSData *)data {}
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveText:(NSString *)text {}
-- (void)webSocketConnection:(WebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveMessage:(NSData *)data {}
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveText:(NSString *)text {}
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
     self.lastCloseCode = code;
     self.lastCloseReason = reason;
     if (self.expectation) [self.expectation fulfill];
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didFailWithError:(NSError *)error {}
-- (void)webSocketConnection:(WebSocketConnection *)connection didReachBackpressureWarning:(double)fillPercentage queueBytes:(NSUInteger)bytes {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didFailWithError:(NSError *)error {}
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReachBackpressureWarning:(double)fillPercentage queueBytes:(NSUInteger)bytes {
     self.didReceiveBackpressureWarning = YES;
     self.lastWarningFillPercentage = fillPercentage;
     self.lastWarningQueueBytes = bytes;
     [self.warningExpectation fulfill];
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didReachBackpressureCritical:(double)fillPercentage queueBytes:(NSUInteger)bytes {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReachBackpressureCritical:(double)fillPercentage queueBytes:(NSUInteger)bytes {
     self.didReceiveBackpressureCritical = YES;
     self.lastCriticalFillPercentage = fillPercentage;
     self.lastCriticalQueueBytes = bytes;
     [self.criticalExpectation fulfill];
 }
-- (void)webSocketConnectionDidClearBackpressure:(WebSocketConnection *)connection {
+- (void)webSocketConnectionDidClearBackpressure:(ATProtoWebSocketConnection *)connection {
     self.didReceiveBackpressureCleared = YES;
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection willCloseForQueueOverflow:(NSUInteger)bytes limit:(NSUInteger)limit {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection willCloseForQueueOverflow:(NSUInteger)bytes limit:(NSUInteger)limit {
     self.didReceiveQueueOverflow = YES;
     self.lastOverflowBytes = bytes;
     self.lastOverflowLimit = limit;
 }
 @end
 
-@interface WebSocketConnection (StateTesting)
+@interface ATProtoWebSocketConnection (StateTesting)
 @property (nonatomic, assign, readwrite) WebSocketConnectionState state;
 @property (nonatomic, assign) NSUInteger queuedSendBytes;
 @property (nonatomic, strong) NSMutableArray<NSData *> *messageQueue;
-@property (nonatomic, strong) WebSocketHeartbeatPolicy *heartbeatPolicy;
+@property (nonatomic, strong) ATProtoWebSocketHeartbeatPolicy *heartbeatPolicy;
 - (void)startHeartbeat;
 - (void)stopHeartbeat;
 - (void)tickHeartbeat;
@@ -79,7 +79,7 @@
 @end
 
 @interface WebSocketStateCharacterizationTests : XCTestCase
-@property (nonatomic, strong) WebSocketConnection *connection;
+@property (nonatomic, strong) ATProtoWebSocketConnection *connection;
 @property (nonatomic, strong) MockStateWebSocketDelegate *delegate;
 @end
 
@@ -87,7 +87,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.connection = [[WebSocketConnection alloc] init];
+    self.connection = [[ATProtoWebSocketConnection alloc] init];
     self.delegate = [[MockStateWebSocketDelegate alloc] init];
     self.connection.delegate = self.delegate;
 }

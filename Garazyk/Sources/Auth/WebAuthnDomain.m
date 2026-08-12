@@ -3,39 +3,39 @@
 #import "Auth/WebAuthnDomain.h"
 #import "Auth/Base32Utils.h"
 
-@implementation WebAuthnRelyingParty
+@implementation ATProtoWebAuthnRelyingParty
 @end
 
-@implementation WebAuthnUser
+@implementation ATProtoWebAuthnUser
 @end
 
-@implementation WebAuthnPubKeyCredParam
+@implementation ATProtoWebAuthnPubKeyCredParam
 @end
 
-@implementation WebAuthnRegistrationOptions
+@implementation ATProtoWebAuthnRegistrationOptions
 @end
 
-@implementation WebAuthnCredentialDescriptor
+@implementation ATProtoWebAuthnCredentialDescriptor
 @end
 
-@implementation WebAuthnAssertionOptions
+@implementation ATProtoWebAuthnAssertionOptions
 @end
 
-@implementation WebAuthnDomain
+@implementation ATProtoWebAuthnDomain
 
-+ (NSDictionary *)dictionaryFromRegistrationOptions:(WebAuthnRegistrationOptions *)options {
++ (NSDictionary *)dictionaryFromRegistrationOptions:(ATProtoWebAuthnRegistrationOptions *)options {
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
     
-    dict[@"challenge"] = [Base32Utils base32StringFromData:options.challenge];
+    dict[@"challenge"] = [ATProtoBase32Utils base32StringFromData:options.challenge];
     dict[@"rp"] = @{@"name": options.rp.name, @"id": options.rp.identifier};
     dict[@"user"] = @{
-        @"id": [Base32Utils base32StringFromData:options.user.identifier],
+        @"id": [ATProtoBase32Utils base32StringFromData:options.user.identifier],
         @"name": options.user.name,
         @"displayName": options.user.displayName
     };
     
     NSMutableArray *pubKeyCredParams = [NSMutableArray array];
-    for (WebAuthnPubKeyCredParam *param in options.pubKeyCredParams) {
+    for (ATProtoWebAuthnPubKeyCredParam *param in options.pubKeyCredParams) {
         [pubKeyCredParams addObject:@{@"type": param.type, @"alg": @(param.alg)}];
     }
     dict[@"pubKeyCredParams"] = pubKeyCredParams;
@@ -46,20 +46,20 @@
     return [dict copy];
 }
 
-+ (NSDictionary *)dictionaryFromAssertionOptions:(WebAuthnAssertionOptions *)options {
++ (NSDictionary *)dictionaryFromAssertionOptions:(ATProtoWebAuthnAssertionOptions *)options {
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
     
-    dict[@"challenge"] = [Base32Utils base32StringFromData:options.challenge];
+    dict[@"challenge"] = [ATProtoBase32Utils base32StringFromData:options.challenge];
     dict[@"timeout"] = @(options.timeout * 1000);
     dict[@"rpId"] = options.rpId;
     dict[@"userVerification"] = options.userVerification ?: @"preferred";
     
     if (options.allowCredentials.count > 0) {
         NSMutableArray *creds = [NSMutableArray array];
-        for (WebAuthnCredentialDescriptor *desc in options.allowCredentials) {
+        for (ATProtoWebAuthnCredentialDescriptor *desc in options.allowCredentials) {
             NSMutableDictionary *c = [NSMutableDictionary dictionary];
             c[@"type"] = desc.type;
-            c[@"id"] = [Base32Utils base32StringFromData:desc.credentialId];
+            c[@"id"] = [ATProtoBase32Utils base32StringFromData:desc.credentialId];
             if (desc.transports) {
                 c[@"transports"] = desc.transports;
             }

@@ -6,8 +6,8 @@
  @abstract Shared account lifecycle event names used across services and sync modules.
 
  @discussion These notifications bridge the account service layer (which has no
- direct reference to SubscribeReposHandler) and the firehose broadcast layer.
- SubscribeReposHandler observes these notifications and emits the corresponding
+ direct reference to ATProtoSubscribeReposHandler) and the firehose broadcast layer.
+ ATProtoSubscribeReposHandler observes these notifications and emits the corresponding
  identity and account firehose events.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky

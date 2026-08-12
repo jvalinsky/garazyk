@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcIdentityPack.m
+//  ATProtoXrpcIdentityPack.m
 //  ATProtoPDS
 //
 //  Domain module for com.atproto.identity.* XRPC endpoints.
@@ -59,13 +59,13 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
     return NO;
 }
 
-@implementation XrpcIdentityPack
+@implementation ATProtoXrpcIdentityPack
 
 + (NSString *)routePackIdentifier {
   return @"com.atproto.identity";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
@@ -74,7 +74,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
     PDSDatabasePool *userDatabasePool = services.userDatabasePool;
     ATProtoServiceConfiguration *configuration = services.configuration;
     id<PDSEmailProvider> emailProvider = services.emailProvider;
-    SubscribeReposHandler *subscribeReposHandler = services.subscribeReposHandler;
+    ATProtoSubscribeReposHandler *subscribeReposHandler = services.subscribeReposHandler;
     
     // com.atproto.identity.refreshIdentity
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_refreshIdentity handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
@@ -94,7 +94,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
 
         NSError *error = nil;
         NSString *errorName = nil;
-        NSDictionary *result = [XrpcIdentityHelper resolveIdentityInfoForIdentifier:identifier
+        NSDictionary *result = [ATProtoXrpcIdentityHelper resolveIdentityInfoForIdentifier:identifier
                                                                    serviceDatabases:serviceDatabases
                                                                           errorName:&errorName
                                                                               error:&error];
@@ -128,7 +128,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
             return;
         }
 
-        HandleResolver *handleResolver = [[HandleResolver alloc] init];
+        ATProtoHandleResolver *handleResolver = [[ATProtoHandleResolver alloc] init];
         __block NSString *resolvedDid = nil;
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         [handleResolver resolveHandle:normalizedHandle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
@@ -146,7 +146,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
             // a DID whose alsoKnownAs contains this handle.
             NSString *plcUrl = configuration.plcURL;
             if (!XrpcIdentityUsesMockPLC(configuration)) {
-                DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+                ATProtoDIDPLCResolver *plcResolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:plcUrl];
                 plcResolver.timeout = 2.0;
 
                 NSURL *listURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/_list", plcUrl]];
@@ -210,7 +210,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
 
         NSError *error = nil;
         NSString *errorName = nil;
-        NSDictionary *result = [XrpcIdentityHelper resolveIdentityInfoForIdentifier:identifier
+        NSDictionary *result = [ATProtoXrpcIdentityHelper resolveIdentityInfoForIdentifier:identifier
                                                                    serviceDatabases:serviceDatabases
                                                                           errorName:&errorName
                                                                               error:&error];
@@ -237,7 +237,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
         }
 
         NSError *error = nil;
-        NSDictionary *doc = [XrpcIdentityHelper resolveDid:did
+        NSDictionary *doc = [ATProtoXrpcIdentityHelper resolveDid:did
                                           serviceDatabases:serviceDatabases
                                              configuration:configuration
                                                      error:&error];
@@ -276,7 +276,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
     // com.atproto.identity.requestPlcOperationSignature
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_requestPlcOperationSignature handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -298,7 +298,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
         for (int i = 0; i < 8; i++) {
             [token appendFormat:@"%C", [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)]];
         }
-        [XrpcIdentityHelper storePlcOperationToken:token forDid:did];
+        [ATProtoXrpcIdentityHelper storePlcOperationToken:token forDid:did];
         GZ_LOG_INFO(@"Generated PLC operation token for DID %@", did);
 
         if (emailProvider && account.email.length > 0) {
@@ -324,7 +324,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
     // com.atproto.identity.signPlcOperation
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_signPlcOperation handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -341,7 +341,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing token"}];
             return;
         }
-        if (![XrpcIdentityHelper validatePlcOperationToken:token forDid:did]) {
+        if (![ATProtoXrpcIdentityHelper validatePlcOperationToken:token forDid:did]) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid or expired token"}];
             return;
@@ -367,7 +367,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
             return;
         }
 
-        PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+        ATProtoPLCRotationKeyManager *keyManager = [ATProtoPLCRotationKeyManager sharedManager];
         NSError *keyLoadError = nil;
         if (![keyManager loadOrGenerateKeyWithError:&keyLoadError]) {
             response.statusCode = HttpStatusInternalServerError;
@@ -391,7 +391,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
         id prev = [NSNull null];
         if (!XrpcIdentityUsesMockPLC(configuration)) {
             NSString *plcUrl = configuration.plcURL;
-            DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+            ATProtoDIDPLCResolver *plcResolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:plcUrl];
             NSError *auditError = nil;
             NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
 
@@ -401,7 +401,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                 for (id opDict in auditLog) {
                     if ([opDict isKindOfClass:[NSDictionary class]]) {
                         NSDictionary *innerOp = opDict[@"operation"] ?: opDict;
-                        PLCOperation *op = [PLCOperation operationFromDictionary:innerOp error:nil];
+                        ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:innerOp error:nil];
                         if (op) {
                             [ops addObject:op];
                             if (opDict[@"cid"] && [opDict[@"cid"] isKindOfClass:[NSString class]]) {
@@ -416,7 +416,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                     // The audit log from the remote PLC directory has no signature
                     // or prev-chain check — an attacker-controlled response could
                     // inject forged operations.
-                    if (![PLCAuditor verifyChain:ops did:did error:&auditError]) {
+                    if (![ATProtoPLCAuditor verifyChain:ops did:did error:&auditError]) {
                         GZ_LOG_ERROR(@"signPlcOperation: PLC audit log verification failed for DID %@: %@",
                                       did, auditError.localizedDescription ?: @"unknown error");
                         response.statusCode = HttpStatusBadRequest;
@@ -425,7 +425,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                     }
 
                     NSError *replayError = nil;
-                    PLCDIDState *state = [PLCStateReplayer replayHistory:ops error:&replayError];
+                    ATProtoPLCDIDState *state = [ATProtoPLCStateReplayer replayHistory:ops error:&replayError];
                     if (state && state.tombstoned) {
                         response.statusCode = HttpStatusBadRequest;
                         [response setJsonBody:@{@"error": @"AccountTombstoned", @"message": @"Cannot update tombstoned DID"}];
@@ -435,9 +435,9 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                     if (lastEnvelopeCid) {
                         prev = lastEnvelopeCid;
                     } else {
-                        PLCOperation *lastOp = ops.lastObject;
+                        ATProtoPLCOperation *lastOp = ops.lastObject;
                         if (lastOp) {
-                            NSString *lastCid = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
+                            NSString *lastCid = [ATProtoPLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
                             if (lastCid) {
                                 prev = lastCid;
                             }
@@ -478,7 +478,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
             }
         }
         if (services.count == 0) {
-            services = [XrpcIdentityHelper defaultPdsServiceForConfig:configuration];
+            services = [ATProtoXrpcIdentityHelper defaultPdsServiceForConfig:configuration];
         }
         if (!services) {
             services = @{};
@@ -529,7 +529,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
     // com.atproto.identity.submitPlcOperation
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_submitPlcOperation handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -579,7 +579,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
             return;
         }
 
-        PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+        ATProtoPLCRotationKeyManager *keyManager = [ATProtoPLCRotationKeyManager sharedManager];
         NSError *keyLoadError = nil;
         if (![keyManager loadOrGenerateKeyWithError:&keyLoadError]) {
             response.statusCode = HttpStatusInternalServerError;
@@ -646,7 +646,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
 
         NSString *plcUrl = configuration.plcURL;
 
-        DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+        ATProtoDIDPLCResolver *plcResolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:plcUrl];
         NSError *auditError = nil;
         NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
 
@@ -654,13 +654,13 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
             NSMutableArray *ops = [NSMutableArray array];
             for (id opDict in auditLog) {
                 if ([opDict isKindOfClass:[NSDictionary class]]) {
-                    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+                    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:opDict error:nil];
                     if (op) [ops addObject:op];
                 }
             }
             if (ops.count > 0) {
-                PLCOperation *lastOp = ops.lastObject;
-                NSString *expectedPrev = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
+                ATProtoPLCOperation *lastOp = ops.lastObject;
+                NSString *expectedPrev = [ATProtoPLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
                 id submittedPrevValue = opData[@"prev"];
                 NSString *submittedPrev = [submittedPrevValue isKindOfClass:[NSString class]] ? submittedPrevValue : nil;
                 if (expectedPrev && submittedPrevValue != [NSNull null] && ![submittedPrev isEqualToString:expectedPrev]) {
@@ -735,7 +735,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
     // com.atproto.identity.updateHandle
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_identity_updateHandle handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -834,9 +834,9 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
             }
 
             if (!isLocal) {
-                HandleResolver *handleResolver = [[HandleResolver alloc] init];
+                ATProtoHandleResolver *handleResolver = [[ATProtoHandleResolver alloc] init];
                 NSError *rError = nil;
-                NSString *resolvedDid = [XrpcIdentityHelper resolveHandleToDid:normalizedHandle handleResolver:handleResolver error:&rError];
+                NSString *resolvedDid = [ATProtoXrpcIdentityHelper resolveHandleToDid:normalizedHandle handleResolver:handleResolver error:&rError];
 
                 if (![resolvedDid isEqualToString:did]) {
                     GZ_LOG_ERROR(@"Handle verification failed for %@: expected %@, got %@", normalizedHandle, did, resolvedDid);
@@ -856,7 +856,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                     plcUrl = @"http://127.0.0.1:2582";
                 }
                 
-                DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+                ATProtoDIDPLCResolver *plcResolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:plcUrl];
                 GZ_LOG_DEBUG(@"updateHandle: Resolving PLC audit log for DID=%@", did);
                 NSError *auditError = nil;
                 NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
@@ -869,7 +869,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                     return;
                 }
 
-                PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+                ATProtoPLCRotationKeyManager *keyManager = [ATProtoPLCRotationKeyManager sharedManager];
                 NSError *keyError = nil;
                 if (![keyManager loadOrGenerateKeyWithError:&keyError]) {
                     GZ_LOG_ERROR(@"Failed to load rotation key for DID %@: %@", did, keyError);
@@ -886,10 +886,10 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                     perDidRotationKey = [store rotationKeyDecryptedWithError:nil];
                 }
 
-                NSMutableArray<PLCOperation *> *ops = [NSMutableArray array];
+                NSMutableArray<ATProtoPLCOperation *> *ops = [NSMutableArray array];
                 for (NSDictionary *dict in auditLog) {
                     NSError *parseError = nil;
-                    PLCOperation *operation = [PLCOperation operationFromDictionary:dict error:&parseError];
+                    ATProtoPLCOperation *operation = [ATProtoPLCOperation operationFromDictionary:dict error:&parseError];
                     if (operation) {
                         [ops addObject:operation];
                     } else {
@@ -898,7 +898,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                 }
                 
                 // Verify the operation chain before trusting derived state.
-                if (![PLCAuditor verifyChain:ops did:did error:&auditError]) {
+                if (![ATProtoPLCAuditor verifyChain:ops did:did error:&auditError]) {
                     GZ_LOG_ERROR(@"updateHandle: PLC audit log verification failed for DID %@: %@",
                                   did, auditError.localizedDescription ?: @"unknown error");
                     response.statusCode = HttpStatusBadRequest;
@@ -906,10 +906,10 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                     return;
                 }
 
-                PLCDIDState *currentState = nil;
+                ATProtoPLCDIDState *currentState = nil;
                 @try {
                     GZ_LOG_DEBUG(@"updateHandle: Replaying PLC history");
-                    currentState = [PLCStateReplayer replayHistory:ops error:&auditError];
+                    currentState = [ATProtoPLCStateReplayer replayHistory:ops error:&auditError];
                 } @catch (NSException *exception) {
                     GZ_LOG_ERROR(@"updateHandle: Exception replaying PLC history: %@", exception);
                     response.statusCode = HttpStatusInternalServerError;
@@ -965,7 +965,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
                     NSDictionary *lastOp = lastEntry[@"operation"] ?: lastEntry;
                     NSString *prevCid = lastEntry[@"cid"];
                     if (!prevCid) {
-                        prevCid = [PLCOperation calculateCIDForOperation:lastOp error:nil];
+                        prevCid = [ATProtoPLCOperation calculateCIDForOperation:lastOp error:nil];
                     }
                     op[@"prev"] = prevCid;
                     
@@ -1010,7 +1010,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
 
             // 4. Database Update
             GZ_LOG_INFO(@"updateHandle: Doing DB update for did=%@, handle=%@", did, normalizedHandle);
-            if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
+            if (![ATProtoXrpcIdentityHelper updateAccountHandle:serviceDatabases
                                                     did:did
                                                 handle:normalizedHandle
                                                     error:&error]) {
@@ -1020,7 +1020,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
             }
         }
 
-        // 5. Firehose / Sequencer Broadcast (Always run, even if handle was already owned)
+        // 5. ATProtoFirehose / Sequencer Broadcast (Always run, even if handle was already owned)
         GZ_LOG_INFO(@"updateHandle: Broadcasting identity change for did=%@, handler exists=%d", did, subscribeReposHandler != nil);
         if (subscribeReposHandler) {
             [subscribeReposHandler broadcastIdentityChange:did handle:normalizedHandle];
@@ -1028,7 +1028,7 @@ static BOOL XrpcIdentityAllows(ATProtoHttpRequest *request, ATProtoHttpResponse 
 
         // 6. Resolve DID for response
         error = nil;
-        NSDictionary *doc = [XrpcIdentityHelper resolveDid:did
+        NSDictionary *doc = [ATProtoXrpcIdentityHelper resolveDid:did
                                           serviceDatabases:serviceDatabases
                                              configuration:configuration
                                                      error:&error];

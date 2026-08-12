@@ -10,20 +10,20 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AgeAssuranceService;
+@class PDSAgeAssuranceService;
 @class ATProtoServiceConfiguration;
-@class BookmarkService;
-@class ContactService;
-@class DraftService;
-@class NotificationService;
+@class PDSBookmarkService;
+@class PDSContactService;
+@class PDSDraftService;
+@class PDSNotificationService;
 @class PDSRecordService;
 @class PDSBlobService;
 @class PDSRepositoryService;
 @class PDSRelayService;
 @class PDSBlobAuditManager;
-@class SubscribeReposHandler;
-@class SearchIndexService;
-@class FeedService;
+@class ATProtoSubscribeReposHandler;
+@class PDSSearchIndexService;
+@class PDSFeedService;
 @class PDSSpaceStore;
 @class PDSSpaceReconciler;
 @class ATProtoJWTMinter;
@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
 @class ATProtoRateLimiter;
-@class XrpcDispatcher;
+@class ATProtoXrpcDispatcher;
 /**
  * @abstract Defines the PDSAdminController protocol contract.
  */
@@ -50,7 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @protocol XrpcRoutePackServices <NSObject>
 
-@property (nonatomic, readonly, nullable) XrpcDispatcher *dispatcher;
+@property (nonatomic, readonly, nullable) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, readonly, nullable) ATProtoJWTMinter *jwtMinter;
 @property (nonatomic, readonly, nullable) ATProtoAuthVerifier *authVerifier;
 @property (nonatomic, readonly, nullable) id<PDSAdminController> adminController;
@@ -63,11 +63,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) ATProtoRateLimiter *rateLimiter;
 
 /*! Pack-specific services populated before registration when needed. */
-@property (nonatomic, readonly, nullable) AgeAssuranceService *ageAssuranceService;
-@property (nonatomic, readonly, nullable) BookmarkService *bookmarkService;
-@property (nonatomic, readonly, nullable) DraftService *draftService;
-@property (nonatomic, readonly, nullable) ContactService *contactService;
-@property (nonatomic, readonly, nullable) NotificationService *notificationService;
+@property (nonatomic, readonly, nullable) PDSAgeAssuranceService *ageAssuranceService;
+@property (nonatomic, readonly, nullable) PDSBookmarkService *bookmarkService;
+@property (nonatomic, readonly, nullable) PDSDraftService *draftService;
+@property (nonatomic, readonly, nullable) PDSContactService *contactService;
+@property (nonatomic, readonly, nullable) PDSNotificationService *notificationService;
 @property (nonatomic, readonly, nullable) PDSRecordService *recordService;
 @property (nonatomic, readonly, nullable) PDSBlobService *blobService;
 @property (nonatomic, readonly, nullable) PDSRepositoryService *repositoryService;
@@ -75,10 +75,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) id<PDSAccountService> accountService;
 @property (nonatomic, readonly, nullable) id<PDSQueryDatabase> appViewDatabase;
 @property (nonatomic, readonly, nullable) id<PDSEmailProvider> emailProvider;
-@property (nonatomic, readonly, nullable) SubscribeReposHandler *subscribeReposHandler;
+@property (nonatomic, readonly, nullable) ATProtoSubscribeReposHandler *subscribeReposHandler;
 @property (nonatomic, readonly, nullable) PDSBlobAuditManager *blobAuditManager;
-@property (nonatomic, readonly, nullable) SearchIndexService *searchIndexService;
-@property (nonatomic, readonly, nullable) FeedService *feedService;
+@property (nonatomic, readonly, nullable) PDSSearchIndexService *searchIndexService;
+@property (nonatomic, readonly, nullable) PDSFeedService *feedService;
 
 @property (nonatomic, readonly, nullable) id<VideoJobStore> videoJobStore;
 @property (nonatomic, readonly, nullable) id<VideoAuthProvider> videoAuthProvider;
@@ -87,13 +87,13 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class XrpcRoutePackServiceBag
+ @class ATProtoXrpcRoutePackServiceBag
 
  @abstract Concrete @c XrpcRoutePackServices holder built by the method registry.
  */
-@interface XrpcRoutePackServiceBag : NSObject <XrpcRoutePackServices>
+@interface ATProtoXrpcRoutePackServiceBag : NSObject <XrpcRoutePackServices>
 
-@property (nonatomic, readonly, nullable) XrpcDispatcher *dispatcher;
+@property (nonatomic, readonly, nullable) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, readonly, nullable) ATProtoJWTMinter *jwtMinter;
 @property (nonatomic, strong, nullable) ATProtoAuthVerifier *authVerifier;
 @property (nonatomic, readonly, nullable) id<PDSAdminController> adminController;
@@ -102,11 +102,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, readonly, nullable) PDSDatabasePool *userDatabasePool;
 @property (nonatomic, readonly, nullable) ATProtoRateLimiter *rateLimiter;
-@property (nonatomic, strong, nullable) AgeAssuranceService *ageAssuranceService;
-@property (nonatomic, strong, nullable) BookmarkService *bookmarkService;
-@property (nonatomic, strong, nullable) DraftService *draftService;
-@property (nonatomic, strong, nullable) ContactService *contactService;
-@property (nonatomic, strong, nullable) NotificationService *notificationService;
+@property (nonatomic, strong, nullable) PDSAgeAssuranceService *ageAssuranceService;
+@property (nonatomic, strong, nullable) PDSBookmarkService *bookmarkService;
+@property (nonatomic, strong, nullable) PDSDraftService *draftService;
+@property (nonatomic, strong, nullable) PDSContactService *contactService;
+@property (nonatomic, strong, nullable) PDSNotificationService *notificationService;
 @property (nonatomic, strong, nullable) PDSRecordService *recordService;
 @property (nonatomic, strong, nullable) PDSBlobService *blobService;
 @property (nonatomic, strong, nullable) PDSRepositoryService *repositoryService;
@@ -114,10 +114,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) id<PDSAccountService> accountService;
 @property (nonatomic, strong, nullable) id<PDSQueryDatabase> appViewDatabase;
 @property (nonatomic, strong, nullable) id<PDSEmailProvider> emailProvider;
-@property (nonatomic, strong, nullable) SubscribeReposHandler *subscribeReposHandler;
+@property (nonatomic, strong, nullable) ATProtoSubscribeReposHandler *subscribeReposHandler;
 @property (nonatomic, strong, nullable) PDSBlobAuditManager *blobAuditManager;
-@property (nonatomic, strong, nullable) SearchIndexService *searchIndexService;
-@property (nonatomic, strong, nullable) FeedService *feedService;
+@property (nonatomic, strong, nullable) PDSSearchIndexService *searchIndexService;
+@property (nonatomic, strong, nullable) PDSFeedService *feedService;
 @property (nonatomic, strong, nullable) PDSSpaceStore *spaceStore;
 @property (nonatomic, strong, nullable) PDSSpaceReconciler *spaceReconciler;
 
@@ -128,7 +128,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the initWithDispatcher operation.
  */
-- (instancetype)initWithDispatcher:(nullable XrpcDispatcher *)dispatcher
+- (instancetype)initWithDispatcher:(nullable ATProtoXrpcDispatcher *)dispatcher
                          jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
                    adminController:(nullable id<PDSAdminController>)adminController
                       configuration:(nullable ATProtoServiceConfiguration *)configuration

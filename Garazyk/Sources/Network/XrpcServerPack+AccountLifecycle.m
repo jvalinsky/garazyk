@@ -27,9 +27,9 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcServerPack (AccountLifecycle)
+@implementation ATProtoXrpcServerPack (AccountLifecycle)
 
-+ (void)registerAccountLifecycleEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerAccountLifecycleEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                                   services:(id<XrpcRoutePackServices>)services {
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
@@ -38,7 +38,7 @@
 #pragma mark - com.atproto.server.accountLifecycle.*
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -60,7 +60,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *authenticatedDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *authenticatedDid = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!authenticatedDid) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -75,15 +75,15 @@
         NSString *did = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
         NSString *password = AuthTypedValue(body, @"password", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         if (did.length == 0 || password.length == 0 || token.length == 0) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"did, password, and token are required"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"did, password, and token are required"];
             return;
         }
         if (![ATProtoValidator validateDID:did error:nil]) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Invalid did"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Invalid did"];
             return;
         }
         if (![authenticatedDid isEqualToString:did]) {
@@ -152,7 +152,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_checkAccountStatus handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -180,7 +180,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_activateAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -209,7 +209,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deactivateAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
         if (!did) {
             response.statusCode = HttpStatusUnauthorized;
@@ -221,11 +221,11 @@
         BOOL typeMismatch = NO;
         NSString *deleteAfter = AuthTypedValue(body, @"deleteAfter", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         if (deleteAfter && ![ATProtoValidator validateDatetime:deleteAfter error:nil]) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Invalid deleteAfter datetime"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Invalid deleteAfter datetime"];
             return;
         }
 

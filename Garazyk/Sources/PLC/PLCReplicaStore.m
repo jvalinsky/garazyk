@@ -26,13 +26,13 @@ static NSString * const kCountOperationsSQL =
 static NSString * const kCountUniqueDIDsSQL =
     @"SELECT COUNT(DISTINCT did) FROM plc_operations;";
 
-@interface PLCReplicaStore ()
+@interface ATProtoPLCReplicaStore ()
 
 @property (nonatomic, assign) BOOL syncStateTableCreated;
 
 @end
 
-@implementation PLCReplicaStore
+@implementation ATProtoPLCReplicaStore
 
 - (BOOL)openWithError:(NSError **)error {
     if (![super openWithError:error]) {

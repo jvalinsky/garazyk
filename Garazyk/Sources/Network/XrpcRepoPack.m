@@ -344,13 +344,13 @@ NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnownAs) {
     return nil;
 }
 
-@implementation XrpcRepoPack
+@implementation ATProtoXrpcRepoPack
 
 + (NSString *)routePackIdentifier {
   return @"com.atproto.repo";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     [self registerRecordRoutesWithDispatcher:dispatcher services:services];
     [self registerBlobRoutesWithDispatcher:dispatcher services:services];

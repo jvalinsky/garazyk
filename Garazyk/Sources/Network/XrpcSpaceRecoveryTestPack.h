@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
  * This pack is deliberately unlexiconed and is registered only when all test
  * environment gates are enabled; it is never part of production routing.
  */
-@interface XrpcSpaceRecoveryTestPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcSpaceRecoveryTestPack : NSObject <XrpcRoutePack>
 
 + (BOOL)isEnabledForEnvironment:(NSDictionary<NSString *, NSString *> *)environment;
 + (BOOL)isAuthorizedRequest:(ATProtoHttpRequest *)request

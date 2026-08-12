@@ -5,7 +5,7 @@
 #import "Network/HttpRequest.h"
 
 // Category to expose private method for testing
-@interface OAuth2Handler (Test)
+@interface ATProtoOAuth2Handler (Test)
 - (NSString *)requestOriginForRequest:(ATProtoHttpRequest *)request;
 @end
 
@@ -15,7 +15,7 @@
 @implementation OAuthOriginTests
 
 - (void)testRequestOriginForRequest {
-    // This requires a real or mock OAuth2Handler and ATProtoHttpRequest.
+    // This requires a real or mock ATProtoOAuth2Handler and ATProtoHttpRequest.
     // Since we're in a unit test, we'll try to verify the logic.
 }
 

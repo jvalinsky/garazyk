@@ -137,7 +137,7 @@
                                   params:@[listURI, subjectDid, @"test-list", @"app.bsky.graph.defs#curatelist"]
                                    error:nil];
 
-    GraphService *graphService = [[GraphService alloc] initWithDatabase:database];
+    PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:database];
     NSError *error = nil;
     NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.listitem/%@", subjectDid, [NSUUID UUID].UUIDString];
     BOOL success = [graphService indexListitem:@{@"list" : listURI, @"subject" : subjectDid}

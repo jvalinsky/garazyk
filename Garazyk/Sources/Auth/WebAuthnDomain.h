@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file WebAuthnDomain.h
+ @file ATProtoWebAuthnDomain.h
 
  @abstract WebAuthn domain models and serialization.
 
@@ -16,13 +16,13 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class WebAuthnRelyingParty
+ @class ATProtoWebAuthnRelyingParty
 
  @abstract Relying party (RP) information for WebAuthn.
 
  @discussion Identifies the service requesting authentication.
  */
-@interface WebAuthnRelyingParty : NSObject
+@interface ATProtoWebAuthnRelyingParty : NSObject
 
 /*! Human-readable RP name. */
 @property (nonatomic, copy) NSString *name;
@@ -33,13 +33,13 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class WebAuthnUser
+ @class ATProtoWebAuthnUser
 
  @abstract User information for WebAuthn registration.
 
  @discussion User account details for credential creation.
  */
-@interface WebAuthnUser : NSObject
+@interface ATProtoWebAuthnUser : NSObject
 
 /*! Unique user identifier (byte handle). */
 @property (nonatomic, copy) NSData *identifier;
@@ -53,13 +53,13 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class WebAuthnPubKeyCredParam
+ @class ATProtoWebAuthnPubKeyCredParam
 
  @abstract Public key credential parameters.
 
  @discussion Specifies acceptable credential algorithms.
  */
-@interface WebAuthnPubKeyCredParam : NSObject
+@interface ATProtoWebAuthnPubKeyCredParam : NSObject
 
 /*! Credential type (always "public-key"). */
 @property (nonatomic, copy) NSString *type;
@@ -70,25 +70,25 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class WebAuthnRegistrationOptions
+ @class ATProtoWebAuthnRegistrationOptions
 
  @abstract Options for WebAuthn credential registration.
 
  @discussion Parameters for navigator.credentials.create() call.
  */
-@interface WebAuthnRegistrationOptions : NSObject
+@interface ATProtoWebAuthnRegistrationOptions : NSObject
 
 /*! Random challenge bytes (32+ bytes). */
 @property (nonatomic, copy) NSData *challenge;
 
 /*! Relying party information. */
-@property (nonatomic, strong) WebAuthnRelyingParty *rp;
+@property (nonatomic, strong) ATProtoWebAuthnRelyingParty *rp;
 
 /*! User information. */
-@property (nonatomic, strong) WebAuthnUser *user;
+@property (nonatomic, strong) ATProtoWebAuthnUser *user;
 
 /*! Acceptable public key algorithms. */
-@property (nonatomic, copy) NSArray<WebAuthnPubKeyCredParam *> *pubKeyCredParams;
+@property (nonatomic, copy) NSArray<ATProtoWebAuthnPubKeyCredParam *> *pubKeyCredParams;
 
 /*! Timeout in milliseconds. */
 @property (nonatomic, assign) NSTimeInterval timeout;
@@ -99,13 +99,13 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class WebAuthnCredentialDescriptor
+ @class ATProtoWebAuthnCredentialDescriptor
 
  @abstract Descriptor for existing credential.
 
  @discussion Identifies credential for authentication.
  */
-@interface WebAuthnCredentialDescriptor : NSObject
+@interface ATProtoWebAuthnCredentialDescriptor : NSObject
 
 /*! Credential type (always "public-key"). */
 @property (nonatomic, copy) NSString *type;
@@ -119,13 +119,13 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class WebAuthnAssertionOptions
+ @class ATProtoWebAuthnAssertionOptions
 
  @abstract Options for WebAuthn authentication.
 
  @discussion Parameters for navigator.credentials.get() call.
  */
-@interface WebAuthnAssertionOptions : NSObject
+@interface ATProtoWebAuthnAssertionOptions : NSObject
 
 /*! Random challenge bytes (32+ bytes). */
 @property (nonatomic, copy) NSData *challenge;
@@ -137,7 +137,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *rpId;
 
 /*! Allowed credentials (empty for any). */
-@property (nonatomic, copy) NSArray<WebAuthnCredentialDescriptor *> *allowCredentials;
+@property (nonatomic, copy) NSArray<ATProtoWebAuthnCredentialDescriptor *> *allowCredentials;
 
 /*! User verification requirement ("required", "preferred", "discouraged"). */
 @property (nonatomic, copy) NSString *userVerification;
@@ -145,20 +145,20 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class WebAuthnDomain
+ @class ATProtoWebAuthnDomain
 
  @abstract Serialization utilities for WebAuthn options.
 
  @discussion Converts WebAuthn objects to JSON-compatible dictionaries
  for client transmission.
  */
-@interface WebAuthnDomain : NSObject
+@interface ATProtoWebAuthnDomain : NSObject
 
 /*! Serialize registration options to dictionary. */
-+ (NSDictionary *)dictionaryFromRegistrationOptions:(WebAuthnRegistrationOptions *)options;
++ (NSDictionary *)dictionaryFromRegistrationOptions:(ATProtoWebAuthnRegistrationOptions *)options;
 
 /*! Serialize assertion options to dictionary. */
-+ (NSDictionary *)dictionaryFromAssertionOptions:(WebAuthnAssertionOptions *)options;
++ (NSDictionary *)dictionaryFromAssertionOptions:(ATProtoWebAuthnAssertionOptions *)options;
 
 @end
 

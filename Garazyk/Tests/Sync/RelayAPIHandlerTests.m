@@ -8,18 +8,18 @@
 #import "Network/HttpResponse.h"
 
 @interface RelayAPIHandlerTests : XCTestCase
-@property (nonatomic, strong) RelayAPIHandler *handler;
-@property (nonatomic, strong) RelayMetrics *metrics;
-@property (nonatomic, strong) RelayUpstreamManager *upstreamManager;
+@property (nonatomic, strong) ATProtoRelayAPIHandler *handler;
+@property (nonatomic, strong) ATProtoRelayMetrics *metrics;
+@property (nonatomic, strong) ATProtoRelayUpstreamManager *upstreamManager;
 @end
 
 @implementation RelayAPIHandlerTests
 
 - (void)setUp {
     [super setUp];
-    self.handler = [RelayAPIHandler sharedHandler];
-    self.metrics = [[RelayMetrics alloc] init];
-    self.upstreamManager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    self.handler = [ATProtoRelayAPIHandler sharedHandler];
+    self.metrics = [[ATProtoRelayMetrics alloc] init];
+    self.upstreamManager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
 }
 
 - (void)tearDown {
@@ -46,8 +46,8 @@
 }
 
 - (void)testSharedHandlerSingleton {
-    RelayAPIHandler *handler1 = [RelayAPIHandler sharedHandler];
-    RelayAPIHandler *handler2 = [RelayAPIHandler sharedHandler];
+    ATProtoRelayAPIHandler *handler1 = [ATProtoRelayAPIHandler sharedHandler];
+    ATProtoRelayAPIHandler *handler2 = [ATProtoRelayAPIHandler sharedHandler];
     
     XCTAssertTrue(handler1 == handler2, @"Shared handler should return same instance");
 }
@@ -115,8 +115,8 @@
 }
 
 - (void)testRequestCrawlMetadataAppearsInUpstreamList {
-    RelayAPIHandler *handler = [RelayAPIHandler sharedHandler];
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc]
+    ATProtoRelayAPIHandler *handler = [ATProtoRelayAPIHandler sharedHandler];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc]
         initWithInitialURLs:@[@"https://requested.test/xrpc/com.atproto.sync.subscribeRepos"]];
     [handler setUpstreamManager:manager];
 
@@ -173,13 +173,13 @@
 }
 
 - (void)testSetMetrics {
-    RelayMetrics *newMetrics = [[RelayMetrics alloc] init];
+    ATProtoRelayMetrics *newMetrics = [[ATProtoRelayMetrics alloc] init];
     
     XCTAssertNoThrow([self.handler setMetrics:newMetrics], @"Should set metrics without crash");
 }
 
 - (void)testSetUpstreamManager {
-    RelayUpstreamManager *newManager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"new.pds.com"]];
+    ATProtoRelayUpstreamManager *newManager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"new.pds.com"]];
     
     XCTAssertNoThrow([self.handler setUpstreamManager:newManager], @"Should set upstream manager without crash");
 }

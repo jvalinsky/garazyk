@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PLCDIDKey.h
+ @file ATProtoPLCDIDKey.h
 
  @abstract DID key parsing and validation for PLC operations.
 
@@ -28,7 +28,7 @@ typedef NS_ENUM(NSUInteger, PLCDIDKeyType) {
 };
 
 /*!
- @class PLCDIDKey
+ @class ATProtoPLCDIDKey
 
  @abstract Represents a parsed DID key with its type and public key bytes.
 
@@ -36,7 +36,7 @@ typedef NS_ENUM(NSUInteger, PLCDIDKeyType) {
     Parses did:key strings to extract the key type and raw public key bytes.
     Used for validating rotation keys in PLC operations.
  */
-@interface PLCDIDKey : NSObject
+@interface ATProtoPLCDIDKey : NSObject
 
 /*! The key type (secp256k1 or P-256). */
 @property (nonatomic, readonly) PLCDIDKeyType type;
@@ -47,11 +47,11 @@ typedef NS_ENUM(NSUInteger, PLCDIDKeyType) {
 /*!
  @method parseFromString:error:
 
- @abstract Parses a did:key string into a PLCDIDKey object.
+ @abstract Parses a did:key string into a ATProtoPLCDIDKey object.
 
  @param didKey The did:key string to parse.
  @param error On failure, set to an error describing the parse failure.
- @return A PLCDIDKey instance, or nil if parsing failed.
+ @return A ATProtoPLCDIDKey instance, or nil if parsing failed.
  */
 + (nullable instancetype)parseFromString:(NSString *)didKey error:(NSError **)error;
 

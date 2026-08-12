@@ -13,7 +13,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 @interface OAuthConformanceTests : XCTestCase
-@property (nonatomic, strong) OAuth2Handler *handler;
+@property (nonatomic, strong) ATProtoOAuth2Handler *handler;
 @property (nonatomic, strong) ATProtoJWTMinter *minter;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, assign) SecKeyRef privateKey;
@@ -34,7 +34,7 @@
     // Setup Minter with static key for testing
     self.minter = [[ATProtoJWTMinter alloc] init];
     
-    self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+    self.handler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.database];
     self.handler.minter = self.minter;
     
     // Import deterministic P-256 key pair for DPoP to avoid keychain dialogs.
@@ -101,7 +101,7 @@
     
     // 2. Generate DPoP proof for PAR endpoint
     NSError *dpopError = nil;
-    DPoPToken *dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:@"http://localhost/oauth/par" nonce:nil key:self.privateKey error:&dpopError];
+    ATProtoDPoPToken *dpopToken = [ATProtoDPoPUtil createDPoPForMethod:@"POST" uri:@"http://localhost/oauth/par" nonce:nil key:self.privateKey error:&dpopError];
     XCTAssertNotNil(dpopToken, @"DPoP token creation failed: %@", dpopError);
     
     // 3. Prepare PAR request
@@ -154,7 +154,7 @@
     // Handle DPoP Nonce Challenge
     if (response.statusCode == 400 && [[response headerForKey:@"DPoP-Nonce"] length] > 0) {
         NSString *nonce = [response headerForKey:@"DPoP-Nonce"];
-        dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:@"http://localhost/oauth/par" nonce:nonce key:self.privateKey error:&dpopError];
+        dpopToken = [ATProtoDPoPUtil createDPoPForMethod:@"POST" uri:@"http://localhost/oauth/par" nonce:nonce key:self.privateKey error:&dpopError];
         XCTAssertNotNil(dpopToken);
         
         request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST

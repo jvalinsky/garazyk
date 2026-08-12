@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayClient.h
+ @file ATProtoRelayClient.h
 
  @abstract Client for subscribing to ATProto relay/BGS feeds.
 
- @discussion Connects to ATProto relay servers to receive Firehose events.
+ @discussion Connects to ATProto relay servers to receive ATProtoFirehose events.
  Supports cursor-based resumption and automatic reconnection.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
@@ -13,14 +13,14 @@
 
 #import <Foundation/Foundation.h>
 
-@class RelayClient;
-@class Firehose;
-@class FirehoseCommitEvent;
-@class FirehoseIdentityEvent;
-@class FirehoseAccountEvent;
-@class FirehoseSyncEvent;
-@class FirehoseErrorEvent;
-@class FirehoseRawEvent;
+@class ATProtoRelayClient;
+@class ATProtoFirehose;
+@class ATProtoFirehoseCommitEvent;
+@class ATProtoFirehoseIdentityEvent;
+@class ATProtoFirehoseAccountEvent;
+@class ATProtoFirehoseSyncEvent;
+@class ATProtoFirehoseErrorEvent;
+@class ATProtoFirehoseRawEvent;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -40,25 +40,25 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
  */
 @protocol RelayClientDelegate <NSObject>
 @optional
-- (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event;
-- (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
-- (void)relayClient:(RelayClient *)client didReceiveAccountEvent:(FirehoseAccountEvent *)event;
-- (void)relayClient:(RelayClient *)client didReceiveSyncEvent:(FirehoseSyncEvent *)event;
-- (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event;
-- (void)relayClient:(RelayClient *)client didReceiveRawEvent:(FirehoseRawEvent *)event;
-- (void)relayClientDidConnect:(RelayClient *)client;
-- (void)relayClient:(RelayClient *)client didDisconnectWithError:(nullable NSError *)error;
-- (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor;
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event;
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event;
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveAccountEvent:(ATProtoFirehoseAccountEvent *)event;
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveSyncEvent:(ATProtoFirehoseSyncEvent *)event;
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event;
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveRawEvent:(ATProtoFirehoseRawEvent *)event;
+- (void)relayClientDidConnect:(ATProtoRelayClient *)client;
+- (void)relayClient:(ATProtoRelayClient *)client didDisconnectWithError:(nullable NSError *)error;
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveCursor:(int64_t)cursor;
 @end
 
 /*!
- @class RelayClient
+ @class ATProtoRelayClient
 
- @abstract Client for ATProto relay Firehose subscription.
+ @abstract Client for ATProto relay ATProtoFirehose subscription.
 
  @discussion Maintains a WebSocket connection to a relay server.
  */
-@interface RelayClient : NSObject
+@interface ATProtoRelayClient : NSObject
 
 /*! Delegate for events. */
 @property (nonatomic, weak, nullable) id<RelayClientDelegate> delegate;
@@ -66,8 +66,8 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 /*! URL of the relay server. */
 @property (nonatomic, readonly) NSURL *serverURL;
 
-/*! The underlying Firehose client. */
-@property (nonatomic, strong, readonly, nullable) Firehose *firehose;
+/*! The underlying ATProtoFirehose client. */
+@property (nonatomic, strong, readonly, nullable) ATProtoFirehose *firehose;
 
 /*! Whether connected to the server. */
 @property (nonatomic, readonly) BOOL isConnected;

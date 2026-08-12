@@ -4,7 +4,7 @@
 #import "Database/PDSDatabase.h"
 #import "Debug/GZLogger.h"
 
-@interface ChatService ()
+@interface PDSChatService ()
 @property (nonatomic, weak) id<PDSQueryDatabase> database;
 @end
 
@@ -37,7 +37,7 @@ static BOOL ChatServiceTableExists(PDSDatabase *database, NSString *tableName) {
     return rows.count > 0;
 }
 
-@implementation ChatService
+@implementation PDSChatService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];

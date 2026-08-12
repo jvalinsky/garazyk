@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcServerPack.m
+//  ATProtoXrpcServerPack.m
 //  ATProtoPDS
 //
 //  Domain module for com.atproto.server.* XRPC endpoints.
@@ -275,7 +275,7 @@ BOOL validateDidServiceAuthForAccountCreation(ATProtoHttpRequest *request,
     }
 
     NSError *decodeError = nil;
-    NSData *signingKeyBytes = [XrpcIdentityHelper publicKeyBytesFromMultibase:signingKey error:&decodeError];
+    NSData *signingKeyBytes = [ATProtoXrpcIdentityHelper publicKeyBytesFromMultibase:signingKey error:&decodeError];
     if (!signingKeyBytes) {
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Unable to decode signing key"}];
@@ -327,15 +327,15 @@ BOOL validateDidServiceAuthForAccountCreation(ATProtoHttpRequest *request,
     return YES;
 }
 
-#pragma mark - XrpcServerPack Implementation
+#pragma mark - ATProtoXrpcServerPack Implementation
 
-@implementation XrpcServerPack
+@implementation ATProtoXrpcServerPack
 
 + (NSString *)routePackIdentifier {
   return @"com.atproto.server";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     
     ATProtoServiceConfiguration *config = services.configuration;
@@ -368,7 +368,7 @@ BOOL validateDidServiceAuthForAccountCreation(ATProtoHttpRequest *request,
 #pragma mark - Endpoint Registration Methods
 
 
-+ (void)registerAccountAndSessionMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerAccountAndSessionMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                               services:(id<XrpcRoutePackServices>)services
                                      registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
     [self registerAccountCreationAndSessionEndpoints:dispatcher

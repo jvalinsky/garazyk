@@ -59,7 +59,7 @@ typedef const struct __CFNumber *CFNumberRef;
 #define errSecSuccess 0
 #define errSecItemNotFound (-25300)
 
-// CFHost stubs for HandleResolver.m
+// CFHost stubs for ATProtoHandleResolver.m
 static inline CFHostRef CFHostCreateWithName(CFAllocatorRef allocator, CFStringRef hostname) {
     (void)allocator;
     (void)hostname;

@@ -10,9 +10,9 @@ typedef NSData * _Nullable (^PDSBlockProvider)(NSData *cidBytes);
 typedef NSArray<NSData *> * _Nullable (^PDSRevisionBlockListProvider)(NSString *rev);
 
 /**
- * @abstract Declares the FirehoseCARBuilder public API.
+ * @abstract Declares the ATProtoFirehoseCARBuilder public API.
  */
-@interface FirehoseCARBuilder : NSObject
+@interface ATProtoFirehoseCARBuilder : NSObject
 
 + (NSData *)buildCARForCommit:(ATProtoRepoCommit *)commit
                           ops:(NSArray<NSDictionary *> *)ops

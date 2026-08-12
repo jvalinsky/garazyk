@@ -32,16 +32,16 @@
 }
 
 - (void)testFeatureDoesNotRegisterRoutesWithoutIsolatedStore {
-  XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-  XrpcRoutePackServiceBag *services = [self servicesForDispatcher:dispatcher];
+  ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+  ATProtoXrpcRoutePackServiceBag *services = [self servicesForDispatcher:dispatcher];
   services.spaceStore = nil;
-  [XrpcSpacePack registerWithDispatcher:dispatcher services:services];
+  [ATProtoXrpcSpacePack registerWithDispatcher:dispatcher services:services];
   XCTAssertFalse([dispatcher hasRegisteredMethod:@"com.atproto.space.getSpace"]);
 }
 
 - (void)testRegistersImplementedExperimentalContractAndProtectsSpaceMetadata {
-  XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
-  [XrpcSpacePack registerWithDispatcher:dispatcher services:[self servicesForDispatcher:dispatcher]];
+  ATProtoXrpcDispatcher *dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+  [ATProtoXrpcSpacePack registerWithDispatcher:dispatcher services:[self servicesForDispatcher:dispatcher]];
   for (NSString *method in @[
       @"com.atproto.space.getSpace", @"com.atproto.space.applyWrites",
       @"com.atproto.space.getRepo", @"com.atproto.space.getBlob", @"com.atproto.space.getSpaceCredential",
@@ -61,8 +61,8 @@
   XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");
 }
 
-- (XrpcRoutePackServiceBag *)servicesForDispatcher:(XrpcDispatcher *)dispatcher {
-  XrpcRoutePackServiceBag *services = [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher jwtMinter:nil adminController:nil configuration:nil adminSecret:nil serviceDatabases:nil userDatabasePool:nil rateLimiter:nil];
+- (ATProtoXrpcRoutePackServiceBag *)servicesForDispatcher:(ATProtoXrpcDispatcher *)dispatcher {
+  ATProtoXrpcRoutePackServiceBag *services = [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher jwtMinter:nil adminController:nil configuration:nil adminSecret:nil serviceDatabases:nil userDatabasePool:nil rateLimiter:nil];
   services.spaceStore = self.store;
   return services;
 }

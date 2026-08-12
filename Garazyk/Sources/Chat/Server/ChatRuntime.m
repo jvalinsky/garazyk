@@ -19,22 +19,22 @@
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
 
-@interface ChatRuntime ()
-@property (nonatomic, strong, readwrite) ChatConfiguration *configuration;
+@interface GZChatRuntime ()
+@property (nonatomic, strong, readwrite) PDSChatConfiguration *configuration;
 @property (nonatomic, strong) PDSDatabase *db;
-@property (nonatomic, strong) ChatService *chatService;
+@property (nonatomic, strong) PDSChatService *chatService;
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
 
-@implementation ChatRuntime
+@implementation GZChatRuntime
 
 + (instancetype)sharedRuntime {
-    static ChatRuntime *shared = nil;
+    static GZChatRuntime *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[ChatRuntime alloc] init];
+        shared = [[GZChatRuntime alloc] init];
     });
     return shared;
 }
@@ -42,7 +42,7 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _configuration = [ChatConfiguration defaultConfiguration];
+        _configuration = [PDSChatConfiguration defaultConfiguration];
     }
     return self;
 }
@@ -70,21 +70,21 @@
     if (![self.db openWithError:error]) return NO;
     
     // Initialize Schema
-    NSString *schemaSQL = [[ChatSchemaManager sharedManager] chatSchemaSQL];
+    NSString *schemaSQL = [[PDSChatSchemaManager sharedManager] chatSchemaSQL];
     if (![self.db executeParameterizedUpdate:schemaSQL params:@[] error:error]) {
         return NO;
     }
     
     // 3. Initialize Services
-    self.chatService = [[ChatService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
+    self.chatService = [[PDSChatService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
     
     // 4. Initialize Networking
-    self.dispatcher = [[XrpcDispatcher alloc] init];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
     
     // Create services bag for route packs
     // NOTE: Standalone chat uses its own configuration and database
-    XrpcRoutePackServiceBag *bag =
- [[XrpcRoutePackServiceBag alloc] initWithDispatcher:self.dispatcher
+    ATProtoXrpcRoutePackServiceBag *bag =
+ [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:self.dispatcher
                                                                              jwtMinter:nil
                                                                        adminController:nil
                                                                           configuration:nil
@@ -95,15 +95,15 @@
     bag.appViewDatabase = (id<PDSQueryDatabase>)self.db;
 
     // Register Handlers
-    [XrpcChatBskyActorPack registerWithDispatcher:self.dispatcher services:bag];
-    [XrpcChatBskyConvoPack registerWithDispatcher:self.dispatcher services:bag];
-    [XrpcChatBskyGroupPack registerWithDispatcher:self.dispatcher services:bag];
+    [ATProtoXrpcChatBskyActorPack registerWithDispatcher:self.dispatcher services:bag];
+    [ATProtoXrpcChatBskyConvoPack registerWithDispatcher:self.dispatcher services:bag];
+    [ATProtoXrpcChatBskyGroupPack registerWithDispatcher:self.dispatcher services:bag];
 
     self.httpServer = [ATProtoHttpServer serverWithHost:@"0.0.0.0" port:self.configuration.httpPort]; // Bind to all interfaces for Docker support
 
     // Configure auth manager with PDS URL and service DID for ATProtoJWT verification
     if (self.configuration.pdsUrl.length > 0) {
-        [ChatAuthManager sharedManager].pdsUrl = self.configuration.pdsUrl;
+        [PDSChatAuthManager sharedManager].pdsUrl = self.configuration.pdsUrl;
     }
     
     // Propagate PLC URL to the shared DID resolver
@@ -113,7 +113,7 @@
     
     // Set the service DID for audience validation in service auth JWTs.
     // The aud claim must match this service's DID (with #bsky_chat fragment).
-    [ChatAuthManager sharedManager].serviceDID = self.configuration.serviceDID;
+    [PDSChatAuthManager sharedManager].serviceDID = self.configuration.serviceDID;
 
     // Add health endpoint
     [self.httpServer addRoute:@"GET"
@@ -201,7 +201,7 @@
     [self.httpServer addRoute:@"GET"
                         path:@"/.well-known/did.json"
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                         ChatConfiguration *c = self.configuration;
+                         PDSChatConfiguration *c = self.configuration;
                          NSString *did = c.serviceDID;
                          NSString *scheme = [c.serviceDomain containsString:@":"] ? @"http" : @"https";
                          NSString *endpoint = c.serviceDomain

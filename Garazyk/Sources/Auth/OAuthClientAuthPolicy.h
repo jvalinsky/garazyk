@@ -7,7 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Validates OAuth client authentication and request policy.
  */
-@interface OAuthClientAuthPolicy : NSObject
+@interface ATProtoOAuthClientAuthPolicy : NSObject
 
 /** Returns whether legacy OAuth client authentication is enabled. */
 + (BOOL)legacyOAuthEnabled;

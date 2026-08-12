@@ -3,7 +3,7 @@
 #import "Auth/OAuthClientAuthPolicy.h"
 #import "Security/PDSSecurityCompare.h"
 
-@implementation OAuthClientAuthPolicy
+@implementation ATProtoOAuthClientAuthPolicy
 
 + (BOOL)legacyOAuthEnabled {
 #ifdef DEBUG

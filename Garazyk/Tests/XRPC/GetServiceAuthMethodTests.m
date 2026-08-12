@@ -9,7 +9,7 @@
 
 @interface GetServiceAuthMethodTests : XCTestCase
 @property (nonatomic, strong) PDSController *controller;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @end
 
 @implementation GetServiceAuthMethodTests
@@ -17,8 +17,8 @@
 - (void)setUp {
     [super setUp];
     self.controller = [[PDSController alloc] init];
-    self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher controller:self.controller];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher controller:self.controller];
 }
 
 - (void)tearDown {

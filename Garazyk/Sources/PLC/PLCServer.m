@@ -358,28 +358,28 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     _plcWebSocketTransportFactory = [factory copy];
 }
 
-@interface PLCServer ()
+@interface ATProtoPLCServer ()
 @property (nonatomic, strong) id<PLCStore> store;
-@property (nonatomic, strong) PLCAuditor *auditor;
+@property (nonatomic, strong) ATProtoPLCAuditor *auditor;
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, copy, nullable) NSString *adminSecret;
 @end
 
-@implementation PLCServer
+@implementation ATProtoPLCServer
 
-- (instancetype)initWithStore:(id<PLCStore>)store auditor:(PLCAuditor *)auditor port:(NSUInteger)port {
+- (instancetype)initWithStore:(id<PLCStore>)store auditor:(ATProtoPLCAuditor *)auditor port:(NSUInteger)port {
     return [self initWithStore:store auditor:auditor host:@"127.0.0.1" port:port];
 }
 
-- (instancetype)initWithStore:(id<PLCStore>)store auditor:(PLCAuditor *)auditor adminSecret:(NSString *)adminSecret port:(NSUInteger)port {
+- (instancetype)initWithStore:(id<PLCStore>)store auditor:(ATProtoPLCAuditor *)auditor adminSecret:(NSString *)adminSecret port:(NSUInteger)port {
     return [self initWithStore:store auditor:auditor adminSecret:adminSecret host:@"127.0.0.1" port:port];
 }
 
-- (instancetype)initWithStore:(id<PLCStore>)store auditor:(PLCAuditor *)auditor host:(NSString *)host port:(NSUInteger)port {
+- (instancetype)initWithStore:(id<PLCStore>)store auditor:(ATProtoPLCAuditor *)auditor host:(NSString *)host port:(NSUInteger)port {
     return [self initWithStore:store auditor:auditor adminSecret:nil host:host port:port];
 }
 
-- (instancetype)initWithStore:(id<PLCStore>)store auditor:(PLCAuditor *)auditor adminSecret:(NSString *)adminSecret host:(NSString *)host port:(NSUInteger)port {
+- (instancetype)initWithStore:(id<PLCStore>)store auditor:(ATProtoPLCAuditor *)auditor adminSecret:(NSString *)adminSecret host:(NSString *)host port:(NSUInteger)port {
     self = [super init];
     if (self) {
         _store = store;
@@ -425,18 +425,18 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
 
     [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
-        [[PLCMetrics sharedMetrics] recordRequest];
+        [[ATProtoPLCMetrics sharedMetrics] recordRequest];
         resp.statusCode = HttpStatusOK;
         [resp setJsonBody:@{@"status": @"ok"}];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/_list" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
-        [[PLCMetrics sharedMetrics] recordRequest];
+        [[ATProtoPLCMetrics sharedMetrics] recordRequest];
         NSError *error = nil;
         NSArray<NSString *> *dids = [weakSelf.store getAllDIDsWithError:&error];
         if (error) {
-            [[PLCMetrics sharedMetrics] recordError];
+            [[ATProtoPLCMetrics sharedMetrics] recordError];
             resp.statusCode = HttpStatusInternalServerError;
             [resp setJsonBody:@{@"error": error.localizedDescription}];
         } else {
@@ -447,8 +447,8 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
 
     [self.httpServer addRoute:@"GET" path:@"/_metrics" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
-        [[PLCMetrics sharedMetrics] recordRequest];
-        NSString *metrics = [[PLCMetrics sharedMetrics] renderMetrics];
+        [[ATProtoPLCMetrics sharedMetrics] recordRequest];
+        NSString *metrics = [[ATProtoPLCMetrics sharedMetrics] renderMetrics];
         resp.statusCode = HttpStatusOK;
         resp.contentType = @"text/plain; charset=utf-8";
         [resp setBodyString:metrics];
@@ -499,7 +499,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
 
     [self.httpServer addRoute:@"POST" path:@"/:did" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *resp) {
         [weakSelf setCorsHeaders:resp forRequest:req];
-        [[PLCMetrics sharedMetrics] recordRequest];
+        [[ATProtoPLCMetrics sharedMetrics] recordRequest];
         [weakSelf handlePostDID:req response:resp];
     }];
 
@@ -507,7 +507,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
         [weakSelf setCorsHeaders:resp forRequest:req];
         NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
         if ([did hasPrefix:@"did:plc:"]) {
-            [[PLCMetrics sharedMetrics] recordRequest];
+            [[ATProtoPLCMetrics sharedMetrics] recordRequest];
             [weakSelf handleGetDID:req response:resp];
         } else {
             // No fallback here, let other routes match or 404
@@ -526,24 +526,24 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     }
     
     NSError *error = nil;
-    NSArray<PLCOperation *> *history = [self.store getHistoryForDID:did includeNullified:NO error:&error];
+    NSArray<ATProtoPLCOperation *> *history = [self.store getHistoryForDID:did includeNullified:NO error:&error];
     if (error) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusInternalServerError;
         [resp setJsonBody:@{@"error": error.localizedDescription}];
         return;
     }
     
     if (!history || history.count == 0) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusNotFound;
         [resp setJsonBody:@{@"error": @"DID not found"}];
         return;
     }
     
-    PLCDIDState *state = [PLCStateReplayer replayHistory:history error:&error];
+    ATProtoPLCDIDState *state = [ATProtoPLCStateReplayer replayHistory:history error:&error];
     if (!state) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusInternalServerError;
         [resp setJsonBody:@{@"error": @"Failed to replay history"}];
         return;
@@ -566,30 +566,30 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     includeMetadata:(BOOL)includeMetadata {
     NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
     if (!did) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": @"Missing DID"}];
         return;
     }
     
     NSError *error = nil;
-    NSArray<PLCOperation *> *history = [self.store getHistoryForDID:did includeNullified:includeNullified error:&error];
+    NSArray<ATProtoPLCOperation *> *history = [self.store getHistoryForDID:did includeNullified:includeNullified error:&error];
     if (error) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusInternalServerError;
         [resp setJsonBody:@{@"error": @"Internal server error"}];
         return;
     }
     
     if (!history) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusNotFound;
         [resp setJsonBody:@{@"error": @"DID not found"}];
         return;
     }
     
     NSMutableArray *historyDicts = [NSMutableArray array];
-    for (PLCOperation *op in history) {
+    for (ATProtoPLCOperation *op in history) {
         if (includeMetadata) {
             NSMutableDictionary *entry = [NSMutableDictionary dictionary];
             entry[@"did"] = did;
@@ -619,7 +619,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     
     NSDictionary *json = req.jsonBody;
     if (!json) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": @"Missing JSON body"}];
         return;
@@ -627,16 +627,16 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
 
     NSError *validationError = nil;
     if (!PLCValidateIncomingOperation(json, &validationError)) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": validationError.localizedDescription ?: @"Invalid operation"}];
         return;
     }
     
     NSError *error = nil;
-    PLCOperation *op = [PLCOperation operationFromDictionary:json error:&error];
+    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:json error:&error];
     if (!op) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": [NSString stringWithFormat:@"Invalid operation format: %@", error.localizedDescription]}];
         return;
@@ -645,7 +645,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     // Enforce DID consistency with path if present in payload.
     NSString *payloadDid = op.data[@"did"];
     if (payloadDid && [payloadDid isKindOfClass:[NSString class]] && ![payloadDid isEqualToString:did]) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": @"DID in payload does not match path"}];
         return;
@@ -655,24 +655,24 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
 
     // Ensure create/genesis operations derive the path DID (official PLC behavior).
     NSError *historyError = nil;
-    NSArray<PLCOperation *> *history = [self.store getHistoryForDID:did includeNullified:NO error:&historyError];
+    NSArray<ATProtoPLCOperation *> *history = [self.store getHistoryForDID:did includeNullified:NO error:&historyError];
     if (historyError) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusInternalServerError;
         [resp setJsonBody:@{@"error": @"Failed to fetch operation history"}];
         return;
     }
     if (!history || history.count == 0) {
         if (op.prev != nil) {
-            [[PLCMetrics sharedMetrics] recordError];
+            [[ATProtoPLCMetrics sharedMetrics] recordError];
             resp.statusCode = HttpStatusBadRequest;
             [resp setJsonBody:@{@"error": @"Genesis operation must have null prev"}];
             return;
         }
-        NSString *expectedDid = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
+        NSString *expectedDid = [ATProtoPLCOperation calculateDIDForSignedOperation:[op toDictionary]];
         if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
             GZ_LOG_CORE_ERROR(@"PLC genesis DID mismatch for %@: expected %@", did, expectedDid);
-            [[PLCMetrics sharedMetrics] recordError];
+            [[ATProtoPLCMetrics sharedMetrics] recordError];
             resp.statusCode = HttpStatusBadRequest;
             [resp setJsonBody:@{@"error": @"Genesis operation does not match DID"}];
             return;
@@ -682,7 +682,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     // Validate using auditor
     NSArray<NSString *> *nullified = nil;
     if (![self.auditor verifyOperation:op proposedDate:[NSDate date] nullifiedCIDs:&nullified error:&error]) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": [NSString stringWithFormat:@"Audit failed: %@", error.localizedDescription]}];
         return;
@@ -690,7 +690,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     
     // Append to store
     if (![self.store appendOperation:op nullifyCIDs:nullified ?: @[] error:&error]) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusInternalServerError;
         [resp setJsonBody:@{@"error": [NSString stringWithFormat:@"Failed to append: %@", error.localizedDescription]}];
         return;
@@ -709,9 +709,9 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     }
 
     NSError *error = nil;
-    PLCOperation *op = [self.store getLatestOperationForDID:did error:&error];
+    ATProtoPLCOperation *op = [self.store getLatestOperationForDID:did error:&error];
     if (error) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusInternalServerError;
         [resp setJsonBody:@{@"error": error.localizedDescription}];
         return;
@@ -738,9 +738,9 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     }
 
     NSError *error = nil;
-    PLCOperation *op = [self.store getLatestOperationForDID:did error:&error];
+    ATProtoPLCOperation *op = [self.store getLatestOperationForDID:did error:&error];
     if (error) {
-        [[PLCMetrics sharedMetrics] recordError];
+        [[ATProtoPLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusInternalServerError;
         [resp setJsonBody:@{@"error": error.localizedDescription}];
         return;
@@ -763,7 +763,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     [resp setJsonBody:[data copy]];
 }
 
-- (NSDictionary *)legacyExportEntryForOperation:(PLCOperation *)op {
+- (NSDictionary *)legacyExportEntryForOperation:(ATProtoPLCOperation *)op {
     return @{
         @"did": op.did ?: @"",
         @"operation": [op toDictionary],
@@ -773,7 +773,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     };
 }
 
-- (NSDictionary *)sequencedExportEntryForOperation:(PLCOperation *)op {
+- (NSDictionary *)sequencedExportEntryForOperation:(ATProtoPLCOperation *)op {
     return @{
         @"type": @"sequenced_op",
         @"did": op.did ?: @"",
@@ -801,7 +801,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
 }
 
 - (void)handleExport:(ATProtoHttpRequest *)req response:(ATProtoHttpResponse *)resp {
-    [[PLCMetrics sharedMetrics] recordRequest];
+    [[ATProtoPLCMetrics sharedMetrics] recordRequest];
 
     NSUInteger requestedCount = 0;
     if (![self parseExportCountFromRequest:req count:&requestedCount response:resp]) {
@@ -833,7 +833,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
         if (remaining <= 0) return [NSData data]; // Done
 
         NSInteger batchSize = MIN(remaining, 100);
-        NSArray<PLCOperation *> *ops = nil;
+        NSArray<ATProtoPLCOperation *> *ops = nil;
         if (sequencedMode) {
             ops = [weakSelf.store exportOperationsAfterSequence:cursorSeq ?: @0 count:batchSize error:error];
         } else {
@@ -842,7 +842,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
         if (!ops || ops.count == 0) return [NSData data]; // Done or error
 
         NSMutableData *chunkData = [NSMutableData data];
-        for (PLCOperation *op in ops) {
+        for (ATProtoPLCOperation *op in ops) {
             NSDictionary *entry = sequencedMode ? [weakSelf sequencedExportEntryForOperation:op] : [weakSelf legacyExportEntryForOperation:op];
             NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
             if (jsonData) {
@@ -865,7 +865,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     id<PDSWebSocketTransport> adapter = _plcWebSocketTransportFactory ? _plcWebSocketTransportFactory(connection) : nil;
     if (!adapter) {
         // No factory registered (should not happen in any real binary — see
-        // PLCWebSocketTransportRegistration.m's `+load`). connection is only
+        // GZPLCWebSocketTransportRegistration.m's `+load`). connection is only
         // forward-declared here, so it can't be messaged directly; simply
         // decline to stream and let the transport layer's own timeout close it.
         return;
@@ -886,19 +886,19 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
     __block NSInteger liveCursor = cursor.integerValue;
     if (!cursor) {
         NSError *snapshotError = nil;
-        NSArray<PLCOperation *> *snapshot = [self.store exportOperationsAfterSequence:@0 count:PLCExportMaxCount error:&snapshotError];
-        PLCOperation *lastSnapshotOp = snapshot.lastObject;
+        NSArray<ATProtoPLCOperation *> *snapshot = [self.store exportOperationsAfterSequence:@0 count:PLCExportMaxCount error:&snapshotError];
+        ATProtoPLCOperation *lastSnapshotOp = snapshot.lastObject;
         liveCursor = lastSnapshotOp.sequence.integerValue;
     }
 
     NSError *error = nil;
-    NSArray<PLCOperation *> *ops = cursor ? [self.store exportOperationsAfterSequence:cursor count:PLCExportMaxCount error:&error] : @[];
+    NSArray<ATProtoPLCOperation *> *ops = cursor ? [self.store exportOperationsAfterSequence:cursor count:PLCExportMaxCount error:&error] : @[];
     if (error) {
         [adapter closeWithCode:1011 reason:@"InternalError" completion:^(NSError * _Nullable error) {}];
         return;
     }
 
-    for (PLCOperation *op in ops) {
+    for (ATProtoPLCOperation *op in ops) {
         NSDictionary *entry = [self sequencedExportEntryForOperation:op];
         NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
         if (!jsonData) {
@@ -927,7 +927,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
                               (uint64_t)(0.1 * NSEC_PER_SEC));
     dispatch_source_set_event_handler(timer, ^{
         NSError *pollError = nil;
-        NSArray<PLCOperation *> *newOps = [weakSelf.store exportOperationsAfterSequence:@(liveCursor)
+        NSArray<ATProtoPLCOperation *> *newOps = [weakSelf.store exportOperationsAfterSequence:@(liveCursor)
                                                                                   count:PLCExportDefaultCount
                                                                                   error:&pollError];
         if (pollError) {
@@ -938,7 +938,7 @@ void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory factory)
             }
             return;
         }
-        for (PLCOperation *op in newOps) {
+        for (ATProtoPLCOperation *op in newOps) {
             NSDictionary *entry = [weakSelf sequencedExportEntryForOperation:op];
             NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
             if (!jsonData) continue;

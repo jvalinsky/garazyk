@@ -10,7 +10,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class XrpcDispatcher;
+@class ATProtoXrpcDispatcher;
 @protocol XrpcRoutePackServices;
 
 /*!
@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the registerWithDispatcher operation.
  */
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services;
 
 @optional

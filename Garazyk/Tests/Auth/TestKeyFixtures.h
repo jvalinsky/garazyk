@@ -75,7 +75,7 @@ static inline SecKeyRef _Nullable PDSTestCreateFixedP256PrivateKey(NSError **err
 extern NSString * const kPDSTestDPoPBaseURL;
 
 /*! Test-only HTTP Host-header value shared by tests that dispatch through
- *  XrpcDispatcher with a synthesized origin. Mirrors the host portion of
+ *  ATProtoXrpcDispatcher with a synthesized origin. Mirrors the host portion of
  *  `kPDSTestDPoPBaseURL`. */
 extern NSString * const kPDSTestPDSHostHeader;
 

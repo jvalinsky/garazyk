@@ -12,7 +12,7 @@
 #import <Security/Security.h>
 #endif
 
-@implementation WebAuthnVerifier
+@implementation ATProtoWebAuthnVerifier
 
 + (nullable NSDictionary *)verifyRegistrationResponse:(NSDictionary *)response
                                             challenge:(NSData *)expectedChallenge
@@ -46,8 +46,8 @@
     // Simple byte comparison for challenge
     if (![challengeData isEqualToData:expectedChallenge]) {
         // Fallback: compare base32 strings if binary fails (sometimes encoding varies)
-        NSString *chl1 = [Base32Utils base32StringFromData:challengeData];
-        NSString *chl2 = [Base32Utils base32StringFromData:expectedChallenge];
+        NSString *chl1 = [ATProtoBase32Utils base32StringFromData:challengeData];
+        NSString *chl2 = [ATProtoBase32Utils base32StringFromData:expectedChallenge];
         if (![chl1 isEqualToString:chl2]) {
              if (error) *error = [self errorWithCode:1003 message:@"Challenge mismatch"];
              return nil;
@@ -183,8 +183,8 @@
     }
     NSData *challengeData = [[NSData alloc] initWithBase64EncodedString:challengeBase64 options:0];
     if (![challengeData isEqualToData:expectedChallenge]) {
-        NSString *chl1 = [Base32Utils base32StringFromData:challengeData];
-        NSString *chl2 = [Base32Utils base32StringFromData:expectedChallenge];
+        NSString *chl1 = [ATProtoBase32Utils base32StringFromData:challengeData];
+        NSString *chl2 = [ATProtoBase32Utils base32StringFromData:expectedChallenge];
         if (![chl1 isEqualToString:chl2]) {
              if (error) *error = [self errorWithCode:2002 message:@"Challenge mismatch"];
              return NO;

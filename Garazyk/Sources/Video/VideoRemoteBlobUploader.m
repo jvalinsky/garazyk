@@ -3,7 +3,7 @@
 #import "Video/VideoRemoteBlobUploader.h"
 #import "Debug/GZLogger.h"
 
-@implementation VideoRemoteBlobUploader
+@implementation GZVideoRemoteBlobUploader
 
 - (instancetype)initWithPDSURL:(NSString *)pdsURL {
     self = [super init];

@@ -5,13 +5,13 @@
 #import "PLC/PLCMetrics.h"
 #import "Compat/PDSTypes.h"
 
-@interface PLCMockStore ()
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<PLCOperation *> *> *storage;
+@interface ATProtoPLCMockStore ()
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<ATProtoPLCOperation *> *> *storage;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @property (nonatomic, assign) NSInteger nextSequence;
 @end
 
-@implementation PLCMockStore
+@implementation ATProtoPLCMockStore
 
 - (instancetype)init {
     self = [super init];
@@ -23,14 +23,14 @@
     return self;
 }
 
-- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
+- (nullable NSArray<ATProtoPLCOperation *> *)getHistoryForDID:(NSString *)did
                                       includeNullified:(BOOL)includeNullified
                                                  error:(NSError **)error {
-    __block NSArray<PLCOperation *> *history = nil;
+    __block NSArray<ATProtoPLCOperation *> *history = nil;
     dispatch_sync(self.queue, ^{
-        NSArray<PLCOperation *> *stored = self.storage[did];
+        NSArray<ATProtoPLCOperation *> *stored = self.storage[did];
         if (!includeNullified && stored.count > 0) {
-            NSPredicate *predicate = [NSPredicate predicateWithBlock:^BOOL(PLCOperation *op, NSDictionary *bindings) {
+            NSPredicate *predicate = [NSPredicate predicateWithBlock:^BOOL(ATProtoPLCOperation *op, NSDictionary *bindings) {
                 return !op.nullified;
             }];
             history = [stored filteredArrayUsingPredicate:predicate];
@@ -40,15 +40,15 @@
     });
     
     if (history) {
-        [[PLCMetrics sharedMetrics] recordMemcacheHit];
+        [[ATProtoPLCMetrics sharedMetrics] recordMemcacheHit];
     } else {
-        [[PLCMetrics sharedMetrics] recordMemcacheMiss];
+        [[ATProtoPLCMetrics sharedMetrics] recordMemcacheMiss];
     }
     
     return history ?: @[];
 }
 
-- (BOOL)appendOperation:(PLCOperation *)op
+- (BOOL)appendOperation:(ATProtoPLCOperation *)op
            nullifyCIDs:(NSArray<NSString *> *)nullified
                  error:(NSError **)error {
     if (!op.did) {
@@ -59,7 +59,7 @@
     }
 
     dispatch_sync(self.queue, ^{
-        NSMutableArray<PLCOperation *> *history = self.storage[op.did];
+        NSMutableArray<ATProtoPLCOperation *> *history = self.storage[op.did];
         if (!history) {
             history = [NSMutableArray array];
             self.storage[op.did] = history;
@@ -74,12 +74,12 @@
         }
         if (!op.cid) {
             NSError *cidError = nil;
-            op.cid = [PLCOperation calculateCIDForOperation:[op toDictionary] error:&cidError];
+            op.cid = [ATProtoPLCOperation calculateCIDForOperation:[op toDictionary] error:&cidError];
         }
         op.nullified = NO;
         if (nullified.count > 0) {
             NSSet<NSString *> *nullifiedSet = [NSSet setWithArray:nullified];
-            for (PLCOperation *existing in history) {
+            for (ATProtoPLCOperation *existing in history) {
                 if (existing.cid && [nullifiedSet containsObject:existing.cid]) {
                     existing.nullified = YES;
                 }
@@ -99,10 +99,10 @@
     return keys ?: @[];
 }
 
-- (nullable PLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error {
-    __block PLCOperation *op = nil;
+- (nullable ATProtoPLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error {
+    __block ATProtoPLCOperation *op = nil;
     dispatch_sync(self.queue, ^{
-        NSArray<PLCOperation *> *history = self.storage[did];
+        NSArray<ATProtoPLCOperation *> *history = self.storage[did];
         if (history && history.count > 0) {
             // Find last non-nullified operation? Spec says "latest operation", usually implies valid chain tip.
             // But log/last usually returns just the last entry.
@@ -125,7 +125,7 @@
 - (NSInteger)nullifiedOperationCountForDid:(NSString *)did error:(NSError **)error {
     __block NSInteger count = 0;
     dispatch_sync(self.queue, ^{
-        for (PLCOperation *operation in self.storage[did]) {
+        for (ATProtoPLCOperation *operation in self.storage[did]) {
             if (operation.nullified) count++;
         }
     });
@@ -143,31 +143,31 @@
 - (NSUInteger)totalOperationCountWithError:(NSError **)error {
     __block NSUInteger count = 0;
     dispatch_sync(self.queue, ^{
-        for (NSArray<PLCOperation *> *operations in self.storage.allValues) {
+        for (NSArray<ATProtoPLCOperation *> *operations in self.storage.allValues) {
             count += operations.count;
         }
     });
     return count;
 }
 
-- (nullable NSArray<PLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
+- (nullable NSArray<ATProtoPLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
                                                       count:(NSUInteger)count
                                                       error:(NSError **)error {
-    __block NSArray<PLCOperation *> *result = nil;
+    __block NSArray<ATProtoPLCOperation *> *result = nil;
     dispatch_sync(self.queue, ^{
-        NSMutableArray<PLCOperation *> *allOps = [NSMutableArray array];
-        for (NSArray<PLCOperation *> *didOps in self.storage.allValues) {
+        NSMutableArray<ATProtoPLCOperation *> *allOps = [NSMutableArray array];
+        for (NSArray<ATProtoPLCOperation *> *didOps in self.storage.allValues) {
             [allOps addObjectsFromArray:didOps];
         }
         
         if (after) {
-            NSPredicate *predicate = [NSPredicate predicateWithBlock:^BOOL(PLCOperation *op, NSDictionary *bindings) {
+            NSPredicate *predicate = [NSPredicate predicateWithBlock:^BOOL(ATProtoPLCOperation *op, NSDictionary *bindings) {
                 return [op.createdAt compare:after] == NSOrderedDescending;
             }];
             [allOps filterUsingPredicate:predicate];
         }
         
-        [allOps sortUsingComparator:^NSComparisonResult(PLCOperation *op1, PLCOperation *op2) {
+        [allOps sortUsingComparator:^NSComparisonResult(ATProtoPLCOperation *op1, ATProtoPLCOperation *op2) {
             NSComparisonResult timeResult = [op1.createdAt compare:op2.createdAt];
             if (timeResult == NSOrderedSame) {
                 return [op1.cid compare:op2.cid]; // Fallback sort
@@ -184,20 +184,20 @@
     return result ?: @[];
 }
 
-- (nullable NSArray<PLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
+- (nullable NSArray<ATProtoPLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
                                                               count:(NSUInteger)count
                                                               error:(NSError **)error {
-    __block NSArray<PLCOperation *> *result = nil;
+    __block NSArray<ATProtoPLCOperation *> *result = nil;
     dispatch_sync(self.queue, ^{
-        NSMutableArray<PLCOperation *> *allOps = [NSMutableArray array];
-        for (NSArray<PLCOperation *> *didOps in self.storage.allValues) {
+        NSMutableArray<ATProtoPLCOperation *> *allOps = [NSMutableArray array];
+        for (NSArray<ATProtoPLCOperation *> *didOps in self.storage.allValues) {
             [allOps addObjectsFromArray:didOps];
         }
         NSInteger cursor = sequence.integerValue;
-        [allOps filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(PLCOperation *op, NSDictionary *bindings) {
+        [allOps filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(ATProtoPLCOperation *op, NSDictionary *bindings) {
             return op.sequence.integerValue > cursor;
         }]];
-        [allOps sortUsingComparator:^NSComparisonResult(PLCOperation *op1, PLCOperation *op2) {
+        [allOps sortUsingComparator:^NSComparisonResult(ATProtoPLCOperation *op1, ATProtoPLCOperation *op2) {
             return [op1.sequence compare:op2.sequence];
         }];
         result = (allOps.count > count) ? [allOps subarrayWithRange:NSMakeRange(0, count)] : [allOps copy];

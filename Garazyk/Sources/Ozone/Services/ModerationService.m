@@ -54,11 +54,11 @@ static NSString *PDSCursorString(id value) {
     return value ? [value description] : @"";
 }
 
-@interface ModerationService ()
+@interface PDSModerationService ()
 @property (nonatomic, weak) id<PDSQueryDatabase> database;
 @end
 
-@implementation ModerationService
+@implementation PDSModerationService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];

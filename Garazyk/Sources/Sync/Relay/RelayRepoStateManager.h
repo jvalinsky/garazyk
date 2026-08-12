@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayRepoStateManager.h
+ @file ATProtoRelayRepoStateManager.h
 
  @abstract Tracks repository state for the relay.
 
  @discussion
-    RelayRepoStateManager tracks:
+    ATProtoRelayRepoStateManager tracks:
     - Current signed commit ATProtoCID and ATProtoMST data-root ATProtoCID for each repo
     - Last sequence number for each repo
     - Repo status (active, desynchronized, etc.)
@@ -60,7 +60,7 @@ typedef NS_ENUM(NSInteger, RelayRepoAdvanceResult) {
 /**
  * @abstract Maintains per-repository relay cursor, root, revision, and status state.
  */
-@interface RelayRepoStateManager : NSObject
+@interface ATProtoRelayRepoStateManager : NSObject
 
 /**
  * @abstract Creates an empty in-memory repository state manager.

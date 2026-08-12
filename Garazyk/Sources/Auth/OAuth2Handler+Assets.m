@@ -6,7 +6,7 @@
 #import "Debug/GZLogger.h"
 #import "Core/ATProtoDataPaths.h"
 
-@implementation OAuth2Handler (Assets)
+@implementation ATProtoOAuth2Handler (Assets)
 
 - (NSString *)escapeHtml:(NSString *)input {
   if (!input)
@@ -60,7 +60,7 @@
   }
 
   GZ_LOG_AUTH_ERROR(
-      @"No assets path found for OAuth2Handler (dataDirectory: %@, cwd: %@)",
+      @"No assets path found for ATProtoOAuth2Handler (dataDirectory: %@, cwd: %@)",
       self.dataDirectory, cwd);
   return nil;
 }
@@ -98,7 +98,7 @@
   }
 
   GZ_LOG_AUTH_ERROR(
-      @"No shared CSS path found for OAuth2Handler (dataDirectory: %@, cwd: %@)",
+      @"No shared CSS path found for ATProtoOAuth2Handler (dataDirectory: %@, cwd: %@)",
       self.dataDirectory, cwd);
   return nil;
 }

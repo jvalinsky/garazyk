@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcAuthHelper.h
+//  ATProtoXrpcAuthHelper.h
 //  ATProtoPDS
 //
 //  Authentication helper for XRPC endpoints.
@@ -39,7 +39,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Extracts and validates DIDs from Authorization headers, supports Bearer
  * and DPoP tokens, verifies signatures, and enforces admin authorization.
  */
-@interface XrpcAuthHelper : NSObject
+@interface ATProtoXrpcAuthHelper : NSObject
 
 /**
  * @abstract Extracts and validates a DID from an Authorization header.

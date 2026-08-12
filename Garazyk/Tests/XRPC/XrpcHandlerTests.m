@@ -7,14 +7,14 @@
 #import "Network/HttpResponse.h"
 
 @interface XrpcHandlerTests : XCTestCase
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @end
 
 @implementation XrpcHandlerTests
 
 - (void)setUp {
     [super setUp];
-    self.dispatcher = [[XrpcDispatcher alloc] init];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
 }
 
 - (void)tearDown {

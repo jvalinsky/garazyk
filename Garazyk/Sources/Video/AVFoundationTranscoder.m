@@ -10,7 +10,7 @@
 
 NSString * const AVFoundationTranscoderErrorDomain = @"com.atproto.video.transcoder.avfoundation";
 
-@implementation AVFoundationTranscoder
+@implementation GZAVFoundationTranscoder
 
 - (void)transcodeVideoAtURL:(NSURL *)inputURL
                   toQuality:(ATProtoVideoTranscoderQuality)quality

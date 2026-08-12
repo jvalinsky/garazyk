@@ -7,7 +7,7 @@
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/GraphService.h"
 
-@implementation AppViewXRpcRoutePack (Feed)
+@implementation ATProtoAppViewXRpcRoutePack (Feed)
 
 - (void)handleGetTimeline:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {

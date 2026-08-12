@@ -13,10 +13,10 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
     return [ATProtoPermissionScopeEvaluator validateOAuthScopeString:scope];
 }
 
-@implementation OAuthSession
+@implementation ATProtoOAuthSession
 
 + (instancetype)sessionWithId:(NSString *)sessionId {
-    OAuthSession *session = [[OAuthSession alloc] init];
+    ATProtoOAuthSession *session = [[ATProtoOAuthSession alloc] init];
     session.sessionId = sessionId;
     session.createdAt = [NSDate date];
     session.authenticated = NO;
@@ -28,9 +28,9 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
 
 @end
 
-#pragma mark - OAuthPARRequest
+#pragma mark - ATProtoOAuthPARRequest
 
-@implementation OAuthPARRequest
+@implementation ATProtoOAuthPARRequest
 
 - (BOOL)validateWithError:(NSError **)error {
     if (!self.clientId || self.clientId.length == 0) {
@@ -110,9 +110,9 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
 
 @end
 
-#pragma mark - OAuthTokenRequest
+#pragma mark - ATProtoOAuthTokenRequest
 
-@implementation OAuthTokenRequest
+@implementation ATProtoOAuthTokenRequest
 
 - (BOOL)validateWithError:(NSError **)error {
     if (!self.grantType || self.grantType.length == 0) {
@@ -177,19 +177,19 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
 
 @end
 
-#pragma mark - OAuthPARService
+#pragma mark - ATProtoOAuthPARService
 
-@interface OAuthPARService ()
+@interface ATProtoOAuthPARService ()
 
-@property (nonatomic, strong) NSMutableDictionary<NSString *, OAuthSession *> *sessions;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, OAuthSession *> *authCodes;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoOAuthSession *> *sessions;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoOAuthSession *> *authCodes;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t sessionQueue;
 @property (nonatomic, copy) NSString *dpopNonce;
 @property (nonatomic, strong) NSDate *nonceExpiresAt;
 
 @end
 
-@implementation OAuthPARService
+@implementation ATProtoOAuthPARService
 
 - (instancetype)init {
     self = [super init];
@@ -208,12 +208,12 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
     self.nonceExpiresAt = [NSDate dateWithTimeIntervalSinceNow:300];
 }
 
-- (nullable OAuthSession *)handlePARRequest:(OAuthPARRequest *)request error:(NSError **)error {
+- (nullable ATProtoOAuthSession *)handlePARRequest:(ATProtoOAuthPARRequest *)request error:(NSError **)error {
     if (![request validateWithError:error]) {
         return nil;
     }
 
-    OAuthSession *session = [OAuthSession sessionWithId:[[NSUUID UUID] UUIDString]];
+    ATProtoOAuthSession *session = [ATProtoOAuthSession sessionWithId:[[NSUUID UUID] UUIDString]];
     session.clientId = request.clientId;
     session.responseType = request.responseType;
     session.codeChallenge = request.codeChallenge;
@@ -231,7 +231,7 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
     return session;
 }
 
-- (nullable OAuthSession *)getSessionByRequestUri:(NSString *)requestUri error:(NSError **)error {
+- (nullable ATProtoOAuthSession *)getSessionByRequestUri:(NSString *)requestUri error:(NSError **)error {
     NSArray<NSString *> *parts = [requestUri componentsSeparatedByString:@"="];
     if (parts.count != 2 || ![parts[0] isEqualToString:@"request_uri"]) {
         if (error) {
@@ -242,7 +242,7 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
         return nil;
     }
 
-    __block OAuthSession *session = nil;
+    __block ATProtoOAuthSession *session = nil;
     NSString *sessionId = parts[1];
 
     dispatch_sync(self.sessionQueue, ^{
@@ -261,7 +261,7 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
     return session;
 }
 
-- (nullable NSString *)createAuthorizationCodeForSession:(OAuthSession *)session error:(NSError **)error {
+- (nullable NSString *)createAuthorizationCodeForSession:(ATProtoOAuthSession *)session error:(NSError **)error {
     NSString *authCode = [[NSUUID UUID] UUIDString];
     session.authorizationCode = authCode;
     session.codeExpiresAt = [NSDate dateWithTimeIntervalSinceNow:600];
@@ -273,8 +273,8 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
     return authCode;
 }
 
-- (nullable OAuthSession *)sessionForAuthCode:(NSString *)authCode {
-    __block OAuthSession *session = nil;
+- (nullable ATProtoOAuthSession *)sessionForAuthCode:(NSString *)authCode {
+    __block ATProtoOAuthSession *session = nil;
     dispatch_sync(self.sessionQueue, ^{
         session = self.authCodes[authCode];
     });
@@ -283,26 +283,26 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
 
 @end
 
-#pragma mark - OAuthTokenService
+#pragma mark - ATProtoOAuthTokenService
 
-@interface OAuthTokenService ()
+@interface ATProtoOAuthTokenService ()
 
-@property (nonatomic, strong) OAuthPARService *parService;
+@property (nonatomic, strong) ATProtoOAuthPARService *parService;
 
 @end
 
-@implementation OAuthTokenService
+@implementation ATProtoOAuthTokenService
 
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _parService = [[OAuthPARService alloc] init];
+        _parService = [[ATProtoOAuthPARService alloc] init];
     }
     return self;
 }
 
-- (NSDictionary *)handleTokenRequest:(OAuthTokenRequest *)request
-                        session:(OAuthSession *)session
+- (NSDictionary *)handleTokenRequest:(ATProtoOAuthTokenRequest *)request
+                        session:(ATProtoOAuthSession *)session
                           error:(NSError **)error {
     if (![request validateWithError:error]) {
         return @{@"error": @"invalid_request"};
@@ -317,10 +317,10 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
     return @{@"error": @"unsupported_grant_type"};
 }
 
-- (NSDictionary *)processAuthorizationCodeGrant:(OAuthTokenRequest *)request
-                                     session:(OAuthSession *)session
+- (NSDictionary *)processAuthorizationCodeGrant:(ATProtoOAuthTokenRequest *)request
+                                     session:(ATProtoOAuthSession *)session
                                        error:(NSError **)error {
-    __block OAuthSession *validSession = nil;
+    __block ATProtoOAuthSession *validSession = nil;
 
     dispatch_sync(self.parService.sessionQueue, ^{
         validSession = self.parService.authCodes[request.code];
@@ -353,7 +353,7 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
         return @{@"error": @"invalid_grant"};
     }
 
-    if (![PKCEUtil verifyCodeChallenge:validSession.codeChallenge withVerifier:request.codeVerifier]) {
+    if (![ATProtoPKCEUtil verifyCodeChallenge:validSession.codeChallenge withVerifier:request.codeVerifier]) {
         if (error) {
             *error = [NSError errorWithDomain:OAuthErrorDomain
                                          code:OAuthErrorInvalidRequest
@@ -384,7 +384,7 @@ static BOOL OAuthScopeIsValid(NSString *scope) {
     };
 }
 
-- (NSDictionary *)processRefreshTokenGrant:(OAuthTokenRequest *)request error:(NSError **)error {
+- (NSDictionary *)processRefreshTokenGrant:(ATProtoOAuthTokenRequest *)request error:(NSError **)error {
     if (!request.refreshToken || request.refreshToken.length == 0) {
         return @{@"error": @"invalid_request"};
     }

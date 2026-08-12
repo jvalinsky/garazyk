@@ -49,7 +49,7 @@ static const NSUInteger PDSSpaceAppAttestationMaxMetadataBytes = 64 * 1024;
   NSURL *clientIDURL = [NSURL URLWithString:appClientID];
   BOOL validScheme = [clientIDURL.scheme.lowercaseString isEqualToString:@"https"];
 #ifdef DEBUG
-  // Mirrors OAuth2Handler's redirect_uri loopback exception (RFC 8252): only
+  // Mirrors ATProtoOAuth2Handler's redirect_uri loopback exception (RFC 8252): only
   // in DEBUG builds, and only for loopback hosts, so a real deployment can
   // never be tricked into treating a plaintext endpoint as attestable.
   if (!validScheme && [clientIDURL.scheme.lowercaseString isEqualToString:@"http"] &&
@@ -115,7 +115,7 @@ static const NSUInteger PDSSpaceAppAttestationMaxMetadataBytes = 64 * 1024;
   options.allowHTTP = NO;
   options.allowPrivateHosts = NO;
   options.followRedirects = YES;
-  // Mirrors OAuth2Handler's existing dynamic-client-metadata escape hatch for
+  // Mirrors ATProtoOAuth2Handler's existing dynamic-client-metadata escape hatch for
   // Docker-based E2E tests, where the app under test is only reachable via a
   // private/loopback address without TLS. Production leaves this env var unset.
   const char *envAllowPrivate = getenv("GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS");

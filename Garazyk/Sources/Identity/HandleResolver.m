@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HandleResolver.m
+ @file ATProtoHandleResolver.m
 
  @abstract Handle-to-DID resolution implementation.
 
@@ -36,15 +36,15 @@ NSString * const HandleErrorDomain = @"com.atproto.handle";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 static const NSUInteger kMaximumFailureCacheEntries = 1024;
 
-@interface HandleResolutionFailure : NSObject
+@interface ATProtoHandleResolutionFailure : NSObject
 @property (nonatomic, assign) NSInteger failureCount;
 @property (nonatomic, strong) NSDate *expiresAt;
 @end
 
-@implementation HandleResolutionFailure
+@implementation ATProtoHandleResolutionFailure
 @end
 
-@interface HandleResolver () {
+@interface ATProtoHandleResolver () {
     dispatch_queue_t _rateLimitQueue;
     dispatch_queue_t _cacheQueue;
 }
@@ -57,7 +57,7 @@ static const NSUInteger kMaximumFailureCacheEntries = 1024;
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion;
 @end
 
-@implementation HandleResolver
+@implementation ATProtoHandleResolver
 
 static BOOL PDSHandleResolverRunningTests(void) {
     // Only trust explicit env markers — never ambient XCTestCase class
@@ -117,7 +117,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
     /*! Check failure cache for backoff. */
-    __block HandleResolutionFailure *failure = nil;
+    __block ATProtoHandleResolutionFailure *failure = nil;
     dispatch_sync(_cacheQueue, ^{
         NSDate *now = [NSDate date];
         [self pruneExpiredFailureCacheEntriesLockedAtDate:now];
@@ -220,13 +220,13 @@ static BOOL PDSHandleResolverRunningTests(void) {
 - (void)recordFailureForHandle:(NSString *)handle {
     dispatch_sync(_cacheQueue, ^{
         [self pruneExpiredFailureCacheEntriesLockedAtDate:[NSDate date]];
-        HandleResolutionFailure *failure = self.failureCache[handle];
+        ATProtoHandleResolutionFailure *failure = self.failureCache[handle];
         if (!failure) {
             if (self.failureCache.count >= kMaximumFailureCacheEntries) {
                 NSString *earliestExpiryKey = nil;
                 NSDate *earliestExpiry = nil;
                 for (NSString *key in self.failureCache) {
-                    HandleResolutionFailure *candidate = self.failureCache[key];
+                    ATProtoHandleResolutionFailure *candidate = self.failureCache[key];
                     if (!earliestExpiry || [candidate.expiresAt compare:earliestExpiry] == NSOrderedAscending) {
                         earliestExpiryKey = key;
                         earliestExpiry = candidate.expiresAt;
@@ -236,7 +236,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
                     [self.failureCache removeObjectForKey:earliestExpiryKey];
                 }
             }
-            failure = [[HandleResolutionFailure alloc] init];
+            failure = [[ATProtoHandleResolutionFailure alloc] init];
             failure.failureCount = 0;
         }
         failure.failureCount++;
@@ -250,7 +250,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
 - (void)pruneExpiredFailureCacheEntriesLockedAtDate:(NSDate *)now {
     NSMutableArray<NSString *> *expiredKeys = [NSMutableArray array];
     for (NSString *key in self.failureCache) {
-        HandleResolutionFailure *failure = self.failureCache[key];
+        ATProtoHandleResolutionFailure *failure = self.failureCache[key];
         if ([failure.expiresAt compare:now] != NSOrderedDescending) {
             [expiredKeys addObject:key];
         }

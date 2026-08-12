@@ -14,7 +14,7 @@
 @end
 
 @interface MSTViewerHandlerTests : XCTestCase
-@property (nonatomic, strong) MSTViewerHandler *handler;
+@property (nonatomic, strong) GZMSTViewerHandler *handler;
 @property (nonatomic, strong) PDSApplication *application;
 @property (nonatomic, strong) NSURL *tempURL;
 @property (nonatomic, copy) NSString *adminJwt;
@@ -61,7 +61,7 @@
     self.adminJwt = [PDSAdminAuth sharedAuth].adminToken;
     XCTAssertTrue(self.adminJwt.length > 0);
 
-    self.handler = [MSTViewerHandler sharedHandler];
+    self.handler = [GZMSTViewerHandler sharedHandler];
 }
 
 - (void)tearDown {

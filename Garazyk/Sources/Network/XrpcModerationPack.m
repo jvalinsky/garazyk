@@ -12,13 +12,13 @@
 #import "Core/ATProtoValidator.h"
 #import "Debug/GZLogger.h"
 
-@implementation XrpcModerationPack
+@implementation ATProtoXrpcModerationPack
 
 + (NSString *)routePackIdentifier {
   return @"com.atproto.moderation";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
@@ -26,7 +26,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_moderation_createReport handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) return;
 
         if (request.method != HttpMethodPOST) {

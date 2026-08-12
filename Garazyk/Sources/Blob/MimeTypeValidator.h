@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file MimeTypeValidator.h
+ @file ATProtoMimeTypeValidator.h
 
  @abstract MIME type validation and categorization for blob storage.
 
@@ -65,7 +65,7 @@ typedef NS_ENUM(NSInteger, MimeCategory) {
 };
 
 /*!
- @class MimeTypeValidator
+ @class ATProtoMimeTypeValidator
 
  @abstract Validates MIME types for blob uploads.
 
@@ -77,10 +77,10 @@ typedef NS_ENUM(NSInteger, MimeCategory) {
 
  Thread-safety: Immutable configuration, safe for concurrent access.
  */
-@interface MimeTypeValidator : NSObject
+@interface ATProtoMimeTypeValidator : NSObject
 
 /*! Get singleton validator instance. */
-@property (class, readonly) MimeTypeValidator *sharedValidator;
+@property (class, readonly) ATProtoMimeTypeValidator *sharedValidator;
 
 /*! Size limits by category (bytes). */
 @property (nonatomic, readonly) NSDictionary<NSNumber *, NSNumber *> *maxSizesByCategory;

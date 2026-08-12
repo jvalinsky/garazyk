@@ -28,9 +28,9 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAdminPack (AccountInfo)
+@implementation ATProtoXrpcAdminPack (AccountInfo)
 
-+ (void)registerAccountInfoEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerAccountInfoEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                 services:(id<XrpcRoutePackServices>)services {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
@@ -42,7 +42,7 @@
     // Register com.atproto.admin.getAccountUsage
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountUsage
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -133,7 +133,7 @@
 
     // Register com.atproto.admin.getAccountInfo
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountInfo handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -175,7 +175,7 @@
 
     // Register com.atproto.admin.getAccountInfos
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getAccountInfos handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -217,7 +217,7 @@
 
     // Register com.atproto.admin.getInviteCodes
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getInviteCodes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -273,7 +273,7 @@
 
     // Register com.atproto.admin.disableAccountInvites
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_disableAccountInvites handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -320,7 +320,7 @@
 
     // Register com.atproto.admin.enableAccountInvites
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_enableAccountInvites handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file ChatRuntime.h
+ @file GZChatRuntime.h
  @brief Standalone runtime for the Chat service.
  */
 
@@ -9,14 +9,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class ChatConfiguration;
+@class PDSChatConfiguration;
 
 /**
  * @abstract Owns startup and shutdown for the chat service runtime.
  */
-@interface ChatRuntime : NSObject
+@interface GZChatRuntime : NSObject
 
-@property (nonatomic, strong, readonly) ChatConfiguration *configuration;
+@property (nonatomic, strong, readonly) PDSChatConfiguration *configuration;
 @property (nonatomic, readonly) BOOL isRunning;
 
 + (instancetype)sharedRuntime;

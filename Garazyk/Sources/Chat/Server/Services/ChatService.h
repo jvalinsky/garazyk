@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabase;
 
-@interface ChatService : NSObject
+@interface PDSChatService : NSObject
 
 /**
  * @abstract Initializes the receiver with the supplied dependencies.

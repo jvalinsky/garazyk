@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * backend proxy. Conversation metadata is allowlisted; message bodies
  * are never rendered by default.
  */
-@interface ChatAdminUIPack : NSObject <GZAdminUIPack>
+@interface GZChatAdminUIPack : NSObject <GZAdminUIPack>
 
 @end
 

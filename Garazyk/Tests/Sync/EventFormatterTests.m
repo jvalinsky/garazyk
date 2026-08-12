@@ -7,14 +7,14 @@
 #import "Core/ATProtoDagCBOR.h"
 
 @interface EventFormatterTests : XCTestCase
-@property (nonatomic, strong) EventFormatter *formatter;
+@property (nonatomic, strong) ATProtoEventFormatter *formatter;
 @end
 
 @implementation EventFormatterTests
 
 - (void)setUp {
     [super setUp];
-    self.formatter = [[EventFormatter alloc] init];
+    self.formatter = [[ATProtoEventFormatter alloc] init];
 }
 
 - (void)tearDown {
@@ -24,7 +24,7 @@
 
 - (void)testEncodeCommitEvent {
     NSError *error = nil;
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:abc123";
     // Create a valid ATProtoCID using SHA-256 (required for CBOR tag 42 round-trip)
     event.commit = [ATProtoCID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
@@ -39,7 +39,7 @@
 
 - (void)testEncodeCommitEventWithoutOptionalFields {
     NSError *error = nil;
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:abc123";
     event.commit = [ATProtoCID sha256:[@"test2" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"3k3k3k3k3k3k3";
@@ -64,7 +64,7 @@
 
 - (void)testEncodeIdentityEvent {
     NSError *error = nil;
-    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
     event.seq = 17;
     event.did = @"did:plc:abc123";
     event.time = @"2024-01-01T00:00:00Z";
@@ -77,7 +77,7 @@
 
 - (void)testDecodeSyncEvent {
     NSError *error = nil;
-    FirehoseSyncEvent *event = [[FirehoseSyncEvent alloc] init];
+    ATProtoFirehoseSyncEvent *event = [[ATProtoFirehoseSyncEvent alloc] init];
     event.seq = 42;
     event.did = @"did:plc:sync123";
     event.rev = @"3k3k3k3k3k3k3";
@@ -105,7 +105,7 @@
 
 - (void)testEncodeErrorEvent {
     NSError *error = nil;
-    FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];
+    ATProtoFirehoseErrorEvent *event = [[ATProtoFirehoseErrorEvent alloc] init];
     event.message = @"Something went wrong";
     
     NSData *encoded = [self.formatter encodeErrorEvent:event error:&error];
@@ -116,7 +116,7 @@
 
 - (void)testDecodeCommitEvent {
     NSError *error = nil;
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:abc123";
     event.commit = [ATProtoCID sha256:[@"test3" dataUsingEncoding:NSUTF8StringEncoding]];
     event.ops = @[@{@"action": @"create"}];
@@ -142,7 +142,7 @@
 
 - (void)testDecodeIdentityEvent {
     NSError *error = nil;
-    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
     event.seq = 11;
     event.did = @"did:plc:abc123";
     event.time = @"2024-01-01T00:00:00Z";
@@ -168,7 +168,7 @@
 
 - (void)testDecodeErrorEvent {
     NSError *error = nil;
-    FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];
+    ATProtoFirehoseErrorEvent *event = [[ATProtoFirehoseErrorEvent alloc] init];
     event.message = @"Test error message";
 
     NSData *encoded = [self.formatter encodeErrorEvent:event error:&error];
@@ -187,7 +187,7 @@
 
 - (void)testDecodeAccountEvent {
     NSError *error = nil;
-    FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+    ATProtoFirehoseAccountEvent *event = [[ATProtoFirehoseAccountEvent alloc] init];
     event.seq = 22;
     event.did = @"did:plc:abc123";
     event.active = NO;
@@ -214,7 +214,7 @@
 
 - (void)testDecodeInfoEvent {
     NSError *error = nil;
-    FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
+    ATProtoFirehoseInfoEvent *event = [[ATProtoFirehoseInfoEvent alloc] init];
     event.kind = @"OutdatedCursor";
     event.message = @"Unable to retrieve repository state";
 
@@ -387,7 +387,7 @@
 
 - (void)testSyncEventSeqRoundTrip {
     NSError *error = nil;
-    FirehoseSyncEvent *event = [[FirehoseSyncEvent alloc] init];
+    ATProtoFirehoseSyncEvent *event = [[ATProtoFirehoseSyncEvent alloc] init];
     event.seq = 42;
     event.did = @"did:plc:seqroundtrip";
     event.rev = @"3kseqrt";
@@ -409,7 +409,7 @@
 
 - (void)testIdentityEventSeqRoundTrip {
     NSError *error = nil;
-    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
     event.seq = 99;
     event.did = @"did:plc:identityseqrt";
     event.time = @"2024-01-01T00:00:00Z";
@@ -430,7 +430,7 @@
 
 - (void)testAccountEventSeqRoundTrip {
     NSError *error = nil;
-    FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+    ATProtoFirehoseAccountEvent *event = [[ATProtoFirehoseAccountEvent alloc] init];
     event.seq = 777;
     event.did = @"did:plc:accountseqrt";
     event.active = NO;
@@ -453,7 +453,7 @@
 - (void)testOpsCIDRoundTrip {
     // Verify that ATProtoCID objects in ops survive encode→decode round-trip
     NSError *error = nil;
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:roundtrip";
     event.rev = @"3kroundtrip";
     event.time = @"2024-01-01T00:00:00Z";
@@ -502,7 +502,7 @@
 - (void)testOpsCIDNullRoundTrip {
     // Verify that NSNull cid in ops (for delete ops) survives round-trip
     NSError *error = nil;
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:deletetest";
     event.rev = @"3kdeletetest";
     event.time = @"2024-01-01T00:00:00Z";

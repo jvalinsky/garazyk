@@ -7,7 +7,7 @@
 #import "Debug/GZLogger.h"
 #import <sqlite3.h>
 
-// Mock SubscribeReposHandler for testing.
+// Mock ATProtoSubscribeReposHandler for testing.
 // The collector reads `handler.attachedConnections.count`, so the mock vends a
 // set whose cardinality matches the configured connection count.
 @interface MockSubscribeReposHandler : NSObject

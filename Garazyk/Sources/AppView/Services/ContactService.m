@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file ContactService.m
+ @file PDSContactService.m
 
  @abstract Contact import and matching service implementation.
  */
@@ -14,12 +14,12 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import <CommonCrypto/CommonCrypto.h>
 
-@implementation ContactService {
-    ActorService *_actorService;
+@implementation PDSContactService {
+    PDSActorService *_actorService;
 }
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database
-                    actorService:(nullable ActorService *)actorService {
+                    actorService:(nullable PDSActorService *)actorService {
     self = [super init];
     if (self) {
         _database = database;

@@ -3,7 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Sync/WebSocket/WebSocketConnection.h"
 
-@interface WebSocketConnection (Testing)
+@interface ATProtoWebSocketConnection (Testing)
 - (NSString *)handshakeRequestStringWithKey:(NSString *)key;
 @end
 
@@ -13,7 +13,7 @@
 @implementation WebSocketConnectionTests
 
 - (void)testInitWithPathWithoutQuery {
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"localhost"
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"localhost"
                                                                            port:8081
                                                                            path:@"/xrpc/com.atproto.sync.subscribeRepos"];
     
@@ -26,8 +26,8 @@
 }
 
 - (void)testSecureConnectionPreservesTLSPolicy {
-    WebSocketConnection *connection =
-        [[WebSocketConnection alloc] initWithHost:@"selfhosted.social"
+    ATProtoWebSocketConnection *connection =
+        [[ATProtoWebSocketConnection alloc] initWithHost:@"selfhosted.social"
                                              port:443
                                              path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                         secureTLS:YES];
@@ -36,7 +36,7 @@
 }
 
 - (void)testInitWithPathWithCursorQuery {
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"localhost"
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"localhost"
                                                                            port:8081
                                                                            path:@"/xrpc/com.atproto.sync.subscribeRepos?cursor=123"];
     
@@ -49,7 +49,7 @@
 }
 
 - (void)testInitWithPathWithMultipleQueryParams {
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"localhost"
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"localhost"
                                                                            port:8081
                                                                            path:@"/xrpc/com.atproto.sync.subscribeRepos?cursor=456&collections=app.bsky.feed.post"];
     
@@ -59,7 +59,7 @@
 }
 
 - (void)testInitWithEncodedQueryParams {
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"localhost"
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"localhost"
                                                                            port:8081
                                                                            path:@"/xrpc/com.atproto.sync.subscribeRepos?cursor=789&name=hello%20world"];
     
@@ -69,7 +69,7 @@
 }
 
 - (void)testInitWithRepeatedQueryParams {
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"localhost"
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"localhost"
                                                                            port:8081
                                                                            path:@"/xrpc/com.atproto.sync.subscribeRepos?cursor=100&collections=app.bsky.feed.post&collections=app.bsky.feed.deviate&collections=app.bsky.graph.listitem"];
     
@@ -80,7 +80,7 @@
 }
 
 - (void)testInitWithSingleRepeatedQueryParam {
-    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"localhost"
+    ATProtoWebSocketConnection *connection = [[ATProtoWebSocketConnection alloc] initWithHost:@"localhost"
                                                                            port:8081
                                                                            path:@"/xrpc/com.atproto.sync.subscribeRepos?cursor=200&collections=app.bsky.feed.post"];
     
@@ -90,8 +90,8 @@
 }
 
 - (void)testHandshakeOmitsDefaultTLSPortFromHost {
-    WebSocketConnection *connection =
-        [[WebSocketConnection alloc] initWithHost:@"northamerica.firehose.network"
+    ATProtoWebSocketConnection *connection =
+        [[ATProtoWebSocketConnection alloc] initWithHost:@"northamerica.firehose.network"
                                              port:443
                                              path:@"/xrpc/com.atproto.sync.subscribeRepos"
                                         secureTLS:YES];
@@ -102,8 +102,8 @@
 }
 
 - (void)testHandshakeOmitsDefaultPlaintextPortFromHost {
-    WebSocketConnection *connection =
-        [[WebSocketConnection alloc] initWithHost:@"localhost"
+    ATProtoWebSocketConnection *connection =
+        [[ATProtoWebSocketConnection alloc] initWithHost:@"localhost"
                                              port:80
                                              path:@"/xrpc/com.atproto.sync.subscribeRepos"];
 
@@ -113,8 +113,8 @@
 }
 
 - (void)testHandshakeKeepsNonDefaultPortInHost {
-    WebSocketConnection *connection =
-        [[WebSocketConnection alloc] initWithHost:@"localhost"
+    ATProtoWebSocketConnection *connection =
+        [[ATProtoWebSocketConnection alloc] initWithHost:@"localhost"
                                              port:8081
                                              path:@"/xrpc/com.atproto.sync.subscribeRepos"];
 

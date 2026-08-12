@@ -4,7 +4,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface OAuth2Handler (PAR)
+@interface ATProtoOAuth2Handler (PAR)
 - (void)handlePARRequest:(ATProtoHttpRequest *)request
                 response:(ATProtoHttpResponse *)response;
 - (NSDictionary *)consumePARRequestForURI:(NSString *)requestURI

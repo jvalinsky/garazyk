@@ -46,7 +46,6 @@
             </aside>
             {{/isSingleSurface}}
             <main class="admin-content">
-            {{^isSingleSurface}}
             <!-- Legacy multi-service panes (garazyk-ui only) -->
             <!-- PDS tab -->
             <div id="tab-pds" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-pds" tabindex="0" {{^activePDS}}hidden{{/activePDS}}>
@@ -125,7 +124,6 @@
                     <div id="plc-resolve-result"></div>
                 </section>
             </div>
-            {{/isSingleSurface}}
             {{#dynamicPanes}}
             <div id="tab-{{tabIdentifier}}" class="tab-pane" role="tabpanel" aria-labelledby="{{ariaLabelledby}}" tabindex="{{tabIndex}}" {{hidden}}>
                 <section class="admin-section">

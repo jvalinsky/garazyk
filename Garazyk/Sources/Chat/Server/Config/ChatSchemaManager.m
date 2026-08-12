@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "ChatSchemaManager.h"
 
-@implementation ChatSchemaManager
+@implementation PDSChatSchemaManager
 
 + (instancetype)sharedManager {
-    static ChatSchemaManager *shared = nil;
+    static PDSChatSchemaManager *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[ChatSchemaManager alloc] init];
+        shared = [[PDSChatSchemaManager alloc] init];
     });
     return shared;
 }

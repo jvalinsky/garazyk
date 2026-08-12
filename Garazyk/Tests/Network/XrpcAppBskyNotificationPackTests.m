@@ -25,8 +25,8 @@
     return database;
 }
 
-- (NotificationService *)notificationService {
-    return [[NotificationService alloc] initWithDatabase:[self notificationDatabase]];
+- (PDSNotificationService *)notificationService {
+    return [[PDSNotificationService alloc] initWithDatabase:[self notificationDatabase]];
 }
 
 - (NSDictionary *)createdPostWithText:(NSString *)text {
@@ -44,7 +44,7 @@
     XCTAssertNil(error);
     XCTAssertNotNil(created);
 
-    // Seed the record into the service DB so NotificationService can hydrate the record field
+    // Seed the record into the service DB so PDSNotificationService can hydrate the record field
     [self seedRecordInServiceDB:created record:record forDid:self.userDid collection:@"app.bsky.feed.post"];
 
     return created;
@@ -104,7 +104,7 @@
 - (void)seedNotificationForActor:(NSString *)actorDID
                          subject:(NSDictionary *)subject
                           reason:(NSString *)reason {
-    NotificationService *service = [self notificationService];
+    PDSNotificationService *service = [self notificationService];
     NSError *error = nil;
     BOOL success = [service createNotificationForActor:actorDID
                                              authorDID:self.userDid

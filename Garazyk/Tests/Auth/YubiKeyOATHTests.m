@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 @implementation YubiKeyOATHTests
 
 - (void)testSoftwareTotpFallbackProducesToken {
-    YubiKeyOATHManager *manager = [[YubiKeyOATHManager alloc] init];
+    ATProtoYubiKeyOATHManager *manager = [[ATProtoYubiKeyOATHManager alloc] init];
     NSData *secret = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
 
     NSError *error = nil;
@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testSetOATHSecretNotImplemented {
-    YubiKeyOATHManager *manager = [[YubiKeyOATHManager alloc] init];
+    ATProtoYubiKeyOATHManager *manager = [[ATProtoYubiKeyOATHManager alloc] init];
     NSData *secret = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
 
     NSError *error = nil;
@@ -35,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testListCredentialsEmptyInSoftwareMode {
-    YubiKeyOATHManager *manager = [[YubiKeyOATHManager alloc] init];
+    ATProtoYubiKeyOATHManager *manager = [[ATProtoYubiKeyOATHManager alloc] init];
     NSError *error = nil;
     NSArray *credentials = [manager listCredentialsWithError:&error];
     XCTAssertNotNil(credentials);

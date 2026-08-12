@@ -13,7 +13,7 @@
 
 @interface OAuth2EndpointTests : XCTestCase
 @property (nonatomic, strong) ATProtoHttpServer *server;
-@property (nonatomic, strong) OAuth2Handler *oauthHandler;
+@property (nonatomic, strong) ATProtoOAuth2Handler *oauthHandler;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, copy) NSString *baseURL;
 @property (nonatomic, copy) NSString *tempPath;
@@ -31,7 +31,7 @@
     [self.database openWithError:&error];
 
     self.server = [ATProtoHttpServer serverWithPort:0];
-    self.oauthHandler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+    self.oauthHandler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.database];
     [self.oauthHandler registerRoutesWithServer:self.server];
 
     // Register "test-client" as a valid OAuth client; without it,
@@ -139,8 +139,8 @@
     // challenge bound to the verifier sent below) and a DPoP-bound request;
     // an ad hoc code/verifier pair can only ever hit invalid_grant, which is
     // correct AT Protocol OAuth behavior, not something to relax server-side.
-    NSString *verifier = [PKCEUtil generateCodeVerifier];
-    NSString *challenge = [PKCEUtil generateCodeChallengeWithVerifier:verifier];
+    NSString *verifier = [ATProtoPKCEUtil generateCodeVerifier];
+    NSString *challenge = [ATProtoPKCEUtil generateCodeChallengeWithVerifier:verifier];
 
     NSString *tokenUri = [self.baseURL stringByAppendingString:@"/oauth/token"];
 
@@ -166,7 +166,7 @@
 
     // First request: no DPoP nonce yet, server challenges with one.
     NSString *authCode1 = seedAuthCode();
-    DPoPToken *dpopToken1 = [DPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:nil key:privateKey error:nil];
+    ATProtoDPoPToken *dpopToken1 = [ATProtoDPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:nil key:privateKey error:nil];
     XCTAssertNotNil(dpopToken1, @"Failed to create DPoP token");
 
     NSMutableURLRequest *nonceRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:tokenUri]];
@@ -187,7 +187,7 @@
     // Second request: real DPoP proof with the server-issued nonce, and a
     // freshly-seeded code (the first was consumed by the challenge above).
     NSString *authCode2 = seedAuthCode();
-    DPoPToken *dpopToken2 = [DPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:dpopNonce key:privateKey error:nil];
+    ATProtoDPoPToken *dpopToken2 = [ATProtoDPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:dpopNonce key:privateKey error:nil];
     XCTAssertNotNil(dpopToken2, @"Failed to create DPoP token with nonce");
 
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:tokenUri]];

@@ -8,8 +8,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcAdminPack (Lifecycle)
-+ (void)registerLifecycleEndpoints:(XrpcDispatcher *)dispatcher
+@interface ATProtoXrpcAdminPack (Lifecycle)
++ (void)registerLifecycleEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                 services:(id<XrpcRoutePackServices>)services;
 @end
 

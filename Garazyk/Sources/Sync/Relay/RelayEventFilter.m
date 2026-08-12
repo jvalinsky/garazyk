@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Relay/RelayEventFilter.h"
 
-@interface RelayEventFilter ()
+@interface ATProtoRelayEventFilter ()
 
 @property (nonatomic, strong, readwrite, nullable) NSSet<NSString *> *allowedCollections;
 @property (nonatomic, strong, readwrite, nullable) NSSet<NSString *> *allowedRepos;
@@ -10,7 +10,7 @@
 
 @end
 
-@implementation RelayEventFilter
+@implementation ATProtoRelayEventFilter
 
 - (instancetype)init {
     [self doesNotRecognizeSelector:_cmd];

@@ -9,7 +9,7 @@
  * required body fields yield 400; verification-token failures yield 401 where distinguishable;
  * other service failures yield 500. Mutating handlers return an empty JSON object on success.
  */
-@interface AppViewXRpcRoutePack (Contact)
+@interface ATProtoAppViewXRpcRoutePack (Contact)
 
 /** @abstract Starts phone verification for required `phoneNumber` and returns its verification ID. */
 - (void)handleStartPhoneVerification:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

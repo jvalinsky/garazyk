@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcAppBskyBookmarksPack.h
+//  ATProtoXrpcAppBskyBookmarksPack.h
 //  ATProtoPDS
 //
 //  Namespace pack for app.bsky.bookmark.* XRPC endpoints.
@@ -10,9 +10,9 @@
 #import <Foundation/Foundation.h>
 #import "Network/XrpcRoutePack.h"
 
-@class BookmarkService;
+@class PDSBookmarkService;
 @class ATProtoJWTMinter;
-@class XrpcDispatcher;
+@class ATProtoXrpcDispatcher;
 /**
  * @abstract Defines the PDSAdminController protocol contract.
  */
@@ -20,13 +20,13 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcAppBskyBookmarksPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcAppBskyBookmarksPack : NSObject <XrpcRoutePack>
 
 /**
  * @abstract Performs the registerWithDispatcher operation.
  */
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               bookmarkService:(BookmarkService *)bookmarkService
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
+               bookmarkService:(PDSBookmarkService *)bookmarkService
                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController;
 

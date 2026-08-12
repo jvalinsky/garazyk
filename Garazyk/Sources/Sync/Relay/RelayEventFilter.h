@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayEventFilter.h
+ @file ATProtoRelayEventFilter.h
 
  @abstract Filter events by collection, repo, or actor for the relay.
 
  @discussion
-    RelayEventFilter allows downstream consumers to receive filtered events.
+    ATProtoRelayEventFilter allows downstream consumers to receive filtered events.
     Filters are applied after validation, before forwarding.
     
     - Filter by collection (e.g., "app.bsky.feed.post")
@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Applies allow and deny lists to relay events before forwarding.
  */
-@interface RelayEventFilter : NSObject
+@interface ATProtoRelayEventFilter : NSObject
 
 /** Collection NSIDs that may be forwarded, or nil to allow all collections. */
 @property (nonatomic, strong, readonly, nullable) NSSet<NSString *> *allowedCollections;

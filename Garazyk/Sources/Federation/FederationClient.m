@@ -15,11 +15,11 @@ NSErrorDomain const FederationErrorDomain = @"com.atproto.federation";
 
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
-@interface FederationClient ()
+@interface ATProtoFederationClient ()
 @property (nonatomic, strong) ATProtoHttpRetryPolicy *retryPolicy;
 @end
 
-@implementation FederationClient
+@implementation ATProtoFederationClient
 
 static BOOL PDSFederationRunningTests(void) {
     NSDictionary *env = [[NSProcessInfo processInfo] environment];

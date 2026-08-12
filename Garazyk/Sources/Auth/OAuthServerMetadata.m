@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "OAuthServerMetadata.h"
 
-@implementation OAuthServerMetadata
+@implementation ATProtoOAuthServerMetadata
 
 - (instancetype)initWithBaseURL:(NSString *)baseURL {
   // Validate base URL

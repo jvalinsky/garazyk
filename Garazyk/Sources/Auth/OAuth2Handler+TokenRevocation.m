@@ -7,7 +7,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
-@implementation OAuth2Handler (TokenRevocation)
+@implementation ATProtoOAuth2Handler (TokenRevocation)
 
 - (void)handleRevokeRequest:(ATProtoHttpRequest *)request
                    response:(ATProtoHttpResponse *)response {
@@ -58,7 +58,7 @@
   // Find the session for this token (client validation already done above)
   NSString *sessionIdToRemove = nil;
   for (NSString *sessionId in self.oauthServer.activeSessions) {
-    Session *session = self.oauthServer.activeSessions[sessionId];
+    PDSSession *session = self.oauthServer.activeSessions[sessionId];
     if ([ATProtoCryptoUtils constantTimeCompare:session.accessToken to:token] ||
         [ATProtoCryptoUtils constantTimeCompare:session.refreshToken to:token]) {
       sessionIdToRemove = sessionId;
@@ -169,7 +169,7 @@
 
   // Not a valid ATProtoJWT - check if it's a refresh token in active sessions
   for (NSString *sessionId in self.oauthServer.activeSessions) {
-    Session *session = self.oauthServer.activeSessions[sessionId];
+    PDSSession *session = self.oauthServer.activeSessions[sessionId];
     if ([ATProtoCryptoUtils constantTimeCompare:session.refreshToken to:token]) {
       // Found refresh token in active sessions
       NSMutableDictionary *introspection = [NSMutableDictionary dictionary];
@@ -192,7 +192,7 @@
 
   // Also check for access token match in sessions (non-ATProtoJWT tokens)
   for (NSString *sessionId in self.oauthServer.activeSessions) {
-    Session *session = self.oauthServer.activeSessions[sessionId];
+    PDSSession *session = self.oauthServer.activeSessions[sessionId];
     if ([ATProtoCryptoUtils constantTimeCompare:session.accessToken to:token]) {
       NSMutableDictionary *introspection = [NSMutableDictionary dictionary];
       introspection[@"active"] = @YES;

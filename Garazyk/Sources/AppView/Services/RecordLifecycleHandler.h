@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RecordLifecycleHandler.h
+ @file PDSRecordLifecycleHandler.h
 
  @abstract Observes record changes and triggers side effects.
 
@@ -16,24 +16,24 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class NotificationService;
-@class BookmarkService;
-@class GraphService;
-@class FeedService;
+@class PDSNotificationService;
+@class PDSBookmarkService;
+@class PDSGraphService;
+@class PDSFeedService;
 @class PDSDatabase;
 
 /*!
- @class RecordLifecycleHandler
+ @class PDSRecordLifecycleHandler
  
  @abstract Handles record lifecycle events to generate notifications and index social data.
  */
-@interface RecordLifecycleHandler : NSObject
+@interface PDSRecordLifecycleHandler : NSObject
 
 /*! Initialize and start observing record changes. */
-- (instancetype)initWithNotificationService:(NotificationService *)notificationService
-                             bookmarkService:(BookmarkService *)bookmarkService
-                                graphService:(GraphService *)graphService
-                                 feedService:(FeedService *)feedService
+- (instancetype)initWithNotificationService:(PDSNotificationService *)notificationService
+                             bookmarkService:(PDSBookmarkService *)bookmarkService
+                                graphService:(PDSGraphService *)graphService
+                                 feedService:(PDSFeedService *)feedService
                                     database:(PDSDatabase *)database;
 
 

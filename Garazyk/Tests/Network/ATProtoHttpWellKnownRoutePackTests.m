@@ -185,7 +185,7 @@ static NSDictionary *LiveRASLRawResponse(NSString *method, NSString *path,
     ATProtoCID *cid = [ATProtoCID sha256:payload];
     NSString *cidString = cid.stringValue;
 
-    // Store a repository block directly under its ATProtoCID. Unlike BlobStorage's
+    // Store a repository block directly under its ATProtoCID. Unlike PDSBlobStorage's
     // read path, ActorStore block lookup does not verify the payload; the
     // route's explicit digest check must therefore be observable here.
     PDSActorStore *store = [self.controller.userDatabasePool storeForDid:did error:&error];

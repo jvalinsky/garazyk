@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/AdminUI/JelczAdminEmbedContext.h"
 
-@implementation JelczAdminEmbedContext
+@implementation GZJelczAdminEmbedContext
 
 - (instancetype)initWithWorker:(id)worker
                       jobStore:(id)jobStore

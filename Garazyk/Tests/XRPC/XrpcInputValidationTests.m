@@ -15,14 +15,14 @@ NS_ASSUME_NONNULL_BEGIN
  * Reference: https://atproto.com/specs/xrpc
  */
 @interface XrpcInputValidationTests : XCTestCase
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @end
 
 @implementation XrpcInputValidationTests
 
 - (void)setUp {
     [super setUp];
-    self.dispatcher = [[XrpcDispatcher alloc] init];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
 }
 
 - (void)tearDown {

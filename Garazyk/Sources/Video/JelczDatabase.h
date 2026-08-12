@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract SQLite-based implementation of the video job store.
  */
-@interface JelczDatabase : NSObject <VideoJobStore>
+@interface GZJelczDatabase : NSObject <VideoJobStore>
 
 /**
  * @abstract Initializes the database instance.

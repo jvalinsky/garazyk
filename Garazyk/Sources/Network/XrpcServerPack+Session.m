@@ -26,9 +26,9 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcServerPack (Session)
+@implementation ATProtoXrpcServerPack (PDSSession)
 
-+ (void)registerAccountCreationAndSessionEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerAccountCreationAndSessionEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                                           services:(id<XrpcRoutePackServices>)services
                                  registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
@@ -210,7 +210,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_getSession handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
 
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
@@ -279,7 +279,7 @@
 
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_deleteSession handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;

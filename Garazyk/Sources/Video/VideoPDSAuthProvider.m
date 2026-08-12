@@ -5,7 +5,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
-@implementation VideoPDSAuthProvider
+@implementation ATProtoVideoPDSAuthProvider
 
 - (instancetype)initWithJwtMinter:(ATProtoJWTMinter *)jwtMinter
                    adminController:(nullable id<PDSAdminController>)adminController {
@@ -20,7 +20,7 @@
 - (nullable NSString *)authenticateRequest:(ATProtoHttpRequest *)request
                                    response:(ATProtoHttpResponse *)response {
     NSString *authHeader = [request headerForKey:@"Authorization"];
-    return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+    return [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                            jwtMinter:self.jwtMinter
                                      adminController:self.adminController
                                    sessionRepository:nil

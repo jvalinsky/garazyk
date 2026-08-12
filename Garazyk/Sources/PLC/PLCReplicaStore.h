@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file PLCReplicaStore.h
+ * @file ATProtoPLCReplicaStore.h
  * @abstract Persistent store with sync state tracking for PLC replica.
- * @discussion Extends PLCPersistentStore with sync state management for replica operation.
+ * @discussion Extends ATProtoPLCPersistentStore with sync state management for replica operation.
  * Tracks cursor position, upstream URL, and last sync timestamp to enable resumable sync
  * from upstream PLC directory.
  */
@@ -29,7 +29,7 @@ typedef NS_ENUM(NSInteger, PLCReplicaStoreError) {
 /**
  * @abstract Manages persistent sync state and metadata for a PLC replica.
  */
-@interface PLCReplicaStore : PLCPersistentStore
+@interface ATProtoPLCReplicaStore : ATProtoPLCPersistentStore
 
 /**
  * @abstract Updates the sync cursor position.

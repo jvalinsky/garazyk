@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file GermMailboxSchemaManager.h
+ @file PDSGermMailboxSchemaManager.h
 
  @abstract Schema manager for the Germ E2EE mailbox transport database.
 
@@ -20,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Provides SQL schema strings for the Germ mailbox store.
  */
-@interface GermMailboxSchemaManager : NSObject
+@interface PDSGermMailboxSchemaManager : NSObject
 
 /** Returns the shared schema manager instance. */
 + (instancetype)sharedManager;

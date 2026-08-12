@@ -4,8 +4,8 @@
 #import "AdminUIServer/GZAdminUIPack.h"
 
 @class GZAdminUIHost;
-@class JelczAdminSnapshot;
-@class JelczAdminEmbedContext;
+@class GZJelczAdminSnapshot;
+@class GZJelczAdminEmbedContext;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -16,10 +16,10 @@ NS_ASSUME_NONNULL_BEGIN
  *             JelczAdminSnapshot for real-time worker/queue counters.
  *             Follows the same pattern as GZMikrusAdminUIPack.
  */
-@interface JelczAdminUIPack : NSObject <GZAdminUIPack>
+@interface GZJelczAdminUIPack : NSObject <GZAdminUIPack>
 
-+ (void)configureHost:(GZAdminUIHost *)host snapshot:(JelczAdminSnapshot *)snapshot;
-+ (void)configureHost:(GZAdminUIHost *)host embedContext:(JelczAdminEmbedContext *)context;
++ (void)configureHost:(GZAdminUIHost *)host snapshot:(GZJelczAdminSnapshot *)snapshot;
++ (void)configureHost:(GZAdminUIHost *)host embedContext:(GZJelczAdminEmbedContext *)context;
 
 @end
 

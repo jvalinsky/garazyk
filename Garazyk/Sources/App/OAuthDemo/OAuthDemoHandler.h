@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file OAuthDemoHandler.h
+ @file GZOAuthDemoHandler.h
  
  @abstract HTTP handler for the embedded OAuth demo UI.
  */
@@ -16,14 +16,14 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSController;
 
 /*!
- @class OAuthDemoHandler
+ @class GZOAuthDemoHandler
 
  @abstract Serves OAuth demo assets and route responses.
 
  @discussion Handles `/oauth-demo` requests and maps them to static assets
  bundled with the application.
  */
-@interface OAuthDemoHandler : NSObject
+@interface GZOAuthDemoHandler : NSObject
 
 /*!
  @method sharedHandler

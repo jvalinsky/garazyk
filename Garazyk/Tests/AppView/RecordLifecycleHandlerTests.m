@@ -12,7 +12,7 @@
 @interface RecordLifecycleHandlerTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) RecordLifecycleHandler *handler;
+@property (nonatomic, strong) PDSRecordLifecycleHandler *handler;
 @end
 
 @implementation RecordLifecycleHandlerTests
@@ -32,17 +32,17 @@
     NSError *error = nil;
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
 
-    NotificationService *notificationService =
-        [[NotificationService alloc] initWithDatabase:self.database
+    PDSNotificationService *notificationService =
+        [[PDSNotificationService alloc] initWithDatabase:self.database
                                           actorService:nil];
-    BookmarkService *bookmarkService =
-        [[BookmarkService alloc] initWithDatabase:self.database];
-    GraphService *graphService =
-        [[GraphService alloc] initWithDatabase:self.database];
-    FeedService *feedService =
-        [[FeedService alloc] initWithDatabase:self.database];
+    PDSBookmarkService *bookmarkService =
+        [[PDSBookmarkService alloc] initWithDatabase:self.database];
+    PDSGraphService *graphService =
+        [[PDSGraphService alloc] initWithDatabase:self.database];
+    PDSFeedService *feedService =
+        [[PDSFeedService alloc] initWithDatabase:self.database];
 
-    self.handler = [[RecordLifecycleHandler alloc]
+    self.handler = [[PDSRecordLifecycleHandler alloc]
         initWithNotificationService:notificationService
                       bookmarkService:bookmarkService
                          graphService:graphService
@@ -61,19 +61,19 @@
 #pragma mark - Retention Tests
 
 - (void)testHandlerIsRetainedByStaticStorage {
-    // Verify that the static storage in XrpcAppBskyPack retains the handler.
-    // This is a regression test for the bug where RecordLifecycleHandler was
+    // Verify that the static storage in ATProtoXrpcAppBskyPack retains the handler.
+    // This is a regression test for the bug where PDSRecordLifecycleHandler was
     // stored in a local __attribute__((unused)) variable and immediately
     // deallocated because NSNotificationCenter does not retain observers.
-    RecordLifecycleHandler *handler = self.handler;
-    [XrpcAppBskyPack setRetainedLifecycleHandler:handler];
+    PDSRecordLifecycleHandler *handler = self.handler;
+    [ATProtoXrpcAppBskyPack setRetainedLifecycleHandler:handler];
 
     // The handler should still be alive after setting it
     XCTAssertNotNil(handler,
         @"RecordLifecycleHandler should remain alive after being stored in static storage");
 
     // Clean up
-    [XrpcAppBskyPack setRetainedLifecycleHandler:nil];
+    [ATProtoXrpcAppBskyPack setRetainedLifecycleHandler:nil];
 }
 
 - (void)testHandlerObservesRecordChangeNotification {
@@ -81,8 +81,8 @@
     // If the handler were deallocated, this notification would be silently ignored.
     XCTestExpectation *exp = [self expectationWithDescription:@"Handler received notification"];
 
-    RecordLifecycleHandler *handler = self.handler;
-    [XrpcAppBskyPack setRetainedLifecycleHandler:handler];
+    PDSRecordLifecycleHandler *handler = self.handler;
+    [ATProtoXrpcAppBskyPack setRetainedLifecycleHandler:handler];
 
     // Post a record change notification — the handler should receive it
     // without crashing (it may not process it fully due to missing data,
@@ -109,13 +109,13 @@
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 
     // Clean up
-    [XrpcAppBskyPack setRetainedLifecycleHandler:nil];
+    [ATProtoXrpcAppBskyPack setRetainedLifecycleHandler:nil];
 }
 
 - (void)testHandlerNotCrashingWithIncompleteNotificationData {
     // Verify the handler gracefully handles notifications with missing data.
     // This should not crash even if some fields are nil.
-    [XrpcAppBskyPack setRetainedLifecycleHandler:self.handler];
+    [ATProtoXrpcAppBskyPack setRetainedLifecycleHandler:self.handler];
 
     NSDictionary *userInfo = @{
         @"did": @"did:plc:test123"
@@ -131,7 +131,7 @@
     XCTAssertNotNil(self.handler, @"Handler should still be alive after incomplete notification");
 
     // Clean up
-    [XrpcAppBskyPack setRetainedLifecycleHandler:nil];
+    [ATProtoXrpcAppBskyPack setRetainedLifecycleHandler:nil];
 }
 
 @end

@@ -9,11 +9,11 @@
 @interface TOTPTests : XCTestCase
 @end
 
-@interface TOTPService (TestHooks)
+@interface ATProtoTOTPService (TestHooks)
 - (nullable NSString *)generateSoftwareToken;
 @end
 
-@interface TOTPStubYubiManager : YubiKeyOATHManager
+@interface TOTPStubYubiManager : ATProtoYubiKeyOATHManager
 @property (nonatomic, copy) NSString *tokenToReturn;
 @end
 
@@ -45,7 +45,7 @@
         NSString *input = (NSString *)key;
         NSString *expected = (NSString *)obj;
         NSData *data = [input dataUsingEncoding:NSUTF8StringEncoding];
-        NSString *result = [Base32Utils base32StringFromData:data];
+        NSString *result = [ATProtoBase32Utils base32StringFromData:data];
         XCTAssertEqualObjects(result, expected, @"Base32 encoding failed for input: %@", input);
     }];
 }
@@ -64,7 +64,7 @@
     [testCases enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
         NSString *input = (NSString *)key;
         NSString *expected = (NSString *)obj;
-        NSData *resultData = [Base32Utils dataFromBase32String:input];
+        NSData *resultData = [ATProtoBase32Utils dataFromBase32String:input];
         NSString *result = [[NSString alloc] initWithData:resultData encoding:NSUTF8StringEncoding];
         XCTAssertEqualObjects(result, expected, @"Base32 decoding failed for input: %@", input);
     }];
@@ -72,7 +72,7 @@
 
 - (void)testTOTPGenerationReturnsConsistentCode {
     NSData *secretData = [@"12345678901234567890" dataUsingEncoding:NSUTF8StringEncoding];
-    TOTPGenerator *gen = [[TOTPGenerator alloc] initWithSecret:secretData];
+    ATProtoTOTPGenerator *gen = [[ATProtoTOTPGenerator alloc] initWithSecret:secretData];
     
     NSString *code1 = [gen generateOTP];
     NSString *code2 = [gen generateOTP];
@@ -83,24 +83,24 @@
 - (void)testTOTPServiceVerification {
     NSString *base32Secret = @"JBSWY3DPEHPK3PXP"; // "Hello!" in base32
     
-    NSData *secretData = [Base32Utils dataFromBase32String:base32Secret];
-    TOTPGenerator *gen = [[TOTPGenerator alloc] initWithSecret:secretData];
+    NSData *secretData = [ATProtoBase32Utils dataFromBase32String:base32Secret];
+    ATProtoTOTPGenerator *gen = [[ATProtoTOTPGenerator alloc] initWithSecret:secretData];
     NSString *code = [gen generateOTP];
     
-    XCTAssertTrue([TOTPService verifyCode:code secret:base32Secret], @"TOTP should be valid for current interval");
+    XCTAssertTrue([ATProtoTOTPService verifyCode:code secret:base32Secret], @"TOTP should be valid for current interval");
     
     // Test window (prev interval)
     NSDate *prevDate = [NSDate dateWithTimeIntervalSinceNow:-30];
     NSString *prevCode = [gen generateOTPForDate:prevDate];
-    XCTAssertTrue([TOTPService verifyCode:prevCode secret:base32Secret], @"TOTP should be valid for previous interval (within window)");
+    XCTAssertTrue([ATProtoTOTPService verifyCode:prevCode secret:base32Secret], @"TOTP should be valid for previous interval (within window)");
     
     // Test invalid
-    XCTAssertFalse([TOTPService verifyCode:@"000000" secret:base32Secret], @"Random code should be invalid");
+    XCTAssertFalse([ATProtoTOTPService verifyCode:@"000000" secret:base32Secret], @"Random code should be invalid");
 }
 
 - (void)testYubiKeyOATHFallback {
     NSData *secretData = [@"12345678901234567890" dataUsingEncoding:NSUTF8StringEncoding];
-    TOTPService *service = [[TOTPService alloc] initWithSecret:secretData];
+    ATProtoTOTPService *service = [[ATProtoTOTPService alloc] initWithSecret:secretData];
     NSError *error = nil;
 
     NSString *token = [service generateTOTPToken:&error];
@@ -110,19 +110,19 @@
 }
 
 - (void)testGenerateSecretRoundTripLength {
-    NSString *secret = [TOTPService generateSecret];
+    NSString *secret = [ATProtoTOTPService generateSecret];
     XCTAssertNotNil(secret);
-    NSData *decoded = [Base32Utils dataFromBase32String:secret];
+    NSData *decoded = [ATProtoBase32Utils dataFromBase32String:secret];
     XCTAssertNotNil(decoded);
     XCTAssertEqual(decoded.length, 20u);
 }
 
 - (void)testVerifyCodeRejectsInvalidSecretEncoding {
-    XCTAssertFalse([TOTPService verifyCode:@"123456" secret:@"!invalid-base32!"]);
+    XCTAssertFalse([ATProtoTOTPService verifyCode:@"123456" secret:@"!invalid-base32!"]);
 }
 
 - (void)testGenerateQRCodeImage {
-    NSData *qr = [TOTPService generateQRCodeImageForSecret:@"JBSWY3DPEHPK3PXP"
+    NSData *qr = [ATProtoTOTPService generateQRCodeImageForSecret:@"JBSWY3DPEHPK3PXP"
                                                 accountName:@"alice@example.com"
                                                      issuer:@"GarazykPDS"];
     if (!qr || qr.length == 0) {
@@ -144,7 +144,7 @@
 
 - (void)testGenerateSoftwareTokenProducesSixDigits {
     NSData *secretData = [@"12345678901234567890" dataUsingEncoding:NSUTF8StringEncoding];
-    TOTPService *service = [[TOTPService alloc] initWithSecret:secretData];
+    ATProtoTOTPService *service = [[ATProtoTOTPService alloc] initWithSecret:secretData];
     NSString *token = [service generateSoftwareToken];
     XCTAssertNotNil(token);
     XCTAssertEqual(token.length, 6u);
@@ -152,7 +152,7 @@
 
 - (void)testGenerateTOTPTokenUsesYubiManagerWhenAvailable {
     NSData *secretData = [@"12345678901234567890" dataUsingEncoding:NSUTF8StringEncoding];
-    TOTPService *service = [[TOTPService alloc] initWithSecret:secretData];
+    ATProtoTOTPService *service = [[ATProtoTOTPService alloc] initWithSecret:secretData];
     TOTPStubYubiManager *stub = [[TOTPStubYubiManager alloc] init];
     stub.tokenToReturn = @"123456";
     [service setValue:stub forKey:@"yubiKeyManager"];
@@ -164,7 +164,7 @@
 }
 
 - (void)testYubiKeyManagerSoftwareModeBehaviors {
-    YubiKeyOATHManager *manager = [[YubiKeyOATHManager alloc] init];
+    ATProtoYubiKeyOATHManager *manager = [[ATProtoYubiKeyOATHManager alloc] init];
     XCTAssertFalse(manager.isHardwareAvailable);
     XCTAssertEqual(manager.connectionState, YubiKeyConnectionStateDisconnected);
 
@@ -177,7 +177,7 @@
 }
 
 - (void)testYubiKeyManagerNotImplementedOperationsSetErrors {
-    YubiKeyOATHManager *manager = [[YubiKeyOATHManager alloc] init];
+    ATProtoYubiKeyOATHManager *manager = [[ATProtoYubiKeyOATHManager alloc] init];
     NSError *error = nil;
     BOOL setResult = [manager setOATHSecret:[@"secret" dataUsingEncoding:NSUTF8StringEncoding]
                                        name:@"account"

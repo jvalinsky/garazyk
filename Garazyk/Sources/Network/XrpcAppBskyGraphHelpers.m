@@ -50,13 +50,13 @@ BOOL XrpcParseLimit(NSString *limitParam, NSInteger *outValue, NSInteger min, NS
     NSScanner *scanner = [NSScanner scannerWithString:limitParam];
     NSInteger limit = 0;
     if (![scanner scanInteger:&limit] || !scanner.isAtEnd) {
-        [XrpcErrorHelper setValidationError:response message:@"Invalid limit parameter"];
+        [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid limit parameter"];
         return NO;
     }
 
     if (limit < min || limit > max) {
         NSString *message = [NSString stringWithFormat:@"Limit must be between %ld and %ld", (long)min, (long)max];
-        [XrpcErrorHelper setValidationError:response message:message];
+        [ATProtoXrpcErrorHelper setValidationError:response message:message];
         return NO;
     }
 
@@ -121,7 +121,7 @@ NSMutableDictionary *XrpcGraphMuteStateFromPreferences(NSArray<NSDictionary *> *
     return state;
 }
 
-BOOL XrpcPersistGraphMuteState(ActorService *actorService, NSString *actorDID, NSMutableArray<NSDictionary *> *preferences, NSMutableDictionary *state, NSUInteger existingIndex, NSError **error) {
+BOOL XrpcPersistGraphMuteState(PDSActorService *actorService, NSString *actorDID, NSMutableArray<NSDictionary *> *preferences, NSMutableDictionary *state, NSUInteger existingIndex, NSError **error) {
     NSMutableDictionary *entry = [NSMutableDictionary dictionary];
     entry[@"$type"] = kXrpcGraphMuteStatePreferenceType;
     entry[@"mutedLists"] = XrpcNormalizedUniqueStringArray(state[@"mutedLists"]);
@@ -183,7 +183,7 @@ NSString *XrpcResolveActorIdentifierToDid(PDSServiceDatabases *serviceDatabases,
 
 #pragma mark - List View Helpers
 
-NSDictionary *XrpcLoadListItemViewForListAndSubject(PDSDatabase *appViewDatabase, ActorService *actorService, NSString *creatorDid, NSString *listURI, NSString *subjectDid) {
+NSDictionary *XrpcLoadListItemViewForListAndSubject(PDSDatabase *appViewDatabase, PDSActorService *actorService, NSString *creatorDid, NSString *listURI, NSString *subjectDid) {
     NSError *queryError = nil;
     NSArray<NSDictionary *> *itemRows = [appViewDatabase executeParameterizedQuery:
                                          @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ? ORDER BY rkey DESC LIMIT 500"
@@ -218,7 +218,7 @@ NSDictionary *XrpcLoadListItemViewForListAndSubject(PDSDatabase *appViewDatabase
     return nil;
 }
 
-NSDictionary *XrpcLoadListViewForURI(PDSDatabase *appViewDatabase, ActorService *actorService, NSString *listURI) {
+NSDictionary *XrpcLoadListViewForURI(PDSDatabase *appViewDatabase, PDSActorService *actorService, NSString *listURI) {
     NSString *did = nil;
     NSString *collection = nil;
     NSString *rkey = nil;

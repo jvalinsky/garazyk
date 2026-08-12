@@ -8,8 +8,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcAdminPack (AccountInfo)
-+ (void)registerAccountInfoEndpoints:(XrpcDispatcher *)dispatcher
+@interface ATProtoXrpcAdminPack (AccountInfo)
++ (void)registerAccountInfoEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                 services:(id<XrpcRoutePackServices>)services;
 @end
 

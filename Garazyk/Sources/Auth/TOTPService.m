@@ -16,28 +16,28 @@
 #import <ImageIO/ImageIO.h>
 #endif
 
-@implementation TOTPService
+@implementation ATProtoTOTPService
 
 - (instancetype)initWithSecret:(NSData *)secret {
     self = [super init];
     if (self) {
         _secret = [secret copy];
         _counter = 0; // For future HOTP support
-        _yubiKeyManager = [[YubiKeyOATHManager alloc] init];
+        _yubiKeyManager = [[ATProtoYubiKeyOATHManager alloc] init];
     }
     return self;
 }
 
 + (NSString *)generateSecret {
     NSData *randomBytes = [ATProtoCryptoUtils randomBytes:20]; // 160 bits (recommended min)
-    return [Base32Utils base32StringFromData:randomBytes];
+    return [ATProtoBase32Utils base32StringFromData:randomBytes];
 }
 
 + (BOOL)verifyCode:(NSString *)code secret:(NSString *)secret {
-    NSData *secretData = [Base32Utils dataFromBase32String:secret];
+    NSData *secretData = [ATProtoBase32Utils dataFromBase32String:secret];
     if (!secretData) return NO;
     
-    TOTPGenerator *generator = [[TOTPGenerator alloc] initWithSecret:secretData];
+    ATProtoTOTPGenerator *generator = [[ATProtoTOTPGenerator alloc] initWithSecret:secretData];
     
     // Check current time window and previous one (allow 30s drift)
     NSString *otpCurrent = [generator generateOTP];
@@ -126,7 +126,7 @@
 }
 
 - (nullable NSString *)generateTOTPToken:(NSError **)error {
-    // YubiKeyOATHManager is software-only in the PDS process.
+    // ATProtoYubiKeyOATHManager is software-only in the PDS process.
     NSString *token = [self.yubiKeyManager generateTOTPForSecret:self.secret counter:self.counter error:error];
     if (token) {
         return token;
@@ -137,7 +137,7 @@
 }
 
 - (nullable NSString *)generateSoftwareToken {
-    TOTPGenerator *generator = [[TOTPGenerator alloc] initWithSecret:self.secret];
+    ATProtoTOTPGenerator *generator = [[ATProtoTOTPGenerator alloc] initWithSecret:self.secret];
     return [generator generateOTP];
 }
 

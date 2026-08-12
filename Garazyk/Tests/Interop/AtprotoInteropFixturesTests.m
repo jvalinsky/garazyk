@@ -11,7 +11,7 @@
 #import "PLC/PLCAuditor.h"
 #import "PLC/PLCDIDKey.h"
 
-@interface PLCAuditor (AtprotoInteropSignatureTesting)
+@interface ATProtoPLCAuditor (AtprotoInteropSignatureTesting)
 - (BOOL)verifyP256Signature:(NSData *)rawSig hash:(NSData *)hash compressedPublicKey:(NSData *)pubKey;
 @end
 
@@ -139,7 +139,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
     XCTAssertNotNil(fixtures, @"Failed to parse signature fixtures: %@", jsonError);
     if (![fixtures isKindOfClass:[NSArray class]]) return;
 
-    PLCAuditor *p256Auditor = [[PLCAuditor alloc] initWithStore:(id)nil];
+    ATProtoPLCAuditor *p256Auditor = [[ATProtoPLCAuditor alloc] initWithStore:(id)nil];
 
     for (NSDictionary *fixture in fixtures) {
         if (![fixture isKindOfClass:[NSDictionary class]]) continue;
@@ -172,7 +172,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
         }
 
         NSError *keyError = nil;
-        PLCDIDKey *didKey = [PLCDIDKey parseFromString:publicKeyDid error:&keyError];
+        ATProtoPLCDIDKey *didKey = [ATProtoPLCDIDKey parseFromString:publicKeyDid error:&keyError];
         XCTAssertNotNil(didKey, @"Failed to parse did:key in fixture: %@ (error=%@)", comment, keyError);
         if (!didKey) continue;
 

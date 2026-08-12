@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayEventBuffer.h
+ @file ATProtoRelayEventBuffer.h
 
  @abstract Event buffer with configurable retention window for the relay.
 
  @discussion
-    RelayEventBuffer stores events for the configurable backfill window.
+    ATProtoRelayEventBuffer stores events for the configurable backfill window.
     Default is 72 hours per Sync v1.1 spec.
     
     - Circular buffer with timestamp-based eviction
@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Stores recent relay events for cursor and time-based replay.
  */
-@interface RelayEventBuffer : NSObject
+@interface ATProtoRelayEventBuffer : NSObject
 
 /** Retention window in seconds. */
 @property (nonatomic, assign, readonly) NSUInteger retentionSeconds;

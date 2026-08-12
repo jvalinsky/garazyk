@@ -20,7 +20,7 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
 @interface AppViewWriteProxy ()
 @property (nonatomic, strong) AppViewDatabase *database;
 @property (nonatomic, copy, nullable) NSString *plcUrl;
-@property (nonatomic, strong, nullable) DIDPLCResolver *resolver;
+@property (nonatomic, strong, nullable) ATProtoDIDPLCResolver *resolver;
 @end
 
 @implementation AppViewWriteProxy
@@ -32,7 +32,7 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
         _database = database;
         _plcUrl = [plcUrl copy];
         if (_plcUrl) {
-            _resolver = [[DIDPLCResolver alloc] initWithPlcUrl:_plcUrl];
+            _resolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:_plcUrl];
         }
     }
     return self;

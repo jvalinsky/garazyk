@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2024-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file Session.m
+ @file PDSSession.m
 
- @abstract Session and SessionToken management for authenticated users.
+ @abstract PDSSession and PDSSessionToken management for authenticated users.
 
  @discussion This file implements session lifecycle management including token
  minting, validation, storage, and refresh. Sessions are created with both
@@ -26,7 +26,7 @@
 
 NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
-@implementation SessionToken
+@implementation PDSSessionToken
 
 + (nullable instancetype)tokenWithValue:(NSString *)value
                               expiresIn:(NSTimeInterval)expiresIn
@@ -34,7 +34,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
                           isRefreshToken:(BOOL)isRefreshToken {
     if (!value || expiresIn <= 0) return nil;
 
-    SessionToken *token = [[SessionToken alloc] init];
+    PDSSessionToken *token = [[PDSSessionToken alloc] init];
     token.value = value;
     token.issuedAt = [NSDate date];
     token.expiresAt = [NSDate dateWithTimeIntervalSinceNow:expiresIn];
@@ -54,7 +54,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
 @end
 
-@interface Session ()
+@interface PDSSession ()
 @property (nonatomic, copy, readwrite) NSString *sessionID;
 @property (nonatomic, copy, readwrite) NSString *did;
 @property (nonatomic, copy, readwrite) NSString *handle;
@@ -65,24 +65,24 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 @property (nonatomic, strong, readwrite) NSDate *createdAt;
 @property (nonatomic, strong, readwrite) NSDate *accessTokenExpiresAt;
 @property (nonatomic, strong, readwrite, nullable) NSDate *refreshTokenExpiresAt;
-@property (nonatomic, strong) SessionToken *accessTokenData;
-@property (nonatomic, strong, nullable) SessionToken *refreshTokenData;
+@property (nonatomic, strong) PDSSessionToken *accessTokenData;
+@property (nonatomic, strong, nullable) PDSSessionToken *refreshTokenData;
 @property (nonatomic, strong) id<PDSKeyManager> keyManager;
 @end
 
-@implementation Session
+@implementation PDSSession
 
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
                       dpopKeyThumbprint:(nullable NSString *)jkt {
-    return [[Session alloc] initWithDID:did handle:handle scope:scope dpopKeyThumbprint:jkt];
+    return [[PDSSession alloc] initWithDID:did handle:handle scope:scope dpopKeyThumbprint:jkt];
 }
 
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope {
-    return [[Session alloc] initWithDID:did handle:handle scope:scope dpopKeyThumbprint:nil];
+    return [[PDSSession alloc] initWithDID:did handle:handle scope:scope dpopKeyThumbprint:nil];
 }
 
 + (nullable instancetype)sessionWithDID:(NSString *)did
@@ -90,14 +90,14 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
                                   scope:(NSString *)scope
                                  minter:(nullable ATProtoJWTMinter *)minter
                       dpopKeyThumbprint:(nullable NSString *)jkt {
-    return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:jkt];
+    return [[PDSSession alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:jkt];
 }
 
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
                                   scope:(NSString *)scope
                                  minter:(nullable ATProtoJWTMinter *)minter {
-    return [[Session alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:nil];
+    return [[PDSSession alloc] initWithDID:did handle:handle scope:scope minter:minter dpopKeyThumbprint:nil];
 }
 
 - (instancetype)initWithDID:(NSString *)did
@@ -165,7 +165,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         accessTokenValue = [[NSUUID UUID] UUIDString];
     }
 
-    self.accessTokenData = [SessionToken tokenWithValue:accessTokenValue
+    self.accessTokenData = [PDSSessionToken tokenWithValue:accessTokenValue
                                               expiresIn:accessTokenLifetime
                                                   scope:self.scope
                                           isRefreshToken:NO];
@@ -191,7 +191,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         refreshTokenValue = [[NSUUID UUID] UUIDString];
     }
 
-    self.refreshTokenData = [SessionToken tokenWithValue:refreshTokenValue
+    self.refreshTokenData = [PDSSessionToken tokenWithValue:refreshTokenValue
                                                  expiresIn:refreshTokenLifetime
                                                      scope:self.scope
                                              isRefreshToken:YES];
@@ -219,12 +219,12 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         _accessTokenExpiresAt = accessTokenExpiry;
         _refreshTokenExpiresAt = refreshTokenExpiry;
 
-        self.accessTokenData = [SessionToken tokenWithValue:accessToken
+        self.accessTokenData = [PDSSessionToken tokenWithValue:accessToken
                                                    expiresIn:[accessTokenExpiry timeIntervalSinceNow]
                                                        scope:scope
                                                isRefreshToken:NO];
         if (refreshToken) {
-            self.refreshTokenData = [SessionToken tokenWithValue:refreshToken
+            self.refreshTokenData = [PDSSessionToken tokenWithValue:refreshToken
                                                          expiresIn:[refreshTokenExpiry timeIntervalSinceNow]
                                                              scope:scope
                                                      isRefreshToken:YES];
@@ -282,9 +282,9 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 #pragma mark - Storage Implementations
 
 @interface PDSMemorySessionStorage ()
-@property (nonatomic, strong) NSMutableDictionary<NSString *, Session *> *sessionsByAccessToken;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, Session *> *sessionsByRefreshToken;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<Session *> *> *sessionsByDID;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, PDSSession *> *sessionsByAccessToken;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, PDSSession *> *sessionsByRefreshToken;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<PDSSession *> *> *sessionsByDID;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t accessQueue;
 @end
 
@@ -301,7 +301,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return self;
 }
 
-- (BOOL)saveSession:(Session *)session error:(NSError **)error {
+- (BOOL)saveSession:(PDSSession *)session error:(NSError **)error {
     dispatch_sync(self.accessQueue, ^{
         self.sessionsByAccessToken[session.accessToken] = session;
         if (session.refreshToken) {
@@ -316,7 +316,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         } else {
             // Check for duplicate by ID and remove if found
             for (NSInteger i = 0; i < userSessions.count; i++) {
-                Session *existing = userSessions[i];
+                PDSSession *existing = userSessions[i];
                 if ([existing.sessionID isEqualToString:session.sessionID]) {
                     [userSessions removeObjectAtIndex:i];
                     break;
@@ -328,26 +328,26 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return YES;
 }
 
-- (nullable Session *)getSessionByAccessToken:(NSString *)token error:(NSError **)error {
-    __block Session *session = nil;
+- (nullable PDSSession *)getSessionByAccessToken:(NSString *)token error:(NSError **)error {
+    __block PDSSession *session = nil;
     dispatch_sync(self.accessQueue, ^{
         session = self.sessionsByAccessToken[token];
     });
     return session;
 }
 
-- (nullable Session *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error {
-    __block Session *session = nil;
+- (nullable PDSSession *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error {
+    __block PDSSession *session = nil;
     dispatch_sync(self.accessQueue, ^{
         session = self.sessionsByRefreshToken[token];
     });
     return session;
 }
 
-- (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error {
-    __block Session *session = nil;
+- (nullable PDSSession *)getSessionByID:(NSString *)sessionID error:(NSError **)error {
+    __block PDSSession *session = nil;
     dispatch_sync(self.accessQueue, ^{
-        for (Session *s in self.sessionsByAccessToken.allValues) {
+        for (PDSSession *s in self.sessionsByAccessToken.allValues) {
             if ([s.sessionID isEqualToString:sessionID]) {
                 session = s;
                 break;
@@ -360,8 +360,8 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 - (BOOL)revokeSessionByID:(NSString *)sessionID error:(NSError **)error {
     __block BOOL found = NO;
     dispatch_sync(self.accessQueue, ^{
-        Session *session = nil;
-        for (Session *s in self.sessionsByAccessToken.allValues) {
+        PDSSession *session = nil;
+        for (PDSSession *s in self.sessionsByAccessToken.allValues) {
             if ([s.sessionID isEqualToString:sessionID]) {
                 session = s;
                 break;
@@ -380,7 +380,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return found;
 }
 
-- (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error {
+- (NSArray<PDSSession *> *)getSessionsForDID:(NSString *)did error:(NSError **)error {
     __block NSArray *sessions = nil;
     dispatch_sync(self.accessQueue, ^{
         sessions = [self.sessionsByDID[did] copy] ?: @[];
@@ -388,10 +388,10 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return sessions;
 }
 
-- (NSArray<Session *> *)allActiveSessions:(NSError **)error {
+- (NSArray<PDSSession *> *)allActiveSessions:(NSError **)error {
     __block NSMutableArray *sessions = [NSMutableArray array];
     dispatch_sync(self.accessQueue, ^{
-        for (Session *s in self.sessionsByAccessToken.allValues) {
+        for (PDSSession *s in self.sessionsByAccessToken.allValues) {
             if ([s isAccessTokenValid]) {
                 [sessions addObject:s];
             }
@@ -460,7 +460,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     [_connectionManager close];
 }
 
-- (BOOL)saveSession:(Session *)session error:(NSError **)error {
+- (BOOL)saveSession:(PDSSession *)session error:(NSError **)error {
     NSString *sql = @"INSERT INTO sessions (session_id, did, handle, scope, access_token, refresh_token, access_token_expires_at, refresh_token_expires_at, dpop_key_thumbprint, token_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(session_id) DO UPDATE SET did=excluded.did, handle=excluded.handle, scope=excluded.scope, access_token=excluded.access_token, refresh_token=excluded.refresh_token, access_token_expires_at=excluded.access_token_expires_at, refresh_token_expires_at=excluded.refresh_token_expires_at, dpop_key_thumbprint=excluded.dpop_key_thumbprint, token_type=excluded.token_type, created_at=excluded.created_at";
     NSArray *params = @[
         session.sessionID ?: [NSNull null],
@@ -478,7 +478,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return [_queryRunner executeUpdate:sql params:params error:NULL] >= 0;
 }
 
-- (nullable Session *)sessionFromRow:(NSDictionary<NSString *, id> *)row {
+- (nullable PDSSession *)sessionFromRow:(NSDictionary<NSString *, id> *)row {
     id did = row[@"did"], handle = row[@"handle"], scope = row[@"scope"], accessToken = row[@"access_token"];
     if (![did isKindOfClass:[NSString class]] || ![handle isKindOfClass:[NSString class]] ||
         ![scope isKindOfClass:[NSString class]] || ![accessToken isKindOfClass:[NSString class]]) {
@@ -491,7 +491,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     NSDate *refreshExpiry = [refreshExpiryValue isKindOfClass:[NSNumber class]]
         ? [NSDate dateWithTimeIntervalSince1970:[refreshExpiryValue doubleValue]] : nil;
 
-    Session *session = [[Session alloc] initWithDID:did
+    PDSSession *session = [[PDSSession alloc] initWithDID:did
                                              handle:handle
                                               scope:scope
                                         accessToken:accessToken
@@ -509,19 +509,19 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return session;
 }
 
-- (nullable Session *)getSessionByAccessToken:(NSString *)token error:(NSError **)error {
+- (nullable PDSSession *)getSessionByAccessToken:(NSString *)token error:(NSError **)error {
     NSArray<NSDictionary<NSString *, id> *> *rows =
         [_queryRunner executeQuery:@"SELECT * FROM sessions WHERE access_token = ?" params:@[token ?: [NSNull null]] error:NULL];
     return rows.count > 0 ? [self sessionFromRow:rows.firstObject] : nil;
 }
 
-- (nullable Session *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error {
+- (nullable PDSSession *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error {
     NSArray<NSDictionary<NSString *, id> *> *rows =
         [_queryRunner executeQuery:@"SELECT * FROM sessions WHERE refresh_token = ?" params:@[token ?: [NSNull null]] error:NULL];
     return rows.count > 0 ? [self sessionFromRow:rows.firstObject] : nil;
 }
 
-- (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error {
+- (nullable PDSSession *)getSessionByID:(NSString *)sessionID error:(NSError **)error {
     NSArray<NSDictionary<NSString *, id> *> *rows =
         [_queryRunner executeQuery:@"SELECT * FROM sessions WHERE session_id = ?" params:@[sessionID ?: [NSNull null]] error:NULL];
     return rows.count > 0 ? [self sessionFromRow:rows.firstObject] : nil;
@@ -535,13 +535,13 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
                                  error:NULL] > 0;
 }
 
-- (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error {
+- (NSArray<PDSSession *> *)getSessionsForDID:(NSString *)did error:(NSError **)error {
     NSArray<NSDictionary<NSString *, id> *> *rows =
         [_queryRunner executeQuery:@"SELECT * FROM sessions WHERE did = ?" params:@[did ?: [NSNull null]] error:NULL];
     return [self sessionsFromRows:rows];
 }
 
-- (NSArray<Session *> *)allActiveSessions:(NSError **)error {
+- (NSArray<PDSSession *> *)allActiveSessions:(NSError **)error {
     NSArray<NSDictionary<NSString *, id> *> *rows =
         [_queryRunner executeQuery:@"SELECT * FROM sessions WHERE access_token_expires_at > ?"
                             params:@[@([[NSDate date] timeIntervalSince1970])]
@@ -549,10 +549,10 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return [self sessionsFromRows:rows];
 }
 
-- (NSArray<Session *> *)sessionsFromRows:(NSArray<NSDictionary<NSString *, id> *> *)rows {
-    NSMutableArray<Session *> *sessions = [NSMutableArray array];
+- (NSArray<PDSSession *> *)sessionsFromRows:(NSArray<NSDictionary<NSString *, id> *> *)rows {
+    NSMutableArray<PDSSession *> *sessions = [NSMutableArray array];
     for (NSDictionary<NSString *, id> *row in rows) {
-        Session *s = [self sessionFromRow:row];
+        PDSSession *s = [self sessionFromRow:row];
         if (s) [sessions addObject:s];
     }
     return sessions;
@@ -560,17 +560,17 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 
 @end
 
-@interface SessionStore ()
+@interface PDSSessionStore ()
 @property (nonatomic, strong) id<PDSSessionStorage> storage;
 @property (nonatomic, assign) NSTimeInterval clockSkew;
 @end
 
-@implementation SessionStore
+@implementation PDSSessionStore
 
 @synthesize clockSkew = _clockSkew;
 
 + (instancetype)sharedStore {
-    static SessionStore *sharedInstance = nil;
+    static PDSSessionStore *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[self alloc] init];
@@ -602,12 +602,12 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return self;
 }
 
-- (nullable Session *)createSessionForDID:(NSString *)did
+- (nullable PDSSession *)createSessionForDID:(NSString *)did
                                     handle:(NSString *)handle
                                      scope:(NSString *)scope
                                    dpopJWK:(nullable NSDictionary *)dpopJWK
                                      error:(NSError **)error {
-    Session *session = [[Session alloc] initWithDID:did handle:handle scope:scope minter:self.minter];
+    PDSSession *session = [[PDSSession alloc] initWithDID:did handle:handle scope:scope minter:self.minter];
 
     if (dpopJWK[@"kid"]) {
         session.dpopKeyThumbprint = dpopJWK[@"kid"];
@@ -625,15 +625,15 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return session;
 }
 
-- (nullable Session *)createSessionForDID:(NSString *)did
+- (nullable PDSSession *)createSessionForDID:(NSString *)did
                                     handle:(NSString *)handle
                                      scope:(NSString *)scope
                                    dpopJWK:(nullable NSDictionary *)dpopJWK {
     return [self createSessionForDID:did handle:handle scope:scope dpopJWK:dpopJWK error:nil];
 }
 
-- (nullable Session *)getSessionByAccessToken:(NSString *)accessToken error:(NSError **)error {
-    Session *session = [self.storage getSessionByAccessToken:accessToken error:error];
+- (nullable PDSSession *)getSessionByAccessToken:(NSString *)accessToken error:(NSError **)error {
+    PDSSession *session = [self.storage getSessionByAccessToken:accessToken error:error];
 
     if (!session) {
         if (error && !*error) {
@@ -659,8 +659,8 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return session;
 }
 
-- (nullable Session *)getSessionByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
-    Session *session = [self.storage getSessionByRefreshToken:refreshToken error:error];
+- (nullable PDSSession *)getSessionByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
+    PDSSession *session = [self.storage getSessionByRefreshToken:refreshToken error:error];
 
     if (!session) {
         if (error && !*error) {
@@ -686,8 +686,8 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return session;
 }
 
-- (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error {
-    Session *session = [self.storage getSessionByID:sessionID error:error];
+- (nullable PDSSession *)getSessionByID:(NSString *)sessionID error:(NSError **)error {
+    PDSSession *session = [self.storage getSessionByID:sessionID error:error];
     
     if (!session) {
         if (error && !*error) {
@@ -718,9 +718,9 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 - (BOOL)refreshSession:(NSString *)sessionID
                   scope:(nullable NSString *)newScope
                 dpopJWK:(nullable NSDictionary *)dpopJWK
-            newSession:(Session **)newSession
+            newSession:(PDSSession **)newSession
                   error:(NSError **)error {
-    Session *existingSession = [self getSessionByID:sessionID error:error];
+    PDSSession *existingSession = [self getSessionByID:sessionID error:error];
     if (!existingSession) return NO;
 
     if (![existingSession isRefreshTokenValid]) {
@@ -738,7 +738,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     [self.storage revokeSessionByID:sessionID error:nil];
 
     // Create new session
-    Session *refreshedSession = [self createSessionForDID:existingSession.did
+    PDSSession *refreshedSession = [self createSessionForDID:existingSession.did
                                                    handle:existingSession.handle
                                                     scope:finalScope
                                                   dpopJWK:dpopJWK];
@@ -750,17 +750,17 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     return (refreshedSession != nil);
 }
 
-- (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error {
-    NSArray<Session *> *sessions = [self.storage getSessionsForDID:did error:error];
-    for (Session *session in sessions) {
+- (NSArray<PDSSession *> *)getSessionsForDID:(NSString *)did error:(NSError **)error {
+    NSArray<PDSSession *> *sessions = [self.storage getSessionsForDID:did error:error];
+    for (PDSSession *session in sessions) {
         session.minter = self.minter;
     }
     return sessions;
 }
 
-- (NSArray<Session *> *)allActiveSessions:(NSError **)error {
-    NSArray<Session *> *sessions = [self.storage allActiveSessions:error];
-    for (Session *session in sessions) {
+- (NSArray<PDSSession *> *)allActiveSessions:(NSError **)error {
+    NSArray<PDSSession *> *sessions = [self.storage allActiveSessions:error];
+    for (PDSSession *session in sessions) {
         session.minter = self.minter;
     }
     return sessions;

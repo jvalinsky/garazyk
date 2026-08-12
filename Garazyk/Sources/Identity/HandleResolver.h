@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file HandleResolver.h
+ @file ATProtoHandleResolver.h
 
  @abstract Handle to DID resolution for ATProto identity.
 
@@ -39,14 +39,14 @@ typedef NS_ENUM(NSInteger, HandleError) {
 };
 
 /*!
- @class HandleResolver
+ @class ATProtoHandleResolver
 
  @abstract Resolves ATProto handles to DIDs.
 
  @discussion Uses DNS TXT records (_atproto.handle) and HTTP .well-known/atproto-did
  endpoints. Includes caching, rate limiting, and SSRF protection.
  */
-@interface HandleResolver : NSObject
+@interface ATProtoHandleResolver : NSObject
 
 /*! Cache of resolved handle -> DID mappings. */
 @property (nonatomic, strong) NSCache<NSString *, NSString *> *resolutionCache;

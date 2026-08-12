@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PLCServer.h
+ @file ATProtoPLCServer.h
 
  @abstract HTTP server for the PLC directory service.
 
@@ -29,24 +29,24 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Wraps a raw network connection as a WebSocket transport, for the
  export-stream endpoint.
 
- @discussion PLCServer (PLC) previously constructed PDSWebSocketNetworkAdapter
+ @discussion ATProtoPLCServer (PLC) previously constructed PDSWebSocketNetworkAdapter
  (Sync) directly, an undeclared PLC -> Sync dependency (workstream 08 M4).
  The concrete construction now happens behind this factory, registered by
  whichever module links both PLC and Sync into the running process (see
- PLCWebSocketTransportRegistration.m's `+load`, in ATProtoRuntime) — mirrors
+ GZPLCWebSocketTransportRegistration.m's `+load`, in ATProtoRuntime) — mirrors
  the RateLimiterStorageFactory pattern from the Transport -> Storage fix.
  */
 typedef id<PDSWebSocketTransport> _Nullable (^PLCWebSocketTransportFactory)(id<ATProtoNetworkConnection> connection);
 
 /*!
- @abstract Registers the factory PLCServer uses to wrap connections for its
+ @abstract Registers the factory ATProtoPLCServer uses to wrap connections for its
  export-stream endpoint. Call once at process startup. If never registered,
  handleExportStream: declines to stream rather than crash.
  */
 FOUNDATION_EXPORT void PLCServerSetWebSocketTransportFactory(PLCWebSocketTransportFactory _Nullable factory);
 
 /*!
- @class PLCServer
+ @class ATProtoPLCServer
 
  @abstract HTTP server implementing the PLC directory API.
 
@@ -56,15 +56,15 @@ FOUNDATION_EXPORT void PLCServerSetWebSocketTransportFactory(PLCWebSocketTranspo
     - GET /:did/log - Get audit log
     - POST /:did - Submit operation
 
-    The server validates incoming operations using the PLCAuditor before
+    The server validates incoming operations using the ATProtoPLCAuditor before
     persisting them via the PLCStore.
 
     Thread Safety: All public methods are thread-safe.
  */
 /**
- * @abstract Declares the PLCServer public API.
+ * @abstract Declares the ATProtoPLCServer public API.
  */
-@interface PLCServer : NSObject <GZServiceRuntimeProtocol>
+@interface ATProtoPLCServer : NSObject <GZServiceRuntimeProtocol>
 
 /*! The underlying HTTP server instance. */
 @property (nonatomic, readonly) ATProtoHttpServer *httpServer;
@@ -90,7 +90,7 @@ FOUNDATION_EXPORT void PLCServerSetWebSocketTransportFactory(PLCWebSocketTranspo
  * @abstract Performs the initWithStore operation.
  */
 - (instancetype)initWithStore:(id<PLCStore>)store
-                     auditor:(PLCAuditor *)auditor
+                     auditor:(ATProtoPLCAuditor *)auditor
                         port:(NSUInteger)port;
 
 /*!
@@ -108,7 +108,7 @@ FOUNDATION_EXPORT void PLCServerSetWebSocketTransportFactory(PLCWebSocketTranspo
  * @abstract Performs the initWithStore operation.
  */
 - (instancetype)initWithStore:(id<PLCStore>)store
-                     auditor:(PLCAuditor *)auditor
+                     auditor:(ATProtoPLCAuditor *)auditor
                 adminSecret:(NSString *)adminSecret
                         port:(NSUInteger)port;
 
@@ -128,7 +128,7 @@ FOUNDATION_EXPORT void PLCServerSetWebSocketTransportFactory(PLCWebSocketTranspo
  * @abstract Performs the initWithStore operation.
  */
 - (instancetype)initWithStore:(id<PLCStore>)store
-                     auditor:(PLCAuditor *)auditor
+                     auditor:(ATProtoPLCAuditor *)auditor
                         host:(NSString *)host
                         port:(NSUInteger)port;
 

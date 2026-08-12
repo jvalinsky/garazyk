@@ -14,8 +14,8 @@
 @property (nonatomic, strong) PDSController *pdsController;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) ATProtoDIDResolver *didResolver;
-@property (nonatomic, strong) HandleResolver *handleResolver;
-@property (nonatomic, strong) OAuth2Server *oauthServer;
+@property (nonatomic, strong) ATProtoHandleResolver *handleResolver;
+@property (nonatomic, strong) ATProtoOAuth2Server *oauthServer;
 
 @end
 
@@ -32,10 +32,10 @@
 
     // Initialize resolvers
     self.didResolver = [[ATProtoDIDResolver alloc] init];
-    self.handleResolver = [[HandleResolver alloc] init];
+    self.handleResolver = [[ATProtoHandleResolver alloc] init];
 
     // Initialize OAuth server
-    self.oauthServer = [[OAuth2Server alloc] init];
+    self.oauthServer = [[ATProtoOAuth2Server alloc] init];
     self.oauthServer.didResolver = self.didResolver;
     self.oauthServer.handleResolver = self.handleResolver;
 

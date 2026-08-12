@@ -461,7 +461,7 @@
     __block NSString *resolved = nil;
     __block NSError *resolvedError = nil;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    HandleResolver *resolver = [[HandleResolver alloc] init];
+    ATProtoHandleResolver *resolver = [[ATProtoHandleResolver alloc] init];
     [resolver resolveHandle:[identifier lowercaseString] completion:^(NSString * _Nullable did, NSError * _Nullable handleError) {
         resolved = did;
         resolvedError = handleError;
@@ -472,7 +472,7 @@
     if (resolved.length == 0) {
         NSString *plcUrl = NSProcessInfo.processInfo.environment[@"PDS_PLC_URL"] ?: NSProcessInfo.processInfo.environment[@"PLC_URL"] ?: [ATProtoDIDResolver sharedResolver].plcURL;
         if (plcUrl.length > 0 && ![plcUrl isEqualToString:@"mock"] && ![plcUrl isEqualToString:@"skip"]) {
-            DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+            ATProtoDIDPLCResolver *plcResolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:plcUrl];
             plcResolver.timeout = 2.0;
 
             NSURL *listURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/_list", plcUrl]];
@@ -660,7 +660,7 @@
 }
 
 - (void)writeInvalidRequest:(NSString *)message response:(ATProtoHttpResponse *)response {
-    [XrpcErrorHelper setInvalidRequestError:response message:message ?: @"Invalid request"];
+    [ATProtoXrpcErrorHelper setInvalidRequestError:response message:message ?: @"Invalid request"];
 }
 
 - (BeskidMetrics *)metrics {

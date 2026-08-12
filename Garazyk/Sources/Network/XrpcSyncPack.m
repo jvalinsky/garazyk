@@ -241,13 +241,13 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   };
 }
 
-@implementation XrpcSyncPack
+@implementation ATProtoXrpcSyncPack
 
 + (NSString *)routePackIdentifier {
   return @"com.atproto.sync";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
     
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;

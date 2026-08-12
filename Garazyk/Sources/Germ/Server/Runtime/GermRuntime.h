@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file GermRuntime.h
+ @file GZGermRuntime.h
 
  @brief Standalone runtime for the Germ E2EE mailbox service.
 
@@ -20,9 +20,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Declares the GermRuntime public API.
+ * @abstract Declares the GZGermRuntime public API.
  */
-@interface GermRuntime : NSObject <GZServiceRuntimeProtocol>
+@interface GZGermRuntime : NSObject <GZServiceRuntimeProtocol>
 
 /**
  * @abstract Exposes the is running value.

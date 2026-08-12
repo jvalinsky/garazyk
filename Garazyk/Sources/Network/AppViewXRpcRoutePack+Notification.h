@@ -9,7 +9,7 @@
  * writes the response and stops processing. Paginated reads clamp `limit` to 1...100. Invalid
  * required JSON bodies yield 400, while notification-service failures yield 500 error JSON.
  */
-@interface AppViewXRpcRoutePack (Notification)
+@interface ATProtoAppViewXRpcRoutePack (Notification)
 
 /** @abstract Lists the caller's notifications with optional cursor pagination. */
 - (void)handleListNotifications:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

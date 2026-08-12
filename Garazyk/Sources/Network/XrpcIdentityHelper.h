@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcIdentityHelper.h
+//  ATProtoXrpcIdentityHelper.h
 //  ATProtoPDS
 //
 //  Identity resolution helper for XRPC endpoints.
@@ -10,22 +10,22 @@
 
 #import <Foundation/Foundation.h>
 
-@class HandleResolver;
+@class ATProtoHandleResolver;
 @class PDSServiceDatabases;
 @class ATProtoServiceConfiguration;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * XrpcIdentityHelper provides centralized identity resolution logic for XRPC endpoints.
+ * ATProtoXrpcIdentityHelper provides centralized identity resolution logic for XRPC endpoints.
  *
  * Responsibilities:
- * - Resolve handles to DIDs using HandleResolver
+ * - Resolve handles to DIDs using ATProtoHandleResolver
  * - Resolve account identifiers (handle or DID) to DIDs
  * - Resolve DID documents (PLC directory with local fallback)
  *
  * Handle Resolution Flow:
- * 1. Use HandleResolver service for DNS/HTTPS resolution
+ * 1. Use ATProtoHandleResolver service for DNS/HTTPS resolution
  * 2. Return DID or error
  *
  * Account Identifier Resolution:
@@ -40,22 +40,22 @@ NS_ASSUME_NONNULL_BEGIN
  * 4. Return DID document or error
  */
 /**
- * @abstract Declares the XrpcIdentityHelper public API.
+ * @abstract Declares the ATProtoXrpcIdentityHelper public API.
  */
-@interface XrpcIdentityHelper : NSObject
+@interface ATProtoXrpcIdentityHelper : NSObject
 
 /**
- * Resolve handle to DID using HandleResolver.
+ * Resolve handle to DID using ATProtoHandleResolver.
  *
- * This is a synchronous wrapper around HandleResolver's async API.
+ * This is a synchronous wrapper around ATProtoHandleResolver's async API.
  *
  * @param handle Handle to resolve (e.g., "alice.bsky.social")
- * @param resolver HandleResolver service for DNS/HTTPS resolution
+ * @param resolver ATProtoHandleResolver service for DNS/HTTPS resolution
  * @param error Error output parameter
  * @return Resolved DID or nil on failure
  */
 + (nullable NSString *)resolveHandleToDid:(NSString *)handle
-                           handleResolver:(HandleResolver *)resolver
+                           handleResolver:(ATProtoHandleResolver *)resolver
                                     error:(NSError **)error;
 
 /**

@@ -5,18 +5,18 @@
 #import "Auth/Crypto/JWT.h"
 #import "Auth/Crypto/Secp256k1.h"
 
-@interface SessionStoreTests : XCTestCase
-@property (nonatomic, strong) SessionStore *store;
+@interface PDSSessionStoreTests : XCTestCase
+@property (nonatomic, strong) PDSSessionStore *store;
 @property (nonatomic, strong) ATProtoJWTMinter *minter;
 @property (nonatomic, strong) ATProtoJWTVerifier *verifier;
 @end
 
-@implementation SessionStoreTests
+@implementation PDSSessionStoreTests
 
 - (void)setUp {
     [super setUp];
     // Create a fresh store instance for each test
-    self.store = [[SessionStore alloc] init];
+    self.store = [[PDSSessionStore alloc] init];
     [self configureJWTSigning];
 }
 
@@ -59,11 +59,11 @@
     XCTAssertNil(error, @"No JWT verification error expected");
 }
 
-#pragma mark - Session Creation Tests
+#pragma mark - PDSSession Creation Tests
 
 - (void)testCreateSessionForDID {
     NSError *error = nil;
-    Session *session = [self.store createSessionForDID:@"did:plc:test123"
+    PDSSession *session = [self.store createSessionForDID:@"did:plc:test123"
                                                 handle:@"test.example.com"
                                                  scope:@"atproto"
                                                dpopJWK:nil
@@ -83,7 +83,7 @@
 - (void)testDPoPThumbprintEqualsExpectedValue {
     NSDictionary *dpopJWK = @{@"kid": @"dpop-key-thumbprint-123"};
     
-    Session *session = [self.store createSessionForDID:@"did:plc:dpoptest"
+    PDSSession *session = [self.store createSessionForDID:@"did:plc:dpoptest"
                                                 handle:@"dpop.example.com"
                                                  scope:@"atproto"
                                                dpopJWK:dpopJWK
@@ -96,7 +96,7 @@
 - (void)testDPoPThumbprintNilWhenNoKid {
     NSDictionary *dpopJWK = @{@"kty": @"EC"}; // No kid field
     
-    Session *session = [self.store createSessionForDID:@"did:plc:nokid"
+    PDSSession *session = [self.store createSessionForDID:@"did:plc:nokid"
                                                 handle:@"nokid.example.com"
                                                  scope:@"atproto"
                                                dpopJWK:dpopJWK
@@ -105,17 +105,17 @@
     XCTAssertNil(session.dpopKeyThumbprint, @"DPoP thumbprint should be nil when no kid");
 }
 
-#pragma mark - Session Lookup Tests
+#pragma mark - PDSSession Lookup Tests
 
 - (void)testGetSessionByAccessToken {
-    Session *created = [self.store createSessionForDID:@"did:plc:lookup"
+    PDSSession *created = [self.store createSessionForDID:@"did:plc:lookup"
                                                 handle:@"lookup.example.com"
                                                  scope:@"atproto"
                                                dpopJWK:nil
                                                  error:nil];
     
     NSError *error = nil;
-    Session *found = [self.store getSessionByAccessToken:created.accessToken error:&error];
+    PDSSession *found = [self.store getSessionByAccessToken:created.accessToken error:&error];
     
     XCTAssertNotNil(found, @"Session should be found by access token");
     XCTAssertNil(error, @"No error should occur");
@@ -125,7 +125,7 @@
 
 - (void)testGetSessionByAccessTokenNotFound {
     NSError *error = nil;
-    Session *found = [self.store getSessionByAccessToken:@"nonexistent-token" error:&error];
+    PDSSession *found = [self.store getSessionByAccessToken:@"nonexistent-token" error:&error];
     
     XCTAssertNil(found, @"Session should not be found");
     XCTAssertNotNil(error, @"Error should be returned");
@@ -133,14 +133,14 @@
 }
 
 - (void)testGetSessionByRefreshToken {
-    Session *created = [self.store createSessionForDID:@"did:plc:refresh"
+    PDSSession *created = [self.store createSessionForDID:@"did:plc:refresh"
                                                 handle:@"refresh.example.com"
                                                  scope:@"atproto"
                                                dpopJWK:nil
                                                  error:nil];
     
     NSError *error = nil;
-    Session *found = [self.store getSessionByRefreshToken:created.refreshToken error:&error];
+    PDSSession *found = [self.store getSessionByRefreshToken:created.refreshToken error:&error];
     
     XCTAssertNotNil(found, @"Session should be found by refresh token");
     XCTAssertNil(error, @"No error should occur");
@@ -149,7 +149,7 @@
 
 - (void)testGetSessionByRefreshTokenNotFound {
     NSError *error = nil;
-    Session *found = [self.store getSessionByRefreshToken:@"nonexistent-refresh" error:&error];
+    PDSSession *found = [self.store getSessionByRefreshToken:@"nonexistent-refresh" error:&error];
     
     XCTAssertNil(found, @"Session should not be found");
     XCTAssertNotNil(error, @"Error should be returned");
@@ -157,24 +157,24 @@
 }
 
 - (void)testGetSessionByID {
-    Session *created = [self.store createSessionForDID:@"did:plc:byid"
+    PDSSession *created = [self.store createSessionForDID:@"did:plc:byid"
                                                 handle:@"byid.example.com"
                                                  scope:@"atproto"
                                                dpopJWK:nil
                                                  error:nil];
     
     NSError *error = nil;
-    Session *found = [self.store getSessionByID:created.sessionID error:&error];
+    PDSSession *found = [self.store getSessionByID:created.sessionID error:&error];
     
     XCTAssertNotNil(found, @"Session should be found by ID");
     XCTAssertNil(error, @"No error should occur");
     XCTAssertEqualObjects(found.accessToken, created.accessToken);
 }
 
-#pragma mark - Session Revocation Tests
+#pragma mark - PDSSession Revocation Tests
 
 - (void)testRevokeSession {
-    Session *session = [self.store createSessionForDID:@"did:plc:revoke"
+    PDSSession *session = [self.store createSessionForDID:@"did:plc:revoke"
                                                 handle:@"revoke.example.com"
                                                  scope:@"atproto"
                                                dpopJWK:nil
@@ -190,9 +190,9 @@
     XCTAssertNil(error, @"No error should occur");
     
     // Verify tokens no longer work
-    Session *byAccess = [self.store getSessionByAccessToken:accessToken error:nil];
-    Session *byRefresh = [self.store getSessionByRefreshToken:refreshToken error:nil];
-    Session *byID = [self.store getSessionByID:sessionID error:nil];
+    PDSSession *byAccess = [self.store getSessionByAccessToken:accessToken error:nil];
+    PDSSession *byRefresh = [self.store getSessionByRefreshToken:refreshToken error:nil];
+    PDSSession *byID = [self.store getSessionByID:sessionID error:nil];
     
     XCTAssertNil(byAccess, @"Access token lookup should fail after revocation");
     XCTAssertNil(byRefresh, @"Refresh token lookup should fail after revocation");
@@ -208,10 +208,10 @@
     XCTAssertEqual(error.code, SessionErrorSessionNotFound);
 }
 
-#pragma mark - Session Refresh Tests
+#pragma mark - PDSSession Refresh Tests
 
 - (void)testRefreshSession {
-    Session *original = [self.store createSessionForDID:@"did:plc:refreshtest"
+    PDSSession *original = [self.store createSessionForDID:@"did:plc:refreshtest"
                                                  handle:@"refreshtest.example.com"
                                                   scope:@"atproto"
                                                 dpopJWK:nil
@@ -219,7 +219,7 @@
     NSString *oldAccessToken = original.accessToken;
     NSString *oldRefreshToken = original.refreshToken;
     
-    Session *newSession = nil;
+    PDSSession *newSession = nil;
     NSError *error = nil;
     BOOL refreshed = [self.store refreshSession:original.sessionID
                                           scope:nil
@@ -236,22 +236,22 @@
     XCTAssertNotEqualObjects(newSession.refreshToken, oldRefreshToken);
     
     // Old tokens should no longer work
-    Session *oldLookup = [self.store getSessionByAccessToken:oldAccessToken error:nil];
+    PDSSession *oldLookup = [self.store getSessionByAccessToken:oldAccessToken error:nil];
     XCTAssertNil(oldLookup, @"Old access token should be invalid");
     
     // New tokens should work
-    Session *newLookup = [self.store getSessionByAccessToken:newSession.accessToken error:nil];
+    PDSSession *newLookup = [self.store getSessionByAccessToken:newSession.accessToken error:nil];
     XCTAssertNotNil(newLookup, @"New access token should be valid");
 }
 
 - (void)testRefreshSessionUpdatesScopePropertyEqualToExpected {
-    Session *original = [self.store createSessionForDID:@"did:plc:scopechange"
+    PDSSession *original = [self.store createSessionForDID:@"did:plc:scopechange"
                                                  handle:@"scopechange.example.com"
                                                   scope:@"atproto"
                                                 dpopJWK:nil
                                                   error:nil];
     
-    Session *newSession = nil;
+    PDSSession *newSession = nil;
     [self.store refreshSession:original.sessionID
                          scope:@"atproto transition:generic"
                        dpopJWK:nil
@@ -262,7 +262,7 @@
                           @"New scope should be applied");
 }
 
-#pragma mark - Multi-Session Tests
+#pragma mark - Multi-PDSSession Tests
 
 - (void)testGetSessionsForDID {
     NSString *did = @"did:plc:multisession";
@@ -272,7 +272,7 @@
     [self.store createSessionForDID:did handle:@"session3.example.com" scope:@"atproto" dpopJWK:nil error:nil];
     
     NSError *error = nil;
-    NSArray<Session *> *sessions = [self.store getSessionsForDID:did error:&error];
+    NSArray<PDSSession *> *sessions = [self.store getSessionsForDID:did error:&error];
     
     XCTAssertEqual(sessions.count, 3, @"Should have 3 sessions for this DID");
     XCTAssertNil(error, @"No error should occur");
@@ -283,7 +283,7 @@
     [self.store createSessionForDID:@"did:plc:user2" handle:@"user2.example.com" scope:@"atproto" dpopJWK:nil error:nil];
     
     NSError *error = nil;
-    NSArray<Session *> *sessions = [self.store allActiveSessions:&error];
+    NSArray<PDSSession *> *sessions = [self.store allActiveSessions:&error];
     
     XCTAssertGreaterThanOrEqual(sessions.count, 2, @"Should have at least 2 active sessions");
     XCTAssertNil(error, @"No error should occur");
@@ -299,7 +299,7 @@
 #pragma mark - Token Response Tests
 
 - (void)testToTokenResponse {
-    Session *session = [self.store createSessionForDID:@"did:plc:tokenresp"
+    PDSSession *session = [self.store createSessionForDID:@"did:plc:tokenresp"
                                                 handle:@"tokenresp.example.com"
                                                  scope:@"atproto"
                                                dpopJWK:nil
@@ -321,13 +321,13 @@
     dbPath = [dbPath stringByAppendingPathExtension:@"sqlite"];
     
     // 1. Create store with path
-    SessionStore *store1 = [[SessionStore alloc] initWithDatabasePath:dbPath];
+    PDSSessionStore *store1 = [[PDSSessionStore alloc] initWithDatabasePath:dbPath];
     store1.minter = self.minter;
     // Set clock skew to match setUp
     store1.clockSkew = 0;
     
     // 2. Create session
-    Session *session = [store1 createSessionForDID:@"did:example:123"
+    PDSSession *session = [store1 createSessionForDID:@"did:example:123"
                                             handle:@"user.bsky.social"
                                              scope:@"com.atproto.access"
                                            dpopJWK:nil
@@ -336,13 +336,13 @@
     NSString *accessToken = session.accessToken;
     
     // 3. Create NEW store with same path
-    SessionStore *store2 = [[SessionStore alloc] initWithDatabasePath:dbPath];
+    PDSSessionStore *store2 = [[PDSSessionStore alloc] initWithDatabasePath:dbPath];
     store2.minter = self.minter;
     store2.clockSkew = 0;
     
     // 4. Retrieve session
     NSError *error = nil;
-    Session *retrieved = [store2 getSessionByAccessToken:accessToken error:&error];
+    PDSSession *retrieved = [store2 getSessionByAccessToken:accessToken error:&error];
     
     XCTAssertNotNil(retrieved, @"Session should persist across store instances");
     XCTAssertNil(error, @"Should not have error retrieving session");
@@ -355,7 +355,7 @@
 }
 
 #pragma mark - SQLite storage characterization (PDSSQLiteSessionStorage, file-backed)
-// These drive SessionStore with a file path, which routes to PDSSQLiteSessionStorage
+// These drive PDSSessionStore with a file path, which routes to PDSSQLiteSessionStorage
 // (the in-memory path uses PDSMemorySessionStorage). They are the safety net for
 // migrating that storage onto ConnectionManagerSerial + QueryRunner.
 
@@ -364,8 +364,8 @@
     return [p stringByAppendingPathExtension:@"sqlite"];
 }
 
-- (SessionStore *)fileStoreAtPath:(NSString *)path {
-    SessionStore *store = [[SessionStore alloc] initWithDatabasePath:path];
+- (PDSSessionStore *)fileStoreAtPath:(NSString *)path {
+    PDSSessionStore *store = [[PDSSessionStore alloc] initWithDatabasePath:path];
     store.minter = self.minter;
     store.clockSkew = 0;
     return store;
@@ -380,12 +380,12 @@
 
 - (void)testSQLiteStorageRoundTripsAllFields {
     NSString *path = [self freshSQLiteDbPath];
-    SessionStore *store = [self fileStoreAtPath:path];
-    Session *created = [store createSessionForDID:@"did:plc:full" handle:@"full.example" scope:@"atproto"
+    PDSSessionStore *store = [self fileStoreAtPath:path];
+    PDSSession *created = [store createSessionForDID:@"did:plc:full" handle:@"full.example" scope:@"atproto"
                                           dpopJWK:@{@"kid": @"thumb-xyz"} error:nil];
     XCTAssertNotNil(created);
 
-    Session *got = [store getSessionByID:created.sessionID error:nil];
+    PDSSession *got = [store getSessionByID:created.sessionID error:nil];
     XCTAssertNotNil(got, @"round-trip by id");
     XCTAssertEqualObjects(got.did, @"did:plc:full");
     XCTAssertEqualObjects(got.handle, @"full.example");
@@ -401,10 +401,10 @@
 
 - (void)testSQLiteStorageGetByRefreshToken {
     NSString *path = [self freshSQLiteDbPath];
-    SessionStore *store = [self fileStoreAtPath:path];
-    Session *created = [store createSessionForDID:@"did:plc:rt" handle:@"rt.example" scope:@"atproto" dpopJWK:nil error:nil];
+    PDSSessionStore *store = [self fileStoreAtPath:path];
+    PDSSession *created = [store createSessionForDID:@"did:plc:rt" handle:@"rt.example" scope:@"atproto" dpopJWK:nil error:nil];
 
-    Session *got = [store getSessionByRefreshToken:created.refreshToken error:nil];
+    PDSSession *got = [store getSessionByRefreshToken:created.refreshToken error:nil];
     XCTAssertNotNil(got);
     XCTAssertEqualObjects(got.sessionID, created.sessionID);
     [self removeSQLiteDb:path];
@@ -412,8 +412,8 @@
 
 - (void)testSQLiteStorageRevokeRemovesSession {
     NSString *path = [self freshSQLiteDbPath];
-    SessionStore *store = [self fileStoreAtPath:path];
-    Session *created = [store createSessionForDID:@"did:plc:rev" handle:@"rev.example" scope:@"atproto" dpopJWK:nil error:nil];
+    PDSSessionStore *store = [self fileStoreAtPath:path];
+    PDSSession *created = [store createSessionForDID:@"did:plc:rev" handle:@"rev.example" scope:@"atproto" dpopJWK:nil error:nil];
 
     NSError *error = nil;
     XCTAssertTrue([store revokeSession:created.sessionID error:&error], @"revoke: %@", error);
@@ -423,7 +423,7 @@
 
 - (void)testSQLiteStorageRevokeNonexistentReturnsNO {
     NSString *path = [self freshSQLiteDbPath];
-    SessionStore *store = [self fileStoreAtPath:path];
+    PDSSessionStore *store = [self fileStoreAtPath:path];
     // Characterization: revokeSessionByID reports sqlite3_changes > 0, so revoking a
     // missing session id returns NO.
     XCTAssertFalse([store revokeSession:@"no-such-session" error:NULL]);
@@ -432,7 +432,7 @@
 
 - (void)testSQLiteStorageGetSessionsForDID {
     NSString *path = [self freshSQLiteDbPath];
-    SessionStore *store = [self fileStoreAtPath:path];
+    PDSSessionStore *store = [self fileStoreAtPath:path];
     [store createSessionForDID:@"did:plc:multi" handle:@"a.example" scope:@"atproto" dpopJWK:nil error:nil];
     [store createSessionForDID:@"did:plc:multi" handle:@"a.example" scope:@"atproto" dpopJWK:nil error:nil];
     [store createSessionForDID:@"did:plc:other" handle:@"b.example" scope:@"atproto" dpopJWK:nil error:nil];
@@ -444,7 +444,7 @@
 
 - (void)testSQLiteStorageAllActiveSessions {
     NSString *path = [self freshSQLiteDbPath];
-    SessionStore *store = [self fileStoreAtPath:path];
+    PDSSessionStore *store = [self fileStoreAtPath:path];
     [store createSessionForDID:@"did:plc:act1" handle:@"a.example" scope:@"atproto" dpopJWK:nil error:nil];
     [store createSessionForDID:@"did:plc:act2" handle:@"b.example" scope:@"atproto" dpopJWK:nil error:nil];
 
@@ -454,10 +454,10 @@
 
 - (void)testSQLiteStorageRefreshRotatesSession {
     NSString *path = [self freshSQLiteDbPath];
-    SessionStore *store = [self fileStoreAtPath:path];
-    Session *original = [store createSessionForDID:@"did:plc:refresh" handle:@"r.example" scope:@"atproto" dpopJWK:nil error:nil];
+    PDSSessionStore *store = [self fileStoreAtPath:path];
+    PDSSession *original = [store createSessionForDID:@"did:plc:refresh" handle:@"r.example" scope:@"atproto" dpopJWK:nil error:nil];
 
-    Session *refreshed = nil;
+    PDSSession *refreshed = nil;
     NSError *error = nil;
     BOOL ok = [store refreshSession:original.sessionID scope:nil dpopJWK:nil newSession:&refreshed error:&error];
     XCTAssertTrue(ok, @"refresh: %@", error);

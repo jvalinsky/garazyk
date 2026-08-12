@@ -20,7 +20,7 @@ static NSString *const kGraphMuteStatePreferenceType = @"com.atproto.pds.app.bsk
         return @{};
     }
 
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:db];
+    PDSActorService *actorService = [[PDSActorService alloc] initWithDatabase:db];
     NSError *prefsError = nil;
     NSDictionary *prefs = [actorService getPreferencesForActor:did error:&prefsError];
     XCTAssertNil(prefsError);

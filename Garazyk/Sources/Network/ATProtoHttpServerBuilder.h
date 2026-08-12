@@ -22,8 +22,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoServiceConfiguration;
 @class ATProtoJWTMinter;
 @class PDSServiceDatabases;
-@class XrpcDispatcher;
-@class SubscribeReposHandler;
+@class ATProtoXrpcDispatcher;
+@class ATProtoSubscribeReposHandler;
 
 /*!
  @class ATProtoHttpServerBuilder
@@ -74,10 +74,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) PDSServiceDatabases *serviceDatabases;
 
 /*! XRPC dispatcher for method routing. */
-@property (nonatomic, strong, nullable) XrpcDispatcher *xrpcDispatcher;
+@property (nonatomic, strong, nullable) ATProtoXrpcDispatcher *xrpcDispatcher;
 
 /*! subscribeRepos handler for main-port WebSocket upgrades. */
-@property (nonatomic, strong, nullable) SubscribeReposHandler *subscribeReposHandler;
+@property (nonatomic, strong, nullable) ATProtoSubscribeReposHandler *subscribeReposHandler;
 
 /*! Issuer URL for NodeInfo (e.g., "https://localhost:2583"). */
 @property (nonatomic, copy, nullable) NSString *issuer;

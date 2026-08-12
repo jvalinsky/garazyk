@@ -200,7 +200,7 @@
             },
             @"prev": [NSNull null]
         };
-        NSString *sokolDid = [PLCOperation calculateDIDForData:sokolData];
+        NSString *sokolDid = [ATProtoPLCOperation calculateDIDForData:sokolData];
         GZ_LOG_INFO(@"Diagnostic: Calculated DID for sokol (unsigned, non-spec): %@", sokolDid);
         GZ_LOG_INFO(@"Diagnostic: Note: spec-compliant DID requires signed operation");
     }
@@ -356,7 +356,7 @@
     NSString *pubKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [ATProtoCID base58btcEncode:[self addMulticodecPrefix:keyPair.compressedPublicKey]]];
     NSString *rotationKeyDidKey = [NSString stringWithFormat:@"did:key:z%@", [ATProtoCID base58btcEncode:[self addMulticodecPrefix:rotationKeyPair.compressedPublicKey]]];
 
-    PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+    ATProtoPLCRotationKeyManager *keyManager = [ATProtoPLCRotationKeyManager sharedManager];
     [keyManager loadOrGenerateKeyWithError:nil];
     NSString *serverRotationKey = keyManager.rotationKeyDidKey;
     
@@ -422,7 +422,7 @@
     signedOp[@"sig"] = [ATProtoCryptoUtils base64URLEncode:signature];
     
     // 5. Generate DID from the signed operation (per did-method-plc spec v0.3.0).
-    NSString *did = [PLCOperation calculateDIDForSignedOperation:signedOp];
+    NSString *did = [ATProtoPLCOperation calculateDIDForSignedOperation:signedOp];
     GZ_LOG_INFO(@"Calculated DID from signed genesis op: %@", did);
     
     // 6. POST genesis operation to PLC Server
@@ -657,7 +657,7 @@
         plcUrl = [[NSProcessInfo processInfo] environment][@"PDS_PLC_URL"] ?: @"http://localhost:2582";
     }
 
-    DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+    ATProtoDIDPLCResolver *resolver = [[ATProtoDIDPLCResolver alloc] initWithPlcUrl:plcUrl];
     NSArray *auditLog = [resolver resolveAuditLogForDID:did error:&error];
     
     if (!auditLog || auditLog.count == 0) {
@@ -666,7 +666,7 @@
     }
     
     NSDictionary *lastOpPayload = auditLog.lastObject;
-    NSString *lastOpHash = [PLCOperation calculateCIDForOperation:lastOpPayload error:nil];
+    NSString *lastOpHash = [ATProtoPLCOperation calculateCIDForOperation:lastOpPayload error:nil];
     
     if (!lastOpHash) {
          if (context.verbose) GZ_LOG_ERROR(@"Could not calculate cid of previous operation");

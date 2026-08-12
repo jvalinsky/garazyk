@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RecordLifecycleHandler.m
+ @file PDSRecordLifecycleHandler.m
 
  @abstract Record lifecycle handler implementation.
 
@@ -20,20 +20,20 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Debug/GZLogger.h"
 
-@interface RecordLifecycleHandler ()
-@property (nonatomic, strong) NotificationService *notificationService;
-@property (nonatomic, strong) BookmarkService *bookmarkService;
-@property (nonatomic, strong) GraphService *graphService;
-@property (nonatomic, strong) FeedService *feedService;
+@interface PDSRecordLifecycleHandler ()
+@property (nonatomic, strong) PDSNotificationService *notificationService;
+@property (nonatomic, strong) PDSBookmarkService *bookmarkService;
+@property (nonatomic, strong) PDSGraphService *graphService;
+@property (nonatomic, strong) PDSFeedService *feedService;
 @property (nonatomic, strong) PDSDatabase *database;
 @end
 
-@implementation RecordLifecycleHandler
+@implementation PDSRecordLifecycleHandler
 
-- (instancetype)initWithNotificationService:(NotificationService *)notificationService
-                             bookmarkService:(BookmarkService *)bookmarkService
-                                graphService:(GraphService *)graphService
-                                 feedService:(FeedService *)feedService
+- (instancetype)initWithNotificationService:(PDSNotificationService *)notificationService
+                             bookmarkService:(PDSBookmarkService *)bookmarkService
+                                graphService:(PDSGraphService *)graphService
+                                 feedService:(PDSFeedService *)feedService
                                     database:(PDSDatabase *)database {
     self = [super init];
     if (self) {

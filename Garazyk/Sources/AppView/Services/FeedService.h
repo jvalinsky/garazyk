@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file FeedService.h
+ @file PDSFeedService.h
 
  @abstract Feed generation and post thread service.
 
@@ -18,17 +18,17 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabase;
-@class AppViewVideoUriBuilder;
+@class PDSAppViewVideoUriBuilder;
 
 /*!
- @class FeedService
+ @class PDSFeedService
  
  @abstract Service for feed generation and post threads.
  
  @discussion Generates various feed views with cursor-based pagination.
  Supports timelines, author feeds, post threads, custom feeds, and likes.
  */
-@interface FeedService : NSObject
+@interface PDSFeedService : NSObject
 
 /*! Initialize with database connection. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;
 
 /*! Optional video URL builder used to hydrate app.bsky.embed.video views. */
-@property (nonatomic, strong, nullable) AppViewVideoUriBuilder *videoUriBuilder;
+@property (nonatomic, strong, nullable) PDSAppViewVideoUriBuilder *videoUriBuilder;
 
 
 /*! Get timeline feed for actor with pagination. */

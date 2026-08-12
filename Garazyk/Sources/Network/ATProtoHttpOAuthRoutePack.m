@@ -49,7 +49,7 @@
     return;
   }
 
-  OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:db];
+  ATProtoOAuth2Handler *oauthHandler = [[ATProtoOAuth2Handler alloc] initWithDatabase:db];
   oauthHandler.minter = jwtMinter;
   oauthHandler.dataDirectory = dataDirectory;
 
@@ -154,8 +154,8 @@
              [response setJsonBody:@{@"authFactorToken": authFactorToken}];
            }];
 
-  WebAuthnRegistrationHandler *webauthnHandler =
-      [[WebAuthnRegistrationHandler alloc] initWithDatabase:db
+  ATProtoWebAuthnRegistrationHandler *webauthnHandler =
+      [[ATProtoWebAuthnRegistrationHandler alloc] initWithDatabase:db
                                                 serverOrigin:config.issuer];
   [webauthnHandler registerRoutesWithServer:server];
   GZ_LOG_DEBUG(@"ATProtoHttpOAuthRoutePack: WebAuthn routes registered");

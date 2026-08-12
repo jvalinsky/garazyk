@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PLCMockStore.h
+ @file ATProtoPLCMockStore.h
 
  @abstract In-memory PLCStore implementation for tests and local development.
  */
@@ -12,14 +12,14 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class PLCMockStore
+ @class ATProtoPLCMockStore
 
  @abstract In-memory implementation of the PLCStore protocol.
 
  @discussion Stores operation history in process memory and is primarily
  intended for tests, smoke flows, and local tooling.
  */
-@interface PLCMockStore : NSObject <PLCStore>
+@interface ATProtoPLCMockStore : NSObject <PLCStore>
 
 @end
 

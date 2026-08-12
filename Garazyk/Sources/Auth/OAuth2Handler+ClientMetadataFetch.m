@@ -6,7 +6,7 @@
 #import "Network/SSRFValidator.h"
 #import "Debug/GZLogger.h"
 
-@implementation OAuth2Handler (ClientMetadataFetch)
+@implementation ATProtoOAuth2Handler (ClientMetadataFetch)
 
 - (NSDictionary *)parseClientMetadataFromInput:(id)clientMetadataInput {
   if ([clientMetadataInput isKindOfClass:[NSDictionary class]]) {

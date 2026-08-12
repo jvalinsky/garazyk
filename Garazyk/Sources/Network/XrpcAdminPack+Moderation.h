@@ -8,8 +8,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcAdminPack (Moderation)
-+ (void)registerModerationEndpoints:(XrpcDispatcher *)dispatcher
+@interface ATProtoXrpcAdminPack (Moderation)
++ (void)registerModerationEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                 services:(id<XrpcRoutePackServices>)services;
 @end
 

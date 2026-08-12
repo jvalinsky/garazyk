@@ -10,7 +10,7 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/GZLogger.h"
 
-@interface ActorService ()
+@interface PDSActorService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
 @end
 
@@ -36,7 +36,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
     return [NSString stringWithFormat:@"%%%@%%", escaped];
 }
 
-@implementation ActorService
+@implementation PDSActorService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];
@@ -378,7 +378,7 @@ static NSString *GZLikeContainsPattern(NSString *term) {
     }
 
     // 3. Fallback to IdentityHelper (PLC resolution)
-    NSString *plcHandle = [AppViewIdentityHelper resolveHandleForDID:did error:error];
+    NSString *plcHandle = [PDSAppViewIdentityHelper resolveHandleForDID:did error:error];
     if (plcHandle && ![plcHandle isEqualToString:@"invalid.handle"]) {
         return plcHandle;
     }

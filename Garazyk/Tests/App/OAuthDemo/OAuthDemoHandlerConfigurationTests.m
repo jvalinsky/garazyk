@@ -7,7 +7,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
-@interface TestableOAuthDemoHandler : OAuthDemoHandler
+@interface TestableOAuthDemoHandler : GZOAuthDemoHandler
 @property (nonatomic, copy) NSString *forcedAssetsPath;
 @end
 
@@ -68,13 +68,13 @@
     [builder buildWithError:&error];
     XCTAssertNil(error);
 
-    OAuthDemoHandler *handler = [OAuthDemoHandler sharedHandler];
+    GZOAuthDemoHandler *handler = [GZOAuthDemoHandler sharedHandler];
     NSString *handlerDataDir = [handler valueForKey:@"dataDirectory"];
     XCTAssertEqualObjects(handlerDataDir, testDir);
 }
 
 - (void)testCanHandleRequestMatchesOAuthDemoPrefix {
-    OAuthDemoHandler *handler = [[OAuthDemoHandler alloc] init];
+    GZOAuthDemoHandler *handler = [[GZOAuthDemoHandler alloc] init];
     XCTAssertTrue([handler canHandleRequest:[self requestWithPath:@"/oauth-demo"]]);
     XCTAssertTrue([handler canHandleRequest:[self requestWithPath:@"/oauth-demo/index.html"]]);
     XCTAssertFalse([handler canHandleRequest:[self requestWithPath:@"/xrpc/com.atproto.server.describeServer"]]);

@@ -6,7 +6,7 @@
 #import "Debug/GZLogger.h"
 #import "Core/NSDictionary+CID.h"
 
-@implementation FirehoseCARBuilder
+@implementation ATProtoFirehoseCARBuilder
 
 + (NSData *)buildCARForCommit:(ATProtoRepoCommit *)commit
                           ops:(NSArray<NSDictionary *> *)ops

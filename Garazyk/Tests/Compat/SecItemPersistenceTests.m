@@ -5,12 +5,12 @@
 #import "Security/PDSKeyEnvelope.h"
 #import <sqlite3.h>
 
-@interface SecItemLinuxStore (Testing)
+@interface ATProtoSecItemLinuxStore (Testing)
 - (BOOL)_migrateLegacyPlaintextRows;
 @end
 
 @interface SecItemPersistenceTests : XCTestCase
-@property (nonatomic, strong) SecItemLinuxStore *store;
+@property (nonatomic, strong) ATProtoSecItemLinuxStore *store;
 @end
 
 @implementation SecItemPersistenceTests
@@ -18,14 +18,14 @@
 - (void)setUp {
     [super setUp];
 #ifdef __APPLE__
-    // SecItemLinuxStore is a Linux compat shim; on macOS the real
+    // ATProtoSecItemLinuxStore is a Linux compat shim; on macOS the real
     // Security.framework SecItem* APIs are used instead.  The Linux
     // store uses global dispatch_once state that cannot be reset
     // between test runs, causing hangs on macOS.  Skip on Apple
     // platforms.
     XCTSkip(@"SecItemLinuxStore is a Linux-only compat shim");
 #endif
-    self.store = [[SecItemLinuxStore alloc] init];
+    self.store = [[ATProtoSecItemLinuxStore alloc] init];
     for (NSString *service in @[
         @"com.test", @"com.test.encryption-at-rest", @"com.test.legacy-plaintext",
         @"com.test.pre-migration", @"com.test.persistence"
@@ -35,7 +35,7 @@
 }
 
 - (void)testAddAndRetrieveItem {
-    SecItemLinuxStore *store = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *store = [[ATProtoSecItemLinuxStore alloc] init];
     NSData *testData = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *attributes = @{
         (id)kSecValueData: testData,
@@ -60,7 +60,7 @@
 }
 
 - (void)testDuplicateItemReturnsError {
-    SecItemLinuxStore *store = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *store = [[ATProtoSecItemLinuxStore alloc] init];
     NSData *testData = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *attributes = @{(id)kSecValueData: testData};
 
@@ -81,7 +81,7 @@
 }
 
 - (void)testUpdateMergesAttributes {
-    SecItemLinuxStore *store = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *store = [[ATProtoSecItemLinuxStore alloc] init];
     NSData *originalData = [@"secret1" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *updatedData = [@"secret2" dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *attributes = @{(id)kSecValueData: originalData};
@@ -106,7 +106,7 @@
 }
 
 - (void)testDeleteRemovesItem {
-    SecItemLinuxStore *store = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *store = [[ATProtoSecItemLinuxStore alloc] init];
     NSData *testData = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *attributes = @{(id)kSecValueData: testData};
 
@@ -128,7 +128,7 @@
 }
 
 - (void)testDeleteNonExistentItemReturnsNotFound {
-    SecItemLinuxStore *store = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *store = [[ATProtoSecItemLinuxStore alloc] init];
 
     NSError *error = nil;
     BOOL deleted = [store deleteItemWithService:@"com.nonexistent"
@@ -139,7 +139,7 @@
 }
 
 - (void)testMissingServiceReturnsParamError {
-    SecItemLinuxStore *store = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *store = [[ATProtoSecItemLinuxStore alloc] init];
     NSData *testData = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *attributes = @{(id)kSecValueData: testData};
 
@@ -163,7 +163,7 @@
 }
 
 - (void)testOnDiskFileContainsNoPlaintextSecretMaterial {
-    SecItemLinuxStore *store = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *store = [[ATProtoSecItemLinuxStore alloc] init];
     NSString *secretMarker = @"unmistakable-plaintext-marker-do-not-leak";
     NSData *testData = [secretMarker dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *attributes = @{(id)kSecValueData: testData, @"custom": @"also-should-not-leak-in-the-clear"};
@@ -217,7 +217,7 @@
     sqlite3_finalize(insertStmt);
     sqlite3_close(rawDB);
 
-    SecItemLinuxStore *store = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *store = [[ATProtoSecItemLinuxStore alloc] init];
     NSError *error = nil;
     NSDictionary *retrieved = [store itemWithService:@"com.test.legacy-plaintext" account:@"user" error:&error];
     XCTAssertNotNil(retrieved, @"%@", error);
@@ -248,7 +248,7 @@
     sqlite3_finalize(insertStmt);
     sqlite3_close(rawDB);
 
-    SecItemLinuxStore *store = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *store = [[ATProtoSecItemLinuxStore alloc] init];
     // The store's dispatch_once has already fired earlier in this process,
     // so invoke the migration pass directly rather than relying on a fresh
     // -init to trigger it.
@@ -288,7 +288,7 @@
 }
 
 - (void)testPersistenceAcrossStoreInstances {
-    SecItemLinuxStore *storeA = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *storeA = [[ATProtoSecItemLinuxStore alloc] init];
     NSData *testData = [@"secret" dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *attributes = @{(id)kSecValueData: testData};
 
@@ -298,7 +298,7 @@
                    attributes:attributes
                         error:&error];
 
-    SecItemLinuxStore *storeB = [[SecItemLinuxStore alloc] init];
+    ATProtoSecItemLinuxStore *storeB = [[ATProtoSecItemLinuxStore alloc] init];
     NSDictionary *retrieved = [storeB itemWithService:@"com.test"
                                               account:@"user"
                                                 error:&error];

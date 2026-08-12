@@ -21,10 +21,10 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class JetstreamClient;
-@class FirehoseCommitEvent;
-@class FirehoseIdentityEvent;
-@class FirehoseAccountEvent;
-@class FirehoseErrorEvent;
+@class ATProtoFirehoseCommitEvent;
+@class ATProtoFirehoseIdentityEvent;
+@class ATProtoFirehoseAccountEvent;
+@class ATProtoFirehoseErrorEvent;
 
 /*!
  @protocol JetstreamClientDelegate
@@ -34,9 +34,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @protocol JetstreamClientDelegate <NSObject>
 @optional
-- (void)jetstreamClient:(JetstreamClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event;
-- (void)jetstreamClient:(JetstreamClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
-- (void)jetstreamClient:(JetstreamClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event;
+- (void)jetstreamClient:(JetstreamClient *)client didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event;
+- (void)jetstreamClient:(JetstreamClient *)client didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event;
+- (void)jetstreamClient:(JetstreamClient *)client didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event;
 - (void)jetstreamClientDidConnect:(JetstreamClient *)client;
 - (void)jetstreamClient:(JetstreamClient *)client didDisconnectWithError:(nullable NSError *)error;
 - (void)jetstreamClient:(JetstreamClient *)client didReceiveCursor:(int64_t)cursor;

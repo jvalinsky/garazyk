@@ -200,7 +200,7 @@
     PDSDatabase *db = [[self serviceDatabases] serviceDatabaseWithError:&dbError];
     XCTAssertNotNil(db, @"Failed to open service database: %@", dbError);
 
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:db];
+    PDSActorService *actorService = [[PDSActorService alloc] initWithDatabase:db];
     NSError *prefsError = nil;
     NSDictionary *stored = [actorService getPreferencesForActor:self.did1 error:&prefsError];
     XCTAssertNil(prefsError, @"getPreferencesForActor should not error: %@", prefsError);

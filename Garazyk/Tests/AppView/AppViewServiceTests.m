@@ -170,7 +170,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 
 #pragma mark - Service tracking doubles
 
-@interface TrackingNotificationService : NotificationService
+@interface TrackingNotificationService : PDSNotificationService
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *createCalls;
 @property(nonatomic, strong) NSMutableArray<NSString *> *deleteCalls;
 @end
@@ -209,7 +209,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 @end
 
-@interface TrackingBookmarkService : BookmarkService
+@interface TrackingBookmarkService : PDSBookmarkService
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *indexCalls;
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *deleteCalls;
 @end
@@ -247,7 +247,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 @end
 
-@interface TrackingGraphService : GraphService
+@interface TrackingGraphService : PDSGraphService
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *calls;
 @end
 
@@ -306,7 +306,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 @end
 
-@interface TrackingFeedService : FeedService
+@interface TrackingFeedService : PDSFeedService
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *calls;
 @end
 
@@ -375,7 +375,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 @property(nonatomic, strong) TrackingBookmarkService *bookmarkService;
 @property(nonatomic, strong) TrackingGraphService *graphService;
 @property(nonatomic, strong) TrackingFeedService *feedService;
-@property(nonatomic, strong) RecordLifecycleHandler *recordLifecycleHandler;
+@property(nonatomic, strong) PDSRecordLifecycleHandler *recordLifecycleHandler;
 @end
 
 @implementation AppViewServiceTests
@@ -406,7 +406,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     self.graphService = [[TrackingGraphService alloc] initWithDatabase:self.database];
     self.feedService = [[TrackingFeedService alloc] initWithDatabase:self.database];
 
-    self.recordLifecycleHandler = [[RecordLifecycleHandler alloc]
+    self.recordLifecycleHandler = [[PDSRecordLifecycleHandler alloc]
         initWithNotificationService:self.notificationService
                       bookmarkService:self.bookmarkService
                          graphService:self.graphService
@@ -779,7 +779,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     XCTAssertEqual(indexer.deleteCalls.count, 0u);
 }
 
-#pragma mark - RecordLifecycleHandler notifications
+#pragma mark - PDSRecordLifecycleHandler notifications
 
 - (void)testRecordLifecycleHandlerCreatesLikeRepostAndFollowNotifications {
     NSUInteger startingCount = self.notificationService.createCalls.count;

@@ -10,7 +10,7 @@
  * transfer the request and authenticated DID to the configured write proxy, which owns response
  * completion and mutation semantics.
  */
-@interface AppViewXRpcRoutePack (Identity)
+@interface ATProtoAppViewXRpcRoutePack (Identity)
 
 /** @abstract Resolves required `handle` to a DID, returning 404 when resolution fails. */
 - (void)handleResolveHandle:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

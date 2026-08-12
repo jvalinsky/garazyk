@@ -37,8 +37,8 @@
     // don't hit the 503 fail-closed guard (ADR 0018).
     [app setValue:[[PDSMockEmailProvider alloc] init] forKey:@"emailProvider"];
 
-    self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
 
     NSError *error = nil;
     NSDictionary *account1 = [self.controller createAccountForEmail:@"repoauth1@example.com"

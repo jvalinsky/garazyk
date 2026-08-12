@@ -28,8 +28,8 @@
                                              userDatabaseSize:1000];
     
     self.server = [ATProtoHttpServer serverWithPort:0]; // Random port
-    XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:self.controller];
+    ATProtoXrpcDispatcher *dispatcher = [ATProtoXrpcDispatcher sharedDispatcher];
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:dispatcher controller:self.controller];
     
     [self.server addHandlerForPath:@"/xrpc" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [dispatcher handleRequest:request response:response];

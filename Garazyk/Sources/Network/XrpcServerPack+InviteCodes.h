@@ -8,8 +8,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcServerPack (InviteCodes)
-+ (void)registerInviteCodeEndpoints:(XrpcDispatcher *)dispatcher
+@interface ATProtoXrpcServerPack (InviteCodes)
++ (void)registerInviteCodeEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                            services:(id<XrpcRoutePackServices>)services;
 @end
 

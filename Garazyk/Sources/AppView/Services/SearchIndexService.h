@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file SearchIndexService.h
+ @file PDSSearchIndexService.h
 
  @abstract Full-text search service using FTS5 for actor, post, and starter pack search.
 
@@ -23,7 +23,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class SearchIndexService
+ @class PDSSearchIndexService
 
  @abstract FTS5-backed full-text search service.
 
@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
  Results are lightweight (DIDs/URIs only) matching the unspecced skeleton lexicon format.
  Index is populated from the records table on startup if empty.
  */
-@interface SearchIndexService : NSObject <AppViewIndexHook>
+@interface PDSSearchIndexService : NSObject <AppViewIndexHook>
 
 /*! Initialize with database connection. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;

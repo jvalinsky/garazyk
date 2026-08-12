@@ -9,7 +9,7 @@
  * an unavailable age-assurance dependency yields 503, and service failures yield 500. The config
  * route is public but has the same dependency and error semantics.
  */
-@interface AppViewXRpcRoutePack (AgeAssurance)
+@interface ATProtoAppViewXRpcRoutePack (AgeAssurance)
 
 /** @abstract Starts age assurance for the caller when email, language, and country code are present. */
 - (void)handleAgeAssuranceBegin:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

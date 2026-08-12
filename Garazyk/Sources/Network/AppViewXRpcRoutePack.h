@@ -6,38 +6,38 @@
  * @abstract Defines the PDSQueryDatabase protocol contract.
  */
 @protocol PDSQueryDatabase;
-@class FeedService;
-@class ActorService;
-@class GraphService;
-@class FeedService;
-@class ActorService;
-@class GraphService;
-@class NotificationService;
-@class AgeAssuranceService;
-@class DraftService;
-@class BookmarkService;
-@class ContactService;
-@class SearchIndexService;
+@class PDSFeedService;
+@class PDSActorService;
+@class PDSGraphService;
+@class PDSFeedService;
+@class PDSActorService;
+@class PDSGraphService;
+@class PDSNotificationService;
+@class PDSAgeAssuranceService;
+@class PDSDraftService;
+@class PDSBookmarkService;
+@class PDSContactService;
+@class PDSSearchIndexService;
 @class ATProtoJWTMinter;
 @class ATProtoHttpServer;
 @class AppViewWriteProxy;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface AppViewXRpcRoutePack : NSObject
+@interface ATProtoAppViewXRpcRoutePack : NSObject
 
 /**
  * @abstract Performs the initWithFeedService operation.
  */
-- (instancetype)initWithFeedService:(FeedService *)feedService
-                       actorService:(ActorService *)actorService
-                       graphService:(nullable GraphService *)graphService
-                 notificationService:(NotificationService *)notificationService
-                ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
-                        draftService:(nullable DraftService *)draftService
-                     bookmarkService:(nullable BookmarkService *)bookmarkService
-                      contactService:(nullable ContactService *)contactService
-                  searchIndexService:(nullable SearchIndexService *)searchIndexService
+- (instancetype)initWithFeedService:(PDSFeedService *)feedService
+                       actorService:(PDSActorService *)actorService
+                       graphService:(nullable PDSGraphService *)graphService
+                 notificationService:(PDSNotificationService *)notificationService
+                ageAssuranceService:(nullable PDSAgeAssuranceService *)ageAssuranceService
+                        draftService:(nullable PDSDraftService *)draftService
+                     bookmarkService:(nullable PDSBookmarkService *)bookmarkService
+                      contactService:(nullable PDSContactService *)contactService
+                  searchIndexService:(nullable PDSSearchIndexService *)searchIndexService
                          writeProxy:(nullable AppViewWriteProxy *)writeProxy
                           database:(nullable id<PDSQueryDatabase>)database
                          jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter;

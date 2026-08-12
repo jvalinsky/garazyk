@@ -151,7 +151,7 @@
     NSArray *events = [db getEventsSince:initialSeq limit:10 error:&error];
     XCTAssertNil(error);
     
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     BOOL foundIdentityEvent = NO;
     for (NSDictionary *event in events) {
         if ([event[@"type"] isEqualToString:@"identity"]) {

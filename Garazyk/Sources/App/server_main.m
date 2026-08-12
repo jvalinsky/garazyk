@@ -39,9 +39,9 @@ int main(int argc, const char * argv[]) {
                                                            serviceMaxSize:100
                                                          userDatabaseSize:30000];
         ATProtoHttpServer *server = [ATProtoHttpServer serverWithPort:2583];
-        XrpcDispatcher *xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
+        ATProtoXrpcDispatcher *xrpcDispatcher = [ATProtoXrpcDispatcher sharedDispatcher];
 
-        [XrpcMethodRegistry registerMethodsWithDispatcher:xrpcDispatcher controller:controller];
+        [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:xrpcDispatcher controller:controller];
 
         [server addHandlerForPath:@"/xrpc" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             [xrpcDispatcher handleRequest:request response:response];
@@ -57,7 +57,7 @@ int main(int argc, const char * argv[]) {
             [response setJsonBody:health];
         }];
 
-        // /xrpc/_health is handled by xrpcDispatcher via XrpcServerPack
+        // /xrpc/_health is handled by xrpcDispatcher via ATProtoXrpcServerPack
         // We can keep a direct handler for better performance or just let it fall through.
         // Let's make it consistent.
         [server addHandlerForPath:@"/xrpc/_health" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {

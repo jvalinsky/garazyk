@@ -72,9 +72,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
   dispatch_queue_t _repoQueue;
   dispatch_queue_t _controllerQueue;
-  SubscribeReposHandler *_subscribeReposHandler;
+  ATProtoSubscribeReposHandler *_subscribeReposHandler;
   ATProtoHttpServer *_httpServer;
-  XrpcDispatcher *_xrpcDispatcher;
+  ATProtoXrpcDispatcher *_xrpcDispatcher;
   NSString *_dataDirectory;
   BOOL _running;
 }
@@ -98,7 +98,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   return _rateLimiter;
 }
 
-- (SubscribeReposHandler *)subscribeReposHandler {
+- (ATProtoSubscribeReposHandler *)subscribeReposHandler {
   if (_backingApplication) {
     return _backingApplication.subscribeReposHandler;
   }

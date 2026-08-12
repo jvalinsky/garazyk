@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcChatBskyConvoPack.h
+ @file ATProtoXrpcChatBskyConvoPack.h
 
  @abstract XRPC route pack for chat.bsky.convo.* endpoints.
  */
@@ -11,7 +11,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcChatBskyConvoPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcChatBskyConvoPack : NSObject <XrpcRoutePack>
 
 @end
 

@@ -8,8 +8,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcServerPack (Describe)
-+ (void)registerDescribeServerWithDispatcher:(XrpcDispatcher *)dispatcher
+@interface ATProtoXrpcServerPack (Describe)
++ (void)registerDescribeServerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                configuration:(ATProtoServiceConfiguration *)config
                             registrationGate:(nullable id<PDSRegistrationGate>)registrationGate;
 @end

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayDownstreamHandler.m
+ @file ATProtoRelayDownstreamHandler.m
 
  @abstract Implementation of relay downstream event handling.
 
@@ -27,19 +27,19 @@ static const NSUInteger kRelayInventoryPageLimit = 1000;
 static const NSUInteger kRelayInventoryMaximumPages = 10000;
 static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
-@interface RelayDownstreamHandler ()
-@property (nonatomic, strong) RelayEventBuffer *eventBuffer;
-@property (nonatomic, strong) SubscribeReposHandler *subscribeReposHandler;
+@interface ATProtoRelayDownstreamHandler ()
+@property (nonatomic, strong) ATProtoRelayEventBuffer *eventBuffer;
+@property (nonatomic, strong) ATProtoSubscribeReposHandler *subscribeReposHandler;
 @property (nonatomic, assign) int64_t currentSequence;
 @property (nonatomic, strong) NSMutableArray<id<ATProtoNetworkConnection>> *downstreamConnections;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t handlerQueue;
 @property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
 @property (nonatomic, strong) NSMutableSet<NSString *> *bootstrappingUpstreams;
 @property (nonatomic, strong) NSMutableSet<NSString *> *recoveringRepos;
-@property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
-- (nullable ATProtoRepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
+@property (nonatomic, strong, nullable) ATProtoRelayUpstreamManager *upstreamManager;
+- (nullable ATProtoRepoCommit *)validatedCommitForEvent:(ATProtoFirehoseCommitEvent *)event
                                            error:(NSError **)error;
-- (nullable ATProtoRepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
+- (nullable ATProtoRepoCommit *)validatedCommitForSyncEvent:(ATProtoFirehoseSyncEvent *)event
                                            commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCID
                                                error:(NSError **)error;
 - (void)recoverRepo:(NSString *)repoDID
@@ -47,7 +47,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
            sequence:(int64_t)sequence;
 @end
 
-@implementation RelayDownstreamHandler
+@implementation ATProtoRelayDownstreamHandler
 
 - (instancetype)init {
     [self doesNotRecognizeSelector:_cmd];
@@ -56,8 +56,8 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
 #pragma mark - Initialization
 
-- (instancetype)initWithEventBuffer:(RelayEventBuffer *)buffer
-               subscribeReposHandler:(SubscribeReposHandler *)handler {
+- (instancetype)initWithEventBuffer:(ATProtoRelayEventBuffer *)buffer
+               subscribeReposHandler:(ATProtoSubscribeReposHandler *)handler {
     self = [super init];
     if (self) {
         _eventBuffer = buffer;
@@ -81,7 +81,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
 #pragma mark - RelayUpstreamManagerDelegate
 
-- (void)upstreamManager:(RelayUpstreamManager *)manager
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
          didReceiveEvent:(id)event
            fromUpstream:(NSString *)url {
     GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event from %@", url);
@@ -92,11 +92,11 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         [self.metrics recordEventReceived];
 
         GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event of class %@", NSStringFromClass([event class]));
-        if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
-            FirehoseCommitEvent *commitEvent = (FirehoseCommitEvent *)event;
+        if ([event isKindOfClass:[ATProtoFirehoseCommitEvent class]]) {
+            ATProtoFirehoseCommitEvent *commitEvent = (ATProtoFirehoseCommitEvent *)event;
 
             if (self.eventValidator) {
-                RelayValidationOutcome *outcome = [self.eventValidator validateCommitEvent:commitEvent];
+                ATProtoRelayValidationOutcome *outcome = [self.eventValidator validateCommitEvent:commitEvent];
                 if (![self.eventValidator shouldForwardEvent:outcome]) {
                     GZ_LOG_SYNC_WARN(@"Relay: Dropping commit seq=%lld repo=%@ (validation: %d %@)",
                                      (long long)commitEvent.seq, commitEvent.repo,
@@ -117,7 +117,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
                 return;
             }
 
-            // Just broadcast. Re-sequencing happens in SubscribeReposHandler/Session.
+            // Just broadcast. Re-sequencing happens in ATProtoSubscribeReposHandler/PDSSession.
             if (self.subscribeReposHandler) {
                 [self.subscribeReposHandler broadcastCommitEvent:commitEvent];
                 seq = (int64_t)commitEvent.seq;
@@ -130,8 +130,8 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
             GZ_LOG_DEBUG(@"Relay: Received and broadcast commit seq=%lld repo=%@", seq, commitEvent.repo);
         }
-        else if ([event isKindOfClass:[FirehoseSyncEvent class]]) {
-            FirehoseSyncEvent *syncEvent = (FirehoseSyncEvent *)event;
+        else if ([event isKindOfClass:[ATProtoFirehoseSyncEvent class]]) {
+            ATProtoFirehoseSyncEvent *syncEvent = (ATProtoFirehoseSyncEvent *)event;
             NSError *syncError = nil;
             ATProtoCID *commitCID = nil;
             ATProtoRepoCommit *commit =
@@ -163,8 +163,8 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
             GZ_LOG_SYNC_INFO(@"Relay: Applied and broadcast sync seq=%lld did=%@",
                              (long long)syncEvent.seq, syncEvent.did);
         }
-        else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
-            FirehoseIdentityEvent *identityEvent = (FirehoseIdentityEvent *)event;
+        else if ([event isKindOfClass:[ATProtoFirehoseIdentityEvent class]]) {
+            ATProtoFirehoseIdentityEvent *identityEvent = (ATProtoFirehoseIdentityEvent *)event;
             
             if (self.subscribeReposHandler) {
                 [self.subscribeReposHandler broadcastIdentityChange:identityEvent.did handle:identityEvent.handle];
@@ -176,8 +176,8 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
             GZ_LOG_DEBUG(@"Relay: Received and broadcast identity seq=%lld did=%@", seq, identityEvent.did);
         }
-        else if ([event isKindOfClass:[FirehoseAccountEvent class]]) {
-            FirehoseAccountEvent *accountEvent = (FirehoseAccountEvent *)event;
+        else if ([event isKindOfClass:[ATProtoFirehoseAccountEvent class]]) {
+            ATProtoFirehoseAccountEvent *accountEvent = (ATProtoFirehoseAccountEvent *)event;
             
             if (self.subscribeReposHandler) {
                 [self.subscribeReposHandler broadcastAccountStatus:accountEvent.did active:accountEvent.active status:accountEvent.status];
@@ -189,12 +189,12 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
             GZ_LOG_DEBUG(@"Relay: Received and broadcast account seq=%lld did=%@", seq, accountEvent.did);
         }
-        else if ([event isKindOfClass:[FirehoseErrorEvent class]]) {
-            FirehoseErrorEvent *errorEvent = (FirehoseErrorEvent *)event;
+        else if ([event isKindOfClass:[ATProtoFirehoseErrorEvent class]]) {
+            ATProtoFirehoseErrorEvent *errorEvent = (ATProtoFirehoseErrorEvent *)event;
             GZ_LOG_WARN(@"Relay: Received error from upstream %@: %@", url, errorEvent.message ?: @"unknown");
         }
-        else if ([event isKindOfClass:[FirehoseRawEvent class]]) {
-            FirehoseRawEvent *rawEvent = (FirehoseRawEvent *)event;
+        else if ([event isKindOfClass:[ATProtoFirehoseRawEvent class]]) {
+            ATProtoFirehoseRawEvent *rawEvent = (ATProtoFirehoseRawEvent *)event;
             int64_t rawSequence = [rawEvent.payload[@"seq"] longLongValue];
             if (self.eventBuffer && rawSequence > 0) {
                 [self.eventBuffer appendEvent:rawEvent.frameData seq:rawSequence];
@@ -222,7 +222,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 }
 
 
-- (void)upstreamManager:(RelayUpstreamManager *)manager
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
     didConnectToUpstream:(NSString *)url {
     GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Connected to upstream %@", url);
     self.upstreamManager = manager;
@@ -241,7 +241,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
     });
 }
 
-- (void)upstreamManager:(RelayUpstreamManager *)manager
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
     didDisconnectFromUpstream:(NSString *)url
                         error:(nullable NSError *)error {
     GZ_LOG_SYNC_WARN(@"RelayDownstreamHandler: Disconnected from upstream %@ (error: %@)",
@@ -256,7 +256,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
     });
 }
 
-- (void)upstreamManager:(RelayUpstreamManager *)manager
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
         didReceiveCursor:(int64_t)cursor
              fromUpstream:(NSString *)url {
     GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received cursor %lld from upstream %@", (long long)cursor, url);
@@ -274,7 +274,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
 #pragma mark - Chain Verification
 
-- (nullable ATProtoRepoCommit *)validatedCommitForSyncEvent:(FirehoseSyncEvent *)event
+- (nullable ATProtoRepoCommit *)validatedCommitForSyncEvent:(ATProtoFirehoseSyncEvent *)event
                                            commitCID:(ATProtoCID * _Nullable * _Nonnull)commitCID
                                                error:(NSError **)error {
     ATProtoCARReader *reader = [ATProtoCARReader readFromData:event.blocks error:error];
@@ -322,7 +322,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
     return commit;
 }
 
-- (nullable ATProtoRepoCommit *)validatedCommitForEvent:(FirehoseCommitEvent *)event
+- (nullable ATProtoRepoCommit *)validatedCommitForEvent:(ATProtoFirehoseCommitEvent *)event
                                            error:(NSError **)error {
     if (!event.commit || event.blocks.length == 0) {
         if (error) {
@@ -406,7 +406,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
     return commit;
 }
 
-- (BOOL)verifyChainForCommitEvent:(FirehoseCommitEvent *)event {
+- (BOOL)verifyChainForCommitEvent:(ATProtoFirehoseCommitEvent *)event {
     if (!self.repoStateManager || event.repo.length == 0) {
         return YES;
     }
@@ -583,8 +583,8 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
                 return;
             }
 
-            FirehoseSyncEvent *syncEvent =
-                [FirehoseSyncEvent eventWithDid:repoDID
+            ATProtoFirehoseSyncEvent *syncEvent =
+                [ATProtoFirehoseSyncEvent eventWithDid:repoDID
                                             rev:commit.rev
                                          blocks:data];
             syncEvent.seq = sequence;

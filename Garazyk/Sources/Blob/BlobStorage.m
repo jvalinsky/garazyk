@@ -36,18 +36,18 @@ static HttpResponseBodyChunkProducer
 blobFileChunkProducer(NSString *path, unsigned long long startOffset,
                       unsigned long long endOffset, NSError **error);
 
-@interface BlobStorage ()
+@interface PDSBlobStorage ()
 
 @end
 
-@implementation BlobStorage
+@implementation PDSBlobStorage
 
 + (instancetype)sharedStorage {
-    static BlobStorage *sharedInstance = nil;
+    static PDSBlobStorage *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         // This will need to be initialized properly in the app
-        sharedInstance = [[BlobStorage alloc] init];
+        sharedInstance = [[PDSBlobStorage alloc] init];
     });
     return sharedInstance;
 }
@@ -334,7 +334,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
 #pragma mark - Validation
 
 - (BOOL)validateBlob:(NSData *)data mimeType:(NSString *)mimeType error:(NSError **)error {
-    MimeTypeValidator *validator = [MimeTypeValidator sharedValidator];
+    ATProtoMimeTypeValidator *validator = [ATProtoMimeTypeValidator sharedValidator];
 
     NSError *mimeError = nil;
     if (![validator isValidMimeType:mimeType error:&mimeError]) {

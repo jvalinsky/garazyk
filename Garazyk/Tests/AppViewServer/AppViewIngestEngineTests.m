@@ -159,7 +159,7 @@
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 0;
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 10;
     event.repo = @"did:plc:lagged";
     event.rev = @"rev1";
@@ -187,7 +187,7 @@
     engine.maxLagForBackpressure = INT64_MAX;
     engine.indexQueueHighWatermarkEvents = 1;
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 10;
     event.repo = @"did:plc:over-limit";
     event.rev = @"rev1";
@@ -211,7 +211,7 @@
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 1000;
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 11;
     event.repo = @"did:plc:live";
     event.rev = @"rev1";
@@ -232,7 +232,7 @@
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 1000;
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 12;
     event.repo = @"did:plc:newrepo";
     event.rev = @"rev1";
@@ -252,7 +252,7 @@
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 1000;
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 13;
     event.repo = @"did:plc:queued";
     event.rev = @"rev1";
@@ -275,14 +275,14 @@
 }
 
 - (void)testStartRecoversQueuedCommitBeforeRelayConsumption {
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.seq = 14;
     event.repo = @"did:plc:recovered";
     event.rev = @"rev1";
     event.ops = @[];
 
     NSError *error = nil;
-    NSData *envelope = [[[EventFormatter alloc] init] encodeCommitEvent:event error:&error];
+    NSData *envelope = [[[ATProtoEventFormatter alloc] init] encodeCommitEvent:event error:&error];
     XCTAssertNotNil(envelope, @"%@", error);
     XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://test.relay" seq:event.seq eventType:@"live_commit"
                                                     did:event.repo rev:event.rev cid:nil rawEnvelope:envelope error:&error], @"%@", error);
@@ -316,7 +316,7 @@
     
     for (int i = 0; i < iterations; i++) {
         dispatch_async(testQueue1, ^{
-            FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+            ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
             event.seq = 100 + i;
             event.repo = [NSString stringWithFormat:@"did:plc:repo%d", i];
             event.rev = [NSString stringWithFormat:@"rev%d", i];
@@ -326,7 +326,7 @@
         });
         
         dispatch_async(testQueue2, ^{
-            FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+            ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
             event.seq = 5000 + i;
             event.repo = [NSString stringWithFormat:@"did:plc:other%d", i];
             event.rev = [NSString stringWithFormat:@"rev%d", i];
@@ -368,14 +368,14 @@
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 100;
 
-    FirehoseCommitEvent *highSequenceEvent = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *highSequenceEvent = [[ATProtoFirehoseCommitEvent alloc] init];
     highSequenceEvent.seq = 5000;
     highSequenceEvent.repo = @"did:plc:high-sequence";
     highSequenceEvent.rev = @"rev1";
     highSequenceEvent.ops = @[];
     [engine _handleCommitEvent:highSequenceEvent fromRelay:@"wss://relay2"];
 
-    FirehoseCommitEvent *lowSequenceEvent = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *lowSequenceEvent = [[ATProtoFirehoseCommitEvent alloc] init];
     lowSequenceEvent.seq = 10;
     lowSequenceEvent.repo = @"did:plc:low-sequence";
     lowSequenceEvent.rev = @"rev1";
@@ -427,7 +427,7 @@
         initWithDatabase:self.db relayURLs:@[@"wss://test.relay"]];
     engine.delegate = self.delegate;
 
-    FirehoseAccountEvent *takedown = [[FirehoseAccountEvent alloc] init];
+    ATProtoFirehoseAccountEvent *takedown = [[ATProtoFirehoseAccountEvent alloc] init];
     takedown.seq = 50;
     takedown.did = did;
     takedown.active = NO;
@@ -474,7 +474,7 @@
         initWithDatabase:self.db relayURLs:@[]];
     engine.delegate = self.delegate;
 
-    FirehoseAccountEvent *reinstatement = [[FirehoseAccountEvent alloc] init];
+    ATProtoFirehoseAccountEvent *reinstatement = [[ATProtoFirehoseAccountEvent alloc] init];
     reinstatement.seq = 60;
     reinstatement.did = did;
     reinstatement.active = YES;
@@ -500,7 +500,7 @@
     AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[]];
 
-    FirehoseAccountEvent *suspended = [[FirehoseAccountEvent alloc] init];
+    ATProtoFirehoseAccountEvent *suspended = [[ATProtoFirehoseAccountEvent alloc] init];
     suspended.seq = 70;
     suspended.did = did;
     suspended.active = NO;

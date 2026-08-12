@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file NodeInfoProvider.h
+ @file GZNodeInfoProvider.h
 
  @abstract NodeInfo metadata provider.
 
  @discussion Generates NodeInfo 2.0 and 2.1 schema documents and discovery
- endpoint responses. Follows the pattern established by OAuthServerMetadata.
+ endpoint responses. Follows the pattern established by ATProtoOAuthServerMetadata.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -18,14 +18,14 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class NodeInfoProvider
+ @class GZNodeInfoProvider
 
  @abstract NodeInfo metadata document provider.
 
  @discussion Generates NodeInfo schema documents and discovery responses
  for the ATProtoPDS server.
  */
-@interface NodeInfoProvider : NSObject
+@interface GZNodeInfoProvider : NSObject
 
 /*! Base URL for generating href links in discovery document. */
 @property (nonatomic, copy, readonly) NSString *baseURL;

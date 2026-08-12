@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcAuthHelper.m
+//  ATProtoXrpcAuthHelper.m
 //  ATProtoPDS
 //
 //  Authentication helper implementation for XRPC endpoints.
@@ -30,9 +30,9 @@
 
 /*!
  @abstract Whether the new ATProtoAuthVerifier cluster should be used instead of the
-    legacy XrpcAuthHelper path. Controlled by the PDS_USE_AUTH_VERIFIER env var.
+    legacy ATProtoXrpcAuthHelper path. Controlled by the PDS_USE_AUTH_VERIFIER env var.
     When enabled, authentication routes through ATProtoAuthVerifier/PDSAccountPolicy.
-    When disabled (default), the legacy XrpcAuthHelper path is used.
+    When disabled (default), the legacy ATProtoXrpcAuthHelper path is used.
     This switch allows safe cutover with zero-rebuild rollback.
  */
 static BOOL XrpcAuthUseAuthVerifier(void) {
@@ -176,7 +176,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(ATProtoHttpRequest *request, ATProtoJWTMin
     return [NSURL URLWithString:urlString];
 }
 
-@implementation XrpcAuthHelper
+@implementation ATProtoXrpcAuthHelper
 
 #pragma mark - Private Helpers
 
@@ -263,7 +263,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(ATProtoHttpRequest *request, ATProtoJWTMin
 
         // Verify DPoP proof (bind to access token via ath per RFC 9449 §4.3 / §4.2)
         NSError *dpopError = nil;
-        if (![OAuth2DPoPProof verifyProof:dpopProof
+        if (![ATProtoOAuth2DPoPProof verifyProof:dpopProof
                                    method:request.methodString
                                       url:dpopURL
                                     nonce:nil

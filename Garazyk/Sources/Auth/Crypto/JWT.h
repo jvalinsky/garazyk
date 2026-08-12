@@ -170,7 +170,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! Unique token identifier. */
 @property (nonatomic, copy, nullable) NSString *jti;
 
-/*! Session identifier (ATProto-specific). */
+/*! PDSSession identifier (ATProto-specific). */
 @property (nonatomic, copy, nullable) NSString *sid;
 
 /*! The DID of the token subject (ATProto-specific). */

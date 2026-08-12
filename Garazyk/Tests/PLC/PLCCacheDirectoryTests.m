@@ -10,8 +10,8 @@
 #import "../../Sources/PLC/PLCMockStore.h"
 
 @interface PLCCacheDirectoryTests : XCTestCase
-@property (nonatomic, strong) PLCMockStore *mockStore;
-@property (nonatomic, strong) PLCCacheDirectory *cacheDirectory;
+@property (nonatomic, strong) ATProtoPLCMockStore *mockStore;
+@property (nonatomic, strong) ATProtoPLCCacheDirectory *cacheDirectory;
 @property (nonatomic, copy) NSString *testDbPath;
 @end
 
@@ -19,8 +19,8 @@
 
 - (void)setUp {
     [super setUp];
-    self.mockStore = [[PLCMockStore alloc] init];
-    self.cacheDirectory = [[PLCCacheDirectory alloc] initWithStore:self.mockStore];
+    self.mockStore = [[ATProtoPLCMockStore alloc] init];
+    self.cacheDirectory = [[ATProtoPLCCacheDirectory alloc] initWithStore:self.mockStore];
     
     NSString *uuid = [[NSUUID UUID] UUIDString];
     self.testDbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"plc_cache_test_%@.db", uuid]];
@@ -35,7 +35,7 @@
 - (void)testCacheGetHistory {
     NSString *did = @"did:plc:test1";
     
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did;
     op1.sig = @"sig1";
     op1.data = @{@"test": @"value1"};
@@ -43,14 +43,14 @@
     [self.mockStore appendOperation:op1 nullifyCIDs:@[] error:nil];
     
     NSError *error = nil;
-    NSArray<PLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:&error];
+    NSArray<ATProtoPLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:&error];
     
     XCTAssertNotNil(history1);
     XCTAssertEqual(history1.count, 1);
     XCTAssertEqualObjects(history1[0].sig, @"sig1");
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 1);
     
-    NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:&error];
+    NSArray<ATProtoPLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertEqual(self.cacheDirectory.cacheHitCount, 1);
     XCTAssertEqualObjects(history2[0].sig, @"sig1");
 }
@@ -58,17 +58,17 @@
 - (void)testCacheInvalidationOnAppend {
     NSString *did = @"did:plc:test2";
     
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did;
     op1.sig = @"sig1";
     op1.data = @{};
     
     [self.mockStore appendOperation:op1 nullifyCIDs:@[] error:nil];
     
-    NSArray<PLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
+    NSArray<ATProtoPLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(history1.count, 1);
     
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = did;
     op2.sig = @"sig2";
     op2.prev = @"sig1";
@@ -79,7 +79,7 @@
 
     // flushCacheForDID is asynchronous; wait briefly for invalidation to apply.
     [NSThread sleepForTimeInterval:0.05];
-    NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
+    NSArray<ATProtoPLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(history2.count, 2);
     XCTAssertEqualObjects(history2.lastObject.sig, @"sig2");
 }
@@ -88,12 +88,12 @@
     NSString *did1 = @"did:plc:cache1";
     NSString *did2 = @"did:plc:cache2";
     
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did1;
     op1.sig = @"sig1";
     op1.data = @{};
     
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = did2;
     op2.sig = @"sig2";
     op2.data = @{};
@@ -119,7 +119,7 @@
 - (void)testFlushAllCachesResetsCacheMissCount {
     NSString *did = @"did:plc:flushall";
     
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.did = did;
     op.sig = @"sig";
     op.data = @{};
@@ -140,19 +140,19 @@
     
     NSString *did = @"did:plc:ttl";
     
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.did = did;
     op.sig = @"sig";
     op.data = @{};
     
     [self.mockStore appendOperation:op nullifyCIDs:@[] error:nil];
     
-    NSArray<PLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
+    NSArray<ATProtoPLCOperation *> *history1 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 1);
     
     [NSThread sleepForTimeInterval:0.2];
     
-    NSArray<PLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
+    NSArray<ATProtoPLCOperation *> *history2 = [self.cacheDirectory getHistoryForDID:did includeNullified:NO error:nil];
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 2);
 }
 
@@ -161,7 +161,7 @@
     
     for (int i = 0; i < 5; i++) {
         NSString *did = [NSString stringWithFormat:@"did:plc:capacity%d", i];
-        PLCOperation *op = [[PLCOperation alloc] init];
+        ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
         op.did = did;
         op.sig = [NSString stringWithFormat:@"sig%d", i];
         op.data = @{};
@@ -174,7 +174,7 @@
 }
 
 - (void)testDefaultValues {
-    PLCCacheDirectory *cache = [[PLCCacheDirectory alloc] initWithStore:self.mockStore];
+    ATProtoPLCCacheDirectory *cache = [[ATProtoPLCCacheDirectory alloc] initWithStore:self.mockStore];
     
     XCTAssertEqual(cache.ttl, PLCCacheDefaultTTL);
     XCTAssertEqual(cache.maxEntries, PLCCacheDefaultCapacity);

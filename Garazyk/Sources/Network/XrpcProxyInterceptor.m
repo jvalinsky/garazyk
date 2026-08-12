@@ -374,7 +374,7 @@ static BOOL proxyXrpcRequest(ATProtoHttpRequest *request, ATProtoHttpResponse *r
     NSString *authHeader =
         trimmedNonEmptyString([request headerForKey:@"Authorization"]);
     if ([authHeader.lowercaseString hasPrefix:@"bearer "]) {
-      NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+      NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                      jwtMinter:jwtMinter
                                                adminController:adminController
                                                        request:request];
@@ -486,9 +486,9 @@ static BOOL proxyXrpcRequest(ATProtoHttpRequest *request, ATProtoHttpResponse *r
   return YES;
 }
 
-@implementation XrpcProxyInterceptor
+@implementation ATProtoXrpcProxyInterceptor
 
-+ (void)installOnDispatcher:(XrpcDispatcher *)dispatcher
++ (void)installOnDispatcher:(ATProtoXrpcDispatcher *)dispatcher
               configuration:(ATProtoServiceConfiguration *)configuration
                   jwtMinter:(ATProtoJWTMinter *)jwtMinter
             adminController:(id<PDSAdminController>)adminController

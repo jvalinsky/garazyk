@@ -6,7 +6,7 @@
  @abstract Custom query handler for app.bsky.graph XRPC endpoints.
 
  @discussion Handles domain-specific graph queries that require the
- GraphService rather than the generic record lookup:
+ PDSGraphService rather than the generic record lookup:
  - app.bsky.graph.getStarterPack (single starter pack by URI)
  - app.bsky.graph.getStarterPacks (batch starter packs by URIs)
  - app.bsky.graph.getActorStarterPacks (actor's starter packs)
@@ -18,13 +18,13 @@
 
 #import "AppViewCustomQueryRegistry.h"
 
-@class GraphService;
+@class PDSGraphService;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface AppViewGraphQueryHandler : NSObject <AppViewLexiconQueryHandler>
 
-- (instancetype)initWithGraphService:(GraphService *)graphService;
+- (instancetype)initWithGraphService:(PDSGraphService *)graphService;
 
 @end
 

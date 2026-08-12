@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcToolsOzonePack.h
+//  ATProtoXrpcToolsOzonePack.h
 //  ATProtoPDS
 //
 //  Namespace pack for tools.ozone.* moderation/admin endpoints.
@@ -13,9 +13,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Declares the XrpcToolsOzonePack public API.
+ * @abstract Declares the ATProtoXrpcToolsOzonePack public API.
  */
-@interface XrpcToolsOzonePack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcToolsOzonePack : NSObject <XrpcRoutePack>
 
 @end
 

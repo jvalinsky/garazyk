@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /** Serving tab — client-facing health + three-lane pulse. */
 + (NSString *)servingHTML:(NSDictionary *)snapshot;
-/** Firehose tab — relay ingest. */
+/** ATProtoFirehose tab — relay ingest. */
 + (NSString *)firehoseHTML:(NSDictionary *)snapshot;
 /** Repo sync tab — funnel, enqueue, queue actions. */
 + (NSString *)repoSyncHTML:(NSDictionary *)snapshot queue:(NSDictionary *)queue;

@@ -8,20 +8,20 @@
 #import "Core/CID.h"
 #import "Database/Schema.h"
 
-@interface BookmarkService ()
+@interface PDSBookmarkService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
-@property (nonatomic, strong) ActorService *actorService;
-@property (nonatomic, strong) FeedService *feedService;
+@property (nonatomic, strong) PDSActorService *actorService;
+@property (nonatomic, strong) PDSFeedService *feedService;
 @end
 
-@implementation BookmarkService
+@implementation PDSBookmarkService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];
     if (self) {
         _database = database;
-        _actorService = [[ActorService alloc] initWithDatabase:database];
-        _feedService = [[FeedService alloc] initWithDatabase:database];
+        _actorService = [[PDSActorService alloc] initWithDatabase:database];
+        _feedService = [[PDSFeedService alloc] initWithDatabase:database];
     }
     return self;
 }

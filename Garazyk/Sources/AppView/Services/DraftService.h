@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file DraftService.h
+ @file PDSDraftService.h
 
  @abstract Draft storage service for app.bsky.draft.* endpoints.
 
@@ -17,14 +17,14 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class DraftService
+ @class PDSDraftService
 
  @abstract Service for draft storage operations.
 
  @discussion Manages draft records in the service database. Each draft
  belongs to an actor (identified by DID) and stores arbitrary JSON content.
  */
-@interface DraftService : NSObject
+@interface PDSDraftService : NSObject
 
 /*! Initialize with database connection. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;

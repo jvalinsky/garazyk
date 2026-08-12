@@ -5,12 +5,12 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class XrpcDispatcher;
+@class ATProtoXrpcDispatcher;
 
-@interface XrpcAppBskyProxyMethodPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcAppBskyProxyMethodPack : NSObject <XrpcRoutePack>
 
 /*! Legacy entry point retained for call sites not yet on @c XrpcRoutePackServices. */
-+ (void)registerProxyOnlyMethodsWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerProxyOnlyMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher;
 
 @end
 

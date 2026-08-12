@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PLCOperation.h
+ @file ATProtoPLCOperation.h
 
  @abstract PLC operation model and state replay for DID documents.
 
@@ -9,7 +9,7 @@
     Defines the PLC operation structure used in the AT Protocol's PLC directory.
     Operations form a hash-linked chain that defines the state of a DID over time.
 
-    The PLCStateReplayer class replays operation history to compute the current
+    The ATProtoPLCStateReplayer class replays operation history to compute the current
     DID document state.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
@@ -20,7 +20,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class PLCOperation
+ @class ATProtoPLCOperation
 
  @abstract Represents a single operation in a DID's PLC operation chain.
 
@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
     state. Each operation references the previous operation via the `prev` field,
     forming an immutable history chain.
  */
-@interface PLCOperation : NSObject
+@interface ATProtoPLCOperation : NSObject
 
 /*! The DID this operation belongs to. */
 @property (nonatomic, copy) NSString *did;
@@ -112,11 +112,11 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method operationFromDictionary:error:
 
- @abstract Creates a PLCOperation from a dictionary representation.
+ @abstract Creates a ATProtoPLCOperation from a dictionary representation.
 
  @param dict The dictionary containing operation data.
  @param error On failure, set to an error describing the parse failure.
- @return A PLCOperation instance, or nil if parsing failed.
+ @return A ATProtoPLCOperation instance, or nil if parsing failed.
  */
 + (nullable instancetype)operationFromDictionary:(NSDictionary *)dict error:(NSError **)error;
 
@@ -152,10 +152,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-#pragma mark - PLCDIDState
+#pragma mark - ATProtoPLCDIDState
 
 /*!
- @class PLCDIDState
+ @class ATProtoPLCDIDState
 
  @abstract Represents the computed state of a DID from replaying operations.
 
@@ -163,7 +163,7 @@ NS_ASSUME_NONNULL_BEGIN
     The DID state is computed by replaying all operations in a DID's history.
     It contains the current rotation keys, verification methods, and services.
  */
-@interface PLCDIDState : NSObject
+@interface ATProtoPLCDIDState : NSObject
 
 /*! The DID this state belongs to. */
 @property (nonatomic, copy) NSString *did;
@@ -194,10 +194,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-#pragma mark - PLCStateReplayer
+#pragma mark - ATProtoPLCStateReplayer
 
 /*!
- @class PLCStateReplayer
+ @class ATProtoPLCStateReplayer
 
  @abstract Replays PLC operation history to compute DID state.
 
@@ -206,7 +206,7 @@ NS_ASSUME_NONNULL_BEGIN
     the current DID document state. Validates signatures and prev links
     during replay.
  */
-@interface PLCStateReplayer : NSObject
+@interface ATProtoPLCStateReplayer : NSObject
 
 /*!
  @method replayHistory:error:
@@ -217,7 +217,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On failure, set to an error describing the replay failure.
  @return The computed DID state, or nil if replay failed.
  */
-+ (nullable PLCDIDState *)replayHistory:(NSArray<PLCOperation *> *)history error:(NSError **)error;
++ (nullable ATProtoPLCDIDState *)replayHistory:(NSArray<ATProtoPLCOperation *> *)history error:(NSError **)error;
 
 @end
 

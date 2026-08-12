@@ -6,9 +6,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Declares the AVFoundationTranscoder public API.
+ * @abstract Declares the GZAVFoundationTranscoder public API.
  */
-@interface AVFoundationTranscoder : NSObject <VideoTranscoderBackend>
+@interface GZAVFoundationTranscoder : NSObject <VideoTranscoderBackend>
 
 @end
 

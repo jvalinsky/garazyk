@@ -8,8 +8,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcServerPack (Health)
-+ (void)registerHealthEndpointWithDispatcher:(XrpcDispatcher *)dispatcher;
+@interface ATProtoXrpcServerPack (Health)
++ (void)registerHealthEndpointWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher;
 @end
 
 NS_ASSUME_NONNULL_END

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file BlobStorage.h
+ * @file PDSBlobStorage.h
  * @abstract Blob storage management with ATProtoCID-based addressing.
  * @discussion Provides persistent blob storage with CIDv1 identification using raw codec and SHA-256 hashing.
  * Manages blob lifecycle including upload, retrieval, listing, deletion, and validation.
@@ -44,7 +44,7 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
 /**
  * @abstract Manages persistent blob storage and metadata.
  */
-@interface BlobStorage : NSObject
+@interface PDSBlobStorage : NSObject
 
 /**
  * @abstract The underlying database pool used for metadata.

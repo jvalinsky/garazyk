@@ -324,7 +324,7 @@ static int run_serve(NSArray<NSString *> *args) {
     }
 
     GZAdminUIHost *adminUIHost = nil;
-    __block JelczAdminEmbedContext *embedContext = nil;
+    __block GZJelczAdminEmbedContext *embedContext = nil;
     if (adminPassword.length > 0) {
         GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
         adminConfig.host = @"127.0.0.1";
@@ -333,9 +333,9 @@ static int run_serve(NSArray<NSString *> *args) {
         adminConfig.serviceIdentifier = @"video";
 
         adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig
-                                                              packs:@[JelczAdminUIPack.class]];
+                                                              packs:@[GZJelczAdminUIPack.class]];
 
-        embedContext = [[JelczAdminEmbedContext alloc]
+        embedContext = [[GZJelczAdminEmbedContext alloc]
             initWithWorker:nil
                   jobStore:nil
                     config:@{
@@ -343,7 +343,7 @@ static int run_serve(NSArray<NSString *> *args) {
                         @"maxDuration": @(180),
                     }
                  startTime:[NSDate date]];
-        [JelczAdminUIPack configureHost:adminUIHost embedContext:embedContext];
+        [GZJelczAdminUIPack configureHost:adminUIHost embedContext:embedContext];
 
         NSError *adminErr = nil;
         if (![adminUIHost startWithError:&adminErr]) {

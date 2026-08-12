@@ -369,7 +369,7 @@
     __block NSString *resolved = nil;
     __block NSError *resolvedError = nil;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    HandleResolver *resolver = [[HandleResolver alloc] init];
+    ATProtoHandleResolver *resolver = [[ATProtoHandleResolver alloc] init];
     [resolver resolveHandle:[identifier lowercaseString] completion:^(NSString * _Nullable did, NSError * _Nullable handleError) {
         resolved = did;
         resolvedError = handleError;
@@ -455,7 +455,7 @@
 }
 
 - (void)writeInvalidRequest:(NSString *)message response:(ATProtoHttpResponse *)response {
-    [XrpcErrorHelper setInvalidRequestError:response message:message ?: @"Invalid request"];
+    [ATProtoXrpcErrorHelper setInvalidRequestError:response message:message ?: @"Invalid request"];
 }
 
 - (void)writeDatabaseError:(NSError *)error response:(ATProtoHttpResponse *)response {

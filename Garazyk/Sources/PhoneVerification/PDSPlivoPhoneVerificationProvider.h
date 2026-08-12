@@ -8,8 +8,8 @@
  @discussion
     Uses the Plivo Verify API to send and validate phone verification
     codes. Plivo handles OTP generation, delivery, and fraud shield
-    end-to-end. We call /Verify/Session/ to send and
-    /Verify/Session/{session_uuid}/ to validate.
+    end-to-end. We call /Verify/PDSSession/ to send and
+    /Verify/PDSSession/{session_uuid}/ to validate.
 
     Requires configuration:
     - Plivo Auth ID (env:PLIVO_AUTH_ID)
@@ -52,7 +52,7 @@ typedef NS_ENUM(NSInteger, PDSPlivoProviderErrorCode) {
 
  @discussion
     Sends verification codes via Plivo Verify and validates them
-    using the /Verify/Session/{session_uuid}/ endpoint. Uses JSON
+    using the /Verify/PDSSession/{session_uuid}/ endpoint. Uses JSON
     POST requests with Basic Auth. Thread-safe: the HTTP
     client is lazily initialized on first use.
  */

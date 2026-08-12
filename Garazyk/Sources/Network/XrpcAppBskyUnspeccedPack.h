@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcAppBskyUnspeccedPack.h
+//  ATProtoXrpcAppBskyUnspeccedPack.h
 //  ATProtoPDS
 //
 //  Namespace pack for app.bsky.unspecced.* and related utility methods.
@@ -13,9 +13,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Declares the XrpcAppBskyUnspeccedPack public API.
+ * @abstract Declares the ATProtoXrpcAppBskyUnspeccedPack public API.
  */
-@interface XrpcAppBskyUnspeccedPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcAppBskyUnspeccedPack : NSObject <XrpcRoutePack>
 
 @end
 

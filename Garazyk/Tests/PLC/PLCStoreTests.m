@@ -34,7 +34,7 @@
 
 - (void)testPersistentStoreOpen {
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     
     XCTAssertNotNil(store);
     XCTAssertNil(error);
@@ -45,12 +45,12 @@
 
 - (void)testPersistentStoreAppendAndGetHistory {
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(store);
     
     NSString *did = @"did:plc:test1";
     
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did;
     op1.sig = @"sig1";
     op1.prev = nil;
@@ -60,7 +60,7 @@
     XCTAssertTrue(success);
     XCTAssertNil(error);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
+    NSArray<ATProtoPLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertNotNil(history);
     XCTAssertEqual(history.count, 1);
     XCTAssertEqualObjects(history[0].sig, @"sig1");
@@ -72,24 +72,24 @@
 
 - (void)testPersistentStoreMultipleOperations {
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(store);
     
     NSString *did = @"did:plc:test_chain";
     
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did;
     op1.sig = @"sig1";
     op1.prev = nil;
     op1.data = @{@"step": @"1"};
     
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = did;
     op2.sig = @"sig2";
     op2.prev = [NSString stringWithFormat:@"prev_%@", op1.sig];
     op2.data = @{@"step": @"2"};
     
-    PLCOperation *op3 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op3 = [[ATProtoPLCOperation alloc] init];
     op3.did = did;
     op3.sig = @"sig3";
     op3.prev = [NSString stringWithFormat:@"prev_%@", op2.sig];
@@ -99,7 +99,7 @@
     XCTAssertTrue([store appendOperation:op2 nullifyCIDs:@[] error:&error]);
     XCTAssertTrue([store appendOperation:op3 nullifyCIDs:@[] error:&error]);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
+    NSArray<ATProtoPLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertEqual(history.count, 3);
     XCTAssertEqualObjects(history[0].sig, @"sig1");
     XCTAssertEqualObjects(history[1].sig, @"sig2");
@@ -110,16 +110,16 @@
 
 - (void)testPersistentStoreSequenceExport {
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(store);
 
     NSString *did = @"did:plc:sequence_test";
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did;
     op1.sig = @"sig1";
     op1.data = @{@"type": @"create", @"prev": [NSNull null]};
 
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = did;
     op2.sig = @"sig2";
     op2.data = @{@"type": @"create", @"prev": [NSNull null]};
@@ -129,12 +129,12 @@
     XCTAssertEqualObjects(op1.sequence, @1);
     XCTAssertEqualObjects(op2.sequence, @2);
 
-    NSArray<PLCOperation *> *exported = [store exportOperationsAfterSequence:@0 count:10 error:&error];
+    NSArray<ATProtoPLCOperation *> *exported = [store exportOperationsAfterSequence:@0 count:10 error:&error];
     XCTAssertEqual(exported.count, 2);
     XCTAssertEqualObjects(exported[0].sequence, @1);
     XCTAssertEqualObjects(exported[1].sequence, @2);
 
-    NSArray<PLCOperation *> *afterFirst = [store exportOperationsAfterSequence:@1 count:10 error:&error];
+    NSArray<ATProtoPLCOperation *> *afterFirst = [store exportOperationsAfterSequence:@1 count:10 error:&error];
     XCTAssertEqual(afterFirst.count, 1);
     XCTAssertEqualObjects(afterFirst[0].sequence, @2);
 
@@ -143,18 +143,18 @@
 
 - (void)testPersistentStoreMultipleDIDs {
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(store);
     
     NSString *did1 = @"did:plc:test_a";
     NSString *did2 = @"did:plc:test_b";
     
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did1;
     op1.sig = @"sig_a";
     op1.data = @{};
     
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = did2;
     op2.sig = @"sig_b";
     op2.data = @{};
@@ -162,8 +162,8 @@
     [store appendOperation:op1 nullifyCIDs:@[] error:nil];
     [store appendOperation:op2 nullifyCIDs:@[] error:nil];
     
-    NSArray<PLCOperation *> *history1 = [store getHistoryForDID:did1 includeNullified:NO error:nil];
-    NSArray<PLCOperation *> *history2 = [store getHistoryForDID:did2 includeNullified:NO error:nil];
+    NSArray<ATProtoPLCOperation *> *history1 = [store getHistoryForDID:did1 includeNullified:NO error:nil];
+    NSArray<ATProtoPLCOperation *> *history2 = [store getHistoryForDID:did2 includeNullified:NO error:nil];
     
     XCTAssertEqual(history1.count, 1);
     XCTAssertEqualObjects(history1[0].sig, @"sig_a");
@@ -176,10 +176,10 @@
 
 - (void)testPersistentStoreEmptyHistory {
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(store);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:@"did:plc:nonexistent" includeNullified:NO error:&error];
+    NSArray<ATProtoPLCOperation *> *history = [store getHistoryForDID:@"did:plc:nonexistent" includeNullified:NO error:&error];
     XCTAssertNotNil(history);
     XCTAssertEqual(history.count, 0);
     
@@ -188,17 +188,17 @@
 
 - (void)testPersistentStoreOperationCount {
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(store);
     
     NSString *did = @"did:plc:count_test";
     
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did;
     op1.sig = @"sig1";
     op1.data = @{};
     
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = did;
     op2.sig = @"sig2";
     op2.data = @{};
@@ -216,12 +216,12 @@
 
 - (void)testPersistentStoreDeleteOperations {
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(store);
     
     NSString *did = @"did:plc:delete_test";
     
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.did = did;
     op.sig = @"sig_to_delete";
     op.data = @{};
@@ -233,17 +233,17 @@
     XCTAssertTrue(deleted);
     XCTAssertEqual([store operationCountForDid:did error:&error], 0);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
+    NSArray<ATProtoPLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertEqual(history.count, 0);
     
     [store close];
 }
 
 - (void)testMockStoreAppendAndGetHistory {
-    PLCMockStore *store = [[PLCMockStore alloc] init];
+    ATProtoPLCMockStore *store = [[ATProtoPLCMockStore alloc] init];
     NSString *did = @"did:plc:test1";
     
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did;
     op1.sig = @"sig1";
     op1.data = @{@"foo": @"bar"};
@@ -253,23 +253,23 @@
     XCTAssertTrue(success);
     XCTAssertNil(error);
     
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
+    NSArray<ATProtoPLCOperation *> *history = [store getHistoryForDID:did includeNullified:NO error:&error];
     XCTAssertNotNil(history);
     XCTAssertEqual(history.count, 1);
     XCTAssertEqualObjects(history[0].sig, @"sig1");
 }
 
 - (void)testMockStoreMultipleDIDs {
-    PLCMockStore *store = [[PLCMockStore alloc] init];
+    ATProtoPLCMockStore *store = [[ATProtoPLCMockStore alloc] init];
     NSString *did1 = @"did:plc:test1";
     NSString *did2 = @"did:plc:test2";
     
-    PLCOperation *op1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op1 = [[ATProtoPLCOperation alloc] init];
     op1.did = did1;
     op1.sig = @"sig1";
     op1.data = @{};
     
-    PLCOperation *op2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op2 = [[ATProtoPLCOperation alloc] init];
     op2.did = did2;
     op2.sig = @"sig2";
     op2.data = @{};
@@ -277,8 +277,8 @@
     [store appendOperation:op1 nullifyCIDs:@[] error:nil];
     [store appendOperation:op2 nullifyCIDs:@[] error:nil];
     
-    NSArray<PLCOperation *> *history1 = [store getHistoryForDID:did1 includeNullified:NO error:nil];
-    NSArray<PLCOperation *> *history2 = [store getHistoryForDID:did2 includeNullified:NO error:nil];
+    NSArray<ATProtoPLCOperation *> *history1 = [store getHistoryForDID:did1 includeNullified:NO error:nil];
+    NSArray<ATProtoPLCOperation *> *history2 = [store getHistoryForDID:did2 includeNullified:NO error:nil];
     
     XCTAssertEqual(history1.count, 1);
     XCTAssertEqualObjects(history1[0].sig, @"sig1");
@@ -288,8 +288,8 @@
 }
 
 - (void)testMockStoreEmptyHistory {
-    PLCMockStore *store = [[PLCMockStore alloc] init];
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:@"did:plc:nonexistent" includeNullified:NO error:nil];
+    ATProtoPLCMockStore *store = [[ATProtoPLCMockStore alloc] init];
+    NSArray<ATProtoPLCOperation *> *history = [store getHistoryForDID:@"did:plc:nonexistent" includeNullified:NO error:nil];
     XCTAssertNotNil(history);
     XCTAssertEqual(history.count, 0);
 }
@@ -355,17 +355,17 @@
     // Opening the store upgrades the legacy schema (adds cid/nullified/seq atomically) and
     // backfills seq = id, leaving the pre-existing operation readable.
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(store, @"store should open and upgrade a legacy database: %@", error);
 
-    NSArray<PLCOperation *> *history = [store getHistoryForDID:@"did:plc:legacy" includeNullified:NO error:&error];
+    NSArray<ATProtoPLCOperation *> *history = [store getHistoryForDID:@"did:plc:legacy" includeNullified:NO error:&error];
     XCTAssertEqual(history.count, 1u, @"legacy op should be readable after upgrade: %@", error);
     XCTAssertEqualObjects(history.firstObject.sig, @"legacy-sig");
     XCTAssertEqualObjects(history.firstObject.sequence, @1, @"seq backfilled to id (1)");
 
     // Reopen: the upgrade is idempotent and converges.
     [store close];
-    PLCPersistentStore *reopened = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *reopened = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNotNil(reopened, @"reopen converges: %@", error);
     XCTAssertEqual([reopened getHistoryForDID:@"did:plc:legacy" includeNullified:NO error:nil].count, 1u);
     [reopened close];
@@ -381,7 +381,7 @@
     sqlite3_close(db);
 
     NSError *error = nil;
-    PLCPersistentStore *store = [PLCPersistentStore storeWithPath:self.testDbPath error:&error];
+    ATProtoPLCPersistentStore *store = [ATProtoPLCPersistentStore storeWithPath:self.testDbPath error:&error];
     XCTAssertNil(store, @"open must fail when a schema statement conflicts");
     XCTAssertNotNil(error);
 

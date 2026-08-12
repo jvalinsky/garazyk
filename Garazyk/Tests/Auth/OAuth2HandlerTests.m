@@ -16,7 +16,7 @@
 #import <CommonCrypto/CommonDigest.h>
 #import "App/ATProtoServiceConfiguration.h"
 
-@interface OAuth2Handler (TestPrivate)
+@interface ATProtoOAuth2Handler (TestPrivate)
 - (NSDictionary *)sanitizeClientMetadataIfNeeded:(NSDictionary *)validatedClient
                                         clientID:(NSString *)clientID;
 @end
@@ -48,7 +48,7 @@
 @end
 
 @interface OAuth2HandlerTests : XCTestCase
-@property (nonatomic, strong) OAuth2Handler *handler;
+@property (nonatomic, strong) ATProtoOAuth2Handler *handler;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) TestAccountService *accountService;
 @property (nonatomic, copy) NSString *databasePath;
@@ -91,7 +91,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     self.accountService = [[TestAccountService alloc] init];
     self.accountService.mockUser = @{@"did": @"did:plc:test-user", @"handle": @"test-user.test"};
     
-    self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+    self.handler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.database];
     self.handler.accountService = self.accountService;
     [self.handler clearPendingConsentsForTesting];
 }
@@ -224,7 +224,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     NSError *error = nil;
     [testDb openWithError:&error];
     
-    OAuth2Handler *handler = [[OAuth2Handler alloc] initWithDatabase:testDb];
+    ATProtoOAuth2Handler *handler = [[ATProtoOAuth2Handler alloc] initWithDatabase:testDb];
     XCTAssertEqualObjects(handler.oauthServer.issuer, @"https://custom.pds.example.com",
                          @"Should use custom issuer from environment");
 
@@ -242,7 +242,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
     @try {
         NSError *proofError = nil;
-        DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"POST"
+        ATProtoDPoPToken *proof = [ATProtoDPoPUtil createDPoPForMethod:@"POST"
                                                       uri:@"http://localhost:2583/oauth/token"
                                                    nonce:nil
                                                      key:privateKey
@@ -313,7 +313,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
         XCTAssertTrue(incomingNonce.length > 0);
 
         NSError *proofError = nil;
-        DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"POST"
+        ATProtoDPoPToken *proof = [ATProtoDPoPUtil createDPoPForMethod:@"POST"
                                                       uri:@"http://localhost:2583/oauth/token"
                                                    nonce:incomingNonce
                                                      key:privateKey
@@ -360,7 +360,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
 
     @try {
         NSError *proofError = nil;
-        DPoPToken *proof = [DPoPUtil createDPoPForMethod:@"POST"
+        ATProtoDPoPToken *proof = [ATProtoDPoPUtil createDPoPForMethod:@"POST"
                                                       uri:@"http://localhost:2583/oauth/par"
                                                    nonce:nil
                                                      key:privateKey

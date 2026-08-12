@@ -4,14 +4,14 @@
 #import "Sync/WebSocket/WebSocketProtocolSession.h"
 
 @interface WebSocketProtocolSessionTests : XCTestCase
-@property (nonatomic, strong) WebSocketProtocolSession *session;
+@property (nonatomic, strong) ATProtoWebSocketProtocolSession *session;
 @end
 
 @implementation WebSocketProtocolSessionTests
 
 - (void)setUp {
     [super setUp];
-    self.session = [[WebSocketProtocolSession alloc] init];
+    self.session = [[ATProtoWebSocketProtocolSession alloc] init];
     // These fixtures hand-build unmasked frames, simulating what a real
     // server legitimately sends. maskOutgoingFrames=YES puts the codec in
     // client role, which requires unmasked incoming frames per RFC 6455 §5.1.
@@ -38,7 +38,7 @@
 - (void)testFeedData_TextFrame_ReturnsNotifyTextAction {
     // Build a text frame: FIN=1, opcode=1 (text), payload="Hello"
     NSData *frame = [self.class textFrameWithPayload:@"Hello"];
-    NSArray<WSSessionAction *> *actions = [self.session feedData:frame];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session feedData:frame];
 
     XCTAssertEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeNotifyTextMessage);
@@ -49,7 +49,7 @@
     uint8_t bytes[] = {0x00, 0x01, 0x02, 0x03};
     NSData *payload = [NSData dataWithBytes:bytes length:4];
     NSData *frame = [self.class binaryFrameWithPayload:payload];
-    NSArray<WSSessionAction *> *actions = [self.session feedData:frame];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session feedData:frame];
 
     XCTAssertEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeNotifyBinaryMessage);
@@ -58,7 +58,7 @@
 
 - (void)testFeedData_PingFrame_ReturnsHandlePingAction {
     NSData *frame = [self.class pingFrameWithPayload:[@"ping" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSArray<WSSessionAction *> *actions = [self.session feedData:frame];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session feedData:frame];
 
     XCTAssertEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeHandlePing);
@@ -68,7 +68,7 @@
     // Feed a ping first to set up heartbeat state, then a pong
     [self.session feedData:[self.class pingFrameWithPayload:nil]];
     NSData *pongFrame = [self.class pongFrameWithPayload:nil];
-    NSArray<WSSessionAction *> *actions = [self.session feedData:pongFrame];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session feedData:pongFrame];
 
     XCTAssertEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeHandlePong);
@@ -77,19 +77,19 @@
 - (void)testFeedData_CloseFrame_ReturnsCloseAction {
     uint8_t closeBytes[] = {0x88, 0x02, 0x03, 0xE8}; // Close frame with status 1000
     NSData *frame = [NSData dataWithBytes:closeBytes length:4];
-    NSArray<WSSessionAction *> *actions = [self.session feedData:frame];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session feedData:frame];
 
     XCTAssertGreaterThanOrEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeClose);
 }
 
 - (void)testFeedData_EmptyData_ReturnsNoActions {
-    NSArray<WSSessionAction *> *actions = [self.session feedData:[NSData data]];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session feedData:[NSData data]];
     XCTAssertEqual(actions.count, (NSUInteger)0);
 }
 
 - (void)testFeedData_NilData_ReturnsNoActions {
-    NSArray<WSSessionAction *> *actions = [self.session feedData:(NSData *)nil];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session feedData:(NSData *)nil];
     XCTAssertEqual(actions.count, (NSUInteger)0);
 }
 
@@ -101,7 +101,7 @@
     [combined appendData:frame1];
     [combined appendData:frame2];
 
-    NSArray<WSSessionAction *> *actions = [self.session feedData:combined];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session feedData:combined];
     XCTAssertEqual(actions.count, (NSUInteger)2);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeNotifyTextMessage);
     XCTAssertEqualObjects(actions[0].data, @"First");
@@ -113,7 +113,7 @@
 
 - (void)testTick_FirstCallSendsPing {
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-    NSArray<WSSessionAction *> *actions = [self.session tick:now];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session tick:now];
     XCTAssertEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeSendPing);
 }
@@ -122,9 +122,9 @@
     NSTimeInterval now = 1000.0;
     [self.session tick:now]; // First tick → sends ping
 
-    NSArray<WSSessionAction *> *actions = [self.session tick:now + 1.0];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session tick:now + 1.0];
     // Within 30s interval, so no ping
-    for (WSSessionAction *action in actions) {
+    for (ATProtoWSSessionAction *action in actions) {
         XCTAssertNotEqual(action.type, WSSessionActionTypeSendPing);
     }
 }
@@ -135,7 +135,7 @@
     NSUInteger maxQueue = self.session.maxOutboundQueueBytes;
     // Fill to 50% (below 70% warning threshold)
     NSUInteger size = maxQueue / 2;
-    NSArray<WSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:size currentQueueSize:size];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:size currentQueueSize:size];
 
     XCTAssertEqual(actions.count, (NSUInteger)0);
 }
@@ -144,7 +144,7 @@
     NSUInteger maxQueue = self.session.maxOutboundQueueBytes;
     NSUInteger warningSize = (NSUInteger)((double)maxQueue * 0.75); // 75% > 70% warning
 
-    NSArray<WSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:warningSize currentQueueSize:warningSize];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:warningSize currentQueueSize:warningSize];
     XCTAssertEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeBackpressureWarning);
 }
@@ -154,12 +154,12 @@
     NSUInteger warningSize = (NSUInteger)((double)maxQueue * 0.75);
 
     // First enqueue at warning level → emits warning
-    NSArray<WSSessionAction *> *actions1 = [self.session didEnqueueFrameOfSize:warningSize currentQueueSize:warningSize];
+    NSArray<ATProtoWSSessionAction *> *actions1 = [self.session didEnqueueFrameOfSize:warningSize currentQueueSize:warningSize];
     XCTAssertEqual(actions1.count, (NSUInteger)1);
 
     // Second enqueue still at warning level → no repeat
-    NSArray<WSSessionAction *> *actions2 = [self.session didEnqueueFrameOfSize:1 currentQueueSize:warningSize + 1];
-    for (WSSessionAction *action in actions2) {
+    NSArray<ATProtoWSSessionAction *> *actions2 = [self.session didEnqueueFrameOfSize:1 currentQueueSize:warningSize + 1];
+    for (ATProtoWSSessionAction *action in actions2) {
         XCTAssertNotEqual(action.type, WSSessionActionTypeBackpressureWarning);
     }
 }
@@ -168,7 +168,7 @@
     NSUInteger maxQueue = self.session.maxOutboundQueueBytes;
     NSUInteger criticalSize = (NSUInteger)((double)maxQueue * 0.95); // 95% > 90% critical
 
-    NSArray<WSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:criticalSize currentQueueSize:criticalSize];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:criticalSize currentQueueSize:criticalSize];
     XCTAssertEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeBackpressureCritical);
 
@@ -183,15 +183,15 @@
     NSUInteger criticalSize = (NSUInteger)((double)maxQueue * 0.95);
 
     // New session (isUnderBackpressure = NO, no warning emitted yet)
-    WebSocketProtocolSession *freshSession = [[WebSocketProtocolSession alloc] init];
+    ATProtoWebSocketProtocolSession *freshSession = [[ATProtoWebSocketProtocolSession alloc] init];
 
     // Enqueue at warning
-    NSArray<WSSessionAction *> *warnActions = [freshSession didEnqueueFrameOfSize:warningSize currentQueueSize:warningSize];
+    NSArray<ATProtoWSSessionAction *> *warnActions = [freshSession didEnqueueFrameOfSize:warningSize currentQueueSize:warningSize];
     XCTAssertEqual(warnActions.count, (NSUInteger)1);
     XCTAssertEqual(warnActions[0].type, WSSessionActionTypeBackpressureWarning);
 
     // Enqueue at critical
-    NSArray<WSSessionAction *> *critActions = [freshSession didEnqueueFrameOfSize:1 currentQueueSize:criticalSize];
+    NSArray<ATProtoWSSessionAction *> *critActions = [freshSession didEnqueueFrameOfSize:1 currentQueueSize:criticalSize];
     XCTAssertGreaterThanOrEqual(critActions.count, (NSUInteger)1);
     XCTAssertEqual(critActions[0].type, WSSessionActionTypeBackpressureCritical);
 }
@@ -199,7 +199,7 @@
 #pragma mark - didDequeueFrameOfSize:currentQueueSize:
 
 - (void)testDequeue_NotUnderBackpressure_NoAction {
-    NSArray<WSSessionAction *> *actions = [self.session didDequeueFrameOfSize:100 currentQueueSize:50];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session didDequeueFrameOfSize:100 currentQueueSize:50];
     XCTAssertEqual(actions.count, (NSUInteger)0);
 }
 
@@ -212,7 +212,7 @@
 
     // Dequeue below threshold
     NSUInteger clearSize = (NSUInteger)((double)maxQueue * 0.4);
-    NSArray<WSSessionAction *> *actions = [self.session didDequeueFrameOfSize:(warningSize - clearSize) currentQueueSize:clearSize];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session didDequeueFrameOfSize:(warningSize - clearSize) currentQueueSize:clearSize];
     XCTAssertEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeBackpressureCleared);
 }
@@ -228,7 +228,7 @@
     [self.session didDequeueFrameOfSize:(warningSize - 1) currentQueueSize:1];
 
     // Another dequeue (already cleared) → no action
-    NSArray<WSSessionAction *> *actions = [self.session didDequeueFrameOfSize:1 currentQueueSize:0];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session didDequeueFrameOfSize:1 currentQueueSize:0];
     XCTAssertEqual(actions.count, (NSUInteger)0);
 }
 
@@ -240,7 +240,7 @@
     self.session.backpressureCriticalThreshold = 0.8;
 
     // 40% → below warning
-    NSArray<WSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:400 currentQueueSize:400];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:400 currentQueueSize:400];
     XCTAssertEqual(actions.count, (NSUInteger)0);
 
     // 60% → warning
@@ -259,7 +259,7 @@
 - (void)testFeedDataWithReceivedAt_TextFrame_ReturnsNotifyText {
     NSData *frame = [self.class textFrameWithPayload:@"Timed"];
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-    NSArray<WSSessionAction *> *actions = [self.session feedData:frame receivedAt:now];
+    NSArray<ATProtoWSSessionAction *> *actions = [self.session feedData:frame receivedAt:now];
     XCTAssertEqual(actions.count, (NSUInteger)1);
     XCTAssertEqual(actions[0].type, WSSessionActionTypeNotifyTextMessage);
     XCTAssertEqualObjects(actions[0].data, @"Timed");

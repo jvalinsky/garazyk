@@ -9,7 +9,7 @@
  * forward an optional cursor, and return 400 for a missing query or 500 when the search index
  * fails. They write a service-provided JSON result on success.
  */
-@interface AppViewXRpcRoutePack (Search)
+@interface ATProtoAppViewXRpcRoutePack (Search)
 
 /** @abstract Searches actor skeletons for the required `q` query. */
 - (void)handleSearchActorsSkeleton:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

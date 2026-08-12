@@ -29,7 +29,7 @@
     };
 
     NSError *error = nil;
-    PLCOperation *op = [PLCOperation operationFromDictionary:json error:&error];
+    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:json error:&error];
 
     XCTAssertNil(error);
     XCTAssertNotNil(op);
@@ -53,7 +53,7 @@
     };
     
     NSError *error = nil;
-    PLCOperation *op = [PLCOperation operationFromDictionary:json error:&error];
+    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:json error:&error];
     
     XCTAssertNil(error);
     XCTAssertNotNil(op);
@@ -64,7 +64,7 @@
 }
 
 - (void)testToDictionaryPreservesGenesisPrevNull {
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     op.did = @"did:plc:abcdefghijklmnopqrstuvwx";
     op.sig = @"sig789";
     op.data = @{
@@ -89,7 +89,7 @@
     };
     
     NSError *error = nil;
-    PLCOperation *op = [PLCOperation operationFromDictionary:json error:&error];
+    ATProtoPLCOperation *op = [ATProtoPLCOperation operationFromDictionary:json error:&error];
     
     XCTAssertNotNil(error);
     XCTAssertNil(op);
@@ -109,9 +109,9 @@
         @"sig": @"test_sig"
     };
 
-    NSString *did = [PLCOperation calculateDIDForSignedOperation:createData];
+    NSString *did = [ATProtoPLCOperation calculateDIDForSignedOperation:createData];
 
-    PLCOperation *createOp = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *createOp = [[ATProtoPLCOperation alloc] init];
     createOp.did = did;
     createOp.prev = nil;
     createOp.sig = @"test_sig";
@@ -125,7 +125,7 @@
     };
     
     NSError *cidError = nil;
-    NSString *prevCid = [PLCOperation calculateCIDForOperation:[createOp toDictionary] error:&cidError];
+    NSString *prevCid = [ATProtoPLCOperation calculateCIDForOperation:[createOp toDictionary] error:&cidError];
     XCTAssertNotNil(prevCid);
     
     NSDictionary *updateHandleData = @{
@@ -137,14 +137,14 @@
         @"prev": prevCid
     };
     
-    PLCOperation *updateOp = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *updateOp = [[ATProtoPLCOperation alloc] init];
     updateOp.did = did;
     updateOp.prev = prevCid;
     updateOp.sig = @"test_sig";
     updateOp.data = updateHandleData;
     
     NSError *error = nil;
-    PLCDIDState *state = [PLCStateReplayer replayHistory:@[createOp, updateOp] error:&error];
+    ATProtoPLCDIDState *state = [ATProtoPLCStateReplayer replayHistory:@[createOp, updateOp] error:&error];
     
     XCTAssertNil(error);
     XCTAssertNotNil(state);
@@ -168,9 +168,9 @@
         @"sig": @"test_sig"
     };
 
-    NSString *did = [PLCOperation calculateDIDForSignedOperation:createData];
+    NSString *did = [ATProtoPLCOperation calculateDIDForSignedOperation:createData];
 
-    PLCOperation *createOp = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *createOp = [[ATProtoPLCOperation alloc] init];
     createOp.did = did;
     createOp.prev = nil;
     createOp.sig = @"test_sig";
@@ -184,7 +184,7 @@
     };
     
     NSError *cidError = nil;
-    NSString *prevCid1 = [PLCOperation calculateCIDForOperation:[createOp toDictionary] error:&cidError];
+    NSString *prevCid1 = [ATProtoPLCOperation calculateCIDForOperation:[createOp toDictionary] error:&cidError];
     XCTAssertNotNil(prevCid1);
     
     NSDictionary *updateHandleData1 = @{
@@ -196,13 +196,13 @@
         @"prev": prevCid1
     };
     
-    PLCOperation *updateOp1 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *updateOp1 = [[ATProtoPLCOperation alloc] init];
     updateOp1.did = did;
     updateOp1.prev = prevCid1;
     updateOp1.sig = @"test_sig";
     updateOp1.data = updateHandleData1;
     
-    NSString *prevCid2 = [PLCOperation calculateCIDForOperation:[updateOp1 toDictionary] error:&cidError];
+    NSString *prevCid2 = [ATProtoPLCOperation calculateCIDForOperation:[updateOp1 toDictionary] error:&cidError];
     XCTAssertNotNil(prevCid2);
     
     NSDictionary *updateHandleData2 = @{
@@ -214,14 +214,14 @@
         @"prev": prevCid2
     };
     
-    PLCOperation *updateOp2 = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *updateOp2 = [[ATProtoPLCOperation alloc] init];
     updateOp2.did = did;
     updateOp2.prev = prevCid2;
     updateOp2.sig = @"test_sig";
     updateOp2.data = updateHandleData2;
     
     NSError *error = nil;
-    PLCDIDState *state = [PLCStateReplayer replayHistory:@[createOp, updateOp1, updateOp2] error:&error];
+    ATProtoPLCDIDState *state = [ATProtoPLCStateReplayer replayHistory:@[createOp, updateOp1, updateOp2] error:&error];
     
     XCTAssertNil(error);
     XCTAssertNotNil(state);
@@ -275,7 +275,7 @@
     };
 
     // Legacy unsigned derivation (retained for backward compatibility)
-    NSString *unsignedDID = [PLCOperation calculateDIDForData:opData];
+    NSString *unsignedDID = [ATProtoPLCOperation calculateDIDForData:opData];
     XCTAssertEqualObjects(unsignedDID, @"did:plc:taybjzkanfb23appusr452ga",
         @"Legacy unsigned DID derivation should match indigo test vector");
 
@@ -291,7 +291,7 @@
         @"prev": [NSNull null],
         @"sig": @"DyaPWDItkJnVkN1izINSW-fdjUzP9BkIKlD7SnzD5axfK_870ZZ-1EYcrQLQtP9VkWcp2cdbyIHprjPfeUs8WQ"
     };
-    NSString *signedDID = [PLCOperation calculateDIDForSignedOperation:signedOp];
+    NSString *signedDID = [ATProtoPLCOperation calculateDIDForSignedOperation:signedOp];
     XCTAssertTrue([signedDID hasPrefix:@"did:plc:"],
         @"Signed DID derivation should produce valid did:plc");
     XCTAssertNotEqualObjects(signedDID, unsignedDID,
@@ -311,7 +311,7 @@
         @"sig": @"test_signature_placeholder"
     };
 
-    NSString *calculatedDID = [PLCOperation calculateDIDForSignedOperation:signedOp];
+    NSString *calculatedDID = [ATProtoPLCOperation calculateDIDForSignedOperation:signedOp];
 
     XCTAssertTrue([calculatedDID hasPrefix:@"did:plc:"], @"DID should have did:plc: prefix");
     XCTAssertEqual(calculatedDID.length, 32, @"DID should be 32 characters (did:plc: + 24 char hash)");

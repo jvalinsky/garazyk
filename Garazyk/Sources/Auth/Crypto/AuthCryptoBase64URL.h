@@ -7,7 +7,7 @@
 
  @discussion Provides RFC 4648 §5 base64url encoding without padding, shared
  between OAuth Provider and Auth Verifier components. Extracted from duplicated
- implementations in DPoPUtil and OAuth2DPoPProof.
+ implementations in ATProtoDPoPUtil and ATProtoOAuth2DPoPProof.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */

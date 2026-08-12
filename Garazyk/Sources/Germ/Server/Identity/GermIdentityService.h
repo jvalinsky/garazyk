@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file GermIdentityService.h
+ @file PDSGermIdentityService.h
 
  @abstract Server-side AC Protocol identity verification for Germ E2EE.
 
@@ -34,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 extern const uint8_t kGermAlgorithmCurve25519Signing;
 
-@interface GermIdentityService : NSObject
+@interface PDSGermIdentityService : NSObject
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
 

@@ -11,9 +11,9 @@
 #import "Network/XrpcHandler.h"
 #import "Admin/PDSAdminController.h"
 
-@implementation XrpcRoutePackServiceBag
+@implementation ATProtoXrpcRoutePackServiceBag
 
-- (instancetype)initWithDispatcher:(XrpcDispatcher *)dispatcher
+- (instancetype)initWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                          jwtMinter:(ATProtoJWTMinter *)jwtMinter
                    adminController:(id<PDSAdminController>)adminController
                       configuration:(ATProtoServiceConfiguration *)configuration

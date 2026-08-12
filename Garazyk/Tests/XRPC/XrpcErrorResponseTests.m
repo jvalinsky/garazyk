@@ -8,14 +8,14 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcErrorResponseTests : XCTestCase
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @end
 
 @implementation XrpcErrorResponseTests
 
 - (void)setUp {
     [super setUp];
-    self.dispatcher = [[XrpcDispatcher alloc] init];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
 }
 
 - (void)tearDown {

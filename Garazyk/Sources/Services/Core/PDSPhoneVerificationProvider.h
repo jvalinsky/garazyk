@@ -40,7 +40,7 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
 
  @param phoneNumber E.164 or provider-compatible phone number string.
  @param error On failure, set to the provider-specific error.
- @result Session ID string on success (provider-specific, e.g. request_id,
+ @result PDSSession ID string on success (provider-specific, e.g. request_id,
          session_uuid), or nil on failure. For providers that do not use
          session IDs (e.g. Twilio Verify), returns an empty string (@"") on success.
  */

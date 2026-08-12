@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file SecItemLinuxStore.h
+ * @file ATProtoSecItemLinuxStore.h
  *
  * @brief Persistent SQLite-backed keychain storage for Linux SecItem implementation.
  *
@@ -12,7 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/** Error domain for SecItemLinuxStore errors. */
+/** Error domain for ATProtoSecItemLinuxStore errors. */
 extern NSString * const SecItemLinuxStoreErrorDomain;
 
 /**
@@ -22,7 +22,7 @@ extern NSString * const SecItemLinuxStoreErrorDomain;
  Uses a single-file SQLite database at ~/.pds/keychain.db with proper
  transaction handling and schema versioning.
  */
-@interface SecItemLinuxStore : NSObject
+@interface ATProtoSecItemLinuxStore : NSObject
 
 /**
  Shared singleton instance of the keychain store.

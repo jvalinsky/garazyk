@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AppView/Services/VideoUriBuilder.h"
 
-@implementation AppViewVideoUriBuilder
+@implementation PDSAppViewVideoUriBuilder
 
 + (instancetype)builderWithVideoServiceURL:(NSString *)videoServiceURL {
-    AppViewVideoUriBuilder *builder = [[AppViewVideoUriBuilder alloc] init];
+    PDSAppViewVideoUriBuilder *builder = [[PDSAppViewVideoUriBuilder alloc] init];
     builder.videoServiceURL = videoServiceURL;
     builder.playlistUrlPattern = @"{videoServiceURL}/watch/{did}/{cid}/playlist.m3u8";
     builder.thumbnailUrlPattern = @"{videoServiceURL}/watch/{did}/{cid}/thumbnail.jpg";

@@ -4,11 +4,11 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Sync/Relay/RelayUpstreamManager.h"
 
-@interface RelayUpstreamManager (ValidationTesting)
+@interface ATProtoRelayUpstreamManager (ValidationTesting)
 @property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, RelayClient *> *upstreamClients;
-- (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event;
-- (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoRelayClient *> *upstreamClients;
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event;
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event;
 @end
 
 @interface RelayValidationHTTPClient : ATProtoSafeHTTPClient
@@ -39,7 +39,7 @@
 @implementation RelayUpstreamManagerTests
 
 - (void)testInitialization {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com", @"pds2.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com", @"pds2.com"]];
     
     XCTAssertNotNil(manager);
     NSArray *allUpstreams = [manager allUpstreams];
@@ -49,7 +49,7 @@
 }
 
 - (void)testAddUpstream {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
     
     XCTAssertEqual([manager allUpstreams].count, 1);
     
@@ -60,7 +60,7 @@
 }
 
 - (void)testRemoveUpstream {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com", @"pds2.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com", @"pds2.com"]];
     
     XCTAssertEqual([manager allUpstreams].count, 2);
     
@@ -72,7 +72,7 @@
 }
 
 - (void)testRemoveAllUpstreams {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com", @"pds2.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com", @"pds2.com"]];
     
     XCTAssertEqual([manager allUpstreams].count, 2);
     
@@ -82,20 +82,20 @@
 }
 
 - (void)testActiveUpstreamsInitiallyEmpty {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
     
     NSArray *active = [manager activeUpstreams];
     XCTAssertEqual(active.count, 0); // Not connected yet
 }
 
 - (void)testIsConnected {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
     
     XCTAssertFalse([manager isConnected]); // No upstreams connected
 }
 
 - (void)testPauseResume {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
     
     [manager pause];
     // Would test paused state here
@@ -105,7 +105,7 @@
 }
 
 - (void)testDefaultReconnectSettings {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"pds1.com"]];
     
     XCTAssertEqual(manager.maxReconnectAttempts, 10);
     XCTAssertEqual(manager.baseReconnectInterval, 5.0);
@@ -113,7 +113,7 @@
 }
 
 - (void)testCrawlStateTransitionsAndRequestOrigin {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc]
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc]
         initWithInitialURLs:@[@"https://crawl.test/xrpc/com.atproto.sync.subscribeRepos"]];
     NSString *url = @"https://crawl.test/xrpc/com.atproto.sync.subscribeRepos";
 
@@ -145,13 +145,13 @@
 
 - (void)testTracksPerUpstreamEventActivityByKind {
     NSString *url = @"https://events.test/xrpc/com.atproto.sync.subscribeRepos";
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc]
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc]
         initWithInitialURLs:@[url]];
-    RelayClient *client = manager.upstreamClients[url];
+    ATProtoRelayClient *client = manager.upstreamClients[url];
 
-    [manager relayClient:client didReceiveCommitEvent:[[FirehoseCommitEvent alloc] init]];
-    [manager relayClient:client didReceiveCommitEvent:[[FirehoseCommitEvent alloc] init]];
-    [manager relayClient:client didReceiveIdentityEvent:[[FirehoseIdentityEvent alloc] init]];
+    [manager relayClient:client didReceiveCommitEvent:[[ATProtoFirehoseCommitEvent alloc] init]];
+    [manager relayClient:client didReceiveCommitEvent:[[ATProtoFirehoseCommitEvent alloc] init]];
+    [manager relayClient:client didReceiveIdentityEvent:[[ATProtoFirehoseIdentityEvent alloc] init]];
 
     XCTAssertEqual([manager eventCountForUpstream:url], (uint64_t)3);
     NSDictionary<NSString *, NSNumber *> *counts =
@@ -162,7 +162,7 @@
 }
 
 - (void)testValidateHostUsesSafeHTTPClientWithBoundedPolicy {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[]];
     RelayValidationHTTPClient *client = [[RelayValidationHTTPClient alloc] init];
     manager.safeHTTPClient = client;
 
@@ -184,7 +184,7 @@
 }
 
 - (void)testValidateLocalHostAllowsHTTPThroughSafeClient {
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[]];
     RelayValidationHTTPClient *client = [[RelayValidationHTTPClient alloc] init];
     manager.safeHTTPClient = client;
 

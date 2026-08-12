@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcGermIdentityPack.h
+ @file PDSXrpcGermIdentityPack.h
 
  @abstract XRPC handler registration for Germ AC Protocol identity.
 
@@ -14,24 +14,24 @@
 
 #import <Foundation/Foundation.h>
 
-@class XrpcDispatcher;
-@class GermIdentityService;
-@class ChatAuthManager;
+@class ATProtoXrpcDispatcher;
+@class PDSGermIdentityService;
+@class PDSChatAuthManager;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcGermIdentityPack : NSObject
+@interface PDSXrpcGermIdentityPack : NSObject
 
 /**
  * @abstract Performs the initWithIdentityService operation.
  */
-- (instancetype)initWithIdentityService:(GermIdentityService *)identityService
-                            authManager:(ChatAuthManager *)authManager;
+- (instancetype)initWithIdentityService:(PDSGermIdentityService *)identityService
+                            authManager:(PDSChatAuthManager *)authManager;
 
 /**
  * @abstract Performs the registerHandlersWithDispatcher operation.
  */
-- (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher;
+- (void)registerHandlersWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher;
 
 @end
 

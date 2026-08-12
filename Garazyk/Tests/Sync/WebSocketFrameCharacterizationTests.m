@@ -23,29 +23,29 @@
     }
     return self;
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveMessage:(NSData *)data {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveMessage:(NSData *)data {
     [self.messages addObject:data];
     if (self.expectation) [self.expectation fulfill];
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didReceiveText:(NSString *)text {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didReceiveText:(NSString *)text {
     [self.texts addObject:text];
     if (self.expectation) [self.expectation fulfill];
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason {
     self.lastCloseCode = code;
     self.lastCloseReason = reason;
     if (self.expectation) [self.expectation fulfill];
 }
-- (void)webSocketConnection:(WebSocketConnection *)connection didFailWithError:(NSError *)error {
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didFailWithError:(NSError *)error {
     self.lastError = error;
     if (self.expectation) [self.expectation fulfill];
 }
 @end
 
-@interface WebSocketConnection (Testing2)
+@interface ATProtoWebSocketConnection (Testing2)
 @property (nonatomic, assign, readwrite) WebSocketConnectionState state;
 @property (nonatomic, strong) NSMutableData *readBuffer;
-@property (nonatomic, strong) WebSocketCodec *codec;
+@property (nonatomic, strong) ATProtoWebSocketCodec *codec;
 - (void)handleReceivedData:(NSData *)data;
 - (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
 - (void)sendPong:(NSData *)payload;
@@ -53,7 +53,7 @@
 @end
 
 @interface WebSocketFrameCharacterizationTests : XCTestCase
-@property (nonatomic, strong) WebSocketConnection *connection;
+@property (nonatomic, strong) ATProtoWebSocketConnection *connection;
 @property (nonatomic, strong) MockWebSocketDelegate2 *delegate;
 @end
 
@@ -61,7 +61,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.connection = [[WebSocketConnection alloc] init];
+    self.connection = [[ATProtoWebSocketConnection alloc] init];
     self.delegate = [[MockWebSocketDelegate2 alloc] init];
     self.connection.delegate = self.delegate;
     self.connection.state = WebSocketConnectionStateConnected;
@@ -83,7 +83,7 @@
 }
 
 - (void)testFragmentedFramesMatchesFirstObject {
-    // Current WebSocketConnection doesn't fully support FIN=0 continuation frame reassembly in the parser itself.
+    // Current ATProtoWebSocketConnection doesn't fully support FIN=0 continuation frame reassembly in the parser itself.
     // Let's see what the current behavior actually is.
     // ACTUALLY, looking at handleReceivedData: it seems to dispatch every frame it sees directly.
     // We will just feed it two text frames and see what happens (since current code doesn't do reassembly).

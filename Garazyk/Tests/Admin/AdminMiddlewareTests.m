@@ -9,18 +9,18 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface AdminMiddlewareTests : XCTestCase
-@property (nonatomic, strong, nullable) AdminMiddleware *middleware;
-@property (nonatomic, strong, nullable) SessionStore *sessionStore;
+@property (nonatomic, strong, nullable) PDSAdminMiddleware *middleware;
+@property (nonatomic, strong, nullable) PDSSessionStore *sessionStore;
 @end
 
 @implementation AdminMiddlewareTests
 
 - (void)setUp {
     [super setUp];
-    self.middleware = [AdminMiddleware sharedMiddleware];
+    self.middleware = [PDSAdminMiddleware sharedMiddleware];
     self.middleware.adminDids = @[];
     self.middleware.customAdminCheck = nil;
-    self.sessionStore = [SessionStore sharedStore];
+    self.sessionStore = [PDSSessionStore sharedStore];
 }
 
 - (void)tearDown {
@@ -70,7 +70,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testNonAdminTokenForbidden {
-    Session *session = [self.sessionStore createSessionForDID:@"did:plc:user123"
+    PDSSession *session = [self.sessionStore createSessionForDID:@"did:plc:user123"
                                                        handle:@"user.example.com"
                                                         scope:@"atproto"
                                                       dpopJWK:nil
@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testAdminDidAllowed {
-    Session *session = [self.sessionStore createSessionForDID:@"did:plc:admin123"
+    PDSSession *session = [self.sessionStore createSessionForDID:@"did:plc:admin123"
                                                        handle:@"administrator.example.com"
                                                         scope:@"atproto"
                                                       dpopJWK:nil
@@ -104,12 +104,12 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testCustomAdminCheckAllows {
-    Session *session = [self.sessionStore createSessionForDID:@"did:plc:custom123"
+    PDSSession *session = [self.sessionStore createSessionForDID:@"did:plc:custom123"
                                                        handle:@"user.example.com"
                                                         scope:@"atproto"
                                                       dpopJWK:nil
                                                         error:nil];
-    self.middleware.customAdminCheck = ^BOOL(Session *sessionToCheck) {
+    self.middleware.customAdminCheck = ^BOOL(PDSSession *sessionToCheck) {
         return [sessionToCheck.did isEqualToString:@"did:plc:custom123"];
     };
 

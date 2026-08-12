@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file SubscribeReposHandler.h
+ @file ATProtoSubscribeReposHandler.h
  
  @abstract Handler for com.atproto.sync.subscribeRepos endpoint.
  
- @discussion Manages WebSocket connections for the Firehose subscription
+ @discussion Manages WebSocket connections for the ATProtoFirehose subscription
  endpoint. Broadcasts repository commits, identity changes, and account
  status updates to connected subscribers.
  
@@ -18,10 +18,10 @@
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/Relay/RelayEventBuffer.h"
 
-@class WebSocketServer;
-@class WebSocketConnection;
+@class ATProtoWebSocketServer;
+@class ATProtoWebSocketConnection;
 @class PDSServiceDatabases;
-@class EventFormatter;
+@class ATProtoEventFormatter;
 @class ATProtoRepoCommit;
 @class ATProtoCID;
 @class ATProtoHttpRequest;
@@ -30,7 +30,7 @@
  */
 @protocol ATProtoNetworkConnection;
 @class PDSDatabasePool;
-@class RelayMetrics;
+@class ATProtoRelayMetrics;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -49,31 +49,31 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 @optional
 - (void)subscribeReposHandlerDidStart:(id)handler;
 - (void)subscribeReposHandlerDidStop:(id)handler;
-- (void)subscribeReposHandler:(id)handler didAcceptConnection:(WebSocketConnection *)connection;
-- (void)subscribeReposHandler:(id)handler didCloseConnection:(WebSocketConnection *)connection;
+- (void)subscribeReposHandler:(id)handler didAcceptConnection:(ATProtoWebSocketConnection *)connection;
+- (void)subscribeReposHandler:(id)handler didCloseConnection:(ATProtoWebSocketConnection *)connection;
 @end
 
 /*!
- @class SubscribeReposHandler
+ @class ATProtoSubscribeReposHandler
 
- @abstract Manages Firehose subscriptions.
+ @abstract Manages ATProtoFirehose subscriptions.
 
  @discussion Broadcasts repository events to WebSocket subscribers.
  */
-@interface SubscribeReposHandler : NSObject
+@interface ATProtoSubscribeReposHandler : NSObject
 
 /*! Delegate for lifecycle events. */
 @property (nonatomic, weak, nullable) id<SubscribeReposHandlerDelegate> delegate;
 
 /*! Legacy standalone WebSocket server (compatibility/test use only). */
-@property (nonatomic, readonly) WebSocketServer *webSocketServer
+@property (nonatomic, readonly) ATProtoWebSocketServer *webSocketServer
     DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP upgrade path; use acceptUpgradedConnection:request:");
 
 /*! Formats events for transmission. */
-@property (nonatomic, readonly) EventFormatter *eventFormatter;
+@property (nonatomic, readonly) ATProtoEventFormatter *eventFormatter;
 
 /*! Current WebSocket connections. */
-@property (nonatomic, readonly) NSSet<WebSocketConnection *> *attachedConnections;
+@property (nonatomic, readonly) NSSet<ATProtoWebSocketConnection *> *attachedConnections;
 
 /*! The service databases for event persistence. */
 @property (nonatomic, readonly) PDSServiceDatabases *serviceDatabases;
@@ -82,10 +82,10 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 @property (nonatomic, copy, nullable) NSData *signingKey;
 
 /*! Relay metrics sink. Set when running inside the Relay (`zuk`); nil for plain PDS. */
-@property (nonatomic, strong, nullable) RelayMetrics *relayMetrics;
+@property (nonatomic, strong, nullable) ATProtoRelayMetrics *relayMetrics;
 
 /*! In-memory event buffer for relay-mode replay when serviceDatabases is nil. */
-@property (nonatomic, strong, nullable) RelayEventBuffer *eventBuffer;
+@property (nonatomic, strong, nullable) ATProtoRelayEventBuffer *eventBuffer;
 
 
 - (instancetype)initWithServiceDatabases:(nullable PDSServiceDatabases *)serviceDatabases;
@@ -113,10 +113,10 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (void)acceptUpgradedConnection:(id<ATProtoNetworkConnection>)connection request:(ATProtoHttpRequest *)request;
 
 /*! Broadcasts a repository commit event object. */
-- (void)broadcastCommitEvent:(FirehoseCommitEvent *)event;
+- (void)broadcastCommitEvent:(ATProtoFirehoseCommitEvent *)event;
 
 /*! Broadcasts a repository synchronization/reset event object. */
-- (void)broadcastSyncEvent:(FirehoseSyncEvent *)event;
+- (void)broadcastSyncEvent:(ATProtoFirehoseSyncEvent *)event;
 
 /*! Broadcasts a repository commit event. */
 - (void)broadcastRepositoryCommit:(ATProtoRepoCommit *)commit

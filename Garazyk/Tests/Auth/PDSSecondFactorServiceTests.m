@@ -135,7 +135,7 @@
 
 - (void)testVerifyAuthFactorTokenTOTPValidCode {
     NSString *base32Secret = @"JBSWY3DPEHPK3PXP";
-    NSData *secretData = [Base32Utils dataFromBase32String:base32Secret];
+    NSData *secretData = [ATProtoBase32Utils dataFromBase32String:base32Secret];
 
     TestSecondFactorAccount *account = [[TestSecondFactorAccount alloc] init];
     account.tfaEnabled = YES;
@@ -143,7 +143,7 @@
     account.did = @"did:plc:test";
     account.tfaSecret = secretData;
 
-    TOTPGenerator *gen = [[TOTPGenerator alloc] initWithSecret:secretData];
+    ATProtoTOTPGenerator *gen = [[ATProtoTOTPGenerator alloc] initWithSecret:secretData];
     NSString *validCode = [gen generateOTP];
 
     PDSSecondFactorService *service = [[PDSSecondFactorService alloc] initWithServiceDatabases:nil origin:@"https://example.com"];
@@ -157,7 +157,7 @@
     account.tfaEnabled = YES;
     account.webauthnEnabled = NO;
     account.did = @"did:plc:test";
-    account.tfaSecret = [Base32Utils dataFromBase32String:@"JBSWY3DPEHPK3PXP"];
+    account.tfaSecret = [ATProtoBase32Utils dataFromBase32String:@"JBSWY3DPEHPK3PXP"];
 
     PDSSecondFactorService *service = [[PDSSecondFactorService alloc] initWithServiceDatabases:nil origin:@"https://example.com"];
     NSError *error = nil;
@@ -171,7 +171,7 @@
     account.tfaEnabled = YES;
     account.webauthnEnabled = NO;
     account.did = @"did:plc:test";
-    account.tfaSecret = [Base32Utils dataFromBase32String:@"JBSWY3DPEHPK3PXP"];
+    account.tfaSecret = [ATProtoBase32Utils dataFromBase32String:@"JBSWY3DPEHPK3PXP"];
 
     PDSSecondFactorService *service = [[PDSSecondFactorService alloc] initWithServiceDatabases:nil origin:@"https://example.com"];
     NSError *error = nil;

@@ -7,7 +7,7 @@
 #import "AppView/Services/AgeAssuranceService.h"
 #import "Auth/AuthClaimTypeCheck.h"
 
-@implementation AppViewXRpcRoutePack (AgeAssurance)
+@implementation ATProtoAppViewXRpcRoutePack (AgeAssurance)
 
 - (void)handleAgeAssuranceBegin:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {

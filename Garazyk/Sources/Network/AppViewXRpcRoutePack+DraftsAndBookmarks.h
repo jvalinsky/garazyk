@@ -9,7 +9,7 @@
  * failures write a response before returning; backing-service failures produce 500 JSON errors.
  * Bookmark reads clamp `limit` to 1...100 and forward an optional cursor.
  */
-@interface AppViewXRpcRoutePack (DraftsAndBookmarks)
+@interface ATProtoAppViewXRpcRoutePack (DraftsAndBookmarks)
 
 /** @abstract Returns drafts owned by the authenticated actor. */
 - (void)handleGetDrafts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;

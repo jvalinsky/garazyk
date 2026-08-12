@@ -7,7 +7,7 @@
 @interface BookmarkServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) BookmarkService *service;
+@property (nonatomic, strong) PDSBookmarkService *service;
 @end
 
 @implementation BookmarkServiceTests
@@ -24,7 +24,7 @@
     NSError *error = nil;
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     [self setupSchema];
-    self.service = [[BookmarkService alloc] initWithDatabase:self.database];
+    self.service = [[PDSBookmarkService alloc] initWithDatabase:self.database];
 }
 
 - (void)setupSchema {

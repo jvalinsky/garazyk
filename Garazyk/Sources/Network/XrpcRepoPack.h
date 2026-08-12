@@ -6,12 +6,12 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * XrpcRepoPack provides registration logic for the com.atproto.repo namespace.
+ * ATProtoXrpcRepoPack provides registration logic for the com.atproto.repo namespace.
  */
 /**
- * @abstract Declares the XrpcRepoPack public API.
+ * @abstract Declares the ATProtoXrpcRepoPack public API.
  */
-@interface XrpcRepoPack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcRepoPack : NSObject <XrpcRoutePack>
 
 @end
 

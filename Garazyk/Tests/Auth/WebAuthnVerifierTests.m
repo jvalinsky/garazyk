@@ -69,7 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          attestation:attestation];
 
     NSError *error = nil;
-    NSDictionary *result = [WebAuthnVerifier verifyRegistrationResponse:response
+    NSDictionary *result = [ATProtoWebAuthnVerifier verifyRegistrationResponse:response
                                                               challenge:expectedChallenge
                                                                  origin:expectedOrigin
                                                                   error:&error];
@@ -90,7 +90,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          attestation:attestation];
 
     NSError *error = nil;
-    NSDictionary *result = [WebAuthnVerifier verifyRegistrationResponse:response
+    NSDictionary *result = [ATProtoWebAuthnVerifier verifyRegistrationResponse:response
                                                               challenge:expectedChallenge
                                                                  origin:expectedOrigin
                                                                   error:&error];
@@ -109,7 +109,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          attestation:attestation];
 
     NSError *error = nil;
-    NSDictionary *result = [WebAuthnVerifier verifyRegistrationResponse:response
+    NSDictionary *result = [ATProtoWebAuthnVerifier verifyRegistrationResponse:response
                                                               challenge:expectedChallenge
                                                                  origin:expectedOrigin
                                                                   error:&error];
@@ -131,7 +131,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                          attestation:attestation];
 
     NSError *error = nil;
-    NSDictionary *result = [WebAuthnVerifier verifyRegistrationResponse:response
+    NSDictionary *result = [ATProtoWebAuthnVerifier verifyRegistrationResponse:response
                                                               challenge:expectedChallenge
                                                                  origin:expectedOrigin
                                                                   error:&error];
@@ -162,7 +162,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSError *error = nil;
     uint32_t outCount = 0;
-    BOOL ok = [WebAuthnVerifier verifyAssertionResponse:response
+    BOOL ok = [ATProtoWebAuthnVerifier verifyAssertionResponse:response
                                               challenge:[@"expected" dataUsingEncoding:NSUTF8StringEncoding]
                                                  origin:@"https://example.com"
                                               publicKey:[NSData data]

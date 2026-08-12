@@ -190,7 +190,7 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 - (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid error:(NSError **)error;
 /**
  * @abstract Store refresh token.
- * @param token Session token.
+ * @param token PDSSession token.
  * @param accountDid Actor DID for the request.
  * @param error Receives details when the operation fails.
  * @return YES when the operation succeeds; otherwise NO.

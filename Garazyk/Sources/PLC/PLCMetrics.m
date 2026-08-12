@@ -5,7 +5,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface PLCMetrics () {
+@interface ATProtoPLCMetrics () {
     dispatch_queue_t _metricsQueue;
 }
 @property (nonatomic, assign) int64_t cacheHits;
@@ -22,10 +22,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *customCounters;
 @end
 
-@implementation PLCMetrics
+@implementation ATProtoPLCMetrics
 
 + (instancetype)sharedMetrics {
-    static PLCMetrics *sharedInstance = nil;
+    static ATProtoPLCMetrics *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[self alloc] init];

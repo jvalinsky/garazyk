@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file PLCMetrics.h
+ * @file ATProtoPLCMetrics.h
  * @abstract Metrics collection for PLC operations.
  * @discussion Provides Prometheus-style metrics for PLC DID operations including cache hits/misses, operation counts, and latency measurements.
  */
@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
  * - Verification success/failure counts
  * - Resolution latency histograms
  */
-@interface PLCMetrics : NSObject
+@interface ATProtoPLCMetrics : NSObject
 
 /**
  * @abstract Returns the shared singleton metrics collector.

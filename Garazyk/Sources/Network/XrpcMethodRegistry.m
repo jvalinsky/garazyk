@@ -30,7 +30,7 @@
 #import "Services/PDS/PDSSpaceReconciler.h"
 #import "Registration/PDSRegistrationGate.h"
 
-@implementation XrpcMethodRegistry
+@implementation ATProtoXrpcMethodRegistry
 
 static id<PDSBlobProvider> XrpcBlobProviderFromService(PDSBlobService *blobService) {
   if (!blobService) {
@@ -38,7 +38,7 @@ static id<PDSBlobProvider> XrpcBlobProviderFromService(PDSBlobService *blobServi
     return nil;
   }
 
-  BlobStorage *blobStorage = blobService.blobStorage;
+  PDSBlobStorage *blobStorage = blobService.blobStorage;
   if (!blobStorage) {
     GZ_LOG_WARN(@"XRPC route registration has no blob storage; video uploads will fail closed");
     return nil;
@@ -52,7 +52,7 @@ static id<PDSBlobProvider> XrpcBlobProviderFromService(PDSBlobService *blobServi
 }
 
 static void registerMethodsWithDispatcherUsingServices(
-    Class registryClass, XrpcDispatcher *dispatcher,
+    Class registryClass, ATProtoXrpcDispatcher *dispatcher,
     id<PDSAccountService> accountService, PDSRecordService *recordService,
     PDSBlobService *blobService, id<VideoJobStore> videoJobStore,
     ATProtoAuthVerifier *authVerifier,
@@ -62,7 +62,7 @@ static void registerMethodsWithDispatcherUsingServices(
     PDSServiceDatabases *serviceDatabases, PDSDatabasePool *userDatabasePool,
     ATProtoJWTMinter *jwtMinter, ATProtoRateLimiter *rateLimiter, ATProtoServiceConfiguration *config,
     id<PDSEmailProvider> emailProvider,
-    SubscribeReposHandler *subscribeReposHandler, PDSSpaceStore *spaceStore,
+    ATProtoSubscribeReposHandler *subscribeReposHandler, PDSSpaceStore *spaceStore,
     PDSSpaceReconciler *spaceReconciler) {
 
   // A dispatcher can outlive a PDSApplication in tests and controlled restarts.
@@ -70,18 +70,18 @@ static void registerMethodsWithDispatcherUsingServices(
   // treating a prior application's handlers as a second route owner.
   [dispatcher resetRegisteredMethods];
 
-  [XrpcLexiconResolver registerResolveLexiconMethodOnDispatcher:dispatcher
+  [ATProtoXrpcLexiconResolver registerResolveLexiconMethodOnDispatcher:dispatcher
                                                    configuration:config];
 
-  [XrpcProxyInterceptor installOnDispatcher:dispatcher
+  [ATProtoXrpcProxyInterceptor installOnDispatcher:dispatcher
                               configuration:config
                                   jwtMinter:jwtMinter
                             adminController:adminController
                            serviceDatabases:serviceDatabases
                            userDatabasePool:userDatabasePool];
 
-  XrpcRoutePackServiceBag *routePackServices =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *routePackServices =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:config
@@ -106,29 +106,29 @@ static void registerMethodsWithDispatcherUsingServices(
   routePackServices.spaceReconciler = spaceReconciler;
 
   // Register domain modules in order
-  [XrpcServerPack registerWithDispatcher:dispatcher services:routePackServices];
-  [XrpcIdentityPack registerWithDispatcher:dispatcher services:routePackServices];
-  [XrpcRepoPack registerWithDispatcher:dispatcher services:routePackServices];
-  [XrpcSyncPack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcServerPack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcIdentityPack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcRepoPack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcSyncPack registerWithDispatcher:dispatcher services:routePackServices];
 
-  [XrpcSpacePack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcSpacePack registerWithDispatcher:dispatcher services:routePackServices];
   NSDictionary<NSString *, NSString *> *environment = NSProcessInfo.processInfo.environment;
-  if ([XrpcSpaceRecoveryTestPack isEnabledForEnvironment:environment]) {
-    [XrpcSpaceRecoveryTestPack registerWithDispatcher:dispatcher services:routePackServices];
+  if ([ATProtoXrpcSpaceRecoveryTestPack isEnabledForEnvironment:environment]) {
+    [ATProtoXrpcSpaceRecoveryTestPack registerWithDispatcher:dispatcher services:routePackServices];
   }
 
-  [XrpcAppBskyPack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcAppBskyPack registerWithDispatcher:dispatcher services:routePackServices];
 
-  [XrpcAdminPack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcAdminPack registerWithDispatcher:dispatcher services:routePackServices];
 
-  [XrpcLabelPack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcLabelPack registerWithDispatcher:dispatcher services:routePackServices];
 
-  [XrpcModerationPack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcModerationPack registerWithDispatcher:dispatcher services:routePackServices];
 
-  [XrpcVendorPack registerWithDispatcher:dispatcher services:routePackServices];
+  [ATProtoXrpcVendorPack registerWithDispatcher:dispatcher services:routePackServices];
 }
 
-+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                            controller:(PDSController *)controller {
   if (!dispatcher || !controller) {
     return;
@@ -148,7 +148,7 @@ static void registerMethodsWithDispatcherUsingServices(
       controller.application.spaceReconciler);
 }
 
-+ (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                           application:(PDSApplication *)application {
   if (!dispatcher || !application) {
     return;

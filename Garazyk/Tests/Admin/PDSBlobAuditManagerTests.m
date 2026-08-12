@@ -18,7 +18,7 @@
 @property (nonatomic, strong) PDSBlobAuditManager *auditManager;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong) PDSDatabasePool *userDatabasePool;
-@property (nonatomic, strong) BlobStorage *blobStorage;
+@property (nonatomic, strong) PDSBlobStorage *blobStorage;
 @property (nonatomic, strong) PDSDiskBlobProvider *blobProvider;
 @property (nonatomic, copy) NSString *tempDirectory;
 @end
@@ -45,7 +45,7 @@
 
     NSURL *blobURL = [NSURL fileURLWithPath:[self.tempDirectory stringByAppendingPathComponent:@"blobs"]];
     self.blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
-    self.blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.userDatabasePool provider:self.blobProvider];
+    self.blobStorage = [[PDSBlobStorage alloc] initWithDatabasePool:self.userDatabasePool provider:self.blobProvider];
     self.auditManager = [[PDSBlobAuditManager alloc] initWithBlobStorage:self.blobStorage
                                                         serviceDatabases:self.serviceDatabases];
 }

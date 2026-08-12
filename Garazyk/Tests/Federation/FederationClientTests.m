@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 @implementation FederationClientTests
 
 - (void)testDefaultsToSTARL0WithCARFallback {
-    FederationClient *client = [[FederationClient alloc] init];
+    ATProtoFederationClient *client = [[ATProtoFederationClient alloc] init];
 
     XCTAssertEqual(client.preferredRepoFormat, PDSRepoFormatSTARL0);
     XCTAssertEqualObjects(
@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testForwardXrpcRequestFailsWhenDIDResolutionFails {
-    FederationClient *client = [[FederationClient alloc] init];
+    ATProtoFederationClient *client = [[ATProtoFederationClient alloc] init];
     TestDIDResolver *resolver = [[TestDIDResolver alloc] init];
     resolver.result = nil;
     client.didResolver = resolver;

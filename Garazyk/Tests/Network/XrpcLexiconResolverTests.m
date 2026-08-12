@@ -24,28 +24,28 @@
 
 - (void)testAuthorityDomainForNSID_ThreePart_ReturnsAuthority {
     NSError *error = nil;
-    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:@"com.example.record" error:&error];
+    NSString *domain = [ATProtoXrpcLexiconResolver authorityDomainForNSID:@"com.example.record" error:&error];
     XCTAssertEqualObjects(domain, @"example.com");
     XCTAssertNil(error);
 }
 
 - (void)testAuthorityDomainForNSID_FourPart_ReturnsAuthority {
     NSError *error = nil;
-    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:@"io.example.sub.record" error:&error];
+    NSString *domain = [ATProtoXrpcLexiconResolver authorityDomainForNSID:@"io.example.sub.record" error:&error];
     XCTAssertEqualObjects(domain, @"sub.example.io");
     XCTAssertNil(error);
 }
 
 - (void)testAuthorityDomainForNSID_FivePart_ReturnsAuthority {
     NSError *error = nil;
-    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:@"org.deep.nested.name.type" error:&error];
+    NSString *domain = [ATProtoXrpcLexiconResolver authorityDomainForNSID:@"org.deep.nested.name.type" error:&error];
     XCTAssertEqualObjects(domain, @"name.nested.deep.org");
     XCTAssertNil(error);
 }
 
 - (void)testAuthorityDomainForNSID_TwoPart_ReturnsNilError {
     NSError *error = nil;
-    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:@"tld.name" error:&error];
+    NSString *domain = [ATProtoXrpcLexiconResolver authorityDomainForNSID:@"tld.name" error:&error];
     XCTAssertNil(domain);
     XCTAssertNotNil(error);
     XCTAssertEqual(error.code, 400);
@@ -53,7 +53,7 @@
 
 - (void)testAuthorityDomainForNSID_SingleSegment_ReturnsNilError {
     NSError *error = nil;
-    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:@"single" error:&error];
+    NSString *domain = [ATProtoXrpcLexiconResolver authorityDomainForNSID:@"single" error:&error];
     XCTAssertNil(domain);
     XCTAssertNotNil(error);
     XCTAssertEqual(error.code, 400);
@@ -61,20 +61,20 @@
 
 - (void)testAuthorityDomainForNSID_Nil_ReturnsNilError {
     NSError *error = nil;
-    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:(NSString *)nil error:&error];
+    NSString *domain = [ATProtoXrpcLexiconResolver authorityDomainForNSID:(NSString *)nil error:&error];
     XCTAssertNil(domain);
     XCTAssertNotNil(error);
 }
 
 - (void)testAuthorityDomainForNSID_Empty_ReturnsNilError {
     NSError *error = nil;
-    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:@"" error:&error];
+    NSString *domain = [ATProtoXrpcLexiconResolver authorityDomainForNSID:@"" error:&error];
     XCTAssertNil(domain);
     XCTAssertNotNil(error);
 }
 
 - (void)testAuthorityDomainForNSID_NullErrorPointer_Safe {
-    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:@"single" error:NULL];
+    NSString *domain = [ATProtoXrpcLexiconResolver authorityDomainForNSID:@"single" error:NULL];
     XCTAssertNil(domain);
 }
 
@@ -86,7 +86,7 @@
     ];
     ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
-    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
+    NSString *endpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertEqualObjects(endpoint, @"https://pds.example.com");
     XCTAssertNil(error);
 }
@@ -99,7 +99,7 @@
     ];
     ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
-    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
+    NSString *endpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertEqualObjects(endpoint, @"https://pds.example.com");
     XCTAssertNil(error);
 }
@@ -110,7 +110,7 @@
     ];
     ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
-    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
+    NSString *endpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
     XCTAssertNotNil(error);
     XCTAssertEqual(error.code, 500);
@@ -119,7 +119,7 @@
 - (void)testPdsEndpointFromDidDocument_NoServices_ReturnsNilError {
     ATProtoDIDDocument *doc = [self documentWithServices:@[]];
     NSError *error = nil;
-    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
+    NSString *endpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
     XCTAssertNotNil(error);
 }
@@ -128,7 +128,7 @@
     // DID document with empty services array — no PDS endpoint to extract.
     ATProtoDIDDocument *doc = [self documentWithServices:@[]];
     NSError *error = nil;
-    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
+    NSString *endpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
     XCTAssertNotNil(error);
 }
@@ -139,7 +139,7 @@
     ];
     ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
-    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
+    NSString *endpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
 }
 
@@ -149,7 +149,7 @@
     ];
     ATProtoDIDDocument *doc = [self documentWithServices:services];
     NSError *error = nil;
-    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
+    NSString *endpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
 }
 
@@ -158,7 +158,7 @@
         @{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"}
     ];
     ATProtoDIDDocument *doc = [self documentWithServices:services];
-    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:NULL];
+    NSString *endpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:doc error:NULL];
     XCTAssertEqualObjects(endpoint, @"https://pds.example.com");
 }
 
@@ -167,7 +167,7 @@
 - (void)testBuildResolveResponse_ValidSchema_ReturnsResponse {
     NSDictionary *schema = @{@"id": @"com.example.record", @"type": @"record"};
     NSError *error = nil;
-    NSDictionary *response = [XrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"com.example.record" configuration:self.config error:&error];
+    NSDictionary *response = [ATProtoXrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"com.example.record" configuration:self.config error:&error];
     XCTAssertNotNil(response);
     XCTAssertNotNil(response[@"uri"]);
     XCTAssertTrue([response[@"uri"] hasPrefix:@"at://"]);
@@ -182,20 +182,20 @@
     [self.config setValue:@"https://appview.example.com" forKey:@"appViewURL"];
     NSDictionary *schema = @{@"id": @"app.bsky.feed.post", @"type": @"record"};
     NSError *error = nil;
-    NSDictionary *response = [XrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"app.bsky.feed.post" configuration:self.config error:&error];
+    NSDictionary *response = [ATProtoXrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"app.bsky.feed.post" configuration:self.config error:&error];
     XCTAssertEqualObjects(response[@"proxied"], @YES);
 }
 
 - (void)testBuildResolveResponse_NilSchema_ReturnsNilError {
     NSError *error = nil;
-    NSDictionary *response = [XrpcLexiconResolver buildResolveResponseWithSchema:nil nsid:@"com.example.record" configuration:self.config error:&error];
+    NSDictionary *response = [ATProtoXrpcLexiconResolver buildResolveResponseWithSchema:nil nsid:@"com.example.record" configuration:self.config error:&error];
     XCTAssertNil(response);
     XCTAssertNotNil(error);
 }
 
 - (void)testBuildResolveResponse_NonDictionarySchema_ReturnsNilError {
     NSError *error = nil;
-    NSDictionary *response = [XrpcLexiconResolver buildResolveResponseWithSchema:(NSDictionary *)@[] nsid:@"com.example.record" configuration:self.config error:&error];
+    NSDictionary *response = [ATProtoXrpcLexiconResolver buildResolveResponseWithSchema:(NSDictionary *)@[] nsid:@"com.example.record" configuration:self.config error:&error];
     XCTAssertNil(response);
     XCTAssertNotNil(error);
 }
@@ -204,7 +204,7 @@
 
 - (void)testLexiconRecordURL_ValidEndpoint_ReturnsURL {
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
     XCTAssertNotNil(url);
     XCTAssertNil(error);
     NSString *urlStr = url.absoluteString;
@@ -216,14 +216,14 @@
 
 - (void)testLexiconRecordURL_HttpScheme_ReturnsURL {
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"http://internal:2582" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"http://internal:2582" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
     XCTAssertNotNil(url);
     XCTAssertNil(error);
 }
 
 - (void)testLexiconRecordURL_EndpointWithPath_AppendsXrpcSuffix {
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com/base" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com/base" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
     XCTAssertNotNil(url);
     NSString *urlStr = url.absoluteString;
     XCTAssertTrue([urlStr containsString:@"/base/xrpc/com.atproto.repo.getRecord"]);
@@ -231,7 +231,7 @@
 
 - (void)testLexiconRecordURL_EndpointWithTrailingSlash_AppendsXrpcSuffix {
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com/base/" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com/base/" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
     XCTAssertNotNil(url);
     NSString *urlStr = url.absoluteString;
     XCTAssertTrue([urlStr containsString:@"/base/xrpc/com.atproto.repo.getRecord"]);
@@ -239,7 +239,7 @@
 
 - (void)testLexiconRecordURL_InvalidEndpoint_ReturnsNilError {
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"not-a-url" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"not-a-url" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
     XCTAssertNil(url);
     XCTAssertNotNil(error);
 }
@@ -250,7 +250,7 @@
 #if defined(__APPLE__)
     BOOL raisedExpectedException = NO;
     @try {
-        [XrpcLexiconResolver lexiconRecordURLForEndpoint:(NSString *)nil
+        [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:(NSString *)nil
                                                      did:@"did:plc:abc"
                                                     nsid:@"com.example.record"
                                                    error:nil];
@@ -261,7 +261,7 @@
     XCTAssertTrue(raisedExpectedException);
 #else
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:(NSString *)nil
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:(NSString *)nil
                                                               did:@"did:plc:abc"
                                                              nsid:@"com.example.record"
                                                             error:&error];
@@ -274,13 +274,13 @@
 
 - (void)testLexiconRecordURL_NilDid_ReturnsURL {
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com" did:nil nsid:@"com.example.record" error:&error];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com" did:nil nsid:@"com.example.record" error:&error];
     // nil did is passed through — should produce a URL with nil repo param
     XCTAssertNotNil(url);
 }
 
 - (void)testLexiconRecordURL_NullErrorPointer_Safe {
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"not-a-url" did:@"did:plc:abc" nsid:@"com.example.record" error:NULL];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"not-a-url" did:@"did:plc:abc" nsid:@"com.example.record" error:NULL];
     XCTAssertNil(url);
 }
 
@@ -288,7 +288,7 @@
 
 - (void)testAuthorityDomainForNSID_DashInName_ReturnsAuthority {
     NSError *error = nil;
-    NSString *domain = [XrpcLexiconResolver authorityDomainForNSID:@"com.my-service.record" error:&error];
+    NSString *domain = [ATProtoXrpcLexiconResolver authorityDomainForNSID:@"com.my-service.record" error:&error];
     XCTAssertEqualObjects(domain, @"my-service.com");
     XCTAssertNil(error);
 }
@@ -298,7 +298,7 @@
     ATProtoDIDDocument *doc = [[ATProtoDIDDocument alloc] init];
     [doc setValue:@{@"id": @"#atproto_pds", @"type": @"AtprotoPersonalDataServer", @"serviceEndpoint": @"https://pds.example.com"} forKey:@"service"];
     NSError *error = nil;
-    NSString *endpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
+    NSString *endpoint = [ATProtoXrpcLexiconResolver pdsEndpointFromDidDocument:doc error:&error];
     XCTAssertNil(endpoint);
     XCTAssertNotNil(error);
 }
@@ -306,27 +306,27 @@
 - (void)testBuildResolveResponse_EmptyNsid_ReturnsResponse {
     NSDictionary *schema = @{@"id": @"", @"type": @"record"};
     NSError *error = nil;
-    NSDictionary *response = [XrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"" configuration:self.config error:&error];
+    NSDictionary *response = [ATProtoXrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"" configuration:self.config error:&error];
     XCTAssertNotNil(response);
     XCTAssertNil(error);
 }
 
 - (void)testBuildResolveResponse_NullErrorPointer_Safe {
     NSDictionary *schema = @{@"id": @"com.example.record", @"type": @"record"};
-    NSDictionary *response = [XrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"com.example.record" configuration:self.config error:NULL];
+    NSDictionary *response = [ATProtoXrpcLexiconResolver buildResolveResponseWithSchema:schema nsid:@"com.example.record" configuration:self.config error:NULL];
     XCTAssertNotNil(response);
 }
 
 - (void)testLexiconRecordURL_UnsupportedScheme_ReturnsNilError {
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"ftp://pds.example.com" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"ftp://pds.example.com" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
     XCTAssertNil(url);
     XCTAssertNotNil(error);
 }
 
 - (void)testLexiconRecordURL_EndpointWithOnlySlash_AppendsXrpc {
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com/" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com/" did:@"did:plc:abc" nsid:@"com.example.record" error:&error];
     XCTAssertNotNil(url);
     NSString *urlStr = url.absoluteString;
     XCTAssertTrue([urlStr containsString:@"/xrpc/com.atproto.repo.getRecord"]);
@@ -334,14 +334,14 @@
 
 - (void)testLexiconRecordURL_NilNsid_ReturnsURL {
     NSError *error = nil;
-    NSURL *url = [XrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com" did:@"did:plc:abc" nsid:nil error:&error];
+    NSURL *url = [ATProtoXrpcLexiconResolver lexiconRecordURLForEndpoint:@"https://pds.example.com" did:@"did:plc:abc" nsid:nil error:&error];
     XCTAssertNotNil(url);
 }
 
 - (void)testLoadLexiconJSON_NotFound_ReturnsNilError {
     NSString *tempDir = NSTemporaryDirectory();
     NSError *error = nil;
-    NSDictionary *schema = [XrpcLexiconResolver loadLexiconJSONForNSID:@"com.nonexistent.test"
+    NSDictionary *schema = [ATProtoXrpcLexiconResolver loadLexiconJSONForNSID:@"com.nonexistent.test"
                                                          dataDirectory:tempDir
                                                                  error:&error];
     XCTAssertNil(schema);

@@ -13,7 +13,7 @@
 @class ATProtoRateLimiter;
 @class ATProtoJWTMinter;
 @class ATProtoAuthVerifier;
-@class SubscribeReposHandler;
+@class ATProtoSubscribeReposHandler;
 @class PDSRecordService;
 @class PDSBlobAuditManager;
 @class PDSSpaceStore;
@@ -144,7 +144,7 @@ extern NSString * const PDSApplicationErrorDomain;
 @property (nonatomic, strong, readonly, nullable) ATProtoAuthVerifier *authVerifier;
 
 /*! Handler for the subscribeRepos firehose. */
-@property (nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;
+@property (nonatomic, strong, readonly) ATProtoSubscribeReposHandler *subscribeReposHandler;
 
 /*! The HTTP server instance. */
 @property (nonatomic, strong, readonly) ATProtoHttpServer *httpServer;

@@ -17,7 +17,7 @@
 
 @interface RelayAdminUIPackTests : XCTestCase
 @property(nonatomic, strong) GZAdminUIHost *host;
-@property(nonatomic, strong) RelayUpstreamManager *upstreams;
+@property(nonatomic, strong) ATProtoRelayUpstreamManager *upstreams;
 @property(nonatomic, strong) GZRelayAdminSnapshot *snapshot;
 @end
 
@@ -38,9 +38,9 @@
     config.port = 0;
     config.adminPassword = @"relay-password";
     config.serviceIdentifier = @"relay";
-    self.upstreams = [[RelayUpstreamManager alloc] initWithInitialURLs:@[]];
+    self.upstreams = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[]];
     self.host = [[GZAdminUIHost alloc] initWithConfiguration:config packs:@[GZRelayAdminUIPack.class]];
-    self.snapshot = [[GZRelayAdminSnapshot alloc] initWithMetrics:[RelayMetrics sharedMetrics]
+    self.snapshot = [[GZRelayAdminSnapshot alloc] initWithMetrics:[ATProtoRelayMetrics sharedMetrics]
                                                    upstreamManager:self.upstreams];
     [GZRelayAdminUIPack configureHost:self.host snapshot:self.snapshot];
 }
@@ -95,7 +95,7 @@
 }
 
 - (void)testSnapshotCoversEmptyAndPopulatedSourcesWithoutTornValues {
-    GZRelayAdminSnapshot *snapshot = [[GZRelayAdminSnapshot alloc] initWithMetrics:[RelayMetrics sharedMetrics] upstreamManager:self.upstreams];
+    GZRelayAdminSnapshot *snapshot = [[GZRelayAdminSnapshot alloc] initWithMetrics:[ATProtoRelayMetrics sharedMetrics] upstreamManager:self.upstreams];
     XCTAssertEqual([(NSArray *)[snapshot snapshot][@"upstreams"] count], (NSUInteger)0);
     [self.upstreams addUpstream:@"wss://pds.example/xrpc/com.atproto.sync.subscribeRepos"];
     NSDictionary *value = [snapshot snapshot];
@@ -108,7 +108,7 @@
 }
 
 - (void)testSnapshotRemainsConsistentDuringConcurrentMetricUpdates {
-    RelayMetrics *metrics = [RelayMetrics sharedMetrics];
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     GZRelayAdminSnapshot *snapshot = [[GZRelayAdminSnapshot alloc] initWithMetrics:metrics upstreamManager:self.upstreams];
     __block BOOL invalid = NO;
     dispatch_apply(128, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^(size_t index) {

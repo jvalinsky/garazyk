@@ -19,7 +19,7 @@
 
 @end
 
-@interface TestHandleResolver : HandleResolver
+@interface TestHandleResolver : ATProtoHandleResolver
 @property (nonatomic, strong) MockURLSession *mockSession;
 @property (nonatomic, assign) NSUInteger requestCount;
 @end
@@ -121,13 +121,13 @@
 
 @interface HandleResolverTests : XCTestCase
 
-@property (nonatomic, strong) HandleResolver *resolver;
+@property (nonatomic, strong) ATProtoHandleResolver *resolver;
 
 @end
 
 #ifndef GNUSTEP
 
-@interface ControlledBatchHandleResolver : HandleResolver
+@interface ControlledBatchHandleResolver : ATProtoHandleResolver
 @property (nonatomic, copy) NSDictionary<NSString *, NSArray<NSDictionary *> *> *responseSequences;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *callCounts;
 @property (nonatomic, assign) BOOL invokeCallbacksTwice;
@@ -184,7 +184,7 @@
 
 - (void)testHandleResolverInitialization {
     XCTAssertNotNil(self.resolver, @"Resolver should be initialized");
-    // Session property removed — ATProtoSafeHTTPClient manages sessions internally
+    // PDSSession property removed — ATProtoSafeHTTPClient manages sessions internally
 }
 
 - (void)testHandleValidationEmpty {
@@ -230,7 +230,7 @@
     MockURLSession *testSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:7HjwGtP5cLyq3vD5nDzDg"}
                                                                      error:nil
                                                                      delay:0.1];
-    HandleResolver *testResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *testResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)testResolver).mockSession = testSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Valid handle test"];
@@ -288,7 +288,7 @@
                                                                                                code:NSURLErrorTimedOut
                                                                                            userInfo:nil]
                                                                      delay:0.1];
-    HandleResolver *errorResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *errorResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)errorResolver).mockSession = errorSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Network error test"];
@@ -307,7 +307,7 @@
     MockURLSession *notFoundSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @404, @"body": @"Not Found"}
                                                                          error:nil
                                                                          delay:0.1];
-    HandleResolver *notFoundResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *notFoundResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)notFoundResolver).mockSession = notFoundSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"404 error test"];
@@ -326,7 +326,7 @@
     MockURLSession *serverErrorSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @500, @"body": @"Internal Server Error"}
                                                                             error:nil
                                                                             delay:0.1];
-    HandleResolver *serverErrorResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *serverErrorResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)serverErrorResolver).mockSession = serverErrorSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"500 error test"];
@@ -345,7 +345,7 @@
     MockURLSession *emptyBodySession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @""}
                                                                           error:nil
                                                                           delay:0.1];
-    HandleResolver *emptyBodyResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *emptyBodyResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)emptyBodyResolver).mockSession = emptyBodySession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Empty body test"];
@@ -364,7 +364,7 @@
     MockURLSession *whitespaceSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"   \n\t  "}
                                                                            error:nil
                                                                            delay:0.1];
-    HandleResolver *whitespaceResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *whitespaceResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)whitespaceResolver).mockSession = whitespaceSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Whitespace only test"];
@@ -383,7 +383,7 @@
     MockURLSession *invalidDIDSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"invalid-did-format"}
                                                                            error:nil
                                                                            delay:0.1];
-    HandleResolver *invalidDIDResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *invalidDIDResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)invalidDIDResolver).mockSession = invalidDIDSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Invalid DID test"];
@@ -402,7 +402,7 @@
     MockURLSession *whitespaceDIDSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"  did:plc:7HjwGtP5cLyq3vD5nDzDg  \n"}
                                                                              error:nil
                                                                              delay:0.1];
-    HandleResolver *whitespaceDIDResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *whitespaceDIDResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)whitespaceDIDResolver).mockSession = whitespaceDIDSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"DID with whitespace test"];
@@ -418,7 +418,7 @@
 }
 
 - (void)testURLConstructionInvalidCharacters {
-    HandleResolver *urlTestResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *urlTestResolver = [[TestHandleResolver alloc] init];
     // ATProtoSafeHTTPClient handles SSRF in test mode automatically
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Invalid URL characters test"];
@@ -434,9 +434,9 @@
 }
 
 - (void)testSessionTimeoutConfiguration {
-    HandleResolver *timeoutResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *timeoutResolver = [[TestHandleResolver alloc] init];
 
-    // Session property removed — ATProtoSafeHTTPClient manages timeout internally
+    // PDSSession property removed — ATProtoSafeHTTPClient manages timeout internally
     XCTAssertNotNil(timeoutResolver, @"Resolver should be initialized");
 }
 
@@ -448,8 +448,8 @@
                                                                            error:nil
                                                                            delay:0.1];
 
-    HandleResolver *concurrentResolver1 = [[TestHandleResolver alloc] init];
-    HandleResolver *concurrentResolver2 = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *concurrentResolver1 = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *concurrentResolver2 = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)concurrentResolver1).mockSession = concurrentSession1;
     ((TestHandleResolver *)concurrentResolver2).mockSession = concurrentSession2;
 
@@ -501,7 +501,7 @@
     MockURLSession *specialCharSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:special"}
                                                                            error:nil
                                                                            delay:0.1];
-    HandleResolver *specialCharResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *specialCharResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)specialCharResolver).mockSession = specialCharSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Special characters test"];
@@ -518,7 +518,7 @@
 
 - (void)testMemoryManagement {
     @autoreleasepool {
-        HandleResolver *tempResolver = [[TestHandleResolver alloc] init];
+        ATProtoHandleResolver *tempResolver = [[TestHandleResolver alloc] init];
         // ATProtoSafeHTTPClient handles SSRF in test mode automatically
         MockURLSession *tempSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:temp"}
                                                                          error:nil
@@ -547,7 +547,7 @@
     MockURLSession *multiDotSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:multidot"}
                                                                          error:nil
                                                                          delay:0.1];
-    HandleResolver *multiDotResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *multiDotResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)multiDotResolver).mockSession = multiDotSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Multiple dots test"];
@@ -570,7 +570,7 @@
     MockURLSession *notFoundSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @404, @"body": @"Not Found"}
                                                                          error:nil
                                                                          delay:0.1];
-    HandleResolver *dnsResolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *dnsResolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)dnsResolver).mockSession = notFoundSession;
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"DNS fallback test"];
@@ -592,7 +592,7 @@
                                                                                                code:NSURLErrorTimedOut
                                                                                            userInfo:nil]
                                                                      delay:0.0];
-    HandleResolver *resolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *resolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)resolver).mockSession = errorSession;
     
     NSString *handle = @"backoff.test.example.com";
@@ -624,7 +624,7 @@
                                                                                                code:NSURLErrorTimedOut
                                                                                            userInfo:nil]
                                                                      delay:0.0];
-    HandleResolver *resolver = [[TestHandleResolver alloc] init];
+    ATProtoHandleResolver *resolver = [[TestHandleResolver alloc] init];
     ((TestHandleResolver *)resolver).mockSession = errorSession;
 
     XCTestExpectation *exp1 = [self expectationWithDescription:@"Initial mixed-case failure"];

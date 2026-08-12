@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayAPIHandler.h
+ @file ATProtoRelayAPIHandler.h
 
  @abstract HTTP handler for Relay API endpoints.
 
@@ -19,26 +19,26 @@
 
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
-@class RelayUpstreamManager;
-@class RelayMetrics;
+@class ATProtoRelayUpstreamManager;
+@class ATProtoRelayMetrics;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class RelayAPIHandler
+ @class ATProtoRelayAPIHandler
 
  @abstract HTTP handler for relay API endpoints.
 
  @discussion Serves JSON data for the relay dashboard UI.
  */
-@interface RelayAPIHandler : NSObject
+@interface ATProtoRelayAPIHandler : NSObject
 
 /*!
  @method sharedHandler
 
  @abstract Get singleton handler instance.
 
- @return Shared RelayAPIHandler instance.
+ @return Shared ATProtoRelayAPIHandler instance.
  */
 + (instancetype)sharedHandler;
 
@@ -68,18 +68,18 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Set the relay metrics instance.
 
- @param metrics The RelayMetrics instance.
+ @param metrics The ATProtoRelayMetrics instance.
  */
-- (void)setMetrics:(RelayMetrics *)metrics;
+- (void)setMetrics:(ATProtoRelayMetrics *)metrics;
 
 /*!
  @method setUpstreamManager:
 
  @abstract Set the upstream manager for connection status queries.
 
- @param manager The RelayUpstreamManager instance (may be nil if relay not configured).
+ @param manager The ATProtoRelayUpstreamManager instance (may be nil if relay not configured).
  */
-- (void)setUpstreamManager:(RelayUpstreamManager *)manager;
+- (void)setUpstreamManager:(ATProtoRelayUpstreamManager *)manager;
 
 @end
 

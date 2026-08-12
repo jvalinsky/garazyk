@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On failure, set to a store error.
  @result Ordered operation history, or nil on store failure.
  */
-- (nullable NSArray<PLCOperation *> *)getHistoryForDID:(NSString *)did
+- (nullable NSArray<ATProtoPLCOperation *> *)getHistoryForDID:(NSString *)did
                                       includeNullified:(BOOL)includeNullified
                                                  error:(NSError **)error;
 
@@ -42,7 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On failure, set to a store error.
  @result YES on success, otherwise NO.
  */
-- (BOOL)appendOperation:(PLCOperation *)op
+- (BOOL)appendOperation:(ATProtoPLCOperation *)op
            nullifyCIDs:(nullable NSArray<NSString *> *)nullified
                  error:(NSError **)error;
 
@@ -65,7 +65,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On failure, set to a store error.
  @result Most recent operation, or nil when none exists or on failure.
  */
-- (nullable PLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error;
+- (nullable ATProtoPLCOperation *)getLatestOperationForDID:(NSString *)did error:(NSError **)error;
 
 /*! @abstract Returns the exact number of stored operations without materializing them. */
 - (NSInteger)operationCountForDid:(NSString *)did error:(NSError **)error;
@@ -89,7 +89,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On failure, set to a store error.
  @result Ordered operations for export, or nil on failure.
  */
-- (nullable NSArray<PLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
+- (nullable NSArray<ATProtoPLCOperation *> *)exportOperationsAfter:(nullable NSDate *)after
                                                       count:(NSUInteger)count
                                                       error:(NSError **)error;
 
@@ -103,7 +103,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On failure, set to a store error.
  @result Sequence-ordered operations for export, or nil on failure.
  */
-- (nullable NSArray<PLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
+- (nullable NSArray<ATProtoPLCOperation *> *)exportOperationsAfterSequence:(NSNumber *)sequence
                                                               count:(NSUInteger)count
                                                               error:(NSError **)error;
 

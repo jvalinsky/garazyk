@@ -44,7 +44,7 @@ static BOOL isBase32Char(unichar c) {
     return (c >= 'a' && c <= 'z') || (c >= '2' && c <= '7');
 }
 
-@implementation PLCOperation
+@implementation ATProtoPLCOperation
 
 + (NSString *)calculateDIDForData:(NSDictionary *)data {
     NSError *error = nil;
@@ -172,7 +172,7 @@ static BOOL isBase32Char(unichar c) {
         dict = entry;
     }
 
-    PLCOperation *op = [[PLCOperation alloc] init];
+    ATProtoPLCOperation *op = [[ATProtoPLCOperation alloc] init];
     id didValue = dict[@"did"];
     if (didValue && ![didValue isKindOfClass:[NSString class]]) {
         if (outError) {
@@ -290,7 +290,7 @@ static BOOL isBase32Char(unichar c) {
 
 @end
 
-@implementation PLCDIDState
+@implementation ATProtoPLCDIDState
 
 - (NSDictionary *)toDIDDocument {
     NSMutableArray *verificationMethods = [NSMutableArray array];
@@ -333,22 +333,22 @@ static BOOL isBase32Char(unichar c) {
 
 @end
 
-@implementation PLCStateReplayer
+@implementation ATProtoPLCStateReplayer
 
-+ (nullable PLCDIDState *)replayHistory:(NSArray<PLCOperation *> *)history error:(NSError **)error {
++ (nullable ATProtoPLCDIDState *)replayHistory:(NSArray<ATProtoPLCOperation *> *)history error:(NSError **)error {
     if (history.count == 0) return nil;
     
-    PLCDIDState *state = [[PLCDIDState alloc] init];
+    ATProtoPLCDIDState *state = [[ATProtoPLCDIDState alloc] init];
     state.did = history[0].did;
     state.alsoKnownAs = @[];
     
-    for (PLCOperation *op in history) {
+    for (ATProtoPLCOperation *op in history) {
         // Sanitize operation data through normalizedDataForOperation: so nil
         // elements can no longer reach collection literals. If normalization
         // fails (unsupported type, missing fields), skip the operation — it
         // will not contribute to the derived state.
         NSError *normalizeError = nil;
-        NSDictionary *normalized = [PLCAuditor normalizedDataForOperation:op error:&normalizeError];
+        NSDictionary *normalized = [ATProtoPLCAuditor normalizedDataForOperation:op error:&normalizeError];
         if (!normalized) {
             GZ_LOG_CORE_WARN(@"PLCStateReplayer: skipping operation with invalid data: %@",
                               normalizeError.localizedDescription ?: @"unknown error");

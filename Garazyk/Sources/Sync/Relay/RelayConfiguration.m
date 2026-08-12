@@ -4,7 +4,7 @@
 
 NSString * const RelayConfigurationErrorDomain = @"com.atproto.relay.configuration";
 
-@interface RelayConfiguration ()
+@interface ATProtoRelayConfiguration ()
 
 @property (nonatomic, copy, readwrite) NSArray<NSString *> *upstreamURLs;
 @property (nonatomic, assign, readwrite) uint16_t downstreamPort;
@@ -17,7 +17,7 @@ NSString * const RelayConfigurationErrorDomain = @"com.atproto.relay.configurati
 
 @end
 
-@implementation RelayConfiguration
+@implementation ATProtoRelayConfiguration
 
 - (instancetype)init {
     [self doesNotRecognizeSelector:_cmd];
@@ -90,7 +90,7 @@ NSString * const RelayConfigurationErrorDomain = @"com.atproto.relay.configurati
         mode = RelayValidationModeStrict;
     }
 
-    RelayConfiguration *result = [[RelayConfiguration alloc] initWithUpstreamURLs:upstreams
+    ATProtoRelayConfiguration *result = [[ATProtoRelayConfiguration alloc] initWithUpstreamURLs:upstreams
                                                                      downstreamPort:port
                                                                       retentionHours:hours
                                                                     validationMode:mode];
@@ -125,7 +125,7 @@ NSString * const RelayConfigurationErrorDomain = @"com.atproto.relay.configurati
         mode = RelayValidationModeStrict;
     }
     
-    RelayConfiguration *result = [[RelayConfiguration alloc] initWithUpstreamURLs:urls
+    ATProtoRelayConfiguration *result = [[ATProtoRelayConfiguration alloc] initWithUpstreamURLs:urls
                                                                      downstreamPort:port
                                                                       retentionHours:hours
                                                                     validationMode:mode];

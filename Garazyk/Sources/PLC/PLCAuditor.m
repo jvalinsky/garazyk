@@ -59,14 +59,14 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     return [[NSData alloc] initWithBase64EncodedString:base64 options:0];
 }
 
-@interface PLCAuditor ()
+@interface ATProtoPLCAuditor ()
 @property (nonatomic, strong) id<PLCStore> store;
 @property (nonatomic, assign) NSUInteger hourLimit;
 @property (nonatomic, assign) NSUInteger dayLimit;
 @property (nonatomic, assign) NSUInteger weekLimit;
 @end
 
-@implementation PLCAuditor
+@implementation ATProtoPLCAuditor
 
 - (instancetype)initWithStore:(id<PLCStore>)store {
     self = [super init];
@@ -91,25 +91,25 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 - (BOOL)verifyDID:(NSString *)did error:(NSError **)error {
     NSDate *startTime = [NSDate date];
     
-    NSArray<PLCOperation *> *history = [self.store getHistoryForDID:did includeNullified:NO error:error];
+    NSArray<ATProtoPLCOperation *> *history = [self.store getHistoryForDID:did includeNullified:NO error:error];
     if (!history || history.count == 0) {
         if (error && !*error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                          code:1
                                      userInfo:@{NSLocalizedDescriptionKey: @"Empty history"}];
         }
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         NSTimeInterval latency = [[NSDate date] timeIntervalSinceDate:startTime] * 1000;
-        [[PLCMetrics sharedMetrics] recordResolutionLatency:latency];
+        [[ATProtoPLCMetrics sharedMetrics] recordResolutionLatency:latency];
         return NO;
     }
 
     NSError *localError = nil;
-    PLCOperation *first = history.firstObject;
+    ATProtoPLCOperation *first = history.firstObject;
     NSDictionary *normalized = [self normalizedDataForOperation:first error:&localError];
     if (!normalized) {
         if (error) *error = localError;
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
     if ([self isTombstoneOperation:first]) {
@@ -118,7 +118,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                          code:2
                                      userInfo:@{NSLocalizedDescriptionKey: @"Tombstone cannot be genesis"}];
         }
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
     if (first.prev != nil) {
@@ -127,44 +127,44 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                          code:3
                                      userInfo:@{NSLocalizedDescriptionKey: @"Genesis operation must have null prev"}];
         }
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
-    NSString *expectedDid = [PLCOperation calculateDIDForSignedOperation:[first toDictionary]];
+    NSString *expectedDid = [ATProtoPLCOperation calculateDIDForSignedOperation:[first toDictionary]];
     if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                          code:4
                                      userInfo:@{NSLocalizedDescriptionKey: @"Genesis DID does not match"}];
         }
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
     NSArray<NSString *> *rotationKeys = normalized[@"rotationKeys"];
     if (![self verifySignatureForOperation:first allowedKeys:rotationKeys error:&localError]) {
         if (error) *error = localError;
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
     NSString *prevCid = [self cidStringForOperation:first error:&localError];
     if (!prevCid) {
         if (error) *error = localError;
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
     for (NSUInteger idx = 1; idx < history.count; idx++) {
-        PLCOperation *op = history[idx];
+        ATProtoPLCOperation *op = history[idx];
         if (op.prev == nil || ![op.prev isKindOfClass:[NSString class]] || ![op.prev isEqualToString:prevCid]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                              code:5
                                          userInfo:@{NSLocalizedDescriptionKey: @"Operation prev does not match history"}];
             }
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
         if ([self isTombstoneOperation:op]) {
@@ -174,14 +174,14 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                                  code:6
                                              userInfo:@{NSLocalizedDescriptionKey: @"Tombstone must be last"}];
                 }
-                [[PLCMetrics sharedMetrics] recordVerificationFailure];
+                [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
                 return NO;
             }
         }
 
         if (![self verifySignatureForOperation:op allowedKeys:rotationKeys error:&localError]) {
             if (error) *error = localError;
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
 
@@ -192,25 +192,25 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         normalized = [self normalizedDataForOperation:op error:&localError];
         if (!normalized) {
             if (error) *error = localError;
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
         rotationKeys = normalized[@"rotationKeys"];
         prevCid = [self cidStringForOperation:op error:&localError];
         if (!prevCid) {
             if (error) *error = localError;
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
     }
 
-    [[PLCMetrics sharedMetrics] recordVerificationSuccess];
+    [[ATProtoPLCMetrics sharedMetrics] recordVerificationSuccess];
     NSTimeInterval latency = [[NSDate date] timeIntervalSinceDate:startTime] * 1000;
-    [[PLCMetrics sharedMetrics] recordResolutionLatency:latency];
+    [[ATProtoPLCMetrics sharedMetrics] recordResolutionLatency:latency];
     return YES;
 }
 
-- (BOOL)verifyOperation:(PLCOperation *)op
+- (BOOL)verifyOperation:(ATProtoPLCOperation *)op
 	           proposedDate:(NSDate *)proposedDate
 	          nullifiedCIDs:(NSArray<NSString *> * _Nullable __autoreleasing * _Nullable)nullified
 	                  error:(NSError **)error {
@@ -218,10 +218,10 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 
     NSString *opType = op.data[@"type"];
     if (opType) {
-        [[PLCMetrics sharedMetrics] recordOperation:opType];
+        [[ATProtoPLCMetrics sharedMetrics] recordOperation:opType];
     }
 
-    NSArray<PLCOperation *> *history = [self.store getHistoryForDID:op.did includeNullified:NO error:error];
+    NSArray<ATProtoPLCOperation *> *history = [self.store getHistoryForDID:op.did includeNullified:NO error:error];
     if (!history) {
         history = @[];
     }
@@ -234,7 +234,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                              code:2
                                          userInfo:@{NSLocalizedDescriptionKey: @"Tombstone cannot be genesis"}];
             }
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
         if (op.prev != nil) {
@@ -243,46 +243,46 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                              code:3
                                          userInfo:@{NSLocalizedDescriptionKey: @"Genesis operation must have null prev"}];
             }
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
-        NSString *expectedDid = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
+        NSString *expectedDid = [ATProtoPLCOperation calculateDIDForSignedOperation:[op toDictionary]];
         if (expectedDid.length > 0 && ![expectedDid isEqualToString:op.did]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                              code:19
                                          userInfo:@{NSLocalizedDescriptionKey: @"Genesis DID does not match"}];
             }
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
         NSDictionary *normalized = [self normalizedDataForOperation:op error:&localError];
         if (!normalized) {
             if (error) *error = localError;
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
         NSArray<NSString *> *rotationKeys = normalized[@"rotationKeys"];
         if (![self verifySignatureForOperation:op allowedKeys:rotationKeys error:&localError]) {
             if (error) *error = localError;
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
         if (nullified) *nullified = @[];
-        [[PLCMetrics sharedMetrics] recordVerificationSuccess];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationSuccess];
         NSTimeInterval latency = [[NSDate date] timeIntervalSinceDate:startTime] * 1000;
-        [[PLCMetrics sharedMetrics] recordResolutionLatency:latency];
+        [[ATProtoPLCMetrics sharedMetrics] recordResolutionLatency:latency];
         return YES;
     }
 
-    PLCOperation *mostRecent = history.lastObject;
+    ATProtoPLCOperation *mostRecent = history.lastObject;
     if ([self isTombstoneOperation:mostRecent]) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                          code:4
                                      userInfo:@{NSLocalizedDescriptionKey: @"DID is tombstoned"}];
         }
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
@@ -292,13 +292,13 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                          code:5
                                      userInfo:@{NSLocalizedDescriptionKey: @"Operation must reference prev CID"}];
         }
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
     NSUInteger prevIndex = NSNotFound;
     for (NSUInteger idx = 0; idx < history.count; idx++) {
-        PLCOperation *existing = history[idx];
+        ATProtoPLCOperation *existing = history[idx];
         NSString *cidString = existing.cid ?: [self cidStringForOperation:existing error:nil];
         if (cidString && [cidString isEqualToString:op.prev]) {
             prevIndex = idx;
@@ -311,19 +311,19 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                          code:6
                                      userInfo:@{NSLocalizedDescriptionKey: @"Prev CID not found in history"}];
         }
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
-    NSArray<PLCOperation *> *opsInHistory = [history subarrayWithRange:NSMakeRange(0, prevIndex + 1)];
-    NSArray<PLCOperation *> *nullifiedOps = (prevIndex + 1 < history.count)
+    NSArray<ATProtoPLCOperation *> *opsInHistory = [history subarrayWithRange:NSMakeRange(0, prevIndex + 1)];
+    NSArray<ATProtoPLCOperation *> *nullifiedOps = (prevIndex + 1 < history.count)
         ? [history subarrayWithRange:NSMakeRange(prevIndex + 1, history.count - prevIndex - 1)]
         : @[];
-    PLCOperation *lastOp = opsInHistory.lastObject;
+    ATProtoPLCOperation *lastOp = opsInHistory.lastObject;
     NSDictionary *lastNormalized = [self normalizedDataForOperation:lastOp error:&localError];
     if (!lastNormalized) {
         if (error) *error = localError;
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
     NSArray<NSString *> *rotationKeys = lastNormalized[@"rotationKeys"];
@@ -331,26 +331,26 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     if (nullifiedOps.count == 0) {
         if (![self enforceRateLimitForHistory:history proposedDate:proposedDate error:&localError]) {
             if (error) *error = localError;
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
         if (![self verifySignatureForOperation:op allowedKeys:rotationKeys error:&localError]) {
             if (error) *error = localError;
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
         if (nullified) *nullified = @[];
-        [[PLCMetrics sharedMetrics] recordVerificationSuccess];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationSuccess];
         NSTimeInterval latency = [[NSDate date] timeIntervalSinceDate:startTime] * 1000;
-        [[PLCMetrics sharedMetrics] recordResolutionLatency:latency];
+        [[ATProtoPLCMetrics sharedMetrics] recordResolutionLatency:latency];
         return YES;
     }
 
-    PLCOperation *firstNullified = nullifiedOps.firstObject;
+    ATProtoPLCOperation *firstNullified = nullifiedOps.firstObject;
     NSString *signedKey = [self verifySignatureForOperation:firstNullified allowedKeys:rotationKeys error:&localError];
     if (!signedKey) {
         if (error) *error = localError;
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
@@ -361,14 +361,14 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                          code:7
                                      userInfo:@{NSLocalizedDescriptionKey: @"No more powerful rotation key available"}];
         }
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
     NSArray<NSString *> *morePowerfulKeys = [rotationKeys subarrayWithRange:NSMakeRange(0, signerIndex)];
     if (![self verifySignatureForOperation:op allowedKeys:morePowerfulKeys error:&localError]) {
         if (error) *error = localError;
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
@@ -378,7 +378,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                          code:8
                                      userInfo:@{NSLocalizedDescriptionKey: @"Operation timestamp must be newer"}];
         }
-        [[PLCMetrics sharedMetrics] recordVerificationFailure];
+        [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
         return NO;
     }
 
@@ -390,14 +390,14 @@ static NSData *PLCBase64URLDecode(NSString *string) {
                                              code:9
                                          userInfo:@{NSLocalizedDescriptionKey: @"Recovery window exceeded"}];
             }
-            [[PLCMetrics sharedMetrics] recordVerificationFailure];
+            [[ATProtoPLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
     }
 
     if (nullified) {
         NSMutableArray<NSString *> *cids = [NSMutableArray array];
-        for (PLCOperation *nullifiedOp in nullifiedOps) {
+        for (ATProtoPLCOperation *nullifiedOp in nullifiedOps) {
             NSString *cidString = nullifiedOp.cid ?: [self cidStringForOperation:nullifiedOp error:nil];
             if (cidString) {
                 [cids addObject:cidString];
@@ -406,18 +406,18 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         *nullified = [cids copy];
     }
 
-    [[PLCMetrics sharedMetrics] recordVerificationSuccess];
+    [[ATProtoPLCMetrics sharedMetrics] recordVerificationSuccess];
     NSTimeInterval latency = [[NSDate date] timeIntervalSinceDate:startTime] * 1000;
-    [[PLCMetrics sharedMetrics] recordResolutionLatency:latency];
+    [[ATProtoPLCMetrics sharedMetrics] recordResolutionLatency:latency];
     return YES;
 }
 
-- (BOOL)verifyOperation:(PLCOperation *)op error:(NSError **)error {
+- (BOOL)verifyOperation:(ATProtoPLCOperation *)op error:(NSError **)error {
     NSArray<NSString *> *nullified = nil;
     return [self verifyOperation:op proposedDate:[NSDate date] nullifiedCIDs:&nullified error:error];
 }
 
-+ (BOOL)verifyChain:(NSArray<PLCOperation *> *)operations did:(NSString *)did error:(NSError **)error {
++ (BOOL)verifyChain:(NSArray<ATProtoPLCOperation *> *)operations did:(NSString *)did error:(NSError **)error {
     if (operations.count == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
@@ -430,9 +430,9 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     // Create a temporary auditor with a nil store. The instance methods
     // called below (verifySignatureForOperation:, normalizedDataForOperation:)
     // operate on the operation data directly and do not access self.store.
-    PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:nil];
+    ATProtoPLCAuditor *auditor = [[ATProtoPLCAuditor alloc] initWithStore:nil];
 
-    PLCOperation *first = operations.firstObject;
+    ATProtoPLCOperation *first = operations.firstObject;
     // Genesis must have null prev
     if (first.prev != nil) {
         if (error) {
@@ -443,7 +443,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         return NO;
     }
 
-    NSString *expectedDid = [PLCOperation calculateDIDForSignedOperation:[first toDictionary]];
+    NSString *expectedDid = [ATProtoPLCOperation calculateDIDForSignedOperation:[first toDictionary]];
     if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
@@ -466,14 +466,14 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         return NO;
     }
 
-    NSString *prevCid = [PLCOperation calculateCIDForOperation:[first toDictionary] error:&localError];
+    NSString *prevCid = [ATProtoPLCOperation calculateCIDForOperation:[first toDictionary] error:&localError];
     if (!prevCid) {
         if (error) *error = localError;
         return NO;
     }
 
     for (NSUInteger idx = 1; idx < operations.count; idx++) {
-        PLCOperation *op = operations[idx];
+        ATProtoPLCOperation *op = operations[idx];
 
         // Verify prev chain
         if (op.prev == nil || ![op.prev isKindOfClass:[NSString class]] || ![op.prev isEqualToString:prevCid]) {
@@ -517,7 +517,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         }
         rotationKeys = normalized[@"rotationKeys"];
 
-        prevCid = [PLCOperation calculateCIDForOperation:[op toDictionary] error:&localError];
+        prevCid = [ATProtoPLCOperation calculateCIDForOperation:[op toDictionary] error:&localError];
         if (!prevCid) {
             if (error) *error = localError;
             return NO;
@@ -541,11 +541,11 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     return hash;
 }
 
-- (BOOL)isTombstoneOperation:(PLCOperation *)op {
+- (BOOL)isTombstoneOperation:(ATProtoPLCOperation *)op {
     return [op.data[@"type"] isEqualToString:@"plc_tombstone"];
 }
 
-+ (nullable NSDictionary *)normalizedDataForOperation:(PLCOperation *)op error:(NSError **)error {
++ (nullable NSDictionary *)normalizedDataForOperation:(ATProtoPLCOperation *)op error:(NSError **)error {
     NSString *type = op.data[@"type"];
     if ([type isEqualToString:@"plc_operation"]) {
         NSArray *rotationKeys = op.data[@"rotationKeys"];
@@ -604,18 +604,18 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     return nil;
 }
 
-- (nullable NSDictionary *)normalizedDataForOperation:(PLCOperation *)op error:(NSError **)error {
+- (nullable NSDictionary *)normalizedDataForOperation:(ATProtoPLCOperation *)op error:(NSError **)error {
     return [[self class] normalizedDataForOperation:op error:error];
 }
 
-- (nullable NSString *)cidStringForOperation:(PLCOperation *)op error:(NSError **)error {
+- (nullable NSString *)cidStringForOperation:(ATProtoPLCOperation *)op error:(NSError **)error {
     if (op.cid.length > 0) {
         return op.cid;
     }
-    return [PLCOperation calculateCIDForOperation:[op toDictionary] error:error];
+    return [ATProtoPLCOperation calculateCIDForOperation:[op toDictionary] error:error];
 }
 
-- (nullable NSString *)verifySignatureForOperation:(PLCOperation *)op
+- (nullable NSString *)verifySignatureForOperation:(ATProtoPLCOperation *)op
                                        allowedKeys:(NSArray<NSString *> *)allowedKeys
                                              error:(NSError **)error {
     NSData *sigData = PLCBase64URLDecode(op.sig);
@@ -638,7 +638,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         return nil;
     }
     for (NSString *keyString in allowedKeys) {
-        PLCDIDKey *parsedKey = [PLCDIDKey parseFromString:keyString error:nil];
+        ATProtoPLCDIDKey *parsedKey = [ATProtoPLCDIDKey parseFromString:keyString error:nil];
         NSData *pubKey = nil;
         BOOL isP256 = NO;
 
@@ -673,7 +673,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     return nil;
 }
 
-- (NSDictionary *)unsignedDataForOperation:(PLCOperation *)op {
+- (NSDictionary *)unsignedDataForOperation:(ATProtoPLCOperation *)op {
     NSMutableDictionary *data = [op.data mutableCopy] ?: [NSMutableDictionary dictionary];
     
     // Strip wrapper-level and non-operation fields defensively.
@@ -698,7 +698,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     return [data copy];
 }
 
-- (BOOL)enforceRateLimitForHistory:(NSArray<PLCOperation *> *)history
+- (BOOL)enforceRateLimitForHistory:(NSArray<ATProtoPLCOperation *> *)history
                       proposedDate:(NSDate *)proposedDate
                              error:(NSError **)error {
     NSDate *hourAgo = [proposedDate dateByAddingTimeInterval:-3600];
@@ -709,7 +709,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     NSUInteger withinDay = 0;
     NSUInteger withinWeek = 0;
 
-    for (PLCOperation *op in history) {
+    for (ATProtoPLCOperation *op in history) {
         NSDate *timestamp = op.createdAt ?: proposedDate;
         if ([timestamp compare:weekAgo] == NSOrderedDescending) {
             withinWeek++;
@@ -753,8 +753,8 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 - (NSData *)dataFromKeyString:(NSString *)keyString {
     if (!keyString || ![keyString isKindOfClass:[NSString class]]) return nil;
     if ([keyString hasPrefix:@"did:key:"]) {
-        // PLCDIDKey handles varint multicodec decoding for both secp256k1 (0xe7) and P-256 (0x1200)
-        PLCDIDKey *parsed = [PLCDIDKey parseFromString:keyString error:nil];
+        // ATProtoPLCDIDKey handles varint multicodec decoding for both secp256k1 (0xe7) and P-256 (0x1200)
+        ATProtoPLCDIDKey *parsed = [ATProtoPLCDIDKey parseFromString:keyString error:nil];
         if (parsed) return parsed.publicKeyBytes;
     }
     return [self dataFromHexString:keyString];

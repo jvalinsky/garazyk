@@ -27,9 +27,9 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcServerPack (AppPasswords)
+@implementation ATProtoXrpcServerPack (AppPasswords)
 
-+ (void)registerAppPasswordEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerAppPasswordEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                              services:(id<XrpcRoutePackServices>)services {
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
     id<PDSAdminController> adminController = services.adminController;
@@ -45,7 +45,7 @@
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -59,7 +59,7 @@
         NSString *name = AuthTypedValue(body, @"name", [NSString class], &typeMismatch);
         NSNumber *privilegedNumber = AuthTypedValue(body, @"privileged", [NSNumber class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         BOOL privileged = privilegedNumber.boolValue;
@@ -94,7 +94,7 @@
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -124,7 +124,7 @@
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -137,7 +137,7 @@
         BOOL typeMismatch = NO;
         NSString *name = AuthTypedValue(body, @"name", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         if (name.length == 0) {

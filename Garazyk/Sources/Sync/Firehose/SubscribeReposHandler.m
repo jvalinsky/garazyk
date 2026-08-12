@@ -68,11 +68,11 @@ static NSString *const kSubscribeReposErrorConsumerTooSlow = @"ConsumerTooSlow";
 static NSString *const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
 static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 
-@interface SubscribeReposHandler () <WebSocketServerDelegate,
+@interface ATProtoSubscribeReposHandler () <WebSocketServerDelegate,
                                      WebSocketConnectionDelegate>
 
-@property(nonatomic, strong) WebSocketServer *webSocketServer;
-@property(nonatomic, strong) FirehoseProtocolSession *session;
+@property(nonatomic, strong) ATProtoWebSocketServer *webSocketServer;
+@property(nonatomic, strong) ATProtoFirehoseProtocolSession *session;
 @property(nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property(nonatomic, strong) PDSDatabasePool *userDatabasePool;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t syncQueue;
@@ -83,7 +83,7 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 @property(atomic, assign) BOOL stopping;
 @property(atomic, assign) BOOL observingNotifications;
 @property(nonatomic, strong)
-    NSMutableSet<WebSocketConnection *> *attachedConnections;
+    NSMutableSet<ATProtoWebSocketConnection *> *attachedConnections;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_source_t eventRateLimiter;
 @property(nonatomic, assign) NSUInteger maxReplayEventsPerConnection;
 @property(nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
@@ -93,24 +93,24 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
                  outValue:(NSUInteger *)outValue;
 - (void)sendErrorFrameWithCode:(NSString *)code
                        message:(NSString *)message
-                  toConnection:(WebSocketConnection *)connection;
-- (void)detachConnection:(WebSocketConnection *)connection;
+                  toConnection:(ATProtoWebSocketConnection *)connection;
+- (void)detachConnection:(ATProtoWebSocketConnection *)connection;
 - (BOOL)sendEventData:(NSData *)eventData
-    toConnectionWithBackpressureCheck:(WebSocketConnection *)connection;
+    toConnectionWithBackpressureCheck:(ATProtoWebSocketConnection *)connection;
 + (NSString *)rfc3339Timestamp;
 - (nullable NSNumber *)oldestPersistedSequenceNumber;
 - (NSUInteger)effectiveReplayCursorForRequestedCursor:(NSUInteger)requestedCursor
                                               outdated:(BOOL *)outdated;
 - (void)replayEventsAfterCursor:(NSUInteger)cursor
-                   toConnection:(WebSocketConnection *)connection;
+                   toConnection:(ATProtoWebSocketConnection *)connection;
 - (void)sendInfoEvent:(NSString *)kind
                message:(NSString *)message
-          toConnection:(WebSocketConnection *)connection;
+          toConnection:(ATProtoWebSocketConnection *)connection;
 - (void)bufferRelayEventData:(NSData *)eventData seq:(NSUInteger)seq;
 
 @end
 
-@implementation SubscribeReposHandler {
+@implementation ATProtoSubscribeReposHandler {
     dispatch_semaphore_t _backfillSemaphore;
 }
 
@@ -249,7 +249,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   [self ensureSequenceInitialized];
 
   self.webSocketServer =
-      [[WebSocketServer alloc] initWithHost:@"localhost" port:port];
+      [[ATProtoWebSocketServer alloc] initWithHost:@"localhost" port:port];
   self.webSocketServer.delegate = self;
   self.webSocketServer.subprotocol = @"com.atproto.sync.subscribeRepos";
 
@@ -287,11 +287,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
   [self waitForIdleWithTimeout:5.0];
 
-  __block NSSet<WebSocketConnection *> *attachedSnapshot = nil;
+  __block NSSet<ATProtoWebSocketConnection *> *attachedSnapshot = nil;
   dispatch_sync(_connectionsQueue, ^{
     attachedSnapshot = [_attachedConnections copy];
   });
-  for (WebSocketConnection *connection in attachedSnapshot) {
+  for (ATProtoWebSocketConnection *connection in attachedSnapshot) {
     [self detachConnection:connection];
     [connection close];
   }
@@ -333,8 +333,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   GZ_LOG_SYNC_INFO(@"Accepting upgraded connection for subscribeRepos from %@", request.remoteAddress);
   [self ensureSequenceInitialized];
 
-  WebSocketConnection *webSocketConnection =
-      [[WebSocketConnection alloc] initWithConnection:connection];
+  ATProtoWebSocketConnection *webSocketConnection =
+      [[ATProtoWebSocketConnection alloc] initWithConnection:connection];
   if (request.remoteAddress.length > 0) {
     webSocketConnection.remoteAddress = request.remoteAddress;
   }
@@ -362,8 +362,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 #pragma mark - WebSocketServerDelegate
 
-- (void)webSocketServer:(WebSocketServer *)server
-    didAcceptConnection:(WebSocketConnection *)connection {
+- (void)webSocketServer:(ATProtoWebSocketServer *)server
+    didAcceptConnection:(ATProtoWebSocketConnection *)connection {
   GZ_LOG_SYNC_INFO(
       @"[%@] Accepted new WebSocket connection for subscribeRepos",
       connection.remoteAddress);
@@ -386,26 +386,26 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   [self sendInitialRepositoryStateToConnection:connection cursor:nil];
 }
 
-- (void)webSocketServer:(WebSocketServer *)server
-     didCloseConnection:(WebSocketConnection *)connection {
+- (void)webSocketServer:(ATProtoWebSocketServer *)server
+     didCloseConnection:(ATProtoWebSocketConnection *)connection {
   GZ_LOG_SYNC_INFO(@"[%@] Closed WebSocket connection for subscribeRepos",
                     connection.remoteAddress);
   [self detachConnection:connection];
 }
 
-- (void)webSocketServer:(WebSocketServer *)server
+- (void)webSocketServer:(ATProtoWebSocketServer *)server
        didFailWithError:(NSError *)error {
   GZ_LOG_SYNC_ERROR(@"WebSocket server failed: %@", error);
 }
 
-- (void)webSocketServer:(WebSocketServer *)server
+- (void)webSocketServer:(ATProtoWebSocketServer *)server
          stateDidChange:(WebSocketServerState)state {
   GZ_LOG_SYNC_INFO(@"WebSocket server state changed to: %ld", (long)state);
 }
 
 #pragma mark - WebSocketConnectionDelegate
 
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
            didCloseWithCode:(NSInteger)code
                      reason:(NSString *)reason {
   GZ_LOG_SYNC_INFO(
@@ -414,7 +414,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   [self detachConnection:connection];
 }
 
-- (void)webSocketConnection:(WebSocketConnection *)connection
+- (void)webSocketConnection:(ATProtoWebSocketConnection *)connection
            didFailWithError:(NSError *)error {
   GZ_LOG_SYNC_ERROR(@"[%@] Main-port WebSocket connection failed: %@",
                      connection.remoteAddress, error);
@@ -540,7 +540,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 #pragma mark - Event Broadcasting
 
-- (void)broadcastCommitEvent:(FirehoseCommitEvent *)event {
+- (void)broadcastCommitEvent:(ATProtoFirehoseCommitEvent *)event {
   if (self.stopping || !event) {
     GZ_LOG_SYNC_INFO(@"[Relay] broadcastCommitEvent: early return (stopping=%d, event=%p)", self.stopping, event);
     return;
@@ -572,7 +572,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   });
 }
 
-- (void)broadcastSyncEvent:(FirehoseSyncEvent *)event {
+- (void)broadcastSyncEvent:(ATProtoFirehoseSyncEvent *)event {
   if (self.stopping || !event) {
     return;
   }
@@ -614,7 +614,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (!strongSelf || strongSelf.stopping) return;
     [strongSelf ensureSequenceInitialized];
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
 
     // Required fields per subscribeRepos lexicon
     event.rebase = NO; // Deprecated, always false
@@ -653,7 +653,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
     event.since = previousCommit.rev;
     
-    event.blocks = [FirehoseCARBuilder buildCARForCommit:commit
+    event.blocks = [ATProtoFirehoseCARBuilder buildCARForCommit:commit
                                                      ops:ops
                                            blockProvider:^NSData * _Nullable(NSData * _Nonnull cidBytes) {
                                                __strong typeof(weakSelf) innerSelf = weakSelf;
@@ -667,7 +667,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                       }];
     event.ops = ops;
     event.blobs = blobs ?: @[]; // Already ATProtoCID array
-    event.time = [SubscribeReposHandler rfc3339Timestamp];
+    event.time = [ATProtoSubscribeReposHandler rfc3339Timestamp];
     event.prevData = previousCommit.dataCID;
 
     NSString *eventType = @"commit";
@@ -678,9 +678,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
           @"Commit event could not be emitted inductively for %@ at seq %lu, falling back "
           @"to #sync",
           repoDid, (unsigned long)strongSelf.session.sequenceNumber + 1);
-      FirehoseSyncEvent *syncEvent = [[FirehoseSyncEvent alloc] init];
+      ATProtoFirehoseSyncEvent *syncEvent = [[ATProtoFirehoseSyncEvent alloc] init];
       syncEvent.did = repoDid;
-      syncEvent.blocks = [FirehoseCARBuilder buildCARForSyncCommitOnly:commit];
+      syncEvent.blocks = [ATProtoFirehoseCARBuilder buildCARForSyncCommitOnly:commit];
       syncEvent.rev = commit.rev ?: @"";
       syncEvent.time = event.time;
 
@@ -734,9 +734,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     @autoreleasepool {
       [strongSelf ensureSequenceInitialized];
 
-      FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+      ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
       event.did = did;
-      event.time = [SubscribeReposHandler rfc3339Timestamp];
+      event.time = [ATProtoSubscribeReposHandler rfc3339Timestamp];
       event.handle = handle;
 
       NSData *eventData = [strongSelf.session encodeIdentityEvent:event];
@@ -779,11 +779,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     @autoreleasepool {
       [strongSelf ensureSequenceInitialized];
 
-      FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+      ATProtoFirehoseAccountEvent *event = [[ATProtoFirehoseAccountEvent alloc] init];
       event.did = did;
       event.active = active;
       event.status = status;
-      event.time = [SubscribeReposHandler rfc3339Timestamp];
+      event.time = [ATProtoSubscribeReposHandler rfc3339Timestamp];
 
       NSData *eventData = [strongSelf.session encodeAccountEvent:event];
 
@@ -828,7 +828,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     // Per ATProto spec: "it is common to have an #info message type that is not persisted"
     // and "Not all message types need to include seq". Info events should NOT consume
     // a sequence number and should NOT be persisted.
-    FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
+    ATProtoFirehoseInfoEvent *event = [[ATProtoFirehoseInfoEvent alloc] init];
     event.kind = kind;
     event.message = message;
 
@@ -849,7 +849,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)broadcastEventData:(NSData *)eventData {
-  __block NSArray<WebSocketConnection *> *snapshot;
+  __block NSArray<ATProtoWebSocketConnection *> *snapshot;
   dispatch_sync(_connectionsQueue, ^{
     snapshot = [_attachedConnections allObjects];
   });
@@ -863,7 +863,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   // to O(1). sendEventData:toConnectionWithBackpressureCheck: is
   // non-blocking (drops slow consumers), so the loop won't stall.
   dispatch_async(self.broadcastFanoutQueue, ^{
-    for (WebSocketConnection *connection in snapshot) {
+    for (ATProtoWebSocketConnection *connection in snapshot) {
       NSUInteger pCount = connection.pendingSendCount;
       NSUInteger pBytes = connection.pendingSendBytes;
       if (pCount > 10 || pBytes > 100000) {
@@ -884,7 +884,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   });
 }
 
-- (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection
+- (void)sendInitialRepositoryStateToConnection:(ATProtoWebSocketConnection *)connection
                                         cursor:(nullable NSString *)cursor {
   GZ_LOG_SYNC_INFO(@"New connection from %@ (requested path: %@)", connection.remoteAddress, connection.path);
   GZ_LOG_SYNC_INFO(@"Sending initial repository state to new connection");
@@ -987,7 +987,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)replayEventsAfterCursor:(NSUInteger)cursor
-                   toConnection:(WebSocketConnection *)connection {
+                   toConnection:(ATProtoWebSocketConnection *)connection {
     dispatch_semaphore_wait(_backfillSemaphore, dispatch_time(DISPATCH_TIME_NOW, 60 * NSEC_PER_SEC));
 
     @try {
@@ -1085,12 +1085,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if ([event isKindOfClass:[NSData class]]) {
         return (NSData *)event;
     }
-    if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
-        return [self.session encodeCommitEvent:(FirehoseCommitEvent *)event];
-    } else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
-        return [self.session encodeIdentityEvent:(FirehoseIdentityEvent *)event];
-    } else if ([event isKindOfClass:[FirehoseAccountEvent class]]) {
-        return [self.session encodeAccountEvent:(FirehoseAccountEvent *)event];
+    if ([event isKindOfClass:[ATProtoFirehoseCommitEvent class]]) {
+        return [self.session encodeCommitEvent:(ATProtoFirehoseCommitEvent *)event];
+    } else if ([event isKindOfClass:[ATProtoFirehoseIdentityEvent class]]) {
+        return [self.session encodeIdentityEvent:(ATProtoFirehoseIdentityEvent *)event];
+    } else if ([event isKindOfClass:[ATProtoFirehoseAccountEvent class]]) {
+        return [self.session encodeAccountEvent:(ATProtoFirehoseAccountEvent *)event];
     } else if ([event isKindOfClass:[NSDictionary class]]) {
         // Legacy raw dictionary event — encode as JSON
         return [NSJSONSerialization dataWithJSONObject:(NSDictionary *)event options:0 error:nil];
@@ -1108,8 +1108,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)sendInfoEvent:(NSString *)kind
                message:(NSString *)message
-          toConnection:(WebSocketConnection *)connection {
-  FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
+          toConnection:(ATProtoWebSocketConnection *)connection {
+  ATProtoFirehoseInfoEvent *event = [[ATProtoFirehoseInfoEvent alloc] init];
   event.kind = kind;
   event.message = message;
 
@@ -1198,16 +1198,16 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)sendErrorFrameWithCode:(NSString *)code
                        message:(NSString *)message
-                  toConnection:(WebSocketConnection *)connection {
-  FirehoseErrorEvent *event =
-      [FirehoseErrorEvent eventWithError:code message:message];
+                  toConnection:(ATProtoWebSocketConnection *)connection {
+  ATProtoFirehoseErrorEvent *event =
+      [ATProtoFirehoseErrorEvent eventWithError:code message:message];
   NSData *eventData = [self.session encodeErrorEvent:event];
   if (eventData) {
     [connection sendMessage:eventData];
   }
 }
 
-- (void)detachConnection:(WebSocketConnection *)connection {
+- (void)detachConnection:(ATProtoWebSocketConnection *)connection {
   __block BOOL removed = NO;
   __block NSUInteger count = 0;
   dispatch_sync(_connectionsQueue, ^{
@@ -1229,7 +1229,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (BOOL)sendEventData:(NSData *)eventData
-    toConnectionWithBackpressureCheck:(WebSocketConnection *)connection {
+    toConnectionWithBackpressureCheck:(ATProtoWebSocketConnection *)connection {
   if (!eventData || !connection) {
     return NO;
   }
@@ -1274,7 +1274,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         startSeq = (NSUInteger)MAX((int64_t)0, maxSequence);
     }
 
-    self.session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:startSeq];
+    self.session = [[ATProtoFirehoseProtocolSession alloc] initWithSequenceNumber:startSeq];
     self.sequenceInitialized = YES;
     GZ_LOG_SYNC_INFO(@"Initialized sequence number to %lu",
                       (unsigned long)self.session.sequenceNumber);
@@ -1284,7 +1284,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 - (void)skipPersistence {
   dispatch_sync(_stateQueue, ^{
     if (self.sequenceInitialized) return;
-    self.session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:0];
+    self.session = [[ATProtoFirehoseProtocolSession alloc] initWithSequenceNumber:0];
     self.sequenceInitialized = YES;
     GZ_LOG_SYNC_INFO(@"Firehose persistence disabled. Starting from sequence 0.");
   });

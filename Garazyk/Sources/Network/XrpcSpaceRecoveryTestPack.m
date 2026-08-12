@@ -51,7 +51,7 @@ static void XrpcSpaceRecoveryTestError(ATProtoHttpResponse *response, NSInteger 
   [response setJsonBody:@{ @"error" : @"RecoveryTestControlError", @"message" : message ?: @"Invalid request" }];
 }
 
-@implementation XrpcSpaceRecoveryTestPack
+@implementation ATProtoXrpcSpaceRecoveryTestPack
 
 + (BOOL)isEnabledForEnvironment:(NSDictionary<NSString *, NSString *> *)environment {
   if (![environment isKindOfClass:[NSDictionary class]]) return NO;
@@ -81,7 +81,7 @@ static void XrpcSpaceRecoveryTestError(ATProtoHttpResponse *response, NSInteger 
       marker.location + marker.length < space.length;
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
   PDSSpaceStore *spaceStore = services.spaceStore;
   PDSSpaceReconciler *reconciler = services.spaceReconciler;

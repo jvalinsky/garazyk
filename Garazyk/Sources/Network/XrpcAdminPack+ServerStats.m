@@ -29,9 +29,9 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAdminPack (ServerStats)
+@implementation ATProtoXrpcAdminPack (ServerStats)
 
-+ (void)registerServerStatsEndpoints:(XrpcDispatcher *)dispatcher
++ (void)registerServerStatsEndpoints:(ATProtoXrpcDispatcher *)dispatcher
                 services:(id<XrpcRoutePackServices>)services {
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     ATProtoJWTMinter *jwtMinter = services.jwtMinter;
@@ -44,7 +44,7 @@
     // com.atproto.admin.getServerStats
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getServerStats
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -67,7 +67,7 @@
     // com.atproto.admin.queryAuditLog
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_queryAuditLog
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -99,7 +99,7 @@
     // com.atproto.admin.repairRepo
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_repairRepo
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -118,7 +118,7 @@
         BOOL typeMismatch = NO;
         NSString *did = AuthTypedValue(body, @"did", [NSString class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
 
@@ -151,7 +151,7 @@
     // com.atproto.admin.runBlobAudit
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_runBlobAudit
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter
@@ -171,7 +171,7 @@
         NSString *type = AuthTypedValue(body, @"type", [NSString class], &typeMismatch) ?: @"consistency";
         NSNumber *dryRunNumber = AuthTypedValue(body, @"dryRun", [NSNumber class], &typeMismatch);
         if (typeMismatch) {
-            [XrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response message:@"Request field has wrong type"];
             return;
         }
         BOOL dryRun = dryRunNumber.boolValue;
@@ -190,7 +190,7 @@
     // com.atproto.admin.getBlobAuditStatus
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_admin_getBlobAuditStatus
                        handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
+        if (![ATProtoXrpcAuthHelper authorizeAdminRequest:request
                                            response:response
                                    serviceDatabases:serviceDatabases
                                           jwtMinter:jwtMinter

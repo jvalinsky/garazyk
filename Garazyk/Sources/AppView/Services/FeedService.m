@@ -12,9 +12,9 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "AppView/Services/VideoUriBuilder.h"
 #import "Database/Utils/ATProtoDatabaseUtilities.h"
-@interface FeedService ()
+@interface PDSFeedService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
-@property (nonatomic, strong) ActorService *actorService;
+@property (nonatomic, strong) PDSActorService *actorService;
 @end
 
 static NSString *GZFeedStringValue(id value) {
@@ -57,13 +57,13 @@ static NSString *GZFeedDIDFromPostURI(NSString *uri) {
     return components.count > 2 ? components[2] : @"";
 }
 
-@implementation FeedService
+@implementation PDSFeedService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];
     if (self) {
         _database = database;
-        _actorService = [[ActorService alloc] initWithDatabase:database];
+        _actorService = [[PDSActorService alloc] initWithDatabase:database];
     }
     return self;
 }

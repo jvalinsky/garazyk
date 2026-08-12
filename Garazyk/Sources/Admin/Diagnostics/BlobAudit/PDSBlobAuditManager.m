@@ -16,7 +16,7 @@ static NSString *const PDSBlobAuditManagerErrorDomain = @"com.atproto.pds.diagno
 
 @interface PDSBlobAuditManager ()
 @property (nonatomic, strong, readwrite) NSOperationQueue *auditQueue;
-@property (nonatomic, strong) BlobStorage *blobStorage;
+@property (nonatomic, strong) PDSBlobStorage *blobStorage;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSOperation *> *jobMap;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
@@ -24,7 +24,7 @@ static NSString *const PDSBlobAuditManagerErrorDomain = @"com.atproto.pds.diagno
 
 @implementation PDSBlobAuditManager
 
-- (instancetype)initWithBlobStorage:(BlobStorage *)blobStorage
+- (instancetype)initWithBlobStorage:(PDSBlobStorage *)blobStorage
                  serviceDatabases:(PDSServiceDatabases *)serviceDatabases {
     if ((self = [super init])) {
         _blobStorage = blobStorage;

@@ -24,7 +24,7 @@
     [super setUp];
     self.server = [ATProtoHttpServer serverWithPort:0];
     [ATProtoHttpXrpcRoutePack registerRoutesWithServer:self.server
-                                        dispatcher:[[XrpcDispatcher alloc] init]
+                                        dispatcher:[[ATProtoXrpcDispatcher alloc] init]
                                        application:nil
                                         controller:nil
                              subscribeReposHandler:nil

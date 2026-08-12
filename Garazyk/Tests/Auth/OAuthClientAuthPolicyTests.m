@@ -13,7 +13,7 @@
 - (void)testSupportedTokenEndpointAuthMethodsLegacyEnabled {
     // In DEBUG builds, legacyOAuthEnabled returns YES
 #ifdef DEBUG
-    NSArray *methods = [OAuthClientAuthPolicy supportedTokenEndpointAuthMethods];
+    NSArray *methods = [ATProtoOAuthClientAuthPolicy supportedTokenEndpointAuthMethods];
     XCTAssertTrue([methods containsObject:@"none"]);
     XCTAssertTrue([methods containsObject:@"private_key_jwt"]);
     XCTAssertTrue([methods containsObject:@"client_secret_post"]);
@@ -24,7 +24,7 @@
 
 - (void)testSupportedGrantTypesLegacyEnabled {
 #ifdef DEBUG
-    NSArray *types = [OAuthClientAuthPolicy supportedGrantTypes];
+    NSArray *types = [ATProtoOAuthClientAuthPolicy supportedGrantTypes];
     XCTAssertTrue([types containsObject:@"authorization_code"]);
     XCTAssertTrue([types containsObject:@"refresh_token"]);
     XCTAssertTrue([types containsObject:@"client_credentials"]);
@@ -34,47 +34,47 @@
 
 - (void)testLegacyOAuthEnabled {
 #ifdef DEBUG
-    XCTAssertTrue([OAuthClientAuthPolicy legacyOAuthEnabled]);
+    XCTAssertTrue([ATProtoOAuthClientAuthPolicy legacyOAuthEnabled]);
 #endif
 }
 
 #pragma mark - Client Secret Validation
 
 - (void)testValidateClientSecretMatching {
-    XCTAssertTrue([OAuthClientAuthPolicy validateClientSecret:@"secret123" againstExpected:@"secret123"]);
+    XCTAssertTrue([ATProtoOAuthClientAuthPolicy validateClientSecret:@"secret123" againstExpected:@"secret123"]);
 }
 
 - (void)testValidateClientSecretMismatch {
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:@"wrong" againstExpected:@"correct"]);
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:@"wrong" againstExpected:@"correct"]);
 }
 
 - (void)testValidateClientSecretProvidedNil {
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:nil againstExpected:@"expected"]);
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:nil againstExpected:@"expected"]);
 }
 
 - (void)testValidateClientSecretExpectedNil {
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:@"provided" againstExpected:nil]);
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:@"provided" againstExpected:nil]);
 }
 
 - (void)testValidateClientSecretBothNil {
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:nil againstExpected:nil]);
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:nil againstExpected:nil]);
 }
 
 - (void)testValidateClientSecretEmptyProvided {
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:@"" againstExpected:@"expected"]);
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:@"" againstExpected:@"expected"]);
 }
 
 - (void)testValidateClientSecretEmptyExpected {
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:@"provided" againstExpected:@""]);
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:@"provided" againstExpected:@""]);
 }
 
 - (void)testValidateClientSecretBothEmpty {
-    XCTAssertFalse([OAuthClientAuthPolicy validateClientSecret:@"" againstExpected:@""]);
+    XCTAssertFalse([ATProtoOAuthClientAuthPolicy validateClientSecret:@"" againstExpected:@""]);
 }
 
 - (void)testValidateClientSecretLongStrings {
     NSString *longSecret = [@"" stringByPaddingToLength:1000 withString:@"a" startingAtIndex:0];
-    XCTAssertTrue([OAuthClientAuthPolicy validateClientSecret:longSecret againstExpected:longSecret]);
+    XCTAssertTrue([ATProtoOAuthClientAuthPolicy validateClientSecret:longSecret againstExpected:longSecret]);
 }
 
 #pragma mark - Client Metadata Validation
@@ -85,7 +85,7 @@
         @"redirect_uris": @[@"https://example.com/cb"]
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
     XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"token_endpoint_auth_method"]);
@@ -96,7 +96,7 @@
         @"token_endpoint_auth_method": @"client_secret_jwt"
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
 }
@@ -106,7 +106,7 @@
         @"token_endpoint_auth_method": @"none"
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertTrue(result);
     XCTAssertNil(error);
 }
@@ -117,7 +117,7 @@
         @"jwks": @{@"kty": @"EC", @"crv": @"P-256"}
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
 }
@@ -128,7 +128,7 @@
         @"jwks_uri": @"https://example.com/jwks"
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
 }
@@ -139,7 +139,7 @@
         @"token_endpoint_auth_signing_alg": @"ES256"
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
 }
@@ -150,7 +150,7 @@
         @"token_endpoint_auth_signing_alg": @"ES256"
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
     XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"jwks"]);
@@ -164,7 +164,7 @@
         @"token_endpoint_auth_signing_alg": @"ES256"
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
 }
@@ -176,7 +176,7 @@
         @"token_endpoint_auth_signing_alg": @"ES256"
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertTrue(result);
 }
 
@@ -187,7 +187,7 @@
         @"token_endpoint_auth_signing_alg": @"ES256"
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertTrue(result);
 }
 
@@ -198,7 +198,7 @@
         @"token_endpoint_auth_signing_alg": @"RS256"
     };
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateClientMetadata:metadata error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
     XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"ES256"]);
@@ -210,7 +210,7 @@
     NSDictionary *params = @{};
     NSDictionary *client = @{@"token_endpoint_auth_method": @"none"};
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:NO error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:NO error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
     XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"DPoP"]);
@@ -220,7 +220,7 @@
     NSDictionary *params = @{};
     NSDictionary *client = @{@"token_endpoint_auth_method": @"private_key_jwt"};
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
     XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"client_assertion"]);
@@ -230,7 +230,7 @@
     NSDictionary *params = @{@"client_assertion": @"jwt-assertion"};
     NSDictionary *client = @{@"token_endpoint_auth_method": @"private_key_jwt"};
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
     XCTAssertTrue(result);
     XCTAssertNil(error);
 }
@@ -239,7 +239,7 @@
     NSDictionary *params = @{};
     NSDictionary *client = @{@"token_endpoint_auth_method": @"none"};
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
     XCTAssertTrue(result);
     XCTAssertNil(error);
 }
@@ -248,7 +248,7 @@
     NSDictionary *params = @{@"client_assertion": @"some-jwt"};
     NSDictionary *client = @{@"token_endpoint_auth_method": @"none"};
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
     XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"Public clients must not send client_assertion"]);
@@ -256,8 +256,8 @@
 
 - (void)testValidateRequestParametersClientSecretInNonLegacyRejected {
 #ifdef DEBUG
-    // +[OAuthClientAuthPolicy legacyOAuthEnabled] hardcodes YES for DEBUG
-    // builds (see OAuthClientAuthPolicy.m), so the non-legacy rejection path
+    // +[ATProtoOAuthClientAuthPolicy legacyOAuthEnabled] hardcodes YES for DEBUG
+    // builds (see ATProtoOAuthClientAuthPolicy.m), so the non-legacy rejection path
     // this test wants to exercise is unreachable from any DEBUG-compiled
     // test binary, including this one. Skip rather than assert unreachable
     // behavior; this needs a way to override the flag under test to be
@@ -266,7 +266,7 @@
     NSDictionary *params = @{@"client_secret": @"secret"};
     NSDictionary *client = @{@"token_endpoint_auth_method": @"client_secret_basic"};
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
     XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"client_secret is not supported"]);
@@ -277,7 +277,7 @@
     NSDictionary *params = @{};
     NSDictionary *client = @{};  // No auth method set, defaults to "none"
     NSError *error = nil;
-    BOOL result = [OAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
+    BOOL result = [ATProtoOAuthClientAuthPolicy validateRequestParameters:params client:client hasDPoPProof:YES error:&error];
     XCTAssertTrue(result);
     XCTAssertNil(error);
 }

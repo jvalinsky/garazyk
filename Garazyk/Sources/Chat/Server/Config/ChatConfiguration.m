@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "ChatConfiguration.h"
 
-@implementation ChatConfiguration
+@implementation PDSChatConfiguration
 
 + (instancetype)defaultConfiguration {
-    ChatConfiguration *config = [[ChatConfiguration alloc] init];
+    PDSChatConfiguration *config = [[PDSChatConfiguration alloc] init];
     config.dataDirectory = @"./data/chat";
     config.httpPort = 2585; // Default port for chat
     config.adminSecret = @"";

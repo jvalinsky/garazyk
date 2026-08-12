@@ -13,11 +13,11 @@ static NSString *GZLikeContainsPattern(NSString *term) {
     return [NSString stringWithFormat:@"%%%@%%", escaped];
 }
 
-@interface GroupService ()
+@interface PDSGroupService ()
 @property (nonatomic, weak) id<PDSQueryDatabase> database;
 @end
 
-@implementation GroupService
+@implementation PDSGroupService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];

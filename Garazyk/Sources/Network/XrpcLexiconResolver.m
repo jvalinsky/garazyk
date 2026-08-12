@@ -23,7 +23,7 @@
 NSErrorDomain const XrpcLexiconResolverErrorDomain = @"XrpcLexiconResolve";
 static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
 
-@implementation XrpcLexiconResolver
+@implementation ATProtoXrpcLexiconResolver
 
 + (nullable NSDictionary *)buildResolveResponseWithSchema:(NSDictionary *)schema
                                                      nsid:(NSString *)nsid
@@ -638,7 +638,7 @@ static BOOL PDSLexiconResolverRunningTests(void) {
                                         error:error];
 }
 
-+ (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerResolveLexiconMethodOnDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                    configuration:(ATProtoServiceConfiguration *)configuration {
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_lexicon_resolveLexicon handler:^(
                   ATProtoHttpRequest *request, ATProtoHttpResponse *response) {

@@ -128,8 +128,8 @@ static int fail_with_usage(const char *executable_name, NSString *message) {
 static const char *executable_name = "campagnola";
 
 @interface PLCRuntimeComposite : NSObject <GZServiceRuntimeProtocol>
-@property (nonatomic, strong) PLCServer *server;
-@property (nonatomic, strong, nullable) PLCSyncEngine *syncEngine;
+@property (nonatomic, strong) ATProtoPLCServer *server;
+@property (nonatomic, strong, nullable) ATProtoPLCSyncEngine *syncEngine;
 @property (nonatomic, strong, nullable) GZAdminUIHost *adminUIHost;
 @end
 
@@ -316,11 +316,11 @@ int main(int argc, const char * argv[]) {
             printf("No --upstream specified, defaulting to %s\n", [upstreamURL UTF8String]);
         }
 
-        PLCServer *server = nil;
-        PLCSyncEngine *syncEngine = nil;
+        ATProtoPLCServer *server = nil;
+        ATProtoPLCSyncEngine *syncEngine = nil;
 
         if (replicaMode) {
-            // Replica mode: use PLCReplicaStore + PLCSyncEngine for upstream sync
+            // Replica mode: use ATProtoPLCReplicaStore + ATProtoPLCSyncEngine for upstream sync
             NSString *replicaDBPath = dbPath;
             if (!replicaDBPath && dataDir) {
                 replicaDBPath = [dataDir stringByAppendingPathComponent:@"plc-replica.db"];
@@ -330,7 +330,7 @@ int main(int argc, const char * argv[]) {
             }
 
             NSError *storeError = nil;
-            PLCReplicaStore *replicaStore = [[PLCReplicaStore alloc] initWithPath:replicaDBPath];
+            ATProtoPLCReplicaStore *replicaStore = [[ATProtoPLCReplicaStore alloc] initWithPath:replicaDBPath];
             if (![replicaStore openWithError:&storeError]) {
                 GZ_LOG_CORE_ERROR(@"Failed to open replica store at %@: %@",
                                     replicaDBPath, storeError.localizedDescription);
@@ -338,16 +338,16 @@ int main(int argc, const char * argv[]) {
             }
             printf("Using replica store at %s\n", [replicaDBPath UTF8String]);
 
-            PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:replicaStore];
-            PLCSyncClient *syncClient = [[PLCSyncClient alloc] initWithUpstreamURL:upstreamURL];
-            syncEngine = [[PLCSyncEngine alloc] initWithStore:replicaStore
+            ATProtoPLCAuditor *auditor = [[ATProtoPLCAuditor alloc] initWithStore:replicaStore];
+            ATProtoPLCSyncClient *syncClient = [[ATProtoPLCSyncClient alloc] initWithUpstreamURL:upstreamURL];
+            syncEngine = [[ATProtoPLCSyncEngine alloc] initWithStore:replicaStore
                                                        client:syncClient
                                                       auditor:auditor];
             syncEngine.batchSize = 1000;
 
             printf("Starting PLC replica server on port %lu (upstream: %s)\n",
                    (unsigned long)port, [upstreamURL UTF8String]);
-            server = [[PLCReplicaServer alloc] initWithStore:replicaStore
+            server = [[ATProtoPLCReplicaServer alloc] initWithStore:replicaStore
                                                       auditor:auditor
                                                          host:host
                                                          port:port
@@ -357,7 +357,7 @@ int main(int argc, const char * argv[]) {
             id<PLCStore> store = nil;
             if (dbPath) {
                 NSError *storeError = nil;
-                store = [PLCPersistentStore storeWithPath:dbPath error:&storeError];
+                store = [ATProtoPLCPersistentStore storeWithPath:dbPath error:&storeError];
                 if (!store) {
                     GZ_LOG_CORE_ERROR(@"Failed to open persistent store at %@: %@",
                                         dbPath, storeError.localizedDescription);
@@ -365,15 +365,15 @@ int main(int argc, const char * argv[]) {
                 }
                 printf("Using persistent store at %s\n", [dbPath UTF8String]);
             } else if (inMemory) {
-                store = [[PLCMockStore alloc] init];
+                store = [[ATProtoPLCMockStore alloc] init];
                 printf("Using in-memory mock store\n");
             } else {
                 return fail_with_usage(binaryName, @"serve requires --database or explicit --in-memory");
             }
 
-            PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:store];
+            ATProtoPLCAuditor *auditor = [[ATProtoPLCAuditor alloc] initWithStore:store];
             printf("Starting PLC server on port %lu\n", (unsigned long)port);
-            server = [[PLCServer alloc] initWithStore:store
+            server = [[ATProtoPLCServer alloc] initWithStore:store
                                                auditor:auditor
                                                   host:host
                                                   port:port];

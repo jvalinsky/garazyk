@@ -7,7 +7,7 @@
 @interface NotificationServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) NotificationService *service;
+@property (nonatomic, strong) PDSNotificationService *service;
 @end
 
 @implementation NotificationServiceTests
@@ -24,7 +24,7 @@
     NSError *error = nil;
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     
-    self.service = [[NotificationService alloc] initWithDatabase:self.database];
+    self.service = [[PDSNotificationService alloc] initWithDatabase:self.database];
 }
 
 - (void)tearDown {

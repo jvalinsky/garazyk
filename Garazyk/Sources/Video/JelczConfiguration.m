@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/JelczConfiguration.h"
 
-@implementation JelczConfiguration
+@implementation GZJelczConfiguration
 
 + (instancetype)configurationFromEnvironment {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
 
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
 

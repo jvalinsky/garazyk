@@ -40,7 +40,7 @@
 
 @interface XRPCAddRouteCrashSafetyTests : XCTestCase
 @property (nonatomic, strong) PDSController *controller;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, strong) NSURL *tempURL;
 @property (nonatomic, copy) NSString *userDid;
 @property (nonatomic, copy) NSString *userJwt;
@@ -64,8 +64,8 @@
 
     PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
     self.controller = app.legacyController;
-    self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
 
     NSError *error = nil;
     NSDictionary *account = [self.controller createAccountForEmail:@"crashsafety@example.com"

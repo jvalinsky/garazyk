@@ -12,11 +12,11 @@
 static NSString *const kWebAuthnErrorDomain = @"com.atproto.pds.webauthn";
 static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
 
-@interface WebAuthnRegistrationHandler ()
+@interface ATProtoWebAuthnRegistrationHandler ()
 @property (nonatomic, strong) NSMutableDictionary *pendingChallenges;
 @end
 
-@implementation WebAuthnRegistrationHandler {
+@implementation ATProtoWebAuthnRegistrationHandler {
     dispatch_queue_t _challengeQueue;
 }
 
@@ -131,7 +131,7 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
     NSString *did = challengeInfo[@"did"];
 
     NSError *error = nil;
-    NSDictionary *credentialData = [WebAuthnVerifier verifyRegistrationResponse:attestation
+    NSDictionary *credentialData = [ATProtoWebAuthnVerifier verifyRegistrationResponse:attestation
                                                                     challenge:expectedChallenge
                                                                        origin:self.serverOrigin
                                                                         error:&error];
@@ -198,7 +198,7 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
         uint32_t storedSignCount = [cred[@"signCount"] unsignedIntValue];
         uint32_t newCount = 0;
 
-        verified = [WebAuthnVerifier verifyAssertionResponse:assertion
+        verified = [ATProtoWebAuthnVerifier verifyAssertionResponse:assertion
                                          challenge:expectedChallenge
                                             origin:self.serverOrigin
                                          publicKey:cred[@"publicKey"]

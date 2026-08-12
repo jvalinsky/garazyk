@@ -9,7 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoHttpResponse;
 
 /*!
- @header MSTViewerHandler.h
+ @header GZMSTViewerHandler.h
 
  @abstract HTTP request handler for ATProtoMST visualization interface.
 
@@ -21,7 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 /*!
- @class MSTViewerHandler
+ @class GZMSTViewerHandler
 
  @abstract Singleton handler for ATProtoMST viewer HTTP requests.
 
@@ -33,14 +33,14 @@ NS_ASSUME_NONNULL_BEGIN
 
  All requests to /mst-viewer and /api/mst are routed through this handler.
  */
-@interface MSTViewerHandler : NSObject
+@interface GZMSTViewerHandler : NSObject
 
 /*!
  @method sharedHandler
 
  @abstract Returns the shared singleton instance.
 
- @return The shared MSTViewerHandler instance.
+ @return The shared GZMSTViewerHandler instance.
  */
 + (instancetype)sharedHandler;
 

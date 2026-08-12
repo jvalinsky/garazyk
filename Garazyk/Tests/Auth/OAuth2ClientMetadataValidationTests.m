@@ -6,7 +6,7 @@
 #import "Database/PDSDatabase.h"
 
 /**
- * Unit tests for OAuth2Handler validateClientMetadata:error: method
+ * Unit tests for ATProtoOAuth2Handler validateClientMetadata:error: method
  *
  * **Validates: Requirements 2.2, 2.3**
  *
@@ -14,7 +14,7 @@
  * ATProto client metadata according to the ATProto OAuth specification.
  */
 @interface OAuth2ClientMetadataValidationTests : XCTestCase
-@property (nonatomic, strong) OAuth2Handler *handler;
+@property (nonatomic, strong) ATProtoOAuth2Handler *handler;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, copy) NSString *databasePath;
 @end
@@ -30,7 +30,7 @@
     self.database = [PDSDatabase databaseAtURL:databaseURL];
     XCTAssertTrue([self.database openWithError:nil], @"Database should open");
 
-    self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
+    self.handler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.database];
 }
 
 - (void)tearDown {

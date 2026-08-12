@@ -272,7 +272,7 @@
 
 @end
 
-#pragma mark - AVFoundationTranscoder
+#pragma mark - GZAVFoundationTranscoder
 
 @interface AVFoundationTranscoderTests : XCTestCase
 @end
@@ -280,22 +280,22 @@
 @implementation AVFoundationTranscoderTests
 
 - (void)testInstantiation {
-    AVFoundationTranscoder *transcoder = [[AVFoundationTranscoder alloc] init];
+    GZAVFoundationTranscoder *transcoder = [[GZAVFoundationTranscoder alloc] init];
     XCTAssertNotNil(transcoder);
 }
 
 - (void)testConformsToVideoTranscoderBackend {
-    AVFoundationTranscoder *transcoder = [[AVFoundationTranscoder alloc] init];
+    GZAVFoundationTranscoder *transcoder = [[GZAVFoundationTranscoder alloc] init];
     XCTAssertTrue([transcoder conformsToProtocol:@protocol(VideoTranscoderBackend)]);
 }
 
 - (void)testCancelAllExportsDoesNotThrow {
-    AVFoundationTranscoder *transcoder = [[AVFoundationTranscoder alloc] init];
+    GZAVFoundationTranscoder *transcoder = [[GZAVFoundationTranscoder alloc] init];
     XCTAssertNoThrow([transcoder cancelAllExports]);
 }
 
 - (void)testTranscodeNonexistentFileReturnsError {
-    AVFoundationTranscoder *transcoder = [[AVFoundationTranscoder alloc] init];
+    GZAVFoundationTranscoder *transcoder = [[GZAVFoundationTranscoder alloc] init];
     NSURL *fakeURL = [NSURL fileURLWithPath:@"/tmp/nonexistent_video_test_file.mp4"];
     XCTestExpectation *expectation = [self expectationWithDescription:@"completion called"];
     [transcoder transcodeVideoAtURL:fakeURL
@@ -316,7 +316,7 @@
 
 @end
 
-#pragma mark - FFmpegTranscoder
+#pragma mark - GZFFmpegTranscoder
 
 @interface FFmpegTranscoderTests : XCTestCase
 @end
@@ -324,7 +324,7 @@
 @implementation FFmpegTranscoderTests
 
 - (void)testInstantiationWithDefaults {
-    FFmpegTranscoder *transcoder = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil
+    GZFFmpegTranscoder *transcoder = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil
                                                                    ffprobePath:nil];
     XCTAssertNotNil(transcoder);
     XCTAssertEqualObjects(transcoder.ffmpegPath, @"ffmpeg");
@@ -332,7 +332,7 @@
 }
 
 - (void)testInstantiationWithCustomPaths {
-    FFmpegTranscoder *transcoder = [[FFmpegTranscoder alloc] initWithFFmpegPath:@"/usr/local/bin/ffmpeg"
+    GZFFmpegTranscoder *transcoder = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:@"/usr/local/bin/ffmpeg"
                                                                    ffprobePath:@"/usr/local/bin/ffprobe"];
     XCTAssertNotNil(transcoder);
     XCTAssertEqualObjects(transcoder.ffmpegPath, @"/usr/local/bin/ffmpeg");
@@ -340,33 +340,33 @@
 }
 
 - (void)testConformsToVideoTranscoderBackend {
-    FFmpegTranscoder *transcoder = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil
+    GZFFmpegTranscoder *transcoder = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil
                                                                    ffprobePath:nil];
     XCTAssertTrue([transcoder conformsToProtocol:@protocol(VideoTranscoderBackend)]);
 }
 
 - (void)testCancelAllExportsDoesNotThrow {
-    FFmpegTranscoder *transcoder = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil
+    GZFFmpegTranscoder *transcoder = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil
                                                                    ffprobePath:nil];
     XCTAssertNoThrow([transcoder cancelAllExports]);
 }
 
 - (void)testFfmpegPathCanBeUpdated {
-    FFmpegTranscoder *transcoder = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil
+    GZFFmpegTranscoder *transcoder = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil
                                                                    ffprobePath:nil];
     transcoder.ffmpegPath = @"/opt/custom/ffmpeg";
     XCTAssertEqualObjects(transcoder.ffmpegPath, @"/opt/custom/ffmpeg");
 }
 
 - (void)testFfprobePathCanBeUpdated {
-    FFmpegTranscoder *transcoder = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil
+    GZFFmpegTranscoder *transcoder = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil
                                                                    ffprobePath:nil];
     transcoder.ffprobePath = @"/opt/custom/ffprobe";
     XCTAssertEqualObjects(transcoder.ffprobePath, @"/opt/custom/ffprobe");
 }
 
 - (void)testProbeDurationReturnsZeroForMissingFile {
-    FFmpegTranscoder *transcoder = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil
+    GZFFmpegTranscoder *transcoder = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil
                                                                    ffprobePath:nil];
     NSURL *fakeURL = [NSURL fileURLWithPath:@"/tmp/nonexistent_video_test.mp4"];
     float duration = [transcoder probeDurationForVideoAtURL:fakeURL];
@@ -374,7 +374,7 @@
 }
 
 - (void)testProbeDimensionsReturnsZeroForMissingFile {
-    FFmpegTranscoder *transcoder = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil
+    GZFFmpegTranscoder *transcoder = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil
                                                                    ffprobePath:nil];
     NSURL *fakeURL = [NSURL fileURLWithPath:@"/tmp/nonexistent_video_test.mp4"];
     CGSize dims = [transcoder probeDimensionsForVideoAtURL:fakeURL];
@@ -382,7 +382,7 @@
 }
 
 - (void)testProbeFramerateReturnsZeroForMissingFile {
-    FFmpegTranscoder *transcoder = [[FFmpegTranscoder alloc] initWithFFmpegPath:nil
+    GZFFmpegTranscoder *transcoder = [[GZFFmpegTranscoder alloc] initWithFFmpegPath:nil
                                                                    ffprobePath:nil];
     NSURL *fakeURL = [NSURL fileURLWithPath:@"/tmp/nonexistent_video_test.mp4"];
     float fps = [transcoder probeFramerateForVideoAtURL:fakeURL];
@@ -391,7 +391,7 @@
 
 @end
 
-#pragma mark - JelczConfiguration
+#pragma mark - GZJelczConfiguration
 
 @interface JelczConfigurationTests : XCTestCase
 @end
@@ -399,168 +399,168 @@
 @implementation JelczConfigurationTests
 
 - (void)testInstantiation {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     XCTAssertNotNil(config);
 }
 
 - (void)testDefaultPort {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.port = 2586;
     XCTAssertEqual(config.port, 2586u);
 }
 
 - (void)testPortCanBeSet {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.port = 8080;
     XCTAssertEqual(config.port, 8080u);
 }
 
 - (void)testDataDirectory {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.dataDirectory = @"/var/data";
     XCTAssertEqualObjects(config.dataDirectory, @"/var/data");
 }
 
 - (void)testBlobDirectory {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.blobDirectory = @"/var/blobs";
     XCTAssertEqualObjects(config.blobDirectory, @"/var/blobs");
 }
 
 - (void)testPDSURL {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.pdsURL = @"http://localhost:2583";
     XCTAssertEqualObjects(config.pdsURL, @"http://localhost:2583");
 }
 
 - (void)testPLCURL {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.plcURL = @"http://localhost:2582";
     XCTAssertEqualObjects(config.plcURL, @"http://localhost:2582");
 }
 
 - (void)testPLCURLCanBeNull {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.plcURL = nil;
     XCTAssertNil(config.plcURL);
 }
 
 - (void)testServiceDID {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.serviceDID = @"did:web:example.com";
     XCTAssertEqualObjects(config.serviceDID, @"did:web:example.com");
 }
 
 - (void)testMaxConcurrentJobs {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.maxConcurrentJobs = 4;
     XCTAssertEqual(config.maxConcurrentJobs, 4);
 }
 
 - (void)testPollInterval {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.pollInterval = 2.5;
     XCTAssertEqual(config.pollInterval, 2.5);
 }
 
 - (void)testMaxUploadBytes {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.maxUploadBytes = 100 * 1024 * 1024;
     XCTAssertEqual(config.maxUploadBytes, 100u * 1024u * 1024u);
 }
 
 - (void)testMaxOutputBytes {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.maxOutputBytes = 50 * 1024 * 1024;
     XCTAssertEqual(config.maxOutputBytes, 50u * 1024u * 1024u);
 }
 
 - (void)testMaxDurationSeconds {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.maxDurationSeconds = 300;
     XCTAssertEqual(config.maxDurationSeconds, 300);
 }
 
 - (void)testHLSOutputDirectory {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.hlsOutputDirectory = @"/tmp/hls";
     XCTAssertEqualObjects(config.hlsOutputDirectory, @"/tmp/hls");
 }
 
 - (void)testHLSOutputDirectoryCanBeNull {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.hlsOutputDirectory = nil;
     XCTAssertNil(config.hlsOutputDirectory);
 }
 
 - (void)testHLSBaseUrl {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.hlsBaseUrl = @"http://cdn.example.com";
     XCTAssertEqualObjects(config.hlsBaseUrl, @"http://cdn.example.com");
 }
 
 - (void)testHLSBaseUrlCanBeNull {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.hlsBaseUrl = nil;
     XCTAssertNil(config.hlsBaseUrl);
 }
 
 - (void)testHLSInclude1080p {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.hlsInclude1080p = YES;
     XCTAssertTrue(config.hlsInclude1080p);
 }
 
 - (void)testS3Bucket {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.s3Bucket = @"my-video-bucket";
     XCTAssertEqualObjects(config.s3Bucket, @"my-video-bucket");
 }
 
 - (void)testS3BucketCanBeNull {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.s3Bucket = nil;
     XCTAssertNil(config.s3Bucket);
 }
 
 - (void)testS3Region {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.s3Region = @"eu-west-1";
     XCTAssertEqualObjects(config.s3Region, @"eu-west-1");
 }
 
 - (void)testS3Endpoint {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.s3Endpoint = @"http://localhost:9000";
     XCTAssertEqualObjects(config.s3Endpoint, @"http://localhost:9000");
 }
 
 - (void)testS3EndpointCanBeNull {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.s3Endpoint = nil;
     XCTAssertNil(config.s3Endpoint);
 }
 
 - (void)testS3AccessKey {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.s3AccessKey = @"AKIAIOSFODNN7EXAMPLE";
     XCTAssertEqualObjects(config.s3AccessKey, @"AKIAIOSFODNN7EXAMPLE");
 }
 
 - (void)testS3AccessKeyCanBeNull {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.s3AccessKey = nil;
     XCTAssertNil(config.s3AccessKey);
 }
 
 - (void)testS3SecretKey {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.s3SecretKey = @"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
     XCTAssertEqualObjects(config.s3SecretKey, @"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
 }
 
 - (void)testS3SecretKeyCanBeNull {
-    JelczConfiguration *config = [[JelczConfiguration alloc] init];
+    GZJelczConfiguration *config = [[GZJelczConfiguration alloc] init];
     config.s3SecretKey = nil;
     XCTAssertNil(config.s3SecretKey);
 }
@@ -568,12 +568,12 @@
 #pragma mark - configurationFromEnvironment
 
 - (void)testConfigurationFromEnvironmentReturnsInstance {
-    JelczConfiguration *config = [JelczConfiguration configurationFromEnvironment];
+    GZJelczConfiguration *config = [GZJelczConfiguration configurationFromEnvironment];
     XCTAssertNotNil(config);
 }
 
 - (void)testConfigurationFromEnvironmentHasDefaults {
-    JelczConfiguration *config = [JelczConfiguration configurationFromEnvironment];
+    GZJelczConfiguration *config = [GZJelczConfiguration configurationFromEnvironment];
     // These should have defaults when env vars are unset
     XCTAssertGreaterThan(config.port, 0u);
     XCTAssertNotNil(config.dataDirectory);
@@ -588,14 +588,14 @@
 }
 
 - (void)testConfigurationFromEnvironmentS3RegionDefault {
-    JelczConfiguration *config = [JelczConfiguration configurationFromEnvironment];
+    GZJelczConfiguration *config = [GZJelczConfiguration configurationFromEnvironment];
     XCTAssertNotNil(config.s3Region);
     XCTAssertEqualObjects(config.s3Region, @"us-east-1");
 }
 
 @end
 
-#pragma mark - VideoRemoteBlobUploader
+#pragma mark - GZVideoRemoteBlobUploader
 
 @interface VideoRemoteBlobUploaderTests : XCTestCase
 @end
@@ -603,29 +603,29 @@
 @implementation VideoRemoteBlobUploaderTests
 
 - (void)testInstantiation {
-    VideoRemoteBlobUploader *uploader = [[VideoRemoteBlobUploader alloc] initWithPDSURL:@"http://localhost:2583"];
+    GZVideoRemoteBlobUploader *uploader = [[GZVideoRemoteBlobUploader alloc] initWithPDSURL:@"http://localhost:2583"];
     XCTAssertNotNil(uploader);
 }
 
 - (void)testConformsToVideoBlobUploader {
-    VideoRemoteBlobUploader *uploader = [[VideoRemoteBlobUploader alloc] initWithPDSURL:@"http://localhost:2583"];
+    GZVideoRemoteBlobUploader *uploader = [[GZVideoRemoteBlobUploader alloc] initWithPDSURL:@"http://localhost:2583"];
     XCTAssertTrue([uploader conformsToProtocol:@protocol(VideoBlobUploader)]);
 }
 
 - (void)testPDSURLIsStored {
-    VideoRemoteBlobUploader *uploader = [[VideoRemoteBlobUploader alloc] initWithPDSURL:@"http://localhost:2583"];
+    GZVideoRemoteBlobUploader *uploader = [[GZVideoRemoteBlobUploader alloc] initWithPDSURL:@"http://localhost:2583"];
     XCTAssertEqualObjects(uploader.pdsURL, @"http://localhost:2583");
 }
 
 - (void)testPDSURLIsCopied {
     NSMutableString *url = [NSMutableString stringWithString:@"http://example.com"];
-    VideoRemoteBlobUploader *uploader = [[VideoRemoteBlobUploader alloc] initWithPDSURL:url];
+    GZVideoRemoteBlobUploader *uploader = [[GZVideoRemoteBlobUploader alloc] initWithPDSURL:url];
     [url appendString:@":2583"];
     XCTAssertEqualObjects(uploader.pdsURL, @"http://example.com");
 }
 
 - (void)testUploadBlobReturnsErrorForUnreachableServer {
-    VideoRemoteBlobUploader *uploader = [[VideoRemoteBlobUploader alloc] initWithPDSURL:@"http://127.0.0.1:1"];
+    GZVideoRemoteBlobUploader *uploader = [[GZVideoRemoteBlobUploader alloc] initWithPDSURL:@"http://127.0.0.1:1"];
     NSData *blobData = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error = nil;
     NSDictionary *result = [uploader uploadBlob:blobData
@@ -638,7 +638,7 @@
 
 @end
 
-#pragma mark - VideoLocalBlobUploader
+#pragma mark - GZVideoLocalBlobUploader
 
 @interface VideoLocalBlobUploaderTests : XCTestCase
 @end
@@ -646,18 +646,18 @@
 @implementation VideoLocalBlobUploaderTests
 
 - (void)testInstantiation {
-    // VideoLocalBlobUploader requires a PDSBlobProvider, but we can verify
+    // GZVideoLocalBlobUploader requires a PDSBlobProvider, but we can verify
     // the class exists and the initializer signature compiles.
-    XCTAssertNotNil([VideoLocalBlobUploader class]);
+    XCTAssertNotNil([GZVideoLocalBlobUploader class]);
 }
 
 - (void)testConformsToVideoBlobUploader {
-    XCTAssertTrue([VideoLocalBlobUploader conformsToProtocol:@protocol(VideoBlobUploader)]);
+    XCTAssertTrue([GZVideoLocalBlobUploader conformsToProtocol:@protocol(VideoBlobUploader)]);
 }
 
 @end
 
-#pragma mark - VideoJWTAuthProvider
+#pragma mark - GZVideoJWTAuthProvider
 
 @interface VideoJWTAuthProviderTests : XCTestCase
 @end
@@ -665,58 +665,58 @@
 @implementation VideoJWTAuthProviderTests
 
 - (void)testInstantiationWithJWK {
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
                                                                              signingKeyJWK:nil];
     XCTAssertNotNil(provider);
 }
 
 - (void)testInstantiationWithPDSURL {
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
                                                                                      pdsURL:@"http://localhost:2583"
                                                                                      plcURL:nil];
     XCTAssertNotNil(provider);
 }
 
 - (void)testConformsToVideoAuthProvider {
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
                                                                              signingKeyJWK:nil];
     XCTAssertTrue([provider conformsToProtocol:@protocol(VideoAuthProvider)]);
 }
 
 - (void)testAudienceIsStored {
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
                                                                              signingKeyJWK:nil];
     XCTAssertEqualObjects(provider.audience, @"did:web:video.example.com");
 }
 
 - (void)testSigningKeyJWKIsStored {
     NSDictionary *jwk = @{@"kty": @"OKP", @"crv": @"Ed25519"};
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
                                                                              signingKeyJWK:jwk];
     XCTAssertEqualObjects(provider.signingKeyJWK, jwk);
 }
 
 - (void)testSigningKeyJWKDefaultsToNil {
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
                                                                              signingKeyJWK:nil];
     XCTAssertNil(provider.signingKeyJWK);
 }
 
 - (void)testDIDResolverDefaultsToNil {
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
                                                                              signingKeyJWK:nil];
     XCTAssertNil(provider.didResolver);
 }
 
 - (void)testDIDResolverCreatedWithPDSURL {
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
                                                                                      pdsURL:@"http://localhost:2583"
                                                                                      plcURL:@"http://localhost:2582"];
     XCTAssertNotNil(provider.didResolver);
 }
 
 - (void)testDIDResolverUsesDefaultPLCWhenNil {
-    VideoJWTAuthProvider *provider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
+    GZVideoJWTAuthProvider *provider = [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:video.example.com"
                                                                                      pdsURL:@"http://localhost:2583"
                                                                                      plcURL:nil];
     XCTAssertNotNil(provider.didResolver);
@@ -724,7 +724,7 @@
 
 @end
 
-#pragma mark - VideoPDSAuthProvider
+#pragma mark - ATProtoVideoPDSAuthProvider
 
 @interface VideoPDSAuthProviderTests : XCTestCase
 @end
@@ -732,13 +732,13 @@
 @implementation VideoPDSAuthProviderTests
 
 - (void)testConformsToVideoAuthProvider {
-    XCTAssertTrue([VideoPDSAuthProvider conformsToProtocol:@protocol(VideoAuthProvider)]);
+    XCTAssertTrue([ATProtoVideoPDSAuthProvider conformsToProtocol:@protocol(VideoAuthProvider)]);
 }
 
 - (void)testInstantiationRequiresJWTMinter {
     // We can't create a ATProtoJWTMinter without dependencies, but we can verify the
     // class compiles and the protocol is adopted.
-    XCTAssertNotNil([VideoPDSAuthProvider class]);
+    XCTAssertNotNil([ATProtoVideoPDSAuthProvider class]);
 }
 
 @end
@@ -935,7 +935,7 @@
 
 @end
 
-#pragma mark - VideoHLSResult
+#pragma mark - GZVideoHLSResult
 
 @interface VideoHLSResultTests : XCTestCase
 @end
@@ -943,12 +943,12 @@
 @implementation VideoHLSResultTests
 
 - (void)testInstantiation {
-    VideoHLSResult *result = [[VideoHLSResult alloc] init];
+    GZVideoHLSResult *result = [[GZVideoHLSResult alloc] init];
     XCTAssertNotNil(result);
 }
 
 - (void)testPropertiesDefaultToNil {
-    VideoHLSResult *result = [[VideoHLSResult alloc] init];
+    GZVideoHLSResult *result = [[GZVideoHLSResult alloc] init];
     XCTAssertNil(result.masterPlaylistPath);
     XCTAssertNil(result.masterPlaylistRelativePath);
     XCTAssertNil(result.variants);
@@ -956,7 +956,7 @@
 }
 
 - (void)testAllPropertiesSettable {
-    VideoHLSResult *result = [[VideoHLSResult alloc] init];
+    GZVideoHLSResult *result = [[GZVideoHLSResult alloc] init];
     result.masterPlaylistPath = @"/hls/playlist.m3u8";
     result.masterPlaylistRelativePath = @"/watch/playlist.m3u8";
     result.variants = @[@{@"resolution": @"640x360", @"bandwidth": @"688540"}];

@@ -10,7 +10,7 @@
 
 - (void)testSessionInitialization {
     NSString *sid = [[NSUUID UUID] UUIDString];
-    OAuthSession *session = [OAuthSession sessionWithId:sid];
+    ATProtoOAuthSession *session = [ATProtoOAuthSession sessionWithId:sid];
     
     XCTAssertNotNil(session);
     XCTAssertEqualObjects(session.sessionId, sid);
@@ -19,7 +19,7 @@
 }
 
 - (void)testPARRequestValidationSuccess {
-    OAuthPARRequest *req = [[OAuthPARRequest alloc] init];
+    ATProtoOAuthPARRequest *req = [[ATProtoOAuthPARRequest alloc] init];
     req.clientId = @"client-id";
     req.responseType = @"code";
     req.codeChallenge = @"challenge";
@@ -34,7 +34,7 @@
 }
 
 - (void)testPARRequestValidationFailures {
-    OAuthPARRequest *req = [[OAuthPARRequest alloc] init];
+    ATProtoOAuthPARRequest *req = [[ATProtoOAuthPARRequest alloc] init];
     NSError *error = nil;
     
     // Missing client_id
@@ -78,7 +78,7 @@
 }
 
 - (void)testPARRequestValidationAcceptsStandardPermissionScopes {
-    OAuthPARRequest *req = [[OAuthPARRequest alloc] init];
+    ATProtoOAuthPARRequest *req = [[ATProtoOAuthPARRequest alloc] init];
     req.clientId = @"client-id";
     req.responseType = @"code";
     req.codeChallenge = @"challenge";
@@ -93,7 +93,7 @@
 }
 
 - (void)testPARRequestValidationRejectsUnknownOrMalformedPermissionScopes {
-    OAuthPARRequest *req = [[OAuthPARRequest alloc] init];
+    ATProtoOAuthPARRequest *req = [[ATProtoOAuthPARRequest alloc] init];
     req.clientId = @"client-id";
     req.responseType = @"code";
     req.codeChallenge = @"challenge";
@@ -110,7 +110,7 @@
 }
 
 - (void)testTokenRequestValidationAuthorizationCode {
-    OAuthTokenRequest *req = [[OAuthTokenRequest alloc] init];
+    ATProtoOAuthTokenRequest *req = [[ATProtoOAuthTokenRequest alloc] init];
     req.grantType = @"authorization_code";
     req.code = @"auth-code";
     req.redirectUri = @"https://cb.com";
@@ -122,13 +122,13 @@
 }
 
 - (void)testTokenRequestValidationRefreshToken {
-    OAuthTokenRequest *req = [[OAuthTokenRequest alloc] init];
+    ATProtoOAuthTokenRequest *req = [[ATProtoOAuthTokenRequest alloc] init];
     req.grantType = @"refresh_token";
     req.refreshToken = @"refresh-token";
     req.dpopJwt = @"dpop-proof";
     
     // Assuming refresh token validation doesn't require code/redirectUri
-    // Let's verify implementation details in OAuthSession.m:106
+    // Let's verify implementation details in ATProtoOAuthSession.m:106
     // It primarily checks grantType.
     // If 'authorization_code', checks code & redirectUri.
     // DPoP is checked for ALL types.
@@ -138,7 +138,7 @@
 }
 
 - (void)testTokenRequestMissingDPoP {
-    OAuthTokenRequest *req = [[OAuthTokenRequest alloc] init];
+    ATProtoOAuthTokenRequest *req = [[ATProtoOAuthTokenRequest alloc] init];
     req.grantType = @"authorization_code";
     req.code = @"code";
     req.redirectUri = @"uri";

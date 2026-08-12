@@ -12,7 +12,7 @@
 
 @interface BlobXrpcTests : XCTestCase
 @property (nonatomic, strong) PDSController *controller;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, strong) NSURL *tempURL;
 @property (nonatomic, copy) NSString *did;
 @end
@@ -29,8 +29,8 @@
     
     self.controller = [[PDSController alloc] initWithDirectory:self.tempURL.path serviceMaxSize:10 userDatabaseSize:10];
     
-    self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher controller:self.controller];
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher controller:self.controller];
     
     NSError *error = nil;
     NSDictionary *account = [self.controller createAccountForEmail:@"blobtest@example.com" password:@"password" handle:@"blobtest.bsky.social" did:nil error:&error];

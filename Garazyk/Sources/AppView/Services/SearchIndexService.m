@@ -6,11 +6,11 @@
 
 NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
 
-@interface SearchIndexService ()
+@interface PDSSearchIndexService ()
 @property (nonatomic, strong, readwrite) id<PDSQueryDatabase> database;
 @end
 
-@implementation SearchIndexService
+@implementation PDSSearchIndexService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     if (self = [super init]) {

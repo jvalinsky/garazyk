@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PLCAuditor.h
+ @file ATProtoPLCAuditor.h
 
  @abstract PLC operation chain verification APIs.
  */
@@ -12,14 +12,14 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class PLCAuditor
+ @class ATProtoPLCAuditor
 
  @abstract Validates PLC operation history and proposed PLC operations.
 
  @discussion Verifies signature chains, `prev` links, tombstone placement,
  and rotation-key transitions against data retrieved from a PLCStore.
  */
-@interface PLCAuditor : NSObject
+@interface ATProtoPLCAuditor : NSObject
 
 /*!
  @method initWithStore:
@@ -55,7 +55,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Performs the verifyOperation operation.
  */
-- (BOOL)verifyOperation:(PLCOperation *)op
+- (BOOL)verifyOperation:(ATProtoPLCOperation *)op
 	           proposedDate:(NSDate *)proposedDate
 	          nullifiedCIDs:(NSArray<NSString *> * _Nullable __autoreleasing * _Nullable)nullified
 	                  error:(NSError **)error;
@@ -69,7 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On failure, set to the verification error.
  @result YES when valid, otherwise NO.
  */
-- (BOOL)verifyOperation:(PLCOperation *)op error:(NSError **)error;
+- (BOOL)verifyOperation:(ATProtoPLCOperation *)op error:(NSError **)error;
 
 /*!
  @method normalizedDataForOperation:error:
@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
     when passed to collection literals. Call before any derived state is read
     from remote operation data.
  */
-+ (nullable NSDictionary *)normalizedDataForOperation:(PLCOperation *)op error:(NSError **)error;
++ (nullable NSDictionary *)normalizedDataForOperation:(ATProtoPLCOperation *)op error:(NSError **)error;
 
 /*!
  @method verifyChain:did:error:
@@ -104,7 +104,7 @@ NS_ASSUME_NONNULL_BEGIN
     Unlike verifyDID:error:, this method accepts a bare array of operations
     directly rather than reading from a PLCStore.
  */
-+ (BOOL)verifyChain:(NSArray<PLCOperation *> *)operations did:(NSString *)did error:(NSError **)error;
++ (BOOL)verifyChain:(NSArray<ATProtoPLCOperation *> *)operations did:(NSString *)did error:(NSError **)error;
 
 /*!
  @method hashForOperationData:

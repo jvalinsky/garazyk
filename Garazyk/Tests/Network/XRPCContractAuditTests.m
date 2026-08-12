@@ -70,7 +70,7 @@ static ATProtoHttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
 @interface XRPCContractAuditTests : XCTestCase
 @property (nonatomic, strong) NSString *tempDir;
 @property (nonatomic, strong) PDSApplication *application;
-@property (nonatomic, strong) XrpcDispatcher *dispatcher;
+@property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @end
 
 @implementation XRPCContractAuditTests
@@ -84,8 +84,8 @@ static ATProtoHttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
                                                     error:nil];
     self.application = [[PDSApplication alloc] initWithDataDirectory:self.tempDir];
     // Use a fresh dispatcher (not the shared singleton) so tests are independent.
-    self.dispatcher = [[XrpcDispatcher alloc] init];
-    [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher
+    self.dispatcher = [[ATProtoXrpcDispatcher alloc] init];
+    [ATProtoXrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher
                                           application:self.application];
 }
 
@@ -102,7 +102,7 @@ static ATProtoHttpRequest *xrpcAuditRequest(NSString *method, NSString *nsid) {
 - (void)testQueryMethodsRespondToGETNotPOST {
     // ATProto Lexicon: query type → GET only. Any POST to a query NSID must return 405.
     // NOTE: This test is expected to FAIL until HTTP method enforcement is added to
-    // XrpcDispatcher.handleRequest:response: or individual handler blocks (refactor P0#1).
+    // ATProtoXrpcDispatcher.handleRequest:response: or individual handler blocks (refactor P0#1).
     NSDictionary *lexicon = XRPCKnownLexiconTypes();
     NSUInteger failCount = 0;
     for (NSString *nsid in lexicon) {

@@ -4,14 +4,14 @@
 #import "Auth/Crypto/CryptoUtils.h"
 #import <Security/Security.h>
 
-@interface TOTPGenerator ()
+@interface ATProtoTOTPGenerator ()
 @property (nonatomic, strong) NSData *secret;
 @property (nonatomic, assign) NSUInteger digits;
 @property (nonatomic, assign) NSTimeInterval period;
 @property (nonatomic, copy) NSString *algorithm;
 @end
 
-@implementation TOTPGenerator
+@implementation ATProtoTOTPGenerator
 
 - (instancetype)initWithSecret:(NSData *)secret
                         digits:(NSUInteger)digits

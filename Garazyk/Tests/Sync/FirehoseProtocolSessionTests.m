@@ -7,14 +7,14 @@
 #import "Core/CID.h"
 
 @interface FirehoseProtocolSessionTests : XCTestCase
-@property (nonatomic, strong) EventFormatter *formatter;
+@property (nonatomic, strong) ATProtoEventFormatter *formatter;
 @end
 
 @implementation FirehoseProtocolSessionTests
 
 - (void)setUp {
     [super setUp];
-    self.formatter = [[EventFormatter alloc] init];
+    self.formatter = [[ATProtoEventFormatter alloc] init];
 }
 
 - (void)tearDown {
@@ -25,9 +25,9 @@
 #pragma mark - Seq in CBOR payload (identity/account/sync — no ATProtoCID decode issues)
 
 - (void)testEncodeIdentityEventSetsSeqInPayload {
-    FirehoseProtocolSession *session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:20];
+    ATProtoFirehoseProtocolSession *session = [[ATProtoFirehoseProtocolSession alloc] initWithSequenceNumber:20];
 
-    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
     event.did = @"did:plc:identityseq";
     event.time = @"2024-01-01T00:00:00Z";
 
@@ -48,9 +48,9 @@
 }
 
 - (void)testEncodeAccountEventSetsSeqInPayload {
-    FirehoseProtocolSession *session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:50];
+    ATProtoFirehoseProtocolSession *session = [[ATProtoFirehoseProtocolSession alloc] initWithSequenceNumber:50];
 
-    FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+    ATProtoFirehoseAccountEvent *event = [[ATProtoFirehoseAccountEvent alloc] init];
     event.did = @"did:plc:accountseq";
     event.active = YES;
     event.time = @"2024-01-01T00:00:00Z";
@@ -72,9 +72,9 @@
 }
 
 - (void)testEncodeSyncEventSetsSeqInPayload {
-    FirehoseProtocolSession *session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:100];
+    ATProtoFirehoseProtocolSession *session = [[ATProtoFirehoseProtocolSession alloc] initWithSequenceNumber:100];
 
-    FirehoseSyncEvent *event = [[FirehoseSyncEvent alloc] init];
+    ATProtoFirehoseSyncEvent *event = [[ATProtoFirehoseSyncEvent alloc] init];
     event.did = @"did:plc:syncseq";
     event.rev = @"3ksynctest";
     event.time = @"2024-01-01T00:00:00Z";
@@ -99,9 +99,9 @@
 #pragma mark - Commit event seq (check session.sequenceNumber, not CBOR decode)
 
 - (void)testEncodeCommitEventIncrementsSequence {
-    FirehoseProtocolSession *session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:10];
+    ATProtoFirehoseProtocolSession *session = [[ATProtoFirehoseProtocolSession alloc] initWithSequenceNumber:10];
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:testseq";
     event.commit = [ATProtoCID sha256:[@"seq-test" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"3kseqtest";
@@ -121,17 +121,17 @@
 #pragma mark - Monotonic sequence
 
 - (void)testSequenceMonotonicallyIncreases {
-    FirehoseProtocolSession *session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:0];
+    ATProtoFirehoseProtocolSession *session = [[ATProtoFirehoseProtocolSession alloc] initWithSequenceNumber:0];
 
     // Encode an identity event (seq should be 1)
-    FirehoseIdentityEvent *identity = [[FirehoseIdentityEvent alloc] init];
+    ATProtoFirehoseIdentityEvent *identity = [[ATProtoFirehoseIdentityEvent alloc] init];
     identity.did = @"did:plc:mono1";
     identity.time = @"2024-01-01T00:00:00Z";
     NSData *data1 = [session encodeIdentityEvent:identity];
     XCTAssertNotNil(data1);
 
     // Encode an account event (seq should be 2)
-    FirehoseAccountEvent *account = [[FirehoseAccountEvent alloc] init];
+    ATProtoFirehoseAccountEvent *account = [[ATProtoFirehoseAccountEvent alloc] init];
     account.did = @"did:plc:mono2";
     account.active = YES;
     account.time = @"2024-01-01T00:00:00Z";
@@ -139,7 +139,7 @@
     XCTAssertNotNil(data2);
 
     // Encode a sync event (seq should be 3)
-    FirehoseSyncEvent *sync = [[FirehoseSyncEvent alloc] init];
+    ATProtoFirehoseSyncEvent *sync = [[ATProtoFirehoseSyncEvent alloc] init];
     sync.did = @"did:plc:mono3";
     sync.rev = @"3kmono3";
     sync.time = @"2024-01-01T00:00:00Z";
@@ -168,10 +168,10 @@
 #pragma mark - Info events don't consume seq
 
 - (void)testEncodeInfoEventDoesNotIncrementSequence {
-    FirehoseProtocolSession *session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:5];
+    ATProtoFirehoseProtocolSession *session = [[ATProtoFirehoseProtocolSession alloc] initWithSequenceNumber:5];
 
     // Encode an info event
-    FirehoseInfoEvent *info = [[FirehoseInfoEvent alloc] init];
+    ATProtoFirehoseInfoEvent *info = [[ATProtoFirehoseInfoEvent alloc] init];
     info.kind = @"OutdatedCursor";
     info.message = @"test";
 
@@ -183,7 +183,7 @@
                    @"Info events should not consume a sequence number");
 
     // Now encode an identity event — seq should be 6 (5 + 1)
-    FirehoseIdentityEvent *identity = [[FirehoseIdentityEvent alloc] init];
+    ATProtoFirehoseIdentityEvent *identity = [[ATProtoFirehoseIdentityEvent alloc] init];
     identity.did = @"did:plc:afterinfo";
     identity.time = @"2024-01-01T00:00:00Z";
 
@@ -205,7 +205,7 @@
 #pragma mark - nextSequenceNumber
 
 - (void)testNextSequenceNumberIncrements {
-    FirehoseProtocolSession *session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:0];
+    ATProtoFirehoseProtocolSession *session = [[ATProtoFirehoseProtocolSession alloc] initWithSequenceNumber:0];
 
     NSUInteger seq1 = [session nextSequenceNumber];
     NSUInteger seq2 = [session nextSequenceNumber];

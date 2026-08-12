@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayUpstreamManager.h
+ @file ATProtoRelayUpstreamManager.h
 
  @abstract Manages connections to upstream PDS instances for the relay.
 
  @discussion
-    RelayUpstreamManager handles:
+    ATProtoRelayUpstreamManager handles:
     - Connecting to multiple PDS instances
     - Tracking upstream health and connectivity
     - Automatic reconnection with exponential backoff
@@ -25,8 +25,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class RelayUpstreamManager;
-@class FirehoseRawEvent;
+@class ATProtoRelayUpstreamManager;
+@class ATProtoFirehoseRawEvent;
 
 /**
  * @abstract Host connectivity status reported by the relay host status endpoint.
@@ -67,14 +67,14 @@ typedef NS_ENUM(NSInteger, RelayCrawlState) {
  * @param event The decoded upstream event payload.
  * @param url The upstream URL that emitted the event.
  */
-- (void)upstreamManager:(RelayUpstreamManager *)manager didReceiveEvent:(id)event fromUpstream:(NSString *)url;
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager didReceiveEvent:(id)event fromUpstream:(NSString *)url;
 
 /**
  * @abstract Called after a connection to an upstream succeeds.
  * @param manager The upstream manager that established the connection.
  * @param url The upstream URL that connected.
  */
-- (void)upstreamManager:(RelayUpstreamManager *)manager didConnectToUpstream:(NSString *)url;
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager didConnectToUpstream:(NSString *)url;
 
 /**
  * @abstract Called after an upstream disconnects.
@@ -82,7 +82,7 @@ typedef NS_ENUM(NSInteger, RelayCrawlState) {
  * @param url The upstream URL that disconnected.
  * @param error The disconnect error, or nil for an intentional disconnect.
  */
-- (void)upstreamManager:(RelayUpstreamManager *)manager didDisconnectFromUpstream:(NSString *)url error:(nullable NSError *)error;
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager didDisconnectFromUpstream:(NSString *)url error:(nullable NSError *)error;
 
 /**
  * @abstract Called when an upstream reports a cursor.
@@ -90,13 +90,13 @@ typedef NS_ENUM(NSInteger, RelayCrawlState) {
  * @param cursor The latest upstream sequence cursor.
  * @param url The upstream URL that reported the cursor.
  */
-- (void)upstreamManager:(RelayUpstreamManager *)manager didReceiveCursor:(int64_t)cursor fromUpstream:(NSString *)url;
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager didReceiveCursor:(int64_t)cursor fromUpstream:(NSString *)url;
 @end
 
 /**
  * @abstract Manages relay subscriptions to upstream PDS instances.
  */
-@interface RelayUpstreamManager : NSObject
+@interface ATProtoRelayUpstreamManager : NSObject
 
 /** Delegate notified about upstream events and connection state. */
 @property (nonatomic, weak, nullable) id<RelayUpstreamManagerDelegate> delegate;

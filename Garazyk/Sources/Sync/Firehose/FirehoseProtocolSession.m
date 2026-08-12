@@ -3,26 +3,26 @@
 #import "Sync/Firehose/FirehoseProtocolSession.h"
 #import "Debug/GZLogger.h"
 
-@interface FirehoseProtocolSession () {
+@interface ATProtoFirehoseProtocolSession () {
     dispatch_queue_t _sequenceQueue;
 }
-@property(nonatomic, strong, readwrite) EventFormatter *eventFormatter;
+@property(nonatomic, strong, readwrite) ATProtoEventFormatter *eventFormatter;
 @property(nonatomic, assign, readwrite) NSUInteger sequenceNumber;
 @end
 
-@implementation FirehoseProtocolSession
+@implementation ATProtoFirehoseProtocolSession
 
 - (instancetype)initWithSequenceNumber:(NSUInteger)sequenceNumber {
   self = [super init];
   if (self) {
     _sequenceNumber = sequenceNumber;
-    _eventFormatter = [[EventFormatter alloc] init];
+    _eventFormatter = [[ATProtoEventFormatter alloc] init];
     _sequenceQueue = dispatch_queue_create("com.atproto.firehose.sequence", DISPATCH_QUEUE_SERIAL);
   }
   return self;
 }
 
-- (NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event {
+- (NSData *)encodeCommitEvent:(ATProtoFirehoseCommitEvent *)event {
    __block NSUInteger seq;
    dispatch_sync(_sequenceQueue, ^{
      _sequenceNumber++;
@@ -37,7 +37,7 @@
   return data;
 }
 
-- (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event {
+- (NSData *)encodeIdentityEvent:(ATProtoFirehoseIdentityEvent *)event {
    __block NSUInteger seq;
    dispatch_sync(_sequenceQueue, ^{
      _sequenceNumber++;
@@ -52,7 +52,7 @@
   return data;
 }
 
-- (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event {
+- (NSData *)encodeAccountEvent:(ATProtoFirehoseAccountEvent *)event {
    __block NSUInteger seq;
    dispatch_sync(_sequenceQueue, ^{
      _sequenceNumber++;
@@ -67,7 +67,7 @@
   return data;
 }
 
-- (NSData *)encodeSyncEvent:(FirehoseSyncEvent *)event {
+- (NSData *)encodeSyncEvent:(ATProtoFirehoseSyncEvent *)event {
    __block NSUInteger seq;
    dispatch_sync(_sequenceQueue, ^{
      _sequenceNumber++;
@@ -82,7 +82,7 @@
   return data;
 }
 
-- (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event {
+- (NSData *)encodeInfoEvent:(ATProtoFirehoseInfoEvent *)event {
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeInfoEvent:event error:&error];
   if (!data) {
@@ -91,7 +91,7 @@
   return data;
 }
 
-- (NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event {
+- (NSData *)encodeErrorEvent:(ATProtoFirehoseErrorEvent *)event {
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeErrorEvent:event error:&error];
   if (!data) {

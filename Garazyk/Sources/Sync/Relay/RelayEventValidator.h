@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayEventValidator.h
+ @file ATProtoRelayEventValidator.h
 
  @abstract Validates firehose events (ATProtoMST proofs, signatures) for ATProto Relay
 
  @discussion
-    RelayEventValidator performs:
+    ATProtoRelayEventValidator performs:
     - ATProtoMST (Merkle Search Tree) proof validation for commits
     - Signature verification for repo operations
     - Event schema validation
@@ -44,7 +44,7 @@ typedef NS_ENUM(NSInteger, RelayValidationResult) {
 /**
  * @abstract Captures the result and context for validating one relay event.
  */
-@interface RelayValidationOutcome : NSObject
+@interface ATProtoRelayValidationOutcome : NSObject
 
 /** Validation result classification. */
 @property (nonatomic, assign) RelayValidationResult result;
@@ -52,7 +52,7 @@ typedef NS_ENUM(NSInteger, RelayValidationResult) {
 @property (nonatomic, copy, nullable) NSString *errorMessage;
 /** Repository DID associated with the event, when known. */
 @property (nonatomic, copy, nullable) NSString *repoDID;
-/** Firehose sequence associated with the event, when known. */
+/** ATProtoFirehose sequence associated with the event, when known. */
 @property (nonatomic, assign) int64_t sequence;
 
 /**
@@ -91,13 +91,13 @@ typedef NS_ENUM(NSInteger, RelayValidationResult) {
  * @param validator The validator that produced the outcome.
  * @param outcome The validation outcome.
  */
-- (void)eventValidator:(id)validator didValidateEvent:(RelayValidationOutcome *)outcome;
+- (void)eventValidator:(id)validator didValidateEvent:(ATProtoRelayValidationOutcome *)outcome;
 @end
 
 /**
  * @abstract Validates relay events before downstream forwarding.
  */
-@interface RelayEventValidator : NSObject
+@interface ATProtoRelayEventValidator : NSObject
 
 /** Delegate notified when validation completes. */
 @property (nonatomic, weak, nullable) id<RelayEventValidatorDelegate> delegate;
@@ -118,27 +118,27 @@ typedef NS_ENUM(NSInteger, RelayValidationResult) {
  * @param event Event payload to validate.
  * @return Validation outcome for the event.
  */
-- (RelayValidationOutcome *)validateCommitEvent:(id)event;
+- (ATProtoRelayValidationOutcome *)validateCommitEvent:(id)event;
 
 /**
  * @abstract Validates an identity event.
  * @param event Event payload to validate.
  * @return Validation outcome for the event.
  */
-- (RelayValidationOutcome *)validateIdentityEvent:(id)event;
+- (ATProtoRelayValidationOutcome *)validateIdentityEvent:(id)event;
 
 /**
  * @abstract Validates an account status event.
  * @param event Event payload to validate.
  * @return Validation outcome for the event.
  */
-- (RelayValidationOutcome *)validateAccountEvent:(id)event;
+- (ATProtoRelayValidationOutcome *)validateAccountEvent:(id)event;
 
 /**
  * @abstract Returns whether the relay should forward an event with the supplied outcome.
  * @param outcome Validation outcome to evaluate.
  */
-- (BOOL)shouldForwardEvent:(RelayValidationOutcome *)outcome;
+- (BOOL)shouldForwardEvent:(ATProtoRelayValidationOutcome *)outcome;
 
 /**
  * @abstract Changes the validator's forwarding policy.

@@ -60,7 +60,7 @@ static NSString *SpaceAuthorizationToken(ATProtoHttpRequest *request) {
  * only the structured `space:` resources from its already verified scope. */
 static NSDictionary *SpaceOAuthAuthentication(ATProtoHttpRequest *request, ATProtoHttpResponse *response,
                                               id<XrpcRoutePackServices> services) {
-  NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:[request headerForKey:@"Authorization"]
+  NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:[request headerForKey:@"Authorization"]
                                                   services:services request:request response:response];
   if (!did) return nil;
   ATProtoJWT *jwt = [ATProtoJWT jwtWithToken:SpaceAuthorizationToken(request) error:nil];
@@ -370,7 +370,7 @@ static NSString *SpaceServiceAuthentication(ATProtoHttpRequest *request, ATProto
   ATProtoJWTVerifier *verifier = [[ATProtoJWTVerifier alloc] init]; verifier.publicKey = key; verifier.expectedIssuer = issuer;
   verifier.expectedAudience = expectedAudience; verifier.allowedAlgorithms = @[ @"ES256K" ];
   // Inter-service auth tokens (iss/aud/lxm) carry no subject claim — matching
-  // the service-auth verification in XrpcServerPack.
+  // the service-auth verification in ATProtoXrpcServerPack.
   verifier.allowMissingSubject = YES;
   if (!key || ![verifier verifyJWT:jwt error:nil]) { SpaceError(response, HttpStatusUnauthorized, @"InvalidToken", @"Service token did not verify"); return nil; }
   return issuer;
@@ -459,11 +459,11 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
   }
 }
 
-@implementation XrpcSpacePack
+@implementation ATProtoXrpcSpacePack
 
 + (NSString *)routePackIdentifier { return @"com.atproto.space"; }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
   PDSSpaceStore *store = services.spaceStore;
   if (!store) return; // Feature flag is off: no experimental API surface.
@@ -473,7 +473,7 @@ static void SpaceNotifyDeletion(id<XrpcRoutePackServices> services, PDSSpaceURI 
 
   [dispatcher registerMethod:kGZXrpcNSID_com_atproto_space_getSpace handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
     PDSSpaceURI *space = SpaceURIFromString([request queryParamForKey:@"space"], response); if (!space) return;
-    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:[request headerForKey:@"Authorization"]
+    NSString *did = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:[request headerForKey:@"Authorization"]
                                                      services:resolvedServices request:request response:response];
     if (!did) return;
     if (![did isEqualToString:space.authorityDID]) {

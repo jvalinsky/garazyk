@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file ChatConfiguration.h
+ @file PDSChatConfiguration.h
  @brief Configuration for the standalone Chat service.
  */
 
@@ -10,9 +10,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @abstract Declares the ChatConfiguration public API.
+ * @abstract Declares the PDSChatConfiguration public API.
  */
-@interface ChatConfiguration : NSObject
+@interface PDSChatConfiguration : NSObject
 
 /**
  * @abstract Filesystem directory used for chat service data.

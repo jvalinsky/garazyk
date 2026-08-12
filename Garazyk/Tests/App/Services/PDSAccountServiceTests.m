@@ -257,7 +257,7 @@
     account.tfaSecret = [base32Secret dataUsingEncoding:NSUTF8StringEncoding];
     XCTAssertTrue([self.service.serviceDatabases updateAccount:account error:&error]);
 
-    TOTPGenerator *generator = [[TOTPGenerator alloc] initWithSecret:[Base32Utils dataFromBase32String:base32Secret]];
+    ATProtoTOTPGenerator *generator = [[ATProtoTOTPGenerator alloc] initWithSecret:[ATProtoBase32Utils dataFromBase32String:base32Secret]];
     NSString *code = [generator generateOTP];
 
     error = nil;

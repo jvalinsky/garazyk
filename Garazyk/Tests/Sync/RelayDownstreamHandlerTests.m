@@ -12,7 +12,7 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Repository/RepoCommit.h"
 
-@interface RelayDownstreamHandler (RepoInventoryTesting)
+@interface ATProtoRelayDownstreamHandler (RepoInventoryTesting)
 @property (nonatomic, strong) ATProtoSafeHTTPClient *safeHTTPClient;
 @end
 
@@ -64,7 +64,7 @@
 
 @implementation RelayDownstreamHandlerTests
 
-- (FirehoseCommitEvent *)commitEventForRepo:(NSString *)repo
+- (ATProtoFirehoseCommitEvent *)commitEventForRepo:(NSString *)repo
                                     dataCID:(ATProtoCID *)dataCID
                                         rev:(NSString *)rev
                               prevCommitCID:(nullable ATProtoCID *)prevCommitCID
@@ -77,7 +77,7 @@
                                                     prev:prevCommitCID];
     commit.signature = [NSMutableData dataWithLength:64];
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.repo = repo;
     event.commit = commit.computeCID;
     event.rev = rev;
@@ -92,10 +92,10 @@
 }
 
 - (void)testInitialization {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:handler];
     
@@ -103,10 +103,10 @@
 }
 
 - (void)testEventBufferProperty {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:handler];
     
@@ -114,10 +114,10 @@
 }
 
 - (void)testSubscribeReposHandlerProperty {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:handler];
     
@@ -125,11 +125,11 @@
 }
 
 - (void)testMetricsProperty {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:handler];
     
@@ -141,10 +141,10 @@
 }
 
 - (void)testUpstreamManagerDelegateConformance {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:handler];
     
@@ -154,16 +154,16 @@
 }
 
 - (void)testUpstreamManagerDidConnectToUpstream {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     downstreamHandler.metrics = metrics;
     
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
     
     // Should not crash when delegate method is called
     XCTAssertNoThrow([downstreamHandler upstreamManager:manager didConnectToUpstream:@"test.pds.com"],
@@ -171,16 +171,16 @@
 }
 
 - (void)testUpstreamManagerDidDisconnectFromUpstream {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     downstreamHandler.metrics = metrics;
     
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
     
     NSError *testError = [NSError errorWithDomain:@"TestDomain" code:1 userInfo:nil];
     
@@ -190,16 +190,16 @@
 }
 
 - (void)testUpstreamManagerDidReceiveCursor {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     downstreamHandler.metrics = metrics;
     
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
     
     // Should not crash when cursor is received
     XCTAssertNoThrow([downstreamHandler upstreamManager:manager didReceiveCursor:12345 fromUpstream:@"test.pds.com"],
@@ -207,19 +207,19 @@
 }
 
 - (void)testUpstreamManagerDidReceiveEventCommit {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     downstreamHandler.metrics = metrics;
     
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
     
     // Create a commit event
-    FirehoseCommitEvent *commitEvent = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *commitEvent = [[ATProtoFirehoseCommitEvent alloc] init];
     
     // Should not crash when event is received
     XCTAssertNoThrow([downstreamHandler upstreamManager:manager didReceiveEvent:commitEvent fromUpstream:@"test.pds.com"],
@@ -227,17 +227,17 @@
 }
 
 - (void)testCommitEventUpdatesRepoStateManager {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
-    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *repoStateManager = [[ATProtoRelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
     ATProtoCID *dataCID = [ATProtoCID sha256:[@"relay state test data"
         dataUsingEncoding:NSUTF8StringEncoding]];
-    FirehoseCommitEvent *commitEvent =
+    ATProtoFirehoseCommitEvent *commitEvent =
         [self commitEventForRepo:@"did:plc:relay-state-test"
                         dataCID:dataCID
                             rev:@"3mrelaystate"
@@ -250,7 +250,7 @@
     NSString *expectedRev = commitEvent.rev;
     int64_t expectedUpstreamSeq = commitEvent.seq;
 
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
     [downstreamHandler upstreamManager:manager
                        didReceiveEvent:commitEvent
                           fromUpstream:@"test.pds.com"];
@@ -271,12 +271,12 @@
 }
 
 - (void)testUpstreamConnectionBootstrapsPaginatedRepoInventory {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
-    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *repoStateManager = [[ATProtoRelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
     RelayInventoryHTTPClient *client = [[RelayInventoryHTTPClient alloc] init];
@@ -293,7 +293,7 @@
     }];
     downstreamHandler.safeHTTPClient = client;
 
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[]];
     [downstreamHandler upstreamManager:manager didConnectToUpstream:@"https://inventory.test"];
 
     XCTestExpectation *bootstrapCompleted = [self expectationWithDescription:@"inventory bootstrap completes"];
@@ -317,19 +317,19 @@
 }
 
 - (void)testUpstreamManagerDidReceiveEventIdentity {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     downstreamHandler.metrics = metrics;
     
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
     
     // Create an identity event
-    FirehoseIdentityEvent *identityEvent = [[FirehoseIdentityEvent alloc] init];
+    ATProtoFirehoseIdentityEvent *identityEvent = [[ATProtoFirehoseIdentityEvent alloc] init];
     
     // Should not crash when event is received
     XCTAssertNoThrow([downstreamHandler upstreamManager:manager didReceiveEvent:identityEvent fromUpstream:@"test.pds.com"],
@@ -337,19 +337,19 @@
 }
 
 - (void)testUpstreamManagerDidReceiveEventAccount {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     downstreamHandler.metrics = metrics;
     
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
     
     // Create an account event
-    FirehoseAccountEvent *accountEvent = [[FirehoseAccountEvent alloc] init];
+    ATProtoFirehoseAccountEvent *accountEvent = [[ATProtoFirehoseAccountEvent alloc] init];
     
     // Should not crash when event is received
     XCTAssertNoThrow([downstreamHandler upstreamManager:manager didReceiveEvent:accountEvent fromUpstream:@"test.pds.com"],
@@ -357,19 +357,19 @@
 }
 
 - (void)testUpstreamManagerDidReceiveEventError {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     downstreamHandler.metrics = metrics;
     
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
     
     // Create an error event
-    FirehoseErrorEvent *errorEvent = [[FirehoseErrorEvent alloc] init];
+    ATProtoFirehoseErrorEvent *errorEvent = [[ATProtoFirehoseErrorEvent alloc] init];
     
     // Should not crash when event is received
     XCTAssertNoThrow([downstreamHandler upstreamManager:manager didReceiveEvent:errorEvent fromUpstream:@"test.pds.com"],
@@ -377,10 +377,10 @@
 }
 
 - (void)testActiveDownstreamCountInitial {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     
@@ -390,15 +390,15 @@
 }
 
 - (void)testHandlesNilMetrics {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
     
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     // metrics is nil
     
-    RelayUpstreamManager *manager = [[RelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
+    ATProtoRelayUpstreamManager *manager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[@"test.pds.com"]];
     
     // Should not crash when metrics is nil
     XCTAssertNoThrow([downstreamHandler upstreamManager:manager didConnectToUpstream:@"test.pds.com"],
@@ -410,17 +410,17 @@
 #pragma mark - Chain Verification
 
 - (void)testVerifyChainFirstCommitAccepted {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
-    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *repoStateManager = [[ATProtoRelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
     ATProtoCID *dataCID =
         [ATProtoCID sha256:[@"data1" dataUsingEncoding:NSUTF8StringEncoding]];
-    FirehoseCommitEvent *event =
+    ATProtoFirehoseCommitEvent *event =
         [self commitEventForRepo:@"did:plc:newrepo"
                         dataCID:dataCID
                             rev:@"3m1"
@@ -438,12 +438,12 @@
 }
 
 - (void)testVerifyChainValidContinuation {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
-    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *repoStateManager = [[ATProtoRelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
     ATProtoCID *commit1 =
@@ -459,7 +459,7 @@
                                      rev:@"1"
                                      seq:1];
 
-    FirehoseCommitEvent *event =
+    ATProtoFirehoseCommitEvent *event =
         [self commitEventForRepo:@"did:plc:test"
                         dataCID:data2
                             rev:@"2"
@@ -475,12 +475,12 @@
 }
 
 - (void)testVerifyChainBreakDetected {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
-    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *repoStateManager = [[ATProtoRelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
     downstreamHandler.chainValidationMode = RelayValidationModeStrict;
@@ -496,7 +496,7 @@
                                      rev:@"1"
                                      seq:1];
 
-    FirehoseCommitEvent *event =
+    ATProtoFirehoseCommitEvent *event =
         [self commitEventForRepo:@"did:plc:test"
                         dataCID:data2
                             rev:@"2"
@@ -513,12 +513,12 @@
 }
 
 - (void)testVerifyChainNoPrevDataAcceptedWithWarning {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
-    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+    ATProtoRelayRepoStateManager *repoStateManager = [[ATProtoRelayRepoStateManager alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
 
     ATProtoCID *commit1 = [ATProtoCID sha256:[@"commit1" dataUsingEncoding:NSUTF8StringEncoding]];
@@ -530,7 +530,7 @@
                                      rev:@"1"
                                      seq:1];
 
-    FirehoseCommitEvent *event =
+    ATProtoFirehoseCommitEvent *event =
         [self commitEventForRepo:@"did:plc:test"
                         dataCID:data2
                             rev:@"2"
@@ -546,14 +546,14 @@
 }
 
 - (void)testVerifyChainNoStateManagerAlwaysAccepted {
-    RelayEventBuffer *buffer = [RelayEventBuffer bufferWithDefaultRetention];
-    SubscribeReposHandler *subHandler = [[SubscribeReposHandler alloc] init];
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayEventBuffer *buffer = [ATProtoRelayEventBuffer bufferWithDefaultRetention];
+    ATProtoSubscribeReposHandler *subHandler = [[ATProtoSubscribeReposHandler alloc] init];
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
     // repoStateManager is nil
 
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:test";
     event.commit = [ATProtoCID sha256:[@"root" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"1";
@@ -564,16 +564,16 @@
 }
 
 - (void)testStrictChainBreakFetchesRepoAndBroadcastsSyncReset {
-    RelayEventBuffer *buffer =
-        [[RelayEventBuffer alloc] initWithRetentionHours:1 maxEvents:10];
-    SubscribeReposHandler *subHandler =
-        [[SubscribeReposHandler alloc] initWithServiceDatabases:nil];
+    ATProtoRelayEventBuffer *buffer =
+        [[ATProtoRelayEventBuffer alloc] initWithRetentionHours:1 maxEvents:10];
+    ATProtoSubscribeReposHandler *subHandler =
+        [[ATProtoSubscribeReposHandler alloc] initWithServiceDatabases:nil];
     subHandler.eventBuffer = buffer;
-    RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]
+    ATProtoRelayDownstreamHandler *downstreamHandler = [[ATProtoRelayDownstreamHandler alloc]
         initWithEventBuffer:buffer
         subscribeReposHandler:subHandler];
-    RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
-    RelayMetrics *metrics = [[RelayMetrics alloc] init];
+    ATProtoRelayRepoStateManager *repoStateManager = [[ATProtoRelayRepoStateManager alloc] init];
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
     downstreamHandler.repoStateManager = repoStateManager;
     downstreamHandler.metrics = metrics;
     downstreamHandler.chainValidationMode = RelayValidationModeStrict;
@@ -600,7 +600,7 @@
     [client.responseBodies addObject:recoveryCommit.exportCAR];
     downstreamHandler.safeHTTPClient = client;
 
-    FirehoseCommitEvent *broken =
+    ATProtoFirehoseCommitEvent *broken =
         [self commitEventForRepo:did
                         dataCID:[ATProtoCID sha256:[@"broken-data"
                             dataUsingEncoding:NSUTF8StringEncoding]]
@@ -610,8 +610,8 @@
                        prevData:[ATProtoCID sha256:[@"wrong-data"
                             dataUsingEncoding:NSUTF8StringEncoding]]
                             seq:2];
-    RelayUpstreamManager *manager =
-        [[RelayUpstreamManager alloc] initWithInitialURLs:@[]];
+    ATProtoRelayUpstreamManager *manager =
+        [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:@[]];
     [downstreamHandler upstreamManager:manager
                        didReceiveEvent:broken
                           fromUpstream:@"https://recovery.test"];

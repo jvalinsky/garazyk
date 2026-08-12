@@ -7,7 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Live handles for rebuilding @c JelczAdminSnapshot on each admin poll.
  */
-@interface JelczAdminEmbedContext : NSObject
+@interface GZJelczAdminEmbedContext : NSObject
 
 @property (nonatomic, strong, nullable) id worker;
 @property (nonatomic, strong, nullable) id jobStore;

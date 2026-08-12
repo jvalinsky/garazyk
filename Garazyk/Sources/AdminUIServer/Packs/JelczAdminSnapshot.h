@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
  *             The snapshot is immutable after construction — refresh replaces
  *             the instance.
  */
-@interface JelczAdminSnapshot : NSObject
+@interface GZJelczAdminSnapshot : NSObject
 
 /**
  * @abstract Create a snapshot from the three backend data sources.

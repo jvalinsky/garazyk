@@ -17,8 +17,8 @@
 
 @interface RelayXrpcRoutePackTests : XCTestCase
 @property(nonatomic, strong) ATProtoHttpServer *server;
-@property(nonatomic, strong) RelayRepoStateManager *repoStateManager;
-@property(nonatomic, strong) RelayXrpcRoutePack *routePack;
+@property(nonatomic, strong) ATProtoRelayRepoStateManager *repoStateManager;
+@property(nonatomic, strong) ATProtoRelayXrpcRoutePack *routePack;
 @end
 
 @implementation RelayXrpcRoutePackTests
@@ -26,8 +26,8 @@
 - (void)setUp {
     [super setUp];
     self.server = [ATProtoHttpServer serverWithPort:0];
-    self.repoStateManager = [[RelayRepoStateManager alloc] init];
-    self.routePack = [[RelayXrpcRoutePack alloc] initWithRepoStateManager:self.repoStateManager
+    self.repoStateManager = [[ATProtoRelayRepoStateManager alloc] init];
+    self.routePack = [[ATProtoRelayXrpcRoutePack alloc] initWithRepoStateManager:self.repoStateManager
                                                    subscribeReposHandler:nil];
     [self.routePack registerRoutesWithServer:self.server];
 }

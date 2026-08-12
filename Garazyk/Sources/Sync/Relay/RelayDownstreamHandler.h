@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file RelayDownstreamHandler.h
+ @file ATProtoRelayDownstreamHandler.h
 
  @abstract Bridges upstream events to downstream WebSocket subscribers.
 
  @discussion
-    RelayDownstreamHandler is the core of the relay pipeline:
-    - Receives events from RelayUpstreamManager (upstream firehose)
-    - Stores events in RelayEventBuffer for backfill support
-    - Broadcasts events to downstream subscribers via SubscribeReposHandler
+    ATProtoRelayDownstreamHandler is the core of the relay pipeline:
+    - Receives events from ATProtoRelayUpstreamManager (upstream firehose)
+    - Stores events in ATProtoRelayEventBuffer for backfill support
+    - Broadcasts events to downstream subscribers via ATProtoSubscribeReposHandler
     - Supports cursor-based replay for new subscribers
 
  @copyright Copyright (c) 2026 Jack Valinsky
@@ -20,60 +20,60 @@
 #import "Sync/Relay/RelayConfiguration.h"
 #import "Sync/Firehose/Firehose.h"
 
-@class RelayEventBuffer;
-@class SubscribeReposHandler;
-@class RelayMetrics;
-@class RelayRepoStateManager;
-@class RelayEventValidator;
-@class FirehoseCommitEvent;
-@class FirehoseRawEvent;
+@class ATProtoRelayEventBuffer;
+@class ATProtoSubscribeReposHandler;
+@class ATProtoRelayMetrics;
+@class ATProtoRelayRepoStateManager;
+@class ATProtoRelayEventValidator;
+@class ATProtoFirehoseCommitEvent;
+@class ATProtoFirehoseRawEvent;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class RelayDownstreamHandler
+ @class ATProtoRelayDownstreamHandler
 
  @abstract Bridges upstream firehose events to downstream subscribers.
 
  @discussion Implements RelayUpstreamManagerDelegate to receive events from
  upstream PDS instances and broadcasts them to connected downstream clients.
  */
-@interface RelayDownstreamHandler : NSObject <RelayUpstreamManagerDelegate>
+@interface ATProtoRelayDownstreamHandler : NSObject <RelayUpstreamManagerDelegate>
 
 /*!
  @property eventBuffer
 
  @abstract Buffer storing recent events for backfill.
  */
-@property (nonatomic, readonly) RelayEventBuffer *eventBuffer;
+@property (nonatomic, readonly) ATProtoRelayEventBuffer *eventBuffer;
 
 /*!
  @property subscribeReposHandler
 
  @abstract Handler for downstream WebSocket connections.
  */
-@property (nonatomic, readonly) SubscribeReposHandler *subscribeReposHandler;
+@property (nonatomic, readonly) ATProtoSubscribeReposHandler *subscribeReposHandler;
 
 /*!
  @property metrics
 
  @abstract Metrics tracker for relay statistics.
  */
-@property (nonatomic, strong, nullable) RelayMetrics *metrics;
+@property (nonatomic, strong, nullable) ATProtoRelayMetrics *metrics;
 
 /*!
  @property repoStateManager
 
  @abstract Manages repository state for XRPC queries.
  */
-@property (nonatomic, strong, readwrite, nullable) RelayRepoStateManager *repoStateManager;
+@property (nonatomic, strong, readwrite, nullable) ATProtoRelayRepoStateManager *repoStateManager;
 
 /*!
  @property eventValidator
 
  @abstract Optional event validator for schema, ATProtoMST, and signature checks.
  */
-@property (nonatomic, strong, readwrite, nullable) RelayEventValidator *eventValidator;
+@property (nonatomic, strong, readwrite, nullable) ATProtoRelayEventValidator *eventValidator;
 
 /**
  * @abstract Controls whether repository continuity failures are forwarded.
@@ -89,12 +89,12 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Initialize with required components.
 
  @param buffer Event buffer for storing recent events.
- @param handler SubscribeReposHandler for downstream connections.
+ @param handler ATProtoSubscribeReposHandler for downstream connections.
 
  @return Initialized handler instance.
  */
-- (instancetype)initWithEventBuffer:(RelayEventBuffer *)buffer
-              subscribeReposHandler:(SubscribeReposHandler *)handler
+- (instancetype)initWithEventBuffer:(ATProtoRelayEventBuffer *)buffer
+              subscribeReposHandler:(ATProtoSubscribeReposHandler *)handler
     NS_DESIGNATED_INITIALIZER;
 
 /**
@@ -113,7 +113,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param event The firehose event (commit, identity, account, or error).
  @param url The upstream URL the event came from.
  */
-- (void)upstreamManager:(RelayUpstreamManager *)manager
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
          didReceiveEvent:(id)event
            fromUpstream:(NSString *)url;
 
@@ -125,7 +125,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param manager The upstream manager.
  @param url The upstream URL that connected.
  */
-- (void)upstreamManager:(RelayUpstreamManager *)manager
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
     didConnectToUpstream:(NSString *)url;
 
 /*!
@@ -137,7 +137,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param url The upstream URL that disconnected.
  @param error The error that caused disconnection, if any.
  */
-- (void)upstreamManager:(RelayUpstreamManager *)manager
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
     didDisconnectFromUpstream:(NSString *)url
                         error:(nullable NSError *)error;
 
@@ -150,7 +150,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param cursor The sequence number.
  @param url The upstream URL.
  */
-- (void)upstreamManager:(RelayUpstreamManager *)manager
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
        didReceiveCursor:(int64_t)cursor
             fromUpstream:(NSString *)url;
 
@@ -175,7 +175,7 @@ NS_ASSUME_NONNULL_BEGIN
              valid event becomes the new baseline. In strict mode, mismatches
              are rejected without advancing repository state.
  */
-- (BOOL)verifyChainForCommitEvent:(FirehoseCommitEvent *)event;
+- (BOOL)verifyChainForCommitEvent:(ATProtoFirehoseCommitEvent *)event;
 
 @end
 

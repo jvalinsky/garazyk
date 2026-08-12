@@ -7,9 +7,9 @@
 
 static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
-@interface RelayUpstreamManager () <RelayClientDelegate>
+@interface ATProtoRelayUpstreamManager () <RelayClientDelegate>
 
-@property (nonatomic, strong) NSMutableDictionary<NSString *, RelayClient *> *upstreamClients;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoRelayClient *> *upstreamClients;
 @property (nonatomic, strong) NSMutableSet<NSString *> *connectedUpstreams;
 @property (nonatomic, assign, readwrite) NSUInteger maxReconnectAttempts;
 @property (nonatomic, assign, readwrite) NSTimeInterval baseReconnectInterval;
@@ -36,7 +36,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 @end
 
-@implementation RelayUpstreamManager {
+@implementation ATProtoRelayUpstreamManager {
     dispatch_queue_t _managerQueue;
 }
 
@@ -103,7 +103,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
         }
     } else {
         // Normalize WebSocket schemes to HTTP so NSURL can parse them.
-        // RelayClient.buildWebSocketURL converts http→ws, https→wss when connecting.
+        // ATProtoRelayClient.buildWebSocketURL converts http→ws, https→wss when connecting.
         if ([urlString hasPrefix:@"ws://"]) {
             urlString = [NSString stringWithFormat:@"http://%@", [urlString substringFromIndex:5]];
         } else if ([urlString hasPrefix:@"wss://"]) {
@@ -123,7 +123,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
         return;
     }
 
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:httpURL];
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:httpURL];
     client.delegate = self;
     self.upstreamClients[url] = client;
     self.reconnectAttempts[url] = @0;
@@ -145,7 +145,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 - (void)removeUpstream:(NSString *)url {
     dispatch_async(_managerQueue, ^{
-        RelayClient *client = self.upstreamClients[url];
+        ATProtoRelayClient *client = self.upstreamClients[url];
         if (client) {
             [client disconnect];
             [self.upstreamClients removeObjectForKey:url];
@@ -158,7 +158,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 - (void)removeAllUpstreams {
     dispatch_async(_managerQueue, ^{
-        for (RelayClient *client in self.upstreamClients.allValues) {
+        for (ATProtoRelayClient *client in self.upstreamClients.allValues) {
             [client disconnect];
         }
         [self.upstreamClients removeAllObjects];
@@ -196,7 +196,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 - (void)disconnectAll {
     dispatch_async(_managerQueue, ^{
-        for (RelayClient *client in self.upstreamClients.allValues) {
+        for (ATProtoRelayClient *client in self.upstreamClients.allValues) {
             [client disconnect];
         }
     });
@@ -204,7 +204,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 - (void)connectToUpstream:(NSString *)url {
     [self performSynchronouslyOnManagerQueue:^{
-        RelayClient *client = self.upstreamClients[url];
+        ATProtoRelayClient *client = self.upstreamClients[url];
         if (client) {
             GZ_LOG_SYNC_INFO(@"RelayUpstreamManager: Connecting to %@", url);
             [client connect];
@@ -216,7 +216,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 - (void)disconnectFromUpstream:(NSString *)url {
     [self performSynchronouslyOnManagerQueue:^{
-        RelayClient *client = self.upstreamClients[url];
+        ATProtoRelayClient *client = self.upstreamClients[url];
         if (client) {
             [client disconnect];
         }
@@ -269,7 +269,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 - (void)pause {
     dispatch_async(_managerQueue, ^{
         self.isPaused = YES;
-        for (RelayClient *client in self.upstreamClients.allValues) {
+        for (ATProtoRelayClient *client in self.upstreamClients.allValues) {
             [client disconnect];
         }
     });
@@ -314,7 +314,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     });
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
@@ -325,7 +325,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     }
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
@@ -336,7 +336,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     }
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveAccountEvent:(FirehoseAccountEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveAccountEvent:(ATProtoFirehoseAccountEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
@@ -347,7 +347,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     }
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveSyncEvent:(FirehoseSyncEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveSyncEvent:(ATProtoFirehoseSyncEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
@@ -358,7 +358,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     }
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveRawEvent:(FirehoseRawEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveRawEvent:(ATProtoFirehoseRawEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
@@ -369,7 +369,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     }
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event {
     NSString *url = [self urlForClient:client];
     id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
@@ -380,7 +380,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     }
 }
 
-- (void)relayClientDidConnect:(RelayClient *)client {
+- (void)relayClientDidConnect:(ATProtoRelayClient *)client {
     NSString *url = [self urlForClient:client];
     if (url) {
         GZ_LOG_SYNC_INFO(@"RelayUpstreamManager: Client connected to %@", url);
@@ -391,7 +391,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
             self.hostStatuses[url] = @(RelayHostStatusActive);
             self.hostConnectedDates[url] = [NSDate date];
         });
-        [[RelayMetrics sharedMetrics] recordUpstreamConnected];
+        [[ATProtoRelayMetrics sharedMetrics] recordUpstreamConnected];
         id<RelayUpstreamManagerDelegate> delegate = self.delegate;
         if (delegate) {
             [delegate upstreamManager:self didConnectToUpstream:url];
@@ -399,7 +399,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     }
 }
 
-- (void)relayClient:(RelayClient *)client didDisconnectWithError:(NSError *)error {
+- (void)relayClient:(ATProtoRelayClient *)client didDisconnectWithError:(NSError *)error {
     NSString *url = [self urlForClient:client];
     if (url) {
         dispatch_async(_managerQueue, ^{
@@ -407,7 +407,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
             self.hostStatuses[url] = @(error ? RelayHostStatusError : RelayHostStatusDisconnected);
             [self.hostConnectedDates removeObjectForKey:url];
         });
-        [[RelayMetrics sharedMetrics] recordUpstreamDisconnected];
+        [[ATProtoRelayMetrics sharedMetrics] recordUpstreamDisconnected];
         id<RelayUpstreamManagerDelegate> delegate = self.delegate;
         if (delegate) {
             [delegate upstreamManager:self didDisconnectFromUpstream:url error:error];
@@ -418,13 +418,13 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     }
 }
 
-- (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor {
+- (void)relayClient:(ATProtoRelayClient *)client didReceiveCursor:(int64_t)cursor {
     NSString *url = [self urlForClient:client];
     if (url) {
         dispatch_async(_managerQueue, ^{
             self.hostSeqs[url] = @(cursor);
         });
-        [[RelayMetrics sharedMetrics] recordSequence:cursor];
+        [[ATProtoRelayMetrics sharedMetrics] recordSequence:cursor];
         id<RelayUpstreamManagerDelegate> delegate = self.delegate;
         if (delegate) {
             [delegate upstreamManager:self didReceiveCursor:cursor fromUpstream:url];
@@ -469,7 +469,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 #pragma mark - Helpers
 
-- (NSString *)urlForClient:(RelayClient *)client {
+- (NSString *)urlForClient:(ATProtoRelayClient *)client {
     __block NSString *matchedURL = nil;
     [self performSynchronouslyOnManagerQueue:^{
         for (NSString *url in self.upstreamClients) {

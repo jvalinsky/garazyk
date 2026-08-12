@@ -18,24 +18,24 @@
 #import "Debug/GZLogger.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAppBskyFeedPack
+@implementation ATProtoXrpcAppBskyFeedPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.feed";
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
 
-    FeedService *feedService = [[FeedService alloc] initWithDatabase:services.appViewDatabase];
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:services.appViewDatabase];
-    GraphService *graphService = [[GraphService alloc] initWithDatabase:services.appViewDatabase];
+    PDSFeedService *feedService = [[PDSFeedService alloc] initWithDatabase:services.appViewDatabase];
+    PDSActorService *actorService = [[PDSActorService alloc] initWithDatabase:services.appViewDatabase];
+    PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:services.appViewDatabase];
 
     // app.bsky.feed.getAuthorFeed
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getAuthorFeed handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -52,7 +52,7 @@
         NSError *error = nil;
         NSDictionary *result = [feedService getAuthorFeedForActor:actor limit:limit cursor:cursor filter:filter error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -63,17 +63,17 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getTimeline handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required for timeline"];
+            [ATProtoXrpcErrorHelper setAuthenticationError:response message:@"Authentication required for timeline"];
             return;
         }
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
+        NSString *actorDID = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) return;
         NSInteger limit = 50;
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSError *error = nil;
         NSDictionary *result = [feedService getTimelineForActor:actorDID limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -84,7 +84,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getActorLikes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -92,7 +92,7 @@
         NSError *error = nil;
         NSDictionary *result = [feedService getActorLikes:actor limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -103,7 +103,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getPostThread handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
             return;
         }
         NSInteger depth = 6;
@@ -118,7 +118,7 @@
         NSError *error = nil;
         NSDictionary *result = [feedService getPostThread:uri depth:depth error:&error];
         if (!result || error) {
-            [XrpcErrorHelper setNotFoundError:response message:error.localizedDescription ?: @"Post thread not found"];
+            [ATProtoXrpcErrorHelper setNotFoundError:response message:error.localizedDescription ?: @"Post thread not found"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -129,7 +129,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getFeed handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *feed = [request queryParamForKey:@"feed"];
         if (!feed) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -137,7 +137,7 @@
         NSError *error = nil;
         NSDictionary *result = [feedService getFeed:feed limit:limit cursor:cursor error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -153,13 +153,13 @@
         } else if ([urisParam isKindOfClass:[NSString class]]) {
             uris = @[urisParam];
         } else {
-            [XrpcErrorHelper setValidationError:response message:@"Missing uris parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing uris parameter"];
             return;
         }
         NSError *error = nil;
         NSDictionary *result = [feedService getPosts:uris error:&error];
         if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -175,7 +175,7 @@
         } else if ([feedsParam isKindOfClass:[NSString class]]) {
             feedURIs = @[(NSString *)feedsParam];
         } else {
-            [XrpcErrorHelper setValidationError:response message:@"Missing feeds parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing feeds parameter"];
             return;
         }
         NSMutableArray<NSDictionary *> *feeds = [NSMutableArray arrayWithCapacity:feedURIs.count];
@@ -196,7 +196,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getLikes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -211,7 +211,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getRepostedBy handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -226,7 +226,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getActorFeeds handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
         NSInteger limit = 50;
@@ -287,13 +287,13 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getFeedGenerator handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *feed = [request queryParamForKey:@"feed"];
         if (!feed) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
             return;
         }
 
         NSArray *components = [feed componentsSeparatedByString:@"/"];
         if (components.count < 5) {
-            [XrpcErrorHelper setValidationError:response message:@"Invalid feed URI"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid feed URI"];
             return;
         }
         NSString *did = components[2];
@@ -340,7 +340,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_searchPosts handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *q = [request queryParamForKey:@"q"];
         if (!q || q.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing q parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing q parameter"];
             return;
         }
 
@@ -397,7 +397,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getQuotes handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *uri = [request queryParamForKey:@"uri"];
         if (!uri) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
             return;
         }
 
@@ -481,7 +481,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getFeedSkeleton handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *feed = [request queryParamForKey:@"feed"];
         if (!feed || feed.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
             return;
         }
 
@@ -519,7 +519,7 @@
         NSError *queryError = nil;
         NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&queryError];
         if (!rows) {
-            [XrpcErrorHelper setInternalServerError:response message:queryError.localizedDescription ?: @"Failed to query feed"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:queryError.localizedDescription ?: @"Failed to query feed"];
             return;
         }
 
@@ -552,7 +552,7 @@
     [dispatcher registerMethod:kGZXrpcNSID_app_bsky_feed_getListFeed handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *list = [request queryParamForKey:@"list"];
         if (!list) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing list parameter"];
+            [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing list parameter"];
             return;
         }
 
@@ -562,11 +562,11 @@
         }
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
-        FeedService *feedService = [[FeedService alloc] initWithDatabase:services.appViewDatabase];
+        PDSFeedService *feedService = [[PDSFeedService alloc] initWithDatabase:services.appViewDatabase];
         NSError *error = nil;
         NSDictionary *result = [feedService getListFeed:list limit:limit cursor:cursor error:&error];
         if (error && !result) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load list feed"];
+            [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load list feed"];
             return;
         }
         response.statusCode = HttpStatusOK;

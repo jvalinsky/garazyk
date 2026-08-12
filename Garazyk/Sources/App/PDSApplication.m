@@ -137,9 +137,9 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 }
 
 @implementation PDSApplication {
-    SubscribeReposHandler *_subscribeReposHandler;
+    ATProtoSubscribeReposHandler *_subscribeReposHandler;
     PDSSequencerAnalyticsCollector *_analyticsCollector;
-    XrpcDispatcher *_xrpcDispatcher;
+    ATProtoXrpcDispatcher *_xrpcDispatcher;
 }
 
 - (instancetype)init {
@@ -162,7 +162,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     return self.httpPort;
 }
 
-- (SubscribeReposHandler *)subscribeReposHandler {
+- (ATProtoSubscribeReposHandler *)subscribeReposHandler {
     return _subscribeReposHandler;
 }
 
@@ -527,7 +527,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     NSURL *blobURL = [NSURL fileURLWithPath:blobDir];
     PDSDiskBlobProvider *blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
     [ATProtoVideoWorker sharedWorker].blobProvider = blobProvider;
-    BlobStorage *blobStorage = [[BlobStorage alloc] initWithDatabasePool:_userDatabasePool provider:blobProvider];
+    PDSBlobStorage *blobStorage = [[PDSBlobStorage alloc] initWithDatabasePool:_userDatabasePool provider:blobProvider];
     
     id<PDSBlobRepository> blobRepo = [PDSRepositoryFactory blobRepositoryWithDatabasePool:_userDatabasePool];
     _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool storage:blobStorage];
@@ -584,9 +584,9 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         GZ_LOG_WARN(@"Auth", @"X-Admin-Token legacy header is explicitly enabled in production. This header is disabled by default. Remove PDS_DISABLE_X_ADMIN_TOKEN_HEADER=0 to restore secure defaults.");
     }
 
-    // Firehose handler
+    // ATProtoFirehose handler
     if (!_subscribeReposHandler) {
-        _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases userDatabasePool:_userDatabasePool];
+        _subscribeReposHandler = [[ATProtoSubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases userDatabasePool:_userDatabasePool];
     }
 
     // Sequencer Analytics Collector
@@ -613,7 +613,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     }
 
     // XRPC dispatcher
-    _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
+    _xrpcDispatcher = [ATProtoXrpcDispatcher sharedDispatcher];
 
     // HTTP server
     ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] initWithConfiguration:_configuration];
@@ -673,8 +673,8 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     if ([_configuration.videoMode isEqualToString:@"internal"]) {
         PDSDatabase *serviceDB = [_serviceDatabases serviceDatabaseWithError:nil];
         id<VideoJobStore> jobStore = self.videoJobStore;
-        id<VideoBlobUploader> uploader = [[VideoLocalBlobUploader alloc] initWithBlobProvider:[ATProtoVideoWorker sharedWorker].blobProvider];
-        id<VideoAuthProvider> authProvider = [[VideoPDSAuthProvider alloc] initWithJwtMinter:_jwtMinter
+        id<VideoBlobUploader> uploader = [[GZVideoLocalBlobUploader alloc] initWithBlobProvider:[ATProtoVideoWorker sharedWorker].blobProvider];
+        id<VideoAuthProvider> authProvider = [[ATProtoVideoPDSAuthProvider alloc] initWithJwtMinter:_jwtMinter
                                                                                adminController:_adminController];
 
         ATProtoVideoWorker *worker = [ATProtoVideoWorker sharedWorker];

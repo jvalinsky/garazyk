@@ -5,7 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSServiceDatabases;
-@class SubscribeReposHandler;
+@class ATProtoSubscribeReposHandler;
 @class GZMetrics;
 
 /**
@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @return Initialized collector instance
  */
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
-                         subscribeHandler:(SubscribeReposHandler *)subscribeHandler;
+                         subscribeHandler:(ATProtoSubscribeReposHandler *)subscribeHandler;
 
 /**
  * @brief Start periodic metric collection.

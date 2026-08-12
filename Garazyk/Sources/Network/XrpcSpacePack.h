@@ -6,7 +6,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /** Experimental proposal-0016 permissioned-space XRPC methods. */
-@interface XrpcSpacePack : NSObject <XrpcRoutePack>
+@interface ATProtoXrpcSpacePack : NSObject <XrpcRoutePack>
 @end
 
 NS_ASSUME_NONNULL_END

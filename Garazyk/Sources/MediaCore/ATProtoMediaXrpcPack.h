@@ -35,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Validates that raw data matches the declared media container signature.
 @property (nonatomic, copy, nullable) BOOL (^contentValidator)(NSData *data, NSString *mimeType);
 
-- (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+- (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services;
 
 - (NSDictionary *)formatJobResponse:(NSDictionary *)job;

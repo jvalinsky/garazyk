@@ -3,9 +3,9 @@
 /*!
  @file JelczDatabaseTests.m
 
- @brief Characterization tests for JelczDatabase (the SQLite VideoJobStore).
+ @brief Characterization tests for GZJelczDatabase (the SQLite VideoJobStore).
 
- @discussion JelczDatabase shipped with no tests. These pin down its *current*
+ @discussion GZJelczDatabase shipped with no tests. These pin down its *current*
  observable behaviour through the VideoJobStore interface — the safety net required
  before it can be migrated onto ATProtoDatabaseQueryRunner (and it closes
  architecture-review candidate 10). They capture behaviour exactly as-is, including
@@ -18,11 +18,11 @@
 #import <sqlite3.h>
 #import "Video/JelczDatabase.h"
 
-// Defined (external linkage) in JelczDatabase.m; not exported via the header.
+// Defined (external linkage) in GZJelczDatabase.m; not exported via the header.
 extern NSString * const JelczDatabaseErrorDomain;
 
 @interface JelczDatabaseTests : XCTestCase
-@property (nonatomic, strong) JelczDatabase *db;
+@property (nonatomic, strong) GZJelczDatabase *db;
 @property (nonatomic, copy) NSString *databasePath;
 @end
 
@@ -32,7 +32,7 @@ extern NSString * const JelczDatabaseErrorDomain;
     [super setUp];
     self.databasePath = [NSTemporaryDirectory() stringByAppendingFormat:@"jelcz_test_%@.db", [[NSUUID UUID] UUIDString]];
     NSError *error = nil;
-    self.db = [[JelczDatabase alloc] initWithDatabasePath:self.databasePath error:&error];
+    self.db = [[GZJelczDatabase alloc] initWithDatabasePath:self.databasePath error:&error];
     XCTAssertNotNil(self.db, @"Failed to create JelczDatabase: %@", error);
 }
 

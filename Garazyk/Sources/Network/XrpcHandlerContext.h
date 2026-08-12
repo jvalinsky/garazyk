@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcHandlerContext.h
+ @file ATProtoXrpcHandlerContext.h
 
  @abstract Per-request context for XRPC route-pack handlers.
  */
@@ -15,11 +15,11 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol XrpcRoutePackServices;
 
 /*!
- @class XrpcHandlerContext
+ @class ATProtoXrpcHandlerContext
 
  @abstract Bundles request/response state and authentication helpers for handlers.
  */
-@interface XrpcHandlerContext : NSObject
+@interface ATProtoXrpcHandlerContext : NSObject
 
 @property (nonatomic, readonly) ATProtoHttpRequest *request;
 @property (nonatomic, readonly) ATProtoHttpResponse *response;
@@ -47,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
  @brief Require a valid Authorization header.
 
  @discussion When @c jwtMinter and @c adminController are available on
- @c services, validates the token via @c XrpcAuthHelper. Otherwise only
+ @c services, validates the token via @c ATProtoXrpcAuthHelper. Otherwise only
  checks that a non-empty Authorization header is present (standalone chat).
  */
 - (BOOL)requireAuthentication;

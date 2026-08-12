@@ -8,14 +8,14 @@
 #import "Core/CID.h"
 
 @interface PDSPLCAccountOperationProvider ()
-@property (nonatomic, strong) PLCRotationKeyManager *keyManager;
+@property (nonatomic, strong) ATProtoPLCRotationKeyManager *keyManager;
 @end
 
 @implementation PDSPLCAccountOperationProvider
 
 - (instancetype)init {
     if ((self = [super init])) {
-        _keyManager = [PLCRotationKeyManager sharedManager];
+        _keyManager = [ATProtoPLCRotationKeyManager sharedManager];
     }
     return self;
 }
@@ -51,7 +51,7 @@
 
 - (NSString *)didForSignedOperation:(NSDictionary *)signedOperation
                                error:(NSError **)error {
-    NSString *did = [PLCOperation calculateDIDForSignedOperation:signedOperation];
+    NSString *did = [ATProtoPLCOperation calculateDIDForSignedOperation:signedOperation];
     if (did.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"PDSPLCAccountOperationProvider"

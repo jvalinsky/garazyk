@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Privacy-first dashboard — never renders ciphertext, mailbox
  * addresses, agent references, or row-level message history.
  */
-@interface GermAdminUIPack : NSObject <GZAdminUIPack>
+@interface GZGermAdminUIPack : NSObject <GZAdminUIPack>
 
 @end
 

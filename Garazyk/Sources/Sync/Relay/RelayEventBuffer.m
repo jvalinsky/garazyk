@@ -2,26 +2,26 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Relay/RelayEventBuffer.h"
 
-@interface BufferedEvent : NSObject
+@interface ATProtoBufferedEvent : NSObject
 @property (nonatomic, strong) id event;
 @property (nonatomic, assign) int64_t seq;
 @property (nonatomic, strong) NSDate *timestamp;
 @end
 
-@implementation BufferedEvent
+@implementation ATProtoBufferedEvent
 @end
 
-@interface RelayEventBuffer ()
+@interface ATProtoRelayEventBuffer ()
 
 @property (nonatomic, assign, readwrite) NSUInteger retentionSeconds;
 @property (nonatomic, assign, readwrite) NSUInteger maxEvents;
-@property (nonatomic, strong) NSMutableArray<BufferedEvent *> *buffer;
+@property (nonatomic, strong) NSMutableArray<ATProtoBufferedEvent *> *buffer;
 @property (nonatomic, assign) int64_t oldestSeq;
 @property (nonatomic, assign) int64_t newestSeq;
 
 @end
 
-@implementation RelayEventBuffer {
+@implementation ATProtoRelayEventBuffer {
     dispatch_queue_t _bufferQueue;
 }
 
@@ -49,7 +49,7 @@
 }
 
 + (instancetype)bufferWithDefaultRetention {
-    return [[RelayEventBuffer alloc] initWithRetentionHours:72 maxEvents:100000];
+    return [[ATProtoRelayEventBuffer alloc] initWithRetentionHours:72 maxEvents:100000];
 }
 
 - (void)appendEvent:(id)event seq:(int64_t)seq {
@@ -58,7 +58,7 @@
 
 - (void)appendEvent:(id)event seq:(int64_t)seq timestamp:(NSDate *)timestamp {
     dispatch_async(_bufferQueue, ^{
-        BufferedEvent *e = [[BufferedEvent alloc] init];
+        ATProtoBufferedEvent *e = [[ATProtoBufferedEvent alloc] init];
         e.event = event;
         e.seq = seq;
         e.timestamp = timestamp;
@@ -76,7 +76,7 @@
         if (self.buffer.count > self.maxEvents) {
             [self.buffer removeObjectAtIndex:0];
             if (self.buffer.count > 0) {
-                self.oldestSeq = ((BufferedEvent *)self.buffer[0]).seq;
+                self.oldestSeq = ((ATProtoBufferedEvent *)self.buffer[0]).seq;
             }
         }
     });
@@ -85,7 +85,7 @@
 - (nullable NSArray *)eventsAfterCursor:(int64_t)cursor count:(NSUInteger)count {
     __block NSMutableArray *result = [NSMutableArray array];
     dispatch_sync(_bufferQueue, ^{
-        for (BufferedEvent *e in self.buffer) {
+        for (ATProtoBufferedEvent *e in self.buffer) {
             if (e.seq > cursor) {
                 [result addObject:e.event];
                 if (result.count >= count) {
@@ -100,7 +100,7 @@
 - (nullable NSArray *)eventsInTimeRange:(NSDate *)start end:(NSDate *)end {
     __block NSMutableArray *result = [NSMutableArray array];
     dispatch_sync(_bufferQueue, ^{
-        for (BufferedEvent *e in self.buffer) {
+        for (ATProtoBufferedEvent *e in self.buffer) {
             if ([e.timestamp compare:start] != NSOrderedAscending &&
                 [e.timestamp compare:end] != NSOrderedDescending) {
                 [result addObject:e.event];
@@ -139,7 +139,7 @@
         NSDate *cutoff = [NSDate dateWithTimeIntervalSinceNow:-self.retentionSeconds];
         
         NSMutableArray *toRemove = [NSMutableArray array];
-        for (BufferedEvent *e in self.buffer) {
+        for (ATProtoBufferedEvent *e in self.buffer) {
             if ([e.timestamp compare:cutoff] == NSOrderedAscending) {
                 [toRemove addObject:e];
             }
@@ -148,7 +148,7 @@
         [self.buffer removeObjectsInArray:toRemove];
         
         if (self.buffer.count > 0) {
-            self.oldestSeq = ((BufferedEvent *)self.buffer[0]).seq;
+            self.oldestSeq = ((ATProtoBufferedEvent *)self.buffer[0]).seq;
         } else {
             self.oldestSeq = -1;
             self.newestSeq = -1;

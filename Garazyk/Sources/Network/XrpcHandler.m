@@ -15,7 +15,7 @@
 #import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Security/ATProtoPermissionScope.h"
 
-@interface XrpcDispatcher ()
+@interface ATProtoXrpcDispatcher ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, XrpcMethodHandler> *methodHandlers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, XrpcMethodHandler> *internalHandlers;
@@ -27,13 +27,13 @@
                               response:(ATProtoHttpResponse *)response;
 - (NSSet<NSString *> *)queryMethodIds;
 - (NSSet<NSString *> *)procedureMethodIds;
-- (XrpcProxyHandler *)proxyHandlerWithMinter;
+- (ATProtoXrpcProxyHandler *)proxyHandlerWithMinter;
 
 @end
 
-@implementation XrpcDispatcher
+@implementation ATProtoXrpcDispatcher
 
-static XrpcDispatcher *_sharedInstance = nil;
+static ATProtoXrpcDispatcher *_sharedInstance = nil;
 
 + (instancetype)sharedDispatcher {
     static dispatch_once_t onceToken;
@@ -149,7 +149,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     // Create a wrapped handler that executes middleware chain first
     XrpcMethodHandler wrappedHandler = ^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         // Execute middleware chain
-        XrpcMiddlewareChain *chain = [[XrpcMiddlewareChain alloc] init];
+        ATProtoXrpcMiddlewareChain *chain = [[ATProtoXrpcMiddlewareChain alloc] init];
         [chain addMiddlewares:middlewares];
         NSError *middlewareError = nil;
         BOOL passed = [chain handleRequest:request response:response error:&middlewareError];
@@ -311,7 +311,7 @@ static XrpcDispatcher *_sharedInstance = nil;
 
         if ([self resolveProxyTarget:atprotoProxy outURL:&resolvedURL outDID:&resolvedDID error:&resolveError]) {
             GZ_LOG_INFO(@"Proxying XRPC method '%@' to resolved service %@ (%@)", methodId, resolvedDID, resolvedURL);
-            XrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
+            ATProtoXrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
             [proxy handleRequest:request response:response baseURL:resolvedURL upstreamDID:resolvedDID];
             return;
         } else {
@@ -332,7 +332,7 @@ static XrpcDispatcher *_sharedInstance = nil;
             [self executeHandler:handler methodId:methodId request:request response:response];
         } else if (self.proxyURL) {
             GZ_LOG_INFO(@"Proxying XRPC method '%@' to AppView (automatic) %@", methodId, self.proxyURL);
-            XrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
+            ATProtoXrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
             [proxy handleRequest:request response:response baseURL:self.proxyURL upstreamDID:self.upstreamDID];
         } else {
             [self sendMethodNotFound:methodId response:response];
@@ -346,7 +346,7 @@ static XrpcDispatcher *_sharedInstance = nil;
             [self executeHandler:handler methodId:methodId request:request response:response];
         } else if (self.ozoneURL) {
             GZ_LOG_INFO(@"Proxying XRPC method '%@' to Ozone %@", methodId, self.ozoneURL);
-            XrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
+            ATProtoXrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
             [proxy handleRequest:request response:response baseURL:self.ozoneURL upstreamDID:self.ozoneDID];
         } else {
             [self sendMethodNotFound:methodId response:response];
@@ -360,7 +360,7 @@ static XrpcDispatcher *_sharedInstance = nil;
             [self executeHandler:handler methodId:methodId request:request response:response];
         } else if (self.chatURL) {
             GZ_LOG_INFO(@"Proxying XRPC method '%@' to Chat %@", methodId, self.chatURL);
-            XrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
+            ATProtoXrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
             [proxy handleRequest:request response:response baseURL:self.chatURL upstreamDID:self.chatDID];
         } else {
             [self sendMethodNotFound:methodId response:response];
@@ -521,8 +521,8 @@ static XrpcDispatcher *_sharedInstance = nil;
 
 #pragma mark - Proxy Handler Construction
 
-- (XrpcProxyHandler *)proxyHandlerWithMinter {
-    XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithMinter:self.jwtMinter];
+- (ATProtoXrpcProxyHandler *)proxyHandlerWithMinter {
+    ATProtoXrpcProxyHandler *proxy = [[ATProtoXrpcProxyHandler alloc] initWithMinter:self.jwtMinter];
 
     // Wire up the signing key resolver if we have access to the user database pool.
     // This allows the proxy handler to mint spec-compliant service auth JWTs

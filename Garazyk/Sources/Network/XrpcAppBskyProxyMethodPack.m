@@ -10,15 +10,15 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/Generated/GZXrpcNSID.h"
 
-@implementation XrpcAppBskyProxyMethodPack
+@implementation ATProtoXrpcAppBskyProxyMethodPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.proxy";
 }
 
-+ (void)registerProxyOnlyMethodsWithDispatcher:(XrpcDispatcher *)dispatcher {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
++ (void)registerProxyOnlyMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher {
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:dispatcher.jwtMinter
                                           adminController:nil
                                              configuration:nil
@@ -29,16 +29,16 @@
   [self registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
-  XrpcDispatcher *resolvedDispatcher = services.dispatcher ?: dispatcher;
+  ATProtoXrpcDispatcher *resolvedDispatcher = services.dispatcher ?: dispatcher;
   if (!resolvedDispatcher) {
     return;
   }
   [self registerProxyOnlyMethodsOnDispatcher:resolvedDispatcher];
 }
 
-+ (void)registerProxyOnlyMethodsOnDispatcher:(XrpcDispatcher *)dispatcher {
++ (void)registerProxyOnlyMethodsOnDispatcher:(ATProtoXrpcDispatcher *)dispatcher {
   NSArray<NSString *> *methodIds = @[
     @"app.bsky.actor.getProfile",
     @"app.bsky.actor.getProfiles",
@@ -76,10 +76,10 @@
 + (void)proxyOrNotSupported:(ATProtoHttpRequest *)request
                    response:(ATProtoHttpResponse *)response
                    methodId:(NSString *)methodId
-                 dispatcher:(XrpcDispatcher *)dispatcher {
+                 dispatcher:(ATProtoXrpcDispatcher *)dispatcher {
   if (dispatcher.proxyURL) {
     GZ_LOG_INFO(@"Proxying XRPC method '%@' to %@", methodId, dispatcher.proxyURL);
-    XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc]
+    ATProtoXrpcProxyHandler *proxy = [[ATProtoXrpcProxyHandler alloc]
         initWithProxyURL:dispatcher.proxyURL
              upstreamDID:dispatcher.upstreamDID
                   minter:dispatcher.jwtMinter];

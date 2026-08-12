@@ -34,14 +34,14 @@ static NSSet<NSString *> *graphCollections(void) {
 @interface AppViewGraphIndexer ()
 @property (nonatomic, strong) AppViewDatabase *avdb;
 @property (nonatomic, weak)   AppViewRelevanceSet *relevanceSet;
-@property (nonatomic, strong) GraphService *graphService;
+@property (nonatomic, strong) PDSGraphService *graphService;
 @end
 
 @implementation AppViewGraphIndexer
 
 - (instancetype)initWithDatabase:(AppViewDatabase *)database
                     relevanceSet:(nullable AppViewRelevanceSet *)relevanceSet
-                    graphService:(nullable GraphService *)graphService {
+                    graphService:(nullable PDSGraphService *)graphService {
     self = [super init];
     if (!self) return nil;
     _avdb        = database;

@@ -6,7 +6,7 @@
  @abstract Top-level coordinator for the standalone AppView server.
 
  @discussion AppViewRuntime owns and wires together all three planes:
-  - Ingest: AppViewIngestEngine + RelayClient connections
+  - Ingest: AppViewIngestEngine + ATProtoRelayClient connections
   - Backfill: AppViewBackfillOrchestrator + worker pool
   - Query API: HTTP server with app.bsky.* XRPC routes
 
@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class AppViewConfiguration;
 @class AppViewDatabase;
-@class AppViewVideoUriBuilder;
+@class PDSAppViewVideoUriBuilder;
 @class GZDatabaseConnectionManager;
 @protocol AppViewRouteRegistration;
 
@@ -46,7 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) BOOL isRunning;
 
 /*! Returns the video URI builder (nil if no video service configured). */
-@property (nonatomic, strong, readonly, nullable) AppViewVideoUriBuilder *videoUriBuilder;
+@property (nonatomic, strong, readonly, nullable) PDSAppViewVideoUriBuilder *videoUriBuilder;
 
 /*! Admin UI host for loopback bind (e.g. "127.0.0.1"). */
 @property (nonatomic, copy, nullable) NSString *adminUIHost;

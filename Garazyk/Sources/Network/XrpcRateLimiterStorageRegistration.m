@@ -15,10 +15,10 @@
 #import "Database/Connection/ATProtoConnectionManagerSerial.h"
 #import "Database/Utils/ATProtoDatabaseQueryRunner.h"
 
-@interface XrpcRateLimiterStorageRegistration : NSObject
+@interface ATProtoXrpcRateLimiterStorageRegistration : NSObject
 @end
 
-@implementation XrpcRateLimiterStorageRegistration
+@implementation ATProtoXrpcRateLimiterStorageRegistration
 
 + (void)load {
     RateLimiterSetStorageFactory(^ATProtoRateLimiterStorageHandle * _Nullable(NSString *path, ATProtoDBConfig config, NSError **error) {

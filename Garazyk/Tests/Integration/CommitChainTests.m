@@ -16,14 +16,14 @@
 #import "Sync/Relay/EventFormatter.h"
 
 // Expose private property for testing
-@interface SubscribeReposHandler (CommitChainTesting)
-@property (nonatomic, strong) NSMutableSet<WebSocketConnection *> *attachedConnections;
+@interface ATProtoSubscribeReposHandler (CommitChainTesting)
+@property (nonatomic, strong) NSMutableSet<ATProtoWebSocketConnection *> *attachedConnections;
 - (void)ensureSequenceInitialized;
 - (void)startObservingNotifications;
 @end
 
 // Mock Connection
-@interface CommitChainMockConnection : WebSocketConnection
+@interface CommitChainMockConnection : ATProtoWebSocketConnection
 @property (nonatomic, strong) NSMutableArray<NSData *> *messages;
 @property (nonatomic, assign) NSInteger messageCount;
 @end
@@ -157,11 +157,11 @@
     // A firehose frame is two concatenated dag-cbor objects (header, then
     // payload) with no length prefix; ATProtoDagCBOR decodeData: rejects
     // trailing bytes after a complete item, so it can't be used to split
-    // this buffer manually. Use EventFormatter's own incremental decoder
-    // instead — the same one the real firehose consumer (Firehose.m's
+    // this buffer manually. Use ATProtoEventFormatter's own incremental decoder
+    // instead — the same one the real firehose consumer (ATProtoFirehose.m's
     // handleMessage:) uses.
     NSError *error = nil;
-    EventFormatter *formatter = [[EventFormatter alloc] init];
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
     NSInteger op = 0;
     NSString *msgType = nil;
     return [formatter decodeEventFromData:msg op:&op msgType:&msgType error:&error];
@@ -172,7 +172,7 @@
     NSError *error = nil;
 
     // Create handler
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] initWithServiceDatabases:self.controller.serviceDatabases
+    ATProtoSubscribeReposHandler *handler = [[ATProtoSubscribeReposHandler alloc] initWithServiceDatabases:self.controller.serviceDatabases
                                                                            userDatabasePool:self.controller.userDatabasePool];
     handler.signingKey = [NSData dataWithBytes:"dummykey" length:32];
 

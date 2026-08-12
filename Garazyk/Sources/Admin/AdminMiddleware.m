@@ -10,16 +10,16 @@
 
 NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware";
 
-@interface AdminMiddleware ()
+@interface PDSAdminMiddleware ()
 
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t accessQueue;
 
 @end
 
-@implementation AdminMiddleware
+@implementation PDSAdminMiddleware
 
 + (instancetype)sharedMiddleware {
-    static AdminMiddleware *sharedInstance = nil;
+    static PDSAdminMiddleware *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[self alloc] init];
@@ -44,7 +44,7 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
                            response:(ATProtoHttpResponse *)response
                               error:(NSError **)error {
     NSError *sessionError = nil;
-    Session *session = [self extractSessionFromRequest:request error:&sessionError];
+    PDSSession *session = [self extractSessionFromRequest:request error:&sessionError];
     
     if (!session) {
         if (error) {
@@ -95,7 +95,7 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
     return YES;
 }
 
-- (nullable Session *)extractSessionFromRequest:(ATProtoHttpRequest *)request error:(NSError **)error {
+- (nullable PDSSession *)extractSessionFromRequest:(ATProtoHttpRequest *)request error:(NSError **)error {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     
     if (!authHeader) {
@@ -126,9 +126,9 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
         return nil;
     }
     
-    SessionStore *store = [SessionStore sharedStore];
+    PDSSessionStore *store = [PDSSessionStore sharedStore];
     NSError *sessionError = nil;
-    Session *session = [store getSessionByAccessToken:token error:&sessionError];
+    PDSSession *session = [store getSessionByAccessToken:token error:&sessionError];
     
     if (!session) {
         if (error) {

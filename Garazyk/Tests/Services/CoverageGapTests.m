@@ -106,7 +106,7 @@
     // Let's check `PDSController.m`.
     
     // Actually, for unit testing, if we can't easily hit the HTTP endpoint, we can test the registry logic directly if we extract it.
-    // But `resolveDid` is a static function inside XrpcMethodRegistry.m.
+    // But `resolveDid` is a static function inside ATProtoXrpcMethodRegistry.m.
     
     // Alternative: Use `[self.controller.serverDispatch dispatchRequest:...]` if exposed.
     // `PDSController` has `dispatcher`?

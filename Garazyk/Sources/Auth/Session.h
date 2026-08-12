@@ -4,19 +4,19 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class SessionToken;
-@class Session;
-@class SessionStore;
+@class PDSSessionToken;
+@class PDSSession;
+@class PDSSessionStore;
 @class ATProtoJWTMinter;
 
 /*!
- @header Session.h
+ @header PDSSession.h
  
- @abstract Session management for ATProto authentication.
+ @abstract PDSSession management for ATProto authentication.
  
  @discussion This header defines the session management classes used by the
- PDS for OAuth 2.0 authentication. It includes SessionToken, Session, and
- SessionStore for managing user authentication state.
+ PDS for OAuth 2.0 authentication. It includes PDSSessionToken, PDSSession, and
+ PDSSessionStore for managing user authentication state.
  
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -53,14 +53,14 @@ typedef NS_ENUM(NSInteger, SessionError) {
 };
 
 /*!
- @class SessionToken
+ @class PDSSessionToken
  
  @abstract Represents an OAuth 2.0 token.
  
- @discussion SessionToken encapsulates both access tokens and refresh tokens
+ @discussion PDSSessionToken encapsulates both access tokens and refresh tokens
  with their associated metadata including expiration and scope.
  */
-@interface SessionToken : NSObject
+@interface PDSSessionToken : NSObject
 
 /*! The token value (ATProtoJWT for access tokens, opaque string for refresh tokens). */
 @property (nonatomic, copy) NSString *value;
@@ -86,7 +86,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param expiresIn Time in seconds until the token expires.
  @param scope The OAuth scope for this token.
  @param isRefreshToken YES if this is a refresh token.
- @return A new SessionToken instance.
+ @return A new PDSSessionToken instance.
  */
 /**
  * @abstract Performs the tokenWithValue operation.
@@ -122,17 +122,17 @@ typedef NS_ENUM(NSInteger, SessionError) {
 @end
 
 /*!
- @class Session
+ @class PDSSession
  
  @abstract Represents an authenticated user session.
  
- @discussion Session contains all information about an authenticated session
+ @discussion PDSSession contains all information about an authenticated session
  including tokens, user identity, and metadata. It provides methods for
  serializing to OAuth 2.0 token responses.
  
  @code
  // Create a new session
- Session *session = [Session sessionWithDID:@"did:plc:..."
+ PDSSession *session = [PDSSession sessionWithDID:@"did:plc:..."
                                     handle:@"alice.test"
                                      scope:@"atproto"];
  
@@ -141,9 +141,9 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @endcode
  */
 /**
- * @abstract Declares the Session public API.
+ * @abstract Declares the PDSSession public API.
  */
-@interface Session : NSObject
+@interface PDSSession : NSObject
 
 /*! Unique identifier for this session. */
 @property (nonatomic, copy, readonly) NSString *sessionID;
@@ -189,7 +189,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param did The user's DID.
  @param handle The user's handle.
  @param scope The OAuth scope for the session.
- @return A new Session instance.
+ @return A new PDSSession instance.
  */
 + (nullable instancetype)sessionWithDID:(NSString *)did
                                  handle:(NSString *)handle
@@ -214,7 +214,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param handle The user's handle.
  @param scope The OAuth scope for the session.
  @param minter The ATProtoJWT minter to use for access tokens.
- @return A new Session instance.
+ @return A new PDSSession instance.
  */
 /**
  * @abstract Performs the sessionWithDID operation.
@@ -244,7 +244,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param handle The user's handle.
  @param scope The OAuth scope for the session.
  @param jkt The DPoP key thumbprint.
- @return An initialized Session instance.
+ @return An initialized PDSSession instance.
  */
 /**
  * @abstract Performs the initWithDID operation.
@@ -273,7 +273,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param scope The OAuth scope for the session.
  @param minter The ATProtoJWT minter to use for access tokens.
  @param jkt The DPoP key thumbprint.
- @return An initialized Session instance.
+ @return An initialized PDSSession instance.
  */
 /**
  * @abstract Performs the initWithDID operation.
@@ -360,8 +360,8 @@ typedef NS_ENUM(NSInteger, SessionError) {
  <b>Security:</b> Sessions contain sensitive tokens. Implementations should
  consider encryption at rest for production deployments.
 
- @see Session
- @see SessionStore
+ @see PDSSession
+ @see PDSSessionStore
  */
 /**
  * @abstract Defines the PDSSessionStorage protocol contract.
@@ -378,7 +378,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @return YES if saved successfully, NO otherwise.
  */
 /** Persists a session to the backing store. */
-- (BOOL)saveSession:(Session *)session error:(NSError **)error;
+- (BOOL)saveSession:(PDSSession *)session error:(NSError **)error;
 
 /*!
  @method getSessionByAccessToken:error:
@@ -390,7 +390,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @return The session, or nil if not found.
  */
 /** Looks up a session by access token. */
-- (nullable Session *)getSessionByAccessToken:(NSString *)token error:(NSError **)error;
+- (nullable PDSSession *)getSessionByAccessToken:(NSString *)token error:(NSError **)error;
 
 /*!
  @method getSessionByRefreshToken:error:
@@ -402,7 +402,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @return The session, or nil if not found.
  */
 /** Looks up a session by refresh token. */
-- (nullable Session *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error;
+- (nullable PDSSession *)getSessionByRefreshToken:(NSString *)token error:(NSError **)error;
 
 /*!
  @method getSessionByID:error:
@@ -414,7 +414,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @return The session, or nil if not found.
  */
 /** Looks up a session by stable session identifier. */
-- (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error;
+- (nullable PDSSession *)getSessionByID:(NSString *)sessionID error:(NSError **)error;
 
 /*!
  @method revokeSessionByID:error:
@@ -438,7 +438,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @return An array of sessions for the DID.
  */
 /** Returns sessions belonging to a DID. */
-- (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error;
+- (NSArray<PDSSession *> *)getSessionsForDID:(NSString *)did error:(NSError **)error;
 
 /*!
  @method allActiveSessions:
@@ -449,7 +449,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @return An array of all active sessions.
  */
 /** Returns all non-revoked sessions. */
-- (NSArray<Session *> *)allActiveSessions:(NSError **)error;
+- (NSArray<PDSSession *> *)allActiveSessions:(NSError **)error;
 
 @end
 
@@ -470,10 +470,10 @@ typedef NS_ENUM(NSInteger, SessionError) {
 @end
 
 /*!
- @class SessionStore
+ @class PDSSessionStore
  @abstract Manages storage and lifecycle of sessions.
  */
-@interface SessionStore : NSObject
+@interface PDSSessionStore : NSObject
 
 /*! Lifetime of access tokens in seconds (default: 3600). */
 @property (nonatomic, assign) NSTimeInterval accessTokenLifetime;
@@ -492,7 +492,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  
  @abstract Returns the shared session store instance.
  
- @return The singleton SessionStore instance.
+ @return The singleton PDSSessionStore instance.
  */
 + (instancetype)sharedStore;
 
@@ -505,7 +505,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  Pass nil or use init for an in-memory store (legacy behavior).
  
  @param path File path for the SQLite database, or nil for in-memory.
- @return An initialized SessionStore instance.
+ @return An initialized PDSSessionStore instance.
  */
 /**
  * @abstract Performs the initWithDatabasePath operation.
@@ -522,12 +522,12 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param scope The OAuth scope for the session.
  @param dpopJWK Optional DPoP key for proof-of-possession.
  @param error On return, contains an error if session creation failed.
- @return The new Session, or nil on failure.
+ @return The new PDSSession, or nil on failure.
  */
 /**
  * @abstract Performs the createSessionForDID operation.
  */
-- (nullable Session *)createSessionForDID:(NSString *)did
+- (nullable PDSSession *)createSessionForDID:(NSString *)did
                                    handle:(NSString *)handle
                                     scope:(NSString *)scope
                                   dpopJWK:(nullable NSDictionary *)dpopJWK
@@ -540,9 +540,9 @@ typedef NS_ENUM(NSInteger, SessionError) {
  
  @param accessToken The access token to look up.
  @param error On return, contains an error if the lookup failed.
- @return The Session, or nil if not found.
+ @return The PDSSession, or nil if not found.
  */
-- (nullable Session *)getSessionByAccessToken:(NSString *)accessToken error:(NSError **)error;
+- (nullable PDSSession *)getSessionByAccessToken:(NSString *)accessToken error:(NSError **)error;
 
 /*!
  @method getSessionByRefreshToken:error:
@@ -551,9 +551,9 @@ typedef NS_ENUM(NSInteger, SessionError) {
  
  @param refreshToken The refresh token to look up.
  @param error On return, contains an error if the lookup failed.
- @return The Session, or nil if not found.
+ @return The PDSSession, or nil if not found.
  */
-- (nullable Session *)getSessionByRefreshToken:(NSString *)refreshToken error:(NSError **)error;
+- (nullable PDSSession *)getSessionByRefreshToken:(NSString *)refreshToken error:(NSError **)error;
 
 /*!
  @method getSessionByID:error:
@@ -562,9 +562,9 @@ typedef NS_ENUM(NSInteger, SessionError) {
  
  @param sessionID The session ID to look up.
  @param error On return, contains an error if the lookup failed.
- @return The Session, or nil if not found.
+ @return The PDSSession, or nil if not found.
  */
-- (nullable Session *)getSessionByID:(NSString *)sessionID error:(NSError **)error;
+- (nullable PDSSession *)getSessionByID:(NSString *)sessionID error:(NSError **)error;
 
 /*!
  @method revokeSession:error:
@@ -595,7 +595,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
 - (BOOL)refreshSession:(NSString *)sessionID
                   scope:(nullable NSString *)newScope
                 dpopJWK:(nullable NSDictionary *)dpopJWK
-            newSession:(Session * _Nullable * _Nonnull)newSession
+            newSession:(PDSSession * _Nullable * _Nonnull)newSession
                   error:(NSError ** _Nullable)error;
 
 /*!
@@ -607,7 +607,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param error On return, contains an error if retrieval failed.
  @return An array of the user's active sessions.
  */
-- (NSArray<Session *> *)getSessionsForDID:(NSString *)did error:(NSError **)error;
+- (NSArray<PDSSession *> *)getSessionsForDID:(NSString *)did error:(NSError **)error;
 
 /*!
  @method allActiveSessions:
@@ -617,7 +617,7 @@ typedef NS_ENUM(NSInteger, SessionError) {
  @param error On return, contains an error if retrieval failed.
  @return An array of all active sessions.
  */
-- (NSArray<Session *> *)allActiveSessions:(NSError **)error;
+- (NSArray<PDSSession *> *)allActiveSessions:(NSError **)error;
 
 /*!
  @method setClockSkew:

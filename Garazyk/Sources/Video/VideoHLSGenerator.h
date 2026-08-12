@@ -24,7 +24,7 @@ typedef NS_ENUM(NSInteger, ATProtoVideoHLSError) {
  * @abstract Result of HLS generation.
  * @discussion Contains paths to the master playlist and all variant assets.
  */
-@interface VideoHLSResult : NSObject
+@interface GZVideoHLSResult : NSObject
 
 /**
  * @abstract Path to the master playlist (e.g. /hls/{did}/{cid}/playlist.m3u8).
@@ -101,9 +101,9 @@ typedef NS_ENUM(NSInteger, ATProtoVideoHLSError) {
  * @param cid ATProtoCID of the original video blob.
  * @param thumbnailData Optional thumbnail JPEG data to store alongside HLS.
  * @param error On failure, contains the error.
- * @return VideoHLSResult with paths to generated files, or nil on failure.
+ * @return GZVideoHLSResult with paths to generated files, or nil on failure.
  */
-- (nullable VideoHLSResult *)generateHLSFromVideoAtURL:(NSURL *)inputURL
+- (nullable GZVideoHLSResult *)generateHLSFromVideoAtURL:(NSURL *)inputURL
                                                     did:(NSString *)did
                                                     cid:(NSString *)cid
                                           thumbnailData:(nullable NSData *)thumbnailData

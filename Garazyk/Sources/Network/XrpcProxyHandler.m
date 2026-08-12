@@ -10,7 +10,7 @@
 #import "Security/ATProtoPermissionScopeEvaluator.h"
 #import "Debug/GZLogger.h"
 
-@implementation XrpcProxyHandler
+@implementation ATProtoXrpcProxyHandler
 
 - (instancetype)initWithMinter:(ATProtoJWTMinter *)minter {
     self = [super init];
@@ -50,7 +50,7 @@
 
     // 1. Extract User DID from the incoming request.
     NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *userDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+    NSString *userDid = [ATProtoXrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                        jwtMinter:self.minter
                                                  adminController:nil
                                                          request:request
@@ -157,7 +157,7 @@
 
     [proxyRequest setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
 
-    // 4. Execute request synchronously (for now, as XrpcDispatcher is synchronous)
+    // 4. Execute request synchronously (for now, as ATProtoXrpcDispatcher is synchronous)
     NSTimeInterval proxyTimeoutSeconds = (NSClassFromString(@"XCTestCase") != Nil) ? 2.0 : 30.0;
     proxyRequest.timeoutInterval = proxyTimeoutSeconds;
 

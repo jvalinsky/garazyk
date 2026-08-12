@@ -131,8 +131,8 @@
 }
 
 - (void)testVideoServiceAuthAcceptsAudienceFragment {
-    VideoJWTAuthProvider *provider =
-        [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:localhost"
+    GZVideoJWTAuthProvider *provider =
+        [[GZVideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:localhost"
                                                         pdsURL:@"http://localhost:2583"
                                                         plcURL:@"http://localhost:2582"];
     NSString *token = [self unsignedServiceAuthTokenWithAudience:@"did:web:localhost#bsky_video"];

@@ -27,7 +27,7 @@
 + (nullable NSString *)requiredQueryParam:(NSString *)name request:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *value = [request queryParamForKey:name];
     if (value.length == 0) {
-        [XrpcErrorHelper setInvalidRequestError:response
+        [ATProtoXrpcErrorHelper setInvalidRequestError:response
                                         message:[NSString stringWithFormat:@"%@ parameter is required", name]];
         return nil;
     }
@@ -46,7 +46,7 @@
         NSScanner *scanner = [NSScanner scannerWithString:limitParam];
         scanner.charactersToBeSkipped = nil;
         if (![scanner scanInteger:&limit] || !scanner.isAtEnd || limit < min || limit > max) {
-            [XrpcErrorHelper setInvalidRequestError:response
+            [ATProtoXrpcErrorHelper setInvalidRequestError:response
                                             message:[NSString stringWithFormat:@"limit must be an integer between %ld and %ld",
                                                      (long)min,
                                                      (long)max]];

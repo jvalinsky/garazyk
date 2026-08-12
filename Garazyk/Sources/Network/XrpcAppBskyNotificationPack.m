@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file XrpcAppBskyNotificationPack.m
+ @file ATProtoXrpcAppBskyNotificationPack.m
 
  @abstract XRPC route pack for app.bsky.notification endpoints.
  */
@@ -46,43 +46,43 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
   };
 }
 
-@implementation XrpcAppBskyNotificationPack
+@implementation ATProtoXrpcAppBskyNotificationPack
 
 + (NSString *)routePackIdentifier {
   return @"app.bsky.notification";
 }
 
-+ (nullable ActorService *)actorServiceForServices:(id<XrpcRoutePackServices>)services {
++ (nullable PDSActorService *)actorServiceForServices:(id<XrpcRoutePackServices>)services {
   id<PDSQueryDatabase> database = services.appViewDatabase;
   if (!database) {
     return nil;
   }
-  return [[ActorService alloc] initWithDatabase:database];
+  return [[PDSActorService alloc] initWithDatabase:database];
 }
 
-+ (nullable NotificationService *)notificationServiceForServices:(id<XrpcRoutePackServices>)services {
++ (nullable PDSNotificationService *)notificationServiceForServices:(id<XrpcRoutePackServices>)services {
   if (services.notificationService) {
     return services.notificationService;
   }
-  ActorService *actorService = [self actorServiceForServices:services];
+  PDSActorService *actorService = [self actorServiceForServices:services];
   if (!actorService) {
     return nil;
   }
-  return [[NotificationService alloc] initWithDatabase:services.appViewDatabase actorService:actorService];
+  return [[PDSNotificationService alloc] initWithDatabase:services.appViewDatabase actorService:actorService];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services {
   [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
   [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerPDSLevelMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                                adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -94,12 +94,12 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
   [self registerPDSLevelMethodsWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerAppViewMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                                     jwtMinter:(ATProtoJWTMinter *)jwtMinter
                               adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -111,12 +111,12 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
   [self registerAppViewMethodsWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                      jwtMinter:(ATProtoJWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController {
-  XrpcRoutePackServiceBag *services =
-      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+  ATProtoXrpcRoutePackServiceBag *services =
+      [[ATProtoXrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
@@ -128,9 +128,9 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
   [self registerWithDispatcher:dispatcher services:services];
 }
 
-+ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerPDSLevelMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                      services:(id<XrpcRoutePackServices>)services {
-  ActorService *actorService = [self actorServiceForServices:services];
+  PDSActorService *actorService = [self actorServiceForServices:services];
   if (!actorService) {
     return;
   }
@@ -139,8 +139,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putNotificationPreferences
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -150,14 +150,14 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
                        NSDictionary *body = request.jsonBody;
                        if (!body || ![body isKindOfClass:[NSDictionary class]]) {
-                         [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing request body"];
                          return;
                        }
 
                        BOOL bodyTypeMismatch = NO;
                        NSNumber *priorityNumber = AuthTypedValue(body, @"priority", [NSNumber class], &bodyTypeMismatch);
                        if (bodyTypeMismatch) {
-                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
                          return;
                        }
                        BOOL priority = priorityNumber.boolValue;
@@ -191,7 +191,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
                        BOOL success = [actorService putPreferencesForActor:actorDID preferences:prefsList error:&error];
                        if (!success) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription ?: @"Failed to save preferences"];
                          return;
                        }
@@ -201,10 +201,10 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                      }];
 }
 
-+ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
++ (void)registerAppViewMethodsWithDispatcher:(ATProtoXrpcDispatcher *)dispatcher
                                     services:(id<XrpcRoutePackServices>)services {
-  ActorService *actorService = [self actorServiceForServices:services];
-  NotificationService *notificationService = [self notificationServiceForServices:services];
+  PDSActorService *actorService = [self actorServiceForServices:services];
+  PDSNotificationService *notificationService = [self notificationServiceForServices:services];
   if (!actorService || !notificationService) {
     return;
   }
@@ -213,8 +213,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_getPreferences
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -252,8 +252,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putPreferences
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -263,14 +263,14 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
                        NSDictionary *body = request.jsonBody;
                        if (!body || ![body isKindOfClass:[NSDictionary class]]) {
-                         [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing request body"];
                          return;
                        }
 
                        BOOL bodyTypeMismatch = NO;
                        NSNumber *priorityNumber = AuthTypedValue(body, @"priority", [NSNumber class], &bodyTypeMismatch);
                        if (bodyTypeMismatch) {
-                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
                          return;
                        }
                        BOOL priority = priorityNumber.boolValue;
@@ -301,7 +301,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
                        BOOL success = [actorService putPreferencesForActor:actorDID preferences:filtered error:&error];
                        if (!success) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription ?: @"Failed to save preferences"];
                          return;
                        }
@@ -312,8 +312,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_listNotifications
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -334,7 +334,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                                                                   cursor:cursor
                                                                    error:&error];
                        if (error) {
-                         [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                         [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
                          return;
                        }
                        response.statusCode = HttpStatusOK;
@@ -343,8 +343,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_getUnreadCount
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -355,7 +355,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        NSError *error = nil;
                        NSInteger count = [notificationService getUnreadCountForActor:actorDID error:&error];
                        if (error) {
-                         [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                         [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
                          return;
                        }
                        response.statusCode = HttpStatusOK;
@@ -364,8 +364,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_updateSeen
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -381,8 +381,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                      }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_registerPush handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-    XrpcHandlerContext *context =
-        [[XrpcHandlerContext alloc] initWithRequest:request response:response services:resolvedServices];
+    ATProtoXrpcHandlerContext *context =
+        [[ATProtoXrpcHandlerContext alloc] initWithRequest:request response:response services:resolvedServices];
     NSString *actorDID = nil;
     if (![context requireAuthenticatedDID:&actorDID]) {
       return;
@@ -390,7 +390,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
     NSDictionary *body = request.jsonBody;
     if (![body isKindOfClass:[NSDictionary class]]) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing request body"];
       return;
     }
 
@@ -400,25 +400,25 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
     NSString *appId = body[@"appId"];
 
     if (![serviceDid isKindOfClass:[NSString class]] || serviceDid.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing or invalid serviceDid"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid serviceDid"];
       return;
     }
     if (![token isKindOfClass:[NSString class]] || token.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing or invalid token"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid token"];
       return;
     }
     if (![platform isKindOfClass:[NSString class]] || platform.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing or invalid platform"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid platform"];
       return;
     }
     if (![appId isKindOfClass:[NSString class]] || appId.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing or invalid appId"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid appId"];
       return;
     }
 
     NSArray *validPlatforms = @[@"ios", @"android", @"web"];
     if (![validPlatforms containsObject:platform]) {
-      [XrpcErrorHelper setValidationError:response message:@"Invalid platform, must be one of: ios, android, web"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid platform, must be one of: ios, android, web"];
       return;
     }
 
@@ -429,7 +429,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                                            serviceEndpoint:serviceDid
                                                        error:&error];
     if (!success) {
-      [XrpcErrorHelper setInternalServerError:response
+      [ATProtoXrpcErrorHelper setInternalServerError:response
                                       message:error.localizedDescription ?: @"Failed to register push token"];
       return;
     }
@@ -439,8 +439,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
   }];
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_unregisterPush handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-    XrpcHandlerContext *context =
-        [[XrpcHandlerContext alloc] initWithRequest:request response:response services:resolvedServices];
+    ATProtoXrpcHandlerContext *context =
+        [[ATProtoXrpcHandlerContext alloc] initWithRequest:request response:response services:resolvedServices];
     NSString *actorDID = nil;
     if (![context requireAuthenticatedDID:&actorDID]) {
       return;
@@ -448,7 +448,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
     NSDictionary *body = request.jsonBody;
     if (![body isKindOfClass:[NSDictionary class]]) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing request body"];
       return;
     }
 
@@ -458,32 +458,32 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
     NSString *appId = body[@"appId"];
 
     if (![serviceDid isKindOfClass:[NSString class]] || serviceDid.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing or invalid serviceDid"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid serviceDid"];
       return;
     }
     if (![token isKindOfClass:[NSString class]] || token.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing or invalid token"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid token"];
       return;
     }
     if (![platform isKindOfClass:[NSString class]] || platform.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing or invalid platform"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid platform"];
       return;
     }
     if (![appId isKindOfClass:[NSString class]] || appId.length == 0) {
-      [XrpcErrorHelper setValidationError:response message:@"Missing or invalid appId"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid appId"];
       return;
     }
 
     NSArray *validPlatforms = @[@"ios", @"android", @"web"];
     if (![validPlatforms containsObject:platform]) {
-      [XrpcErrorHelper setValidationError:response message:@"Invalid platform, must be one of: ios, android, web"];
+      [ATProtoXrpcErrorHelper setValidationError:response message:@"Invalid platform, must be one of: ios, android, web"];
       return;
     }
 
     NSError *error = nil;
     BOOL success = [notificationService unregisterPushToken:token forActor:actorDID error:&error];
     if (!success) {
-      [XrpcErrorHelper setInternalServerError:response
+      [ATProtoXrpcErrorHelper setInternalServerError:response
                                       message:error.localizedDescription ?: @"Failed to unregister push token"];
       return;
     }
@@ -494,8 +494,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_listActivitySubscriptions
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -516,7 +516,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                                                                                              cursor:cursor
                                                                                               error:&error];
                        if (error) {
-                         [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                         [ATProtoXrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
                          return;
                        }
 
@@ -526,8 +526,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putPreferencesV2
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -537,7 +537,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
                        NSDictionary *body = request.jsonBody;
                        if (![body isKindOfClass:[NSDictionary class]]) {
-                         [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing request body"];
                          return;
                        }
 
@@ -572,7 +572,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        }
 
                        if (prefsToStore.count == 0) {
-                         [XrpcErrorHelper setValidationError:response message:@"No valid preferences provided"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"No valid preferences provided"];
                          return;
                        }
 
@@ -581,7 +581,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                                                                preferences:[prefsToStore copy]
                                                                        error:&error];
                        if (!success) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription ?: @"Failed to save preferences"];
                          return;
                        }
@@ -592,8 +592,8 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
   [dispatcher registerMethod:kGZXrpcNSID_app_bsky_notification_putActivitySubscription
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                       XrpcHandlerContext *context =
-                           [[XrpcHandlerContext alloc] initWithRequest:request
+                       ATProtoXrpcHandlerContext *context =
+                           [[ATProtoXrpcHandlerContext alloc] initWithRequest:request
                                                              response:response
                                                              services:resolvedServices];
                        NSString *actorDID = nil;
@@ -603,7 +603,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
 
                        NSDictionary *body = request.jsonBody;
                        if (![body isKindOfClass:[NSDictionary class]]) {
-                         [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing request body"];
                          return;
                        }
 
@@ -611,11 +611,11 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        NSDictionary *subscription = body[@"activitySubscription"];
 
                        if (![subjectDID isKindOfClass:[NSString class]] || subjectDID.length == 0) {
-                         [XrpcErrorHelper setValidationError:response message:@"Missing or invalid subject"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid subject"];
                          return;
                        }
                        if (![subscription isKindOfClass:[NSDictionary class]]) {
-                         [XrpcErrorHelper setValidationError:response message:@"Missing or invalid activitySubscription"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Missing or invalid activitySubscription"];
                          return;
                        }
 
@@ -623,7 +623,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                        NSNumber *postEnabledNumber = AuthTypedValue(subscription, @"post", [NSNumber class], &subscriptionTypeMismatch);
                        NSNumber *replyEnabledNumber = AuthTypedValue(subscription, @"reply", [NSNumber class], &subscriptionTypeMismatch);
                        if (subscriptionTypeMismatch) {
-                         [XrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
+                         [ATProtoXrpcErrorHelper setValidationError:response message:@"Request field has wrong type"];
                          return;
                        }
                        BOOL postEnabled = postEnabledNumber.boolValue;
@@ -636,7 +636,7 @@ static NSDictionary *XrpcNotificationPreferenceDefaults(void) {
                                                                              replyEnabled:replyEnabled
                                                                                    error:&error];
                        if (!success) {
-                         [XrpcErrorHelper setInternalServerError:response
+                         [ATProtoXrpcErrorHelper setInternalServerError:response
                                                          message:error.localizedDescription
                                                                    ?: @"Failed to save activity subscription"];
                          return;

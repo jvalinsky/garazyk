@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PLCCacheDirectory.h
+ @file ATProtoPLCCacheDirectory.h
 
  @abstract Caching wrapper for PLCStore with TTL support.
 
@@ -24,7 +24,7 @@ extern NSTimeInterval const PLCCacheDefaultTTL;
 extern NSUInteger const PLCCacheDefaultCapacity;
 
 /*!
- @class PLCCacheDirectory
+ @class ATProtoPLCCacheDirectory
 
  @abstract Caching wrapper for PLCStore.
 
@@ -35,7 +35,7 @@ extern NSUInteger const PLCCacheDefaultCapacity;
  Uses NSCache for memory-efficient caching with automatic eviction when
  memory pressure occurs.
  */
-@interface PLCCacheDirectory : NSObject <PLCStore>
+@interface ATProtoPLCCacheDirectory : NSObject <PLCStore>
 
 /*! The underlying PLCStore being wrapped. */
 @property (nonatomic, strong, readonly) id<PLCStore> innerStore;

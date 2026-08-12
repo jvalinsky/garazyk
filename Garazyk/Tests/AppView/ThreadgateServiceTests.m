@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-// Unit tests for FeedService -indexThreadgate:did:uri:cid:error: and
-// -unindexThreadgateWithURI:error: (FeedService.m:657–684).
+// Unit tests for PDSFeedService -indexThreadgate:did:uri:cid:error: and
+// -unindexThreadgateWithURI:error: (PDSFeedService.m:657–684).
 // Schema under test: bsky_feed_threadgates table in AppViewDatabase.m kSchemaV1.
 #import <XCTest/XCTest.h>
 #import "AppView/Services/FeedService.h"
@@ -10,7 +10,7 @@
 @interface ThreadgateServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) FeedService *service;
+@property (nonatomic, strong) PDSFeedService *service;
 @end
 
 @implementation ThreadgateServiceTests
@@ -29,7 +29,7 @@
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
 
     [self createSchema];
-    self.service = [[FeedService alloc] initWithDatabase:self.database];
+    self.service = [[PDSFeedService alloc] initWithDatabase:self.database];
 }
 
 - (void)createSchema {
@@ -235,10 +235,10 @@
 // MARK: - Gate by non-author (documented gap)
 
 - (void)testIndexThreadgateByNonAuthorIsRejected {
-    // KNOWN GAP: FeedService.m:657 does not validate that `did` matches the post_uri author.
+    // KNOWN GAP: PDSFeedService.m:657 does not validate that `did` matches the post_uri author.
     // A gate created by "did:plc:other" for a post authored by "did:plc:author" is currently
     // accepted. This test fails intentionally to keep the gap visible in CI until the author
-    // check is added to FeedService.m.
+    // check is added to PDSFeedService.m.
     NSError *error = nil;
     NSString *postUri = [self postURIForDID:@"did:plc:author" rkey:@"post6"];
     NSString *gateUri = [self threadgateURIForDID:@"did:plc:other"  rkey:@"gate6"];

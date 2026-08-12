@@ -8,13 +8,13 @@
 
 NSString * const JelczDatabaseErrorDomain = @"com.atproto.jelcz.database";
 
-@interface JelczDatabase ()
+@interface GZJelczDatabase ()
 @property (nonatomic, readwrite) NSURL *databaseURL;
 @property (nonatomic, strong) ATProtoConnectionManagerSerial *connectionManager;
 @property (nonatomic, strong) ATProtoDatabaseQueryRunner *queryRunner;
 @end
 
-@implementation JelczDatabase
+@implementation GZJelczDatabase
 
 - (nullable instancetype)initWithDatabasePath:(NSString *)path
                                        error:(NSError **)error {
@@ -132,7 +132,7 @@ NSString * const JelczDatabaseErrorDomain = @"com.atproto.jelcz.database";
 
 // The single-row updates below intentionally do NOT map "no matching row" to an error:
 // against a missing job the UPDATE affects 0 rows and returns YES. This preserves
-// JelczDatabase's pre-migration contract (see JelczDatabaseTests) and is deliberately
+// GZJelczDatabase's pre-migration contract (see JelczDatabaseTests) and is deliberately
 // looser than ATProtoMediaSQLiteStore's 404-on-no-row behaviour.
 
 - (BOOL)updateVideoJobState:(NSString *)jobId

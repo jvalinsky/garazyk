@@ -532,9 +532,9 @@
 
 @end
 
-#pragma mark - Base32Utils Tests
+#pragma mark - ATProtoBase32Utils Tests
 
-#pragma mark - Base32Utils Tests
+#pragma mark - ATProtoBase32Utils Tests
 
 @interface Base32UtilsTests : XCTestCase
 @end
@@ -542,40 +542,40 @@
 @implementation Base32UtilsTests
 
 - (void)testEncodeEmptyData {
-    NSString *result = [Base32Utils base32StringFromData:[NSData data]];
+    NSString *result = [ATProtoBase32Utils base32StringFromData:[NSData data]];
     XCTAssertEqualObjects(result, @"");
 }
 
 - (void)testEncodeNilData {
-    NSString *result = [Base32Utils base32StringFromData:nil];
+    NSString *result = [ATProtoBase32Utils base32StringFromData:nil];
     XCTAssertEqualObjects(result, @"");
 }
 
 - (void)testEncodeSingleByte {
     NSData *data = [NSData dataWithBytes:(uint8_t[]){0x48} length:1];
-    NSString *result = [Base32Utils base32StringFromData:data];
+    NSString *result = [ATProtoBase32Utils base32StringFromData:data];
     XCTAssertEqualObjects(result, @"JA======");
 }
 
 - (void)testEncodeHelloWorld {
     NSData *data = [@"Hello" dataUsingEncoding:NSUTF8StringEncoding];
-    NSString *result = [Base32Utils base32StringFromData:data];
+    NSString *result = [ATProtoBase32Utils base32StringFromData:data];
     XCTAssertTrue([result hasPrefix:@"JBSWY3DP"]);
 }
 
 - (void)testDecodeNil {
-    NSData *result = [Base32Utils dataFromBase32String:nil];
+    NSData *result = [ATProtoBase32Utils dataFromBase32String:nil];
     XCTAssertNil(result);
 }
 
 - (void)testDecodeEmptyString {
-    NSData *result = [Base32Utils dataFromBase32String:@""];
+    NSData *result = [ATProtoBase32Utils dataFromBase32String:@""];
     XCTAssertNotNil(result);
     XCTAssertEqual(result.length, (NSUInteger)0);
 }
 
 - (void)testDecodeInvalidCharacter {
-    NSData *result = [Base32Utils dataFromBase32String:@"019!@#"];
+    NSData *result = [ATProtoBase32Utils dataFromBase32String:@"019!@#"];
     XCTAssertNil(result);
 }
 
@@ -583,22 +583,22 @@
     for (NSUInteger len = 1; len < 32; len++) {
         NSMutableData *data = [NSMutableData dataWithLength:len];
         arc4random_buf(data.mutableBytes, len);
-        NSString *encoded = [Base32Utils base32StringFromData:data];
-        NSData *decoded = [Base32Utils dataFromBase32String:encoded];
+        NSString *encoded = [ATProtoBase32Utils base32StringFromData:data];
+        NSData *decoded = [ATProtoBase32Utils dataFromBase32String:encoded];
         XCTAssertEqualObjects(decoded, data, @"Round-trip failed for %lu bytes", (unsigned long)len);
     }
 }
 
 - (void)testDecodeLowercase {
-    NSData *result = [Base32Utils dataFromBase32String:@"jbswy3dp"];
+    NSData *result = [ATProtoBase32Utils dataFromBase32String:@"jbswy3dp"];
     XCTAssertNotNil(result);
-    NSData *upperResult = [Base32Utils dataFromBase32String:@"JBSWY3DP"];
+    NSData *upperResult = [ATProtoBase32Utils dataFromBase32String:@"JBSWY3DP"];
     XCTAssertNotNil(upperResult);
     XCTAssertEqualObjects(result, upperResult);
 }
 
 - (void)testDecodeWithPadding {
-    NSData *result = [Base32Utils dataFromBase32String:@"JA======"];
+    NSData *result = [ATProtoBase32Utils dataFromBase32String:@"JA======"];
     XCTAssertNotNil(result);
     XCTAssertEqual(result.length, (NSUInteger)1);
     const uint8_t *bytes = result.bytes;
@@ -606,7 +606,7 @@
 }
 
 - (void)testDecodeWithoutPadding {
-    NSData *result = [Base32Utils dataFromBase32String:@"JA"];
+    NSData *result = [ATProtoBase32Utils dataFromBase32String:@"JA"];
     XCTAssertNotNil(result);
     XCTAssertEqual(result.length, (NSUInteger)1);
     const uint8_t *bytes = result.bytes;
@@ -615,23 +615,23 @@
 
 - (void)testEncodeKnownValue {
     NSData *f = [NSData dataWithBytes:(uint8_t[]){0x66} length:1];
-    NSString *fEncoded = [Base32Utils base32StringFromData:f];
+    NSString *fEncoded = [ATProtoBase32Utils base32StringFromData:f];
     XCTAssertEqualObjects(fEncoded, @"MY======");
 
     NSData *fo = [NSData dataWithBytes:(uint8_t[]){0x66, 0x6f} length:2];
-    NSString *foEncoded = [Base32Utils base32StringFromData:fo];
+    NSString *foEncoded = [ATProtoBase32Utils base32StringFromData:fo];
     XCTAssertEqualObjects(foEncoded, @"MZXQ====");
 
     NSData *foo = [NSData dataWithBytes:(uint8_t[]){0x66, 0x6f, 0x6f} length:3];
-    NSString *fooEncoded = [Base32Utils base32StringFromData:foo];
+    NSString *fooEncoded = [ATProtoBase32Utils base32StringFromData:foo];
     XCTAssertEqualObjects(fooEncoded, @"MZXW6===");
 
     NSData *foob = [NSData dataWithBytes:(uint8_t[]){0x66, 0x6f, 0x6f, 0x62} length:4];
-    NSString *foobEncoded = [Base32Utils base32StringFromData:foob];
+    NSString *foobEncoded = [ATProtoBase32Utils base32StringFromData:foob];
     XCTAssertEqualObjects(foobEncoded, @"MZXW6YQ=");
 
     NSData *fooba = [NSData dataWithBytes:(uint8_t[]){0x66, 0x6f, 0x6f, 0x62, 0x61} length:5];
-    NSString *foobaEncoded = [Base32Utils base32StringFromData:fooba];
+    NSString *foobaEncoded = [ATProtoBase32Utils base32StringFromData:fooba];
     XCTAssertEqualObjects(foobaEncoded, @"MZXW6YTB");
 }
 

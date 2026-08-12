@@ -435,7 +435,7 @@ typedef void (^UILabRouteHandler)(ATProtoHttpRequest *request, ATProtoHttpRespon
     XCTAssertTrue([html containsString:@"data-lab-action=\"sign-out\""]);
 }
 
-#pragma mark - Session Token Tests
+#pragma mark - PDSSession Token Tests
 
 /*!
  @test testSessionTokenCreationAndValidation

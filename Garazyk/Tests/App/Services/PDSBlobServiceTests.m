@@ -14,7 +14,7 @@
 @property (nonatomic, strong) NSURL *testDBURL;
 @property (nonatomic, strong) NSURL *testStorageURL;
 @property (nonatomic, strong) PDSDatabasePool *databasePool;
-@property (nonatomic, strong) BlobStorage *blobStorage;
+@property (nonatomic, strong) PDSBlobStorage *blobStorage;
 @property (nonatomic, strong) PDSBlobService *blobService;
 @property (nonatomic, strong) PDSRecordService *recordService;
 @property (nonatomic, strong) NSData *testData;
@@ -36,7 +36,7 @@
     self.databasePool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDBURL.path maxSize:5];
     
     PDSDiskBlobProvider *provider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:self.testStorageURL];
-    self.blobStorage = [[BlobStorage alloc] initWithDatabasePool:self.databasePool provider:provider];
+    self.blobStorage = [[PDSBlobStorage alloc] initWithDatabasePool:self.databasePool provider:provider];
     
     self.blobService = [[PDSBlobService alloc] initWithDatabasePool:self.databasePool storage:self.blobStorage];
     self.recordService = [[PDSRecordService alloc] initWithDatabasePool:self.databasePool];

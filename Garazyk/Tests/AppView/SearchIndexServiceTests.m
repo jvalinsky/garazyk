@@ -11,7 +11,7 @@
 @interface SearchIndexServiceTests : XCTestCase
 
 @property (nonatomic, strong) PDSDatabase *database;
-@property (nonatomic, strong) SearchIndexService *service;
+@property (nonatomic, strong) PDSSearchIndexService *service;
 @property (nonatomic, copy) NSString *tempPath;
 
 @end
@@ -66,7 +66,7 @@
      @"USING fts5(uri, did, name, "
      @"content=search_starter_packs, content_rowid=rowid)" error:nil];
 
-    self.service = [[SearchIndexService alloc] initWithDatabase:self.database];
+    self.service = [[PDSSearchIndexService alloc] initWithDatabase:self.database];
 }
 
 - (void)tearDown {

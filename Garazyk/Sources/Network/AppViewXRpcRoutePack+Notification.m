@@ -6,7 +6,7 @@
 #import "Network/HttpResponse.h"
 #import "AppView/Services/NotificationService.h"
 
-@implementation AppViewXRpcRoutePack (Notification)
+@implementation ATProtoAppViewXRpcRoutePack (Notification)
 
 - (void)handleListNotifications:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {

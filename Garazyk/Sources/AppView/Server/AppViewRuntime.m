@@ -63,22 +63,22 @@
 @property (nonatomic, strong) AppViewRelevanceSet *relevanceSet;
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
-@property (nonatomic, strong) FeedService *feedService;
-@property (nonatomic, strong) ActorService *actorService;
-@property (nonatomic, strong) GraphService *graphService;
-@property (nonatomic, strong) NotificationService *notificationService;
-@property (nonatomic, strong) BookmarkService *bookmarkService;
-@property (nonatomic, strong) AgeAssuranceService *ageAssuranceService;
-@property (nonatomic, strong) DraftService *draftService;
-@property (nonatomic, strong) SearchIndexService *searchIndexService;
-@property (nonatomic, strong) ContactService *contactService;
+@property (nonatomic, strong) PDSFeedService *feedService;
+@property (nonatomic, strong) PDSActorService *actorService;
+@property (nonatomic, strong) PDSGraphService *graphService;
+@property (nonatomic, strong) PDSNotificationService *notificationService;
+@property (nonatomic, strong) PDSBookmarkService *bookmarkService;
+@property (nonatomic, strong) PDSAgeAssuranceService *ageAssuranceService;
+@property (nonatomic, strong) PDSDraftService *draftService;
+@property (nonatomic, strong) PDSSearchIndexService *searchIndexService;
+@property (nonatomic, strong) PDSContactService *contactService;
 @property (nonatomic, strong) AppViewWriteProxy *writeProxy;
 @property (nonatomic, strong) AppViewLexiconEndpointGenerator *lexiconEndpointGenerator;
 @property (nonatomic, strong) AppViewCustomQueryRegistry *customQueryRegistry;
 @property (nonatomic, strong) ATProtoLexiconRegistry *lexiconRegistry;
 @property (nonatomic, strong) ATProtoLexiconValidator *lexiconValidator;
 @property (nonatomic, strong) AppViewIndexHookRegistry *hookRegistry;
-@property (nonatomic, strong) AppViewVideoUriBuilder *videoUriBuilder;
+@property (nonatomic, strong) PDSAppViewVideoUriBuilder *videoUriBuilder;
 @property (nonatomic, strong) SyrenaMetrics *syrenaMetrics;
 @property (nonatomic, strong) GZAdminUIHost *adminUIHostInstance;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
@@ -194,21 +194,21 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     // Initialize services before indexers so domain indexers use the same
     // service instances as the HTTP query layer.
-    _feedService = [[FeedService alloc] initWithDatabase:_database];
-    _actorService = [[ActorService alloc] initWithDatabase:_database];
-    _graphService = [[GraphService alloc] initWithDatabase:_database];
-    _notificationService = [[NotificationService alloc] initWithDatabase:_database
+    _feedService = [[PDSFeedService alloc] initWithDatabase:_database];
+    _actorService = [[PDSActorService alloc] initWithDatabase:_database];
+    _graphService = [[PDSGraphService alloc] initWithDatabase:_database];
+    _notificationService = [[PDSNotificationService alloc] initWithDatabase:_database
                                                             actorService:_actorService];
-    _ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:_database
+    _ageAssuranceService = [[PDSAgeAssuranceService alloc] initWithDatabase:_database
                                                            emailProvider:nil];
-    _bookmarkService = [[BookmarkService alloc] initWithDatabase:_database];
-    _draftService = [[DraftService alloc] initWithDatabase:_database];
-    _searchIndexService = [[SearchIndexService alloc] initWithDatabase:_database];
-    _contactService = [[ContactService alloc] initWithDatabase:_database actorService:_actorService];
+    _bookmarkService = [[PDSBookmarkService alloc] initWithDatabase:_database];
+    _draftService = [[PDSDraftService alloc] initWithDatabase:_database];
+    _searchIndexService = [[PDSSearchIndexService alloc] initWithDatabase:_database];
+    _contactService = [[PDSContactService alloc] initWithDatabase:_database actorService:_actorService];
 
     // Initialize video URI builder (for constructing HLS playlist/thumbnail URLs)
     if (config.videoServiceURL.length > 0) {
-        _videoUriBuilder = [AppViewVideoUriBuilder builderWithVideoServiceURL:config.videoServiceURL];
+        _videoUriBuilder = [PDSAppViewVideoUriBuilder builderWithVideoServiceURL:config.videoServiceURL];
         _feedService.videoUriBuilder = _videoUriBuilder;
     }
 
@@ -261,7 +261,7 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     _hookRegistry = [[AppViewIndexHookRegistry alloc] initWithDatabase:_database];
     
-    // Register SearchIndexService as an internal hook for real-time search updates
+    // Register PDSSearchIndexService as an internal hook for real-time search updates
     [_hookRegistry registerHook:_searchIndexService];
 
     // Populate search index from existing records if needed
@@ -309,7 +309,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     }
 
     // Register XRPC routes
-    AppViewXRpcRoutePack *xrpcPack = [[AppViewXRpcRoutePack alloc] initWithFeedService:_feedService
+    ATProtoAppViewXRpcRoutePack *xrpcPack = [[ATProtoAppViewXRpcRoutePack alloc] initWithFeedService:_feedService
                                                                     actorService:_actorService
                                                                     graphService:_graphService
                                                               notificationService:_notificationService

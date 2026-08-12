@@ -50,8 +50,8 @@
 
 @interface OAuthIntegrationTests : XCTestCase
 @property (nonatomic, strong) ATProtoHttpServer *server;
-@property (nonatomic, strong) OAuth2Server *oauthServer;
-@property (nonatomic, strong) OAuth2Handler *oauthHandler;
+@property (nonatomic, strong) ATProtoOAuth2Server *oauthServer;
+@property (nonatomic, strong) ATProtoOAuth2Handler *oauthHandler;
 @property (nonatomic, strong) PDSDatabase *db;
 @property (nonatomic, strong) OAuthRedirectDelegate *redirectDelegate;
 @property (nonatomic, strong) NSURLSession *session;
@@ -68,15 +68,15 @@
     [self.db openWithError:nil];
     
     // Setup OAuth Server first (so it doesn't overwrite our manual seeding later)
-    self.oauthServer = [[OAuth2Server alloc] initWithDatabase:self.db];
+    self.oauthServer = [[ATProtoOAuth2Server alloc] initWithDatabase:self.db];
     
     // Setup HTTP Server
     self.server = [ATProtoHttpServer serverWithPort:0];
-    self.oauthHandler = [[OAuth2Handler alloc] initWithDatabase:self.db];
+    self.oauthHandler = [[ATProtoOAuth2Handler alloc] initWithDatabase:self.db];
     self.oauthHandler.oauthServer = self.oauthServer;
     [self.oauthHandler registerRoutesWithServer:self.server];
     
-    // Manually seed test client (overwriting any seeded by OAuth2Handler)
+    // Manually seed test client (overwriting any seeded by ATProtoOAuth2Handler)
     NSDictionary *testClient = @{
         @"client_id": @"test-client",
         @"client_secret": @"test-secret",
@@ -93,7 +93,7 @@
     account.email = @"test@test.com";
     [self.db createAccount:account error:nil];
     
-    // Setup Session
+    // Setup PDSSession
     self.redirectDelegate = [[OAuthRedirectDelegate alloc] init];
     self.session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] 
                                                  delegate:self.redirectDelegate 
@@ -155,8 +155,8 @@
 
 - (void)testFullOAuthFlow {
     // Client generates PKCE parameters
-    NSString *verifier = [PKCEUtil generateCodeVerifier];
-    NSString *challenge = [PKCEUtil generateCodeChallengeWithVerifier:verifier];
+    NSString *verifier = [ATProtoPKCEUtil generateCodeVerifier];
+    NSString *challenge = [ATProtoPKCEUtil generateCodeChallengeWithVerifier:verifier];
     
     // Seed authorization code directly since /oauth/authorize now serves
     // a consent page (200 HTML) and resolveIdentity needs DNS. We test the core
@@ -185,7 +185,7 @@
     XCTAssertNotNil((__bridge id)privateKey, @"Failed to import DPoP key: %@", keyError);
     
     NSString *tokenUri = [NSString stringWithFormat:@"http://127.0.0.1:%lu/oauth/token", (unsigned long)port];
-    DPoPToken *dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:nil key:privateKey error:nil];
+    ATProtoDPoPToken *dpopToken = [ATProtoDPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:nil key:privateKey error:nil];
     XCTAssertNotNil(dpopToken, @"Failed to create DPoP token");
     
     NSString *body = [NSString stringWithFormat:@"grant_type=authorization_code&client_id=test-client&redirect_uri=http://127.0.0.1:3000/callback&code=%@&code_verifier=%@", authCode, verifier];
@@ -230,7 +230,7 @@
     self.oauthServer.authorizationCodes[authCode2] = codeData2;
 
     // Request with nonce
-    DPoPToken *dpopToken2 = [DPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:dpopNonce key:privateKey error:nil];
+    ATProtoDPoPToken *dpopToken2 = [ATProtoDPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:dpopNonce key:privateKey error:nil];
     XCTAssertNotNil(dpopToken2, @"Failed to create DPoP token with nonce");
 
     NSString *body2 = [NSString stringWithFormat:@"grant_type=authorization_code&client_id=test-client&redirect_uri=http://127.0.0.1:3000/callback&code=%@&code_verifier=%@", authCode2, verifier];
@@ -267,7 +267,7 @@
     // We can directly check if the session exists and has the correct thumbprint
     XCTAssertNotNil(accessToken);
     BOOL found = NO;
-    for (Session *s in self.oauthServer.activeSessions.allValues) {
+    for (PDSSession *s in self.oauthServer.activeSessions.allValues) {
         if ([s.accessToken isEqualToString:accessToken]) {
             XCTAssertNotNil(s.dpopKeyThumbprint, @"Session should be bound to DPoP key");
             found = YES;

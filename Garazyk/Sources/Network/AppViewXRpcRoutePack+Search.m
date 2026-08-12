@@ -6,7 +6,7 @@
 #import "Network/HttpResponse.h"
 #import "AppView/Services/SearchIndexService.h"
 
-@implementation AppViewXRpcRoutePack (Search)
+@implementation ATProtoAppViewXRpcRoutePack (Search)
 
 - (void)handleSearchActorsSkeleton:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response
 {

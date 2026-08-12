@@ -43,7 +43,7 @@
 - (void)testAdminAuthorizationDenyByDefault {
     // Verify that authorization is deny-by-default
     // Even with a valid DID, authorization should fail unless ATProtoJWT scope is verified
-    // This is enforced by the calling code (XrpcMethodRegistry)
+    // This is enforced by the calling code (ATProtoXrpcMethodRegistry)
 
     GZAuthzManager *manager = [GZAuthzManager sharedManager];
 
@@ -77,12 +77,12 @@
     XCTAssertNotNil(secret, @"Should generate random secret");
 
     // Create TOTP with SHA256 (default)
-    TOTPGenerator *totp256 = [[TOTPGenerator alloc] initWithSecret:secret digits:6 period:30.0 algorithm:@"SHA256"];
+    ATProtoTOTPGenerator *totp256 = [[ATProtoTOTPGenerator alloc] initWithSecret:secret digits:6 period:30.0 algorithm:@"SHA256"];
     NSString *code256 = [totp256 generateOTP];
     XCTAssertNotNil(code256, @"Should generate SHA256 TOTP code");
 
     // Create TOTP with SHA1 (for compatibility)
-    TOTPGenerator *totp1 = [[TOTPGenerator alloc] initWithSecret:secret digits:6 period:30.0 algorithm:@"SHA1"];
+    ATProtoTOTPGenerator *totp1 = [[ATProtoTOTPGenerator alloc] initWithSecret:secret digits:6 period:30.0 algorithm:@"SHA1"];
     NSString *code1 = [totp1 generateOTP];
     XCTAssertNotNil(code1, @"Should generate SHA1 TOTP code");
 }

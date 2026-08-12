@@ -6,14 +6,14 @@
 #import <arpa/inet.h>
 
 @interface HandleResolverSSRFTests : XCTestCase
-@property (nonatomic, strong) HandleResolver *resolver;
+@property (nonatomic, strong) ATProtoHandleResolver *resolver;
 @end
 
 @implementation HandleResolverSSRFTests
 
 - (void)setUp {
     [super setUp];
-    self.resolver = [[HandleResolver alloc] init];
+    self.resolver = [[ATProtoHandleResolver alloc] init];
     // skipSSRFCheck property removed — ATProtoSafeHTTPClient handles SSRF validation
     // atomically during the request. In test mode, allowPrivateHosts is set
     // automatically via PDSHandleResolverRunningTests().
@@ -88,7 +88,7 @@
     // by ATProtoSafeHTTPClient during the actual request. There is no way to
     // disable it in production code. Tests use allowPrivateHosts via
     // PDSHandleResolverRunningTests() detection.
-    HandleResolver *newResolver = [[HandleResolver alloc] init];
+    ATProtoHandleResolver *newResolver = [[ATProtoHandleResolver alloc] init];
     XCTAssertNotNil(newResolver, @"Resolver should be initialized");
     // SSRF validation is enforced by ATProtoSafeHTTPClient, not a toggle
 }
