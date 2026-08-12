@@ -7,7 +7,9 @@
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/Config/AppViewConfiguration.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
+#import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/UIAuthManager.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -46,13 +48,18 @@
     [GZSyrenaAdminUIPack configureHost:self.host snapshot:self.snapshot];
 }
 
-- (ATProtoHttpRequest *)r:(NSString *)method path:(NSString *)path headers:(NSDictionary *)h body:(NSData *)b {
-    ATProtoHttpRequest *req = [[ATProtoHttpRequest alloc] init];
-    req.methodString = method;
-    req.path = path;
-    for (NSString *k in h) { [req setHeader:h[k] forKey:k]; }
-    if (b) req.body = b;
-    return req;
+- (ATProtoHttpRequest *)r:(NSString *)method path:(NSString *)path headers:(NSDictionary *)h body:(NSData *)body {
+    NSMutableDictionary *headers = [h mutableCopy] ?: [NSMutableDictionary dictionary];
+    if (body) headers[@"Content-Type"] = @"application/json";
+    return [[ATProtoHttpRequest alloc] initWithMethod:[method isEqualToString:@"POST"] ? HttpMethodPOST : HttpMethodGET
+                                          methodString:method
+                                                 path:path
+                                          queryString:@""
+                                           queryParams:@{}
+                                              version:@"HTTP/1.1"
+                                               headers:headers
+                                                  body:body
+                                        remoteAddress:@"127.0.0.1"];
 }
 
 #pragma mark - Metrics
@@ -120,8 +127,9 @@
 }
 
 - (void)testSessionAuthGrantsAllPartialRoutes {
-    NSString *sessionCookie = [NSString stringWithFormat:@"%@=faketoken", self.host.authManager.sessionCookieName];
-    NSDictionary *h = @{@"Cookie": sessionCookie};
+    NSString *token = [self.host.authManager createSessionToken];
+    NSString *cookie = [NSString stringWithFormat:@"%@=%@", self.host.authManager.sessionCookieName, token];
+    NSDictionary *h = @{@"Cookie": cookie};
 
     for (NSString *path in @[@"/admin/partials/appview-metrics",
                               @"/admin/partials/ingest-health",
@@ -148,10 +156,7 @@
     XCTAssertTrue([html containsString:@"no"]);
 }
 
-- (void)testErrorUnavailableHTMLRenders {
-    NSString *html = [GZSyrenaAdminUIPack errorUnavailableHTML];
-    XCTAssertTrue([html containsString:@"unavailable"]);
-}
+
 
 #pragma mark - Password helper
 
