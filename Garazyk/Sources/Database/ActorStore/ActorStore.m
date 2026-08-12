@@ -391,6 +391,41 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return [self.database executeParameterizedQuery:sql params:params modelClass:[PDSDatabaseRecord class] error:error] ?: @[];
 }
 
+- (nullable NSArray<PDSDatabaseRecord *> *)listRecordsForDid:(NSString *)did
+                                                  collection:(NSString *)collection
+                                                       limit:(NSUInteger)limit
+                                                      cursor:(nullable NSString *)cursor
+                                                     reverse:(BOOL)reverse
+                                                       error:(NSError **)error {
+    (void)did;
+    if (collection.length == 0) {
+        if (error) {
+            *error = [ATProtoError invalidInputWithMessage:@"collection is required for keyset listRecords"];
+        }
+        return nil;
+    }
+    if (limit == 0) {
+        return @[];
+    }
+
+    NSMutableArray *params = [NSMutableArray arrayWithObject:collection];
+    NSMutableString *sql = [NSMutableString stringWithString:
+        @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did "
+        @"FROM records WHERE collection = ?"];
+    if (cursor.length > 0) {
+        // Exclusive keyset: default DESC pages use rkey < cursor; reverse ASC uses rkey > cursor.
+        [sql appendString:reverse ? @" AND rkey > ?" : @" AND rkey < ?"];
+        [params addObject:cursor];
+    }
+    [sql appendString:reverse ? @" ORDER BY rkey ASC LIMIT ?" : @" ORDER BY rkey DESC LIMIT ?"];
+    [params addObject:@(limit)];
+
+    return [self.database executeParameterizedQuery:sql
+                                             params:params
+                                         modelClass:[PDSDatabaseRecord class]
+                                              error:error];
+}
+
 - (NSArray<NSString *> *)listRecordCIDsForDid:(NSString *)did limit:(NSUInteger)limit offset:(NSUInteger)offset error:(NSError **)error {
     NSArray *results = [self.database executeParameterizedQuery:@"SELECT cid FROM records WHERE cid IS NOT NULL AND cid != '' ORDER BY rkey LIMIT ? OFFSET ?" params:@[@(limit), @(offset)] error:error];
     if (!results) return nil;

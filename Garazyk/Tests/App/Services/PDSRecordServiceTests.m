@@ -1455,45 +1455,65 @@
 #pragma mark - List Records with Cursor
 
 - (void)testListRecordsWithCursorPagination {
-    // Create 5 records
     for (int i = 0; i < 5; i++) {
         NSDictionary *value = @{
             @"$type": @"app.bsky.feed.post",
             @"text": [NSString stringWithFormat:@"page test %d", i],
             @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
         };
-        [self.service putRecord:@"app.bsky.feed.post"
-                           rkey:[NSString stringWithFormat:@"page-%d", i]
-                          value:value
-                         forDid:self.testDID
-                 validationMode:PDSValidationModeOff
-                          error:nil];
+        NSError *putError = nil;
+        BOOL putOk = [self.service putRecord:@"app.bsky.feed.post"
+                                        rkey:[NSString stringWithFormat:@"page-%d", i]
+                                       value:value
+                                      forDid:self.testDID
+                              validationMode:PDSValidationModeOff
+                                       error:&putError];
+        XCTAssertTrue(putOk, @"putRecord failed: %@", putError);
     }
 
-    // Get first page
     NSError *error = nil;
+    NSString *nextCursor = nil;
     NSArray *firstPage = [self.service listRecords:@"app.bsky.feed.post"
-                                           forDid:self.testDID
-                                            limit:3
-                                           cursor:nil
-                                            error:&error];
-    XCTAssertNotNil(firstPage);
+                                            forDid:self.testDID
+                                             limit:3
+                                            cursor:nil
+                                           reverse:NO
+                                        nextCursor:&nextCursor
+                                             error:&error];
     XCTAssertNil(error);
-    XCTAssertEqual(firstPage.count, 3);
+    XCTAssertEqual(firstPage.count, 3U);
+    NSString *first0 = firstPage[0][@"rkey"];
+    NSString *first1 = firstPage[1][@"rkey"];
+    NSString *first2 = firstPage[2][@"rkey"];
+    XCTAssertEqualObjects(first0, @"page-4");
+    XCTAssertEqualObjects(first1, @"page-3");
+    XCTAssertEqualObjects(first2, @"page-2");
+    XCTAssertEqualObjects(nextCursor, @"page-2");
 
-    // Get second page using cursor from last record
-    NSString *cursor = firstPage.lastObject[@"rkey"];
-    if (cursor) {
-        NSArray *secondPage = [self.service listRecords:@"app.bsky.feed.post"
-                                                forDid:self.testDID
-                                                 limit:3
-                                                cursor:cursor
-                                                 error:&error];
-        XCTAssertNotNil(secondPage);
-        XCTAssertNil(error);
-        // Cursor pagination may include the cursor record or start after it
-        XCTAssertGreaterThan(secondPage.count, 0U);
+    NSString *secondCursor = nil;
+    NSArray *secondPage = [self.service listRecords:@"app.bsky.feed.post"
+                                             forDid:self.testDID
+                                              limit:3
+                                             cursor:nextCursor
+                                            reverse:NO
+                                         nextCursor:&secondCursor
+                                              error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqual(secondPage.count, 2U);
+    NSString *second0 = secondPage[0][@"rkey"];
+    NSString *second1 = secondPage[1][@"rkey"];
+    XCTAssertEqualObjects(second0, @"page-1");
+    XCTAssertEqualObjects(second1, @"page-0");
+    XCTAssertNil(secondCursor);
+
+    NSMutableSet *all = [NSMutableSet set];
+    for (NSDictionary *row in firstPage) {
+        [all addObject:row[@"rkey"]];
     }
+    for (NSDictionary *row in secondPage) {
+        [all addObject:row[@"rkey"]];
+    }
+    XCTAssertEqual(all.count, 5U);
 }
 
 @end

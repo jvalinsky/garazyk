@@ -188,14 +188,19 @@ STAR-lite v2 (same English name, different bytes and media type).
 
 ## Benchmarking STAR-lite vs CAR
 
+The full experiment design (topology, seeding, metrics, expectations, and the
+`listRecords` pagination gap) is in
+[STAR-lite v0 vs CAR export benchmark](star-lite-vs-car-export-benchmark.md).
+
 `scripts/test/star_lite_export_benchmark.ts` (wrapper:
 `scripts/test/star_lite_export_benchmark.sh`) starts PLC plus one or more PDS
 binaries, seeds repos to a configurable total payload size, then exports each
 account with `com.atproto.sync.getRepo` negotiated as CAR and STAR-lite v0.
 For each export it records size, generation+transfer latency, peak RSS, average
 CPU (`ps`), and on-disk data-dir delta (`du`). Correctness is checked by
-comparing sorted post texts parsed from both archives (Garazyk `listRecords`
-does not paginate today, so cross-format agreement is the ground truth).
+comparing sorted post texts parsed from both archives. (`listRecords` cursor
+pagination landed in workstream 01 S21 and can be used as optional independent
+ground truth in a follow-up.)
 
 Environment knobs:
 
