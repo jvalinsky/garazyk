@@ -313,7 +313,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Pre-configured with V1 initial schema, V2 threadgate URI,
  V3 pending index events, and V4 legacy schema bridge.
 
- @return Migration manager for AppViewDatabase.
+ @return Migration manager for GZAppViewDatabase.
  */
 + (instancetype)appViewDatabaseMigrationManager;
 

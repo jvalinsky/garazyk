@@ -57,7 +57,7 @@
 #pragma mark - Tests
 
 @interface AppViewHookTests : XCTestCase
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @end
 
 @implementation AppViewHookTests
@@ -65,7 +65,7 @@
 - (void)setUp {
     [super setUp];
     NSError *error = nil;
-    self.database = [[AppViewDatabase alloc] initInMemoryWithError:&error];
+    self.database = [[GZAppViewDatabase alloc] initInMemoryWithError:&error];
     XCTAssertNotNil(self.database, @"Failed to create in-memory database: %@", error);
     BOOL migrated = [self.database runMigrations:&error];
     XCTAssertTrue(migrated, @"Failed to run migrations: %@", error);
@@ -76,27 +76,27 @@
     [super tearDown];
 }
 
-#pragma mark - AppViewIndexHookRegistry
+#pragma mark - GZAppViewIndexHookRegistry
 
 - (void)testRegistryInstantiation {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     XCTAssertNotNil(registry);
 }
 
 - (void)testRegistryStartsEmpty {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     XCTAssertEqual(registry.registeredHookCount, 0);
 }
 
 - (void)testRegistryRegisterHook {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     GZTestHook *hook = [[GZTestHook alloc] initWithIdentifier:@"test-hook" collections:nil];
     [registry registerHook:hook];
     XCTAssertEqual(registry.registeredHookCount, 1);
 }
 
 - (void)testRegistryRegisterMultipleHooks {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     [registry registerHook:[[GZTestHook alloc] initWithIdentifier:@"hook-a" collections:nil]];
     [registry registerHook:[[GZTestHook alloc] initWithIdentifier:@"hook-b" collections:nil]];
     [registry registerHook:[[GZTestHook alloc] initWithIdentifier:@"hook-c" collections:nil]];
@@ -104,7 +104,7 @@
 }
 
 - (void)testRegistryUnregisterHook {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     [registry registerHook:[[GZTestHook alloc] initWithIdentifier:@"hook-a" collections:nil]];
     [registry registerHook:[[GZTestHook alloc] initWithIdentifier:@"hook-b" collections:nil]];
     [registry unregisterHook:@"hook-a"];
@@ -112,20 +112,20 @@
 }
 
 - (void)testRegistryUnregisterNonexistentIsNoop {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     [registry registerHook:[[GZTestHook alloc] initWithIdentifier:@"hook-a" collections:nil]];
     [registry unregisterHook:@"hook-ghost"];
     XCTAssertEqual(registry.registeredHookCount, 1);
 }
 
 - (void)testRegistryRegisterNilHookIsNoop {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     [registry registerHook:nil];
     XCTAssertEqual(registry.registeredHookCount, 0);
 }
 
 - (void)testRegistryFireDidIndexRecordCallsMatchingHooks {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     GZTestHook *hookA = [[GZTestHook alloc] initWithIdentifier:@"hook-a" collections:@[@"app.bsky.feed.post"]];
     GZTestHook *hookB = [[GZTestHook alloc] initWithIdentifier:@"hook-b" collections:@[@"app.bsky.graph.follow"]];
     [registry registerHook:hookA];
@@ -148,7 +148,7 @@
 }
 
 - (void)testRegistryFireDidDeleteCallsMatchingHooks {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     GZTestHook *hookFeed = [[GZTestHook alloc] initWithIdentifier:@"hook-feed" collections:@[@"app.bsky.feed.post"]];
     [registry registerHook:hookFeed];
 
@@ -166,7 +166,7 @@
 }
 
 - (void)testRegistryFireDoesNotCallNonMatchingHooks {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     GZTestHook *hook = [[GZTestHook alloc] initWithIdentifier:@"hook-follow" collections:@[@"app.bsky.graph.follow"]];
     [registry registerHook:hook];
 
@@ -184,7 +184,7 @@
 }
 
 - (void)testRegistryNilCollectionsHookFiresForAllCollections {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     GZTestHook *wildcard = [[GZTestHook alloc] initWithIdentifier:@"wildcard" collections:nil];
     [registry registerHook:wildcard];
 
@@ -202,7 +202,7 @@
 }
 
 - (void)testRegistryUnregisterBeforeFireDoesNotCall {
-    AppViewIndexHookRegistry *registry = [[AppViewIndexHookRegistry alloc] initWithDatabase:self.database];
+    GZAppViewIndexHookRegistry *registry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:self.database];
     GZTestHook *hook = [[GZTestHook alloc] initWithIdentifier:@"ephemeral" collections:nil];
     [registry registerHook:hook];
     [registry unregisterHook:@"ephemeral"];
@@ -220,30 +220,30 @@
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
 
-#pragma mark - AppViewSearchIndexHook
+#pragma mark - GZAppViewSearchIndexHook
 
 - (void)testSearchIndexHookInstantiation {
-    AppViewSearchIndexHook *hook = [[AppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://search.example.com"];
+    GZAppViewSearchIndexHook *hook = [[GZAppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://search.example.com"];
     XCTAssertNotNil(hook);
 }
 
 - (void)testSearchIndexHookConformsToIndexHookProtocol {
-    AppViewSearchIndexHook *hook = [[AppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://search.example.com"];
+    GZAppViewSearchIndexHook *hook = [[GZAppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://search.example.com"];
     XCTAssertTrue([hook conformsToProtocol:@protocol(AppViewIndexHook)]);
 }
 
 - (void)testSearchIndexHookIdentifier {
-    AppViewSearchIndexHook *hook = [[AppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://search.example.com"];
+    GZAppViewSearchIndexHook *hook = [[GZAppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://search.example.com"];
     XCTAssertEqualObjects([hook hookIdentifier], @"search-index");
 }
 
 - (void)testSearchIndexHookCollectionsReturnsNil {
-    AppViewSearchIndexHook *hook = [[AppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://search.example.com"];
+    GZAppViewSearchIndexHook *hook = [[GZAppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://search.example.com"];
     XCTAssertNil([hook collections]);
 }
 
 - (void)testSearchIndexHookDidIndexRecordDoesNotCrash {
-    AppViewSearchIndexHook *hook = [[AppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://localhost:1"];
+    GZAppViewSearchIndexHook *hook = [[GZAppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://localhost:1"];
     XCTAssertNoThrow([hook didIndexRecord:@{@"text": @"hello"}
                                 uri:@"at://did:plc:x/app.bsky.feed.post/1"
                                  did:@"did:plc:x"
@@ -251,32 +251,32 @@
 }
 
 - (void)testSearchIndexHookDidDeleteDoesNotCrash {
-    AppViewSearchIndexHook *hook = [[AppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://localhost:1"];
+    GZAppViewSearchIndexHook *hook = [[GZAppViewSearchIndexHook alloc] initWithSearchEndpoint:@"https://localhost:1"];
     XCTAssertNoThrow([hook didDeleteRecordWithURI:@"at://did:plc:x/app.bsky.feed.post/1"
                                               did:@"did:plc:x"
                                        collection:@"app.bsky.feed.post"]);
 }
 
-#pragma mark - AppViewWebhookHook
+#pragma mark - GZAppViewWebhookHook
 
 - (void)testWebhookHookInstantiation {
-    AppViewWebhookHook *hook = [[AppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"];
+    GZAppViewWebhookHook *hook = [[GZAppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"];
     XCTAssertNotNil(hook);
 }
 
 - (void)testWebhookHookInstantiationWithCollections {
-    AppViewWebhookHook *hook = [[AppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"
+    GZAppViewWebhookHook *hook = [[GZAppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"
                                                                   collections:@[@"app.bsky.feed.post"]];
     XCTAssertNotNil(hook);
 }
 
 - (void)testWebhookHookConformsToIndexHookProtocol {
-    AppViewWebhookHook *hook = [[AppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"];
+    GZAppViewWebhookHook *hook = [[GZAppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"];
     XCTAssertTrue([hook conformsToProtocol:@protocol(AppViewIndexHook)]);
 }
 
 - (void)testWebhookHookIdentifierContainsURL {
-    AppViewWebhookHook *hook = [[AppViewWebhookHook alloc] initWithWebhookURL:@"https://myhook.example.com/push"];
+    GZAppViewWebhookHook *hook = [[GZAppViewWebhookHook alloc] initWithWebhookURL:@"https://myhook.example.com/push"];
     NSString *identifier = [hook hookIdentifier];
     XCTAssertTrue([identifier hasPrefix:@"webhook-"]);
     XCTAssertTrue([identifier containsString:@"myhook.example.com"]);
@@ -284,18 +284,18 @@
 
 - (void)testWebhookHookCollectionsReturnsConfiguredCollections {
     NSArray *collections = @[@"app.bsky.feed.post", @"app.bsky.graph.follow"];
-    AppViewWebhookHook *hook = [[AppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"
+    GZAppViewWebhookHook *hook = [[GZAppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"
                                                                   collections:collections];
     XCTAssertEqualObjects([hook collections], collections);
 }
 
 - (void)testWebhookHookCollectionsReturnsNilWhenNotConfigured {
-    AppViewWebhookHook *hook = [[AppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"];
+    GZAppViewWebhookHook *hook = [[GZAppViewWebhookHook alloc] initWithWebhookURL:@"https://webhook.example.com"];
     XCTAssertNil([hook collections]);
 }
 
 - (void)testWebhookHookDidIndexRecordDoesNotCrash {
-    AppViewWebhookHook *hook = [[AppViewWebhookHook alloc] initWithWebhookURL:@"https://localhost:1"];
+    GZAppViewWebhookHook *hook = [[GZAppViewWebhookHook alloc] initWithWebhookURL:@"https://localhost:1"];
     XCTAssertNoThrow([hook didIndexRecord:@{@"text": @"hello"}
                                 uri:@"at://did:plc:x/app.bsky.feed.post/1"
                                  did:@"did:plc:x"
@@ -303,7 +303,7 @@
 }
 
 - (void)testWebhookHookDidDeleteDoesNotCrash {
-    AppViewWebhookHook *hook = [[AppViewWebhookHook alloc] initWithWebhookURL:@"https://localhost:1"];
+    GZAppViewWebhookHook *hook = [[GZAppViewWebhookHook alloc] initWithWebhookURL:@"https://localhost:1"];
     XCTAssertNoThrow([hook didDeleteRecordWithURI:@"at://did:plc:x/app.bsky.feed.post/1"
                                               did:@"did:plc:x"
                                        collection:@"app.bsky.feed.post"]);

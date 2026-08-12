@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
-@class BeskidMetrics;
-@class BeskidDatabase;
-@class BeskidConfiguration;
+@class GZBeskidMetrics;
+@class GZBeskidDatabase;
+@class GZBeskidConfiguration;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -15,9 +15,9 @@ FOUNDATION_EXPORT NSString * _Nullable GZBeskidAdminPasswordFromFile(NSString *p
 /** Bounded, synchronized Beskid cache server snapshot for the embedded Admin UI. */
 @interface GZBeskidAdminSnapshot : NSObject
 
-- (instancetype)initWithDatabase:(BeskidDatabase *)database
-                         metrics:(BeskidMetrics *)metrics
-                   configuration:(BeskidConfiguration *)configuration NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithDatabase:(GZBeskidDatabase *)database
+                         metrics:(GZBeskidMetrics *)metrics
+                   configuration:(GZBeskidConfiguration *)configuration NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
 - (NSDictionary<NSString *, id> *)snapshot;

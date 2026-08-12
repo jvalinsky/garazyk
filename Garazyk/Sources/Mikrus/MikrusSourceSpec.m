@@ -5,7 +5,7 @@
 
 NSString * const MikrusSourceSpecErrorDomain = @"blue.microcosm.mikrus.source";
 
-@implementation MikrusSourceSpec
+@implementation GZMikrusSourceSpec
 
 - (instancetype)initPrivateWithCollection:(NSString *)collection path:(NSString *)path {
     self = [super init];

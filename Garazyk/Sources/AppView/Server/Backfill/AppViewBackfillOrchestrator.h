@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewBackfillOrchestrator.h
+ @file GZAppViewBackfillOrchestrator.h
 
  @abstract Backfill plane: schedules and runs per-repo `sync.getRepo` workers.
 
@@ -32,8 +32,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewDatabase;
-@class AppViewBackfillOrchestrator;
+@class GZAppViewDatabase;
+@class GZAppViewBackfillOrchestrator;
 /**
  * @abstract Defines the AppViewIndexer protocol contract.
  */
@@ -53,7 +53,7 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Called when a repo's backfill completes successfully.
  At this point pending deltas have been replayed.
  */
-- (void)orchestrator:(AppViewBackfillOrchestrator *)orchestrator
+- (void)orchestrator:(GZAppViewBackfillOrchestrator *)orchestrator
 didCompleteBackfillForDID:(NSString *)did;
 
 /*!
@@ -61,18 +61,18 @@ didCompleteBackfillForDID:(NSString *)did;
 
  @abstract Called when a backfill attempt fails after retries.
  */
-- (void)orchestrator:(AppViewBackfillOrchestrator *)orchestrator
+- (void)orchestrator:(GZAppViewBackfillOrchestrator *)orchestrator
 didFailBackfillForDID:(NSString *)did
                error:(NSError *)error;
 
 @end
 
 /*!
- @interface AppViewBackfillOrchestrator
+ @interface GZAppViewBackfillOrchestrator
 
  @abstract Manages the backfill queue and worker pool.
  */
-@interface AppViewBackfillOrchestrator : NSObject
+@interface GZAppViewBackfillOrchestrator : NSObject
 
 /*! Delegate for lifecycle events. */
 @property (nonatomic, weak, nullable) id<AppViewBackfillOrchestratorDelegate> delegate;
@@ -105,7 +105,7 @@ didFailBackfillForDID:(NSString *)did
  @param indexers  Array of indexers that process decoded ops from a repo CAR.
  @param plcURL   PLC directory URL for DID resolution.
  */
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                         indexers:(NSArray<id<AppViewIndexer>> *)indexers
                         plcURL:(NSString *)plcURL;
 

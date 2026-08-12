@@ -21,9 +21,9 @@ static NSString *BeskidTestDBPath(NSString *name) {
     return [dir stringByAppendingPathComponent:@"test.db"];
 }
 
-static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
+static GZBeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
     NSError *error = nil;
-    BeskidDatabase *db = [[BeskidDatabase alloc] initWithPath:BeskidTestDBPath(test.name) error:&error];
+    GZBeskidDatabase *db = [[GZBeskidDatabase alloc] initWithPath:BeskidTestDBPath(test.name) error:&error];
     XCTAssertNotNil(db, @"open db: %@", error);
     XCTAssertTrue([db runMigrations:&error], @"migrate: %@", error);
     return db;
@@ -37,7 +37,7 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 @implementation BeskidMetricsTests
 
 - (void)testCountersAggregateAndSnapshot {
-    BeskidMetrics *metrics = [[BeskidMetrics alloc] init];
+    GZBeskidMetrics *metrics = [[GZBeskidMetrics alloc] init];
     [metrics recordRecordHit];
     [metrics recordRecordHit];
     [metrics recordRecordMiss];
@@ -71,7 +71,7 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 }
 
 - (void)testUpstreamAggregationIsBounded {
-    BeskidMetrics *metrics = [[BeskidMetrics alloc] init];
+    GZBeskidMetrics *metrics = [[GZBeskidMetrics alloc] init];
     for (int i = 0; i < 40; i++) {
         NSString *host = [NSString stringWithFormat:@"pds-%d.example.com", i];
         [metrics recordUpstreamRequestToHost:host];
@@ -82,7 +82,7 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 }
 
 - (void)testConcurrentUpdatesAreConsistent {
-    BeskidMetrics *metrics = [[BeskidMetrics alloc] init];
+    GZBeskidMetrics *metrics = [[GZBeskidMetrics alloc] init];
     dispatch_apply(128, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(size_t idx) {
         [metrics recordRecordHit];
         [metrics recordRecordWriteWithExpiresAt:(int64_t)([[NSDate date] timeIntervalSince1970] + 3600)];
@@ -109,9 +109,9 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 @implementation BeskidAdminSnapshotTests
 
 - (void)testEmptyCacheSnapshotReportsOkAndZeroEntries {
-    BeskidDatabase *db = BeskidAdminOpenTestDB(self);
-    BeskidConfiguration *config = [BeskidConfiguration defaultConfiguration];
-    BeskidMetrics *metrics = [[BeskidMetrics alloc] init];
+    GZBeskidDatabase *db = BeskidAdminOpenTestDB(self);
+    GZBeskidConfiguration *config = [GZBeskidConfiguration defaultConfiguration];
+    GZBeskidMetrics *metrics = [[GZBeskidMetrics alloc] init];
     GZBeskidAdminSnapshot *snapshot = [[GZBeskidAdminSnapshot alloc] initWithDatabase:db metrics:metrics configuration:config];
     NSDictionary *value = [snapshot snapshot];
     XCTAssertEqualObjects(value[@"health"], @"ok");
@@ -121,9 +121,9 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 }
 
 - (void)testSnapshotReflectsCacheOperations {
-    BeskidDatabase *db = BeskidAdminOpenTestDB(self);
-    BeskidConfiguration *config = [BeskidConfiguration defaultConfiguration];
-    BeskidMetrics *metrics = [[BeskidMetrics alloc] init];
+    GZBeskidDatabase *db = BeskidAdminOpenTestDB(self);
+    GZBeskidConfiguration *config = [GZBeskidConfiguration defaultConfiguration];
+    GZBeskidMetrics *metrics = [[GZBeskidMetrics alloc] init];
     db.metrics = metrics;
 
     NSError *error = nil;
@@ -141,9 +141,9 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 }
 
 - (void)testSnapshotDoesNotLeakSensitiveData {
-    BeskidDatabase *db = BeskidAdminOpenTestDB(self);
-    BeskidConfiguration *config = [BeskidConfiguration defaultConfiguration];
-    BeskidMetrics *metrics = [[BeskidMetrics alloc] init];
+    GZBeskidDatabase *db = BeskidAdminOpenTestDB(self);
+    GZBeskidConfiguration *config = [GZBeskidConfiguration defaultConfiguration];
+    GZBeskidMetrics *metrics = [[GZBeskidMetrics alloc] init];
     db.metrics = metrics;
 
     [db saveRecord:@{@"$type": @"test", @"text": @"sensitive"} did:@"did:plc:x" collection:@"test.ns" rkey:@"one" cid:@"bafy" ttl:3600 error:nil];
@@ -158,7 +158,7 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 }
 
 - (void)testSoonestExpiryReported {
-    BeskidMetrics *metrics = [[BeskidMetrics alloc] init];
+    GZBeskidMetrics *metrics = [[GZBeskidMetrics alloc] init];
     int64_t soon = (int64_t)[[NSDate dateWithTimeIntervalSinceNow:60] timeIntervalSince1970];
     int64_t later = (int64_t)[[NSDate dateWithTimeIntervalSinceNow:3600] timeIntervalSince1970];
     [metrics recordRecordWriteWithExpiresAt:later];
@@ -168,9 +168,9 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 }
 
 - (void)testDatabasePressureBytesReported {
-    BeskidDatabase *db = BeskidAdminOpenTestDB(self);
-    BeskidConfiguration *config = [BeskidConfiguration defaultConfiguration];
-    BeskidMetrics *metrics = [[BeskidMetrics alloc] init];
+    GZBeskidDatabase *db = BeskidAdminOpenTestDB(self);
+    GZBeskidConfiguration *config = [GZBeskidConfiguration defaultConfiguration];
+    GZBeskidMetrics *metrics = [[GZBeskidMetrics alloc] init];
     GZBeskidAdminSnapshot *snapshot = [[GZBeskidAdminSnapshot alloc] initWithDatabase:db metrics:metrics configuration:config];
     NSDictionary *value = [snapshot snapshot];
     int64_t bytes = [value[@"database"][@"storageBytes"] longLongValue];
@@ -186,8 +186,8 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 @property(nonatomic, strong) GZAdminUIServiceConfig *config;
 @property(nonatomic, strong) GZAdminUIHost *host;
 @property(nonatomic, strong) GZBeskidAdminSnapshot *snapshot;
-@property(nonatomic, strong) BeskidDatabase *db;
-@property(nonatomic, strong) BeskidMetrics *metrics;
+@property(nonatomic, strong) GZBeskidDatabase *db;
+@property(nonatomic, strong) GZBeskidMetrics *metrics;
 @end
 
 @implementation BeskidAdminUIPackTests
@@ -195,7 +195,7 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
 - (void)setUp {
     [super setUp];
     self.db = BeskidAdminOpenTestDB(self);
-    self.metrics = [[BeskidMetrics alloc] init];
+    self.metrics = [[GZBeskidMetrics alloc] init];
     self.db.metrics = self.metrics;
     self.config = [[GZAdminUIServiceConfig alloc] init];
     self.config.host = @"127.0.0.1";
@@ -204,7 +204,7 @@ static BeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
     self.config.serviceIdentifier = @"beskid";
     self.config.pdsBaseURL = [NSURL URLWithString:@"http://127.0.0.1:2583"];
     self.host = [[GZAdminUIHost alloc] initWithConfiguration:self.config packs:@[GZBeskidAdminUIPack.class]];
-    self.snapshot = [[GZBeskidAdminSnapshot alloc] initWithDatabase:self.db metrics:self.metrics configuration:[BeskidConfiguration defaultConfiguration]];
+    self.snapshot = [[GZBeskidAdminSnapshot alloc] initWithDatabase:self.db metrics:self.metrics configuration:[GZBeskidConfiguration defaultConfiguration]];
     [GZBeskidAdminUIPack configureHost:self.host snapshot:self.snapshot];
 }
 

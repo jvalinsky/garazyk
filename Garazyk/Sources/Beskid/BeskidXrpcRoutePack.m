@@ -19,11 +19,11 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Debug/GZLogger.h"
 
-@implementation BeskidXrpcRoutePack {
-    BeskidDatabase *_database;
+@implementation GZBeskidXrpcRoutePack {
+    GZBeskidDatabase *_database;
 }
 
-- (instancetype)initWithDatabase:(BeskidDatabase *)database {
+- (instancetype)initWithDatabase:(GZBeskidDatabase *)database {
     self = [super init];
     if (!self) return nil;
     _database = database;
@@ -214,7 +214,7 @@
     NSString *signingKey = [self signingKeyFromDocument:doc] ?: @"";
 
     // Cache with configured identity TTL
-    NSTimeInterval ttl = [BeskidRuntime sharedRuntime].configuration.cacheIdentityTtlSeconds;
+    NSTimeInterval ttl = [GZBeskidRuntime sharedRuntime].configuration.cacheIdentityTtlSeconds;
     [_database saveIdentity:did handle:handle pdsEndpoint:pds signingKey:signingKey rawDocument:doc.jsonDictionary ttl:ttl error:nil];
 
     response.statusCode = HttpStatusOK;
@@ -642,7 +642,7 @@
     // Cache the record with configured record TTL
     NSDictionary *recValue = json[@"value"];
     NSString *recCid = json[@"cid"] ?: cid;
-    NSTimeInterval ttl = [BeskidRuntime sharedRuntime].configuration.cacheRecordTtlSeconds;
+    NSTimeInterval ttl = [GZBeskidRuntime sharedRuntime].configuration.cacheRecordTtlSeconds;
 
     if (recValue && recCid.length > 0) {
         NSError *saveError = nil;
@@ -663,9 +663,9 @@
     [ATProtoXrpcErrorHelper setInvalidRequestError:response message:message ?: @"Invalid request"];
 }
 
-- (BeskidMetrics *)metrics {
+- (GZBeskidMetrics *)metrics {
     if (!_metrics) {
-        _metrics = [[BeskidMetrics alloc] init];
+        _metrics = [[GZBeskidMetrics alloc] init];
     }
     return _metrics;
 }

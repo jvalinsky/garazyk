@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewIndexHookRegistry.h
+ @file GZAppViewIndexHookRegistry.h
 
  @abstract Registry and dispatcher for index hooks.
 
@@ -14,7 +14,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -24,11 +24,11 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol AppViewIndexHook;
 
 /*!
- @class AppViewIndexHookRegistry
+ @class GZAppViewIndexHookRegistry
 
  @abstract Manages and dispatches index hooks.
  */
-@interface AppViewIndexHookRegistry : NSObject
+@interface GZAppViewIndexHookRegistry : NSObject
 
 /*!
  @method initWithDatabase:
@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param database The AppView database.
  */
-- (instancetype)initWithDatabase:(AppViewDatabase *)database;
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database;
 
 /*!
  @method registerHook:

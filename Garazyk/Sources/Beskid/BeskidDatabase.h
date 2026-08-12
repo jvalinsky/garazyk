@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file BeskidDatabase.h
+ * @file GZBeskidDatabase.h
  * @abstract SQLite-backed high-performance edge record and identity cache.
  */
 
 #import <Foundation/Foundation.h>
 
-@class BeskidMetrics;
+@class GZBeskidMetrics;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -19,7 +19,7 @@ extern NSString * const BeskidDatabaseErrorDomain;
 /**
  * @abstract Database manager for Beskid edge record and identity caching.
  */
-@interface BeskidDatabase : NSObject
+@interface GZBeskidDatabase : NSObject
 
 /**
  * @abstract Initializes the database connection pool.
@@ -117,7 +117,7 @@ extern NSString * const BeskidDatabaseErrorDomain;
 #pragma mark - Metrics
 
 /** @abstract Metrics recorder: set to wire cache counters; lazily creates a private instance when nil. */
-@property (nonatomic, strong) BeskidMetrics *metrics;
+@property (nonatomic, strong) GZBeskidMetrics *metrics;
 
 /** @abstract One-time COUNT of live record and identity entries for gauge seeding. */
 - (NSDictionary<NSString *, NSNumber *> *)entryCountsWithError:(NSError **)error;

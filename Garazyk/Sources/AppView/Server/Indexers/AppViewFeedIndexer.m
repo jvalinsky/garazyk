@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewFeedIndexer.m
+ @file GZAppViewFeedIndexer.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -27,13 +27,13 @@ static NSSet<NSString *> *feedCollections(void) {
     return s;
 }
 
-@interface AppViewFeedIndexer ()
-@property (nonatomic, strong) AppViewDatabase *avdb;
+@interface GZAppViewFeedIndexer ()
+@property (nonatomic, strong) GZAppViewDatabase *avdb;
 @end
 
-@implementation AppViewFeedIndexer
+@implementation GZAppViewFeedIndexer
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database {
     self = [super init];
     if (!self) return nil;
     _avdb = database;
@@ -83,7 +83,7 @@ static NSSet<NSString *> *feedCollections(void) {
     return YES;
 }
 
-- (BOOL)handleIngestEvent:(AppViewIngestEvent *)event error:(NSError **)error {
+- (BOOL)handleIngestEvent:(GZAppViewIngestEvent *)event error:(NSError **)error {
     for (NSDictionary *op in event.ops) {
         NSString *action = op[@"action"];
         NSString *path   = op[@"path"];
@@ -111,7 +111,7 @@ static NSSet<NSString *> *feedCollections(void) {
     return YES;
 }
 
-- (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error {
+- (BOOL)processPendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error {
     GZ_LOG_DEBUG(@"[AppViewFeedIndexer] Replaying pending delta for %@", delta.did);
     return YES;
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewSearchIndexHook.m
+ @file GZAppViewSearchIndexHook.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -10,13 +10,13 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Debug/GZLogger.h"
 
-@interface AppViewSearchIndexHook ()
+@interface GZAppViewSearchIndexHook ()
 
 @property (nonatomic, copy) NSString *searchEndpoint;
 
 @end
 
-@implementation AppViewSearchIndexHook
+@implementation GZAppViewSearchIndexHook
 
 - (instancetype)initWithSearchEndpoint:(NSString *)searchEndpoint {
     self = [super init];

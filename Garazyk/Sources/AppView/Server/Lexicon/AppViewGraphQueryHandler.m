@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewGraphQueryHandler.m
+ @file GZAppViewGraphQueryHandler.m
 
  @abstract Custom query handler for app.bsky.graph XRPC endpoints.
 
@@ -13,13 +13,13 @@
 #import "AppView/Services/GraphService.h"
 #import "AppView/Server/AppViewDatabase.h"
 
-@interface AppViewGraphQueryHandler ()
+@interface GZAppViewGraphQueryHandler ()
 
 @property (nonatomic, strong) PDSGraphService *graphService;
 
 @end
 
-@implementation AppViewGraphQueryHandler
+@implementation GZAppViewGraphQueryHandler
 
 - (instancetype)initWithGraphService:(PDSGraphService *)graphService {
     self = [super init];
@@ -33,7 +33,7 @@
 
 - (BOOL)handleQueryWithParams:(NSDictionary<NSString *, NSString *> *)params
                         input:(nullable NSDictionary *)input
-                     database:(AppViewDatabase *)database
+                     database:(GZAppViewDatabase *)database
                     callerDID:(nullable NSString *)callerDID
                        result:(NSDictionary *_Nullable *_Nullable)result
                         error:(NSError **)error {

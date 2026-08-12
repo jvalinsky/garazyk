@@ -200,7 +200,7 @@ int main(int argc, const char * argv[]) {
         // ----------------------------------------------------------------
         // Load configuration
         // ----------------------------------------------------------------
-        AppViewRuntime *runtime = [AppViewRuntime sharedRuntime];
+        GZAppViewRuntime *runtime = [GZAppViewRuntime sharedRuntime];
 
         if (configPath) {
             NSError *configErr = nil;
@@ -214,7 +214,7 @@ int main(int argc, const char * argv[]) {
         }
 
         // Apply CLI overrides
-        AppViewConfiguration *config = runtime.configuration;
+        GZAppViewConfiguration *config = runtime.configuration;
         if (port > 0)            config.httpPort       = port;
         if (relayURLs.count > 0) config.relayURLs      = relayURLs;
         if (seedDIDs.count > 0)  config.partialSeedDIDs = seedDIDs;

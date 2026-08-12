@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewCollectionFilter.h
+ @file GZAppViewCollectionFilter.h
 
  @abstract Collection allowlist matcher for scoped AppView indexing.
 
@@ -22,11 +22,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class AppViewCollectionFilter
+ @class GZAppViewCollectionFilter
 
  @abstract Matches collection NSIDs against an optional allowlist.
  */
-@interface AppViewCollectionFilter : NSObject
+@interface GZAppViewCollectionFilter : NSObject
 
 /*!
  @property allowlist

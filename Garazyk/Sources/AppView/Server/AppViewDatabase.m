@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewDatabase.m
+ @file GZAppViewDatabase.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -42,7 +42,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 // Implementation
 // ---------------------------------------------------------------------------
 
-@implementation AppViewDatabase {
+@implementation GZAppViewDatabase {
     ATProtoConnectionPool *_pool;
     ATProtoConnectionManagerPooled *_connectionManager;
     ATProtoDatabaseQueryRunner *_queryRunner;
@@ -137,7 +137,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 // Checkpoint
 // ---------------------------------------------------------------------------
 
-- (BOOL)saveCheckpoint:(AppViewCheckpoint *)checkpoint error:(NSError **)error {
+- (BOOL)saveCheckpoint:(GZAppViewCheckpoint *)checkpoint error:(NSError **)error {
     NSString *sql = @"INSERT INTO appview_checkpoints(relay_url, seq, saved_at) VALUES(?,?,?) "
                     @"ON CONFLICT(relay_url) DO UPDATE SET seq = excluded.seq, saved_at = excluded.saved_at "
                     @"WHERE excluded.seq > appview_checkpoints.seq";
@@ -145,14 +145,14 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return [self executeParameterizedUpdate:sql params:params error:error];
 }
 
-- (nullable AppViewCheckpoint *)loadCheckpointForRelayURL:(NSString *)relayURL
+- (nullable GZAppViewCheckpoint *)loadCheckpointForRelayURL:(NSString *)relayURL
                                                     error:(NSError **)error {
     NSString *sql = @"SELECT seq, saved_at FROM appview_checkpoints WHERE relay_url = ?";
     NSArray *rows = [self executeParameterizedQuery:sql params:@[relayURL] error:error];
     if (rows.count == 0) return nil;
 
     NSDictionary *row = rows.firstObject;
-    AppViewCheckpoint *result = [[AppViewCheckpoint alloc] initWithRelayURL:relayURL seq:[row[@"seq"] longLongValue]];
+    GZAppViewCheckpoint *result = [[GZAppViewCheckpoint alloc] initWithRelayURL:relayURL seq:[row[@"seq"] longLongValue]];
     NSString *savedAt = row[@"saved_at"];
     if (savedAt) result.savedAt = iso8601Parse(savedAt);
     return result;
@@ -162,7 +162,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 // Repo Sync State
 // ---------------------------------------------------------------------------
 
-- (BOOL)upsertRepoSyncState:(AppViewRepoSyncState *)state error:(NSError **)error {
+- (BOOL)upsertRepoSyncState:(GZAppViewRepoSyncState *)state error:(NSError **)error {
     NSString *sql =
         @"INSERT INTO appview_repo_sync_state(did, status, last_rev, last_backfill_at, error_count, last_error)"
         " VALUES(?,?,?,?,?,?)"
@@ -189,14 +189,14 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return [self executeParameterizedUpdate:sql params:params error:error];
 }
 
-- (nullable AppViewRepoSyncState *)loadRepoSyncStateForDID:(NSString *)did
+- (nullable GZAppViewRepoSyncState *)loadRepoSyncStateForDID:(NSString *)did
                                                      error:(NSError **)error {
     NSString *sql = @"SELECT status, last_rev, last_backfill_at, error_count, last_error FROM appview_repo_sync_state WHERE did = ?";
     NSArray *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
     if (rows.count == 0) return nil;
 
     NSDictionary *row = rows.firstObject;
-    AppViewRepoSyncState *result = [[AppViewRepoSyncState alloc] initWithDID:did];
+    GZAppViewRepoSyncState *result = [[GZAppViewRepoSyncState alloc] initWithDID:did];
     result.status = (AppViewRepoSyncStatus)[row[@"status"] intValue];
     result.lastRev = row[@"last_rev"] != [NSNull null] ? row[@"last_rev"] : nil;
     NSString *bfAt = row[@"last_backfill_at"] != [NSNull null] ? row[@"last_backfill_at"] : nil;
@@ -206,12 +206,12 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return result;
 }
 
-- (nullable AppViewRepoSyncState *)getRepoSyncState:(NSString *)did
+- (nullable GZAppViewRepoSyncState *)getRepoSyncState:(NSString *)did
                                               error:(NSError **)error {
     return [self loadRepoSyncStateForDID:did error:error];
 }
 
-- (nullable NSArray<AppViewRepoSyncState *> *)loadRepoSyncStatesWithStatus:(AppViewRepoSyncStatus)status
+- (nullable NSArray<GZAppViewRepoSyncState *> *)loadRepoSyncStatesWithStatus:(AppViewRepoSyncStatus)status
                                                                      limit:(NSInteger)limit
                                                                      error:(NSError **)error {
     NSString *sql =
@@ -226,7 +226,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 
     NSMutableArray *results = [NSMutableArray arrayWithCapacity:rows.count];
     for (NSDictionary *row in rows) {
-        AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:row[@"did"]];
+        GZAppViewRepoSyncState *s = [[GZAppViewRepoSyncState alloc] initWithDID:row[@"did"]];
         s.status = status;
         s.lastRev = row[@"last_rev"] != [NSNull null] ? row[@"last_rev"] : nil;
         NSString *bfAt = row[@"last_backfill_at"] != [NSNull null] ? row[@"last_backfill_at"] : nil;
@@ -238,7 +238,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return [results copy];
 }
 
-- (BOOL)setRepoSyncState:(AppViewRepoSyncState *)state
+- (BOOL)setRepoSyncState:(GZAppViewRepoSyncState *)state
                    error:(NSError **)error {
     return [self upsertRepoSyncState:state error:error];
 }
@@ -315,7 +315,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 // Pending Deltas
 // ---------------------------------------------------------------------------
 
-- (BOOL)enqueuePendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error {
+- (BOOL)enqueuePendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error {
     NSString *sql =
         @"INSERT OR IGNORE INTO appview_pending_deltas"
         "(did, seq, commit_cid, rev, raw_envelope, enqueued_at)"
@@ -331,9 +331,9 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return [self executeParameterizedUpdate:sql params:params error:error];
 }
 
-- (nullable NSArray<AppViewPendingDelta *> *)dequeuePendingDeltasForDID:(NSString *)did
+- (nullable NSArray<GZAppViewPendingDelta *> *)dequeuePendingDeltasForDID:(NSString *)did
                                                                    error:(NSError **)error {
-    __block NSMutableArray<AppViewPendingDelta *> *results = [NSMutableArray array];
+    __block NSMutableArray<GZAppViewPendingDelta *> *results = [NSMutableArray array];
 
     BOOL ok = [self performWriteTransaction:^BOOL(id<ATProtoDatabaseTransactor> tx, NSError **innerError) {
         NSString *selectSQL =
@@ -347,7 +347,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
             NSString *cid = row[@"commit_cid"];
             NSString *rev = row[@"rev"];
             NSData *envelope = row[@"raw_envelope"];
-            AppViewPendingDelta *d = [[AppViewPendingDelta alloc]
+            GZAppViewPendingDelta *d = [[GZAppViewPendingDelta alloc]
                 initWithDID:did
                         seq:seq
                   commitCID:cid
@@ -620,7 +620,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 // Relevance Set
 // ---------------------------------------------------------------------------
 
-- (BOOL)upsertRelevanceMembership:(AppViewRelevanceMembership *)membership
+- (BOOL)upsertRelevanceMembership:(GZAppViewRelevanceMembership *)membership
                             error:(NSError **)error {
     NSString *sql =
         @"INSERT INTO appview_relevance(did, reason, expires_at, added_at)"
@@ -654,7 +654,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return ok;
 }
 
-- (nullable AppViewRelevanceMembership *)loadRelevanceMembershipForDID:(NSString *)did
+- (nullable GZAppViewRelevanceMembership *)loadRelevanceMembershipForDID:(NSString *)did
                                                                  error:(NSError **)error {
     NSString *sql = @"SELECT reason, expires_at, added_at FROM appview_relevance WHERE did = ?";
     NSArray *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
@@ -664,7 +664,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     AppViewRelevanceReason reason = (AppViewRelevanceReason)[row[@"reason"] intValue];
     NSString *expiresStr = row[@"expires_at"] != [NSNull null] ? row[@"expires_at"] : nil;
     NSDate *expires = expiresStr ? iso8601Parse(expiresStr) : nil;
-    AppViewRelevanceMembership *result = [[AppViewRelevanceMembership alloc] initWithDID:did reason:reason expiresAt:expires];
+    GZAppViewRelevanceMembership *result = [[GZAppViewRelevanceMembership alloc] initWithDID:did reason:reason expiresAt:expires];
     NSString *addedStr = row[@"added_at"] != [NSNull null] ? row[@"added_at"] : nil;
     if (addedStr) result.addedAt = iso8601Parse(addedStr);
     return result;

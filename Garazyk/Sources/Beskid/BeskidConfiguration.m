@@ -4,7 +4,7 @@
 #import "Beskid/BeskidConfiguration.h"
 #import "Shared/GZConfigurationParsing.h"
 
-@implementation BeskidConfiguration
+@implementation GZBeskidConfiguration
 
 - (instancetype)init {
     self = [super init];
@@ -43,7 +43,7 @@
 }
 
 + (instancetype)configurationFromEnvironment {
-    BeskidConfiguration *config = [[self alloc] init];
+    GZBeskidConfiguration *config = [[self alloc] init];
     [[self sharedParser] applyEnvironmentVariables:[[NSProcessInfo processInfo] environment] toTarget:config];
     return config;
 }

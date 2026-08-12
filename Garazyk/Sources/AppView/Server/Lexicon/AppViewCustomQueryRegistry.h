@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewCustomQueryRegistry.h
+ @file GZAppViewCustomQueryRegistry.h
 
  @abstract Registry for custom ObjC query handlers per-NSID.
 
@@ -16,7 +16,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
 
@@ -52,7 +52,7 @@ extern NSErrorDomain const AppViewCustomQueryRegistryErrorDomain;
  */
 - (BOOL)handleQueryWithParams:(NSDictionary<NSString *, NSString *> *)params
                         input:(nullable NSDictionary *)input
-                     database:(AppViewDatabase *)database
+                     database:(GZAppViewDatabase *)database
                     callerDID:(nullable NSString *)callerDID
                        result:(NSDictionary *_Nullable *_Nullable)result
                         error:(NSError **)error;
@@ -82,11 +82,11 @@ extern NSErrorDomain const AppViewCustomQueryRegistryErrorDomain;
 @end
 
 /*!
- @class AppViewCustomQueryRegistry
+ @class GZAppViewCustomQueryRegistry
 
  @abstract Registry for per-NSID custom query handlers.
  */
-@interface AppViewCustomQueryRegistry : NSObject
+@interface GZAppViewCustomQueryRegistry : NSObject
 
 /*!
  @method registerHandler:forNSID:

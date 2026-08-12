@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewBackfillWorker.m
+ @file GZAppViewBackfillWorker.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -17,13 +17,13 @@
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
 
-@interface AppViewBackfillWorker ()
+@interface GZAppViewBackfillWorker ()
 @property (nonatomic, copy)   NSString *did;
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
 @end
 
-@implementation AppViewBackfillWorker {
+@implementation GZAppViewBackfillWorker {
     NSString *_plcURL;
 }
 
@@ -69,7 +69,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
 }
 
 - (instancetype)initWithDID:(NSString *)did
-                    database:(AppViewDatabase *)database
+                    database:(GZAppViewDatabase *)database
                     indexers:(NSArray<id<AppViewIndexer>> *)indexers
                     plcURL:(NSString *)plcURL {
     self = [super init];
@@ -98,7 +98,7 @@ static ATProtoCID *AppViewBackfillDataCIDFromCommitBlock(NSData *data, NSString 
 
     // Load current sync state to get lastRev for incremental fetch
     NSError *stateErr = nil;
-    AppViewRepoSyncState *state = [_database loadRepoSyncStateForDID:did error:&stateErr];
+    GZAppViewRepoSyncState *state = [_database loadRepoSyncStateForDID:did error:&stateErr];
     NSString *sinceRev = state.lastRev; // nil for fresh backfill
 
     // Resolve PDS endpoint for this DID via com.atproto.identity.resolveHandle /

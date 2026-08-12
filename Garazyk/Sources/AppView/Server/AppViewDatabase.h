@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewDatabase.h
+ @file GZAppViewDatabase.h
 
  @abstract AppView-owned SQLite database with checkpoint, backfill, and
  relevance-set tables.
@@ -143,11 +143,11 @@ extern NSString * const AppViewDatabaseErrorDomain;
 @end
 
 /*!
- @class AppViewDatabase
+ @class GZAppViewDatabase
  
  @abstract Manages the AppView SQLite database.
  */
-@interface AppViewDatabase : NSObject <PDSQueryDatabase, AppViewRecordStore>
+@interface GZAppViewDatabase : NSObject <PDSQueryDatabase, AppViewRecordStore>
 
 /*!
  @method initWithPath:error:
@@ -189,7 +189,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
 
  @abstract Upsert the cursor for a relay URL.
  */
-- (BOOL)saveCheckpoint:(AppViewCheckpoint *)checkpoint error:(NSError **)error;
+- (BOOL)saveCheckpoint:(GZAppViewCheckpoint *)checkpoint error:(NSError **)error;
 
 /*!
  @method loadCheckpointForRelayURL:error:
@@ -197,7 +197,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
  @abstract Load the last saved checkpoint for a relay URL.
  Returns nil if none exists yet.
  */
-- (nullable AppViewCheckpoint *)loadCheckpointForRelayURL:(NSString *)relayURL
+- (nullable GZAppViewCheckpoint *)loadCheckpointForRelayURL:(NSString *)relayURL
                                                     error:(NSError **)error;
 
 #pragma mark - Repo Sync State
@@ -207,14 +207,14 @@ extern NSString * const AppViewDatabaseErrorDomain;
 
  @abstract Insert or replace the sync state for a repo DID.
  */
-- (BOOL)upsertRepoSyncState:(AppViewRepoSyncState *)state error:(NSError **)error;
+- (BOOL)upsertRepoSyncState:(GZAppViewRepoSyncState *)state error:(NSError **)error;
 
 /*!
  @method loadRepoSyncStateForDID:error:
 
  @abstract Return the current sync state for a DID. Returns nil if unknown.
  */
-- (nullable AppViewRepoSyncState *)loadRepoSyncStateForDID:(NSString *)did
+- (nullable GZAppViewRepoSyncState *)loadRepoSyncStateForDID:(NSString *)did
                                                      error:(NSError **)error;
 
 /*!
@@ -223,7 +223,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
  @abstract Return repos in the given status, ordered by error_count ASC then
  last_backfill_at ASC (fair scheduling). Used by the backfill scheduler.
  */
-- (nullable NSArray<AppViewRepoSyncState *> *)loadRepoSyncStatesWithStatus:(AppViewRepoSyncStatus)status
+- (nullable NSArray<GZAppViewRepoSyncState *> *)loadRepoSyncStatesWithStatus:(AppViewRepoSyncStatus)status
                                                                      limit:(NSInteger)limit
                                                                      error:(NSError **)error;
 
@@ -240,7 +240,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
 
  @abstract Get sync state for a specific DID. Alias for loadRepoSyncStateForDID:.
  */
-- (nullable AppViewRepoSyncState *)getRepoSyncState:(NSString *)did
+- (nullable GZAppViewRepoSyncState *)getRepoSyncState:(NSString *)did
                                              error:(NSError **)error;
 
 /*!
@@ -248,7 +248,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
 
  @abstract Update sync state for a repo. Alias for upsertRepoSyncState:.
  */
-- (BOOL)setRepoSyncState:(AppViewRepoSyncState *)state
+- (BOOL)setRepoSyncState:(GZAppViewRepoSyncState *)state
                   error:(NSError **)error;
 
 /*!
@@ -289,7 +289,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
  @abstract Persist a live delta for a repo whose backfill is in-flight.
  Idempotent: duplicate (did, seq) pairs are silently ignored.
  */
-- (BOOL)enqueuePendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error;
+- (BOOL)enqueuePendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error;
 
 /*!
  @method dequeuePendingDeltasForDID:error:
@@ -297,7 +297,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
  @abstract Return all pending deltas for a DID ordered by seq ASC,
  then delete them. Called once backfill completes for that DID.
  */
-- (nullable NSArray<AppViewPendingDelta *> *)dequeuePendingDeltasForDID:(NSString *)did
+- (nullable NSArray<GZAppViewPendingDelta *> *)dequeuePendingDeltasForDID:(NSString *)did
                                                                   error:(NSError **)error;
 
 /*!
@@ -352,7 +352,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
 
  @abstract Insert or update a relevance membership entry.
  */
-- (BOOL)upsertRelevanceMembership:(AppViewRelevanceMembership *)membership
+- (BOOL)upsertRelevanceMembership:(GZAppViewRelevanceMembership *)membership
                             error:(NSError **)error;
 
 /*!
@@ -360,7 +360,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
 
  @abstract Return the membership entry for a DID, or nil if not a member.
  */
-- (nullable AppViewRelevanceMembership *)loadRelevanceMembershipForDID:(NSString *)did
+- (nullable GZAppViewRelevanceMembership *)loadRelevanceMembershipForDID:(NSString *)did
                                                                  error:(NSError **)error;
 
 /*!

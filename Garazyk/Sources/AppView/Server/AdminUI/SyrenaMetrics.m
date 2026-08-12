@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AppView/Server/AdminUI/SyrenaMetrics.h"
 
-@interface SyrenaMetrics ()
+@interface GZSyrenaMetrics ()
 @property (nonatomic, strong) dispatch_queue_t queue;
 @property (nonatomic, assign) int64_t ingestEvents;
 @property (nonatomic, assign) int64_t ingestCommits;
@@ -22,7 +22,7 @@
 @property (nonatomic, assign) int64_t rateLimitRejects;
 @end
 
-@implementation SyrenaMetrics
+@implementation GZSyrenaMetrics
 
 - (instancetype)init {
     self = [super init];

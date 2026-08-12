@@ -15,8 +15,8 @@
 #import "AppView/Server/Relevance/AppViewRelevanceSet.h"
 
 @interface AppViewRelevanceSetTests : XCTestCase
-@property (nonatomic, strong) AppViewDatabase *db;
-@property (nonatomic, strong) AppViewRelevanceSet *relevanceSet;
+@property (nonatomic, strong) GZAppViewDatabase *db;
+@property (nonatomic, strong) GZAppViewRelevanceSet *relevanceSet;
 @end
 
 @implementation AppViewRelevanceSetTests
@@ -24,11 +24,11 @@
 - (void)setUp {
     [super setUp];
     NSError *err = nil;
-    self.db = [[AppViewDatabase alloc] initInMemoryWithError:&err];
+    self.db = [[GZAppViewDatabase alloc] initInMemoryWithError:&err];
     XCTAssertNotNil(self.db);
     [self.db runMigrations:&err];
 
-    self.relevanceSet = [[AppViewRelevanceSet alloc]
+    self.relevanceSet = [[GZAppViewRelevanceSet alloc]
         initWithDatabase:self.db
                 seedDIDs:@[@"did:plc:seed1", @"did:plc:seed2"]
                allowlist:@[@"did:plc:allow1"]
@@ -78,7 +78,7 @@
     // Add 3 entries with past expiry
     for (NSInteger i = 0; i < 3; i++) {
         NSString *did = [NSString stringWithFormat:@"did:plc:old%ld", (long)i];
-        AppViewRelevanceMembership *m = [[AppViewRelevanceMembership alloc]
+        GZAppViewRelevanceMembership *m = [[GZAppViewRelevanceMembership alloc]
             initWithDID:did
                  reason:AppViewRelevanceReasonRecentInteraction
               expiresAt:[NSDate dateWithTimeIntervalSinceNow:-7200]];

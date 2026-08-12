@@ -21,9 +21,9 @@
 // ---------------------------------------------------------------------------
 
 @interface IngestTrackingDelegate : NSObject <AppViewIngestEngineDelegate>
-@property (nonatomic, strong) NSMutableArray<AppViewIngestEvent *> *receivedCommits;
-@property (nonatomic, strong) NSMutableArray<AppViewIngestEvent *> *receivedIdentityChanges;
-@property (nonatomic, strong) NSMutableArray<AppViewIngestEvent *> *receivedAccountEvents;
+@property (nonatomic, strong) NSMutableArray<GZAppViewIngestEvent *> *receivedCommits;
+@property (nonatomic, strong) NSMutableArray<GZAppViewIngestEvent *> *receivedIdentityChanges;
+@property (nonatomic, strong) NSMutableArray<GZAppViewIngestEvent *> *receivedAccountEvents;
 @end
 
 @implementation IngestTrackingDelegate
@@ -36,15 +36,15 @@
     return self;
 }
 
-- (void)ingestEngine:(AppViewIngestEngine *)engine didReceiveCommit:(AppViewIngestEvent *)event {
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine didReceiveCommit:(GZAppViewIngestEvent *)event {
     @synchronized(self) { [_receivedCommits addObject:event]; }
 }
 
-- (void)ingestEngine:(AppViewIngestEngine *)engine didReceiveIdentityChange:(AppViewIngestEvent *)event {
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine didReceiveIdentityChange:(GZAppViewIngestEvent *)event {
     @synchronized(self) { [_receivedIdentityChanges addObject:event]; }
 }
 
-- (void)ingestEngine:(AppViewIngestEngine *)engine didReceiveAccountEvent:(AppViewIngestEvent *)event {
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine didReceiveAccountEvent:(GZAppViewIngestEvent *)event {
     @synchronized(self) { [_receivedAccountEvents addObject:event]; }
 }
 
@@ -53,7 +53,7 @@
 // ---------------------------------------------------------------------------
 
 @interface AppViewIngestEngineTests : XCTestCase
-@property (nonatomic, strong) AppViewDatabase *db;
+@property (nonatomic, strong) GZAppViewDatabase *db;
 @property (nonatomic, strong) NSString *testDbPath;
 @property (nonatomic, strong) IngestTrackingDelegate *delegate;
 @end
@@ -64,7 +64,7 @@
     [super setUp];
     NSError *err = nil;
     self.testDbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
-    self.db = [[AppViewDatabase alloc] initWithPath:self.testDbPath error:&err];
+    self.db = [[GZAppViewDatabase alloc] initWithPath:self.testDbPath error:&err];
     XCTAssertNotNil(self.db);
     [self.db runMigrations:&err];
     self.delegate = [[IngestTrackingDelegate alloc] init];
@@ -85,14 +85,14 @@
 
 - (void)testCheckpointPersistedOnStop {
     // Simulate saving a checkpoint
-    AppViewCheckpoint *cp = [[AppViewCheckpoint alloc]
+    GZAppViewCheckpoint *cp = [[GZAppViewCheckpoint alloc]
         initWithRelayURL:@"wss://test.relay" seq:999];
     NSError *err = nil;
     [self.db saveCheckpoint:cp error:&err];
     XCTAssertNil(err);
 
     // Engine should resume from this checkpoint
-    AppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://test.relay" error:&err];
+    GZAppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://test.relay" error:&err];
     XCTAssertEqual(loaded.seq, 999LL);
 }
 
@@ -112,24 +112,24 @@
 - (void)testPendingDeltaBufferedForProcessingRepo {
     NSError *err = nil;
     // Mark repo as processing
-    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:busy"];
+    GZAppViewRepoSyncState *state = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:busy"];
     state.status = AppViewRepoSyncStatusProcessing;
     [self.db upsertRepoSyncState:state error:nil];
 
     // Enqueue a pending delta (simulating the ingest engine buffering)
-    AppViewPendingDelta *delta = [[AppViewPendingDelta alloc]
+    GZAppViewPendingDelta *delta = [[GZAppViewPendingDelta alloc]
         initWithDID:@"did:plc:busy" seq:100 commitCID:@"cid1" rev:@"rev1"
         rawEnvelope:[NSData data]];
     XCTAssertTrue([self.db enqueuePendingDelta:delta error:&err]);
 
     // After backfill completes, dequeue
-    NSArray<AppViewPendingDelta *> *dequeued = [self.db dequeuePendingDeltasForDID:@"did:plc:busy" error:&err];
+    NSArray<GZAppViewPendingDelta *> *dequeued = [self.db dequeuePendingDeltasForDID:@"did:plc:busy" error:&err];
     XCTAssertEqual(dequeued.count, 1u);
     XCTAssertEqualObjects(dequeued[0].commitCID, @"cid1");
 }
 
 - (void)testIngestEventCreation {
-    AppViewIngestEvent *event = [[AppViewIngestEvent alloc] init];
+    GZAppViewIngestEvent *event = [[GZAppViewIngestEvent alloc] init];
     event.seq       = 12345;
     event.relayURL  = @"wss://test";
     event.did       = @"did:plc:abc";
@@ -141,7 +141,7 @@
 }
 
 - (void)testIngestEngineInitialization {
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[@"wss://bsky.network"]];
     XCTAssertNotNil(engine);
     XCTAssertFalse(engine.isRunning);
@@ -150,12 +150,12 @@
 
 - (void)testBackpressureMarksRepoDirtyAndDurable {
     NSError *err = nil;
-    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:lagged"];
+    GZAppViewRepoSyncState *state = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:lagged"];
     state.status = AppViewRepoSyncStatusSynced;
     state.lastRev = @"rev0";
     XCTAssertTrue([self.db upsertRepoSyncState:state error:&err]);
 
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 0;
 
@@ -169,7 +169,7 @@
 
     [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
 
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:lagged" error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:lagged" error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusDirty);
     XCTAssertEqual([self.db durableCursorForRelayURL:@"wss://test.relay"], 10LL);
 
@@ -183,7 +183,7 @@
     XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://test.relay" seq:9 eventType:@"#commit"
                                                     did:@"did:plc:queued" rev:@"rev0" cid:nil
                                             rawEnvelope:[NSData data] error:&error]);
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc] initWithDatabase:self.db relayURLs:@[]];
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc] initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = INT64_MAX;
     engine.indexQueueHighWatermarkEvents = 1;
 
@@ -202,12 +202,12 @@
 
 - (void)testProcessedLiveCommitAdvancesRepoLastRev {
     NSError *err = nil;
-    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:live"];
+    GZAppViewRepoSyncState *state = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:live"];
     state.status = AppViewRepoSyncStatusSynced;
     state.lastRev = @"rev0";
     XCTAssertTrue([self.db upsertRepoSyncState:state error:&err]);
 
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 1000;
 
@@ -221,14 +221,14 @@
     [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
     [engine waitForIndexQueueDrainForTesting];
 
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:live" error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:live" error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced);
     XCTAssertEqualObjects(loaded.lastRev, @"rev1");
     XCTAssertEqual([self.db durableCursorForRelayURL:@"wss://test.relay"], 11LL);
 }
 
 - (void)testFirstLiveCommitForUnknownRepoMarksRepoSynced {
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 1000;
 
@@ -242,13 +242,13 @@
     [engine waitForIndexQueueDrainForTesting];
 
     NSError *err = nil;
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:newrepo" error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:newrepo" error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced);
     XCTAssertEqualObjects(loaded.lastRev, @"rev1");
 }
 
 - (void)testQueuedLiveCommitIsAcknowledgedAfterMaterialization {
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 1000;
 
@@ -287,12 +287,12 @@
     XCTAssertTrue([self.db enqueueIndexEventForRelayURL:@"wss://test.relay" seq:event.seq eventType:@"live_commit"
                                                     did:event.repo rev:event.rev cid:nil rawEnvelope:envelope error:&error], @"%@", error);
 
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc] initWithDatabase:self.db relayURLs:@[]];
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc] initWithDatabase:self.db relayURLs:@[]];
     [engine start];
     [engine waitForIndexQueueDrainForTesting];
     [engine stop];
 
-    AppViewRepoSyncState *state = [self.db loadRepoSyncStateForDID:event.repo error:&error];
+    GZAppViewRepoSyncState *state = [self.db loadRepoSyncStateForDID:event.repo error:&error];
     XCTAssertEqual(state.status, AppViewRepoSyncStatusSynced);
     XCTAssertEqualObjects(state.lastRev, @"rev1");
     NSArray<NSDictionary *> *rows = [self.db executeParameterizedQuery:
@@ -302,7 +302,7 @@
 }
 
 - (void)testConcurrencySafety {
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[@"wss://relay1", @"wss://relay2"]];
     engine.maxLagForBackpressure = 1000;
     
@@ -364,7 +364,7 @@
 }
 
 - (void)testBackpressureLagIsScopedToEachRelay {
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[]];
     engine.maxLagForBackpressure = 100;
 
@@ -423,7 +423,7 @@
                                  params:@[did, @"Test", @"test.bsky.social", @"desc"] error:nil];
 
     // Simulate a takedown account event
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[@"wss://test.relay"]];
     engine.delegate = self.delegate;
 
@@ -446,7 +446,7 @@
     XCTAssertEqual(actors.count, 0u);
 
     // Repo sync state should be tombstoned
-    AppViewRepoSyncState *state = [self.db loadRepoSyncStateForDID:did error:&err];
+    GZAppViewRepoSyncState *state = [self.db loadRepoSyncStateForDID:did error:&err];
     XCTAssertEqual(state.status, AppViewRepoSyncStatusDirty);
     XCTAssertEqualObjects(state.lastError, @"takendown");
 
@@ -470,7 +470,7 @@
                                       value:@"{\"text\":\"hello\"}" subjectDid:nil error:&err]);
     XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 1);
 
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[]];
     engine.delegate = self.delegate;
 
@@ -497,7 +497,7 @@
                                         cid:@"cid1" handle:nil
                                       value:@"{}" subjectDid:nil error:&err]);
 
-    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:self.db relayURLs:@[]];
 
     ATProtoFirehoseAccountEvent *suspended = [[ATProtoFirehoseAccountEvent alloc] init];

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file MikrusXrpcRoutePack.h
+ * @file GZMikrusXrpcRoutePack.h
  * @abstract XRPC routes for Microcosm-compatible Mikrus endpoints.
  */
 
@@ -9,8 +9,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class MikrusDatabase;
-@class MikrusMetrics;
+@class GZMikrusDatabase;
+@class GZMikrusMetrics;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
 @class ATProtoHttpServer;
@@ -18,21 +18,21 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Registry and handler for Mikrus XRPC endpoints.
  */
-@interface MikrusXrpcRoutePack : NSObject
+@interface GZMikrusXrpcRoutePack : NSObject
 
 /**
  * @abstract Initializes the route pack with the Mikrus database.
  * @param database The Mikrus database instance.
  * @return An initialized route pack instance.
  */
-- (instancetype)initWithDatabase:(MikrusDatabase *)database NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithDatabase:(GZMikrusDatabase *)database NS_DESIGNATED_INITIALIZER;
 
 /**
  * @abstract Unavailable initializer.
  */
 - (instancetype)init NS_UNAVAILABLE;
 
-@property (nonatomic, strong) MikrusMetrics *metrics;
+@property (nonatomic, strong) GZMikrusMetrics *metrics;
 
 /**
  * @abstract Registers Mikrus-specific routes with the provided server.

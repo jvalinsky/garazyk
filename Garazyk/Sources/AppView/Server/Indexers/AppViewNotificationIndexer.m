@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewNotificationIndexer.m
+ @file GZAppViewNotificationIndexer.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -25,13 +25,13 @@ static NSSet<NSString *> *notifSources(void) {
     return s;
 }
 
-@interface AppViewNotificationIndexer ()
-@property (nonatomic, strong) AppViewDatabase *avdb;
+@interface GZAppViewNotificationIndexer ()
+@property (nonatomic, strong) GZAppViewDatabase *avdb;
 @end
 
-@implementation AppViewNotificationIndexer
+@implementation GZAppViewNotificationIndexer
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database {
     self = [super init];
     if (!self) return nil;
     _avdb = database;
@@ -96,7 +96,7 @@ static NSSet<NSString *> *notifSources(void) {
     return YES;
 }
 
-- (BOOL)handleIngestEvent:(AppViewIngestEvent *)event error:(NSError **)error {
+- (BOOL)handleIngestEvent:(GZAppViewIngestEvent *)event error:(NSError **)error {
     if (!event || !event.ops || event.ops.count == 0) {
         return YES; // Nothing to process, not an error
     }
@@ -135,7 +135,7 @@ static NSSet<NSString *> *notifSources(void) {
     return YES;
 }
 
-- (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error {
+- (BOOL)processPendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error {
     return YES;
 }
 

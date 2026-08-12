@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewBookmarkIndexer.m
+ @file GZAppViewBookmarkIndexer.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -11,14 +11,14 @@
 #import "AppView/Services/BookmarkService.h"
 #import "Debug/GZLogger.h"
 
-@interface AppViewBookmarkIndexer ()
-@property (nonatomic, strong) AppViewDatabase *avdb;
+@interface GZAppViewBookmarkIndexer ()
+@property (nonatomic, strong) GZAppViewDatabase *avdb;
 @property (nonatomic, strong) PDSBookmarkService *bookmarkService;
 @end
 
-@implementation AppViewBookmarkIndexer
+@implementation GZAppViewBookmarkIndexer
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                bookmarkService:(PDSBookmarkService *)bookmarkService {
     self = [super init];
     if (!self) return nil;

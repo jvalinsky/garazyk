@@ -6,10 +6,10 @@
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 
-// Wraps AppViewDatabase to count every SELECT issued through the shared
+// Wraps GZAppViewDatabase to count every SELECT issued through the shared
 // query path, so tests can assert query counts rather than merely observe
 // them once. All PDSActorService reads flow through this single override.
-@interface AppViewQueryCountingDatabase : AppViewDatabase
+@interface AppViewQueryCountingDatabase : GZAppViewDatabase
 @property (nonatomic, assign) NSUInteger queryCount;
 @end
 

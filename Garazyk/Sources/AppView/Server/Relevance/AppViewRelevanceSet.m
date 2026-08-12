@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewRelevanceSet.m
+ @file GZAppViewRelevanceSet.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -11,16 +11,16 @@
 #import "Compat/PDSTypes.h"
 #import "Debug/GZLogger.h"
 
-@interface AppViewRelevanceSet ()
-@property (nonatomic, strong) AppViewDatabase *database;
+@interface GZAppViewRelevanceSet ()
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, strong) NSArray<NSString *> *seedDIDs;
 @property (nonatomic, strong) NSArray<NSString *> *allowlist;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue; // Protects writes
 @end
 
-@implementation AppViewRelevanceSet
+@implementation GZAppViewRelevanceSet
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                         seedDIDs:(NSArray<NSString *> *)seedDIDs
                        allowlist:(NSArray<NSString *> *)allowlist
                         ttlHours:(NSUInteger)ttlHours {
@@ -42,12 +42,12 @@
 
     dispatch_async(_queue, ^{
         for (NSString *did in self.seedDIDs) {
-            AppViewRelevanceMembership *m = [[AppViewRelevanceMembership alloc]
+            GZAppViewRelevanceMembership *m = [[GZAppViewRelevanceMembership alloc]
                 initWithDID:did reason:AppViewRelevanceReasonSeed expiresAt:nil];
             [self.database upsertRelevanceMembership:m error:nil];
         }
         for (NSString *did in self.allowlist) {
-            AppViewRelevanceMembership *m = [[AppViewRelevanceMembership alloc]
+            GZAppViewRelevanceMembership *m = [[GZAppViewRelevanceMembership alloc]
                 initWithDID:did reason:AppViewRelevanceReasonAllowlist expiresAt:nil];
             [self.database upsertRelevanceMembership:m error:nil];
         }
@@ -81,7 +81,7 @@
     NSDate *expires = permanent ? nil
         : [NSDate dateWithTimeIntervalSinceNow:self.ttlHours * 3600.0];
 
-    AppViewRelevanceMembership *m = [[AppViewRelevanceMembership alloc]
+    GZAppViewRelevanceMembership *m = [[GZAppViewRelevanceMembership alloc]
         initWithDID:did reason:reason expiresAt:expires];
     [self.database upsertRelevanceMembership:m error:nil];
 }

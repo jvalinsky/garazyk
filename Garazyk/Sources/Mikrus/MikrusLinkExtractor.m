@@ -5,7 +5,7 @@
 
 static const NSUInteger kMikrusMaxRecursionDepth = 50;
 
-@implementation MikrusLinkExtractor
+@implementation GZMikrusLinkExtractor
 
 + (NSArray<NSDictionary<NSString *, NSString *> *> *)linkEntriesInRecord:(NSDictionary *)record {
     if (![record isKindOfClass:[NSDictionary class]]) return @[];

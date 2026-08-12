@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
  flipped by one caller out from under another.
 
  Identity for the strict path: `[ATProtoDagCBOR decodeDataAsJSON:error:]`
- (see `AppViewBackfillWorker.m:422`). The wrapped `[ATProtoCBORDecoder decode:]`
+ (see `GZAppViewBackfillWorker.m:422`). The wrapped `[ATProtoCBORDecoder decode:]`
  at `ATProtoCBORSerialization.m:39` is the only `[ATProtoCBORDecoder decode:]`
  call that survives this refactor; every other production caller routes
  through `[ATProtoDagCBOR decodeData:...]` (gate check 1 of §S19).

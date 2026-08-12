@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewActorIndexer.m
+ @file GZAppViewActorIndexer.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -17,13 +17,13 @@
 
 static NSString * const kCollection = @"app.bsky.actor.profile";
 
-@interface AppViewActorIndexer ()
-@property (nonatomic, strong) AppViewDatabase *avdb;
+@interface GZAppViewActorIndexer ()
+@property (nonatomic, strong) GZAppViewDatabase *avdb;
 @end
 
-@implementation AppViewActorIndexer
+@implementation GZAppViewActorIndexer
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database {
     self = [super init];
     if (!self) return nil;
     _avdb = database;
@@ -105,7 +105,7 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     return YES;
 }
 
-- (BOOL)handleIngestEvent:(AppViewIngestEvent *)event error:(NSError **)error {
+- (BOOL)handleIngestEvent:(GZAppViewIngestEvent *)event error:(NSError **)error {
     for (NSDictionary *op in event.ops) {
         NSString *action = op[@"action"];
         NSString *path   = op[@"path"];
@@ -130,7 +130,7 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     return YES;
 }
 
-- (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error {
+- (BOOL)processPendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error {
     GZ_LOG_DEBUG(@"[AppViewActorIndexer] Replaying pending delta for %@", delta.did);
     return YES;
 }

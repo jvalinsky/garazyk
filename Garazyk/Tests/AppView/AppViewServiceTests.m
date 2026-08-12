@@ -25,33 +25,33 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     return [call copy];
 }
 
-@interface AppViewFeedIndexer (Testing)
-- (BOOL)handleIngestEvent:(AppViewIngestEvent *)event error:(NSError **)error;
-- (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error;
+@interface GZAppViewFeedIndexer (Testing)
+- (BOOL)handleIngestEvent:(GZAppViewIngestEvent *)event error:(NSError **)error;
+- (BOOL)processPendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error;
 - (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error;
 @end
 
-@interface AppViewGraphIndexer (Testing)
-- (BOOL)handleIngestEvent:(AppViewIngestEvent *)event error:(NSError **)error;
-- (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error;
+@interface GZAppViewGraphIndexer (Testing)
+- (BOOL)handleIngestEvent:(GZAppViewIngestEvent *)event error:(NSError **)error;
+- (BOOL)processPendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error;
 - (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error;
 @end
 
-@interface AppViewNotificationIndexer (Testing)
-- (BOOL)handleIngestEvent:(AppViewIngestEvent *)event error:(NSError **)error;
-- (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error;
+@interface GZAppViewNotificationIndexer (Testing)
+- (BOOL)handleIngestEvent:(GZAppViewIngestEvent *)event error:(NSError **)error;
+- (BOOL)processPendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error;
 - (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error;
 @end
 
 #pragma mark - Routing test doubles
 
-@interface RoutingFeedIndexer : AppViewFeedIndexer
+@interface RoutingFeedIndexer : GZAppViewFeedIndexer
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *indexCalls;
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *deleteCalls;
 @end
 
 @implementation RoutingFeedIndexer
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database {
     self = [super initWithDatabase:database];
     if (self) {
         _indexCalls = [NSMutableArray array];
@@ -86,13 +86,13 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 @end
 
-@interface RoutingGraphIndexer : AppViewGraphIndexer
+@interface RoutingGraphIndexer : GZAppViewGraphIndexer
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *indexCalls;
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *deleteCalls;
 @end
 
 @implementation RoutingGraphIndexer
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database {
     self = [super initWithDatabase:database relevanceSet:nil graphService:nil];
     if (self) {
         _indexCalls = [NSMutableArray array];
@@ -127,13 +127,13 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 @end
 
-@interface RoutingNotificationIndexer : AppViewNotificationIndexer
+@interface RoutingNotificationIndexer : GZAppViewNotificationIndexer
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *indexCalls;
 @property(nonatomic, strong) NSMutableArray<NSDictionary *> *deleteCalls;
 @end
 
 @implementation RoutingNotificationIndexer
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database {
     self = [super initWithDatabase:database];
     if (self) {
         _indexCalls = [NSMutableArray array];
@@ -369,8 +369,8 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 
 @interface AppViewServiceTests : XCTestCase
 @property(nonatomic, strong) NSString *testDirectory;
-@property(nonatomic, strong) AppViewDatabase *database;
-@property(nonatomic, strong) AppViewRelevanceSet *relevanceSet;
+@property(nonatomic, strong) GZAppViewDatabase *database;
+@property(nonatomic, strong) GZAppViewRelevanceSet *relevanceSet;
 @property(nonatomic, strong) TrackingNotificationService *notificationService;
 @property(nonatomic, strong) TrackingBookmarkService *bookmarkService;
 @property(nonatomic, strong) TrackingGraphService *graphService;
@@ -391,11 +391,11 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 
     NSString *dbPath = [self.testDirectory stringByAppendingPathComponent:@"appview_service_tests.db"];
     NSError *error = nil;
-    self.database = [[AppViewDatabase alloc] initWithPath:dbPath error:&error];
+    self.database = [[GZAppViewDatabase alloc] initWithPath:dbPath error:&error];
     XCTAssertNotNil(self.database, @"Failed to open AppViewDatabase: %@", error);
     XCTAssertTrue([self.database runMigrations:&error], @"Failed to migrate AppViewDatabase: %@", error);
 
-    self.relevanceSet = [[AppViewRelevanceSet alloc]
+    self.relevanceSet = [[GZAppViewRelevanceSet alloc]
         initWithDatabase:self.database
                 seedDIDs:@[]
                allowlist:@[]
@@ -432,8 +432,8 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 
 #pragma mark - Helpers
 
-- (AppViewIngestEvent *)ingestEventWithDid:(NSString *)did ops:(NSArray<NSDictionary *> *)ops {
-    AppViewIngestEvent *event = [[AppViewIngestEvent alloc] init];
+- (GZAppViewIngestEvent *)ingestEventWithDid:(NSString *)did ops:(NSArray<NSDictionary *> *)ops {
+    GZAppViewIngestEvent *event = [[GZAppViewIngestEvent alloc] init];
     event.seq = 1;
     event.relayURL = @"wss://relay.example";
     event.did = did;
@@ -498,7 +498,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 #pragma mark - Feed indexer
 
 - (void)testFeedIndexerCanIndexSupportedCollections {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
 
     NSArray<NSString *> *supported = @[
         @"app.bsky.feed.post",
@@ -519,7 +519,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 
 - (void)testFeedIndexerValidatesPostsAndSubjects {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
 
     BOOL ok = [indexer indexRecord:@{@"text": @"missing type"}
@@ -585,7 +585,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 - (void)testFeedIndexerRoutesLiveEvents {
     RoutingFeedIndexer *indexer = [[RoutingFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
-    AppViewIngestEvent *event = [self ingestEventWithDid:@"did:plc:feed" ops:@[
+    GZAppViewIngestEvent *event = [self ingestEventWithDid:@"did:plc:feed" ops:@[
         @{ @"action": @"create", @"path": @"app.bsky.feed.post/r1", @"cid": @"cid1", @"record": @{ @"$type": @"app.bsky.feed.post", @"text": @"hello" } },
         @{ @"action": @"update", @"path": @"app.bsky.feed.like/r2", @"cid": @"cid2", @"record": @{ @"$type": @"app.bsky.feed.like", @"subject": @{ @"uri": @"at://did:plc:target/app.bsky.feed.post/1" } } },
         @{ @"action": @"delete", @"path": @"app.bsky.feed.generator/r3" },
@@ -601,8 +601,8 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 
 - (void)testFeedIndexerProcessesPendingDeltas {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
-    AppViewPendingDelta *delta = [[AppViewPendingDelta alloc]
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewPendingDelta *delta = [[GZAppViewPendingDelta alloc]
         initWithDID:@"did:plc:feed"
                 seq:10
           commitCID:@"cid1"
@@ -619,7 +619,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 #pragma mark - Graph indexer
 
 - (void)testGraphIndexerCanIndexSupportedCollections {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:nil graphService:nil];
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:nil graphService:nil];
 
     NSArray<NSString *> *supported = @[
         @"app.bsky.graph.follow",
@@ -637,7 +637,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 
 - (void)testGraphIndexerValidatesFollowsAndExpandsRelevance {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:self.relevanceSet graphService:nil];
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:self.relevanceSet graphService:nil];
     NSError *error = nil;
 
     BOOL ok = [indexer indexRecord:@{@"$type": @"app.bsky.graph.follow"}
@@ -665,14 +665,14 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
     XCTAssertNil(error);
     [self waitUntilDID:targetDID becomesRelevant:YES];
 
-    AppViewRelevanceMembership *membership = [self.database loadRelevanceMembershipForDID:targetDID error:nil];
+    GZAppViewRelevanceMembership *membership = [self.database loadRelevanceMembershipForDID:targetDID error:nil];
     XCTAssertNotNil(membership);
     XCTAssertEqual(membership.reason, AppViewRelevanceReasonFollowOfSeed);
     XCTAssertNotNil(membership.expiresAt);
 }
 
 - (void)testGraphIndexerDoesNotExpandForIrrelevantFollower {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:self.relevanceSet graphService:nil];
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:self.relevanceSet graphService:nil];
     NSError *error = nil;
 
     NSString *followerDID = @"did:plc:outsider";
@@ -692,7 +692,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 - (void)testGraphIndexerRoutesLiveEvents {
     RoutingGraphIndexer *indexer = [[RoutingGraphIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
-    AppViewIngestEvent *event = [self ingestEventWithDid:@"did:plc:graph" ops:@[
+    GZAppViewIngestEvent *event = [self ingestEventWithDid:@"did:plc:graph" ops:@[
         @{ @"action": @"create", @"path": @"app.bsky.graph.follow/r1", @"cid": @"cid1", @"record": @{ @"$type": @"app.bsky.graph.follow", @"subject": @"did:plc:target" } },
         @{ @"action": @"update", @"path": @"app.bsky.graph.list/r2", @"cid": @"cid2", @"record": @{ @"$type": @"app.bsky.graph.list" } },
         @{ @"action": @"delete", @"path": @"app.bsky.graph.listitem/r3" },
@@ -708,8 +708,8 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 
 - (void)testGraphIndexerProcessesPendingDeltas {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:nil graphService:nil];
-    AppViewPendingDelta *delta = [[AppViewPendingDelta alloc]
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database relevanceSet:nil graphService:nil];
+    GZAppViewPendingDelta *delta = [[GZAppViewPendingDelta alloc]
         initWithDID:@"did:plc:graph"
                 seq:10
           commitCID:@"cid1"
@@ -726,7 +726,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 #pragma mark - Notification indexer
 
 - (void)testNotificationIndexerCanIndexSupportedCollections {
-    AppViewNotificationIndexer *indexer = [[AppViewNotificationIndexer alloc] initWithDatabase:self.database];
+    GZAppViewNotificationIndexer *indexer = [[GZAppViewNotificationIndexer alloc] initWithDatabase:self.database];
 
     NSArray<NSString *> *supported = @[
         @"app.bsky.feed.like",
@@ -742,7 +742,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 }
 
 - (void)testNotificationIndexerReturnsYesForSupportedNotificationCollections {
-    AppViewNotificationIndexer *indexer = [[AppViewNotificationIndexer alloc] initWithDatabase:self.database];
+    GZAppViewNotificationIndexer *indexer = [[GZAppViewNotificationIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
 
     NSArray<NSDictionary *> *cases = @[
@@ -767,7 +767,7 @@ static NSDictionary *AVSCall(SEL selector, NSDictionary *payload) {
 - (void)testNotificationIndexerRoutesLiveEvents {
     RoutingNotificationIndexer *indexer = [[RoutingNotificationIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
-    AppViewIngestEvent *event = [self ingestEventWithDid:@"did:plc:notifs" ops:@[
+    GZAppViewIngestEvent *event = [self ingestEventWithDid:@"did:plc:notifs" ops:@[
         @{ @"action": @"create", @"path": @"app.bsky.feed.post/r1", @"cid": @"cid1", @"record": @{ @"$type": @"app.bsky.feed.post", @"text": @"hello" } },
         @{ @"action": @"delete", @"path": @"app.bsky.feed.post/r2" },
         @{ @"action": @"create", @"path": @"app.bsky.actor.profile/self", @"record": @{ @"$type": @"app.bsky.actor.profile" } },

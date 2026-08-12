@@ -360,9 +360,9 @@ static NSString *GZLikeContainsPattern(NSString *term) {
 - (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error {
     if (!did || did.length == 0) return nil;
     
-    // 1. Use the AppViewDatabase handles table if available
+    // 1. Use the GZAppViewDatabase handles table if available
     if ([self.database respondsToSelector:@selector(resolveDIDToHandle:error:)]) {
-        AppViewDatabase *avdb = (AppViewDatabase *)self.database;
+        GZAppViewDatabase *avdb = (GZAppViewDatabase *)self.database;
         NSString *handle = [avdb resolveDIDToHandle:did error:error];
         if (handle) return handle;
     }
@@ -390,9 +390,9 @@ static NSString *GZLikeContainsPattern(NSString *term) {
         return nil;
     }
 
-    // 1. Check local handles table in AppViewDatabase
+    // 1. Check local handles table in GZAppViewDatabase
     if ([self.database respondsToSelector:@selector(resolveHandleToDID:error:)]) {
-        AppViewDatabase *avdb = (AppViewDatabase *)self.database;
+        GZAppViewDatabase *avdb = (GZAppViewDatabase *)self.database;
         NSString *did = [avdb resolveHandleToDID:handle error:error];
         if (did) return did;
     }

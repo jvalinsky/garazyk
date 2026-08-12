@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file BeskidConfiguration.h
+ * @file GZBeskidConfiguration.h
  * @abstract Runtime configuration for the Beskid edge-cache service.
  */
 
@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Configuration container for Beskid service parameters.
  */
-@interface BeskidConfiguration : NSObject
+@interface GZBeskidConfiguration : NSObject
 
 /** @abstract Data storage directory path. */
 @property (nonatomic, copy) NSString *dataDirectory;

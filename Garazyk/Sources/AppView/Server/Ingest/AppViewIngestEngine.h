@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewIngestEngine.h
+ @file GZAppViewIngestEngine.h
 
  @abstract Global ingest plane: consumes subscribeRepos from one or more relays,
  persists raw events idempotently, and dispatches to the materialization layer.
@@ -27,9 +27,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoFirehoseCommitEvent;
 @class ATProtoFirehoseIdentityEvent;
 @class ATProtoFirehoseAccountEvent;
-@class AppViewDatabase;
-@class AppViewIngestEngine;
-@class AppViewIngestEvent;
+@class GZAppViewDatabase;
+@class GZAppViewIngestEngine;
+@class GZAppViewIngestEvent;
 /**
  * @abstract Defines the AppViewIndexer protocol contract.
  */
@@ -49,31 +49,31 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Called for each unique commit event (did+rev+cid).
  May be called from a background queue — do not update UI directly.
  */
-- (void)ingestEngine:(AppViewIngestEngine *)engine
-   didReceiveCommit:(AppViewIngestEvent *)event;
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine
+   didReceiveCommit:(GZAppViewIngestEvent *)event;
 
 /*!
  @method ingestEngine:didReceiveIdentityChange:
 
  @abstract Called for identity events (#identity type).
  */
-- (void)ingestEngine:(AppViewIngestEngine *)engine
-didReceiveIdentityChange:(AppViewIngestEvent *)event;
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine
+didReceiveIdentityChange:(GZAppViewIngestEvent *)event;
 
 /*!
  @method ingestEngine:didReceiveAccountEvent:
 
  @abstract Called for account events (#account type, including takedowns).
  */
-- (void)ingestEngine:(AppViewIngestEngine *)engine
-didReceiveAccountEvent:(AppViewIngestEvent *)event;
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine
+didReceiveAccountEvent:(GZAppViewIngestEvent *)event;
 
 /*!
  @method ingestEngine:didReconnectToRelay:atSeq:
 
  @abstract Called after each successful reconnect.
  */
-- (void)ingestEngine:(AppViewIngestEngine *)engine
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine
   didReconnectToRelay:(NSString *)relayURL
                atSeq:(int64_t)seq;
 
@@ -82,18 +82,18 @@ didReceiveAccountEvent:(AppViewIngestEvent *)event;
 
  @abstract Called when commit continuity is broken and the repo needs backfill repair.
  */
-- (void)ingestEngine:(AppViewIngestEngine *)engine
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine
   didDetectGapForDID:(NSString *)did
                atSeq:(int64_t)seq;
 
 @end
 
 /*!
- @interface AppViewIngestEvent
+ @interface GZAppViewIngestEvent
 
  @abstract A decoded ingest event ready for downstream processing.
  */
-@interface AppViewIngestEvent : NSObject
+@interface GZAppViewIngestEvent : NSObject
 
 /*! Global relay sequence number. */
 @property (nonatomic, assign) int64_t seq;
@@ -125,11 +125,11 @@ didReceiveAccountEvent:(AppViewIngestEvent *)event;
 @end
 
 /*!
- @interface AppViewIngestEngine
+ @interface GZAppViewIngestEngine
 
  @abstract Manages realtime ingest from one or more subscribeRepos relay streams.
  */
-@interface AppViewIngestEngine : NSObject
+@interface GZAppViewIngestEngine : NSObject
 
 /*! Delegate for ingest events. */
 @property (nonatomic, weak, nullable) id<AppViewIngestEngineDelegate> delegate;
@@ -167,7 +167,7 @@ didReceiveAccountEvent:(AppViewIngestEvent *)event;
  @param database AppView database for checkpoints and event log.
  @param relayURLs Array of relay URLs to subscribe to (e.g. wss://bsky.network).
  */
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                        relayURLs:(NSArray<NSString *> *)relayURLs;
 
 /*!

@@ -18,7 +18,7 @@ static NSString *BeskidNow(void) {
     return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 }
 
-@interface BeskidDatabase () {
+@interface GZBeskidDatabase () {
     dispatch_queue_t _writeQueue;
 }
 @property (nonatomic, strong) ATProtoConnectionPool *pool;
@@ -26,7 +26,7 @@ static NSString *BeskidNow(void) {
 @property (nonatomic, strong) ATProtoDatabaseQueryRunner *queryRunner;
 @end
 
-@implementation BeskidDatabase
+@implementation GZBeskidDatabase
 
 - (nullable instancetype)initWithPath:(NSString *)path error:(NSError **)error {
     self = [super init];
@@ -414,9 +414,9 @@ static NSString *BeskidNow(void) {
     return @{ @"records": @(recordCount), @"identities": @(identityCount) };
 }
 
-- (BeskidMetrics *)metrics {
+- (GZBeskidMetrics *)metrics {
     if (!_metrics) {
-        _metrics = [[BeskidMetrics alloc] init];
+        _metrics = [[GZBeskidMetrics alloc] init];
     }
     return _metrics;
 }

@@ -14,24 +14,24 @@
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
 
-@interface AppViewAdminRoutePack ()
+@interface GZAppViewAdminRoutePack ()
 
-@property (nonatomic, strong, nullable) AppViewBackfillOrchestrator *orchestrator;
-@property (nonatomic, strong) AppViewIngestEngine *ingestEngine;
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong, nullable) GZAppViewBackfillOrchestrator *orchestrator;
+@property (nonatomic, strong) GZAppViewIngestEngine *ingestEngine;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, copy, nullable) NSString *adminSecret;
 @property (nonatomic, strong, nullable) ATProtoLexiconRegistry *lexiconRegistry;
-@property (nonatomic, strong, nullable) AppViewIndexHookRegistry *hookRegistry;
-@property (nonatomic, strong, nullable) AppViewCustomQueryRegistry *customQueryRegistry;
-@property (nonatomic, strong, nullable) AppViewLexiconEndpointGenerator *lexiconEndpointGenerator;
+@property (nonatomic, strong, nullable) GZAppViewIndexHookRegistry *hookRegistry;
+@property (nonatomic, strong, nullable) GZAppViewCustomQueryRegistry *customQueryRegistry;
+@property (nonatomic, strong, nullable) GZAppViewLexiconEndpointGenerator *lexiconEndpointGenerator;
 
 @end
 
-@implementation AppViewAdminRoutePack
+@implementation GZAppViewAdminRoutePack
 
-- (instancetype)initWithOrchestrator:(nullable AppViewBackfillOrchestrator *)orchestrator
-                        ingestEngine:(AppViewIngestEngine *)ingestEngine
-                            database:(AppViewDatabase *)database
+- (instancetype)initWithOrchestrator:(nullable GZAppViewBackfillOrchestrator *)orchestrator
+                        ingestEngine:(GZAppViewIngestEngine *)ingestEngine
+                            database:(GZAppViewDatabase *)database
                          adminSecret:(nullable NSString *)adminSecret {
     self = [super init];
     if (self) {
@@ -52,7 +52,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/backfill/status"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleBackfillStatus:response];
@@ -62,7 +62,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/backfill/queue"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleBackfillQueue:request response:response];
@@ -72,7 +72,7 @@
     [server addRoute:@"POST"
                 path:@"/admin/backfill/repos"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleBackfillEnqueue:request response:response];
@@ -82,7 +82,7 @@
     [server addRoute:@"POST"
                 path:@"/admin/backfill/repos/:did/retry"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleBackfillRetry:request response:response];
@@ -92,7 +92,7 @@
     [server addRoute:@"POST"
                 path:@"/admin/backfill/repos/:did/cancel"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleBackfillCancel:request response:response];
@@ -102,7 +102,7 @@
     [server addRoute:@"POST"
                 path:@"/admin/backfill/scope/rebuild"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleBackfillRebuild:response];
@@ -112,7 +112,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/ingest/health"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleIngestHealth:response];
@@ -122,7 +122,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/appview/metrics/stats"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleMetricsStats:response];
@@ -134,7 +134,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/lexicons"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleLexiconList:response];
@@ -144,7 +144,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/lexicons/collections"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleIndexedCollections:response];
@@ -156,7 +156,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/hooks"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleHookList:response];
@@ -166,7 +166,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/hooks/dead-letter"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleDeadLetterHooks:request response:response];
@@ -178,7 +178,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/records"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleRecordBrowse:request response:response];
@@ -190,7 +190,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/handlers"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleCustomHandlerList:response];
@@ -200,7 +200,7 @@
     [server addRoute:@"GET"
                 path:@"/admin/endpoints"
              handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 GZAppViewAdminRoutePack *strongSelf = weakSelf;
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleEndpointList:response];
@@ -402,15 +402,15 @@
     _lexiconRegistry = registry;
 }
 
-- (void)setHookRegistry:(nullable AppViewIndexHookRegistry *)hookRegistry {
+- (void)setHookRegistry:(nullable GZAppViewIndexHookRegistry *)hookRegistry {
     _hookRegistry = hookRegistry;
 }
 
-- (void)setCustomQueryRegistry:(nullable AppViewCustomQueryRegistry *)customQueryRegistry {
+- (void)setCustomQueryRegistry:(nullable GZAppViewCustomQueryRegistry *)customQueryRegistry {
     _customQueryRegistry = customQueryRegistry;
 }
 
-- (void)setLexiconEndpointGenerator:(nullable AppViewLexiconEndpointGenerator *)generator {
+- (void)setLexiconEndpointGenerator:(nullable GZAppViewLexiconEndpointGenerator *)generator {
     _lexiconEndpointGenerator = generator;
 }
 

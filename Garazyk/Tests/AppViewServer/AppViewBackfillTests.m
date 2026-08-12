@@ -30,8 +30,8 @@
 // ---------------------------------------------------------------------------
 
 @interface AppViewBackfillTests : XCTestCase
-@property (nonatomic, strong) AppViewDatabase *db;
-@property (nonatomic, strong) AppViewBackfillOrchestrator *orchestrator;
+@property (nonatomic, strong) GZAppViewDatabase *db;
+@property (nonatomic, strong) GZAppViewBackfillOrchestrator *orchestrator;
 @end
 
 @implementation AppViewBackfillTests
@@ -39,11 +39,11 @@
 - (void)setUp {
     [super setUp];
     NSError *err = nil;
-    self.db = [[AppViewDatabase alloc] initInMemoryWithError:&err];
+    self.db = [[GZAppViewDatabase alloc] initInMemoryWithError:&err];
     XCTAssertNotNil(self.db);
     [self.db runMigrations:&err];
 
-    self.orchestrator = [[AppViewBackfillOrchestrator alloc]
+    self.orchestrator = [[GZAppViewBackfillOrchestrator alloc]
         initWithDatabase:self.db indexers:@[[[MockIndexer alloc] init]]
                     plcURL:@"https://plc.directory"];
     self.orchestrator.globalWorkerCap  = 4;
@@ -64,20 +64,20 @@
     // Give the scheduler queue a moment to process
     [NSThread sleepForTimeInterval:0.05];
 
-    AppViewRepoSyncState *state = [self.db loadRepoSyncStateForDID:@"did:plc:newdid" error:&err];
+    GZAppViewRepoSyncState *state = [self.db loadRepoSyncStateForDID:@"did:plc:newdid" error:&err];
     XCTAssertNotNil(state, @"Enqueueing an unknown DID should create a pending sync state");
 }
 
 - (void)testEnqueueSyncedDIDDoesNotMarkDirty {
     NSError *err = nil;
-    AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:synced"];
+    GZAppViewRepoSyncState *s = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:synced"];
     s.status = AppViewRepoSyncStatusSynced;
     [self.db upsertRepoSyncState:s error:nil];
 
     [self.orchestrator enqueueDIDs:@[@"did:plc:synced"]];
     [NSThread sleepForTimeInterval:0.05];
 
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:synced" error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:synced" error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced,
                    @"Live commits should not force a synced repo into dirty backfill");
 }
@@ -95,7 +95,7 @@
     // Insert 3 pending repos
     for (NSInteger i = 0; i < 3; i++) {
         NSString *did = [NSString stringWithFormat:@"did:plc:depth%ld", (long)i];
-        AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:did];
+        GZAppViewRepoSyncState *s = [[GZAppViewRepoSyncState alloc] initWithDID:did];
         [self.db upsertRepoSyncState:s error:nil];
         [self.orchestrator enqueueDIDs:@[did]];
     }

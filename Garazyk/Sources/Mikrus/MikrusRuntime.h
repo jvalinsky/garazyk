@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file MikrusRuntime.h
+ * @file GZMikrusRuntime.h
  * @abstract Top-level coordinator for the Mikrus link index service.
  */
 
@@ -11,23 +11,23 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class MikrusConfiguration;
-@class MikrusDatabase;
+@class GZMikrusConfiguration;
+@class GZMikrusDatabase;
 
 /**
  * @abstract Coordinates the initialization and lifecycle of the Mikrus service.
  */
-@interface MikrusRuntime : NSObject <AppViewIngestEngineDelegate, GZServiceRuntimeProtocol>
+@interface GZMikrusRuntime : NSObject <AppViewIngestEngineDelegate, GZServiceRuntimeProtocol>
 
 /**
  * @abstract Current service configuration.
  */
-@property (nonatomic, strong, readonly) MikrusConfiguration *configuration;
+@property (nonatomic, strong, readonly) GZMikrusConfiguration *configuration;
 
 /**
  * @abstract Database handle for the link index.
  */
-@property (nonatomic, strong, readonly) MikrusDatabase *database;
+@property (nonatomic, strong, readonly) GZMikrusDatabase *database;
 
 /**
  * @abstract Whether the runtime service is actively running.

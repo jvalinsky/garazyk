@@ -15,7 +15,7 @@
 #import "Network/HttpResponse.h"
 
 @interface SyrenaAdminUITests : XCTestCase
-@property (nonatomic, strong) SyrenaMetrics *metrics;
+@property (nonatomic, strong) GZSyrenaMetrics *metrics;
 @property (nonatomic, strong) GZSyrenaAdminSnapshot *snapshot;
 @property (nonatomic, strong) GZAdminUIServiceConfig *config;
 @property (nonatomic, strong) GZAdminUIHost *host;
@@ -24,7 +24,7 @@
 @implementation SyrenaAdminUITests
 
 - (void)setUp {
-    self.metrics = [[SyrenaMetrics alloc] init];
+    self.metrics = [[GZSyrenaMetrics alloc] init];
     [self.metrics recordIngestEvent];
     [self.metrics recordIngestCommit];
     [self.metrics recordIngestOp];
@@ -32,7 +32,7 @@
     [self.metrics recordQuery:@"identity"];
     [self.metrics recordQueryError];
 
-    AppViewConfiguration *avConfig = [AppViewConfiguration defaultConfiguration];
+    GZAppViewConfiguration *avConfig = [GZAppViewConfiguration defaultConfiguration];
     avConfig.relayURLs = @[@"wss://test.example.com"];
 
     self.snapshot = [[GZSyrenaAdminSnapshot alloc] initWithDatabase:nil
@@ -74,7 +74,7 @@
 }
 
 - (void)testMetricsStartsAtZeroForUnrecorded {
-    SyrenaMetrics *m = [[SyrenaMetrics alloc] init];
+    GZSyrenaMetrics *m = [[GZSyrenaMetrics alloc] init];
     NSDictionary *snap = [m snapshotDictionary];
     XCTAssertEqualObjects(snap[@"ingest"][@"events"], @(0));
     XCTAssertEqualObjects(snap[@"queries"][@"errors"], @(0));

@@ -4,7 +4,7 @@
 #import "Mikrus/MikrusConfiguration.h"
 #import "Shared/GZConfigurationParsing.h"
 
-@implementation MikrusConfiguration
+@implementation GZMikrusConfiguration
 
 - (instancetype)init {
     self = [super init];
@@ -57,7 +57,7 @@
 }
 
 + (instancetype)configurationFromEnvironment {
-    MikrusConfiguration *config = [[self alloc] init];
+    GZMikrusConfiguration *config = [[self alloc] init];
     [[self sharedParser] applyEnvironmentVariables:[[NSProcessInfo processInfo] environment] toTarget:config];
     return config;
 }

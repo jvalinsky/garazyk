@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewBackfillOrchestrator.m
+ @file GZAppViewBackfillOrchestrator.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -16,9 +16,9 @@
 
 // ---------------------------------------------------------------------------
 
-@interface AppViewBackfillOrchestrator () <AppViewBackfillWorkerDelegate>
+@interface GZAppViewBackfillOrchestrator () <AppViewBackfillWorkerDelegate>
 
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
 
 // Queue discipline
@@ -35,9 +35,9 @@
 
 // ---------------------------------------------------------------------------
 
-@implementation AppViewBackfillOrchestrator
+@implementation GZAppViewBackfillOrchestrator
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                          indexers:(NSArray<id<AppViewIndexer>> *)indexers
                          plcURL:(NSString *)plcURL {
     self = [super init];
@@ -86,18 +86,18 @@
 - (void)_sweepPendingRepos {
     // Called on _schedulerQueue
     NSError *err = nil;
-    NSArray<AppViewRepoSyncState *> *pending =
+    NSArray<GZAppViewRepoSyncState *> *pending =
         [_database loadRepoSyncStatesWithStatus:AppViewRepoSyncStatusPending limit:500 error:&err];
     if (err) {
         GZ_LOG_WARN(@"[AppView Backfill] Sweep failed: %@", err.localizedDescription);
         return;
     }
-    NSArray<AppViewRepoSyncState *> *dirty =
+    NSArray<GZAppViewRepoSyncState *> *dirty =
         [_database loadRepoSyncStatesWithStatus:AppViewRepoSyncStatusDirty limit:500 error:&err];
 
     NSMutableArray<NSString *> *dids = [NSMutableArray array];
-    for (AppViewRepoSyncState *s in pending) [dids addObject:s.did];
-    for (AppViewRepoSyncState *s in dirty)   [dids addObject:s.did];
+    for (GZAppViewRepoSyncState *s in pending) [dids addObject:s.did];
+    for (GZAppViewRepoSyncState *s in dirty)   [dids addObject:s.did];
 
     if (dids.count > 0) {
         GZ_LOG_INFO(@"[AppView Backfill] Sweep enqueued %lu repos.", (unsigned long)dids.count);
@@ -114,9 +114,9 @@
     dispatch_async(_schedulerQueue, ^{
         for (NSString *did in dids) {
             NSError *err = nil;
-            AppViewRepoSyncState *state = [self.database loadRepoSyncStateForDID:did error:&err];
+            GZAppViewRepoSyncState *state = [self.database loadRepoSyncStateForDID:did error:&err];
             if (!state) {
-                state = [[AppViewRepoSyncState alloc] initWithDID:did];
+                state = [[GZAppViewRepoSyncState alloc] initWithDID:did];
                 [self.database upsertRepoSyncState:state error:nil];
             } else if (state.status == AppViewRepoSyncStatusProcessing) {
                 continue; // Already being processed
@@ -176,7 +176,7 @@
         _activeWorkers++;
         _activeWorkersByHost[host] = @(hostCount + 1);
 
-        AppViewBackfillWorker *worker = [[AppViewBackfillWorker alloc]
+        GZAppViewBackfillWorker *worker = [[GZAppViewBackfillWorker alloc]
             initWithDID:did database:_database indexers:_indexers plcURL:_plcURL ?: @"https://plc.directory"];
         worker.delegate = self;
         [worker start];
@@ -200,7 +200,7 @@
 // AppViewBackfillWorkerDelegate
 // ---------------------------------------------------------------------------
 
-- (void)worker:(AppViewBackfillWorker *)worker didCompleteForDID:(NSString *)did lastRev:(NSString *)lastRev {
+- (void)worker:(GZAppViewBackfillWorker *)worker didCompleteForDID:(NSString *)did lastRev:(NSString *)lastRev {
     GZ_LOG_INFO(@"[AppView Backfill] Completed backfill for %@", did);
 
     dispatch_async(_schedulerQueue, ^{
@@ -214,11 +214,11 @@
             // Replay pending deltas on the serial scheduler queue to avoid
             // concurrent database access when multiple backfills complete near-simultaneously.
             NSError *err = nil;
-            NSArray<AppViewPendingDelta *> *cachedDeltas = [self.database dequeuePendingDeltasForDID:did error:&err];
+            NSArray<GZAppViewPendingDelta *> *cachedDeltas = [self.database dequeuePendingDeltasForDID:did error:&err];
             if (cachedDeltas.count > 0) {
                 GZ_LOG_INFO(@"[AppView Backfill] Replaying %lu pending deltas for %@",
                              (unsigned long)cachedDeltas.count, did);
-                for (AppViewPendingDelta *delta in cachedDeltas) {
+                for (GZAppViewPendingDelta *delta in cachedDeltas) {
                     for (id<AppViewIndexer> indexer in self.indexers) {
                         if ([indexer respondsToSelector:@selector(processPendingDelta:error:)]) {
                             [indexer processPendingDelta:delta error:nil];
@@ -232,7 +232,7 @@
                 [cachedDelegate orchestrator:self didCompleteBackfillForDID:did];
             }
         } @catch (NSException *e) {
-            fprintf(stderr, "=== CRASH in AppViewBackfillOrchestrator didCompleteForDID ===\n");
+            fprintf(stderr, "=== CRASH in GZAppViewBackfillOrchestrator didCompleteForDID ===\n");
             fprintf(stderr, "Name: %s\n", [[e name] UTF8String] ?: "null");
             fprintf(stderr, "Reason: %s\n", [[e reason] UTF8String] ?: "null");
             fprintf(stderr, "UserInfo: %s\n", [[[e userInfo] description] UTF8String] ?: "null");
@@ -243,7 +243,7 @@
     });
 }
 
-- (void)worker:(AppViewBackfillWorker *)worker
+- (void)worker:(GZAppViewBackfillWorker *)worker
 didFailForDID:(NSString *)did
  error:(NSError *)error
 rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
@@ -261,7 +261,7 @@ rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
         } else {
             // Exponential backoff based on error count
             NSError *stateErr = nil;
-            AppViewRepoSyncState *state = [self.database loadRepoSyncStateForDID:did error:&stateErr];
+            GZAppViewRepoSyncState *state = [self.database loadRepoSyncStateForDID:did error:&stateErr];
             NSInteger errorCount = state ? state.errorCount : 1;
             NSTimeInterval delay = MIN(
                 self.baseBackoffSeconds * pow(2.0, errorCount - 1),
@@ -344,9 +344,9 @@ rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
     }
 
     NSError *err = nil;
-    NSMutableArray<AppViewRepoSyncState *> *repos = [NSMutableArray array];
+    NSMutableArray<GZAppViewRepoSyncState *> *repos = [NSMutableArray array];
     for (NSNumber *statusNumber in statusFilters) {
-        NSArray<AppViewRepoSyncState *> *batch =
+        NSArray<GZAppViewRepoSyncState *> *batch =
             [_database loadRepoSyncStatesWithStatus:(AppViewRepoSyncStatus)statusNumber.integerValue
                                               limit:boundedLimit
                                               error:&err];
@@ -369,7 +369,7 @@ rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
 
     if (cursor.length > 0) {
         NSIndexSet *toRemove =
-            [repos indexesOfObjectsPassingTest:^BOOL(AppViewRepoSyncState *repo, NSUInteger idx, BOOL *stop) {
+            [repos indexesOfObjectsPassingTest:^BOOL(GZAppViewRepoSyncState *repo, NSUInteger idx, BOOL *stop) {
                 return [repo.did compare:cursor] != NSOrderedDescending;
             }];
         if (toRemove.count > 0) {
@@ -377,14 +377,14 @@ rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
         }
     }
 
-    [repos sortUsingComparator:^NSComparisonResult(AppViewRepoSyncState *a, AppViewRepoSyncState *b) {
+    [repos sortUsingComparator:^NSComparisonResult(GZAppViewRepoSyncState *a, GZAppViewRepoSyncState *b) {
         return [a.did compare:b.did];
     }];
     if (repos.count > boundedLimit) {
         [repos removeObjectsInRange:NSMakeRange(boundedLimit, repos.count - boundedLimit)];
     }
 
-    for (AppViewRepoSyncState *repo in repos) {
+    for (GZAppViewRepoSyncState *repo in repos) {
         [entries addObject:@{
             @"did": repo.did ?: @"",
             @"status": [self stringFromSyncStatus:repo.status],
@@ -411,7 +411,7 @@ rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
     if (!did || did.length == 0) return nil;
 
     NSError *err = nil;
-    AppViewRepoSyncState *repo = [_database getRepoSyncState:did error:&err];
+    GZAppViewRepoSyncState *repo = [_database getRepoSyncState:did error:&err];
     if (!repo) return nil;
 
     return @{
@@ -449,7 +449,7 @@ rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
     });
 
     NSError *err = nil;
-    AppViewRepoSyncState *repo = [_database getRepoSyncState:did error:&err];
+    GZAppViewRepoSyncState *repo = [_database getRepoSyncState:did error:&err];
     if (repo) {
         repo.status = AppViewRepoSyncStatusPending;
         [_database setRepoSyncState:repo error:&err];

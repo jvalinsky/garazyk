@@ -20,9 +20,9 @@ static NSString *MDBPath(NSString *name) {
     [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
     return [dir stringByAppendingPathComponent:@"test.db"];
 }
-static MikrusDatabase *MikrusOpenDB(XCTestCase *t) {
+static GZMikrusDatabase *MikrusOpenDB(XCTestCase *t) {
     NSError *e = nil;
-    MikrusDatabase *db = [[MikrusDatabase alloc] initWithPath:MDBPath(t.name) error:&e];
+    GZMikrusDatabase *db = [[GZMikrusDatabase alloc] initWithPath:MDBPath(t.name) error:&e];
     XCTAssertNotNil(db, @"%@", e);
     XCTAssertTrue([db runMigrations:&e], @"%@", e);
     return db;
@@ -32,7 +32,7 @@ static MikrusDatabase *MikrusOpenDB(XCTestCase *t) {
 @end
 @implementation MikrusMetricsTests
 - (void)testCountersAggregate {
-    MikrusMetrics *m = [[MikrusMetrics alloc] init];
+    GZMikrusMetrics *m = [[GZMikrusMetrics alloc] init];
     [m recordIngestEvent]; [m recordIngestCommit]; [m recordIngestOp];
     [m recordRecordIndexed]; [m recordRecordIndexed];
     [m recordIngestError]; [m recordRateLimitReject];
@@ -49,9 +49,9 @@ static MikrusDatabase *MikrusOpenDB(XCTestCase *t) {
 @end
 @implementation MikrusAdminSnapshotTests
 - (void)testEmptySnapshotIsOk {
-    MikrusDatabase *db = MikrusOpenDB(self);
-    MikrusMetrics *m = [[MikrusMetrics alloc] init];
-    MikrusConfiguration *c = [MikrusConfiguration defaultConfiguration];
+    GZMikrusDatabase *db = MikrusOpenDB(self);
+    GZMikrusMetrics *m = [[GZMikrusMetrics alloc] init];
+    GZMikrusConfiguration *c = [GZMikrusConfiguration defaultConfiguration];
     c.ingestEnabled = NO;
     GZMikrusAdminSnapshot *snap = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db metrics:m configuration:c ingestEngine:nil];
     NSDictionary *v = [snap snapshot];
@@ -59,20 +59,20 @@ static MikrusDatabase *MikrusOpenDB(XCTestCase *t) {
     [db close];
 }
 - (void)testIdentityCountUsesHandlesTable {
-    MikrusDatabase *db = MikrusOpenDB(self);
+    GZMikrusDatabase *db = MikrusOpenDB(self);
     NSError *error = nil;
     XCTAssertTrue([db saveHandle:@"alice.test" did:@"did:plc:alice" error:&error], @"%@", error);
     GZMikrusAdminSnapshot *snap = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db
-                                                                          metrics:[[MikrusMetrics alloc] init]
-                                                                    configuration:[MikrusConfiguration defaultConfiguration]
+                                                                          metrics:[[GZMikrusMetrics alloc] init]
+                                                                    configuration:[GZMikrusConfiguration defaultConfiguration]
                                                                      ingestEngine:nil];
     NSDictionary *identities = [snap indexFamilyStatistics][@"identities"];
     XCTAssertGreaterThan([identities[@"approxCount"] longLongValue], (long long)0);
     [db close];
 }
 - (void)testDatabasePressure {
-    MikrusDatabase *db = MikrusOpenDB(self);
-    GZMikrusAdminSnapshot *snap = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db metrics:[[MikrusMetrics alloc] init] configuration:[MikrusConfiguration defaultConfiguration] ingestEngine:nil];
+    GZMikrusDatabase *db = MikrusOpenDB(self);
+    GZMikrusAdminSnapshot *snap = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db metrics:[[GZMikrusMetrics alloc] init] configuration:[GZMikrusConfiguration defaultConfiguration] ingestEngine:nil];
     XCTAssertGreaterThan([[snap snapshot][@"database"][@"storageBytes"] longLongValue], (long long)0);
     [db close];
 }
@@ -82,20 +82,20 @@ static MikrusDatabase *MikrusOpenDB(XCTestCase *t) {
 @property(nonatomic,strong) GZAdminUIServiceConfig *config;
 @property(nonatomic,strong) GZAdminUIHost *host;
 @property(nonatomic,strong) GZMikrusAdminSnapshot *snapshot;
-@property(nonatomic,strong) MikrusDatabase *db;
-@property(nonatomic,strong) MikrusMetrics *metrics;
+@property(nonatomic,strong) GZMikrusDatabase *db;
+@property(nonatomic,strong) GZMikrusMetrics *metrics;
 @end
 @implementation MikrusAdminUIPackTests
 - (void)setUp {
     [super setUp];
     self.db = MikrusOpenDB(self);
-    self.metrics = [[MikrusMetrics alloc] init];
+    self.metrics = [[GZMikrusMetrics alloc] init];
     self.config = [[GZAdminUIServiceConfig alloc] init];
     self.config.host = @"127.0.0.1"; self.config.port = 0;
     self.config.adminPassword = @"mikrus-admin";
     self.config.serviceIdentifier = @"mikrus";
     self.host = [[GZAdminUIHost alloc] initWithConfiguration:self.config packs:@[GZMikrusAdminUIPack.class]];
-    self.snapshot = [[GZMikrusAdminSnapshot alloc] initWithDatabase:self.db metrics:self.metrics configuration:[MikrusConfiguration defaultConfiguration] ingestEngine:nil];
+    self.snapshot = [[GZMikrusAdminSnapshot alloc] initWithDatabase:self.db metrics:self.metrics configuration:[GZMikrusConfiguration defaultConfiguration] ingestEngine:nil];
     [GZMikrusAdminUIPack configureHost:self.host snapshot:self.snapshot];
 }
 - (void)tearDown { [self.host stop]; [self.db close]; [super tearDown]; }

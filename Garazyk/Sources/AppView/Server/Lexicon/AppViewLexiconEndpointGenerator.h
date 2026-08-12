@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewLexiconEndpointGenerator.h
+ @file GZAppViewLexiconEndpointGenerator.h
 
  @abstract Registers XRPC routes from loaded lexicon schemas.
 
@@ -19,19 +19,19 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class ATProtoLexiconRegistry;
-@class AppViewDatabase;
-@class AppViewCustomQueryRegistry;
-@class AppViewGenericQueryHandler;
+@class GZAppViewDatabase;
+@class GZAppViewCustomQueryRegistry;
+@class GZAppViewGenericQueryHandler;
 @class ATProtoHttpServer;
 
 extern NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain;
 
 /*!
- @class AppViewLexiconEndpointGenerator
+ @class GZAppViewLexiconEndpointGenerator
 
  @abstract Generates and registers XRPC routes from loaded lexicon schemas.
  */
-@interface AppViewLexiconEndpointGenerator : NSObject
+@interface GZAppViewLexiconEndpointGenerator : NSObject
 
 /*!
  @method initWithRegistry:database:httpServer:customHandlers:
@@ -44,9 +44,9 @@ extern NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain;
  @param customHandlers  The custom handler registry for per-NSID overrides.
  */
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
-                         database:(AppViewDatabase *)database
+                         database:(GZAppViewDatabase *)database
                       httpServer:(ATProtoHttpServer *)httpServer
-                 customHandlers:(AppViewCustomQueryRegistry *)customHandlers;
+                 customHandlers:(GZAppViewCustomQueryRegistry *)customHandlers;
 
 /*!
  @method registerDynamicEndpointsWithError:
@@ -93,9 +93,9 @@ extern NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain;
 
  @abstract Return the generic query handler (for testing or direct use).
 
- @return The AppViewGenericQueryHandler instance.
+ @return The GZAppViewGenericQueryHandler instance.
  */
-- (AppViewGenericQueryHandler *)queryHandler;
+- (GZAppViewGenericQueryHandler *)queryHandler;
 
 @end
 

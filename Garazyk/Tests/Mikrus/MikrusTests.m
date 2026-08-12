@@ -22,9 +22,9 @@ static NSString *MikrusTestDBPath(NSString *name) {
     return [dir stringByAppendingPathComponent:@"test.db"];
 }
 
-static MikrusDatabase *MikrusOpenTestDB(XCTestCase *testCase) {
+static GZMikrusDatabase *MikrusOpenTestDB(XCTestCase *testCase) {
     NSError *error = nil;
-    MikrusDatabase *db = [[MikrusDatabase alloc] initWithPath:MikrusTestDBPath(testCase.name)
+    GZMikrusDatabase *db = [[GZMikrusDatabase alloc] initWithPath:MikrusTestDBPath(testCase.name)
                                                                       error:&error];
     XCTAssertNotNil(db, @"open db: %@", error);
     XCTAssertTrue([db runMigrations:&error], @"migrate db: %@", error);
@@ -47,7 +47,7 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 @end
 
 @interface MikrusRuntimeTests : XCTestCase
-@property (nonatomic, strong) MikrusRuntime *runtime;
+@property (nonatomic, strong) GZMikrusRuntime *runtime;
 @property (nonatomic, copy) NSString *tempDir;
 @end
 
@@ -55,7 +55,7 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 
 - (void)setUp {
     [super setUp];
-    self.runtime = [[MikrusRuntime alloc] init];
+    self.runtime = [[GZMikrusRuntime alloc] init];
     self.tempDir = [NSTemporaryDirectory() stringByAppendingPathComponent:
         [NSString stringWithFormat:@"garazyk-mikrus-runtime-%@", NSUUID.UUID.UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtPath:self.tempDir
@@ -74,7 +74,7 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 }
 
 - (void)testRateLimitConfigurationDefaults {
-    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    GZMikrusConfiguration *config = [GZMikrusConfiguration defaultConfiguration];
     XCTAssertTrue(config.rateLimitEnabled, @"rate limiting should be enabled by default");
     XCTAssertEqual(config.rateLimitIpLimit, 200, @"default IP limit should be 200");
     XCTAssertEqual(config.rateLimitIpWindowSeconds, 60, @"default IP window should be 60s");
@@ -82,7 +82,7 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 
 - (void)testRateLimitConfigurationFromDictionary {
     // Simulate env var overrides via loadFromDictionary (same code path)
-    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    GZMikrusConfiguration *config = [GZMikrusConfiguration defaultConfiguration];
     [config loadFromDictionary:@{
         @"rate_limit_enabled": @NO,
         @"rate_limit_ip_limit": @500,
@@ -94,12 +94,12 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 }
 
 - (void)testRelayURLsDefaultEmpty {
-    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    GZMikrusConfiguration *config = [GZMikrusConfiguration defaultConfiguration];
     XCTAssertEqual(config.relayURLs.count, 0u, @"relay URLs must not be hardcoded by default");
 }
 
 - (void)testRelayURLNormalization {
-    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    GZMikrusConfiguration *config = [GZMikrusConfiguration defaultConfiguration];
     [config loadFromDictionary:@{
         @"relay_urls": @[@"northamerica.firehose.network",
                          @"  wss://bsky.network  ",
@@ -112,7 +112,7 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 }
 
 - (void)testValidateRequiresRelayWhenIngestEnabled {
-    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    GZMikrusConfiguration *config = [GZMikrusConfiguration defaultConfiguration];
     config.ingestEnabled = YES;
     NSError *error = nil;
     XCTAssertFalse([config validate:&error]);
@@ -167,21 +167,21 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 
 - (void)testSourceParserAcceptsCollectionAndPath {
     NSError *error = nil;
-    MikrusSourceSpec *source =
-        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like:subject.uri"
+    GZMikrusSourceSpec *source =
+        [GZMikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like:subject.uri"
                                                 error:&error];
     XCTAssertNotNil(source, @"%@", error);
     XCTAssertEqualObjects(source.collection, @"app.bsky.feed.like");
     XCTAssertEqualObjects(source.path, @"subject.uri");
 
-    MikrusSourceSpec *arraySource =
-        [MikrusSourceSpec sourceSpecWithString:@"sh.tangled.label.op:add[].key"
+    GZMikrusSourceSpec *arraySource =
+        [GZMikrusSourceSpec sourceSpecWithString:@"sh.tangled.label.op:add[].key"
                                                 error:&error];
     XCTAssertNotNil(arraySource, @"%@", error);
     XCTAssertEqualObjects(arraySource.path, @"add[].key");
 
-    MikrusSourceSpec *legacyLeadingDot =
-        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like:.subject.uri"
+    GZMikrusSourceSpec *legacyLeadingDot =
+        [GZMikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like:.subject.uri"
                                                 error:&error];
     XCTAssertNotNil(legacyLeadingDot, @"%@", error);
     XCTAssertEqualObjects(legacyLeadingDot.path, @"subject.uri");
@@ -189,8 +189,8 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 
 - (void)testSourceParserRejectsMalformedSource {
     NSError *error = nil;
-    MikrusSourceSpec *source =
-        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like.subject.uri"
+    GZMikrusSourceSpec *source =
+        [GZMikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like.subject.uri"
                                                 error:&error];
     XCTAssertNil(source);
     XCTAssertNotNil(error);
@@ -205,13 +205,13 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
         ]
     };
 
-    NSArray *subjectURIs = [MikrusLinkExtractor subjectsInRecord:record path:@"subject.uri"];
+    NSArray *subjectURIs = [GZMikrusLinkExtractor subjectsInRecord:record path:@"subject.uri"];
     XCTAssertEqualObjects(subjectURIs, (@[@"at://did:plc:post/app.bsky.feed.post/1"]));
 
-    NSArray *featureURIs = [MikrusLinkExtractor subjectsInRecord:record path:@"facets[].features[].uri"];
+    NSArray *featureURIs = [GZMikrusLinkExtractor subjectsInRecord:record path:@"facets[].features[].uri"];
     XCTAssertEqualObjects(featureURIs, (@[@"https://example.com/a"]));
 
-    NSArray *entries = [MikrusLinkExtractor linkEntriesInRecord:record];
+    NSArray *entries = [GZMikrusLinkExtractor linkEntriesInRecord:record];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"path == %@ AND subject == %@",
                               @"facets[].features[].did", @"did:plc:mentioned"];
     XCTAssertEqual([entries filteredArrayUsingPredicate:predicate].count, 1u);
@@ -220,7 +220,7 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 @end
 
 @interface MikrusDatabaseTests : XCTestCase
-@property (nonatomic, strong) MikrusDatabase *db;
+@property (nonatomic, strong) GZMikrusDatabase *db;
 @end
 
 @implementation MikrusDatabaseTests
@@ -248,8 +248,8 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
                                    seq:10
                                  error:&error], @"%@", error);
 
-    MikrusSourceSpec *source =
-        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like:subject.uri" error:&error];
+    GZMikrusSourceSpec *source =
+        [GZMikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like:subject.uri" error:&error];
     NSInteger total = 0;
     NSArray *records = [self.db backlinkRecordsForSubject:@"at://did:plc:target/app.bsky.feed.post/one"
                                                     source:source
@@ -285,8 +285,8 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 
 - (void)testBacklinkDidsAndCursor {
     NSError *error = nil;
-    MikrusSourceSpec *source =
-        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.graph.follow:subject" error:&error];
+    GZMikrusSourceSpec *source =
+        [GZMikrusSourceSpec sourceSpecWithString:@"app.bsky.graph.follow:subject" error:&error];
     for (NSInteger i = 0; i < 2; i++) {
         NSString *did = [NSString stringWithFormat:@"did:plc:user%ld", (long)i];
         NSString *rkey = [NSString stringWithFormat:@"follow%ld", (long)i];
@@ -335,8 +335,8 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
     XCTAssertTrue([self.db indexRecord:item1 did:@"did:plc:alice" collection:@"app.bsky.graph.listitem" rkey:@"one" cid:nil seq:30 error:&error], @"%@", error);
     XCTAssertTrue([self.db indexRecord:item2 did:@"did:plc:carol" collection:@"app.bsky.graph.listitem" rkey:@"two" cid:nil seq:31 error:&error], @"%@", error);
 
-    MikrusSourceSpec *source =
-        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.graph.listitem:subject" error:&error];
+    GZMikrusSourceSpec *source =
+        [GZMikrusSourceSpec sourceSpecWithString:@"app.bsky.graph.listitem:subject" error:&error];
     NSArray *items = [self.db manyToManyItemsForSubject:@"did:plc:bob"
                                                  source:source
                                             pathToOther:@"list"
@@ -374,8 +374,8 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
                                    seq:40
                                  error:&error], @"%@", error);
 
-    MikrusSourceSpec *source =
-        [MikrusSourceSpec sourceSpecWithString:@"sh.tangled.graph.vouch:." error:&error];
+    GZMikrusSourceSpec *source =
+        [GZMikrusSourceSpec sourceSpecWithString:@"sh.tangled.graph.vouch:." error:&error];
     NSInteger total = [self.db backlinksCountForSubject:@"did:plc:bob"
                                                  source:source
                                                   error:&error];
@@ -403,8 +403,8 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 @end
 
 @interface MikrusXrpcRoutePackTests : XCTestCase
-@property (nonatomic, strong) MikrusDatabase *db;
-@property (nonatomic, strong) MikrusXrpcRoutePack *routes;
+@property (nonatomic, strong) GZMikrusDatabase *db;
+@property (nonatomic, strong) GZMikrusXrpcRoutePack *routes;
 @end
 
 @implementation MikrusXrpcRoutePackTests
@@ -412,7 +412,7 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
 - (void)setUp {
     [super setUp];
     self.db = MikrusOpenTestDB(self);
-    self.routes = [[MikrusXrpcRoutePack alloc] initWithDatabase:self.db];
+    self.routes = [[GZMikrusXrpcRoutePack alloc] initWithDatabase:self.db];
 
     NSError *error = nil;
     NSDictionary *like = @{@"$type": @"app.bsky.feed.like",

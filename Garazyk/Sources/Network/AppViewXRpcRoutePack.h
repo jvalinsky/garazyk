@@ -20,7 +20,7 @@
 @class PDSSearchIndexService;
 @class ATProtoJWTMinter;
 @class ATProtoHttpServer;
-@class AppViewWriteProxy;
+@class GZAppViewWriteProxy;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -38,7 +38,7 @@ NS_ASSUME_NONNULL_BEGIN
                      bookmarkService:(nullable PDSBookmarkService *)bookmarkService
                       contactService:(nullable PDSContactService *)contactService
                   searchIndexService:(nullable PDSSearchIndexService *)searchIndexService
-                         writeProxy:(nullable AppViewWriteProxy *)writeProxy
+                         writeProxy:(nullable GZAppViewWriteProxy *)writeProxy
                           database:(nullable id<PDSQueryDatabase>)database
                          jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter;
 

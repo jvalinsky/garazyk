@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file MikrusConfiguration.h
+ * @file GZMikrusConfiguration.h
  * @abstract Runtime configuration for the Mikrus link-index service.
  */
 
@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Configuration container for Mikrus service parameters.
  */
-@interface MikrusConfiguration : NSObject
+@interface GZMikrusConfiguration : NSObject
 
 /** @abstract List of relay URLs. */
 @property (nonatomic, strong) NSArray<NSString *> *relayURLs;

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file MikrusSourceSpec.h
+ * @file GZMikrusSourceSpec.h
  * @abstract Parser for Microcosm Mikrus link source strings.
  */
 
@@ -17,7 +17,7 @@ extern NSString * const MikrusSourceSpecErrorDomain;
 /**
  * @abstract Parses and stores the specification of a Mikrus link source.
  */
-@interface MikrusSourceSpec : NSObject
+@interface GZMikrusSourceSpec : NSObject
 
 /** @abstract The collection associated with the source. */
 @property (nonatomic, copy, readonly) NSString *collection;

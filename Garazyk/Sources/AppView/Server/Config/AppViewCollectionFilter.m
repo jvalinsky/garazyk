@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewCollectionFilter.m
+ @file GZAppViewCollectionFilter.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import "AppView/Server/Config/AppViewCollectionFilter.h"
 
-@implementation AppViewCollectionFilter
+@implementation GZAppViewCollectionFilter
 
 - (instancetype)initWithAllowlist:(NSArray<NSString *> *)allowlist {
     self = [super init];

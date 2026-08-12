@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
-@class MikrusMetrics;
-@class MikrusDatabase;
-@class MikrusConfiguration;
-@class AppViewIngestEngine;
+@class GZMikrusMetrics;
+@class GZMikrusDatabase;
+@class GZMikrusConfiguration;
+@class GZAppViewIngestEngine;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -14,10 +14,10 @@ FOUNDATION_EXPORT NSString * _Nullable GZMikrusAdminPasswordFromFile(NSString *p
 
 @interface GZMikrusAdminSnapshot : NSObject
 
-- (instancetype)initWithDatabase:(MikrusDatabase *)database
-                         metrics:(MikrusMetrics *)metrics
-                   configuration:(MikrusConfiguration *)configuration
-                    ingestEngine:(nullable AppViewIngestEngine *)ingestEngine NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithDatabase:(GZMikrusDatabase *)database
+                         metrics:(GZMikrusMetrics *)metrics
+                   configuration:(GZMikrusConfiguration *)configuration
+                    ingestEngine:(nullable GZAppViewIngestEngine *)ingestEngine NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
 - (NSDictionary<NSString *, id> *)snapshot;

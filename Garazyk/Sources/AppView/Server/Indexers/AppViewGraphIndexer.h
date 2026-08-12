@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewGraphIndexer.h
+ @file GZAppViewGraphIndexer.h
 
  @abstract Indexes app.bsky.graph.* records: follows, blocks, lists, list items,
  starter packs, and follow-blocks.
@@ -24,14 +24,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewDatabase;
-@class AppViewRelevanceSet;
+@class GZAppViewDatabase;
+@class GZAppViewRelevanceSet;
 @class PDSGraphService;
 
-@interface AppViewGraphIndexer : NSObject <AppViewIndexer>
+@interface GZAppViewGraphIndexer : NSObject <AppViewIndexer>
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
-                    relevanceSet:(nullable AppViewRelevanceSet *)relevanceSet
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
+                    relevanceSet:(nullable GZAppViewRelevanceSet *)relevanceSet
                     graphService:(nullable PDSGraphService *)graphService;
 
 @end

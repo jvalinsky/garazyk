@@ -7,7 +7,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 
-@interface RecordBodyQueryCountingDatabase : AppViewDatabase
+@interface RecordBodyQueryCountingDatabase : GZAppViewDatabase
 @property (nonatomic, assign) NSUInteger queryCount;
 @end
 

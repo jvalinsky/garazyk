@@ -1,53 +1,9 @@
 # Workstream 08 M5.1: project-owned Objective-C classes without a reserved
-# (ATProto/PDS/GZ) prefix, as of 2026-08-05.
+# (ATProto/PDS/GZ) prefix, as of 2026-08-12.
 #
 # Shrink-only: entries may be removed as classes are renamed (M5.3), but a
 # new unprefixed class must never be added silently — CI fails until either
 # the class is prefixed or this file is edited in the same commit that
 # introduces it, so review sees the regression.
 #
-# Current inventory: 44 unprefixed classes out of 515 total (M5.1 began at 283).
-AppViewActorIndexer
-AppViewAdminRoutePack
-AppViewBackfillOrchestrator
-AppViewBackfillWorker
-AppViewBookmarkIndexer
-AppViewCheckpoint
-AppViewCollectionFilter
-AppViewConfiguration
-AppViewCustomQueryRegistry
-AppViewDatabase
-AppViewFeedIndexer
-AppViewGenericIndexer
-AppViewGenericQueryHandler
-AppViewGraphIndexer
-AppViewGraphQueryHandler
-AppViewGroupIndexer
-AppViewIndexHookRegistry
-AppViewIngestEngine
-AppViewIngestEvent
-AppViewLexiconEndpointGenerator
-AppViewNotificationIndexer
-AppViewOAuth2Middleware
-AppViewPendingDelta
-AppViewRelayConnection
-AppViewRelevanceMembership
-AppViewRelevanceSet
-AppViewRepoSyncState
-AppViewRuntime
-AppViewSearchIndexHook
-AppViewWebhookHook
-AppViewWriteProxy
-BeskidConfiguration
-BeskidDatabase
-BeskidMetrics
-BeskidRuntime
-BeskidXrpcRoutePack
-MikrusConfiguration
-MikrusDatabase
-MikrusLinkExtractor
-MikrusMetrics
-MikrusRuntime
-MikrusSourceSpec
-MikrusXrpcRoutePack
-SyrenaMetrics
+# Current inventory: 0 unprefixed classes out of 515 total (M5.1 began at 283).

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewGenericIndexer.m
+ @file GZAppViewGenericIndexer.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -15,19 +15,19 @@
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Debug/GZLogger.h"
 
-@interface AppViewGenericIndexer ()
+@interface GZAppViewGenericIndexer ()
 
 @property (nonatomic, strong) ATProtoLexiconRegistry *registry;
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, strong) ATProtoLexiconValidator *validator;
 @property (nonatomic, strong) NSMutableSet<NSString *> *domainIndexerCollections;
 
 @end
 
-@implementation AppViewGenericIndexer
+@implementation GZAppViewGenericIndexer
 
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
-                         database:(AppViewDatabase *)database
+                         database:(GZAppViewDatabase *)database
                        validator:(ATProtoLexiconValidator *)validator
        domainIndexerCollections:(NSSet<NSString *> *)domainIndexerCollections {
     self = [super init];

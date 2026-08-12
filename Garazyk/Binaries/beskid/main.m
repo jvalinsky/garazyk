@@ -126,7 +126,7 @@ int main(int argc, const char *argv[]) {
         NSString *dataDir = parsedArgs[@"data-dir"];
         NSString *configPath = parsedArgs[@"config"];
 
-        BeskidRuntime *runtime = [BeskidRuntime sharedRuntime];
+        GZBeskidRuntime *runtime = [GZBeskidRuntime sharedRuntime];
 
         if (configPath.length > 0) {
             NSError *configError = nil;
@@ -138,7 +138,7 @@ int main(int argc, const char *argv[]) {
             [runtime loadConfigurationFromEnvironment];
         }
 
-        BeskidConfiguration *config = runtime.configuration;
+        GZBeskidConfiguration *config = runtime.configuration;
         if (port > 0) config.httpPort = port;
         if (dataDir.length > 0) config.dataDirectory = dataDir;
 

@@ -17,24 +17,24 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@interface MikrusRuntime ()
-@property (nonatomic, strong, readwrite) MikrusConfiguration *configuration;
-@property (nonatomic, strong, readwrite) MikrusDatabase *database;
-@property (nonatomic, strong) AppViewDatabase *ingestStateDatabase;
-@property (nonatomic, strong) AppViewIngestEngine *ingestEngine;
+@interface GZMikrusRuntime ()
+@property (nonatomic, strong, readwrite) GZMikrusConfiguration *configuration;
+@property (nonatomic, strong, readwrite) GZMikrusDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *ingestStateDatabase;
+@property (nonatomic, strong) GZAppViewIngestEngine *ingestEngine;
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
-@property (nonatomic, strong) MikrusMetrics *metrics;
+@property (nonatomic, strong) GZMikrusMetrics *metrics;
 @property (nonatomic, strong) GZAdminUIHost *adminUIHostInstance;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
 
-@implementation MikrusRuntime
+@implementation GZMikrusRuntime
 
 + (instancetype)sharedRuntime {
-    static MikrusRuntime *runtime;
+    static GZMikrusRuntime *runtime;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        runtime = [[MikrusRuntime alloc] init];
+        runtime = [[GZMikrusRuntime alloc] init];
     });
     return runtime;
 }
@@ -49,7 +49,7 @@
                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid config file"}];
         return NO;
     }
-    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    GZMikrusConfiguration *config = [GZMikrusConfiguration defaultConfiguration];
     [config loadFromDictionary:json[@"mikrus"] ?: json];
     if (![config validate:error]) return NO;
     self.configuration = config;
@@ -57,12 +57,12 @@
 }
 
 - (void)loadConfigurationFromEnvironment {
-    self.configuration = [MikrusConfiguration configurationFromEnvironment];
+    self.configuration = [GZMikrusConfiguration configurationFromEnvironment];
 }
 
 - (BOOL)startWithError:(NSError **)error {
     if (self.isRunning) return YES;
-    MikrusConfiguration *config = self.configuration ?: [MikrusConfiguration defaultConfiguration];
+    GZMikrusConfiguration *config = self.configuration ?: [GZMikrusConfiguration defaultConfiguration];
     if (![config validate:error]) return NO;
     self.configuration = config;
 
@@ -76,8 +76,8 @@
     }
 
     NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"mikrus.db"];
-    self.metrics = [[MikrusMetrics alloc] init];
-    self.database = [[MikrusDatabase alloc] initWithPath:dbPath error:error];
+    self.metrics = [[GZMikrusMetrics alloc] init];
+    self.database = [[GZMikrusDatabase alloc] initWithPath:dbPath error:error];
     if (!self.database) return NO;
     if (![self.database runMigrations:error]) return NO;
 
@@ -108,7 +108,7 @@
     NSString *rlDbPath = [config.dataDirectory stringByAppendingPathComponent:@"ratelimits.db"];
     [rateLimiter reconfigureDatabasePath:rlDbPath];
 
-    MikrusXrpcRoutePack *routes = [[MikrusXrpcRoutePack alloc] initWithDatabase:self.database];
+    GZMikrusXrpcRoutePack *routes = [[GZMikrusXrpcRoutePack alloc] initWithDatabase:self.database];
     [routes setValue:self.metrics forKey:@"metrics"]; // lightweight injection
     [routes registerRoutesWithServer:self.httpServer];
 
@@ -121,11 +121,11 @@
 
     if (config.ingestEnabled) {
         NSString *statePath = [config.dataDirectory stringByAppendingPathComponent:@"ingest-state.db"];
-        self.ingestStateDatabase = [[AppViewDatabase alloc] initWithPath:statePath error:error];
+        self.ingestStateDatabase = [[GZAppViewDatabase alloc] initWithPath:statePath error:error];
         if (!self.ingestStateDatabase) return NO;
         if (![self.ingestStateDatabase runMigrations:error]) return NO;
 
-        self.ingestEngine = [[AppViewIngestEngine alloc] initWithDatabase:self.ingestStateDatabase
+        self.ingestEngine = [[GZAppViewIngestEngine alloc] initWithDatabase:self.ingestStateDatabase
                                                                 relayURLs:config.relayURLs];
         self.ingestEngine.checkpointIntervalMs = config.cursorCheckpointIntervalMs;
         self.ingestEngine.delegate = self;
@@ -175,7 +175,7 @@
 
 #pragma mark - AppViewIngestEngineDelegate
 
-- (void)ingestEngine:(AppViewIngestEngine *)engine didReceiveCommit:(AppViewIngestEvent *)event {
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine didReceiveCommit:(GZAppViewIngestEvent *)event {
     for (NSDictionary *op in event.ops ?: @[]) {
         NSString *action = op[@"action"];
         NSString *path = op[@"path"];
@@ -218,7 +218,7 @@
     }
 }
 
-- (void)ingestEngine:(AppViewIngestEngine *)engine didReceiveIdentityChange:(AppViewIngestEvent *)event {
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine didReceiveIdentityChange:(GZAppViewIngestEvent *)event {
     (void)engine;
     (void)event;
 }
