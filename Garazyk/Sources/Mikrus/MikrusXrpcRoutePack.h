@@ -10,6 +10,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class MikrusDatabase;
+@class MikrusMetrics;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
 @class ATProtoHttpServer;
@@ -30,6 +31,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Unavailable initializer.
  */
 - (instancetype)init NS_UNAVAILABLE;
+
+@property (nonatomic, strong) MikrusMetrics *metrics;
 
 /**
  * @abstract Registers Mikrus-specific routes with the provided server.

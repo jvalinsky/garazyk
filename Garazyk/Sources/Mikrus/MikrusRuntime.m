@@ -5,6 +5,11 @@
 #import "Mikrus/MikrusConfiguration.h"
 #import "Mikrus/MikrusDatabase.h"
 #import "Mikrus/MikrusXrpcRoutePack.h"
+#import "Mikrus/MikrusMetrics.h"
+#import "Mikrus/AdminUI/MikrusAdminSnapshot.h"
+#import "Mikrus/AdminUI/MikrusAdminUIPack.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/UIServiceConfig.h"
 #import "Network/RateLimiter.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
@@ -18,6 +23,8 @@
 @property (nonatomic, strong) AppViewDatabase *ingestStateDatabase;
 @property (nonatomic, strong) AppViewIngestEngine *ingestEngine;
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
+@property (nonatomic, strong) MikrusMetrics *metrics;
+@property (nonatomic, strong) GZAdminUIHost *adminUIHostInstance;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
 
@@ -69,6 +76,7 @@
     }
 
     NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"mikrus.db"];
+    self.metrics = [[MikrusMetrics alloc] init];
     self.database = [[MikrusDatabase alloc] initWithPath:dbPath error:error];
     if (!self.database) return NO;
     if (![self.database runMigrations:error]) return NO;
@@ -101,6 +109,7 @@
     [rateLimiter reconfigureDatabasePath:rlDbPath];
 
     MikrusXrpcRoutePack *routes = [[MikrusXrpcRoutePack alloc] initWithDatabase:self.database];
+    [routes setValue:self.metrics forKey:@"metrics"]; // lightweight injection
     [routes registerRoutesWithServer:self.httpServer];
 
     NSError *listenError = nil;
@@ -123,6 +132,29 @@
         [self.ingestEngine start];
     }
 
+    // Embedded admin listener
+    if (self.adminPassword.length > 0) {
+        GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
+        adminConfig.host = self.adminUIHost ?: @"127.0.0.1";
+        adminConfig.port = self.adminUIPort ?: 2593;
+        adminConfig.adminPassword = self.adminPassword;
+        adminConfig.serviceIdentifier = @"mikrus";
+        self.adminUIHostInstance = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig packs:@[GZMikrusAdminUIPack.class]];
+        [GZMikrusAdminUIPack configureHost:self.adminUIHostInstance
+                                  snapshot:[[GZMikrusAdminSnapshot alloc] initWithDatabase:self.database
+                                                                                   metrics:self.metrics
+                                                                             configuration:self.configuration
+                                                                              ingestEngine:self.ingestEngine]];
+        if (![self.adminUIHostInstance startWithError:&listenError]) {
+            [self.ingestEngine stop];
+            [self.httpServer stop];
+            if (error) *error = listenError;
+            return NO;
+        }
+    } else {
+        GZ_LOG_CORE_WARN(@"Mikrus admin UI disabled: MIKRUS_ADMIN_PASSWORD or MIKRUS_ADMIN_PASSWORD_FILE is not configured");
+    }
+
     self.isRunning = YES;
     GZ_LOG_INFO(@"[Mikrus] Started on port %lu", (unsigned long)config.httpPort);
     return YES;
@@ -130,10 +162,12 @@
 
 - (void)stop {
     if (!self.isRunning) return;
+    [self.adminUIHostInstance stop];
     [self.ingestEngine stop];
     [self.httpServer stop];
     [self.database close];
     [self.ingestStateDatabase close];
+    self.adminUIHostInstance = nil;
     self.ingestEngine = nil;
     self.httpServer = nil;
     self.isRunning = NO;
@@ -152,7 +186,9 @@
         if (collection.length == 0 || rkey.length == 0 || event.did.length == 0) continue;
 
         NSError *error = nil;
+        [self.metrics recordIngestOp];
         if ([action isEqualToString:@"delete"]) {
+            [self.metrics recordIngestDelete];
             if (![self.database deleteRecordForDID:event.did collection:collection rkey:rkey error:&error]) {
                 GZ_LOG_WARN(@"[Mikrus] Failed to delete %@/%@ for %@: %@",
                             collection, rkey, event.did, error.localizedDescription);
@@ -164,13 +200,17 @@
             NSDictionary *record = op[@"record"];
             if (![record isKindOfClass:[NSDictionary class]]) continue;
             NSString *cid = [op[@"cid"] isKindOfClass:[NSString class]] ? op[@"cid"] : nil;
-            if (![self.database indexRecord:record
+            BOOL ok = [self.database indexRecord:record
                                         did:event.did
                                  collection:collection
                                        rkey:rkey
                                         cid:cid
                                         seq:event.seq
-                                      error:&error]) {
+                                      error:&error];
+            if (ok) {
+                [self.metrics recordRecordIndexed];
+            } else {
+                [self.metrics recordIngestError];
                 GZ_LOG_WARN(@"[Mikrus] Failed to index %@/%@ for %@: %@",
                             collection, rkey, event.did, error.localizedDescription);
             }

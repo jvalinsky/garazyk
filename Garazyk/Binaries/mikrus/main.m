@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "Mikrus/MikrusRuntime.h"
 #import "Mikrus/MikrusConfiguration.h"
+#import "Mikrus/AdminUI/MikrusAdminSnapshot.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
 #import "Runtime/GZServiceLifecycle.h"
 #import "Core/NSDateFormatter+ATProto.h"
@@ -38,10 +39,32 @@ static void print_usage(void) {
     printf("  MIKRUS_HTTP_PORT              HTTP API port\n");
     printf("  MIKRUS_CURSOR_CHECKPOINT_MS   Cursor checkpoint interval\n");
     printf("  MIKRUS_INGEST_ENABLED         true|false\n\n");
+    printf("Admin UI options:\n");
+    printf("  --admin-ui-host <address>   Admin UI bind address (default: 127.0.0.1)\n");
+    printf("  --admin-ui-port <number>    Admin UI port (default: 2593)\n");
+    printf("  --admin-password-file <path>  Admin password file (overrides env)\n\n");
+    printf("Admin UI environment:\n");
+    printf("  GARAZYK_MIKRUS_ADMIN_UI_HOST     Admin UI bind address\n");
+    printf("  GARAZYK_MIKRUS_ADMIN_UI_PORT     Admin UI port\n");
+    printf("  MIKRUS_ADMIN_PASSWORD_FILE       Admin password credential file\n");
+    printf("  MIKRUS_ADMIN_PASSWORD            Admin password (plaintext, dev only)\n\n");
 }
 
 static void print_version(void) {
     printf("mikrus (Garazyk link index) 1.0.0\n");
+}
+
+static NSString *MikrusAdminPassword(NSString *explicitPath) {
+    NSDictionary<NSString *, NSString *> *env = NSProcessInfo.processInfo.environment;
+    NSString *path = explicitPath.length > 0 ? explicitPath : env[@"MIKRUS_ADMIN_PASSWORD_FILE"];
+    if (path.length > 0) {
+        NSError *readError = nil;
+        NSString *password = GZMikrusAdminPasswordFromFile(path, &readError);
+        if (!password) { GZ_LOG_CORE_ERROR(@"Mikrus admin password file error: %@", readError.localizedDescription); return nil; }
+        return password;
+    }
+    NSString *password = env[@"MIKRUS_ADMIN_PASSWORD"];
+    return password.length > 0 ? password : nil;
 }
 
 static int fail_with_usage(NSString *message) {
@@ -87,7 +110,10 @@ int main(int argc, const char *argv[]) {
             [GZCommandLineOption optionWithLongName:@"data-dir" shortName:@"d" type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"config" shortName:@"c" type:GZCommandLineOptionTypeString isRequired:NO],
             [GZCommandLineOption optionWithLongName:@"no-ingest" shortName:nil type:GZCommandLineOptionTypeBoolean isRequired:NO],
-            [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO]
+            [GZCommandLineOption optionWithLongName:@"verbose" shortName:@"v" type:GZCommandLineOptionTypeBoolean isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-ui-host" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-ui-port" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO],
+            [GZCommandLineOption optionWithLongName:@"admin-password-file" shortName:nil type:GZCommandLineOptionTypeString isRequired:NO]
         ] forCommand:@"serve"];
 
         NSError *parseError = nil;
@@ -122,6 +148,15 @@ int main(int argc, const char *argv[]) {
         if (relayURLs.count > 0) config.relayURLs = relayURLs;
         if (dataDir.length > 0) config.dataDirectory = dataDir;
         if (noIngest) config.ingestEnabled = NO;
+
+        // Admin UI
+        NSString *adminHost = parsedArgs[@"admin-ui-host"] ?: NSProcessInfo.processInfo.environment[@"GARAZYK_MIKRUS_ADMIN_UI_HOST"] ?: @"127.0.0.1";
+        NSString *adminPortValue = parsedArgs[@"admin-ui-port"] ?: NSProcessInfo.processInfo.environment[@"GARAZYK_MIKRUS_ADMIN_UI_PORT"];
+        NSInteger parsedAdminPort = adminPortValue ? adminPortValue.integerValue : 2593;
+        if (parsedAdminPort <= 0 || parsedAdminPort > 65535) return fail_with_usage(@"Admin UI port must be 1-65535");
+        runtime.adminUIHost = adminHost;
+        runtime.adminUIPort = (NSUInteger)parsedAdminPort;
+        runtime.adminPassword = MikrusAdminPassword(parsedArgs[@"admin-password-file"]);
 
         return [GZServiceLifecycle runServiceWithRuntime:runtime serviceName:@"Mikrus" onStart:^{
             printf("Mikrus link index started\n");

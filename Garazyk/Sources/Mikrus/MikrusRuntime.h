@@ -34,6 +34,12 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, readonly) BOOL isRunning;
 
+#pragma mark - Admin UI
+
+@property (nonatomic, copy) NSString *adminUIHost;
+@property (nonatomic, assign) NSUInteger adminUIPort;
+@property (nonatomic, copy) NSString *adminPassword;
+
 /**
  * @abstract Returns the shared singleton runtime.
  */

@@ -811,6 +811,7 @@ target_link_libraries(ATProtoMikrus PRIVATE
   ATProtoXRPC
   ATProtoCore
   ATProtoRuntime
+  ATProtoAdminUI
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
 )
@@ -909,6 +910,7 @@ if(APPLE)
     ATProtoSync
     ATProtoTransport
     ATProtoXRPC
+    ATProtoAdminUI
     ATProtoCore
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
@@ -925,6 +927,7 @@ else()
     ATProtoSync
     ATProtoTransport
     ATProtoXRPC
+    ATProtoAdminUI
     ATProtoCore
     -Wl,--no-whole-archive
     ${PLATFORM_LIBRARIES}

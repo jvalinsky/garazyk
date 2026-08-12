@@ -123,6 +123,7 @@ allowed_links_for_module() {
     # remains transport/core-only and never depends on PLC.
     ATProtoPLC) echo "ATProtoStorage ATProtoAdminUI ATProtoTransport ATProtoCore" ;;
     ATProtoBeskid) echo "ATProtoAppViewServer ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoPLC ATProtoAdminUI ATProtoCore" ;;
+    ATProtoMikrus) echo "ATProtoAppViewServer ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoCore ATProtoRuntime ATProtoAdminUI" ;;
     ATProtoVideoService) echo "ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport" ;;
     ATProtoRuntime) echo "ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService" ;;
     *) echo "" ;;
@@ -135,7 +136,7 @@ module_rank_for() {
     ATProtoStorage|ATProtoTransport) echo 2 ;;
     ATProtoServices|ATProtoSync|ATProtoPLC|ATProtoMediaCore|ATProtoAdminUI) echo 3 ;;
     ATProtoXRPC|ATProtoVideoService|ATProtoRelayAdminUI) echo 4 ;;
-    ATProtoBeskid|ATProtoRuntime) echo 5 ;;
+    ATProtoBeskid|ATProtoMikrus|ATProtoRuntime) echo 5 ;;
     *) echo 0 ;;
   esac
 }
@@ -153,6 +154,7 @@ modules=(
   ATProtoVideoService
   ATProtoRuntime
   ATProtoBeskid
+  ATProtoMikrus
 )
 
 for module in "${modules[@]}"; do
@@ -198,11 +200,12 @@ expected_links_for_executable() {
     campagnola) echo "ATProtoAppViewServer ATProtoPLC ATProtoAdminUI ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices" ;;
     zuk) echo "ATProtoAppViewServer ATProtoRelayAdminUI ATProtoSync ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices ATProtoStorage" ;;
     beskid) echo "ATProtoAppViewServer ATProtoRuntime ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoAdminUI ATProtoCore ATProtoBeskid" ;;
+    mikrus) echo "ATProtoAppViewServer ATProtoRuntime ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoAdminUI ATProtoCore ATProtoMikrus" ;;
     *) echo "" ;;
   esac
 }
 
-for exe in kaszlak campagnola zuk beskid; do
+for exe in kaszlak campagnola zuk beskid mikrus; do
   observed="$(extract_private_executable_links "$exe")"
   observed_arr=()
   read -r -a observed_arr <<<"$observed"

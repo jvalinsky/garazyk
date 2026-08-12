@@ -3,6 +3,7 @@
 
 #import "Mikrus/MikrusXrpcRoutePack.h"
 #import "Mikrus/MikrusDatabase.h"
+#import "Mikrus/MikrusMetrics.h"
 #import "Mikrus/MikrusSourceSpec.h"
 #import "Core/ATProtoDIDDocumentFields.h"
 #import "Core/ATURI.h"
@@ -51,11 +52,14 @@
 }
 
 - (BOOL)checkRateLimitForRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
-    return [GZXrpcRouteSupport checkIPRateLimitForRequest:request response:response];
+    BOOL allowed = [GZXrpcRouteSupport checkIPRateLimitForRequest:request response:response];
+    if (!allowed && [_metrics respondsToSelector:@selector(recordRateLimitReject)]) [_metrics recordRateLimitReject];
+    return allowed;
 }
 
 - (void)handleGetBacklinks:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
+    if ([_metrics respondsToSelector:@selector(recordQueryBacklink)]) [_metrics recordQueryBacklink];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
@@ -86,6 +90,7 @@
 
 - (void)handleGetBacklinkDids:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
+    if ([_metrics respondsToSelector:@selector(recordQueryBacklink)]) [_metrics recordQueryBacklink];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
@@ -115,6 +120,7 @@
 
 - (void)handleGetBacklinksCount:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
+    if ([_metrics respondsToSelector:@selector(recordQueryBacklink)]) [_metrics recordQueryBacklink];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
@@ -131,6 +137,7 @@
 
 - (void)handleGetManyToMany:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
+    if ([_metrics respondsToSelector:@selector(recordQueryManyToMany)]) [_metrics recordQueryManyToMany];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     NSString *pathToOther = [self requiredParam:@"pathToOther" request:request response:response];
@@ -164,6 +171,7 @@
 
 - (void)handleGetManyToManyCounts:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
+    if ([_metrics respondsToSelector:@selector(recordQueryManyToMany)]) [_metrics recordQueryManyToMany];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
     MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     NSString *pathToOther = [self requiredParam:@"pathToOther" request:request response:response];
@@ -196,6 +204,7 @@
 
 - (void)handleResolveMiniDoc:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     if (![self checkRateLimitForRequest:request response:response]) return;
+    if ([_metrics respondsToSelector:@selector(recordQueryIdentity)]) [_metrics recordQueryIdentity];
     NSString *identifier = [self requiredParam:@"identifier" request:request response:response];
     if (!identifier) return;
 
@@ -230,6 +239,7 @@
 }
 
 - (void)handleGetRecordByUri:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
+    if ([_metrics respondsToSelector:@selector(recordQueryRecord)]) [_metrics recordQueryRecord];
     @try {
     if (![self checkRateLimitForRequest:request response:response]) return;
     NSString *atURI = [self requiredParam:@"at_uri" request:request response:response];
