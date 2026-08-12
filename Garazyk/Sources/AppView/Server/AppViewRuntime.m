@@ -39,6 +39,11 @@
 #import "AppView/Services/VideoUriBuilder.h"
 #import "Network/AppViewXRpcRoutePack.h"
 #import "AppView/Server/Admin/AppViewAdminRoutePack.h"
+#import "AppView/Server/AdminUI/SyrenaMetrics.h"
+#import "AppView/Server/AdminUI/SyrenaAdminSnapshot.h"
+#import "AppView/Server/AdminUI/SyrenaAdminUIPack.h"
+#import "AdminUIServer/GZAdminUIHost.h"
+#import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -74,6 +79,8 @@
 @property (nonatomic, strong) ATProtoLexiconValidator *lexiconValidator;
 @property (nonatomic, strong) AppViewIndexHookRegistry *hookRegistry;
 @property (nonatomic, strong) AppViewVideoUriBuilder *videoUriBuilder;
+@property (nonatomic, strong) SyrenaMetrics *syrenaMetrics;
+@property (nonatomic, strong) GZAdminUIHost *adminUIHostInstance;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 
 @end
@@ -131,6 +138,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     if (_isRunning) return YES;
 
     AppViewConfiguration *config = _configuration ?: [AppViewConfiguration defaultConfiguration];
+    _syrenaMetrics = [[SyrenaMetrics alloc] init];
 
     NSError *configErr = nil;
     if (![config validate:&configErr]) {
@@ -369,6 +377,31 @@ static AppViewRuntime *_sharedRuntime = nil;
     }
     GZ_LOG_INFO(@"[AppViewRuntime] HTTP server listening on port %lu", (unsigned long)config.httpPort);
 
+    // Embedded admin listener
+    if (self.adminPassword.length > 0) {
+        GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
+        adminConfig.host = self.adminUIHost ?: @"127.0.0.1";
+        adminConfig.port = self.adminUIPort ?: 2596;
+        adminConfig.adminPassword = self.adminPassword;
+        adminConfig.serviceIdentifier = @"appview";
+        self.adminUIHostInstance = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig packs:@[GZSyrenaAdminUIPack.class]];
+        GZSyrenaAdminSnapshot *snap = [[GZSyrenaAdminSnapshot alloc] initWithDatabase:_database
+                                                                               metrics:_syrenaMetrics
+                                                                         configuration:config
+                                                                          ingestEngine:_ingestEngine
+                                                                   backfillOrchestrator:_orchestrator];
+        [GZSyrenaAdminUIPack configureHost:self.adminUIHostInstance snapshot:snap];
+        if (![self.adminUIHostInstance startWithError:&listenErr]) {
+            [_ingestEngine stop];
+            [_orchestrator stop];
+            [_httpServer stop];
+            if (error) *error = listenErr;
+            return NO;
+        }
+    } else {
+        GZ_LOG_CORE_WARN(@"Syrena admin UI disabled: SYRENA_ADMIN_PASSWORD or SYRENA_ADMIN_PASSWORD_FILE is not configured");
+    }
+
     // Start all planes
     [_ingestEngine start];
     [_orchestrator start];
@@ -386,6 +419,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     if (!_isRunning) return;
     _isRunning = NO;
 
+    [self.adminUIHostInstance stop];
     [_ingestEngine stop];
     [_orchestrator stop];
     [_httpServer stop];
@@ -400,6 +434,8 @@ static AppViewRuntime *_sharedRuntime = nil;
 
 - (void)ingestEngine:(AppViewIngestEngine *)engine
    didReceiveCommit:(AppViewIngestEvent *)event {
+    [_syrenaMetrics recordIngestEvent];
+    [_syrenaMetrics recordIngestCommit];
     // Notify orchestrator to ensure repo is scheduled for backfill if new
     [_orchestrator enqueueDIDs:@[event.did]];
 
@@ -428,6 +464,7 @@ static AppViewRuntime *_sharedRuntime = nil;
             if (![indexer canIndexCollection:collection]) continue;
 
             if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
+            [_syrenaMetrics recordIngestOp];
                 NSDictionary *record = op[@"record"];
                 NSString *cid = op[@"cid"];
                 if (record) {
@@ -438,7 +475,9 @@ static AppViewRuntime *_sharedRuntime = nil;
                                      cid:cid
                                    error:nil];
                 }
-            } else if ([action isEqualToString:@"delete"]) {
+            } else        if ([action isEqualToString:@"delete"]) {
+            [_syrenaMetrics recordIngestDelete];
+            [_syrenaMetrics recordIngestOp];
                 if ([indexer respondsToSelector:@selector(deleteRecord:did:collection:error:)]) {
                     [indexer deleteRecord:rkey
                                       did:event.did
@@ -498,12 +537,14 @@ didReceiveIdentityChange:(AppViewIngestEvent *)event {
 
 - (void)orchestrator:(AppViewBackfillOrchestrator *)orchestrator
 didCompleteBackfillForDID:(NSString *)did {
+    [_syrenaMetrics recordBackfillCompleted];
     GZ_LOG_DEBUG(@"[AppViewRuntime] Backfill complete for %@", did);
 }
 
 - (void)orchestrator:(AppViewBackfillOrchestrator *)orchestrator
 didFailBackfillForDID:(NSString *)did
                error:(NSError *)error {
+    [_syrenaMetrics recordBackfillFailed];
     GZ_LOG_DEBUG(@"[AppViewRuntime] Backfill failed for %@: %@", did, error.localizedDescription);
 }
 

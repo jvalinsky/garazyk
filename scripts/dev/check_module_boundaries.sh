@@ -201,6 +201,9 @@ expected_links_for_executable() {
     zuk) echo "ATProtoAppViewServer ATProtoRelayAdminUI ATProtoSync ATProtoTransport ATProtoCore ATProtoRuntime ATProtoServices ATProtoStorage" ;;
     beskid) echo "ATProtoAppViewServer ATProtoRuntime ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoAdminUI ATProtoCore ATProtoBeskid" ;;
     mikrus) echo "ATProtoAppViewServer ATProtoRuntime ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoAdminUI ATProtoCore ATProtoMikrus" ;;
+    syrena) echo "ATProtoAppViewServer ATProtoRuntime ATProtoPLC ATProtoStorage ATProtoServices ATProtoSync ATProtoTransport ATProtoXRPC ATProtoAdminUI ATProtoCore" ;;
+    syrena-chat) echo "ATProtoAppViewServer ATProtoRuntime ATProtoStorage ATProtoServices ATProtoSync ATProtoMediaCore ATProtoTransport ATProtoXRPC ATProtoAdminUI ATProtoCore" ;;
+    syrena-video) echo "ATProtoAppViewServer ATProtoRuntime ATProtoStorage ATProtoServices ATProtoSync ATProtoMediaCore ATProtoTransport ATProtoXRPC ATProtoVideoService ATProtoAdminUI ATProtoCore" ;;
     *) echo "" ;;
   esac
 }

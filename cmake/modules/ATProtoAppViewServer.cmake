@@ -3,6 +3,9 @@
 # build-host independence before resolving them into target source lists.
 set(ATPROTO_APPVIEW_SERVER_MANIFEST
   "Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m"
+  "Garazyk/Sources/AppView/Server/AdminUI/SyrenaAdminSnapshot.m"
+  "Garazyk/Sources/AppView/Server/AdminUI/SyrenaAdminUIPack.m"
+  "Garazyk/Sources/AppView/Server/AdminUI/SyrenaMetrics.m"
   "Garazyk/Sources/AppView/Server/AppViewDatabase.m"
   "Garazyk/Sources/AppView/Server/AppViewRuntime.m"
   "Garazyk/Sources/AppView/Server/AppViewTypes.m"

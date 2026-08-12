@@ -154,6 +154,19 @@
             meta = with lib; { description = "Garazyk Mikrus link index"; license = [ licenses.unlicense licenses.cc0 ]; platforms = platforms.linux; };
           };
 
+          syrena = pkgs.clangStdenv.mkDerivation {
+            pname = "syrena";
+            version = "1.0.0";
+            src = zukSource;
+            nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+            buildInputs = [ gnustepPrefix ] ++ runtimeLibs;
+            preConfigure = ''export GNUSTEP_PREFIX="${gnustepPrefix}"'';
+            cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" "-DBUILD_TESTS=OFF" "-DBUILD_FUZZERS=OFF" "-DBUILD_SECP256K1=ON" ];
+            buildPhase = ''cmake --build . --target syrena --parallel 4'';
+            installPhase = ''install -Dm755 bin/syrena $out/bin/syrena'';
+            meta = with lib; { description = "Garazyk Syrena AppView server"; license = [ licenses.unlicense licenses.cc0 ]; platforms = platforms.linux; };
+          };
+
           linuxShellHook =
             if isLinux then ''
               export GNUSTEP_PREFIX="${gnustepPrefix}"
@@ -180,7 +193,7 @@
         in
         {
           packages = lib.optionalAttrs isLinux {
-            inherit zuk beskid mikrus;
+            inherit zuk beskid mikrus syrena;
           };
 
           inherit formatter;
@@ -229,6 +242,7 @@
         campagnola = import ./nixos/modules/campagnola.nix;
         beskid = import ./nixos/modules/beskid.nix;
         mikrus = import ./nixos/modules/mikrus.nix;
+        syrena = import ./nixos/modules/syrena.nix;
         cloudflaredTunnel = import ./nixos/modules/cloudflared-tunnel.nix;
       };
     };

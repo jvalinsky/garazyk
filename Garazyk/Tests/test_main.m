@@ -1112,6 +1112,7 @@ int main(int argc, char *argv[]) {
       @"MikrusMetricsTests",
       @"MikrusAdminSnapshotTests",
       @"MikrusAdminUIPackTests",
+      @"SyrenaAdminUITests",
       @"IPLDBlockIntegrityTests",
       @"SecItemPersistenceTests",
       @"Arc4randomTests",
