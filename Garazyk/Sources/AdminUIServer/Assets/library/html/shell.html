@@ -46,23 +46,6 @@
             </aside>
             {{/isSingleSurface}}
             <main class="admin-content">
-            <!-- Overview tab -->
-            <div id="tab-overview" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-overview" tabindex="0" {{^activeOverview}}hidden{{/activeOverview}}>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Service Status</h2>
-                    <div id="overview" hx-get="/admin/partials/overview" hx-trigger="revealed, every 20s"></div>
-                </section>
-            </div>
-
-            <!-- Connections tab -->
-            <div id="tab-connections" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-connections" tabindex="0" {{^activeConnections}}hidden{{/activeConnections}}>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Service Connections</h2>
-                    <p class="text-secondary text-sm mb-lg">Configure URLs and admin tokens for each AT Protocol service. Changes apply immediately but are not persisted across restarts.</p>
-                    <div id="connections-form" hx-get="/admin/partials/connections" hx-trigger="revealed"></div>
-                </section>
-            </div>
-
             <!-- PDS tab -->
             <div id="tab-pds" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-pds" tabindex="0" {{^activePDS}}hidden{{/activePDS}}>
                 <section class="admin-section">
@@ -137,104 +120,6 @@
                         </form>
                     </div>
                     <div id="plc-resolve-result"></div>
-                </section>
-            </div>
-
-            <!-- Explorer tab -->
-            <div id="tab-explorer" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-explorer" tabindex="0" {{^activeExplorer}}hidden{{/activeExplorer}}>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Data Explorer</h2>
-                    <p class="text-secondary text-sm mb-lg">Query records and repo structures across services.</p>
-                    <div class="search-row mb-lg">
-                        <form class="d-flex gap-sm flex-1" hx-get="/admin/partials/explorer" hx-target="#explorer-result">
-                            <input type="text" name="did" placeholder="Account DID" class="form-input flex-1" required/>
-                            <input type="text" name="collection" placeholder="Collection (e.g. app.bsky.feed.post)" class="form-input flex-1" required/>
-                            <button type="submit" class="btn btn-primary btn-sm">Explore</button>
-                        </form>
-                    </div>
-                    <div id="explorer-result"></div>
-                </section>
-            </div>
-
-            <!-- Ozone tab -->
-            <div id="tab-ozone" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-ozone" tabindex="0" {{^activeOzone}}hidden{{/activeOzone}}>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Ozone Moderation Reports</h2>
-                    <div class="search-row">
-                        <form class="d-flex gap-sm flex-1" hx-get="/admin/partials/ozone-reports" hx-target="#ozone-reports">
-                            <input type="text" name="q" placeholder="Filter by DID or reason" class="form-input flex-1"/>
-                            <button type="submit" class="btn btn-primary btn-sm">Search</button>
-                        </form>
-                    </div>
-                    <div id="ozone-reports" hx-get="/admin/partials/ozone-reports" hx-trigger="revealed"></div>
-                </section>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Moderation Actions</h2>
-                    <div id="ozone-events" hx-get="/admin/partials/ozone-events" hx-trigger="revealed"></div>
-                </section>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Account Statuses</h2>
-                    <div id="ozone-statuses" hx-get="/admin/partials/ozone-statuses" hx-trigger="revealed"></div>
-                </section>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Communication Templates</h2>
-                    <div id="ozone-templates" hx-get="/admin/partials/ozone-templates" hx-trigger="revealed"></div>
-                </section>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Ozone Configuration</h2>
-                    <div id="ozone-config" hx-get="/admin/partials/ozone-config" hx-trigger="revealed"></div>
-                </section>
-            </div>
-
-            <!-- Security tab -->
-            <div id="tab-security" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-security" tabindex="0" {{^activeSecurity}}hidden{{/activeSecurity}}>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Security Dashboard</h2>
-                    <p class="text-secondary text-sm mb-lg">Monitor auth events and active sessions.</p>
-                    <div id="security-dashboard" hx-get="/admin/partials/security" hx-trigger="revealed, every 60s"></div>
-                </section>
-            </div>
-
-            <!-- MST tab -->
-            <div id="tab-mst" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-mst" tabindex="0" {{^activeMST}}hidden{{/activeMST}}>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">MST Operations</h2>
-                    <p class="text-secondary text-sm mb-lg">Analyze Merkle Search Trees.</p>
-                    <div class="search-row mb-lg">
-                        <form class="d-flex gap-sm flex-1" hx-get="/admin/partials/mst-diff" hx-target="#mst-result">
-                            <input type="text" name="cid1" placeholder="Old Root CID" class="form-input flex-1" required/>
-                            <input type="text" name="cid2" placeholder="New Root CID" class="form-input flex-1" required/>
-                            <button type="submit" class="btn btn-primary btn-sm">Diff Trees</button>
-                        </form>
-                    </div>
-                    <div class="search-row mb-lg">
-                        <form class="d-flex gap-sm flex-1" hx-get="/admin/partials/mst-proof" hx-target="#mst-result">
-                            <input type="text" name="root" placeholder="Root CID" class="form-input flex-1" required/>
-                            <input type="text" name="key" placeholder="Key (e.g. app.bsky.feed.post/rkey)" class="form-input flex-1" required/>
-                            <button type="submit" class="btn btn-primary btn-sm">Get Proof</button>
-                        </form>
-                    </div>
-                    <div id="mst-result"></div>
-                </section>
-            </div>
-
-            <!-- Chat tab -->
-            <div id="tab-chat" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-chat" tabindex="0" {{^activeChat}}hidden{{/activeChat}}>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Chat Metrics</h2>
-                    <div id="chat-metrics" hx-get="/admin/partials/chat-metrics" hx-trigger="revealed, every 15s"></div>
-                </section>
-            </div>
-
-            <!-- Video tab -->
-            <div id="tab-video" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-video" tabindex="0" {{^activeVideo}}hidden{{/activeVideo}}>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Video Metrics</h2>
-                    <div id="video-metrics" hx-get="/admin/partials/video-metrics" hx-trigger="revealed, every 15s"></div>
-                </section>
-                <section class="admin-section">
-                    <h2 class="admin-section-title">Video Jobs</h2>
-                    <div id="video-jobs" hx-get="/admin/partials/video-jobs" hx-trigger="revealed, every 5s"></div>
                 </section>
             </div>
             {{#dynamicPanes}}

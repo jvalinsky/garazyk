@@ -267,7 +267,7 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
 
 input:focus-visible,
@@ -360,11 +360,11 @@ select:disabled {
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: var(--color-accent); color: var(--color-on-accent); }
-.btn-primary:hover:not(:disabled) { background: #0066cc; box-shadow: var(--shadow-md); }
+.btn-primary:hover:not(:disabled) { background: oklch(48% 0.18 255); box-shadow: var(--shadow-md); }
 .btn-secondary { background: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--separator-color); }
 .btn-secondary:hover:not(:disabled) { background: var(--separator-color); }
 .btn-destructive { background: var(--color-destructive); color: var(--color-on-destructive); }
-.btn-destructive:hover:not(:disabled) { background: #ff3b30; box-shadow: var(--shadow-md); }
+.btn-destructive:hover:not(:disabled) { background: oklch(52% 0.22 25); box-shadow: var(--shadow-md); }
 .btn-sm { padding: 4px 8px; font-size: var(--font-size-xs); min-height: 24px; }
 
 /* Tables */
@@ -418,9 +418,9 @@ select:disabled {
   border-radius: var(--radius-md); font-size: var(--font-size-xs);
   font-weight: 500; white-space: nowrap;
 }
-.badge-success { background: rgba(52, 199, 89, 0.1); color: var(--color-foreground-success); }
-.badge-warning { background: rgba(255, 149, 0, 0.1); color: var(--color-foreground-warning); }
-.badge-destructive { background: rgba(255, 69, 58, 0.1); color: var(--color-foreground-destructive); }
+.badge-success { background: color-mix(in srgb, var(--color-success) 12%, transparent); color: var(--color-foreground-success); }
+.badge-warning { background: color-mix(in srgb, var(--color-warning) 12%, transparent); color: var(--color-foreground-warning); }
+.badge-destructive { background: color-mix(in srgb, var(--color-destructive) 12%, transparent); color: var(--color-foreground-destructive); }
 .badge-secondary { background: var(--color-bg-tertiary); color: var(--color-text-secondary); }
 
 /* Alerts */
@@ -429,10 +429,10 @@ select:disabled {
   border: 1px solid; display: flex; align-items: flex-start;
   gap: var(--space-md); margin-bottom: var(--space-md);
 }
-.alert-info { background: rgba(48, 176, 192, 0.08); border-color: var(--color-foreground-info); color: var(--color-foreground-info); }
-.alert-success { background: rgba(52, 199, 89, 0.08); border-color: var(--color-foreground-success); color: var(--color-foreground-success); }
-.alert-warning { background: rgba(255, 149, 0, 0.08); border-color: var(--color-foreground-warning); color: var(--color-foreground-warning); }
-.alert-destructive { background: rgba(255, 69, 58, 0.08); border-color: var(--color-foreground-destructive); color: var(--color-foreground-destructive); }
+.alert-info { background: color-mix(in srgb, var(--color-info) 10%, transparent); border-color: var(--color-foreground-info); color: var(--color-foreground-info); }
+.alert-success { background: color-mix(in srgb, var(--color-success) 10%, transparent); border-color: var(--color-foreground-success); color: var(--color-foreground-success); }
+.alert-warning { background: color-mix(in srgb, var(--color-warning) 10%, transparent); border-color: var(--color-foreground-warning); color: var(--color-foreground-warning); }
+.alert-destructive { background: color-mix(in srgb, var(--color-destructive) 10%, transparent); border-color: var(--color-foreground-destructive); color: var(--color-foreground-destructive); }
 
 /* Stat cards */
 .stat-card {
@@ -481,7 +481,7 @@ select:disabled {
 
 /* Progress */
 .progress { width: 100%; height: 4px; background: var(--color-bg-tertiary); border-radius: var(--radius-full); overflow: hidden; }
-.progress-bar { height: 100%; background: var(--color-accent); transition: width var(--transition-normal); }
+.progress-bar { height: 100%; background: var(--color-accent); }
 
 /* Code blocks */
 code {
@@ -541,9 +541,7 @@ pre code { background: none; padding: 0; color: inherit; }
   font-size: var(--font-size-md); 
   font-weight: 700; 
   letter-spacing: -0.3px;
-  background: linear-gradient(135deg, var(--color-text-primary), var(--color-text-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--color-text-primary);
 }
 
 .admin-header-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-md); }
@@ -722,11 +720,11 @@ pre code { background: none; padding: 0; color: inherit; }
 
 /* Terminal/Log viewer */
 .terminal-window {
-  background: #0a0a0a; border-radius: var(--radius-lg); padding: var(--space-md);
+  background: oklch(12% 0.003 200); border-radius: var(--radius-lg); padding: var(--space-md);
   font-family: "Monaco", "Menlo", "Courier New", monospace;
-  font-size: var(--font-size-xs); overflow: auto; max-height: 400px; border: 1px solid #333;
+  font-size: var(--font-size-xs); overflow: auto; max-height: 400px; border: 1px solid oklch(30% 0.003 200);
 }
-.terminal-content { color: #f5f5f7; white-space: pre-wrap; word-break: break-all; }
+.terminal-content { color: oklch(96% 0.002 200); white-space: pre-wrap; word-break: break-all; }
 
 /* Cluster Dashboard Styles */
 .cluster-grid {
@@ -804,17 +802,8 @@ pre code { background: none; padding: 0; color: inherit; }
   box-shadow: 0 0 8px color-mix(in oklch, var(--color-destructive) 40%, transparent);
 }
 
-.status-online {
-  border-left: 4px solid var(--color-success);
-}
-
-.status-offline {
-  border-left: 4px solid var(--color-text-tertiary);
-}
-
-.status-error {
-  border-left: 4px solid var(--color-destructive);
-}
+/* .status-online / .status-offline / .status-error convey state
+   solely through the child .status-dot element above. */
 
 
 /* === utilities.css (selected) === */
