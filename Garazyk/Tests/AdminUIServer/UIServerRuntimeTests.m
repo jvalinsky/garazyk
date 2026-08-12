@@ -27,6 +27,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "AdminUIServer/UITileDataProtocol.h"
+#import "AdminUIServer/UITileLoadingHost.h"
 
 @interface UIServerRuntimeBackendStub : GZAdminUIBackendClient
 @property(nonatomic, strong) NSMutableArray<NSString *> *calls;
@@ -324,6 +325,60 @@
     XCTAssertTrue([response.bodyString containsString:@"export function listen"]);
     XCTAssertTrue([response.bodyString containsString:GZAdminUITileDataProtocolReadyAction]);
     XCTAssertFalse([response.bodyString containsString:@"fetch("]);
+}
+
+- (void)testWebTilesLoadHostRedirectsToUniqueOrigin {
+    self.config.tilesBaseHost = @"example.test";
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/.well-known/web-tiles/"
+                                                   queryString:@""
+                                                    queryParams:@{}
+                                                        version:@"HTTP/1.1"
+                                                        headers:@{@"Host": @"load.example.test"}
+                                                           body:[NSData data]
+                                                   remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    XCTAssertEqual(response.statusCode, 303);
+    NSString *location = [response headerForKey:@"Location"];
+    XCTAssertNotNil(location);
+    NSURL *url = [NSURL URLWithString:location];
+    XCTAssertTrue(GZAdminUITileIsUniqueOriginHost(url.host, @"example.test"));
+    XCTAssertTrue([location containsString:@".example.test/.well-known/web-tiles"]);
+}
+
+- (void)testWebTilesUniqueOriginServesShuttleWithPolicyHeaders {
+    self.config.tilesBaseHost = @"example.test";
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/.well-known/web-tiles/index.html"
+                                                   queryString:@""
+                                                    queryParams:@{}
+                                                        version:@"HTTP/1.1"
+                                                        headers:@{@"Host": @"abcdefghijklmnopqrst.example.test"}
+                                                           body:[NSData data]
+                                                   remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.contentType, @"text/html; charset=utf-8");
+    XCTAssertEqualObjects([response headerForKey:@"service-worker-allowed"], @"/");
+    XCTAssertEqualObjects([response headerForKey:@"cross-origin-opener-policy"], @"same-origin");
+    XCTAssertTrue([response.bodyString containsString:@"Web Tile Shuttle"]);
+}
+
+- (void)testWebTilesDocumentRemains404WithoutBaseHost {
+    self.config.tilesBaseHost = nil;
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/.well-known/web-tiles/index.html"
+                                                   queryString:@""
+                                                    queryParams:@{}
+                                                        version:@"HTTP/1.1"
+                                                        headers:@{@"Host": @"load.example.test"}
+                                                           body:[NSData data]
+                                                   remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    XCTAssertEqual(response.statusCode, 404);
 }
 
 /*!

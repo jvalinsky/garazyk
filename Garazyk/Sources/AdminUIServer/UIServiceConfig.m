@@ -136,6 +136,12 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *UIPeerLinksFromString(NS
     }
     config.peerLinks = UIPeerLinksFromString(peers);
 
+    NSString *tilesHost = UIEnvOptionalString(env, @"GARAZYK_ADMIN_UI_TILES_BASE_HOST");
+    if (!tilesHost) {
+        tilesHost = UIEnvOptionalString(env, @"PDS_ADMIN_UI_TILES_BASE_HOST");
+    }
+    config.tilesBaseHost = tilesHost;
+
     return config;
 }
 
