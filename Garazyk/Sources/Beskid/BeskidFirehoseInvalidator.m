@@ -264,8 +264,17 @@ static void GZBeskidWriteCursorToFile(NSString *path, int64_t cursor) {
     self.connected = NO;
     [self.metrics setFirehoseConnected:NO];
     GZBeskidWriteCursorToFile(self.cursorPath, self.currentCursor);
+    NSNumber *closeCode = error.userInfo[FirehoseCloseCodeKey];
+    NSString *closeReason = error.userInfo[FirehoseCloseReasonKey] ?: error.localizedDescription;
+    BOOL backpressure = FirehoseErrorIsBackpressureClose(error);
     if (error) {
-        GZ_LOG_WARN(@"[Beskid] Firehose closed: %@", error.localizedDescription);
+        GZ_LOG_WARN(@"[Beskid] Firehose closed code=%@ reason=%@ backpressure=%@ cursor=%lld",
+                    closeCode ?: @"-",
+                    closeReason ?: @"",
+                    backpressure ? @"YES" : @"NO",
+                    (long long)self.currentCursor);
+    } else {
+        GZ_LOG_INFO(@"[Beskid] Firehose closed cleanly (cursor=%lld)", (long long)self.currentCursor);
     }
     [self scheduleReconnect];
 }

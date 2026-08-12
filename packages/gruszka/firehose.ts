@@ -228,13 +228,22 @@ export class FirehoseClient {
       };
 
       ws.onerror = () => {
+        console.error("Firehose WebSocket error");
         clearTimeout(timeout);
         signal?.removeEventListener("abort", onAbort);
         ws.close();
         resolve();
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        const policy = event.code === 1008 || event.code === 1009 ||
+          /ConsumerTooSlow|Outbound queue/i.test(event.reason);
+        console.log(
+          `Firehose closed code=${event.code} clean=${event.wasClean}` +
+            ` reason=${JSON.stringify(event.reason || "")}` +
+            ` backpressure=${policy}` +
+            (this.lastSeq !== undefined ? ` lastSeq=${this.lastSeq}` : ""),
+        );
         clearTimeout(timeout);
         signal?.removeEventListener("abort", onAbort);
         resolve();

@@ -11,6 +11,24 @@ NSString * const FirehoseErrorDomain = @"com.atproto.pds.firehose";
 NSInteger const FirehoseErrorCodeSubscriptionFailed = 6000;
 NSInteger const FirehoseErrorCodeEventEncodingFailed = 6001;
 NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
+NSString * const FirehoseCloseCodeKey = @"FirehoseCloseCode";
+NSString * const FirehoseCloseReasonKey = @"FirehoseCloseReason";
+
+BOOL FirehoseErrorIsBackpressureClose(NSError * _Nullable error) {
+    if (!error) return NO;
+    NSNumber *codeNumber = error.userInfo[FirehoseCloseCodeKey];
+    if ([codeNumber isKindOfClass:[NSNumber class]]) {
+        NSInteger code = codeNumber.integerValue;
+        if (code == 1008 || code == 1009) return YES;
+    }
+    NSString *reason = error.userInfo[FirehoseCloseReasonKey];
+    if (![reason isKindOfClass:[NSString class]]) {
+        reason = error.localizedDescription;
+    }
+    if (![reason isKindOfClass:[NSString class]]) return NO;
+    return [reason rangeOfString:@"ConsumerTooSlow" options:NSCaseInsensitiveSearch].location != NSNotFound
+        || [reason rangeOfString:@"Outbound queue" options:NSCaseInsensitiveSearch].location != NSNotFound;
+}
 
 @interface ATProtoFirehoseSubscription ()
 @property (nonatomic, assign, readwrite) int64_t cursor;
@@ -285,9 +303,16 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
     for (ATProtoFirehoseSubscription *subscription in self.subscriptions) {
         NSError *error = nil;
         if (code != 1000) {
+            NSString *safeReason = reason.length > 0 ? reason : @"Connection closed";
             error = [NSError errorWithDomain:FirehoseErrorDomain
                                         code:FirehoseErrorCodeSubscriptionClosed
-                                     userInfo:@{NSLocalizedDescriptionKey: reason ?: @"Connection closed"}];
+                                    userInfo:@{
+                NSLocalizedDescriptionKey:
+                    [NSString stringWithFormat:@"WebSocket closed code=%ld reason=%@",
+                                               (long)code, safeReason],
+                FirehoseCloseCodeKey: @(code),
+                FirehoseCloseReasonKey: safeReason,
+            }];
         }
         dispatch_async(dispatch_get_main_queue(), ^{
             if ([subscription.delegate respondsToSelector:@selector(firehoseSubscription:didCloseWithError:)]) {

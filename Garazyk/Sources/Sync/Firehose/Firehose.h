@@ -32,6 +32,18 @@ extern NSInteger const FirehoseErrorCodeEventEncodingFailed;
 /*! Error code when subscription is closed unexpectedly. */
 extern NSInteger const FirehoseErrorCodeSubscriptionClosed;
 
+/*! userInfo key (NSNumber) for the WebSocket close code when a subscription closes. */
+extern NSString * const FirehoseCloseCodeKey;
+
+/*! userInfo key (NSString) for the WebSocket close reason when a subscription closes. */
+extern NSString * const FirehoseCloseReasonKey;
+
+/*!
+ @abstract Returns YES when the close error represents relay backpressure policy
+           (ConsumerTooSlow / outbound queue limit / codes 1008 or 1009).
+ */
+BOOL FirehoseErrorIsBackpressureClose(NSError * _Nullable error);
+
 /*!
 
  @abstract Types of events streamed on the ATProtoFirehose.
