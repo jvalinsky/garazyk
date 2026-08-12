@@ -1,7 +1,7 @@
 ---
 title: Per-Service Admin UI Execution Briefs
 status: active
-last_verified: 2026-08-11T23:40
+last_verified: 2026-08-12
 ---
 
 # Per-service Admin UI execution briefs
@@ -27,7 +27,7 @@ moving every surface onto the shared `ATProtoAdminUI` host.
 | Chat | `syrena-chat` | Conversations, messages, groups, moderation | Embedded pack with privacy-safe overview; NixOS module + deploy example | [Chat](chat.md) |
 | E2EE mailbox | `germ` | Ephemeral and rendezvous mailboxes | Full embedded pack with aggregate counters, `/admin/metrics`, NixOS module + deploy example | [Germ](germ.md) |
 | Video | `jelcz` | Uploads, transcoding, thumbnails and HLS | Embedded pack with real-time job counters, full overview dashboard, NixOS module + deploy example | [Video](video.md) |
-| PDS | `kaszlak` | Accounts, repositories, blobs, moderation and labs | Six existing PDS-owned packs | [PDS](pds.md) |
+| PDS | `kaszlak` | Accounts, repositories, blobs, moderation and labs | Embedded listener + six packs on `main` (`bbc84dd4`); crimson `ui.garazyk.xyz` cutover; M4 hardening still open | [PDS](pds.md) |
 
 `garazyk-ui` is a compatibility host to retire under workstream 11 M5, not a
 service and therefore has no service brief. Scenario Dashboard and Skylab are

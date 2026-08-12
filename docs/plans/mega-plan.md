@@ -594,22 +594,23 @@ for full traceability; mirrored in the
     evidence remains governed by workstreams 08 and 10; no full GNUstep gate
     is claimed by this execution.
 
-13. **Open (added 2026-08-04):** dissolve the single `garazyk-ui` process into
+13. **Open (updated 2026-08-12):** dissolve the single `garazyk-ui` process into
     an admin UI owned by each service binary. Complete
     [workstream 11](workstreams/11-per-service-admin-uis.md). One process
     currently holds admin credentials for the PDS, PLC, relay, AppView, chat,
     and video services simultaneously; `Garazyk/Sources/AdminUIServer/` belongs
-    to no static library, so its ~15 `UI*` classes escape both the ADR 0031
-    link-time boundary gate and `scripts/check_namespace.sh` (each enumerates
-    ten `ATProto*` archives). Decision and constraints:
+    to no static library historically, so its classes escaped both the ADR 0031
+    link-time boundary gate and `scripts/check_namespace.sh` until M2 extracted
+    `ATProtoAdminUI`. Decision and constraints:
     [ADR 0033](../adr/0033-per-service-embedded-admin-uis.md). M1 (per-instance
     `HttpServer` concurrency, service-scoped session cookies) unblocks
     embedding; M2 has been implemented and merged to `main` as
     `ATProtoAdminUI`, validated by rebuilding `garazyk-ui` as its first
     consumer before any service is touched. Phase 30 and the M3 PLC pilot are
-    complete with current full-suite and browser evidence. M4 is now converging
-    Relay (`zuk`) onto its service-owned pack before any later service rollout.
-    The governed
+    complete with current full-suite and browser evidence. M4 is in progress:
+    Relay (`zuk`) and PDS (`kaszlak`, `bbc84dd4` password-gated embed + crimson
+    `ui.garazyk.xyz` cutover) have landed embeds; remaining briefs and M5
+    `garazyk-ui` retirement are still open. The governed
     [per-service brief index](workstreams/service-admin-uis/README.md) adds
     cross-linked execution and acceptance plans for Relay, PLC, AppView,
     Mikrus, Beskid, Chat, Germ, Video, and PDS without creating a second

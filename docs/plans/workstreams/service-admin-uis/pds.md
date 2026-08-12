@@ -37,10 +37,38 @@ Service-scoped shells (`serviceIdentifier = pds`) omit fleet Overview/Connection
 tabs and title as `PDS`; the backend client allows loopback HTTP to the local
 protocol listener.
 
-Still open for full M4 acceptance: NixOS/container secret-file examples,
-bounded overview snapshot work (slices 1–3), browser/visual smoke against a live
-`kaszlak` admin listener, and production reverse-proxy verification
-(`ui.garazyk.xyz` → `:2590`).
+Landed on `main` as `bbc84dd4` (2026-08-12). Live cutover on crimson-comet:
+nginx `ui.garazyk.xyz` → `127.0.0.1:2590`, password-file drop-in, operator
+login verified.
+
+### Operator UX hardening (2026-08-12, same commit)
+
+Verified against the live crimson listener after hard-refresh / asset cache
+bust (`?v=json-mst-2`):
+
+- **Ozone overview** is server-composed (reports / events / statuses / config
+  in one response) so nested HTMX placeholders no longer 404 or spam.
+- **MST** ships tree JSON in a hidden `<pre>` (HTMX `innerHTML` empties
+  `<script>` bodies) and renders an SVG pan/zoom diagram including leaf
+  record nodes; accounts list uses `load once`.
+- **Data Explorer** describe layout tops JSON labels; DID documents use the
+  shared JSON tree/raw/copy viewer; list-records fills Collection/Rkey from
+  `at://` URIs when the XRPC payload omits them.
+- Login CSRF rotates after failed attempts; invite render no longer assumes
+  `uses` is a string on GNUstep.
+
+### Still open for full M4 acceptance
+
+1. Bounded PDS overview snapshot (slices 1–3 DTO allowlists / cheap polling).
+2. NixOS/container secret-file, bind/port, and reverse-proxy module examples
+   for the embedded listener (crimson nginx is an ops proof, not a module).
+3. Checked-in browser/visual smoke against a live `kaszlak` admin listener
+   (crimson manual smoke is not a CI gate).
+4. Lab pack remains composed but has no dedicated sidebar tab on the
+   service-scoped shell; confirm Lab OAuth scenario targets the PDS listener
+   before M5.
+5. Slice 3 DTO allowlists for account email, tokens, audit payloads, and
+   security material (still broad backend dictionaries in places).
 
 ## Dashboard shape
 
@@ -62,20 +90,26 @@ bounded overview snapshot work (slices 1–3), browser/visual smoke against a li
 
 1. Define one cheap PDS overview snapshot from existing health, sequencer,
    metrics, pool, moderation, and storage components; headline polling must not
-   scan actor stores or blob directories.
+   scan actor stores or blob directories. **Open.**
 2. Move all six packs and clients under PDS ownership, remove Overview and
-   Connections, and keep the host service-agnostic.
+   Connections, and keep the host service-agnostic. **Partial:** service-scoped
+   shell omits Overview/Connections; packs still live under `AdminUIServer/`
+   until M5 retires the compatibility host.
 3. Replace broad backend dictionaries with per-view DTO allowlists, especially
    for account email, tokens, audit payloads, repository records, and security
-   material.
+   material. **Open.**
 4. Embed the listener and internal token in `kaszlak`; migrate its admin
    credential to operator login without exposing backend tokens to the browser.
-   **Listener embed landed 2026-08-12** (password-gated; public URL redirect).
+   **Done 2026-08-12** (`bbc84dd4`; password-gated; public URL link; crimson
+   cutover).
 5. Add NixOS/container secret-file, bind/port, backup-aware, and reverse-proxy
-   examples; move the Lab OAuth scenario to the PDS listener.
+   examples; move the Lab OAuth scenario to the PDS listener. **Open** (ops
+   nginx on crimson is not the module example).
 6. Test each pack, dangerous-action confirmation, audit, auth/CSRF, pagination,
    empty/large stores, pool starvation, concurrent repository writes, 200% zoom,
-   and scenario/topology compatibility.
+   and scenario/topology compatibility. **Partial:** composition + focused
+   unit tests landed; checked-in browser/visual smoke against `kaszlak` still
+   open.
 
 Acceptance requires all six local packs to work without fleet credentials,
 bounded polling under a representative multi-actor database, no protocol-write
