@@ -326,8 +326,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     NSString *shellTitle = tabs.count == 1 ? tabs.firstObject[@"displayName"] : @"Garazyk UI Service";
 
     NSSet<NSString *> *knownPanels = [NSSet setWithArray:@[
-        @"overview", @"connections", @"pds", @"appview", @"relay", @"plc",
-        @"explorer", @"ozone", @"security", @"mst", @"chat", @"video"
+        @"pds", @"appview", @"relay", @"plc"
     ]];
 
     // Dynamic panes: tabs whose identifiers don't match a known hardcoded pane.
@@ -364,18 +363,10 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         @"dynamicPanes": dynamicPanes,
     } mutableCopy];
     NSDictionary<NSString *, NSString *> *panelContextKeys = @{
-        @"overview": @"activeOverview",
-        @"connections": @"activeConnections",
         @"pds": @"activePDS",
         @"appview": @"activeAppView",
         @"relay": @"activeRelay",
         @"plc": @"activePLC",
-        @"explorer": @"activeExplorer",
-        @"ozone": @"activeOzone",
-        @"security": @"activeSecurity",
-        @"mst": @"activeMST",
-        @"chat": @"activeChat",
-        @"video": @"activeVideo",
     };
     [panelContextKeys enumerateKeysAndObjectsUsingBlock:^(NSString *identifier, NSString *key, BOOL *stop) {
         context[key] = @(!activeIsDynamic && [identifier isEqualToString:activeTabIdentifier]);
