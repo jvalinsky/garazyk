@@ -1,10 +1,9 @@
 /**
- * Admin UI (garazyk-ui) real-browser smoke (Phase 0 item 1 / workstream 00
- * B0.2 item 5; exercises the protections workstream 04 U1-U4 describe).
+ * Embedded PDS Admin UI real-browser smoke (workstream 00 B0.2 / WS11).
  *
- * Launches PLC + PDS from local build binaries, creates a live test
- * account against the real PDS, starts garazyk-ui pointed at that PDS, and
- * drives Playwright through:
+ * Launches PLC + PDS from local build binaries (PDS embeds the admin UI on
+ * :2590), creates a live test account against the real PDS, and drives
+ * Playwright through:
  *
  *   1. Admin CSP header (`script-src-attr 'none'`) and hostile-identifier
  *      inertness: a real account with a hostile email renders as inert text
@@ -24,15 +23,16 @@
 import { chromium } from "npm:playwright@1.52.0";
 import type { Browser, BrowserContext, Page } from "npm:playwright@1.52.0";
 import {
-  repoRoot,
   startLocalNetwork,
   stopLocalNetwork,
 } from "../packages/hamownia/atproto_network.ts";
 
 const RUN_ID = `admin-ui-smoke-${Date.now()}`;
 const UI_HOST = "127.0.0.1";
-const UI_PORT = 25990;
-const UI_ADMIN_PASSWORD = "test-admin-smoke-password";
+const UI_PORT = 2590;
+const UI_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_UI_PASSWORD") ??
+  Deno.env.get("PDS_ADMIN_PASSWORD") ??
+  "admin-localdev";
 const UI_BASE_URL = `http://${UI_HOST}:${UI_PORT}`;
 // kaszlak's account table lives under a fixed OS app-support directory, not
 // under the per-run --data-dir (see mega-plan current-state notes for
@@ -107,43 +107,10 @@ async function createTestAccount(
   return { did: data.did };
 }
 
-async function startAdminUI(
-  root: string,
-  pdsUrl: string,
-  plcUrl: string,
-  relayUrl: string,
-  appviewUrl: string,
-): Promise<Deno.ChildProcess> {
+async function waitForAdminUI(): Promise<void> {
   await Deno.mkdir(RESULTS_DIR, { recursive: true });
-  const logFile = await Deno.open(`${RESULTS_DIR}/garazyk-ui.log`, {
-    create: true,
-    write: true,
-    truncate: true,
-  });
-  const cmd = new Deno.Command(`${root}/build/bin/garazyk-ui`, {
-    args: ["serve", "--host", UI_HOST, "--port", String(UI_PORT)],
-    env: {
-      ...Deno.env.toObject(),
-      GARAZYK_UI_HOST: UI_HOST,
-      GARAZYK_UI_PORT: String(UI_PORT),
-      GARAZYK_UI_ADMIN_PASSWORD: UI_ADMIN_PASSWORD,
-      GARAZYK_UI_PDS_URL: pdsUrl,
-      GARAZYK_UI_PDS_PASSWORD: "test-admin-password",
-      GARAZYK_UI_PLC_URL: plcUrl,
-      GARAZYK_UI_RELAY_URL: relayUrl,
-      GARAZYK_UI_APPVIEW_URL: appviewUrl,
-      GARAZYK_UI_APPVIEW_TOKEN: "localdevadmin",
-    },
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const proc = cmd.spawn();
-  proc.stdout.pipeTo(logFile.writable, { preventClose: true }).catch(() => {});
-  proc.stderr.pipeTo(logFile.writable, { preventClose: true }).catch(() => {});
-
-  await waitForHttp(`${UI_BASE_URL}/admin/login`, "garazyk-ui", 30_000);
-  ok(`garazyk-ui ready on ${UI_BASE_URL}`);
-  return proc;
+  await waitForHttp(`${UI_BASE_URL}/admin/login`, "PDS admin UI", 60_000);
+  ok(`PDS admin UI ready on ${UI_BASE_URL}`);
 }
 
 // ── Area 1: Admin CSP + hostile-identifier inertness ──────────────────────
@@ -517,7 +484,6 @@ async function testLabOAuthFlow(page: Page): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const root = await repoRoot();
   // The local binary topology hosts the Lab client's metadata on the same
   // loopback interface as the PDS. Keep production SSRF protection enabled;
   // this opt-in is inherited only by the smoke's child processes.
@@ -550,13 +516,12 @@ async function main(): Promise<void> {
     ok(`Test account created with fallback email: ${TEST_HANDLE} (${fallback.did})`);
   }
 
-  let uiProc: Deno.ChildProcess | null = null;
   let browser: Browser | null = null;
   const traceDir = `${RESULTS_DIR}/traces`;
 
   try {
-    logProgress("Starting Admin UI server...");
-    uiProc = await startAdminUI(root, pdsUrl, plcUrl, relayUrl, appviewUrl);
+    logProgress("Waiting for embedded PDS Admin UI...");
+    await waitForAdminUI();
     logProgress("Launching browser...");
 
     browser = await chromium.launch({ headless: true });
@@ -595,15 +560,6 @@ async function main(): Promise<void> {
         logProgress("[teardown] browser closed");
       } catch (err) {
         logProgress(`[teardown] browser.close() failed: ${err}`);
-      }
-    }
-    if (uiProc) {
-      try {
-        logProgress("[teardown] killing garazyk-ui process...");
-        uiProc.kill();
-        logProgress("[teardown] garazyk-ui killed");
-      } catch {
-        // already exited
       }
     }
     logProgress("[teardown] stopping local PLC+PDS binary network...");

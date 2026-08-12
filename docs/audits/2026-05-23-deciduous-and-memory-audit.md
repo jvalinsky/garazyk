@@ -218,7 +218,7 @@ Accurate reflection of graph health.
 |--------|-------|
 | Source modules | 31 |
 | Source files (.h + .m) | 853 |
-| Staged binaries | 12 (beskid, campagnola, constellation, garazyk-ui, germ, jelcz, kaszlak, mikrus, syrena, syrena-chat, zuk, Assets) |
+| Staged binaries | 12 (beskid, campagnola, constellation, the former monolithic admin UI, germ, jelcz, kaszlak, mikrus, syrena, syrena-chat, zuk, Assets) |
 | PDS-prefixed classes remaining | Domain-specific only (intentional) |
 
 ### Docker Infrastructure

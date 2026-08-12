@@ -8,7 +8,7 @@
  * Migrated to OKLCH for perceptually uniform color manipulation
  * Brand hue: warm strawberry red (~15°) at low chroma for tinted neutrals
  *
- * Both the admin shell (garazyk-ui) and the standalone pages served from
+ * Both the admin shell and the standalone pages served from
  * `/css/shared/` (OAuth authorize, PLC index, MST viewer, OAuth demo) resolve
  * their tokens here, so this file carries the union of what either needs.
  */

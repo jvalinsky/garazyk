@@ -52,11 +52,6 @@
     [self.calls addObject:call ?: @""];
 }
 
-- (NSDictionary *)fetchServiceOverview {
-    [self recordCall:NSStringFromSelector(_cmd)];
-    return @{@"services": @[@{@"name": @"pds", @"status": @"online", @"url": @"http://localhost:3001"}]};
-}
-
 - (NSDictionary *)fetchActiveSessionsForDID:(NSString *)did {
     [self recordCall:NSStringFromSelector(_cmd)];
     self.lastDID = did;
@@ -577,8 +572,6 @@
                                                 jsonBody:nil];
     ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
     NSArray<NSDictionary<NSString *, NSString *> *> *expectedTabs = @[
-        @{@"identifier": @"overview", @"displayName": @"Overview"},
-        @{@"identifier": @"connections", @"displayName": @"Connections"},
         @{@"identifier": @"pds", @"displayName": @"PDS"},
         @{@"identifier": @"appview", @"displayName": @"AppView"},
         @{@"identifier": @"explorer", @"displayName": @"Data Explorer"},
@@ -611,8 +604,9 @@
         XCTAssertTrue([response.bodyString containsString:tab[@"displayName"]]);
         previousLocation = buttonRange.location + buttonRange.length;
     }
-    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-overview\" aria-controls=\"tab-overview\" aria-selected=\"true\" tabindex=\"0\""]);
-    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-connections\" aria-controls=\"tab-connections\" aria-selected=\"false\" tabindex=\"-1\""]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"tabbtn-pds\" aria-controls=\"tab-pds\" aria-selected=\"true\" tabindex=\"0\""]);
+    XCTAssertFalse([response.bodyString containsString:@"id=\"tabbtn-overview\""]);
+    XCTAssertFalse([response.bodyString containsString:@"id=\"tabbtn-connections\""]);
     XCTAssertFalse([response.bodyString containsString:@"id=\"tabbtn-relay\""]);
     XCTAssertFalse([response.bodyString containsString:@"tabbtn-lab"]);
 }
@@ -657,13 +651,14 @@
     XCTAssertFalse([response.bodyString containsString:@"/admin/partials/appview-metrics"]);
     XCTAssertFalse([response.bodyString containsString:@"/admin/partials/relay-metrics"]);
     XCTAssertFalse([response.bodyString containsString:@"/admin/partials/plc-metrics"]);
-    XCTAssertFalse([response.bodyString containsString:@"admin-peer-switcher"]);
+    XCTAssertTrue([response.bodyString containsString:@"admin-peer-switcher"]);
+    XCTAssertTrue([response.bodyString containsString:@"No peer UIs configured."]);
     XCTAssertFalse([response.bodyString containsString:@"every 10s"]);
     XCTAssertFalse([response.bodyString containsString:@"hx-trigger=\"revealed\""]);
     XCTAssertTrue([response.bodyString containsString:@"hx-trigger=\"none\""]);
 }
 
-- (void)testSingleSurfaceShellUsesSidebarAndHasNoConfiguredPeers {
+- (void)testSingleSurfaceShellUsesSidebarAndEmptyPeerSwitcher {
     GZAdminUIHost *relayHost = [[GZAdminUIHost alloc] initWithConfiguration:self.config
                                                                        packs:@[GZRelayAdminUIPack.class]];
     NSString *token = [relayHost.authManager createSessionToken];
@@ -684,7 +679,8 @@
     // Hardcoded fleet panes are only emitted when that tab is in the composition.
     XCTAssertFalse([response.bodyString containsString:@"id=\"tab-pds\""]);
     XCTAssertFalse([response.bodyString containsString:@"/admin/partials/appview-metrics"]);
-    XCTAssertFalse([response.bodyString containsString:@"admin-peer-switcher"]);
+    XCTAssertTrue([response.bodyString containsString:@"admin-peer-switcher"]);
+    XCTAssertTrue([response.bodyString containsString:@"No peer UIs configured."]);
     if (relayPanelStart.location == NSNotFound) {
         return;
     }
@@ -697,6 +693,27 @@
     }
     NSString *relayPanel = [response.bodyString substringWithRange:NSMakeRange(relayPanelStart.location, NSMaxRange(relayPanelEnd) - relayPanelStart.location)];
     XCTAssertFalse([relayPanel containsString:@"hidden"]);
+}
+
+- (void)testConfiguredPeerLinksRenderInSingleSurfaceShell {
+    self.config.peerLinks = @[
+        @{@"displayName": @"PLC", @"url": @"http://127.0.0.1:2592/admin"},
+        @{@"displayName": @"PDS", @"url": @"http://127.0.0.1:2590/admin"},
+    ];
+    GZAdminUIHost *relayHost = [[GZAdminUIHost alloc] initWithConfiguration:self.config
+                                                                       packs:@[GZRelayAdminUIPack.class]];
+    NSString *token = [relayHost.authManager createSessionToken];
+    ATProtoHttpRequest *request = [self createRequestWithMethod:@"GET"
+                                                           path:@"/admin"
+                                                    sessionToken:token
+                                                       jsonBody:nil];
+    ATProtoHttpResponse *response = [relayHost dispatchRequestForTesting:request];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.bodyString containsString:@"admin-peer-switcher"]);
+    XCTAssertTrue([response.bodyString containsString:@"href=\"http://127.0.0.1:2592/admin\""]);
+    XCTAssertTrue([response.bodyString containsString:@">PLC</a>"]);
+    XCTAssertTrue([response.bodyString containsString:@"href=\"http://127.0.0.1:2590/admin\""]);
+    XCTAssertFalse([response.bodyString containsString:@"No peer UIs configured."]);
 }
 
 - (void)testDeleteAccountRoute {
@@ -741,7 +758,6 @@
     NSString *token = [self loginAndReturnSessionToken];
 
     NSArray<NSDictionary *> *cases = @[
-        @{@"path": @"/admin/partials/overview", @"call": @"fetchServiceOverview"},
         @{@"path": @"/admin/partials/sessions?did=did:plc:alice", @"call": @"fetchActiveSessionsForDID:"},
         @{@"path": @"/admin/partials/app-passwords?did=did:plc:alice", @"call": @"fetchAppPasswordsForDID:"},
         @{@"path": @"/admin/partials/ozone-reports?cursor=cursor-a", @"call": @"fetchModerationReportsWithCursor:limit:"},
@@ -778,49 +794,17 @@
     XCTAssertTrue([response.bodyString containsString:@"Conversation locked"]);
 }
 
-- (void)testConnectionsUpdateActionAcceptsJSONAndRerendersMatchingInputIDs {
-    NSString *token = [self loginAndReturnSessionToken];
-    NSDictionary *body = @{
-        @"pdsURL": @"http://pds.example",
-        @"pdsToken": @"pds-token",
-        @"plcURL": @"http://plc.example",
-        @"plcToken": @"plc-token",
-        @"relayURL": @"http://relay.example",
-        @"relayToken": @"relay-token",
-        @"appViewURL": @"http://appview.example",
-        @"appViewToken": @"appview-token",
-        @"chatURL": @"http://chat.example",
-        @"chatToken": @"chat-token"
-    };
-    ATProtoHttpRequest *request = [self createRequestWithMethod:@"POST"
-                                                    path:@"/admin/actions/update-connections"
-                                             sessionToken:token
-                                                jsonBody:body];
-    ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
-
-    XCTAssertEqual(response.statusCode, 200);
-    XCTAssertEqualObjects(self.config.appViewBaseURL.absoluteString, @"http://appview.example");
-    XCTAssertEqualObjects(self.config.appViewAdminToken, @"appview-token");
-    XCTAssertTrue([response.bodyString containsString:@"Connections updated"]);
-    XCTAssertTrue([response.bodyString containsString:@"id=\"conn-appview-url\""]);
-    XCTAssertTrue([response.bodyString containsString:@"id=\"conn-appview-token\""]);
-    XCTAssertTrue([response.bodyString containsString:@"data-ui-action=\"test-connection\""]);
-    XCTAssertTrue([response.bodyString containsString:@"data-ui-service=\"appview\""]);
-}
-
 - (void)testAuthenticatedAdminMutationRejectsMissingCSRFToken {
     NSString *token = [self loginAndReturnSessionToken];
-    NSString *originalPDSURL = self.config.pdsBaseURL.absoluteString;
     ATProtoHttpRequest *request = [self createRequestWithoutCSRFWithMethod:@"POST"
-                                                               path:@"/admin/actions/update-connections"
+                                                               path:@"/admin/actions/disable-invites"
                                                         sessionToken:token
-                                                           jsonBody:@{@"pdsURL": @"http://untrusted.example"}];
+                                                           jsonBody:@{@"account": @"did:plc:untrusted"}];
 
     ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
     XCTAssertEqual(response.statusCode, 403);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_csrf_token");
-    XCTAssertEqualObjects(self.config.pdsBaseURL.absoluteString, originalPDSURL);
 }
 
 - (void)testLogoutRequiresSessionAndCSRFValidation {

@@ -25,7 +25,6 @@ const BINARIES = [
   "syrena",
   "mikrus",
   "beskid",
-  "garazyk-ui",
   "jelcz",
   "syrena-chat",
   "germ",
@@ -215,7 +214,7 @@ async function buildMode() {
       await Deno.chmod(join(binDir, binary), 0o755);
     }
 
-    console.log("[stage] Copying UI assets for garazyk-ui...");
+    console.log("[stage] Copying Admin UI assets...");
     const assetsDir = join(binDir, "Assets");
     await Deno.mkdir(assetsDir, { recursive: true });
     await runDocker("cp", [

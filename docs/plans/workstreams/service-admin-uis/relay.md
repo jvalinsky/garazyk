@@ -19,7 +19,7 @@ state, crawl state, repository count, events, cursors, and reconnect attempts
 from that view. `zuk` runs the pack on a password-gated, loopback-default
 `GZAdminUIHost` listener (concurrency 8), while the protocol/firehose listener
 keeps only its read-only relay monitoring routes. The same pack remains in
-`garazyk-ui` as a read-only compatibility surface until M5.
+the former monolithic admin UI as a read-only compatibility surface until M5.
 
 `RELAY_ADMIN_PASSWORD_FILE` is loaded through a systemd credential in
 `nixos/modules/zuk.nix`; failures are redacted and neither the password nor its

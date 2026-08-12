@@ -107,8 +107,9 @@ Run targeted UI checks after changes:
 scripts/test/check_ui_design_system.sh
 ```
 
-The Admin UI is served by `garazyk-ui`, not `kaszlak`, so static serving and
-page load are covered against the real binary in a real browser:
+The Admin UI is embedded in each service binary (PDS: `kaszlak` on
+`:2590`). Static serving and page load are covered against the real binary in
+a real browser:
 
 ```bash
 deno run -A scripts/admin_ui_browser_smoke_test.ts

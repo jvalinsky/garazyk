@@ -330,7 +330,7 @@
  @test testUnscopedManagerKeepsLegacyCookieNames
 
  @abstract Verify that a manager built without an identifier keeps the pre-existing names,
- so garazyk-ui and its clients are unaffected.
+ so compatibility consumers are unaffected.
  */
 - (void)testUnscopedManagerKeepsLegacyCookieNames {
     XCTAssertNil(self.authManager.serviceIdentifier);

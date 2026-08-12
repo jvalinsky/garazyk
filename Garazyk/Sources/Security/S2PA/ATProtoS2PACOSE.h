@@ -73,8 +73,9 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAErrorCode) {
 /**
  Verifies an attached ES256K COSE_Sign1 message against a secp256k1 public key.
 
- No X.509 chain or trust anchor is consulted. Identity binding is an explicit
- responsibility of the caller until the S2PA certificate slice is added.
+ No X.509 chain or trust anchor is consulted. Pair with
+ `ATProtoS2PALeafCertificate` for the self-signed DID-bound X.509 leaf; this
+ type still does not consult trust anchors.
  */
 + (BOOL)verifyEnvelope:(NSData *)envelope
          withPublicKey:(NSData *)publicKey

@@ -76,7 +76,7 @@ Priority decomposition targets:
   into 11 route categories (+PDSRoutes, +AppViewRoutes, +RelayRoutes,
   +PLCRoutes, +DataExplorerRoutes, +LabRoutes, +OzoneRoutes,
   +SecurityRoutes, +ChatRoutes, +VideoRoutes, +MSTRoutes), core file
-  ~1840 → ~900 lines (`6ecef339`). `garazyk-ui`/`AllTests` build clean
+  ~1840 → ~900 lines (`6ecef339`). the former monolithic admin UI/`AllTests` build clean
   and `UIServerRuntimeTests` passes 23/23. Codemod scripts removed.
   Browser smoke and Linux GNUstep gate verified clean.
 - Migration manager — covered by phase 11 database decomposition.
@@ -98,7 +98,7 @@ For each binary:
   checks;
 - smoke `--help` plus one real invocation on macOS and Linux.
 
-`garazyk-ui` is ported and verified across macOS and GNUstep/Linux (2026-07-19): its seven-case executable suite passes natively, `announceSignals:NO` and `GZCrashReporter` maintain its silent signal and `/tmp/garazyk-ui-crash.log` diagnostic contract, and the `garazyk-gnustep` Docker image confirms clean `--help` / `serve --help` execution inside Linux.
+the former monolithic admin UI is ported and verified across macOS and GNUstep/Linux (2026-07-19): its seven-case executable suite passes natively, `announceSignals:NO` and `GZCrashReporter` maintain its silent signal and `/tmp/the former monolithic admin UI-crash.log` diagnostic contract, and the `garazyk-gnustep` Docker image confirms clean `--help` / `serve --help` execution inside Linux.
 
 All remaining binaries (`jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`) are now ported and verified (2026-07-19): each binary has an independent characterization suite (`JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) verified natively and across Linux/GNUstep, preserving specific option grammars, signal handling, and crash diagnostic logs (`/tmp/<binary>-crash.log`). All ports are committed one binary per commit.
 

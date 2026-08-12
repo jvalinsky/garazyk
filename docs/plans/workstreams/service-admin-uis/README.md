@@ -29,7 +29,7 @@ moving every surface onto the shared `ATProtoAdminUI` host.
 | Video | `jelcz` | Uploads, transcoding, thumbnails and HLS | Embedded pack with real-time job counters, full overview dashboard, NixOS module + deploy example | [Video](video.md) |
 | PDS | `kaszlak` | Accounts, repositories, blobs, moderation and labs | Embedded listener + six packs on `main` (`bbc84dd4`); crimson `ui.garazyk.xyz` cutover; M4 hardening still open | [PDS](pds.md) |
 
-`garazyk-ui` is a compatibility host to retire under workstream 11 M5, not a
+the former monolithic admin UI is a compatibility host to retire under workstream 11 M5, not a
 service and therefore has no service brief. Scenario Dashboard and Skylab are
 operator products rather than ATProto service binaries and remain out of this
 program.
@@ -108,7 +108,7 @@ views for PDS, Chat, and Germ.
 5. **Packaging:** expose admin bind/port and password-file options in the
    relevant NixOS module/container manifest. Defaults remain loopback and off
    without a password.
-6. **Compatibility:** serve the same pack from `garazyk-ui` until M5, then
+6. **Compatibility:** serve the same pack from the former monolithic admin UI until M5, then
    remove compatibility routes and fleet-wide credentials.
 
 ## Dependency order
@@ -129,7 +129,7 @@ ATProtoAdminUI extraction and gates
   -> Chat -> Germ
   -> Video
   -> PDS
-  -> garazyk-ui retirement
+  -> the former monolithic admin UI retirement
 ```
 
 Parallel work is allowed only after the PLC acceptance gate, in separate
@@ -153,7 +153,7 @@ mailbox or conversation data.
 - NixOS/container smoke tests prove secret-file loading, default loopback bind,
   disabled-without-password behavior, login, one read, one mutation rejection,
   and clean shutdown for every packaged service.
-- `garazyk-ui` and `GARAZYK_UI_*` are removed only after every individual brief
+- the former monolithic admin UI and `GARAZYK_ADMIN_UI_*` are removed only after every individual brief
   meets its acceptance gate.
 
 ## Rollback rule

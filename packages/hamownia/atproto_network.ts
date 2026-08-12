@@ -320,14 +320,14 @@ export async function startLocalNetwork(
           throw new Error("AppView failed to start within 90s");
         }
         const uiOk = await waitForService(
-          "local-ui",
+          "local-pds",
           ctx.composeProject,
           composeFiles[0],
           60,
           sharedWatcher,
         );
         if (!uiOk) {
-          throw new Error("garazyk-ui failed to start within 60s");
+          throw new Error("PDS admin UI failed to start within 60s");
         }
         if (options.withPds2) {
           await waitForService(

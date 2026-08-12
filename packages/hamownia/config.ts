@@ -19,7 +19,7 @@ export interface WebClientConfig {
   /** Git ref used by the browser client build. */
   ref: string;
   /** Build preset name used by the web client pipeline. */
-  buildPreset: "garazyk-ui" | "social-app" | "witchsky";
+  buildPreset: "social-app" | "witchsky";
   /** Command used to serve the browser client. */
   serveCommand: string[];
   /** Public browser URL. */
@@ -139,7 +139,8 @@ export function createScenarioConfig(
       DEFAULT_ADMIN_PASSWORD,
     uiAdminPassword: options.uiAdminPassword ??
       Deno.env.get("UI_ADMIN_PASSWORD") ??
-      Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
+      Deno.env.get("PDS_ADMIN_UI_PASSWORD") ??
+      Deno.env.get("PDS_ADMIN_PASSWORD") ??
       DEFAULT_ADMIN_PASSWORD,
     serviceUrls: {
       ...resolvedTopology.serviceUrls,

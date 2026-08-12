@@ -188,7 +188,6 @@ export async function stopStaleHostProcesses(
     const ports = neededPorts(opts);
     const knownBinaries = new Set([
       "kaszlak",
-      "garazyk-ui",
       "campagnola",
       "zuk",
       "syrena",

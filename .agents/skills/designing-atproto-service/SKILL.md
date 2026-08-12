@@ -5,7 +5,7 @@ description: "Guide and scaffold a new AT Protocol service binary in Garazyk. Co
 
 # Designing an AT Protocol Service
 
-Workflow and scaffolding for adding a new service binary to Garazyk (alongside kaszlak, syrena, zuk, campagnola, jelcz, garazyk-ui, syrena-chat, germ).
+Workflow and scaffolding for adding a new service binary to Garazyk (alongside kaszlak, syrena, zuk, campagnola, jelcz, syrena-chat, germ).
 
 ## When to Use
 
@@ -59,7 +59,9 @@ The `main.m` is a thin wrapper that:
 | Video | `jelcz` | (inline in main.m) | None | None |
 | Chat | `syrena-chat` | (inline in main.m) | None | None |
 | E2EE | `germ` | (inline in main.m) | None | None |
-| Admin UI | `garazyk-ui` | `UIServerRuntime` | None | None |
+
+Admin UI is embedded per service via `ATProtoAdminUI` / `GZAdminUIHost` (see
+`.agents/skills/garazyk-admin-ui`), not a separate binary.
 
 ## Step-by-Step Checklist
 

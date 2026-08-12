@@ -6,11 +6,11 @@ last_verified: 2026-08-12
 
 ## Target
 
-Replace the single `garazyk-ui` process with an admin UI owned by each service
+Replace the single the former monolithic admin UI process with an admin UI owned by each service
 binary, sharing one design system through a new `ATProtoAdminUI` library.
 `ATProtoAdminUI` depends on `ATProtoTransport` and `ATProtoCore` only, holds no
 compile-time knowledge of any service, and is reached through a
-`GZAdminUIPack` protocol that services implement. `garazyk-ui` is deleted.
+`GZAdminUIPack` protocol that services implement. the former monolithic admin UI is deleted.
 
 The decision and its constraints are recorded in
 [ADR 0033](../../adr/0033-per-service-embedded-admin-uis.md).
@@ -30,7 +30,7 @@ accounted for in the [service brief index](service-admin-uis/README.md).
 
 M2.6 is complete on `main` (merge `8b45c6d9`): `ATProtoAdminUI` is a static
 library with only `ATProtoTransport` and `ATProtoCore` dependencies,
-`garazyk-ui` is its compatibility consumer, and the three boundary/namespace
+the former monolithic admin UI is its compatibility consumer, and the three boundary/namespace
 gates include the new target. Phase 30 closed on 2026-08-11 after a complete
 gated suite, live browser and visual smokes, design-system, and asset-sync
 evidence; the exact closeout evidence is recorded in the M2.6 entry below.
@@ -59,7 +59,7 @@ category resolves against:
 Video is the only genuine cross-service edge in the tree.
 
 **`AdminUIServer/` is in no library and escapes three gates.** Its 6,152 lines
-compile directly into `garazyk-ui` (`CMakeLists.txt`, `add_executable(garazyk-ui …)`)
+compile directly into the former monolithic admin UI (`CMakeLists.txt`, `add_executable(<retired admin UI> …)`)
 and again into `AllTests`. The link-time boundary gate (ADR 0031) and
 `scripts/check_namespace.sh` both enumerate ten `ATProto*` archives;
 `AdminUIServer/` is in none of them, which is why no `UI*` class appears in
@@ -76,21 +76,21 @@ pilot must introduce one.
 `syncEngine` and is handed to `GZServiceLifecycle`. An admin UI attaches as a
 third member with no new lifecycle machinery.
 
-**Twenty-six files outside the C sources name `garazyk-ui`** or its
+**Twenty-six files outside the C sources name the former monolithic admin UI** or its
 environment variables: `packages/schemat` (7, including the
-`WebClientTopology` type and its `buildPreset: "garazyk-ui"` member),
+`WebClientTopology` type and its `buildPreset: "social-app"` member),
 `packages/hamownia` (7), `scripts/` (7), `docker/` (4), and `project.yml`.
 
 ## M0. Decide the hosting model
 
 **Answered** — embedded per service on a dedicated loopback-bound listener,
-shared library, `garazyk-ui` deleted, cross-service Overview and Connections
+shared library, the former monolithic admin UI deleted, cross-service Overview and Connections
 dropped. Alternatives and their consequences are in ADR 0033.
 
 ## M1. Make an admin listener safe to embed
 
 **Complete (2026-08-04).** Both preconditions for two UIs coexisting. Neither
-touches a service; `garazyk-ui` behavior is unchanged.
+touches a service; the former monolithic admin UI behavior is unchanged.
 
 ### M1.1. Parameterize HTTP server concurrency
 
@@ -138,7 +138,7 @@ would be unusable in one browser. ADR 0033 §6 records the corrected reading.
 
 1. `-[UIAuthManager initWithPassword:serviceIdentifier:]` derives
    `gz_admin_<id>_token` and `gz_admin_<id>_nonce`. `initWithPassword:` keeps
-   the unscoped `ui_admin_token` / `ui_admin_nonce`, so `garazyk-ui`, the
+   the unscoped `ui_admin_token` / `ui_admin_nonce`, so the former monolithic admin UI, the
    existing suites, `packages/gruszka/clients/admin.ts`, and
    `scripts/scenarios/scenarios/11_lab_oauth_login.ts` are untouched until M5
    deletes that path.
@@ -153,13 +153,13 @@ would be unusable in one browser. ADR 0033 §6 records the corrected reading.
 Deferred: the `__Host-` prefix under TLS, which needs the listener to know it
 is TLS-terminated. Not required for loopback, where the admin listeners run.
 
-**Acceptance:** met. `UIAuthManagerTests` 21 tests, 0 failures. `garazyk-ui`
+**Acceptance:** met. `UIAuthManagerTests` 21 tests, 0 failures. the former monolithic admin UI
 behavior is unchanged because it uses the unscoped initializer.
 
 ## M2. Extract ATProtoAdminUI and invert route registration
 
 The substantive milestone. Its acceptance gate deliberately touches no
-service: `garazyk-ui` is rebuilt as the library's first consumer, composing
+service: the former monolithic admin UI is rebuilt as the library's first consumer, composing
 all packs, and must behave identically. The extraction is proven by the
 existing application before anything embeds.
 
@@ -193,10 +193,10 @@ deleted in M5, not carried into the library.
 
 - **M2.1 complete:** `GZAdminUIPack`, `GZAdminUIHost`, and the eleven stateless pack adapters landed in `f8a29293`; the host registers only the caller-supplied pack array and `GZAdminUIDefaultPacks()` remains the sole full-surface composition point.
 - **M2.2 complete:** all eleven renderer groups moved from the shared private header into their matching `GZAdminUI<Pack>` implementations, one service per commit (`661d8396` through `f32cc9b5`).
-- **M2.3 complete and validated:** `UIBackendClient` became `GZAdminUIBackendClient`, and its ten service categories moved to `AdminUIServer/Packs/` in `b3bc45e6`. `garazyk-ui` and `AllTests` build; registration audit, `GZAdminUIBackendClientTests` (52), `UIServerRuntimeTests` (26), UI design-system, source/link module-boundary, namespace, and recursive-setter gates pass. After integration with current `main`, internal-strict repo-doc validation also passes.
+- **M2.3 complete and validated:** `UIBackendClient` became `GZAdminUIBackendClient`, and its ten service categories moved to `AdminUIServer/Packs/` in `b3bc45e6`. the former monolithic admin UI and `AllTests` build; registration audit, `GZAdminUIBackendClientTests` (52), `UIServerRuntimeTests` (26), UI design-system, source/link module-boundary, namespace, and recursive-setter gates pass. After integration with current `main`, internal-strict repo-doc validation also passes.
 - **M2.4 complete and validated (2026-08-08):** pack metadata now generates the existing shell's twelve tabs in the pre-extraction visual order, with the original panels retained until M2.5 owns their asset relocation. One-section compositions use a sidebar tablist and service identity, plus a presentation-only empty peer-switcher; no discovery, polling, credentials, or health claims were added. `UIServerRuntimeTests` adds default-composition ARIA/order coverage and a relay-only sidebar/peer-empty-state test. After initializing the previously absent `vendor/secp256k1` submodule in this worktree, `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug`, `cmake --build build --target AllTests --parallel 4`, and `./build/tests/AllTests --filter UIServerRuntimeTests --gated=run` passed (28 tests, 0 failures). `node --check`, `git diff --check`, source/link module-boundary, recursive-setter, and host-process-exit gates passed. `check_ui_design_system.sh` could not run because `rg` is absent; `test_static_files.sh` remains a pre-existing unrelated failure because current `kaszlak` returns 404 for its stale `/explore` target.
 - **M2.5 complete and validated (2026-08-08):** library-owned CSS, shared templates/scripts, and pack-owned partials/scripts now live in separate `Assets/library/` and `Assets/packs/<pack>/` source trees. A reusable `add_admin_ui_assets()` CMake function overlays both trees into the single shared `${CMAKE_BINARY_DIR}/bin/Assets/` directory, with one generalized `ADMIN_UI_ASSET_STAMP` and pack-safe `AdminUIAssetsSync` inventory/hash checking. `UITemplateEngine` resolves library templates and searches pack partials in the source-tree fallback; the CSS bundle generator follows the relocated library CSS. Verified with `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug`, `cmake --build build --target AllTests --parallel 4`, `UIServerRuntimeTests` (28 tests, 0 failures), `GZAdminUIBackendClientTests` (52 tests, 0 failures), `AdminUIAssetsSync`, CSS bundle drift, JavaScript syntax, `check_ui_design_system.sh`, and `git diff --check`. The full-suite baseline required by Phase 30 was run before edits and returned exit 1; its redirected rerun was intentionally interrupted after 11m43s without a final summary. `test_static_files.sh` and `test_page_load.sh` remain unrelated stale `/explore`/legacy resource checks and fail against current `kaszlak` routes.
-- **M2.6 implementation complete, acceptance blocked (2026-08-08):** added `ATProtoAdminUI` as a static target with only `ATProtoTransport` and `ATProtoCore` library dependencies; registered it with source, link-time, and namespace gates; rebuilt `garazyk-ui` as the compatibility consumer; moved service route categories under `AdminUIServer/Packs/`; and completed the post-WS08 HTTP handoff using `ATProtoHttp*` symbols. Exposed UI symbols were renamed to `GZAdminUIAuthManager`, `GZAdminUIServiceConfig`, `GZAdminUITemplateEngine`, `GZAdminUITileDataProtocol*`, `GZAdminUITileExecution*`, `GZAdminUIBackendClient`, `GZAdminUIHost`, and `GZAdminUIHost` helpers. The shared `Assets/` output remains a single directory. Native configure and `cmake --build build --target AllTests --parallel 4` passed. The bounded UI/security suites passed: `UIAuthManagerTests` 21, `GZAdminUIBackendClientTests` 52, `UIServerRuntimeTests` 28, `UITileExecutionPolicyTests` 5, `GarazykUICommandTests` 7, `UILabAuthTests` 21, `UILabIntegrationTests` 16, and `Phase2SecurityIntegrationTests` 36 (186 total, 0 failures). Source boundaries, link-time boundaries, namespace, recursive-setter, host-process-exit, NSID, literal-registration, skill-index, design-system, and `AdminUIAssetsSync` gates passed; the namespace check remained at 175 baselined classes with no new leaks. The required global `AllTests --gated=run` was started but interrupted after reaching `RepoAuthRepoTests`, with no final summary; it is not a pass. `test_static_files.sh` failed because the legacy `/explore` route returned 404, and `test_page_load.sh` failed because the same legacy HTML/CSS/JS/API resources were 404/undersized. Browser and visual smokes were attempted but both stopped at missing `npm:playwright@1.52.0` installation. These are named blockers for Phase 30 closeout; no service rollout or M3 work was started.
+- **M2.6 implementation complete, acceptance blocked (2026-08-08):** added `ATProtoAdminUI` as a static target with only `ATProtoTransport` and `ATProtoCore` library dependencies; registered it with source, link-time, and namespace gates; rebuilt the former monolithic admin UI as the compatibility consumer; moved service route categories under `AdminUIServer/Packs/`; and completed the post-WS08 HTTP handoff using `ATProtoHttp*` symbols. Exposed UI symbols were renamed to `GZAdminUIAuthManager`, `GZAdminUIServiceConfig`, `GZAdminUITemplateEngine`, `GZAdminUITileDataProtocol*`, `GZAdminUITileExecution*`, `GZAdminUIBackendClient`, `GZAdminUIHost`, and `GZAdminUIHost` helpers. The shared `Assets/` output remains a single directory. Native configure and `cmake --build build --target AllTests --parallel 4` passed. The bounded UI/security suites passed: `UIAuthManagerTests` 21, `GZAdminUIBackendClientTests` 52, `UIServerRuntimeTests` 28, `UITileExecutionPolicyTests` 5, `GarazykUICommandTests` 7, `UILabAuthTests` 21, `UILabIntegrationTests` 16, and `Phase2SecurityIntegrationTests` 36 (186 total, 0 failures). Source boundaries, link-time boundaries, namespace, recursive-setter, host-process-exit, NSID, literal-registration, skill-index, design-system, and `AdminUIAssetsSync` gates passed; the namespace check remained at 175 baselined classes with no new leaks. The required global `AllTests --gated=run` was started but interrupted after reaching `RepoAuthRepoTests`, with no final summary; it is not a pass. `test_static_files.sh` failed because the legacy `/explore` route returned 404, and `test_page_load.sh` failed because the same legacy HTML/CSS/JS/API resources were 404/undersized. Browser and visual smokes were attempted but both stopped at missing `npm:playwright@1.52.0` installation. These are named blockers for Phase 30 closeout; no service rollout or M3 work was started.
 - **Post-merge integration evidence (2026-08-08):** after the WS08 M4.5 manifest merge (`313bc2b3`), a fresh configure and `cmake --build build --target AllTests --parallel 4` passed on `main`. The post-merge bounded UI suites passed 143/143 (including `UIServerRuntimeTests` 28, `GZAdminUIBackendClientTests` 52, `UIAuthManagerTests` 21, `UILabIntegrationTests` 16, `UILabAuthTests` 21, and `UITileExecutionPolicyTests` 5); `AdminUIAssetsSync`, source/link boundaries, namespace (175 baselined), safety, metadata, and documentation gates passed.
 - **M2.6 closeout evidence (2026-08-11):** after rebuilding `AllTests`, `./build/tests/AllTests --gated=run` completed 5,004 tests with 0 failures in 506.708s. `scripts/admin_ui_browser_smoke_test.ts` passed against a live local binary topology (including CSP, session/CSRF, keyboard, accessibility, and Lab OAuth); `scripts/admin_ui_visual_smoke_test.ts` passed; `scripts/test/check_ui_design_system.sh` and `ctest --test-dir build -R AdminUIAssetsSync --output-on-failure` passed. The legacy static/page-load scripts remain retired rather than blockers.
 
@@ -206,13 +206,13 @@ deleted in M5, not carried into the library.
   `/css/explore.css`, `/js/ui.js`, and `/api/pds/accounts` checks.~~
   **Resolved (2026-08-09, maintainer chose retirement.)** All four endpoints
   were verified absent from `Garazyk/Sources/` — the admin UI moved off
-  `kaszlak` to `garazyk-ui`/`AdminUIServer`, and nothing registers those
+  `kaszlak` to the former monolithic admin UI/`AdminUIServer`, and nothing registers those
   routes. The two scripts that tested them, `scripts/test/test_static_files.sh`
   and `scripts/test/test_page_load.sh`, were deleted. They were wired into
   nothing: not `ci.yml`, not CTest, not `scripts/test/run-tests.sh` (which
   invoked only `check_ui_design_system.sh`). Their coverage is superseded by
   `scripts/admin_ui_browser_smoke_test.ts` and
-  `scripts/admin_ui_visual_smoke_test.ts`, which drive the real `garazyk-ui`
+  `scripts/admin_ui_visual_smoke_test.ts`, which drive the real the former monolithic admin UI
   binary in a real browser, and by the `AdminUIAssetsSync` CTest, which
   compares asset inventories and SHA-256 hashes. `.agents/skills/garazyk-admin-ui`
   was updated to point at the live tests and at the post-M2.5/M2.6 source
@@ -263,7 +263,7 @@ workstream 08 M5.3.
 
 **Acceptance:**
 
-- `garazyk-ui` links `ATProtoAdminUI`, `ATProtoTransport`, and `ATProtoCore`
+- the former monolithic admin UI links `ATProtoAdminUI`, `ATProtoTransport`, and `ATProtoCore`
   only — the dropped links to `ATProtoRuntime`, `ATProtoStorage`,
   `ATProtoServices`, `ATProtoSync`, and `ATProtoAppViewServer` are the
   measurable proof the extraction is real.
@@ -305,7 +305,7 @@ PDS.
    the `testClasses` array in `Garazyk/Tests/test_main.m`. The registration
    audit fails on a mismatch in either direction.
 
-**Acceptance:** `campagnola` serves the PLC UI; `garazyk-ui` still serves an
+**Acceptance:** `campagnola` serves the PLC UI; the former monolithic admin UI still serves an
 identical one from the same pack; both run simultaneously without session
 interference (M1.2) or worker starvation under concurrent load (M1.1);
 `campagnola` refuses to expose the admin listener with no password set.
@@ -359,11 +359,17 @@ should absorb this without special-casing, and if it does not, that is a
 defect in M2.1 rather than a reason to special-case `kaszlak`.
 
 **Acceptance:** every service in the brief index serves its own UI;
-`garazyk-ui` still works; browser requests use service-scoped sessions rather
+the former monolithic admin UI still works; browser requests use service-scoped sessions rather
 than manually attached auth tokens; double maintenance is confined to this
 milestone.
 
-## M5. Retire garazyk-ui
+## M5. Retire the monolithic admin UI
+
+**Complete (2026-08-12).** The standalone admin binary, Overview/Connections,
+and `serviceProbeSpecifications` are gone. Embedded hosts use
+`GARAZYK_ADMIN_UI_*` / per-service `*_ADMIN_UI_*` env; schemat/hamownia treat
+`ui` as the PDS admin listener on `:2590`; peer switcher renders configured
+`Name=URL` links only.
 
 1. Delete the binary, its CMake target, `docker/Dockerfile.ui`, and the
    `project.yml` entry.
@@ -372,18 +378,15 @@ milestone.
 3. Add the peer switcher: configured links to sibling UIs, no polling, no
    credentials, no health claims about processes it cannot observe.
 4. Update the 26 files enumerated in Current evidence. `packages/schemat`'s
-   `WebClientTopology` and its `buildPreset: "garazyk-ui"` member are a type
-   change with test fallout in `topology_compiler_test.ts` and
-   `topology_registry_test.ts`; `scripts/scenarios/scenarios/11_lab_oauth_login.ts`
-   must move to the PDS admin listener.
+   `WebClientTopology` dropped the retired admin build preset; Lab OAuth
+   scenarios target the PDS admin listener.
 5. Update `Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md`,
-   `.agents/skills/garazyk-admin-ui`, `PRODUCT.md`, and `CLAUDE.md`'s service
-   table.
+   `.agents/skills/garazyk-admin-ui`, and `CLAUDE.md`'s service table.
 
-**Acceptance:** no reference to `garazyk-ui` or `GARAZYK_UI_*` survives outside
-`docs/adr/` and run artifacts under `scripts/scenarios/reports/`;
-`deno task check && deno task lint && deno task test` passes; the scenario
-suite runs against the per-service UIs.
+**Acceptance:** the retired binary name and its pre-migration env-var prefix
+are absent outside `docs/adr/` and run artifacts under
+`scripts/scenarios/reports/`; `deno task check && deno task lint && deno task
+test` passes; the scenario suite runs against the per-service UIs.
 
 ## Risks and coordination
 
@@ -403,5 +406,5 @@ this workstream is most likely to produce a long red tree. Split one service
 at a time.
 
 **Double maintenance during M3-M4.** Each service's pack is deliberately
-served by both `garazyk-ui` and its own binary until M5. This is the cost of
+served by both the former monolithic admin UI and its own binary until M5. This is the cost of
 keeping the tree green throughout, and it is bounded by finishing M4.

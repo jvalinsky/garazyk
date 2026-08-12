@@ -57,7 +57,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const uiUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(/\/$/, "");
-  const adminPassword = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
+  const adminPassword = Deno.env.get("PDS_ADMIN_UI_PASSWORD") ??
     DEFAULT_ADMIN_PASSWORD;
 
   await timedCall(
@@ -110,7 +110,7 @@ export async function run(): Promise<ScenarioResult> {
       ) {
         result.stepSkipped(
           "Lab client metadata valid",
-          `garazyk-ui returned non-object JSON (${typeof metadata}), skipping OAuth metadata checks`,
+          `admin UI returned non-object JSON (${typeof metadata}), skipping OAuth metadata checks`,
         );
         return;
       }

@@ -1,5 +1,5 @@
 /**
- * Focused live-browser visual accessibility smoke for the standalone Admin UI.
+ * Focused live-browser visual accessibility smoke for the embedded PDS Admin UI.
  *
  * Usage: deno run -A scripts/admin_ui_visual_smoke_test.ts
  */
@@ -31,16 +31,23 @@ async function reservePort(): Promise<number> {
 
 async function main(): Promise<void> {
   const root = Deno.cwd();
-  const binary = `${root}/build/bin/garazyk-ui`;
+  const binary = `${root}/build/bin/kaszlak`;
   const assets = `${root}/build/bin/Assets`;
-  const port = await reservePort();
-  const baseUrl = `http://${HOST}:${port}`;
+  const protocolPort = await reservePort();
+  const uiPort = await reservePort();
+  const baseUrl = `http://${HOST}:${uiPort}`;
+  const dataDir = await Deno.makeTempDir({ prefix: "pds-admin-visual-" });
   const server = new Deno.Command(binary, {
-    args: ["serve", "--host", HOST, "--port", String(port)],
+    args: ["serve", "--host", HOST, "--port", String(protocolPort)],
     env: {
       ...Deno.env.toObject(),
-      GARAZYK_UI_ADMIN_PASSWORD: PASSWORD,
-      GARAZYK_UI_ASSETS_DIR: assets,
+      PDS_ADMIN_PASSWORD: PASSWORD,
+      PDS_ADMIN_UI_HOST: HOST,
+      PDS_ADMIN_UI_PORT: String(uiPort),
+      PDS_ADMIN_UI_PUBLIC_URL: `${baseUrl}/admin`,
+      GARAZYK_ADMIN_UI_ASSETS_DIR: assets,
+      PDS_DATA_DIR: dataDir,
+      PDS_USE_KEYCHAIN: "false",
     },
     stdout: "null",
     stderr: "null",
@@ -135,6 +142,11 @@ async function main(): Promise<void> {
       server.kill();
     } catch {
       // The server has already exited.
+    }
+    try {
+      await Deno.remove(dataDir, { recursive: true });
+    } catch {
+      // best-effort cleanup
     }
   }
 }

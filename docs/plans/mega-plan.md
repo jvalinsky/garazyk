@@ -410,7 +410,7 @@ scenario 93/94 runtime passes.
    `registerMethod:@"..."` literals in production source, with six focused
    tests and a read-only CI scan; generator output remains in sync for 419
    endpoints.
-4. **Complete (2026-07-19):** `GZCommandLineOptions` and `GZServiceLifecycle` adoption is complete across all remaining service binaries (`garazyk-ui`, `jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`). Each binary has a dedicated characterization suite (`GarazykUICommandTests`, `JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) verified natively and inside GNUstep/Linux, preserving signal handling and `/tmp/<binary>-crash.log` diagnostic contracts. All ports are committed one binary per commit.
+4. **Complete (2026-07-19):** `GZCommandLineOptions` and `GZServiceLifecycle` adoption is complete across all remaining service binaries (the former monolithic admin UI, `jelcz`, `syrena-chat`, `germ`, `kaszlak`, `campagnola`, `zuk`). Each binary has a dedicated characterization suite (`GarazykUICommandTests`, `JelczCommandTests`, `SyrenaChatCommandTests`, `GermCommandTests`, `KaszlakCommandTests`, `CampagnolaCommandTests`, `ZukCommandTests`) verified natively and inside GNUstep/Linux, preserving signal handling and `/tmp/<binary>-crash.log` diagnostic contracts. All ports are committed one binary per commit.
 
 Exit gate: all three repositories pass format, lint, check, and tests; Garazyk
 uses released dependencies and retains a launcher smoke test. This gate is
@@ -441,7 +441,7 @@ remaining program does not depend on items 1-2.
 4. **Complete (2026-07-22):** Admin UI accessibility, CSS generation, and
    browser-module splits. The real-browser visual smoke proves 200%-zoom
    reflow, 44px targets, keyboard-visible focus, and reduced-motion behavior
-   against the built `garazyk-ui` binary; the asset synchronization CTest
+   against the built the former monolithic admin UI binary; the asset synchronization CTest
    prevents stale served UI files.
 5. **Complete (2026-07-22):** Dedicated `#atproto_space` signing-key rotation
    and existing-DID migration path (workstream 06, P6.2). Purpose-isolated
@@ -584,33 +584,30 @@ for full traceability; mirrored in the
     closing that row for real). A macOS full regression run passes 4,955 tests;
     module boundary and recursive-setter gates are clean. Bounded RASL/BDASL
     and MASL slices are now implemented and merged to `main` (`da56aa18` and
-    `4bfd6a8a`) with focused verification; the remaining PFP
-    producer/comparator/Ozone, MUXL, S2PA, and Web Tiles integration remainders
-    remain open. MUXL's complete deterministic MP4
-    muxer remains the largest single item in the workstream. GNUstep/Linux
+    `4bfd6a8a`) with focused verification; remaining open slices are the PFP
+    producer/Ozone wiring, S2PA claim/JUMBF embedding, and Web Tiles host
+    remainders. PDQ Hamming comparison; MUXL fragment/fMP4/flat; and S2PA
+    COSE + self-signed leaf certificate landed 2026-08-12. MUXL
+    playback/transcoder wiring and `elst` presentation-offset remain open.
+    GNUstep/Linux
     full-suite evidence remains open; the compile blocker (an XCTest
     object-pointer-boxing difference in `PDSAdminServiceTests.m` /
     `PDSBlobAuditHandlerTests.m`). The GNUstep-side UTF-8 and shared-fixture
     evidence remains governed by workstreams 08 and 10; no full GNUstep gate
     is claimed by this execution.
 
-13. **Open (updated 2026-08-12):** dissolve the single `garazyk-ui` process into
-    an admin UI owned by each service binary. Complete
-    [workstream 11](workstreams/11-per-service-admin-uis.md). One process
-    currently holds admin credentials for the PDS, PLC, relay, AppView, chat,
-    and video services simultaneously; `Garazyk/Sources/AdminUIServer/` belongs
-    to no static library historically, so its classes escaped both the ADR 0031
-    link-time boundary gate and `scripts/check_namespace.sh` until M2 extracted
-    `ATProtoAdminUI`. Decision and constraints:
-    [ADR 0033](../adr/0033-per-service-embedded-admin-uis.md). M1 (per-instance
-    `HttpServer` concurrency, service-scoped session cookies) unblocks
-    embedding; M2 has been implemented and merged to `main` as
-    `ATProtoAdminUI`, validated by rebuilding `garazyk-ui` as its first
-    consumer before any service is touched. Phase 30 and the M3 PLC pilot are
-    complete with current full-suite and browser evidence. M4 is in progress:
-    Relay (`zuk`) and PDS (`kaszlak`, `bbc84dd4` password-gated embed + crimson
-    `ui.garazyk.xyz` cutover) have landed embeds; remaining briefs and M5
-    `garazyk-ui` retirement are still open. The governed
+13. **Complete for M5 (updated 2026-08-12); M4 briefs still open:** dissolve the
+    single monolithic admin UI process into an admin UI owned by each service
+    binary. Complete [workstream 11](workstreams/11-per-service-admin-uis.md).
+    One process previously held admin credentials for the PDS, PLC, relay,
+    AppView, chat, and video services simultaneously; `Garazyk/Sources/AdminUIServer/`
+    belonged to no static library historically, so its classes escaped both the
+    ADR 0031 link-time boundary gate and `scripts/check_namespace.sh` until M2
+    extracted `ATProtoAdminUI`. Decision and constraints:
+    [ADR 0033](../adr/0033-per-service-embedded-admin-uis.md). M1–M3 and M5 are
+    complete on `main` (standalone admin binary deleted; Overview/Connections
+    dropped; peer switcher + schemat/hamownia retarget). M4 remains in progress
+    for remaining service briefs after Relay and PDS embeds. The governed
     [per-service brief index](workstreams/service-admin-uis/README.md) adds
     cross-linked execution and acceptance plans for Relay, PLC, AppView,
     Mikrus, Beskid, Chat, Germ, Video, and PDS without creating a second

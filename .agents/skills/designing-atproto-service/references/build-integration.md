@@ -184,7 +184,7 @@ Copy the prebuild script from an existing target — they're all identical excep
 
 **Build stage** — add the target to the `cmake --build` line:
 ```dockerfile
-RUN cmake --build . --target kaszlak --target campagnola --target zuk --target syrena --target garazyk-ui --target jelcz --target syrena-chat --target germ --target <service-name> --parallel $(nproc)
+RUN cmake --build . --target kaszlak --target campagnola --target zuk --target syrena --target jelcz --target syrena-chat --target germ --target <service-name> --parallel $(nproc)
 ```
 
 **Runtime stage** — add COPY line:

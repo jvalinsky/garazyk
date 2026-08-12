@@ -84,6 +84,7 @@ set(ATPROTO_CORE_MANIFEST
   "Garazyk/Sources/Security/PDSLabelSigningKeyManager.m"
   "Garazyk/Sources/Security/PDSSecurityCompare.m"
   "Garazyk/Sources/Security/S2PA/ATProtoS2PACOSE.m"
+  "Garazyk/Sources/Security/S2PA/ATProtoS2PALeafCertificate.m"
   "Garazyk/Sources/Security/Space/PDSSpaceBlake3Dispatch.c"
   "Garazyk/Sources/Security/Space/PDSSpaceCommit.m"
   "Garazyk/Sources/Security/Space/PDSSpaceJWT.m"

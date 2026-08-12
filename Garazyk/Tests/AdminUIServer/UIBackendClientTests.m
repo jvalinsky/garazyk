@@ -222,12 +222,12 @@
 }
 
 /*!
- @test testFetchServiceOverviewMethodExists
+ @test testTestConnectionForServiceMethodExists
 
- @abstract Verify that fetchServiceOverview method exists.
+ @abstract Verify that the single-service connection probe method exists.
  */
-- (void)testFetchServiceOverviewMethodExists {
-    XCTAssertTrue([self.client respondsToSelector:@selector(fetchServiceOverview)]);
+- (void)testTestConnectionForServiceMethodExists {
+    XCTAssertTrue([self.client respondsToSelector:@selector(testConnectionForService:baseURL:adminToken:)]);
 }
 
 /*!
@@ -700,14 +700,16 @@
 
 - (void)testServiceConnectionProbeUsesServiceSpecificHealthEndpoint {
     GZAdminUIBackendClientStub *stub = [self stubClient];
+    NSURL *relayURL = [NSURL URLWithString:@"http://localhost:7002"];
+    NSURL *appViewURL = [NSURL URLWithString:@"http://localhost:3000"];
 
-    [stub testConnectionForService:@"relay"];
+    [stub testConnectionForService:@"relay" baseURL:relayURL adminToken:@"admin-token-relay"];
     NSDictionary *relayRequest = [self lastCapturedRequestFromStub:stub];
     XCTAssertEqualObjects(relayRequest[@"method"], @"GET");
     XCTAssertEqualObjects(relayRequest[@"url"], @"http://localhost:7002/api/relay/health");
     XCTAssertEqualObjects(relayRequest[@"token"], @"admin-token-relay");
 
-    [stub testConnectionForService:@"appview"];
+    [stub testConnectionForService:@"appview" baseURL:appViewURL adminToken:@"admin-token-appview"];
     NSDictionary *appViewRequest = [self lastCapturedRequestFromStub:stub];
     XCTAssertEqualObjects(appViewRequest[@"method"], @"GET");
     XCTAssertEqualObjects(appViewRequest[@"url"], @"http://localhost:3000/admin/ingest/health");

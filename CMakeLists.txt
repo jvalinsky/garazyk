@@ -339,6 +339,13 @@ if(NOT ZSTD_INCLUDE_DIR OR NOT ZSTD_LIBRARY)
   message(FATAL_ERROR "libzstd is required for HTTP Content-Encoding (install zstd / libzstd-dev)")
 endif()
 message(STATUS "Found zstd: ${ZSTD_LIBRARY}")
+if(NOT TARGET ZSTD::zstd)
+  add_library(ZSTD::zstd UNKNOWN IMPORTED)
+  set_target_properties(ZSTD::zstd PROPERTIES
+    IMPORTED_LOCATION "${ZSTD_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${ZSTD_INCLUDE_DIR}"
+  )
+endif()
 
 #=============================
 # secp256k1 Subproject
@@ -611,12 +618,33 @@ endforeach()
 
 target_link_libraries(ATProtoCore PUBLIC ${SECP256K1_LIBRARIES})
 target_link_libraries(ATProtoStorage PUBLIC ATProtoCore)
-target_link_libraries(ATProtoServices PUBLIC ATProtoStorage ATProtoCore ${SECP256K1_LIBRARIES} ${COREMEDIA} ${AVFOUNDATION})
+# Apple frameworks stay BUILD_INTERFACE-only. CMake's export path splits
+# "-framework Foo" into bare library names; GarazykConfig.cmake reattaches
+# relocatable framework flags for installed consumers.
+if(APPLE)
+  if(NOT CORESERVICES)
+    find_library(CORESERVICES CoreServices REQUIRED)
+  endif()
+  target_link_libraries(ATProtoServices PUBLIC
+    $<BUILD_INTERFACE:${COREMEDIA}>
+    $<BUILD_INTERFACE:${AVFOUNDATION}>)
+  target_link_libraries(ATProtoVideoService PUBLIC
+    $<BUILD_INTERFACE:${COREMEDIA}>
+    $<BUILD_INTERFACE:${AVFOUNDATION}>
+    $<BUILD_INTERFACE:${IMAGEIO}>
+    $<BUILD_INTERFACE:${CORESERVICES}>)
+  target_link_libraries(ATProtoMediaCore PUBLIC
+    $<BUILD_INTERFACE:${FOUNDATION}>)
+endif()
+target_link_libraries(ATProtoServices PUBLIC ATProtoStorage ATProtoCore ${SECP256K1_LIBRARIES})
 if(OpenSSL_FOUND)
   target_link_libraries(ATProtoServices PUBLIC OpenSSL::Crypto)
 endif()
-target_link_libraries(ATProtoTransport PUBLIC ATProtoCore ZLIB::ZLIB ${ZSTD_LIBRARY})
-target_include_directories(ATProtoTransport PUBLIC ${ZSTD_INCLUDE_DIR})
+target_link_libraries(ATProtoTransport PUBLIC ATProtoCore ZLIB::ZLIB
+  $<BUILD_INTERFACE:ZSTD::zstd>
+  $<INSTALL_INTERFACE:ZSTD::zstd>)
+target_include_directories(ATProtoTransport PUBLIC
+  $<BUILD_INTERFACE:${ZSTD_INCLUDE_DIR}>)
 target_link_libraries(ATProtoSync PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
 target_link_libraries(ATProtoRelayAdminUI PUBLIC ATProtoSync ATProtoAdminUI)
 target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoPLC ATProtoCore)
@@ -627,10 +655,6 @@ target_link_libraries(ATProtoPLC PUBLIC ATProtoStorage ATProtoAdminUI ATProtoTra
 target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService)
 target_link_libraries(ATProtoMediaCore PUBLIC ATProtoStorage ATProtoCore ATProtoTransport)
 target_link_libraries(ATProtoVideoService PUBLIC ATProtoMediaCore ATProtoStorage ATProtoCore ATProtoTransport ATProtoAdminUI)
-if(APPLE)
-  target_link_libraries(ATProtoVideoService PUBLIC ${COREMEDIA} ${AVFOUNDATION} ${IMAGEIO} ${CORESERVICES})
-  target_link_libraries(ATProtoMediaCore PUBLIC ${FOUNDATION})
-endif()
 
 # M6.1: build-tree aliases matching the installed Garazyk:: namespace.
 foreach(_gz_module_target ${PDS_MODULE_TARGETS})
@@ -1087,60 +1111,6 @@ set_target_properties(jelcz PROPERTIES
   LINK_FLAGS "-ObjC"
 )
 
-# Dedicated Admin UI server
-    add_executable(garazyk-ui
-        Garazyk/Binaries/garazyk-ui/main.m
-    )
-
-target_include_directories(garazyk-ui PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
-  ${SECP256K1_INCLUDE_DIRS}
-)
-
-# garazyk-ui keeps serving the PLC- and Relay-owned packs through the
-# compatibility host until workstream 11 M5. AdminUI itself remains service-neutral.
-if(APPLE)
-  target_link_libraries(garazyk-ui PRIVATE
-    ATProtoAdminUI
-    ATProtoPLC
-    ATProtoRelayAdminUI
-    ATProtoBeskid
-    ATProtoMikrus
-    ATProtoAppViewServer
-    ATProtoTransport
-    ATProtoCore
-    ${PLATFORM_LIBRARIES}
-    ${SECP256K1_LIBRARIES}
-    ${READLINE_LIBRARY}
-  )
-else()
-  target_link_libraries(garazyk-ui PRIVATE
-    -Wl,--whole-archive
-    ATProtoAdminUI
-    ATProtoPLC
-    ATProtoRelayAdminUI
-    ATProtoBeskid
-    ATProtoMikrus
-    ATProtoAppViewServer
-    ATProtoTransport
-    ATProtoCore
-    -Wl,--no-whole-archive
-    ${PLATFORM_LIBRARIES}
-    ${SECP256K1_LIBRARIES}
-    ${READLINE_LIBRARY}
-  )
-endif()
-
-target_compile_definitions(garazyk-ui PRIVATE
-  SQLITE_THREADSAFE=2
-)
-
-set_target_properties(garazyk-ui PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-  LINK_FLAGS "-ObjC"
-)
-
 # Standalone Chat Service (syrena-chat)
 add_executable(syrena-chat
   Garazyk/Binaries/syrena-chat/main.m
@@ -1262,7 +1232,7 @@ file(GLOB_RECURSE ADMIN_UI_ASSET_FILES CONFIGURE_DEPENDS
   "${ADMIN_UI_PACK_ASSET_DIR}/*"
 )
 list(APPEND ADMIN_UI_ASSET_FILES ${ADMIN_UI_ROOT_ASSET_FILES})
-set(ADMIN_UI_ASSET_STAMP "${CMAKE_BINARY_DIR}/bin/.garazyk-ui-assets.stamp")
+set(ADMIN_UI_ASSET_STAMP "${CMAKE_BINARY_DIR}/bin/.admin-ui-assets.stamp")
 
 function(add_admin_ui_assets target)
   if(NOT TARGET admin-ui-assets)
@@ -1301,7 +1271,6 @@ function(add_admin_ui_assets target)
   add_dependencies(${target} admin-ui-assets)
 endfunction()
 
-add_admin_ui_assets(garazyk-ui)
 add_admin_ui_assets(campagnola)
 add_admin_ui_assets(zuk)
 add_admin_ui_assets(jelcz)
@@ -1783,7 +1752,7 @@ if(BUILD_TESTS)
   )
 
   # Process characterization tests execute the adjacent binary directly.
-  add_dependencies(AllTests garazyk-ui jelcz syrena-chat germ kaszlak campagnola zuk)
+  add_dependencies(AllTests jelcz syrena-chat germ kaszlak campagnola zuk)
 
   target_include_directories(AllTests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
@@ -2100,7 +2069,6 @@ message(STATUS "  zuk               - Relay server")
 message(STATUS "  syrena            - Standalone AppView server")
 message(STATUS "  mikrus     - Standalone link index service")
 message(STATUS "  beskid            - Standalone edge record/identity cache service")
-message(STATUS "  garazyk-ui        - Dedicated admin UI server")
 message(STATUS "  AllTests          - Unit tests")
 message(STATUS "  fuzz_xrpc         - XRPC fuzzer")
 message(STATUS "  fuzz_cbor         - CBOR decoder fuzzer")

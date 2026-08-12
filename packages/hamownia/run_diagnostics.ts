@@ -28,7 +28,7 @@ const DIAGNOSTIC_SERVICE_ENV: Record<string, string> = {
   appview: "APPVIEW_URL",
   chat: "CHAT_URL",
   video: "VIDEO_URL",
-  ui: "GARAZYK_UI_URL",
+  ui: "PDS_ADMIN_UI_URL",
 };
 
 /** Context for a single E2E run, holding paths for logs, reports, and diagnostics. */

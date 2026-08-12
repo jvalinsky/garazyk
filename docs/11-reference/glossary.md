@@ -74,7 +74,7 @@ os/log, XCTest, …) so the rest of the stack runs unchanged on GNUstep/Linux. I
 | `germ` | E2EE mailbox service |
 | `jelcz` | Video processing service |
 | `kaszlak` | PDS command-line interface |
-| `garazyk-ui` | Admin UI |
+| `kaszlak` admin UI | Embedded PDS Admin UI (`:2590`) |
 | `syrena-chat` | Chat service |
 
 ## Repository export formats

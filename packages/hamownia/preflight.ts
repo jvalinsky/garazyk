@@ -48,7 +48,6 @@ export async function checkStagedBinaries(): Promise<PreflightResult> {
     "zuk",
     "syrena",
     "mikrus",
-    "garazyk-ui",
     "jelcz",
     "syrena-chat",
     "germ",
@@ -111,7 +110,6 @@ export async function checkHostPorts(
   const ports = neededPorts(opts);
   const knownBinaries = new Set([
     "kaszlak",
-    "garazyk-ui",
     "campagnola",
     "zuk",
     "syrena",

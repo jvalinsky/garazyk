@@ -155,4 +155,41 @@
     XCTAssertEqual(error.code, ATProtoPFPErrorInvalidCID);
 }
 
+- (void)testPDQHammingDistanceAndThreshold {
+    ATProtoPFP *left = [ATProtoPFP pfpFromBytes:[self pdqBytes] error:nil];
+    ATProtoPFP *right = [ATProtoPFP pfpFromBytes:[self pdqBytes] error:nil];
+    NSUInteger distance = 99;
+    NSError *error = nil;
+    XCTAssertTrue([ATProtoPFP hammingDistanceBetweenPDQ:left
+                                                 andPDQ:right
+                                               distance:&distance
+                                                  error:&error]);
+    XCTAssertEqual(distance, 0U);
+    XCTAssertLessThanOrEqual(distance, [ATProtoPFP recommendedPDQMatchDistance]);
+
+    NSMutableData *mutated = [[self pdqBytes] mutableCopy];
+    // Flip one bit in the PDQ hash payload (after algorithm/length varints 0x01 0x20).
+    uint8_t *bytes = mutated.mutableBytes;
+    bytes[2] ^= 0x01;
+    ATProtoPFP *near = [ATProtoPFP pfpFromBytes:mutated error:&error];
+    XCTAssertNotNil(near);
+    XCTAssertTrue([ATProtoPFP hammingDistanceBetweenPDQ:left
+                                                 andPDQ:near
+                                               distance:&distance
+                                                  error:&error]);
+    XCTAssertEqual(distance, 1U);
+
+    ATProtoCID *cid = [self sampleCID];
+    NSMutableData *tmk = [NSMutableData dataWithBytes:(const uint8_t[]){0x02, 0x24} length:2];
+    [tmk appendData:cid.bytes];
+    ATProtoPFP *video = [ATProtoPFP pfpFromBytes:tmk error:&error];
+    XCTAssertNotNil(video);
+    error = nil;
+    XCTAssertFalse([ATProtoPFP hammingDistanceBetweenPDQ:left
+                                                  andPDQ:video
+                                                distance:&distance
+                                                   error:&error]);
+    XCTAssertEqual(error.code, ATProtoPFPErrorUnsupportedAlgorithm);
+}
+
 @end

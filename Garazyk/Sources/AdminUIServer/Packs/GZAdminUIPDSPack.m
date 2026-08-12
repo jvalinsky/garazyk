@@ -18,8 +18,6 @@
 
 + (NSArray<NSDictionary<NSString *, id> *> *)sidebarSections {
     return @[
-        @{@"tabIdentifier": @"overview", @"displayName": @"Overview"},
-        @{@"tabIdentifier": @"connections", @"displayName": @"Connections"},
         @{@"tabIdentifier": @"pds", @"displayName": @"PDS"},
     ];
 }
@@ -208,66 +206,6 @@
         [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/pds-reports?cursor=%@\" hx-target=\"#pds-reports-content\">Load more</button></div>", GZAdminUIEscaped(cursor)];
     }
     return html;
-}
-
-+ (NSString *)renderConnectionsPartialWithConfiguration:(GZAdminUIServiceConfig *)configuration {
-    NSDictionary *fields = @{
-        @"pdsURL": [configuration.pdsBaseURL absoluteString] ?: @"",
-        @"pdsToken": configuration.pdsAdminToken ?: @"",
-        @"appViewURL": [configuration.appViewBaseURL absoluteString] ?: @"",
-        @"appViewToken": configuration.appViewAdminToken ?: @"",
-        @"relayURL": [configuration.relayBaseURL absoluteString] ?: @"",
-        @"relayToken": configuration.relayAdminToken ?: @"",
-        @"plcURL": [configuration.plcBaseURL absoluteString] ?: @"",
-        @"plcToken": configuration.plcAdminToken ?: @"",
-        @"chatURL": [configuration.chatBaseURL absoluteString] ?: @"",
-        @"chatToken": configuration.chatAdminToken ?: @"",
-        @"videoURL": [configuration.videoBaseURL absoluteString] ?: @"",
-        @"videoToken": configuration.videoAdminToken ?: @""
-    };
-    NSArray *order = @[
-        @{@"id": @"pds", @"key": @"pds", @"label": @"PDS"},
-        @{@"id": @"appview", @"key": @"appView", @"label": @"APPVIEW"},
-        @{@"id": @"relay", @"key": @"relay", @"label": @"RELAY"},
-        @{@"id": @"plc", @"key": @"plc", @"label": @"PLC"},
-        @{@"id": @"chat", @"key": @"chat", @"label": @"CHAT"},
-        @{@"id": @"video", @"key": @"video", @"label": @"VIDEO"}
-    ];
-    NSMutableArray *services = [NSMutableArray array];
-    for (NSDictionary *entry in order) {
-        NSString *urlKey = [entry[@"key"] stringByAppendingString:@"URL"];
-        NSString *tokenKey = [entry[@"key"] stringByAppendingString:@"Token"];
-        [services addObject:@{
-            @"id": entry[@"id"],
-            @"label": entry[@"label"],
-            @"urlKey": urlKey,
-            @"urlVal": fields[urlKey],
-            @"tokenKey": tokenKey,
-            @"tokenVal": fields[tokenKey]
-        }];
-    }
-    return [GZAdminUITemplateEngine renderTemplate:@"connections" context:@{@"services": services}];
-}
-
-+ (NSString *)renderOverviewPartial:(NSDictionary *)result {
-    NSMutableDictionary *ctx = [result mutableCopy];
-    if (result[@"services"]) {
-        NSMutableArray *mapped = [NSMutableArray array];
-        for (NSDictionary *svc in result[@"services"]) {
-            NSMutableDictionary *ms = [svc mutableCopy];
-            NSString *name = svc[@"name"] ?: @"unknown";
-            ms[@"nameUpper"] = [name uppercaseString];
-            NSString *status = svc[@"status"] ?: @"unknown";
-            if ([status isEqualToString:@"online"]) ms[@"statusClass"] = @"status-online";
-            else if ([status isEqualToString:@"offline"]) ms[@"statusClass"] = @"status-offline";
-            else if ([status isEqualToString:@"error"]) ms[@"statusClass"] = @"status-error";
-            else ms[@"statusClass"] = @"status-unknown";
-            ms[@"url"] = svc[@"url"] ?: @"-";
-            [mapped addObject:ms];
-        }
-        ctx[@"services"] = mapped;
-    }
-    return [GZAdminUITemplateEngine renderTemplate:@"overview" context:ctx];
 }
 
 @end

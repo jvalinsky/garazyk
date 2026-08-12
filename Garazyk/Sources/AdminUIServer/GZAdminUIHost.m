@@ -230,7 +230,7 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         }];
     }];
 
-    [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-ui/1.0.0"];
+    [ATProtoHttpResponse setDefaultServerHeader:@"garazyk-admin/1.0.0"];
     [self registerRoutes];
 
     NSError *startError = nil;
@@ -477,8 +477,8 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
         @"tabs": tabs,
         @"isSingleSurface": @(isSingleSurface),
         @"shellTitle": shellTitle,
-        @"peerLinks": @[],
-        @"showPeerSwitcher": @NO,
+        @"peerLinks": self.configuration.peerLinks ?: @[],
+        @"showPeerSwitcher": @(isSingleSurface),
         @"includePDSPanel": @([tabIdentifiers containsObject:@"pds"]),
         @"includeAppViewPanel": @([tabIdentifiers containsObject:@"appview"]),
         @"includeRelayPanel": @([tabIdentifiers containsObject:@"relay"]),

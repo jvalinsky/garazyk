@@ -109,8 +109,9 @@ export const demoCommand = new Command()
       generateHex(8);
     const VIDEO_ADMIN_SECRET = Deno.env.get("VIDEO_ADMIN_SECRET") ??
       generateHex(8);
-    const UI_ADMIN_PASSWORD = Deno.env.get("UI_ADMIN_PASSWORD") ??
-      generateHex(8);
+    const UI_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_UI_PASSWORD") ??
+      Deno.env.get("UI_ADMIN_PASSWORD") ??
+      PDS_ADMIN_PASSWORD;
 
     async function writePdsConfig(): Promise<string> {
       const config = {
@@ -204,6 +205,10 @@ export const demoCommand = new Command()
           PDS_ISSUER: pdsUrl,
           PDS_MASTER_SECRET,
           PDS_ADMIN_PASSWORD,
+          PDS_ADMIN_UI_HOST: "127.0.0.1",
+          PDS_ADMIN_UI_PORT: uiPort,
+          PDS_ADMIN_UI_PASSWORD: UI_ADMIN_PASSWORD,
+          PDS_ADMIN_UI_PUBLIC_URL: `${uiUrl}/admin`,
           PDS_ALLOW_HTTP: "1",
           PDS_USE_BIOMETRIC_PROTECTION: "false",
           PDS_USE_KEYCHAIN: "false",
@@ -239,21 +244,6 @@ export const demoCommand = new Command()
       },
     });
 
-    const buildBin = Deno.env.get("BUILD_DIR") || join(root, "build/bin");
-    const uiProc = new Deno.Command(join(buildBin, "garazyk-ui"), {
-      args: ["serve", "--port", uiPort],
-      env: {
-        GARAZYK_UI_PDS_URL: pdsUrl,
-        GARAZYK_UI_PLC_URL: plcUrl,
-        GARAZYK_UI_RELAY_URL: relayUrl,
-        GARAZYK_UI_APPVIEW_URL: appviewUrl,
-        GARAZYK_UI_CHAT_URL: chatUrl,
-        GARAZYK_UI_VIDEO_URL: videoUrl,
-        GARAZYK_UI_PORT: uiPort,
-        GARAZYK_UI_ADMIN_PASSWORD: UI_ADMIN_PASSWORD,
-      },
-    });
-    const uiChild = uiProc.spawn();
 
     await addRelayUpstream(
       relayUrl,
@@ -319,6 +309,5 @@ export const demoCommand = new Command()
 
     if (!flags.keepRunning) {
       await stopBinaryServices(ctx, [...services]);
-      uiChild.kill("SIGTERM");
     }
   });

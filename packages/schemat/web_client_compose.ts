@@ -139,7 +139,7 @@ CMD ${commandJson}
  * Render a docker-compose YAML overlay for a web client service.
  *
  * Generates a complete compose file that adds a web client service
- * (either built from source or using the local garazyk-ui image),
+ * (either built from source or using the local social-app image),
  * a browser runner service, and network alias configuration for
  * DNS interception.
  *
@@ -169,34 +169,8 @@ export async function renderWebClientCompose(
     ...dnsAliases.map((alias) => `          - ${alias}`),
   ].join("\n");
 
-  let webClientService: string;
-  if (client.buildPreset === "garazyk-ui") {
-    webClientService = `  web-client:
-    build:
-      context: ${q(join(options.repoRoot, "docker/local-network"))}
-      dockerfile: Dockerfile.local
-    entrypoint: ["/usr/local/bin/garazyk-ui"]
-    command: ["serve", "--port", "2590"]
-    ports:
-      - "2591:2590"
-    environment:
-${yamlMap(client.env, "      ")}
-    depends_on:
-      local-pds:
-        condition: service_healthy
-      local-appview:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2590/lab"]
-      interval: ${client.healthCheck.intervalSeconds}s
-      timeout: ${client.healthCheck.timeoutSeconds}s
-      retries: ${client.healthCheck.retries}
-      start_period: ${client.healthCheck.startPeriodSeconds}s
-    networks:
-      - ${options.network}`;
-  } else {
-    const buildContext = await writeSourceDockerfile(client, options.runDir);
-    webClientService = `  web-client:
+  const buildContext = await writeSourceDockerfile(client, options.runDir);
+  const webClientService = `  web-client:
     build:
       context: ${q(buildContext)}
     ports:
@@ -216,7 +190,6 @@ ${yamlMap(client.env, "      ")}
       start_period: ${client.healthCheck.startPeriodSeconds}s
     networks:
       - ${options.network}`;
-  }
 
   const blockedHosts = options.allowHybrid || client.allowHybridNetwork
     ? []

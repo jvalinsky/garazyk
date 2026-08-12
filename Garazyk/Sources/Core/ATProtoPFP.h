@@ -6,9 +6,10 @@
  @abstract Strict DASL perceptual fingerprint identifiers.
 
  @discussion Implements the identifier grammar from https://dasl.ing/pfp.html.
- This is identifier parsing and comparison only; no perceptual hash producer is
- included. PDQ carries a 32-byte inline hash. TMK+PDQF carries a 36-byte strict
- DASL ATProtoCID that addresses the potentially large fingerprint data.
+ Identifier parsing, JSON boundary, and PDQ Hamming-distance comparison are
+ included. No perceptual-hash producer or Ozone storage integration is
+ invented here. PDQ carries a 32-byte inline hash. TMK+PDQF carries a 36-byte
+ strict DASL ATProtoCID that addresses the potentially large fingerprint data.
  */
 
 #import <Foundation/Foundation.h>
@@ -68,6 +69,20 @@ typedef NS_ENUM(NSUInteger, ATProtoPFPAlgorithm) {
 
 /** JSON pseudo-type representation: `{"__pfp": "p..."}`. */
 - (NSDictionary<NSString *, NSString *> *)JSONObjectRepresentation;
+
+/**
+ Hamming distance between two PDQ (32-byte) hashes.
+
+ @discussion Matches the ThreatExchange PDQ metric (recommended match threshold
+ ≤ 31). Both identifiers must use `ATProtoPFPAlgorithmPDQ`.
+ */
++ (BOOL)hammingDistanceBetweenPDQ:(ATProtoPFP *)left
+                            andPDQ:(ATProtoPFP *)right
+                          distance:(NSUInteger *)outDistance
+                             error:(NSError **)error;
+
+/** ThreatExchange-recommended PDQ match threshold (inclusive). */
++ (NSUInteger)recommendedPDQMatchDistance;
 
 @end
 

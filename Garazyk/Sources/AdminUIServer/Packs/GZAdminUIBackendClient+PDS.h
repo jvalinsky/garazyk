@@ -16,14 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Refreshes the configured PDS admin token with the configured admin password. */
 - (BOOL)refreshPDSAdminToken;
 
-/** @abstract Concurrently probes configured backend services and returns the snapshot available after its bounded wait. */
-- (NSDictionary *)fetchServiceOverview;
-
-/** @abstract Probes a named configured service, returning an error summary for unknown names. */
-- (NSDictionary *)testConnectionForService:(NSString *)serviceName;
-
 /**
  * @abstract Probes a known service using an explicit base URL and optional admin token.
+ * @discussion Used by Ozone/config connection checks for a single named target, not fleet overview.
  */
 - (NSDictionary *)testConnectionForService:(NSString *)serviceName
                                    baseURL:(NSURL *)baseURL

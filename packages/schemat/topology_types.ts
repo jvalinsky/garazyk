@@ -216,7 +216,7 @@ export interface WebClientTopology {
   /** Git ref used to build the browser client */
   ref: string;
   /** Build preset name used by the web client pipeline */
-  buildPreset: "garazyk-ui" | "social-app" | "witchsky";
+  buildPreset: "social-app" | "witchsky";
   /** Command used to serve the browser client */
   serveCommand: string[];
   /** Public URL exposed to browsers */

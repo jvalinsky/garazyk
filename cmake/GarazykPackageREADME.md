@@ -14,7 +14,18 @@ roots are on the include path (the generated config sets this on exported
 targets).
 
 Static archives require platform link flags (`-ObjC` on Apple toolchains when
-pulling in Objective-C categories). When Garazyk was built with OpenSSL enabled,
-consumers must also find OpenSSL (set `OPENSSL_ROOT_DIR` on macOS if needed).
+pulling in Objective-C categories). Consumers must find ZLIB (always) and, when
+Garazyk was built with OpenSSL enabled, OpenSSL as well (set `OPENSSL_ROOT_DIR`
+on macOS if needed).
 
 This package ships source-built static libraries only; API stability is not promised at 0.x.
+
+## Verify a relocated install
+
+```sh
+./scripts/test/package-consumer-smoke.sh
+```
+
+That script installs to a temp prefix, moves it, then builds the
+`tests/package-consumers/` fixtures (core-only, full-graph, and a
+private-header negative case).
