@@ -10,6 +10,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class BeskidDatabase;
+@class BeskidMetrics;
 @class ATProtoHttpServer;
 
 /**
@@ -28,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Unavailable initializer.
  */
 - (instancetype)init NS_UNAVAILABLE;
+
+/** @abstract Metrics recorder: set to wire rate-limit and upstream counters. */
+@property (nonatomic, strong) BeskidMetrics *metrics;
 
 /**
  * @abstract Registers Beskid-specific routes with the provided server.

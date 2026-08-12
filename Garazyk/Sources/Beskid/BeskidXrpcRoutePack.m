@@ -3,6 +3,7 @@
 
 #import "Beskid/BeskidXrpcRoutePack.h"
 #import "Beskid/BeskidDatabase.h"
+#import "Beskid/BeskidMetrics.h"
 #import "Beskid/BeskidConfiguration.h"
 #import "Beskid/BeskidRuntime.h"
 #import "Core/ATProtoDIDDocumentFields.h"
@@ -62,7 +63,9 @@
 #pragma mark - Helper Validation & Rate Limiting
 
 - (BOOL)checkRateLimitForRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
-    return [GZXrpcRouteSupport checkIPRateLimitForRequest:request response:response];
+    BOOL allowed = [GZXrpcRouteSupport checkIPRateLimitForRequest:request response:response];
+    if (!allowed) [self.metrics recordRateLimitReject];
+    return allowed;
 }
 
 - (nullable NSString *)requiredParam:(NSString *)name request:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
@@ -616,6 +619,10 @@
     options.allowHTTP = YES;
     options.allowPrivateHosts = YES;
 
+    NSString *host = components.host ?: endpoint;
+    [self.metrics recordUpstreamRequestToHost:host];
+    CFAbsoluteTime start = CFAbsoluteTimeGetCurrent();
+
     NSHTTPURLResponse *http = nil;
     NSError *fetchError = nil;
     NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:req
@@ -623,7 +630,12 @@
                                                                        response:&http
                                                                           error:&fetchError];
 
-    if (fetchError || http.statusCode < 200 || http.statusCode >= 300 || data.length == 0) return nil;
+    int64_t latencyMs = (int64_t)((CFAbsoluteTimeGetCurrent() - start) * 1000.0);
+    if (fetchError || http.statusCode < 200 || http.statusCode >= 300 || data.length == 0) {
+        [self.metrics recordUpstreamFailureToHost:host];
+        return nil;
+    }
+    [self.metrics recordUpstreamSuccessToHost:host latencyMillis:latencyMs];
     id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     if (![json isKindOfClass:[NSDictionary class]]) return nil;
 
@@ -649,6 +661,13 @@
 
 - (void)writeInvalidRequest:(NSString *)message response:(ATProtoHttpResponse *)response {
     [XrpcErrorHelper setInvalidRequestError:response message:message ?: @"Invalid request"];
+}
+
+- (BeskidMetrics *)metrics {
+    if (!_metrics) {
+        _metrics = [[BeskidMetrics alloc] init];
+    }
+    return _metrics;
 }
 
 @end

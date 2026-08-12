@@ -1,6 +1,6 @@
 ---
 title: Beskid Admin UI Brief
-status: planned
+status: in-progress
 last_verified: 2026-08-11
 ---
 
@@ -35,13 +35,35 @@ latency counters yet.
 
 ## Slices and acceptance
 
-1. Instrument cache lookup/write/delete and upstream fetch boundaries with
-   synchronized counters; maintain entry gauges during migrations and expiry.
-2. Create `GZAdminUIBeskidPack` and a bounded snapshot route under Beskid.
-3. Add the dedicated listener, password-file configuration, loopback token,
-   clean lifecycle, and packaging/NixOS options.
-4. Test hit/miss/expired behavior, upstream failures, rate limiting, redaction,
-   empty cache, concurrent access, auth, and polling cost.
+1. ~~Instrument cache lookup/write/delete and upstream fetch boundaries with
+   synchronized counters; maintain entry gauges during migrations and expiry.~~
+   **Done 2026-08-11:** `BeskidMetrics` with serial-queue counters
+   (hits/misses/expired/writes/deletes for record + identity), entry gauges
+   seeded from one-time COUNT at startup and maintained on write/delete/expired-read,
+   bounded per-host upstream aggregation (cap 32), and rate-limit reject counter.
+2. ~~Create `GZAdminUIBeskidPack` and a bounded snapshot route under Beskid.~~
+   **Done 2026-08-11:** `GZBeskidAdminUIPack` with three read-only partials
+   (`/admin/partials/beskid-metrics`, `-cache`, `-upstreams`) and a
+   `GZBeskidAdminSnapshot` with bounded snapshot (health, uptime, cache families,
+   TTL config, upstream host summaries, database storage bytes via PRAGMA).
+   HTML partials never render record bodies, signing keys, raw DID documents,
+   query strings, or credentials.
+3. ~~Add the dedicated listener, password-file configuration, loopback token,
+   clean lifecycle, and packaging/NixOS options.~~
+   **Done 2026-08-11 (listener/password/lifecycle):** `BeskidRuntime` composes
+   `GZAdminUIHost` on a dedicated loopback listener (127.0.0.1:2595) with
+   max concurrency 8. Password resolved from `BESKID_ADMIN_PASSWORD_FILE` or
+   `BESKID_ADMIN_PASSWORD` (file wins); listener starts only when configured.
+   CLI: `--admin-ui-host`, `--admin-ui-port`, `--admin-password-file`.
+   NixOS module deferred to follow-up (no existing `beskid.nix`).
+4. ~~Test hit/miss/expired behavior, upstream failures, rate limiting, redaction,
+   empty cache, concurrent access, auth, and polling cost.~~
+   **Done 2026-08-11:** `BeskidMetricsTests` (counters, bounded upstreams,
+   concurrent updates), `BeskidAdminSnapshotTests` (empty cache, counters
+   reflect ops, redaction, soonest expiry, DB pressure), `BeskidAdminUIPackTests`
+   (unauth redirect, scoped session, sibling-cookie rejection, redaction, login
+   wrong-password/correct, loopback+concurrency assertion, upstream HTML no
+   credentials, password-file trim+redact). 16 tests, 0 failures.
 
 Acceptance requires fixture-based counter reconciliation, no sensitive cache
 content in HTML/JSON, and unchanged read-through behavior and latency bounds.
