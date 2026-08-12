@@ -36,10 +36,27 @@
     NSDictionary *queue = snapshot[@"queue"] ?: @{};
     NSDictionary *throughput = snapshot[@"throughput"] ?: @{};
     NSDictionary *storage = snapshot[@"storage"] ?: @{};
-
     NSDictionary *counts = queue[@"countsByState"] ?: @{};
 
-    return [NSString stringWithFormat:
+    // Extract values safely
+    NSString *health = GZAdminUIEscaped(snapshot[@"health"]);
+    NSString *pdsHealth = GZAdminUIEscaped(snapshot[@"pdsUploadHealth"]);
+    NSString *backend = GZAdminUIEscaped(storage[@"backend"]);
+    id activeJobs = worker[@"activeJobs"] ?: @0;
+    id maxConcurrency = worker[@"maxConcurrency"] ?: @0;
+    id depth = queue[@"depth"] ?: @0;
+    NSString *oldest = [self formatSeconds:queue[@"oldestAgeSeconds"]];
+    id completed24h = throughput[@"completed24h"] ?: @0;
+    id failed24h = throughput[@"failed24h"] ?: @0;
+    long long tempMB = [storage[@"tempBytes"] respondsToSelector:@selector(longLongValue)]
+        ? [storage[@"tempBytes"] longLongValue] / (1024 * 1024) : 0;
+    long long outMB = [storage[@"outputBytes"] respondsToSelector:@selector(longLongValue)]
+        ? [storage[@"outputBytes"] longLongValue] / (1024 * 1024) : 0;
+
+    NSMutableString *html = [NSMutableString string];
+
+    // Metric row
+    [html appendFormat:
         @"<div class=\"metric-row\">"
         @"<div class=\"metric\"><span class=\"metric-label\">Health</span>"
         @"<span class=\"metric-value status-%@\">%@</span></div>"
@@ -51,14 +68,30 @@
         @"<span class=\"metric-value\">%@</span></div>"
         @"<div class=\"metric\"><span class=\"metric-label\">Completed / Failed (24h)</span>"
         @"<span class=\"metric-value\">%@ / %@</span></div>"
+        @"</div>",
+        health, health,
+        activeJobs, maxConcurrency,
+        depth, oldest,
+        completed24h, failed24h
+    ];
+
+    // Second metric row
+    [html appendFormat:
+        @"<div class=\"metric-row\">"
         @"<div class=\"metric\"><span class=\"metric-label\">PDS upload</span>"
         @"<span class=\"metric-value status-%@\">%@</span></div>"
         @"<div class=\"metric\"><span class=\"metric-label\">Storage backend</span>"
         @"<span class=\"metric-value\">%@</span></div>"
         @"<div class=\"metric\"><span class=\"metric-label\">Temp / Output</span>"
-        @"<span class=\"metric-value text-sm\">%@ MB / %@ MB</span></div>"
-        @"</div>"
+        @"<span class=\"metric-value text-sm\">%lld MB / %lld MB</span></div>"
+        @"</div>",
+        pdsHealth, pdsHealth,
+        backend,
+        tempMB, outMB
+    ];
 
+    // Queue breakdown table
+    [html appendFormat:
         @"<section class=\"mt-lg\"><h3 class=\"section-title\">Queue breakdown</h3>"
         @"<table class=\"table\"><thead><tr>"
         @"<th>Pending</th><th>Processing</th><th>Transcoding</th>"
@@ -66,19 +99,6 @@
         @"</tr></thead><tbody><tr>"
         @"<td>%@</td><td>%@</td><td>%@</td><td>%@</td><td>%@</td><td>%@</td>"
         @"</tr></tbody></table></section>",
-
-        // Metric row
-        GZAdminUIEscaped(snapshot[@"health"]),
-        worker[@"activeJobs"] ?: @0, worker[@"maxConcurrency"] ?: @0,
-        queue[@"depth"] ?: @0,
-        [self formatSeconds:queue[@"oldestAgeSeconds"]],
-        throughput[@"completed24h"] ?: @0, throughput[@"failed24h"] ?: @0,
-        GZAdminUIEscaped(snapshot[@"pdsUploadHealth"]),
-        GZAdminUIEscaped(storage[@"backend"]),
-        @([storage[@"tempBytes"] longLongValue] / (1024 * 1024)),
-        @([storage[@"outputBytes"] longLongValue] / (1024 * 1024)),
-
-        // Queue breakdown
         counts[@"JOB_STATE_PENDING"] ?: @0,
         counts[@"JOB_STATE_PROCESSING"] ?: @0,
         counts[@"JOB_STATE_TRANSCODING"] ?: @0,
@@ -86,6 +106,8 @@
         counts[@"JOB_STATE_COMPLETED"] ?: @0,
         counts[@"JOB_STATE_FAILED"] ?: @0
     ];
+
+    return html;
 }
 
 + (NSString *)formatSeconds:(id)secondsValue {
