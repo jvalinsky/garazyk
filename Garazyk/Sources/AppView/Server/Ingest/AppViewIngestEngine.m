@@ -8,7 +8,6 @@
 
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 
-#import <CoreFoundation/CoreFoundation.h>
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/AppViewTypes.h"
 #import "Core/NSDateFormatter+ATProto.h"
@@ -112,7 +111,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 @property (nonatomic, assign) int64_t lastCheckpointSeq;
 @property (nonatomic, assign) int64_t currentSeq;
 @property (nonatomic, assign) int64_t eventsSinceThroughputSample;
-@property (nonatomic, assign) CFAbsoluteTime lastThroughputSampleAt;
+@property (nonatomic, assign) NSTimeInterval lastThroughputSampleAt;
 @property (nonatomic, assign) double lastThroughputEventsPerSec;
 @property (nonatomic, weak)   id owner;  // GZAppViewIngestEngine (weak to avoid cycles)
 
@@ -133,7 +132,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     _currentSeq = startingSeq;
     _lastCheckpointSeq = startingSeq;
     _eventsSinceThroughputSample = 0;
-    _lastThroughputSampleAt = CFAbsoluteTimeGetCurrent();
+    _lastThroughputSampleAt = [NSDate timeIntervalSinceReferenceDate];
     _lastThroughputEventsPerSec = 0.0;
     _owner = owner;
 
@@ -475,9 +474,9 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
         }
     }
     if (conn) {
-        CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
+        NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
         conn.eventsSinceThroughputSample++;
-        CFAbsoluteTime elapsed = now - conn.lastThroughputSampleAt;
+        NSTimeInterval elapsed = now - conn.lastThroughputSampleAt;
         if (elapsed >= 5.0) {
             conn.lastThroughputEventsPerSec = (double)conn.eventsSinceThroughputSample / elapsed;
             conn.eventsSinceThroughputSample = 0;
@@ -514,7 +513,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     NSMutableDictionary<NSString *, NSNumber *> *out = [NSMutableDictionary dictionary];
     [_stateLock lock];
     for (GZAppViewRelayConnection *conn in _connections) {
-        CFAbsoluteTime elapsed = CFAbsoluteTimeGetCurrent() - conn.lastThroughputSampleAt;
+        NSTimeInterval elapsed = [NSDate timeIntervalSinceReferenceDate] - conn.lastThroughputSampleAt;
         double rate = conn.lastThroughputEventsPerSec;
         if (elapsed > 0.0 && elapsed < 5.0 && conn.eventsSinceThroughputSample > 0) {
             rate = (double)conn.eventsSinceThroughputSample / MAX(elapsed, 0.001);
