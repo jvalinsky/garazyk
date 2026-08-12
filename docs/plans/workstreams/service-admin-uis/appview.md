@@ -1,8 +1,29 @@
 ---
 title: AppView Admin UI Brief
 status: in-progress
-last_verified: 2026-08-11
+last_verified: 2026-08-12
 ---
+
+## 2026-08-12 — Serving + Repo sync IA
+
+Syrena’s admin surface is **not** a Mikrus/Beskid clone. Operator questions:
+
+| Service | Metaphor | Primary question |
+| --- | --- | --- |
+| Beskid | Cache thermometer | Hit ratio / upstream latency? |
+| Mikrus | Graph / URI index | Is this `at://` edge findable? |
+| **Syrena** | Pipeline → store → **serve** | Will a client get good `app.bsky.*` answers? |
+
+### Dashboard shape (current target)
+
+1. **Serving** — client-facing health first: three-lane pulse (Firehose · Sync · Serving), query families / errors / rate-limit rejects, exception gauges (dead letter, pending index).
+2. **Firehose** — per-relay connection, lag, throughput, event counters (shared ingest vocabulary with Mikrus; AppView framing).
+3. **Repo sync** — funnel (pending / processing / synced / dirty), workers, enqueue DIDs, retry/cancel, rebuild scope; bounded queue table.
+4. **Coverage** — social completeness (handles, profiles, posts) + collection mix; not a generic URI explorer.
+
+Deferred (next slices): Exceptions triage list, Probe (XRPC console), Actor dig (hydrated cards).
+
+Do **not** add a Mikrus-style Explore tab. Browse belongs as hydrated social views or Probe later.
 
 ## 2026-08-11 — Slices 1-3 implemented, slice 4 packaging done
 
@@ -36,28 +57,15 @@ source-level troubleshooting with [Relay](relay.md).
 
 ## Outcome and evidence
 
-Give operators one view of ingestion, indexing, backfill, hooks, lexicons, and
-query health. The existing AppView pack already renders metrics, ingest health,
-and a paginated backfill queue with retry/cancel/rebuild/enqueue actions.
-`AppViewAdminRoutePack` also exposes lexicon, hook/dead-letter, record, handler,
-and endpoint inventories.
+Give operators one view of **serving**, firehose, repo sync (with mutations),
+coverage, hooks/lexicons, and query health. `AppViewAdminRoutePack` exposes
+lexicon, hook/dead-letter, record, handler, and endpoint inventories for the
+protocol admin port; the embedded UI uses session auth + CSRF for mutations.
 
 The current JSON admin route guard allows access when `adminSecret` is empty.
 Embedding must remove that fail-open state: internal routes either require the
 startup-minted loopback token or are unavailable, while browser routes require
 the service session and CSRF for mutations.
-
-## Dashboard shape
-
-- **Overview:** health, uptime, indexed records/repos/collections, query rate and
-  errors, ingestion cursor/lag, backfill depth/age, and dead-letter count.
-- **Ingestion:** overall plus per-relay connection, cursor, event rate, last
-  event, reconnect/error state, commits/operations accepted and rejected.
-- **Backfill:** counts and oldest age by state, workers, throughput, bounded DID
-  queue, retry/cancel, scope rebuild, and explicit DID enqueue.
-- **Indexes:** collections, lexicons, generated/custom endpoints, hooks and
-  dead-letter entries; record browsing remains bounded and redacted.
-- **Storage:** database/migration health and cheap size/pressure gauges.
 
 ## Slices and acceptance
 
@@ -68,7 +76,9 @@ the service session and CSRF for mutations.
 3. Move the existing pack into AppView ownership and add per-relay rendering
    using the same semantics, not shared mutable state, as Mikrus.
 4. Embed the admin host and add secret-file/loopback NixOS or container options.
-5. Test multiple relays, disabled ingest/backfill, stale cursor, dead letters,
+5. **Serving + Repo sync IA** (2026-08-12): rename tabs, three-lane pulse,
+   coverage gauges, queue UI + enqueue/retry/cancel/rebuild with CSRF.
+6. Test multiple relays, disabled ingest/backfill, stale cursor, dead letters,
    bounded pagination, mutation audit, session/CSRF rejection, and concurrent
    ingest while the dashboard polls.
 

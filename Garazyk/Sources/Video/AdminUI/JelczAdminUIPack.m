@@ -6,6 +6,7 @@
 #import "AdminUIServer/GZHTML.h"
 #import "AdminUIServer/Packs/JelczAdminSnapshot.h"
 #import "AdminUIServer/Packs/GZAdminUIVideoPack.h"
+#import "Video/AdminUI/JelczAdminEmbedContext.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -19,8 +20,35 @@
     return snapshots;
 }
 
++ (NSMapTable<GZAdminUIHost *, JelczAdminEmbedContext *> *)embedContexts {
+    static NSMapTable<GZAdminUIHost *, JelczAdminEmbedContext *> *contexts;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ contexts = [NSMapTable weakToStrongObjectsMapTable]; });
+    return contexts;
+}
+
 + (void)configureHost:(GZAdminUIHost *)host snapshot:(JelczAdminSnapshot *)snapshot {
     @synchronized(self) { [[self snapshots] setObject:snapshot forKey:host]; }
+}
+
++ (void)configureHost:(GZAdminUIHost *)host embedContext:(JelczAdminEmbedContext *)context {
+    @synchronized(self) { [[self embedContexts] setObject:context forKey:host]; }
+}
+
++ (JelczAdminEmbedContext *)embedContextForHost:(GZAdminUIHost *)host {
+    @synchronized(self) { return [[self embedContexts] objectForKey:host]; }
+}
+
++ (JelczAdminSnapshot *)snapshotForHost:(GZAdminUIHost *)host {
+    JelczAdminEmbedContext *context = nil;
+    @synchronized(self) { context = [[self embedContexts] objectForKey:host]; }
+    if (context) {
+        return [[JelczAdminSnapshot alloc] initWithWorker:context.worker
+                                                 jobStore:context.jobStore
+                                                   config:context.config
+                                             uptimeSeconds:context.uptimeSeconds];
+    }
+    @synchronized(self) { return [[self snapshots] objectForKey:host]; }
 }
 
 + (NSString *)packIdentifier { return @"video"; }
@@ -41,14 +69,13 @@
 #pragma mark - Route registration
 
 + (void)registerRoutesWithHost:(GZAdminUIHost *)host {
-    JelczAdminSnapshot *snapshot = nil;
-    @synchronized(self) { snapshot = [[self snapshots] objectForKey:host]; }
     __weak GZAdminUIHost *weakHost = host;
 
     // Overview
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-metrics" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
+        JelczAdminSnapshot *snapshot = [JelczAdminUIPack snapshotForHost:weakHost];
         if (!snapshot) {
             [res setBodyString:[self errorUnavailableHTML]];
             return;
@@ -62,32 +89,72 @@
         [res setBodyString:[GZAdminUIVideoPack renderVideoOverviewPartial:snap]];
     }];
 
-    // Jobs (delegates to centralized pack's renderer for consistency)
+    // Jobs: state summary + recent rows with drill-down detail
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-jobs" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
-        if (snapshot) {
-            NSDictionary *counts = snapshot.countsByState ?: @{};
-            NSMutableArray *jobRows = [NSMutableArray array];
-            NSArray *stateOrder = @[@"JOB_STATE_PENDING", @"JOB_STATE_PROCESSING",
-                                     @"JOB_STATE_TRANSCODING", @"JOB_STATE_GENERATING_THUMBNAIL",
-                                     @"JOB_STATE_COMPLETED", @"JOB_STATE_FAILED"];
-            for (NSString *state in stateOrder) {
-                NSNumber *count = counts[state] ?: @0;
-                if (count.integerValue > 0) {
-                    [jobRows addObject:@{@"state": state, @"count": count}];
-                }
-            }
-            [res setBodyString:[self jobsEmbeddedHTML:jobRows]];
-        } else {
+        JelczAdminSnapshot *snapshot = [JelczAdminUIPack snapshotForHost:weakHost];
+        JelczAdminEmbedContext *context = [JelczAdminUIPack embedContextForHost:weakHost];
+        if (!snapshot || !context) {
             [res setBodyString:[self errorUnavailableHTML]];
+            return;
         }
+
+        NSMutableString *html = [NSMutableString string];
+        NSDictionary *counts = snapshot.countsByState ?: @{};
+        NSMutableArray *countRows = [NSMutableArray array];
+        NSArray *stateOrder = @[@"JOB_STATE_PENDING", @"JOB_STATE_PROCESSING",
+                                 @"JOB_STATE_TRANSCODING", @"JOB_STATE_GENERATING_THUMBNAIL",
+                                 @"JOB_STATE_COMPLETED", @"JOB_STATE_FAILED"];
+        for (NSString *state in stateOrder) {
+            NSNumber *count = counts[state] ?: @0;
+            if (count.integerValue > 0) {
+                [countRows addObject:@{@"state": state, @"count": count}];
+            }
+        }
+        [html appendString:[self jobsEmbeddedHTML:countRows]];
+
+        NSString *stateFilter = [req queryParamForKey:@"state"];
+        NSArray *jobs = [JelczAdminSnapshot recentJobDTOsFromStore:context.jobStore
+                                                             limit:25
+                                                       stateFilter:stateFilter];
+        [html appendString:[GZHTML sectionTitle:@"Recent jobs"]];
+        [html appendString:[GZAdminUIVideoPack renderVideoJobsPartial:@{@"jobs": jobs}]];
+
+        [res setBodyString:html];
+    }];
+
+    [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-job-detail" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
+        AUTH_GUARD(weakHost, req, res);
+        res.contentType = @"text/html; charset=utf-8";
+        JelczAdminEmbedContext *context = [JelczAdminUIPack embedContextForHost:weakHost];
+        if (!context) {
+            [res setBodyString:[self errorUnavailableHTML]];
+            return;
+        }
+        NSString *jobId = [req queryParamForKey:@"jobId"];
+        NSDictionary *dto = [JelczAdminSnapshot jobDTOForId:jobId jobStore:context.jobStore];
+        if (!dto) {
+            [res setBodyString:[GZAdminUIVideoPack renderVideoJobDetailPartial:@{
+                @"error": @YES,
+                @"message": @"Job not found.",
+            }]];
+            return;
+        }
+        NSMutableString *html = [NSMutableString stringWithString:
+            [GZAdminUIVideoPack renderVideoJobDetailPartial:@{@"job": dto}]];
+        if ([dto[@"state"] isEqualToString:@"JOB_STATE_FAILED"]) {
+            [html appendFormat:@"<div class=\"mt-md\"><button class=\"btn btn-primary btn-sm\" data-ui-action=\"retry-video-job\" data-ui-job-id=\"%@\">Retry job</button></div>",
+                dto[@"jobId"]];
+        }
+        [res setBodyString:html];
     }];
 
     // Capacity
     [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-capacity" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
+        JelczAdminSnapshot *snapshot = [JelczAdminUIPack snapshotForHost:weakHost];
         if (snapshot) {
             [res setBodyString:[GZAdminUIVideoPack renderVideoCapacityPartial:snapshot.snapshot]];
         } else {
@@ -95,14 +162,33 @@
         }
     }];
 
-    // Retry action (same as centralized)
     [host.httpServer addRoute:@"POST" path:@"/admin/actions/video-retry-job" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
         AUTH_GUARD(weakHost, req, res);
         res.contentType = @"text/html; charset=utf-8";
         NSString *jobId = [req.jsonBody[@"jobId"] isKindOfClass:[NSString class]] ? req.jsonBody[@"jobId"] : @"";
-        NSString *msg = jobId.length > 0 ? @"Job queued for retry (embedded — direct access)."
-                                         : @"Job ID required.";
-        [res setBodyString:[GZHTML alertWithType:jobId.length > 0 ? @"success" : @"destructive" message:msg]];
+        if (jobId.length == 0) {
+            [res setBodyString:[GZHTML alertWithType:@"destructive" message:@"Job ID required."]];
+            return;
+        }
+        JelczAdminEmbedContext *context = [JelczAdminUIPack embedContextForHost:weakHost];
+        id jobStore = context.jobStore;
+        SEL retrySel = NSSelectorFromString(@"incrementJobRetry:error:");
+        BOOL ok = NO;
+        if (jobStore && [jobStore respondsToSelector:retrySel]) {
+            NSMethodSignature *sig = [jobStore methodSignatureForSelector:retrySel];
+            if (sig) {
+                NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+                [inv setSelector:retrySel];
+                [inv setTarget:jobStore];
+                NSError *error = nil;
+                [inv setArgument:&jobId atIndex:2];
+                [inv setArgument:&error atIndex:3];
+                [inv invoke];
+                [inv getReturnValue:&ok];
+            }
+        }
+        NSString *msg = ok ? @"Job queued for retry." : @"Failed to queue job for retry.";
+        [res setBodyString:[GZHTML alertWithType:ok ? @"success" : @"destructive" message:msg]];
     }];
 }
 

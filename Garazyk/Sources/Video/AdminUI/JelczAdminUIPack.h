@@ -5,6 +5,7 @@
 
 @class GZAdminUIHost;
 @class JelczAdminSnapshot;
+@class JelczAdminEmbedContext;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -18,6 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface JelczAdminUIPack : NSObject <GZAdminUIPack>
 
 + (void)configureHost:(GZAdminUIHost *)host snapshot:(JelczAdminSnapshot *)snapshot;
++ (void)configureHost:(GZAdminUIHost *)host embedContext:(JelczAdminEmbedContext *)context;
 
 @end
 

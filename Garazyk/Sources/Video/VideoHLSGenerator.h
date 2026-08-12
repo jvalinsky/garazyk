@@ -47,6 +47,22 @@ typedef NS_ENUM(NSInteger, ATProtoVideoHLSError) {
  */
 @property (nonatomic, copy, nullable) NSString *thumbnailPath;
 
+/**
+ * @abstract Every file this generation run produced, keyed by its bundle-relative
+ * path and mapped to the file's absolute on-disk location.
+ * @discussion Keys mirror the MASL bundle root convention a later phase will use to
+ * content-address this tree: @"/" is the master playlist, @"/{variant}/video.m3u8"
+ * is a variant playlist, @"/{variant}/init.mp4" is that variant's fMP4 init
+ * segment, and @"/{variant}/segment_NNNNN.m4s" is each media segment actually
+ * written to disk. The dictionary is fully populated by the time
+ * -generateHLSFromVideoAtURL:did:cid:thumbnailData:error: returns, so a caller can
+ * enumerate every produced file directly from this property without re-scanning
+ * the output directory (e.g. to walk the tree for content-addressing). Segment
+ * entries reflect what ffmpeg actually wrote, not a computed count, so the map is
+ * accurate even if generation stops early.
+ */
+@property (nonatomic, copy) NSDictionary<NSString *, NSString *> *producedFiles;
+
 @end
 
 /**

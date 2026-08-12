@@ -7,6 +7,38 @@
 
 NSString * const ATProtoMediaWorkerErrorDomain = @"com.atproto.mediacore.worker";
 
+static NSString *ATProtoMediaWorkerInputFilenameForMimeType(NSString *mimeType)
+{
+    if (mimeType.length == 0) {
+        return @"input.mp4";
+    }
+
+    NSString *lower = mimeType.lowercaseString;
+    static NSDictionary<NSString *, NSString *> *knownExtensions = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        knownExtensions = @{
+            @"video/mp4": @"mp4",
+            @"video/quicktime": @"mov",
+            @"video/x-m4v": @"m4v",
+            @"video/webm": @"webm",
+            @"video/x-msvideo": @"avi",
+            @"video/3gpp": @"3gp",
+            @"video/mpeg": @"mpg",
+            @"video/ogg": @"ogv",
+        };
+    });
+
+    NSString *extension = knownExtensions[lower];
+    if (extension.length == 0 && [lower hasPrefix:@"video/"]) {
+        extension = [lower substringFromIndex:6];
+    }
+    if (extension.length == 0) {
+        extension = @"mp4";
+    }
+    return [NSString stringWithFormat:@"input.%@", extension];
+}
+
 @interface ATProtoMediaWorker ()
 @property (nonatomic, assign) BOOL isRunning;
 @property (nonatomic, strong) NSMutableSet<NSString *> *processingJobIds;
@@ -143,7 +175,12 @@ NSString * const ATProtoMediaWorkerErrorDomain = @"com.atproto.mediacore.worker"
                                                        attributes:nil
                                                             error:nil];
 
-            NSString *tempInputPath = [workspace stringByAppendingPathComponent:@"input.bin"];
+            NSString *mimeType = job[@"mime_type"];
+            if ([mimeType isEqual:[NSNull null]]) {
+                mimeType = nil;
+            }
+            NSString *inputFilename = ATProtoMediaWorkerInputFilenameForMimeType(mimeType);
+            NSString *tempInputPath = [workspace stringByAppendingPathComponent:inputFilename];
             NSURL *inputURL = [NSURL fileURLWithPath:tempInputPath];
 
             // Download source blob
@@ -198,6 +235,15 @@ NSString * const ATProtoMediaWorkerErrorDomain = @"com.atproto.mediacore.worker"
                                       withIntermediateDirectories:YES
                                                        attributes:nil
                                                             error:nil];
+
+            NSString *jobDid = job[@"did"];
+            if ([jobDid isEqual:[NSNull null]]) {
+                jobDid = nil;
+            }
+            if ([self.processor respondsToSelector:@selector(prepareForJobWithOwnerDID:blobProvider:)]) {
+                [self.processor prepareForJobWithOwnerDID:jobDid ?: @"did:plc:anonymous"
+                                            blobProvider:self.blobProvider];
+            }
 
             [self.processor processMediaAtURL:inputURL
                               outputDirectory:outputDir

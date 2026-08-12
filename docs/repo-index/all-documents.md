@@ -5,7 +5,7 @@ title: All Documents
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **267**
+Total documents in this view: **271**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -28,6 +28,7 @@ Total documents in this view: **267**
 | [docs/20-explanation/architecture/media_core_framework.md](../20-explanation/architecture/media_core_framework.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/DEPLOYMENT.md](../20-explanation/guides/DEPLOYMENT.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/NIXOS.md](../20-explanation/guides/NIXOS.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/20-explanation/guides/repo-export-formats.md](../20-explanation/guides/repo-export-formats.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/adr/0001-compat-shims-must-not-depend-on-database.md](../adr/0001-compat-shims-must-not-depend-on-database.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0002-defer-appview-database-queryrunner-migration.md](../adr/0002-defer-appview-database-queryrunner-migration.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0003-xrpc-registration-uses-plain-nsid-constants.md](../adr/0003-xrpc-registration-uses-plain-nsid-constants.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
@@ -64,6 +65,7 @@ Total documents in this view: **267**
 | [docs/adr/0033-per-service-embedded-admin-uis.md](../adr/0033-per-service-embedded-admin-uis.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0034-star-lite-v0-interop-export.md](../adr/0034-star-lite-v0-interop-export.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0035-account-migration-bring-your-own-did.md](../adr/0035-account-migration-bring-your-own-did.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
@@ -181,6 +183,7 @@ Total documents in this view: **267**
 | [docs/plans/workstreams/09-test-suite-speedups.md](../plans/workstreams/09-test-suite-speedups.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/chat.md](../plans/workstreams/service-admin-uis/chat.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
@@ -188,6 +191,7 @@ Total documents in this view: **267**
 | [docs/plans/workstreams/service-admin-uis/mikrus.md](../plans/workstreams/service-admin-uis/mikrus.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/plc.md](../plans/workstreams/service-admin-uis/plc.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/service-admin-uis/PROGRESS.md](../plans/workstreams/service-admin-uis/PROGRESS.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/relay.md](../plans/workstreams/service-admin-uis/relay.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/video.md](../plans/workstreams/service-admin-uis/video.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |

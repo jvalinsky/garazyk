@@ -46,6 +46,8 @@
             </aside>
             {{/isSingleSurface}}
             <main class="admin-content">
+            {{^isSingleSurface}}
+            <!-- Legacy multi-service panes (garazyk-ui only) -->
             <!-- PDS tab -->
             <div id="tab-pds" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-pds" tabindex="0" {{^activePDS}}hidden{{/activePDS}}>
                 <section class="admin-section">
@@ -89,11 +91,11 @@
             <div id="tab-appview" class="tab-pane" role="tabpanel" aria-labelledby="tabbtn-appview" tabindex="0" {{^activeAppView}}hidden{{/activeAppView}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">AppView Metrics</h2>
-                    <div id="appview-metrics" hx-get="/admin/partials/appview-metrics" hx-trigger="revealed, every 10s"></div>
+                    <div id="appview-metrics" class="admin-partial" hx-get="/admin/partials/appview-metrics" hx-trigger="revealed, every 10s"></div>
                 </section>
                 <section class="admin-section">
                     <h2 class="admin-section-title">Ingest Health</h2>
-                    <div id="ingest-health" hx-get="/admin/partials/ingest-health" hx-trigger="revealed, every 10s"></div>
+                    <div id="ingest-health" class="admin-partial" hx-get="/admin/partials/ingest-health" hx-trigger="revealed, every 10s"></div>
                 </section>
             </div>
 
@@ -123,11 +125,12 @@
                     <div id="plc-resolve-result"></div>
                 </section>
             </div>
+            {{/isSingleSurface}}
             {{#dynamicPanes}}
             <div id="tab-{{tabIdentifier}}" class="tab-pane" role="tabpanel" aria-labelledby="{{ariaLabelledby}}" tabindex="{{tabIndex}}" {{hidden}}>
                 <section class="admin-section">
                     <h2 class="admin-section-title">{{displayName}}</h2>
-                    <div id="{{tabIdentifier}}-content" hx-get="/admin/partials/{{tabIdentifier}}" hx-trigger="revealed, every 10s"></div>
+                    <div id="{{tabIdentifier}}-content" class="admin-partial" hx-get="/admin/partials/{{tabIdentifier}}" hx-trigger="load, revealed, every 10s"></div>
                 </section>
             </div>
             {{/dynamicPanes}}

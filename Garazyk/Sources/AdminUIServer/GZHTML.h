@@ -152,8 +152,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Builds a table row (<tr>) with pre-rendered HTML cells.
- * @discussion Each string in the array is inserted as raw HTML inside a <td>. The caller is
- * responsible for escaping cell content.
+ * @discussion Each string may be either:
+ * - inner cell HTML (wrapped in a bare <td>), or
+ * - a complete <td>…</td> from +tableCellWithText:/+tableCellWithHTML: (inserted as-is).
+ * The caller is responsible for escaping untrusted content.
  * @param htmlCells An array of pre-rendered HTML cell strings.
  * @return The rendered <tr> HTML.
  */

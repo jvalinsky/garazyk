@@ -59,7 +59,7 @@
         }];
     }
 
-    // uploadMedia
+    // uploadVideo (or domain-specific upload NSID from methodMappings)
     if (uploadNSID.length > 0) {
         [dispatcher registerMethod:uploadNSID handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
             if (request.body.length == 0) {

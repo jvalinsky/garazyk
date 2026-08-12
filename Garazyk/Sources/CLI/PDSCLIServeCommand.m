@@ -18,6 +18,7 @@
 #import "Services/PDS/PDSRelayService.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
+#import "Runtime/GZServiceLifecycle.h"
 #import <signal.h>
 
 @interface PDSCLIServeCommand : PDSBaseCommand
@@ -442,42 +443,10 @@
     GZ_LOG_INFO(@"PDS server started successfully");
   }
 
-  // Setup signal handling for graceful shutdown via GZSignalManager
-  __block volatile sig_atomic_t shouldExit = 0;
-
-  [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
-    shouldExit = 1;
-    printf("\nShutting down server...\n");
-    [subscribeReposHandler stop];
-    [httpServer stop];
-    // Give async operations 2 seconds to complete before forcing termination.
-    // Re-raise with the default disposition rather than calling exit()
-    // directly, matching GZServiceLifecycle's sigabrtHandler: the OS decides
-    // process termination here, not this library.
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC),
-                   dispatch_get_main_queue(), ^{
-                     printf("Forced shutdown after timeout.\n");
-                     signal(sig, SIG_DFL);
-                     raise(sig);
-                   });
-  }];
-
-  [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
-    shouldExit = 1;
-    printf("\nShutting down server...\n");
-    [subscribeReposHandler stop];
-    [httpServer stop];
-    // Give async operations 2 seconds to complete before forcing termination.
-    // Re-raise with the default disposition rather than calling exit()
-    // directly, matching GZServiceLifecycle's sigabrtHandler: the OS decides
-    // process termination here, not this library.
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC),
-                   dispatch_get_main_queue(), ^{
-                     printf("Forced shutdown after timeout.\n");
-                     signal(sig, SIG_DFL);
-                     raise(sig);
-                   });
-  }];
+  // INT/TERM via GZServiceLifecycle (sigaction + wake pipe + watchdog).
+  // Do not use GZSignalManager for these: it SIG_BLOCKs and delivers only on
+  // the main queue, so Ctrl+C is ignored while main is blocked on a full pipe.
+  [GZServiceLifecycle beginInterruptibleRunLoopAnnouncing:YES];
 
   // SIGHUP: log rotation trigger
   [[GZSignalManager sharedManager] registerHandlerForSignal:SIGHUP handler:^(int sig) {
@@ -499,18 +468,18 @@
     printf("Use 'kill %d' or Ctrl+C to stop.\n", getpid());
   }
 
-  // Run the main run loop to keep the server alive
-  // This properly handles network events
-  while (!shouldExit && httpServer.running) {
+  while (![GZServiceLifecycle interruptRequested] && httpServer.running) {
     @autoreleasepool {
       [[NSRunLoop mainRunLoop]
              runMode:NSDefaultRunLoopMode
-          beforeDate:[NSDate dateWithTimeIntervalSinceNow:1.0]];
+          beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.25]];
     }
   }
 
+  [GZServiceLifecycle announceInterrupt];
   [subscribeReposHandler stop];
   [httpServer stop];
+  [GZServiceLifecycle endInterruptibleRunLoop];
   printf("Server stopped.\n");
   return 0;
 }

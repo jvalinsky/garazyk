@@ -31,6 +31,31 @@ FOUNDATION_EXPORT NSString * _Nullable GZMikrusAdminPasswordFromFile(NSString *p
 /// Index family statistics
 - (NSDictionary<NSString *, id> *)indexFamilyStatistics;
 
+/**
+ * @abstract Lists records in a collection, ordered by URI ascending.
+ * @param collection Exact collection NSID.
+ * @param limit Max rows to return (clamped 1…100).
+ * @param cursor Exclusive URI cursor from a previous page; nil for the first page.
+ * @param nextCursor Receives the next URI cursor when more rows exist.
+ */
+- (NSArray<NSDictionary *> *)listRecordsInCollection:(NSString *)collection
+                                               limit:(NSInteger)limit
+                                              cursor:(nullable NSString *)cursor
+                                          nextCursor:(NSString * _Nullable * _Nullable)nextCursor;
+
+/**
+ * @abstract Searches indexed records by URI, DID, handle, or collection NSID/prefix.
+ * @param query Operator search string.
+ * @param limit Max rows (clamped 1…100).
+ */
+- (NSArray<NSDictionary *> *)searchIndexWithQuery:(NSString *)query limit:(NSInteger)limit;
+
+/**
+ * @abstract Loads one record plus a sample of inbound backlinks for admin inspection.
+ * @param uri Exact at:// URI.
+ */
+- (nullable NSDictionary<NSString *, id> *)recordDetailForURI:(NSString *)uri;
+
 @end
 
 NS_ASSUME_NONNULL_END

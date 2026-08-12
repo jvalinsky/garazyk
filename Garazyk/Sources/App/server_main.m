@@ -24,6 +24,7 @@
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/GZSignalManager.h"
+#import "Runtime/GZServiceLifecycle.h"
 
 int main(int argc, const char * argv[]) {
     [[GZSignalManager sharedManager] installIgnoredSignals];
@@ -87,27 +88,21 @@ int main(int argc, const char * argv[]) {
         GZ_LOG_INFO_C(GZLogComponentCore, @"XRPC endpoint: /xrpc/*");
         GZ_LOG_INFO_C(GZLogComponentCore, @"Press Ctrl+C to stop");
 
-        // Register signal handlers for graceful shutdown
-        __block volatile sig_atomic_t shouldExit = 0;
-        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
-            shouldExit = 1;
-            GZ_LOG_SERVICE_INFO(@"Received SIGINT — shutting down");
-        }];
-        [[GZSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
-            shouldExit = 1;
-            GZ_LOG_SERVICE_INFO(@"Received SIGTERM — shutting down");
-        }];
+        // INT/TERM via GZServiceLifecycle — not GZSignalManager (main-queue /
+        // SIG_BLOCK path ignores Ctrl+C when stdout is a full pipe).
+        [GZServiceLifecycle beginInterruptibleRunLoopAnnouncing:YES];
 
-        // Drain the run loop instead of CFRunLoopRun() so we can check shouldExit
-        while (!shouldExit && server.running) {
+        while (![GZServiceLifecycle interruptRequested] && server.running) {
             @autoreleasepool {
                 [[NSRunLoop mainRunLoop]
                      runMode:NSDefaultRunLoopMode
-                  beforeDate:[NSDate dateWithTimeIntervalSinceNow:1.0]];
+                  beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.25]];
             }
         }
 
+        [GZServiceLifecycle announceInterrupt];
         [server stop];
+        [GZServiceLifecycle endInterruptibleRunLoop];
         GZ_LOG_INFO_C(GZLogComponentCore, @"ATProto PDS stopped");
     }
     return 0;

@@ -76,3 +76,27 @@ os/log, XCTest, …) so the rest of the stack runs unchanged on GNUstep/Linux. I
 | `kaszlak` | PDS command-line interface |
 | `garazyk-ui` | Admin UI |
 | `syrena-chat` | Chat service |
+
+## Repository export formats
+
+Whole-repo archives returned by `com.atproto.sync.getRepo` /
+`getCheckout`. Decision guide:
+[`docs/20-explanation/guides/repo-export-formats.md`](../20-explanation/guides/repo-export-formats.md).
+
+### CAR
+IPLD Content Addressable aRchive (`application/vnd.ipld.car`). Default when
+clients express no preference. Required for migration/`importRepo` and for
+payloads that are not a single MST walk.
+
+### STAR-L0
+STAR version 1 (`application/vnd.atproto.star`). MST-structured streaming
+archive. Preferred by AppView backfill with CAR fallback.
+
+### STAR-lite (local / v2)
+STAR version 2 (`application/vnd.atproto.star-lite`). Flat key→record stream,
+Garazyk-local. No known external consumer.
+
+### STAR-lite v0 (Microcosm)
+Upstream lite (`application/x.microcosm.star-lite`, magic `*l\0`). Flat
+records with MST root in the header and a partial commit. PDS exports for
+Hubble; Garazyk has no v0 reader yet.

@@ -24,10 +24,10 @@ title: Garazyk Documentation
 ## Operations and design
 
 - [Architecture](20-explanation/architecture/atproto_pds_architecture.md)
+- [Repository export formats](20-explanation/guides/repo-export-formats.md)
 - [Deployment](20-explanation/guides/DEPLOYMENT.md)
 - [NixOS build and deployment](20-explanation/guides/NIXOS.md)
 - [Decision records](adr/)
-
 ## Project planning
 
 - [Current plans](plans/README.md)

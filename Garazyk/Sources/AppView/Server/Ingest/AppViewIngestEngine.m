@@ -110,6 +110,9 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 @property (nonatomic, copy)   NSString *relayURL;
 @property (nonatomic, assign) int64_t lastCheckpointSeq;
 @property (nonatomic, assign) int64_t currentSeq;
+@property (nonatomic, assign) int64_t eventsSinceThroughputSample;
+@property (nonatomic, assign) CFAbsoluteTime lastThroughputSampleAt;
+@property (nonatomic, assign) double lastThroughputEventsPerSec;
 @property (nonatomic, weak)   id owner;  // AppViewIngestEngine (weak to avoid cycles)
 
 - (instancetype)initWithRelayURL:(NSString *)url
@@ -128,6 +131,9 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     _relayURL = [url copy];
     _currentSeq = startingSeq;
     _lastCheckpointSeq = startingSeq;
+    _eventsSinceThroughputSample = 0;
+    _lastThroughputSampleAt = CFAbsoluteTimeGetCurrent();
+    _lastThroughputEventsPerSec = 0.0;
     _owner = owner;
 
     NSURL *nsurl = [NSURL URLWithString:url];
@@ -332,7 +338,15 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     for (AppViewRelayConnection *conn in connsToStop) {
         [conn.client disconnect];
     }
-    [self flushCheckpoints];
+    // Best-effort flush: never block process shutdown on a stuck checkpoint
+    // queue (e.g. logging into a full stdout pipe under firehose load).
+    dispatch_semaphore_t flushDone = dispatch_semaphore_create(0);
+    dispatch_async(_checkpointQueue, ^{
+        [self _flushCheckpointsOnQueue];
+        dispatch_semaphore_signal(flushDone);
+    });
+    (void)dispatch_semaphore_wait(flushDone,
+                                  dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)));
 }
 
 - (void)_flushCheckpointsOnQueue {
@@ -448,6 +462,66 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     }
     [_stateLock unlock];
     return found;
+}
+
+- (void)_noteEventForThroughput:(NSString *)relayURL {
+    [_stateLock lock];
+    AppViewRelayConnection *conn = nil;
+    for (AppViewRelayConnection *candidate in _connections) {
+        if ([candidate.relayURL isEqualToString:relayURL]) {
+            conn = candidate;
+            break;
+        }
+    }
+    if (conn) {
+        CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
+        conn.eventsSinceThroughputSample++;
+        CFAbsoluteTime elapsed = now - conn.lastThroughputSampleAt;
+        if (elapsed >= 5.0) {
+            conn.lastThroughputEventsPerSec = (double)conn.eventsSinceThroughputSample / elapsed;
+            conn.eventsSinceThroughputSample = 0;
+            conn.lastThroughputSampleAt = now;
+        }
+    }
+    [_stateLock unlock];
+}
+
+- (NSDictionary<NSString *, NSString *> *)relayHealth {
+    NSMutableDictionary<NSString *, NSString *> *health = [NSMutableDictionary dictionary];
+    [_stateLock lock];
+    BOOL running = _isRunning;
+    for (AppViewRelayConnection *conn in _connections) {
+        NSString *status = @"disconnected";
+        if (conn.client.isConnected) {
+            BOOL paused = [_backpressureStateByRelay[conn.relayURL] boolValue];
+            status = paused ? @"paused" : @"connected";
+        } else if (running) {
+            status = @"connecting";
+        }
+        health[conn.relayURL] = status;
+    }
+    for (NSString *url in _relayURLs) {
+        if (health[url] == nil) {
+            health[url] = running ? @"connecting" : @"disconnected";
+        }
+    }
+    [_stateLock unlock];
+    return [health copy];
+}
+
+- (NSDictionary<NSString *, NSNumber *> *)throughput {
+    NSMutableDictionary<NSString *, NSNumber *> *out = [NSMutableDictionary dictionary];
+    [_stateLock lock];
+    for (AppViewRelayConnection *conn in _connections) {
+        CFAbsoluteTime elapsed = CFAbsoluteTimeGetCurrent() - conn.lastThroughputSampleAt;
+        double rate = conn.lastThroughputEventsPerSec;
+        if (elapsed > 0.0 && elapsed < 5.0 && conn.eventsSinceThroughputSample > 0) {
+            rate = (double)conn.eventsSinceThroughputSample / MAX(elapsed, 0.001);
+        }
+        out[conn.relayURL] = @(rate);
+    }
+    [_stateLock unlock];
+    return [out copy];
 }
 
 - (void)_timerFired {
@@ -654,6 +728,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
             }
             if (indexed) {
                 [self.database markDurableCursor:seq forRelayURL:relayURL];
+                [self _noteEventForThroughput:relayURL];
                 _eventsSinceLastFlush++;
                 if (_eventsSinceLastFlush >= 100) {
                     _eventsSinceLastFlush = 0;

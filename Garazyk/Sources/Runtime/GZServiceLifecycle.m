@@ -7,6 +7,7 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <execinfo.h>
 #import <fcntl.h>
+#import <poll.h>
 #import <signal.h>
 #import <unistd.h>
 
@@ -21,22 +22,44 @@ static volatile sig_atomic_t gShutdownSignal = 0;
 static volatile sig_atomic_t gAnnounceSignals = 1;
 static volatile sig_atomic_t gForceExitArmed = 0;
 static int gWakePipe[2] = { -1, -1 };
+static dispatch_source_t gWakeSource = nil;
 
 enum {
-    // Graceful stop can hang when the main thread is blocked (e.g. stdout pipe
-    // backpressure under firehose logging). Force-exit before the operator has
-    // to reach for kill -9.
-    kGZServiceShutdownWatchdogSeconds = 8
+    // Graceful stop can hang (checkpoint flush, stdout pipe backpressure under
+    // firehose logging). Force-exit before the operator reaches for kill -9.
+    // Keep this short: first Ctrl+C should feel responsive even when stop stalls.
+    kGZServiceShutdownWatchdogSeconds = 3
 };
 
 static void lifecycleWriteStderr(const char *msg) {
-    if (!msg) return;
+    if (!msg || !gAnnounceSignals) {
+        return;
+    }
     size_t len = 0;
     while (msg[len] != '\0') {
         len++;
     }
-    if (len > 0) {
-        (void)write(STDERR_FILENO, msg, len);
+    if (len == 0) {
+        return;
+    }
+
+    // Never block the main thread or a signal handler on a full stderr pipe
+    // (common when the operator redirected 2>&1 into an undrained pipe).
+    struct pollfd pfd = { .fd = STDERR_FILENO, .events = POLLOUT, .revents = 0 };
+    if (poll(&pfd, 1, 0) <= 0 || (pfd.revents & POLLOUT) == 0) {
+        return;
+    }
+
+    int flags = fcntl(STDERR_FILENO, F_GETFL, 0);
+    BOOL restored = NO;
+    if (flags >= 0 && (flags & O_NONBLOCK) == 0) {
+        if (fcntl(STDERR_FILENO, F_SETFL, flags | O_NONBLOCK) == 0) {
+            restored = YES;
+        }
+    }
+    (void)write(STDERR_FILENO, msg, len);
+    if (restored) {
+        (void)fcntl(STDERR_FILENO, F_SETFL, flags);
     }
 }
 
@@ -48,9 +71,7 @@ static void lifecycleWakeRunLoop(void) {
 }
 
 static void lifecycleForceExit(int sig) {
-    if (gAnnounceSignals) {
-        lifecycleWriteStderr("\nShutdown watchdog — forcing exit.\n");
-    }
+    lifecycleWriteStderr("\nShutdown watchdog — forcing exit.\n");
     _exit(128 + (sig > 0 ? sig : SIGTERM));
 }
 
@@ -62,9 +83,7 @@ static void lifecycleAlarmHandler(int sig) {
 static void lifecycleShutdownHandler(int sig) {
     // Second Ctrl+C / SIGTERM while stopping: exit immediately.
     if (gShutdownSignal != 0) {
-        if (gAnnounceSignals) {
-            lifecycleWriteStderr("\nSecond interrupt — forcing exit.\n");
-        }
+        lifecycleWriteStderr("\nSecond interrupt — forcing exit.\n");
         _exit(128 + sig);
     }
 
@@ -98,6 +117,9 @@ static void sigabrtHandler(int sig) {
 }
 
 static BOOL lifecycleInstallWakePipe(void) {
+    if (gWakePipe[0] >= 0) {
+        return YES;
+    }
     if (pipe(gWakePipe) != 0) {
         gWakePipe[0] = -1;
         gWakePipe[1] = -1;
@@ -122,6 +144,13 @@ static void lifecycleCloseWakePipe(void) {
     if (gWakePipe[1] >= 0) {
         close(gWakePipe[1]);
         gWakePipe[1] = -1;
+    }
+}
+
+static void lifecycleCancelWakeSource(void) {
+    if (gWakeSource) {
+        dispatch_source_cancel(gWakeSource);
+        gWakeSource = nil;
     }
 }
 
@@ -159,6 +188,85 @@ static void lifecycleCloseWakePipe(void) {
     return YES;
 }
 
++ (void)beginInterruptibleRunLoopAnnouncing:(BOOL)announceSignals {
+    gShutdownSignal = 0;
+    gForceExitArmed = 0;
+    gAnnounceSignals = announceSignals ? 1 : 0;
+
+    lifecycleCancelWakeSource();
+    lifecycleCloseWakePipe();
+    (void)lifecycleInstallWakePipe();
+
+    struct sigaction alarmAction;
+    memset(&alarmAction, 0, sizeof(alarmAction));
+    alarmAction.sa_handler = lifecycleAlarmHandler;
+    sigemptyset(&alarmAction.sa_mask);
+    sigaction(SIGALRM, &alarmAction, NULL);
+
+    struct sigaction shutdownAction;
+    memset(&shutdownAction, 0, sizeof(shutdownAction));
+    shutdownAction.sa_handler = lifecycleShutdownHandler;
+    sigemptyset(&shutdownAction.sa_mask);
+    // Ensure GCD signal sources did not leave INT/TERM blocked for this process.
+    sigset_t unblock;
+    sigemptyset(&unblock);
+    sigaddset(&unblock, SIGINT);
+    sigaddset(&unblock, SIGTERM);
+    sigprocmask(SIG_UNBLOCK, &unblock, NULL);
+    sigaction(SIGTERM, &shutdownAction, NULL);
+    sigaction(SIGINT, &shutdownAction, NULL);
+
+    // When the signal handler writes the wake pipe, drain it on the main queue
+    // and stop the runloop so we don't wait out the full beforeDate interval.
+    if (gWakePipe[0] >= 0) {
+        gWakeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ,
+                                             (uintptr_t)gWakePipe[0],
+                                             0,
+                                             dispatch_get_main_queue());
+        dispatch_source_set_event_handler(gWakeSource, ^{
+            char buf[32];
+            while (read(gWakePipe[0], buf, sizeof(buf)) > 0) {
+            }
+            CFRunLoopStop(CFRunLoopGetMain());
+        });
+        dispatch_resume(gWakeSource);
+    }
+}
+
++ (BOOL)interruptRequested {
+    return gShutdownSignal != 0;
+}
+
++ (void)runMainRunLoopUntilInterrupted {
+    while (gShutdownSignal == 0) {
+        @autoreleasepool {
+            // Short timeout so a missed wake still observes the flag quickly.
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                     beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.25]];
+        }
+    }
+}
+
++ (void)announceInterrupt {
+    if (!gAnnounceSignals || gShutdownSignal == 0) {
+        return;
+    }
+    const char *name = gShutdownSignal == SIGTERM ? "SIGTERM" : "SIGINT";
+    char buf[64];
+    // Keep this tiny so a non-blocking write usually succeeds.
+    int n = snprintf(buf, sizeof(buf), "\nReceived %s, shutting down...\n", name);
+    if (n > 0) {
+        lifecycleWriteStderr(buf);
+    }
+}
+
++ (void)endInterruptibleRunLoop {
+    alarm(0);
+    gForceExitArmed = 0;
+    lifecycleCancelWakeSource();
+    lifecycleCloseWakePipe();
+}
+
 + (int)runServiceWithRuntime:(id<GZServiceRuntimeProtocol>)runtime
                  serviceName:(NSString *)serviceName
                      onStart:(void (^ _Nullable)(void))onStart {
@@ -172,48 +280,11 @@ static void lifecycleCloseWakePipe(void) {
                  serviceName:(NSString *)serviceName
                      onStart:(void (^ _Nullable)(void))onStart
              announceSignals:(BOOL)announceSignals {
-    gShutdownSignal = 0;
-    gForceExitArmed = 0;
-    gAnnounceSignals = announceSignals ? 1 : 0;
-
-    (void)lifecycleInstallWakePipe();
-
-    struct sigaction alarmAction;
-    memset(&alarmAction, 0, sizeof(alarmAction));
-    alarmAction.sa_handler = lifecycleAlarmHandler;
-    sigemptyset(&alarmAction.sa_mask);
-    sigaction(SIGALRM, &alarmAction, NULL);
-
-    struct sigaction shutdownAction;
-    memset(&shutdownAction, 0, sizeof(shutdownAction));
-    shutdownAction.sa_handler = lifecycleShutdownHandler;
-    sigemptyset(&shutdownAction.sa_mask);
-    sigaction(SIGTERM, &shutdownAction, NULL);
-    sigaction(SIGINT, &shutdownAction, NULL);
-
-    // When the signal handler writes the wake pipe, drain it on the main queue
-    // and stop the runloop so we don't wait out the full beforeDate interval.
-    dispatch_source_t wakeSource = nil;
-    if (gWakePipe[0] >= 0) {
-        wakeSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ,
-                                            (uintptr_t)gWakePipe[0],
-                                            0,
-                                            dispatch_get_main_queue());
-        dispatch_source_set_event_handler(wakeSource, ^{
-            char buf[32];
-            while (read(gWakePipe[0], buf, sizeof(buf)) > 0) {
-            }
-            CFRunLoopStop(CFRunLoopGetMain());
-        });
-        dispatch_resume(wakeSource);
-    }
+    [self beginInterruptibleRunLoopAnnouncing:announceSignals];
 
     NSError *startError = nil;
     if (![runtime startWithError:&startError]) {
-        if (wakeSource) {
-            dispatch_source_cancel(wakeSource);
-        }
-        lifecycleCloseWakePipe();
+        [self endInterruptibleRunLoop];
         fprintf(stderr, "Failed to start %s: %s\n", serviceName.UTF8String, startError.localizedDescription.UTF8String ?: "unknown");
         return 1;
     }
@@ -222,30 +293,10 @@ static void lifecycleCloseWakePipe(void) {
         onStart();
     }
 
-    while (gShutdownSignal == 0) {
-        @autoreleasepool {
-            // Short timeout so a missed wake still observes the flag quickly.
-            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
-                                      beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.25]];
-        }
-    }
-
-    if (announceSignals) {
-        const char *name = gShutdownSignal == SIGTERM ? "SIGTERM" : "SIGINT";
-        printf("\nReceived %s, shutting down...\n", name);
-        fflush(stdout);
-    }
-
+    [self runMainRunLoopUntilInterrupted];
+    [self announceInterrupt];
     [runtime stop];
-
-    // Graceful stop finished — cancel the force-exit watchdog.
-    alarm(0);
-    gForceExitArmed = 0;
-
-    if (wakeSource) {
-        dispatch_source_cancel(wakeSource);
-    }
-    lifecycleCloseWakePipe();
+    [self endInterruptibleRunLoop];
     return 0;
 }
 

@@ -510,6 +510,7 @@ static NSDictionary<NSString *, NSString *> *PDSGatedClassMap(void) {
       @"ATProtoVideoTranscoderIntegrationTests"         : @"integration",
       @"ATProtoVideoThumbnailGeneratorIntegrationTests" : @"integration",
       @"ATProtoVideoWorkerIntegrationTests"            : @"integration",
+      @"VideoHLSGeneratorTests"                        : @"integration",
       @"SSLPinningTests"                               : @"integration",
       // socket gate
       @"HealthEndpointIntegrationTests" : @"socket",
@@ -1139,6 +1140,7 @@ int main(int argc, char *argv[]) {
       @"ATProtoVideoWorkerTests",
       @"ATProtoVideoWorkerIntegrationTests",
       @"ATProtoVideoHLSGeneratorTests",
+      @"VideoHLSGeneratorTests",
       @"AppViewVideoUriBuilderTests",
       @"XrpcAppBskyBookmarksTests",
       @"XrpcAppBskyContactTests",

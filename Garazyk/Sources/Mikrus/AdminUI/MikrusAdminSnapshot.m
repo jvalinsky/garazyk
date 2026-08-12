@@ -122,7 +122,7 @@ NSString *GZMikrusAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
     // Compute statistics for each index family
     int64_t linksCount = [self approximateRowCount:@"mikrus_links"];
     int64_t recordsCount = [self approximateRowCount:@"mikrus_records"];
-    int64_t identitiesCount = [self approximateRowCount:@"mikrus_identities"];
+    int64_t identitiesCount = [self approximateRowCount:@"mikrus_handles"];
     int64_t manyToManyCount = [self approximateRowCount:@"mikrus_many_to_many"];
     
     return @{
@@ -146,12 +146,129 @@ NSString *GZMikrusAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
 }
 
 - (int64_t)approximateRowCount:(NSString *)table {
+    static NSSet<NSString *> *allowed = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        allowed = [NSSet setWithArray:@[
+            @"mikrus_links", @"mikrus_records", @"mikrus_handles", @"mikrus_many_to_many"
+        ]];
+    });
+    if (![allowed containsObject:table]) return 0;
+
     NSString *sql = [NSString stringWithFormat:@"SELECT MAX(rowid) as mx FROM %@", table];
     NSArray *rows = [self.database executeQuery:sql params:@[] error:nil];
     if (rows.count == 0) return 0;
     id value = rows.firstObject[@"mx"];
     if ([value isKindOfClass:[NSNull class]] || !value) return 0;
     return [value longLongValue];
+}
+
+static NSInteger GZMikrusClampExploreLimit(NSInteger limit) {
+    if (limit < 1) return 25;
+    if (limit > 100) return 100;
+    return limit;
+}
+
+- (NSArray<NSDictionary *> *)listRecordsInCollection:(NSString *)collection
+                                               limit:(NSInteger)limit
+                                              cursor:(nullable NSString *)cursor
+                                          nextCursor:(NSString * _Nullable * _Nullable)nextCursor {
+    if (nextCursor) *nextCursor = nil;
+    if (collection.length == 0) return @[];
+
+    NSInteger pageSize = GZMikrusClampExploreLimit(limit);
+    NSMutableArray *params = [NSMutableArray arrayWithObject:collection];
+    NSString *sql;
+    if (cursor.length > 0) {
+        sql = @"SELECT uri, did, collection, rkey, cid, indexed_at FROM mikrus_records "
+              @"WHERE collection = ? AND uri > ? ORDER BY uri ASC LIMIT ?";
+        [params addObject:cursor];
+    } else {
+        sql = @"SELECT uri, did, collection, rkey, cid, indexed_at FROM mikrus_records "
+              @"WHERE collection = ? ORDER BY uri ASC LIMIT ?";
+    }
+    [params addObject:@(pageSize + 1)];
+
+    NSArray *rows = [self.database executeQuery:sql params:params error:nil] ?: @[];
+    if ((NSInteger)rows.count > pageSize) {
+        if (nextCursor) {
+            *nextCursor = rows[pageSize - 1][@"uri"];
+        }
+        return [rows subarrayWithRange:NSMakeRange(0, (NSUInteger)pageSize)];
+    }
+    return rows;
+}
+
+- (NSArray<NSDictionary *> *)searchIndexWithQuery:(NSString *)query limit:(NSInteger)limit {
+    NSString *trimmed = [query stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    if (trimmed.length == 0) return @[];
+
+    NSInteger pageSize = GZMikrusClampExploreLimit(limit);
+
+    if ([trimmed hasPrefix:@"at://"]) {
+        NSString *sql = @"SELECT uri, did, collection, rkey, cid, indexed_at FROM mikrus_records "
+                        @"WHERE uri = ? LIMIT 1";
+        return [self.database executeQuery:sql params:@[trimmed] error:nil] ?: @[];
+    }
+
+    if ([trimmed hasPrefix:@"did:"]) {
+        NSString *sql = @"SELECT uri, did, collection, rkey, cid, indexed_at FROM mikrus_records "
+                        @"WHERE did = ? ORDER BY indexed_at DESC, uri ASC LIMIT ?";
+        return [self.database executeQuery:sql params:@[trimmed, @(pageSize)] error:nil] ?: @[];
+    }
+
+    // Handle lookup → DID records
+    NSError *handleError = nil;
+    NSString *resolvedDID = [self.database resolveHandleToDID:trimmed error:&handleError];
+    if (resolvedDID.length > 0) {
+        NSString *sql = @"SELECT uri, did, collection, rkey, cid, indexed_at FROM mikrus_records "
+                        @"WHERE did = ? ORDER BY indexed_at DESC, uri ASC LIMIT ?";
+        NSArray *rows = [self.database executeQuery:sql params:@[resolvedDID, @(pageSize)] error:nil] ?: @[];
+        if (rows.count > 0) return rows;
+    }
+
+    // Exact collection match
+    NSString *exactSQL = @"SELECT uri, did, collection, rkey, cid, indexed_at FROM mikrus_records "
+                         @"WHERE collection = ? ORDER BY indexed_at DESC, uri ASC LIMIT ?";
+    NSArray *exact = [self.database executeQuery:exactSQL params:@[trimmed, @(pageSize)] error:nil] ?: @[];
+    if (exact.count > 0) return exact;
+
+    // Collection / URI prefix (bounded)
+    NSString *prefix = [trimmed stringByAppendingString:@"%"];
+    NSString *prefixSQL = @"SELECT uri, did, collection, rkey, cid, indexed_at FROM mikrus_records "
+                          @"WHERE collection LIKE ? OR uri LIKE ? "
+                          @"ORDER BY indexed_at DESC, uri ASC LIMIT ?";
+    return [self.database executeQuery:prefixSQL params:@[prefix, prefix, @(pageSize)] error:nil] ?: @[];
+}
+
+- (nullable NSDictionary<NSString *, id> *)recordDetailForURI:(NSString *)uri {
+    if (uri.length == 0) return nil;
+
+    NSError *error = nil;
+    NSDictionary *record = [self.database recordByURI:uri cid:nil error:&error];
+    if (!record) return nil;
+
+    NSString *metaSQL = @"SELECT did, collection, rkey, indexed_at, updated_at FROM mikrus_records WHERE uri = ? LIMIT 1";
+    NSArray *metaRows = [self.database executeQuery:metaSQL params:@[uri] error:nil];
+    NSDictionary *meta = metaRows.firstObject ?: @{};
+
+    NSString *linksSQL = @"SELECT subject, source_collection, source_path, link_uri, link_cid, indexed_at "
+                         @"FROM mikrus_links WHERE subject = ? OR link_uri = ? "
+                         @"ORDER BY indexed_at DESC LIMIT 25";
+    NSArray *links = [self.database executeQuery:linksSQL params:@[uri, uri] error:nil] ?: @[];
+
+    NSMutableDictionary *detail = [@{
+        @"uri": record[@"uri"] ?: uri,
+        @"value": record[@"value"] ?: @{},
+        @"backlinks": links,
+    } mutableCopy];
+    if (record[@"cid"]) detail[@"cid"] = record[@"cid"];
+    if (meta[@"did"]) detail[@"did"] = meta[@"did"];
+    if (meta[@"collection"]) detail[@"collection"] = meta[@"collection"];
+    if (meta[@"rkey"]) detail[@"rkey"] = meta[@"rkey"];
+    if (meta[@"indexed_at"]) detail[@"indexed_at"] = meta[@"indexed_at"];
+    if (meta[@"updated_at"]) detail[@"updated_at"] = meta[@"updated_at"];
+    return [detail copy];
 }
 
 @end

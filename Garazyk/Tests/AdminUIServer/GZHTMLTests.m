@@ -227,6 +227,15 @@
                          @"<tr><td><b>x</b></td></tr>");
 }
 
+- (void)testTableRowWithHtmlCellsAcceptsPrefabricatedTd {
+    NSArray *cells = @[
+        [GZHTML tableCellWithText:@"a" className:nil],
+        [GZHTML tableCellWithText:@"9" className:@"text-right"],
+    ];
+    XCTAssertEqualObjects([GZHTML tableRowWithHtmlCells:cells],
+                         @"<tr><td>a</td><td class=\"text-right\">9</td></tr>");
+}
+
 #pragma mark - Compound: Empty State Row
 
 - (void)testEmptyStateRow {

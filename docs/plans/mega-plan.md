@@ -617,6 +617,28 @@ for full traceability; mirrored in the
     Tiles files (`UITileDataProtocol`, `UITileExecutionPolicy`) with
     workstream 10, and the `UI*` → `GZAdminUI*` rename with workstream 08 M5.3.
 
+14. **Open (added 2026-08-12):** make `jelcz`'s adaptive-bitrate output
+    content-addressed, verifiable, and redistributable. Complete
+    [workstream 12](workstreams/12-content-addressed-video.md). Decision:
+    [ADR 0036](../adr/0036-content-addressed-video-distribution.md) — one MASL
+    manifest blob per video names segments held in a `jelcz`-owned
+    content-addressed store; segments are deliberately *not* atproto blobs,
+    because `PDSBlobAuditUtils.m:26` only extracts blob references from record
+    JSON, so CIDs appearing solely inside manifest bytes would never be promoted
+    from `temporary` and would be reclaimed by ADR 0013's sweep. The HLS stage is
+    currently a stub: the ladder is generated, logged, and discarded
+    (`VideoWorker.m:383`), and no route serves the `/watch/{did}/{cid}` pattern
+    that `VideoUriBuilder.m:10` constructs
+    (`ATProtoMediaServiceRuntime.m:106-146` registers only `/xrpc`, `/_health`,
+    `/admin/api/media/*`). Phase 1 also closes a live defect: `segment_%03d.ts`
+    (`VideoHLSGenerator.m:190`) wraps at 1,000 segments — 100 minutes at the
+    configured `-hls_time 6` — silently overwriting earlier segments. Consumes
+    workstream 10's MASL, RASL, and BDASL slices; ADR 0036 records that
+    verifiable distribution does **not** depend on workstream 10 Phase 9's
+    deterministic muxer, so the two are sequenced independently. Peer transports
+    (iroh) and BDASL range verification are deferred pending evidence; IPFS is
+    rejected with reasons in ADR 0036.
+
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
 

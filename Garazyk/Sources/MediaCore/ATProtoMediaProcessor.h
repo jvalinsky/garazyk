@@ -60,6 +60,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (BOOL)validateContentSignature:(NSData *)data declaredMimeType:(NSString *)declaredMime;
 
+/**
+ * @abstract Optional hook invoked by @c ATProtoMediaWorker before processing begins.
+ *
+ * @param ownerDID      DID of the uploader (from the job record).
+ * @param blobProvider  Blob store for output assets (may be nil).
+ */
+- (void)prepareForJobWithOwnerDID:(NSString *)ownerDID blobProvider:(nullable id)blobProvider;
+
 @end
 
 NS_ASSUME_NONNULL_END

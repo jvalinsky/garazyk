@@ -149,3 +149,9 @@ for operators and debugging, not a protocol requirement.
   externally-created commit with an explicit `prev: null` (spec-compliant)
   previously failed `PDSRepoImportValidator` verification because decoding
   and re-serializing it silently dropped the null.
+
+## See also
+
+- [Repository export formats](../20-explanation/guides/repo-export-formats.md) —
+  CAR / STAR-L0 / lite comparison and role-based suggestions.
+- [ADR 0009](0009-star-versioning-and-variants.md) — STAR-L0 and local STAR-lite v2.

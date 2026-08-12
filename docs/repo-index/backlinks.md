@@ -99,10 +99,11 @@ Inbound links: **8**
 
 ## `docs/11-reference/glossary.md`
 
-Inbound links: **3**
+Inbound links: **4**
 
 - [docs/index.md](../index.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 
 ## `docs/11-reference/lexicon-resolution.md`
 
@@ -170,6 +171,18 @@ Inbound links: **7**
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/20-explanation/guides/repo-export-formats.md`
+
+Inbound links: **8**
+
+- [docs/11-reference/glossary.md](../11-reference/glossary.md)
+- [docs/adr/0009-star-versioning-and-variants.md](../adr/0009-star-versioning-and-variants.md)
+- [docs/adr/0034-star-lite-v0-interop-export.md](../adr/0034-star-lite-v0-interop-export.md)
+- [docs/index.md](../index.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/adr/0001-compat-shims-must-not-depend-on-database.md`
 
 Inbound links: **2**
@@ -231,9 +244,12 @@ Inbound links: **2**
 
 ## `docs/adr/0009-star-versioning-and-variants.md`
 
-Inbound links: **2**
+Inbound links: **7**
 
+- [docs/20-explanation/guides/repo-export-formats.md](../20-explanation/guides/repo-export-formats.md)
+- [docs/adr/0034-star-lite-v0-interop-export.md](../adr/0034-star-lite-v0-interop-export.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/adr/0010-wasm-kernel-supported-subset.md`
@@ -259,8 +275,9 @@ Inbound links: **2**
 
 ## `docs/adr/0013-blob-lifecycle-conformance.md`
 
-Inbound links: **3**
+Inbound links: **5**
 
+- [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
 - [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -402,8 +419,9 @@ Inbound links: **3**
 
 ## `docs/adr/0032-dasl-conformance-profiles.md`
 
-Inbound links: **7**
+Inbound links: **8**
 
+- [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
 - [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md)
@@ -432,9 +450,12 @@ Inbound links: **14**
 
 ## `docs/adr/0034-star-lite-v0-interop-export.md`
 
-Inbound links: **2**
+Inbound links: **7**
 
+- [docs/20-explanation/guides/repo-export-formats.md](../20-explanation/guides/repo-export-formats.md)
+- [docs/adr/0009-star-versioning-and-variants.md](../adr/0009-star-versioning-and-variants.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/adr/0035-account-migration-bring-your-own-did.md`
@@ -442,6 +463,16 @@ Inbound links: **2**
 Inbound links: **2**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/adr/0036-content-addressed-video-distribution.md`
+
+Inbound links: **9**
+
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md`
@@ -1122,7 +1153,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **359**
+Inbound links: **364**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -1150,12 +1181,13 @@ Inbound links: **2**
 
 ## `docs/plans/mega-plan.md`
 
-Inbound links: **23**
+Inbound links: **26**
 
 - [docs/archive/planning/README.md](../archive/planning/README.md)
 - [docs/index.md](../index.md)
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -1189,12 +1221,13 @@ Inbound links: **9**
 
 ## `docs/plans/README.md`
 
-Inbound links: **84**
+Inbound links: **90**
 
 - [docs/index.md](../index.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/prompts/README.md](../plans/prompts/README.md)
 - [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
+- [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -1329,13 +1362,15 @@ Inbound links: **6**
 
 ## `docs/plans/workstreams/10-dasl-conformance.md`
 
-Inbound links: **9**
+Inbound links: **11**
 
 - [docs/adr/0032-dasl-conformance-profiles.md](../adr/0032-dasl-conformance-profiles.md)
+- [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
 - [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md)
+- [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -1357,6 +1392,17 @@ Inbound links: **26**
 - [docs/plans/workstreams/service-admin-uis/plc.md](../plans/workstreams/service-admin-uis/plc.md)
 - [docs/plans/workstreams/service-admin-uis/relay.md](../plans/workstreams/service-admin-uis/relay.md)
 - [docs/plans/workstreams/service-admin-uis/video.md](../plans/workstreams/service-admin-uis/video.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/workstreams/12-content-addressed-video.md`
+
+Inbound links: **9**
+
+- [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
+- [docs/plans/README.md](../plans/README.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
@@ -1446,6 +1492,13 @@ Inbound links: **12**
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/plans/workstreams/service-admin-uis/PROGRESS.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/plans/workstreams/service-admin-uis/README.md`
 
 Inbound links: **27**
@@ -1499,7 +1552,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **272**
+Inbound links: **274**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1510,7 +1563,7 @@ Inbound links: **272**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **66**
+Inbound links: **70**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1519,7 +1572,7 @@ Inbound links: **66**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **200**
+Inbound links: **202**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)

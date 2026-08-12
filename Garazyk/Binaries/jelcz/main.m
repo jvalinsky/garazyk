@@ -26,6 +26,7 @@
 #endif
 #import "MediaCore/ATProtoMediaServiceRuntime.h"
 #import "MediaCore/ATProtoMediaServiceConfiguration.h"
+#import "MediaCore/ATProtoMediaWorker.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Blob/PDSCloudStorageBlobProvider.h"
@@ -41,10 +42,8 @@
 #import "Compat/PlatformShims/CrashReporting/GZCrashReporter.h"
 #import "AdminUIServer/GZAdminUIHost.h"
 #import "AdminUIServer/UIServiceConfig.h"
-#import "AdminUIServer/Packs/JelczAdminSnapshot.h"
 #import "Video/AdminUI/JelczAdminUIPack.h"
-#import "Video/VideoWorker.h"
-#import "Video/JelczDatabase.h"
+#import "Video/AdminUI/JelczAdminEmbedContext.h"
 
 static const char *executable_name = "jelcz";
 
@@ -294,9 +293,20 @@ static int run_serve(NSArray<NSString *> *args) {
     ATProtoVideoHLSGenerator *hlsGenerator = [ATProtoVideoHLSGenerator sharedGenerator];
     hlsGenerator.outputBaseDirectory = config.outputDirectory ?: [config.dataDirectory stringByAppendingPathComponent:@"hls"];
     hlsGenerator.include1080p = config.includeHighQuality;
+    NSString *ffmpegPath = [[[NSProcessInfo processInfo] environment] objectForKey:@"JELCZ_FFMPEG_PATH"];
+    if (ffmpegPath.length == 0) {
+        ffmpegPath = @"/opt/homebrew/bin/ffmpeg";
+        if (![[NSFileManager defaultManager] isExecutableFileAtPath:ffmpegPath]) {
+            ffmpegPath = @"/usr/local/bin/ffmpeg";
+            if (![[NSFileManager defaultManager] isExecutableFileAtPath:ffmpegPath]) {
+                ffmpegPath = @"ffmpeg";
+            }
+        }
+    }
+    hlsGenerator.ffmpegPath = ffmpegPath;
+    GZ_LOG_INFO(@"  FFmpeg: %@", ffmpegPath);
 
-    // Register video-specific HLS serving routes on the runtime's HTTP server
-    registerHLSRoutes(runtime.httpServer, hlsGenerator);
+    // HLS /watch/* routes are registered in onStart — httpServer is nil until start.
 
     // --- Embedded admin UI listener ---
     NSString *adminPassword = nil;
@@ -314,6 +324,7 @@ static int run_serve(NSArray<NSString *> *args) {
     }
 
     GZAdminUIHost *adminUIHost = nil;
+    __block JelczAdminEmbedContext *embedContext = nil;
     if (adminPassword.length > 0) {
         GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
         adminConfig.host = @"127.0.0.1";
@@ -324,21 +335,15 @@ static int run_serve(NSArray<NSString *> *args) {
         adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig
                                                               packs:@[JelczAdminUIPack.class]];
 
-        // Build snapshot with direct worker + database access
-        ATProtoVideoWorker *worker = [ATProtoVideoWorker sharedWorker];
-        NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"jelcz.db"];
-        JelczDatabase *db = [[JelczDatabase alloc] initWithDatabasePath:dbPath error:nil];
-        BOOL dbOpen = [db openDatabaseWithError:nil];
-
-        JelczAdminSnapshot *snapshot = [[JelczAdminSnapshot alloc]
-            initWithWorker:worker
-                  jobStore:dbOpen ? db : nil
+        embedContext = [[JelczAdminEmbedContext alloc]
+            initWithWorker:nil
+                  jobStore:nil
                     config:@{
                         @"maxUploadSize": @(50 * 1024 * 1024),
                         @"maxDuration": @(180),
                     }
-              uptimeSeconds:0];
-        [JelczAdminUIPack configureHost:adminUIHost snapshot:snapshot];
+                 startTime:[NSDate date]];
+        [JelczAdminUIPack configureHost:adminUIHost embedContext:embedContext];
 
         NSError *adminErr = nil;
         if (![adminUIHost startWithError:&adminErr]) {
@@ -353,6 +358,11 @@ static int run_serve(NSArray<NSString *> *args) {
     return [GZServiceLifecycle runServiceWithRuntime:runtime
                                          serviceName:@"Jelcz video processing service"
                                              onStart:^{
+        registerHLSRoutes(runtime.httpServer, hlsGenerator);
+        if (embedContext) {
+            embedContext.worker = runtime.worker;
+            embedContext.jobStore = runtime.worker.jobStore;
+        }
         GZ_LOG_INFO(@"Jelcz listening on port %lu", (unsigned long)config.port);
     }
                                      announceSignals:NO];

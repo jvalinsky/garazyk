@@ -54,6 +54,25 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSSet<NSString *> *)sensitiveKeys;
 
 /**
+ * @abstract Converts a raw media_jobs / video_jobs row into an allowlisted admin DTO.
+ */
++ (NSDictionary *)allowlistedJobDTOFromDatabaseRow:(NSDictionary *)row;
+
+/**
+ * @abstract Fetches recent jobs from a MediaCore or legacy job store.
+ *
+ * @param stateFilter Optional persisted state (e.g. @c PENDING) or UI state (@c JOB_STATE_PENDING).
+ */
++ (NSArray<NSDictionary *> *)recentJobDTOsFromStore:(nullable id)jobStore
+                                              limit:(NSUInteger)limit
+                                        stateFilter:(nullable NSString *)stateFilter;
+
+/**
+ * @abstract Fetches one job by ID and returns an allowlisted DTO, or nil.
+ */
++ (nullable NSDictionary *)jobDTOForId:(NSString *)jobId jobStore:(nullable id)jobStore;
+
+/**
  * @abstract Create a snapshot with direct worker + database access (embedded mode).
  *
  * @param worker    The shared video worker singleton for active/pending/max values.

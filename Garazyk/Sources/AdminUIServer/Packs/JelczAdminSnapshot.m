@@ -3,21 +3,81 @@
 #import "AdminUIServer/Packs/JelczAdminSnapshot.h"
 #import "Video/JelczDatabase.h"
 
-/// Known video job state values (server-side enum strings).
-static NSSet<NSString *> *sKnownStates(void) {
-    static NSSet<NSString *> *states;
+/// Maps persisted job state strings to admin UI state keys.
+static NSDictionary<NSString *, NSString *> *sDbStateToUIState(void) {
+    static NSDictionary<NSString *, NSString *> *map;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        states = [NSSet setWithArray:@[
-            @"JOB_STATE_PENDING",
-            @"JOB_STATE_PROCESSING",
-            @"JOB_STATE_TRANSCODING",
-            @"JOB_STATE_GENERATING_THUMBNAIL",
-            @"JOB_STATE_COMPLETED",
-            @"JOB_STATE_FAILED",
-        ]];
+        map = @{
+            @"PENDING": @"JOB_STATE_PENDING",
+            @"PROCESSING": @"JOB_STATE_PROCESSING",
+            @"TRANSCODING": @"JOB_STATE_TRANSCODING",
+            @"GENERATING_THUMBNAIL": @"JOB_STATE_GENERATING_THUMBNAIL",
+            @"COMPLETED": @"JOB_STATE_COMPLETED",
+            @"FAILED": @"JOB_STATE_FAILED",
+            @"JOB_STATE_PENDING": @"JOB_STATE_PENDING",
+            @"JOB_STATE_PROCESSING": @"JOB_STATE_PROCESSING",
+            @"JOB_STATE_TRANSCODING": @"JOB_STATE_TRANSCODING",
+            @"JOB_STATE_GENERATING_THUMBNAIL": @"JOB_STATE_GENERATING_THUMBNAIL",
+            @"JOB_STATE_COMPLETED": @"JOB_STATE_COMPLETED",
+            @"JOB_STATE_FAILED": @"JOB_STATE_FAILED",
+        };
     });
-    return states;
+    return map;
+}
+
+static NSArray<NSString *> *sPersistedStates(void) {
+    return @[@"PENDING", @"PROCESSING", @"COMPLETED", @"FAILED"];
+}
+
+static NSString *sTimestampFromJob(NSDictionary *job, NSString *camelKey) {
+    id value = job[camelKey];
+    if ([value isKindOfClass:[NSString class]] && [(NSString *)value length] > 0) {
+        return value;
+    }
+    if ([camelKey isEqualToString:@"createdAt"]) {
+        value = job[@"created_at"];
+    } else if ([camelKey isEqualToString:@"updatedAt"]) {
+        value = job[@"updated_at"];
+    }
+    return [value isKindOfClass:[NSString class]] ? value : nil;
+}
+
+static NSArray<NSDictionary *> *sInvokeJobList(id jobStore, SEL selector, NSString *state) {
+    if (![jobStore respondsToSelector:selector]) {
+        return @[];
+    }
+    NSMethodSignature *sig = [jobStore methodSignatureForSelector:selector];
+    if (!sig) {
+        return @[];
+    }
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+    [inv setSelector:selector];
+    [inv setTarget:jobStore];
+    NSUInteger limit = 500;
+    NSUInteger offset = 0;
+    NSError *error = nil;
+    [inv setArgument:&state atIndex:2];
+    [inv setArgument:&limit atIndex:3];
+    [inv setArgument:&offset atIndex:4];
+    [inv setArgument:&error atIndex:5];
+    [inv invoke];
+    __unsafe_unretained NSArray *jobs = nil;
+    [inv getReturnValue:&jobs];
+    return jobs ?: @[];
+}
+
+static NSArray<NSDictionary *> *sJobsForPersistedState(id jobStore, NSString *dbState) {
+    if (!jobStore) return @[];
+
+    SEL mediaListSel = NSSelectorFromString(@"listJobsWithState:limit:offset:error:");
+    if ([jobStore respondsToSelector:mediaListSel]) {
+        return sInvokeJobList(jobStore, mediaListSel, dbState);
+    }
+
+    NSString *uiState = sDbStateToUIState()[dbState] ?: dbState;
+    SEL legacyListSel = NSSelectorFromString(@"listVideoJobsWithState:limit:offset:error:");
+    return sInvokeJobList(jobStore, legacyListSel, uiState);
 }
 
 /// Allowlisted keys for job-detail rendering. Everything else is redacted.
@@ -51,6 +111,104 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
 
 @implementation JelczAdminSnapshot {
     NSDictionary *_snapshot;
+}
+
++ (nullable NSDictionary *)jobDTOForId:(NSString *)jobId jobStore:(id)jobStore {
+    if (jobId.length == 0 || !jobStore) return nil;
+    SEL sel = NSSelectorFromString(@"getJobById:error:");
+    if (![jobStore respondsToSelector:sel]) {
+        sel = NSSelectorFromString(@"getVideoJobById:error:");
+    }
+    if (![jobStore respondsToSelector:sel]) return nil;
+    NSDictionary *row = nil;
+    NSMethodSignature *sig = [jobStore methodSignatureForSelector:sel];
+    if (!sig) return nil;
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+    [inv setSelector:sel];
+    [inv setTarget:jobStore];
+    NSError *error = nil;
+    [inv setArgument:&jobId atIndex:2];
+    [inv setArgument:&error atIndex:3];
+    [inv invoke];
+    __unsafe_unretained NSDictionary *result = nil;
+    [inv getReturnValue:&result];
+    row = result;
+    if (!row) return nil;
+    return [self allowlistedJobDTOFromDatabaseRow:row];
+}
+
++ (NSArray<NSDictionary *> *)recentJobDTOsFromStore:(id)jobStore
+                                              limit:(NSUInteger)limit
+                                        stateFilter:(NSString *)stateFilter {
+    if (!jobStore || limit == 0) return @[];
+    NSString *dbFilter = nil;
+    if (stateFilter.length > 0) {
+        NSDictionary *uiToDb = @{
+            @"JOB_STATE_PENDING": @"PENDING",
+            @"JOB_STATE_PROCESSING": @"PROCESSING",
+            @"JOB_STATE_COMPLETED": @"COMPLETED",
+            @"JOB_STATE_FAILED": @"FAILED",
+        };
+        dbFilter = uiToDb[stateFilter] ?: stateFilter;
+    }
+    NSArray *rows = sInvokeJobList(jobStore,
+                                   NSSelectorFromString(@"listJobsWithState:limit:offset:error:"),
+                                   dbFilter ?: @"");
+    if (rows.count == 0 && dbFilter.length > 0) {
+        rows = sInvokeJobList(jobStore,
+                              NSSelectorFromString(@"listVideoJobsWithState:limit:offset:error:"),
+                              stateFilter);
+    } else if (rows.count == 0 && dbFilter.length == 0) {
+        rows = sInvokeJobList(jobStore,
+                              NSSelectorFromString(@"listJobsWithState:limit:offset:error:"),
+                              @"");
+    }
+    NSMutableArray *dtos = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        [dtos addObject:[self allowlistedJobDTOFromDatabaseRow:row]];
+        if (dtos.count >= limit) break;
+    }
+    return dtos;
+}
+
++ (NSDictionary *)allowlistedJobDTOFromDatabaseRow:(NSDictionary *)row {
+    if (!row) return @{};
+    NSMutableDictionary *dto = [NSMutableDictionary dictionary];
+    dto[@"jobId"] = row[@"job_id"] ?: row[@"jobId"] ?: @"";
+    dto[@"did"] = row[@"did"] ?: @"";
+    if (row[@"blob_cid"]) dto[@"blobCid"] = row[@"blob_cid"];
+    if (row[@"blobCid"]) dto[@"blobCid"] = row[@"blobCid"];
+
+    NSString *state = [row[@"state"] isKindOfClass:[NSString class]] ? row[@"state"] : @"";
+    dto[@"state"] = sDbStateToUIState()[state] ?: state;
+    if (row[@"progress"]) dto[@"progress"] = row[@"progress"];
+    if (sTimestampFromJob(row, @"createdAt")) dto[@"createdAt"] = sTimestampFromJob(row, @"createdAt");
+    if (sTimestampFromJob(row, @"updatedAt")) dto[@"updatedAt"] = sTimestampFromJob(row, @"updatedAt");
+    if (row[@"mime_type"]) dto[@"mimeType"] = row[@"mime_type"];
+    if (row[@"file_size"]) dto[@"fileSize"] = row[@"file_size"];
+    if (row[@"retry_count"]) dto[@"retryCount"] = row[@"retry_count"];
+
+    NSString *errorMessage = [row[@"error_message"] isKindOfClass:[NSString class]] ? row[@"error_message"] : nil;
+    if (errorMessage.length > 0) dto[@"errorCategory"] = errorMessage;
+
+    NSString *message = [row[@"message"] isKindOfClass:[NSString class]] ? row[@"message"] : nil;
+    if (message.length > 0) dto[@"stage"] = message;
+
+    NSString *resultsJson = [row[@"results_json"] isKindOfClass:[NSString class]] ? row[@"results_json"] : nil;
+    if (resultsJson.length > 0) {
+        NSData *data = [resultsJson dataUsingEncoding:NSUTF8StringEncoding];
+        NSDictionary *results = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+        NSDictionary *metadata = [results[@"metadata"] isKindOfClass:[NSDictionary class]] ? results[@"metadata"] : nil;
+        if (metadata[@"width"]) dto[@"width"] = metadata[@"width"];
+        if (metadata[@"height"]) dto[@"height"] = metadata[@"height"];
+        if (metadata[@"duration"]) dto[@"duration"] = metadata[@"duration"];
+    }
+
+    if (row[@"width"]) dto[@"width"] = row[@"width"];
+    if (row[@"height"]) dto[@"height"] = row[@"height"];
+    if (row[@"duration_seconds"]) dto[@"duration"] = row[@"duration_seconds"];
+
+    return dto;
 }
 
 - (instancetype)initWithHealth:(NSDictionary *)health
@@ -94,21 +252,14 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
     NSTimeInterval twentyFourHours = 24 * 60 * 60;
     NSUInteger total = 0;
 
-    for (NSString *state in sKnownStates()) {
-        NSArray *jobs = nil;
-        if (jobStore && [jobStore respondsToSelector:@selector(listVideoJobsWithState:limit:offset:error:)]) {
-            @try {
-                jobs = [jobStore listVideoJobsWithState:state limit:500 offset:0 error:nil];
-            } @catch (NSException *exception) {
-                jobs = nil;
-            }
-        }
-        if (!jobs) jobs = @[];
-        counts[state] = @(jobs.count);
+    for (NSString *dbState in sPersistedStates()) {
+        NSArray *jobs = sJobsForPersistedState(jobStore, dbState);
+        NSString *uiState = sDbStateToUIState()[dbState] ?: dbState;
+        counts[uiState] = @(jobs.count);
         total += jobs.count;
 
         for (NSDictionary *job in jobs) {
-            NSString *created = [job[@"createdAt"] isKindOfClass:[NSString class]] ? job[@"createdAt"] : nil;
+            NSString *created = sTimestampFromJob(job, @"createdAt");
             if (created.length > 0) {
                 NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
                 NSDate *date = [fmt dateFromString:created];
@@ -116,18 +267,22 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
                     oldestDate = date;
                 }
             }
-            if ([state isEqualToString:@"JOB_STATE_COMPLETED"] || [state isEqualToString:@"JOB_STATE_FAILED"]) {
-                NSString *updated = [job[@"updatedAt"] isKindOfClass:[NSString class]] ? job[@"updatedAt"] : created;
+            if ([uiState isEqualToString:@"JOB_STATE_COMPLETED"] || [uiState isEqualToString:@"JOB_STATE_FAILED"]) {
+                NSString *updated = sTimestampFromJob(job, @"updatedAt") ?: created;
                 if (updated.length > 0) {
                     NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
                     NSDate *date = [fmt dateFromString:updated];
                     if (date && [now timeIntervalSinceDate:date] <= twentyFourHours) {
-                        if ([state isEqualToString:@"JOB_STATE_COMPLETED"]) completed24h++;
+                        if ([uiState isEqualToString:@"JOB_STATE_COMPLETED"]) completed24h++;
                         else failed24h++;
                     }
                 }
             }
         }
+    }
+
+    for (NSString *uiState in sDbStateToUIState().allValues) {
+        if (!counts[uiState]) counts[uiState] = @0;
     }
 
     _totalJobs = total;
@@ -162,16 +317,14 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
     if (config[@"maxDuration"]) cfg[@"maxDuration"] = config[@"maxDuration"];
     cfg[@"hlsVariants"] = @(3);
 
-    // PDS upload health
-    NSString *pdsHealth = @"unknown";
+    // PDS upload health (best-effort; anonymous uploads skip PDS)
+    NSString *pdsHealth = enabled ? @"healthy" : @"unknown";
     if (enabled) {
         NSUInteger failures = [counts[@"JOB_STATE_FAILED"] unsignedIntegerValue];
         NSUInteger completed = [counts[@"JOB_STATE_COMPLETED"] unsignedIntegerValue];
         NSUInteger finished = completed + failures;
         if (finished > 0 && (double)failures / (double)finished > 0.5) {
             pdsHealth = @"degraded";
-        } else {
-            pdsHealth = @"healthy";
         }
     }
 
@@ -208,7 +361,7 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
 
     for (NSDictionary *job in jobs) {
         NSString *state = [job[@"state"] isKindOfClass:[NSString class]] ? job[@"state"] : @"unknown";
-        if (![sKnownStates() containsObject:state]) {
+        if (![sDbStateToUIState().allValues containsObject:state] && ![state isEqualToString:@"unknown"]) {
             state = @"unknown";
         }
 
@@ -241,8 +394,8 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
     }
 
     // Fill in zero for known states not present in the job list
-    for (NSString *state in sKnownStates()) {
-        if (!counts[state]) counts[state] = @0;
+    for (NSString *uiState in sDbStateToUIState().allValues) {
+        if (!counts[uiState]) counts[uiState] = @0;
     }
 
     _totalJobs = jobs.count;

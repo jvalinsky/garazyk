@@ -164,6 +164,10 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
         "  updated_at TEXT NOT NULL"
         ");"
         "CREATE INDEX IF NOT EXISTS idx_mikrus_handles_did ON mikrus_handles(did);"
+        "CREATE INDEX IF NOT EXISTS idx_mikrus_records_collection_indexed "
+        "ON mikrus_records(collection, indexed_at DESC, uri);"
+        "CREATE INDEX IF NOT EXISTS idx_mikrus_records_did_indexed "
+        "ON mikrus_records(did, indexed_at DESC, uri);"
         "DROP INDEX IF EXISTS idx_mikrus_records_did_collection;";
 
     __block BOOL migrated = NO;

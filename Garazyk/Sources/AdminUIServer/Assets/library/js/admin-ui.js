@@ -3,6 +3,7 @@
 
 const csrfNonceMeta = () => document.querySelector('meta[name="csrf-nonce"]');
 const byID = (id) => document.getElementById(id);
+const videoJobsContentTarget = () => (byID('video-jobs-content') ? '#video-jobs-content' : '#video-jobs');
 
 function refreshCSRFNonce(response) {
   const nextNonce = response.headers.get('X-UI-Admin-Nonce');
@@ -46,13 +47,15 @@ function showError(target, message) {
 }
 
 function reloadPartial(path, targetSelector) {
+  const target = document.querySelector(targetSelector);
+  if (!target) return;
   if (window.htmx) {
-    window.htmx.ajax('GET', path, targetSelector);
+    window.htmx.ajax('GET', path, { target, swap: 'innerHTML' });
     return;
   }
   fetch(path, { credentials: 'same-origin' })
-    .then((response) => replaceServerHTML(document.querySelector(targetSelector), response))
-    .catch(() => showError(document.querySelector(targetSelector), 'Unable to refresh data.'));
+    .then((response) => replaceServerHTML(target, response))
+    .catch(() => showError(target, 'Unable to refresh data.'));
 }
 
 function switchTab(name, options = {}) {
@@ -70,6 +73,28 @@ function switchTab(name, options = {}) {
   if (options.focus) {
     byID(`tabbtn-${name}`)?.focus();
   }
+
+  // Partials use hx-trigger="revealed". Empty placeholders have no layout
+  // box, so IntersectionObserver often never fires — and switching tabs
+  // alone does not re-check. Explicitly load hx-get nodes in the active pane.
+  const pane = byID(`tab-${name}`);
+  if (!pane) return;
+  pane.querySelectorAll('[hx-get]').forEach((el) => {
+    if (window.htmx) {
+      window.htmx.trigger(el, 'revealed');
+      if (!el.innerHTML.trim()) {
+        const path = el.getAttribute('hx-get');
+        if (path) {
+          window.htmx.ajax('GET', path, { source: el, target: el, swap: 'innerHTML' });
+        }
+      }
+      return;
+    }
+    const path = el.getAttribute('hx-get');
+    if (path && !el.innerHTML.trim()) {
+      reloadPartial(path, `#${CSS.escape(el.id)}`);
+    }
+  });
 }
 
 // Arrow-key navigation between tabs, per the WAI-ARIA APG tabs pattern.
@@ -262,15 +287,20 @@ async function handleAction(element) {
       break;
     }
     case 'filter-video-jobs':
-      reloadPartial(`/admin/partials/video-jobs${element.dataset.uiState ? `?state=${encodeURIComponent(element.dataset.uiState)}` : ''}`, '#video-jobs');
+      reloadPartial(`/admin/partials/video-jobs${element.dataset.uiState ? `?state=${encodeURIComponent(element.dataset.uiState)}` : ''}`, videoJobsContentTarget());
       break;
+    case 'view-video-job': {
+      const jobId = element.dataset.uiJobId || '';
+      if (jobId) reloadPartial(`/admin/partials/video-job-detail?jobId=${encodeURIComponent(jobId)}`, videoJobsContentTarget());
+      break;
+    }
     case 'load-video-job-detail': {
       const jobId = byID('video-job-id')?.value || '';
-      if (jobId) reloadPartial(`/admin/partials/video-job-detail?jobId=${encodeURIComponent(jobId)}`, '#video-job-detail');
+      if (jobId) reloadPartial(`/admin/partials/video-job-detail?jobId=${encodeURIComponent(jobId)}`, videoJobsContentTarget());
       break;
     }
     case 'retry-video-job':
-      if (window.confirm('Retry this job?')) await postHTML('/admin/actions/video-retry-job', { jobId: element.dataset.uiJobId || '' }, byID('video-job-detail'), '/admin/partials/video-jobs', '#video-jobs');
+      if (window.confirm('Retry this job?')) await postHTML('/admin/actions/video-retry-job', { jobId: element.dataset.uiJobId || '' }, null, '/admin/partials/video-jobs', videoJobsContentTarget());
       break;
     case 'test-connection':
       await testConnection(element.dataset.uiService || '');
@@ -293,7 +323,9 @@ async function handleForm(form) {
       break;
     case 'enqueue-backfill': {
       const dids = (byID('enqueue-dids-input')?.value || '').split('\n').map((did) => did.trim()).filter(Boolean);
-      if (dids.length) await postHTML('/admin/actions/appview-enqueue-dids', { dids }, byID('appview-result'));
+      if (dids.length) {
+        await postHTML('/admin/actions/appview-enqueue-dids', { dids }, byID('appview-result'), '/admin/partials/appview-queue', '#appview-queue');
+      }
       break;
     }
     case 'load-blobs': {
@@ -351,6 +383,13 @@ async function handleForm(form) {
       break;
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const initial = Array.from(document.querySelectorAll('.tab-pane')).find((pane) => !pane.hidden);
+  if (initial?.id?.startsWith('tab-')) {
+    switchTab(initial.id.slice(4));
+  }
+});
 
 document.addEventListener('click', (event) => {
   const action = event.target.closest('[data-ui-action]');
