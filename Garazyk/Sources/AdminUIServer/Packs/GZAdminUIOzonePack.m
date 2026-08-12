@@ -90,10 +90,20 @@
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:&jsonError];
     NSString *jsonStr = jsonError ? @"" : [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
     ctx[@"jsonStr"] = jsonStr;
+
+    // Allowlisted config keys — no unbounded enumeration of backend response
+    NSSet<NSString *> *allowlist = [NSSet setWithArray:@[
+        @"role", @"createdAt", @"inviteCount", @"prioritizedInviteCount",
+        @"reportCount", @"eventCount", @"subjectCount", @"lastEventAt",
+        @"lastReportAt", @"resolvedCount", @"pendingCount", @"activeCount"
+    ]];
     NSMutableArray *pairs = [NSMutableArray array];
-    [result enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
-        [pairs addObject:@{@"key": key, @"value": [value description]}];
-    }];
+    for (NSString *key in allowlist) {
+        id value = result[key];
+        if (value && ![value isKindOfClass:[NSNull class]]) {
+            [pairs addObject:@{@"key": key, @"value": [value description]}];
+        }
+    }
     ctx[@"configPairs"] = pairs;
     return [GZAdminUITemplateEngine renderTemplate:@"ozone-config" context:ctx];
 }
