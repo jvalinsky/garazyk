@@ -1,7 +1,7 @@
 ---
 title: DASL Conformance
 status: active
-last_verified: 2026-08-08
+last_verified: 2026-08-12
 ---
 
 # DASL Conformance
