@@ -353,7 +353,12 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     ATProtoSecp256k1KeyPair *rotationKeyPair = [[ATProtoSecp256k1 shared] generateKeyPairWithError:error];
     if (!rotationKeyPair) return nil;
 
-    if (did) {
+    // Bring-your-own-DID (ADR 0035): when a DID is supplied the caller has
+    // proven control of it via a service-auth JWT, no PLC operation is minted
+    // (the DID's document keeps resolving to its current host), and the
+    // account is created deactivated until the operator completes the cutover.
+    BOOL broughtOwnDid = did.length > 0;
+    if (broughtOwnDid) {
         resolvedDid = did;
     } else {
         resolvedDid = [self _registerDIDWithPLCWithHandle:handle
@@ -386,6 +391,10 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     account.passwordSalt = salt;
     account.createdAt = [[NSDate date] timeIntervalSince1970];
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    if (broughtOwnDid) {
+        account.status = @"deactivated";
+        account.deactivatedAt = [[NSDate date] timeIntervalSince1970];
+    }
 
     NSError *createError = nil;
     if (![_accountRepository saveAccount:account error:&createError]) {
@@ -493,7 +502,8 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         @"handle": handle,
         @"email": email,
         @"accessJwt": accessToken,
-        @"refreshJwt": refreshToken
+        @"refreshJwt": refreshToken,
+        @"active": @(!broughtOwnDid)
     };
 }
 
@@ -545,6 +555,18 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
                                    password:(NSString *)password
                             authFactorToken:(NSString *)authFactorToken
                                       error:(NSError **)error {
+    // Deactivated accounts (user deactivation or BYO-DID migration, ADR 0035)
+    // cannot create sessions. The migration tooling authenticates with the
+    // tokens returned by createAccount itself.
+    if ([account.status isEqualToString:@"deactivated"]) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeUnauthorized
+                                         message:@"Account is deactivated"
+                                        userInfo:@{@"atprotoError": @"AccountDeactivated"}];
+        }
+        return nil;
+    }
+
     BOOL appPasswordMatched = NO;
     BOOL isPasswordCorrect = [self verifyPassword:password
                                        forAccount:account
@@ -615,7 +637,8 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
         @"handle": account.handle,
         @"email": account.email,
         @"accessJwt": accessToken,
-        @"refreshJwt": refreshToken
+        @"refreshJwt": refreshToken,
+        @"active": @(![account.status isEqualToString:@"deactivated"])
     };
 }
 
@@ -675,7 +698,8 @@ static NSDictionary<NSString *, NSDictionary *> *PDSServicesForAccount(
     return @{
         @"did": account.did ?: @"",
         @"handle": account.handle ?: @"",
-        @"email": account.email ?: @""
+        @"email": account.email ?: @"",
+        @"active": @(![account.status isEqualToString:@"deactivated"])
     };
 }
 

@@ -54,11 +54,8 @@ static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.creat
 #define kCCSuccess 0
 #endif
 
-// Forward declarations for helper functions
-BOOL validateDidWebServiceAuthForAccountCreation(ATProtoHttpRequest *request,
-                                                        ATProtoHttpResponse *response,
-                                                        NSString *did,
-                                                        ATProtoServiceConfiguration *config);
+// Forward declarations for helper functions (validateDidServiceAuthForAccountCreation
+// is declared in XrpcServerPack_Internal.h and imported above).
 BOOL createInviteCodeInDatabase(PDSServiceDatabases *serviceDatabases,
                                        NSString *accountDid,
                                        NSInteger maxUses,
@@ -231,10 +228,10 @@ NSDictionary *payloadDictionaryFromJWT(ATProtoJWT *jwt, NSError **error) {
     return payload;
 }
 
-BOOL validateDidWebServiceAuthForAccountCreation(ATProtoHttpRequest *request,
-                                                        ATProtoHttpResponse *response,
-                                                        NSString *did,
-                                                        ATProtoServiceConfiguration *config) {
+BOOL validateDidServiceAuthForAccountCreation(ATProtoHttpRequest *request,
+                                                      ATProtoHttpResponse *response,
+                                                      NSString *did,
+                                                      ATProtoServiceConfiguration *config) {
     ATProtoServiceConfiguration *effectiveConfig = config ?: [ATProtoServiceConfiguration sharedConfiguration];
 
     NSString *authHeader = [request headerForKey:@"Authorization"];

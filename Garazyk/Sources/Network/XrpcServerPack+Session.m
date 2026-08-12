@@ -37,7 +37,6 @@
     PDSRepositoryService *repositoryService = services.repositoryService;
     PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     ATProtoServiceConfiguration *config = services.configuration;
-    BOOL enforceDidWebServiceAuth = NO; // Default to NO as per registry
 #pragma mark - com.atproto.server.session.*
     [dispatcher registerMethod:kGZXrpcNSID_com_atproto_server_createAccount handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         NSString *email = [request stringBodyForKey:@"email"];
@@ -51,14 +50,24 @@
             return;
         }
 
-        if (did.length > 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Cannot specify DID during account creation. Import is not supported via this endpoint."}];
-            return;
-        }
-
-        // Registration gate validation
-        if (registrationGate) {
+        // Bring-your-own-DID migration path (ADR 0035): when a DID is supplied,
+        // the caller must prove control of it with a service-auth JWT signed by
+        // the DID's current signing key (verified against the resolved DID
+        // document). The account is created deactivated, no PLC operation is
+        // minted, and registration gates do not apply — the service-auth proof
+        // is the authorization for a migration, not a registration.
+        BOOL hasDid = did.length > 0;
+        if (hasDid) {
+            if (![ATProtoValidator validateDID:did error:nil]) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Invalid did"}];
+                return;
+            }
+            if (!validateDidServiceAuthForAccountCreation(request, response, did, config)) {
+                return;
+            }
+        } else if (registrationGate) {
+            // Registration gate validation
             NSError *gateError = nil;
             // Dispatch to the remoteAddress-aware variant when the gate
             // implements it (e.g. CAPTCHA siteverify's remoteip field);
@@ -115,17 +124,11 @@
             }
         }
 
-        if (enforceDidWebServiceAuth && did.length > 0 && [did hasPrefix:@"did:web:"]) {
-            if (!validateDidWebServiceAuthForAccountCreation(request, response, did, config)) {
-                return;
-            }
-        }
-
         NSError *error = nil;
         NSDictionary *result = [accountService createAccountForEmail:email
                                                              password:password
                                                                handle:handle
-                                                                  did:nil
+                                                                  did:hasDid ? did : nil
                                                                 error:&error];
 
         if (error || !result) {
@@ -172,6 +175,15 @@
                 [response setHeader:@"no-cache" forKey:@"Pragma"];
                 [response setJsonBody:@{@"error": @"AuthFactorTokenRequired",
                                         @"message": error.localizedDescription ?: @"Two-factor authentication required"}];
+                return;
+            }
+            // Deactivated accounts cannot create sessions (ADR 0035); surface
+            // the stable AccountDeactivated error code carried by the service.
+            NSString *atprotoError = [error.userInfo[@"atprotoError"] isKindOfClass:[NSString class]]
+                ? error.userInfo[@"atprotoError"] : nil;
+            if (atprotoError.length > 0) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": atprotoError, @"message": error.localizedDescription}];
                 return;
             }
             response.statusCode = HttpStatusUnauthorized;

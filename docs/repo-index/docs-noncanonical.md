@@ -5,7 +5,7 @@ title: Docs Noncanonical
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **193**
+Total documents in this view: **196**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -47,6 +47,8 @@ Total documents in this view: **193**
 | [docs/adr/0031-module-boundary-link-time-gate.md](../adr/0031-module-boundary-link-time-gate.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0032-dasl-conformance-profiles.md](../adr/0032-dasl-conformance-profiles.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0033-per-service-embedded-admin-uis.md](../adr/0033-per-service-embedded-admin-uis.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0034-star-lite-v0-interop-export.md](../adr/0034-star-lite-v0-interop-export.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0035-account-migration-bring-your-own-did.md](../adr/0035-account-migration-bring-your-own-did.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
@@ -187,6 +189,7 @@ Total documents in this view: **193**
 | [docs/reports/2026-05-21-e2e-run.md](../reports/2026-05-21-e2e-run.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-07-17-optimization-research.md](../reports/2026-07-17-optimization-research.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-08-11T0139Z-relay-crawl-cloudflare-findings.md](../reports/2026-08-11T0139Z-relay-crawl-cloudflare-findings.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/reports/2026-08-11T2245Z-hubble-star-lite-sync.md](../reports/2026-08-11T2245Z-hubble-star-lite-sync.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/spec-conformance-matrix.md](../reports/spec-conformance-matrix.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/standard-site-appview-kickstart.md](../standard-site-appview-kickstart.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
