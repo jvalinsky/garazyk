@@ -221,6 +221,12 @@ extern NSString * const MikrusDatabaseErrorDomain;
  */
 - (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error;
 
+/** @abstract Convenience query executor (for admin snapshot use). */
+- (nullable NSArray<NSDictionary *> *)executeQuery:(NSString *)sql params:(NSArray *)params error:(NSError **)error;
+
+/** @abstract Total database storage in bytes via PRAGMA. */
+- (long long)storageBytes;
+
 @end
 
 NS_ASSUME_NONNULL_END

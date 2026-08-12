@@ -627,4 +627,11 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
     return [self.queryRunner performWriteTransaction:block error:error];
 }
 
+- (long long)storageBytes {
+    NSArray *pc = [self executeQuery:@"PRAGMA page_count" params:@[] error:nil];
+    NSArray *ps = [self executeQuery:@"PRAGMA page_size"  params:@[] error:nil];
+    if (pc.count == 0 || ps.count == 0) return 0;
+    return [pc.firstObject[@"page_count"] longLongValue] * [ps.firstObject[@"page_size"] longLongValue];
+}
+
 @end

@@ -141,6 +141,19 @@
             };
           };
 
+          mikrus = pkgs.clangStdenv.mkDerivation {
+            pname = "mikrus";
+            version = "1.0.0";
+            src = zukSource;
+            nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+            buildInputs = [ gnustepPrefix ] ++ runtimeLibs;
+            preConfigure = ''export GNUSTEP_PREFIX="${gnustepPrefix}"'';
+            cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" "-DBUILD_TESTS=OFF" "-DBUILD_FUZZERS=OFF" "-DBUILD_SECP256K1=ON" ];
+            buildPhase = ''cmake --build . --target mikrus --parallel 4'';
+            installPhase = ''install -Dm755 bin/mikrus $out/bin/mikrus'';
+            meta = with lib; { description = "Garazyk Mikrus link index"; license = [ licenses.unlicense licenses.cc0 ]; platforms = platforms.linux; };
+          };
+
           linuxShellHook =
             if isLinux then ''
               export GNUSTEP_PREFIX="${gnustepPrefix}"
@@ -167,7 +180,7 @@
         in
         {
           packages = lib.optionalAttrs isLinux {
-            inherit zuk beskid;
+            inherit zuk beskid mikrus;
           };
 
           inherit formatter;
@@ -215,6 +228,7 @@
         zuk = import ./nixos/modules/zuk.nix;
         campagnola = import ./nixos/modules/campagnola.nix;
         beskid = import ./nixos/modules/beskid.nix;
+        mikrus = import ./nixos/modules/mikrus.nix;
         cloudflaredTunnel = import ./nixos/modules/cloudflared-tunnel.nix;
       };
     };
