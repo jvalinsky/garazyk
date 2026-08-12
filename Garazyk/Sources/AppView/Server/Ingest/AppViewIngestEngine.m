@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewIngestEngine.m
+ @file GZAppViewIngestEngine.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -26,10 +26,10 @@
 #import "Compat/PDSTypes.h"
 
 // ---------------------------------------------------------------------------
-// AppViewIngestEvent
+// GZAppViewIngestEvent
 // ---------------------------------------------------------------------------
 
-@implementation AppViewIngestEvent
+@implementation GZAppViewIngestEvent
 @end
 
 // ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 // Per-relay connection state
 // ---------------------------------------------------------------------------
 
-@interface AppViewRelayConnection : NSObject <RelayClientDelegate>
+@interface GZAppViewRelayConnection : NSObject <RelayClientDelegate>
 
 @property (nonatomic, strong) ATProtoRelayClient *client;
 @property (nonatomic, copy)   NSString *relayURL;
@@ -113,7 +113,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 @property (nonatomic, assign) int64_t eventsSinceThroughputSample;
 @property (nonatomic, assign) CFAbsoluteTime lastThroughputSampleAt;
 @property (nonatomic, assign) double lastThroughputEventsPerSec;
-@property (nonatomic, weak)   id owner;  // AppViewIngestEngine (weak to avoid cycles)
+@property (nonatomic, weak)   id owner;  // GZAppViewIngestEngine (weak to avoid cycles)
 
 - (instancetype)initWithRelayURL:(NSString *)url
                      startingSeq:(int64_t)startingSeq
@@ -121,7 +121,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 
 @end
 
-@implementation AppViewRelayConnection
+@implementation GZAppViewRelayConnection
 
 - (instancetype)initWithRelayURL:(NSString *)url
                      startingSeq:(int64_t)startingSeq
@@ -150,28 +150,28 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 #pragma mark - RelayClientDelegate
 
 - (void)relayClient:(ATProtoRelayClient *)client didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event {
-    AppViewIngestEngine *engine = self.owner;
+    GZAppViewIngestEngine *engine = self.owner;
     if (!engine) return;
     [engine _handleCommitEvent:event fromRelay:self.relayURL];
     self.currentSeq = event.seq;
 }
 
 - (void)relayClient:(ATProtoRelayClient *)client didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event {
-    AppViewIngestEngine *engine = self.owner;
+    GZAppViewIngestEngine *engine = self.owner;
     if (!engine) return;
     [engine _handleIdentityEvent:event fromRelay:self.relayURL];
     self.currentSeq = event.seq;
 }
 
 - (void)relayClient:(ATProtoRelayClient *)client didReceiveAccountEvent:(ATProtoFirehoseAccountEvent *)event {
-    AppViewIngestEngine *engine = self.owner;
+    GZAppViewIngestEngine *engine = self.owner;
     if (!engine) return;
     [engine _handleAccountEvent:event fromRelay:self.relayURL];
     self.currentSeq = event.seq;
 }
 
 - (void)relayClientDidConnect:(ATProtoRelayClient *)client {
-    AppViewIngestEngine *engine = self.owner;
+    GZAppViewIngestEngine *engine = self.owner;
     if (!engine) return;
     GZ_LOG_INFO(@"[AppView Ingest] Connected to relay %@", self.relayURL);
     [engine _relayConnection:self didConnectAtSeq:self.currentSeq];
@@ -200,13 +200,13 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 @end
 
 // ---------------------------------------------------------------------------
-// AppViewIngestEngine
+// GZAppViewIngestEngine
 // ---------------------------------------------------------------------------
 
-@interface AppViewIngestEngine ()
-@property (nonatomic, strong) AppViewDatabase *database;
+@interface GZAppViewIngestEngine ()
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, strong) NSArray<NSString *> *relayURLs;
-@property (nonatomic, strong) NSMutableArray<AppViewRelayConnection *> *connections;
+@property (nonatomic, strong) NSMutableArray<GZAppViewRelayConnection *> *connections;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t ingestQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t checkpointQueue;
@@ -233,15 +233,15 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 - (BOOL)_processCommitEvent:(ATProtoFirehoseCommitEvent *)event
                   fromRelay:(NSString *)relayURL
                 rawEnvelope:(NSData *)rawEnvelope
-                outputEvent:(AppViewIngestEvent **)outputEvent
+                outputEvent:(GZAppViewIngestEvent **)outputEvent
               failureReason:(NSString **)failureReason;
 - (void)_handleCommitEventOnIngestQueue:(ATProtoFirehoseCommitEvent *)event
                               fromRelay:(NSString *)relayURL;
 @end
 
-@implementation AppViewIngestEngine
+@implementation GZAppViewIngestEngine
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                        relayURLs:(NSArray<NSString *> *)relayURLs {
     self = [super init];
     if (!self) return nil;
@@ -294,12 +294,12 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 
     for (NSString *relayURL in _relayURLs) {
         NSError *err = nil;
-        AppViewCheckpoint *checkpoint = [_database loadCheckpointForRelayURL:relayURL error:&err];
+        GZAppViewCheckpoint *checkpoint = [_database loadCheckpointForRelayURL:relayURL error:&err];
         int64_t startSeq = checkpoint ? checkpoint.seq : 0;
         [_database markDurableCursor:startSeq forRelayURL:relayURL];
         GZ_LOG_INFO(@"[AppView Ingest] Starting relay %@ from seq %lld", relayURL, (long long)startSeq);
 
-        AppViewRelayConnection *conn = [[AppViewRelayConnection alloc]
+        GZAppViewRelayConnection *conn = [[GZAppViewRelayConnection alloc]
             initWithRelayURL:relayURL startingSeq:startSeq owner:self];
         // Apply heartbeat timeout for dead-peer detection
         conn.client.firehose.heartbeatTimeout = self.relayHeartbeatTimeout;
@@ -335,7 +335,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     [_checkpointTimer invalidate];
     _checkpointTimer = nil;
 
-    for (AppViewRelayConnection *conn in connsToStop) {
+    for (GZAppViewRelayConnection *conn in connsToStop) {
         [conn.client disconnect];
     }
     // Best-effort flush: never block process shutdown on a stuck checkpoint
@@ -354,10 +354,10 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     NSArray *activeConnections = [self.connections copy];
     [_stateLock unlock];
 
-    for (AppViewRelayConnection *conn in activeConnections) {
+    for (GZAppViewRelayConnection *conn in activeConnections) {
         int64_t durableSeq = [self.database durableCursorForRelayURL:conn.relayURL];
         if (durableSeq <= conn.lastCheckpointSeq) continue;
-        AppViewCheckpoint *cp = [[AppViewCheckpoint alloc]
+        GZAppViewCheckpoint *cp = [[GZAppViewCheckpoint alloc]
             initWithRelayURL:conn.relayURL seq:durableSeq];
         NSError *err = nil;
         if (![self.database saveCheckpoint:cp error:&err]) {
@@ -451,10 +451,10 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     return NO;
 }
 
-- (nullable AppViewRelayConnection *)_connectionForRelayURL:(NSString *)relayURL {
+- (nullable GZAppViewRelayConnection *)_connectionForRelayURL:(NSString *)relayURL {
     [_stateLock lock];
-    AppViewRelayConnection *found = nil;
-    for (AppViewRelayConnection *conn in _connections) {
+    GZAppViewRelayConnection *found = nil;
+    for (GZAppViewRelayConnection *conn in _connections) {
         if ([conn.relayURL isEqualToString:relayURL]) {
             found = conn;
             break;
@@ -466,8 +466,8 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 
 - (void)_noteEventForThroughput:(NSString *)relayURL {
     [_stateLock lock];
-    AppViewRelayConnection *conn = nil;
-    for (AppViewRelayConnection *candidate in _connections) {
+    GZAppViewRelayConnection *conn = nil;
+    for (GZAppViewRelayConnection *candidate in _connections) {
         if ([candidate.relayURL isEqualToString:relayURL]) {
             conn = candidate;
             break;
@@ -490,7 +490,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     NSMutableDictionary<NSString *, NSString *> *health = [NSMutableDictionary dictionary];
     [_stateLock lock];
     BOOL running = _isRunning;
-    for (AppViewRelayConnection *conn in _connections) {
+    for (GZAppViewRelayConnection *conn in _connections) {
         NSString *status = @"disconnected";
         if (conn.client.isConnected) {
             BOOL paused = [_backpressureStateByRelay[conn.relayURL] boolValue];
@@ -512,7 +512,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 - (NSDictionary<NSString *, NSNumber *> *)throughput {
     NSMutableDictionary<NSString *, NSNumber *> *out = [NSMutableDictionary dictionary];
     [_stateLock lock];
-    for (AppViewRelayConnection *conn in _connections) {
+    for (GZAppViewRelayConnection *conn in _connections) {
         CFAbsoluteTime elapsed = CFAbsoluteTimeGetCurrent() - conn.lastThroughputSampleAt;
         double rate = conn.lastThroughputEventsPerSec;
         if (elapsed > 0.0 && elapsed < 5.0 && conn.eventsSinceThroughputSample > 0) {
@@ -562,7 +562,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     // Backpressure: pause the relay instead of dropping events.
     // TCP backpressure propagates to the relay, which slows or stops sending.
     if ([self _shouldApplyBackpressure:seq fromRelay:relayURL]) {
-        AppViewRelayConnection *conn = [self _connectionForRelayURL:relayURL];
+        GZAppViewRelayConnection *conn = [self _connectionForRelayURL:relayURL];
         if (conn && !conn.client.isReadingPaused) {
             [conn.client pauseReading];
             [_stateLock lock];
@@ -681,7 +681,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
             event.blobs = payload[@"blobs"] ?: @[];
             event.time = payload[@"time"];
             event.prevData = payload[@"prevData"];
-            AppViewIngestEvent *ingestEvent = nil;
+            GZAppViewIngestEvent *ingestEvent = nil;
             NSString *failureReason = nil;
             NSError *materializeError = nil;
             BOOL indexed = NO;
@@ -696,9 +696,9 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
                 // (read as a poison bit pattern instead of nil) - this keeps
                 // the call's out-params fully local to the block that uses
                 // them.
-                __block AppViewIngestEvent *capturedIngestEvent = nil;
+                __block GZAppViewIngestEvent *capturedIngestEvent = nil;
                 __block NSString *capturedFailureReason = nil;
-                AppViewIngestEvent *localIngestEvent = nil;
+                GZAppViewIngestEvent *localIngestEvent = nil;
                 NSString *localFailureReason = nil;
                 BOOL processed = [self _processCommitEvent:event
                                                  fromRelay:relayURL
@@ -756,7 +756,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
                         GZ_LOG_ERROR(@"[AppView Ingest] Failed to dead-letter seq=%lld: %@",
                                      (long long)seq, terminalError.localizedDescription);
                     } else {
-                        AppViewRelayConnection *connection = [self _connectionForRelayURL:relayURL];
+                        GZAppViewRelayConnection *connection = [self _connectionForRelayURL:relayURL];
                         [connection.client pauseReading];
                         [_stateLock lock];
                         self.backpressureStateByRelay[relayURL] = @1;
@@ -774,18 +774,18 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
 - (BOOL)_processCommitEvent:(ATProtoFirehoseCommitEvent *)event
                   fromRelay:(NSString *)relayURL
                rawEnvelope:(NSData *)rawEnvelope
-               outputEvent:(AppViewIngestEvent **)outputEvent
+               outputEvent:(GZAppViewIngestEvent **)outputEvent
              failureReason:(NSString **)failureReason {
     if (outputEvent) *outputEvent = nil;
     if (failureReason) *failureReason = nil;
-    // Writing the produced AppViewIngestEvent directly into the
+    // Writing the produced GZAppViewIngestEvent directly into the
     // __autoreleasing outputEvent out-parameter from inside this
     // @autoreleasepool, right before it drains, corrupted the value the
     // caller saw (observed as a poison bit pattern instead of a real
     // pointer, deterministically reproducible). Stage it in a plain __strong
     // local declared outside the pool and write the real out-parameter only
     // after the pool has closed.
-    __strong AppViewIngestEvent *resultEvent = nil;
+    __strong GZAppViewIngestEvent *resultEvent = nil;
     @autoreleasepool {
     NSTimeInterval processStart = [[NSDate date] timeIntervalSinceReferenceDate];
     NSString *did = event.repo;
@@ -794,7 +794,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     int64_t seq   = event.seq;
 
     NSError *err = nil;
-    AppViewRepoSyncState *syncState = [_database loadRepoSyncStateForDID:did error:&err];
+    GZAppViewRepoSyncState *syncState = [_database loadRepoSyncStateForDID:did error:&err];
     if (syncState && syncState.status == AppViewRepoSyncStatusSynced &&
         [event.since isKindOfClass:[NSString class]] && event.since.length > 0 &&
         [syncState.lastRev isKindOfClass:[NSString class]] && syncState.lastRev.length > 0 &&
@@ -1008,7 +1008,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     }
 
     // Build ingest event with enriched ops (containing records)
-    AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
+    GZAppViewIngestEvent *ingestEvent = [[GZAppViewIngestEvent alloc] init];
     ingestEvent.seq        = seq;
     ingestEvent.relayURL   = relayURL;
     ingestEvent.did        = did;
@@ -1022,7 +1022,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     // Check repo sync status — buffer if backfill in-flight
     if (syncState && syncState.status == AppViewRepoSyncStatusProcessing) {
         // Buffer the delta; it will be replayed after backfill completes
-        AppViewPendingDelta *delta = [[AppViewPendingDelta alloc]
+        GZAppViewPendingDelta *delta = [[GZAppViewPendingDelta alloc]
             initWithDID:did seq:seq commitCID:cid ?: @"" rev:rev ?: @"" rawEnvelope:rawEnvelope];
         NSError *deltaError = nil;
         if (![_database enqueuePendingDelta:delta error:&deltaError]) {
@@ -1037,7 +1037,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     // Without this, a later event cannot detect a missing intermediate commit via
     // event.since, and the AppView can report zero global lag while records are absent.
     if (rev.length > 0) {
-        AppViewRepoSyncState *newState = syncState ? [syncState copy] : [[AppViewRepoSyncState alloc] initWithDID:did];
+        GZAppViewRepoSyncState *newState = syncState ? [syncState copy] : [[GZAppViewRepoSyncState alloc] initWithDID:did];
         newState.status = AppViewRepoSyncStatusSynced;
         newState.lastRev = rev;
         newState.lastError = nil;
@@ -1089,7 +1089,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     }
     [[ATProtoDIDResolver sharedResolver] invalidateDID:event.did];
 
-    AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
+    GZAppViewIngestEvent *ingestEvent = [[GZAppViewIngestEvent alloc] init];
     ingestEvent.seq        = event.seq;
     ingestEvent.relayURL   = relayURL;
     ingestEvent.did        = event.did;
@@ -1143,7 +1143,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
         [_repoStateManager handleAccountEventForRepo:event.did status:RelayRepoStatusActive];
     }
 
-    AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
+    GZAppViewIngestEvent *ingestEvent = [[GZAppViewIngestEvent alloc] init];
     ingestEvent.seq        = event.seq;
     ingestEvent.relayURL   = relayURL;
     ingestEvent.did        = event.did;
@@ -1184,7 +1184,7 @@ static id ResolveCIDLinksInObject(id object, ATProtoCARReader *reader, NSMutable
     }
 }
 
-- (void)_relayConnection:(AppViewRelayConnection *)conn didConnectAtSeq:(int64_t)seq {
+- (void)_relayConnection:(GZAppViewRelayConnection *)conn didConnectAtSeq:(int64_t)seq {
     id<AppViewIngestEngineDelegate> delegate = self.delegate;
     if (delegate && [delegate respondsToSelector:@selector(ingestEngine:didReconnectToRelay:atSeq:)]) {
         dispatch_async(_eventQueue, ^{

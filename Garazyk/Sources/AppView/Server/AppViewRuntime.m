@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewRuntime.m
+ @file GZAppViewRuntime.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -52,15 +52,15 @@
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Debug/GZLogger.h"
 
-@interface AppViewRuntime () <AppViewIngestEngineDelegate,
+@interface GZAppViewRuntime () <AppViewIngestEngineDelegate,
                                AppViewBackfillOrchestratorDelegate>
 
-@property (nonatomic, strong, readwrite) AppViewConfiguration *configuration;
-@property (nonatomic, strong) AppViewDatabase *database;
-@property (nonatomic, strong) AppViewIngestEngine *ingestEngine;
-@property (nonatomic, strong) AppViewBackfillOrchestrator *orchestrator;
-@property (nonatomic, strong) AppViewAdminRoutePack *adminRoutePack;
-@property (nonatomic, strong) AppViewRelevanceSet *relevanceSet;
+@property (nonatomic, strong, readwrite) GZAppViewConfiguration *configuration;
+@property (nonatomic, strong) GZAppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewIngestEngine *ingestEngine;
+@property (nonatomic, strong) GZAppViewBackfillOrchestrator *orchestrator;
+@property (nonatomic, strong) GZAppViewAdminRoutePack *adminRoutePack;
+@property (nonatomic, strong) GZAppViewRelevanceSet *relevanceSet;
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) PDSFeedService *feedService;
@@ -72,14 +72,14 @@
 @property (nonatomic, strong) PDSDraftService *draftService;
 @property (nonatomic, strong) PDSSearchIndexService *searchIndexService;
 @property (nonatomic, strong) PDSContactService *contactService;
-@property (nonatomic, strong) AppViewWriteProxy *writeProxy;
-@property (nonatomic, strong) AppViewLexiconEndpointGenerator *lexiconEndpointGenerator;
-@property (nonatomic, strong) AppViewCustomQueryRegistry *customQueryRegistry;
+@property (nonatomic, strong) GZAppViewWriteProxy *writeProxy;
+@property (nonatomic, strong) GZAppViewLexiconEndpointGenerator *lexiconEndpointGenerator;
+@property (nonatomic, strong) GZAppViewCustomQueryRegistry *customQueryRegistry;
 @property (nonatomic, strong) ATProtoLexiconRegistry *lexiconRegistry;
 @property (nonatomic, strong) ATProtoLexiconValidator *lexiconValidator;
-@property (nonatomic, strong) AppViewIndexHookRegistry *hookRegistry;
+@property (nonatomic, strong) GZAppViewIndexHookRegistry *hookRegistry;
 @property (nonatomic, strong) PDSAppViewVideoUriBuilder *videoUriBuilder;
-@property (nonatomic, strong) SyrenaMetrics *syrenaMetrics;
+@property (nonatomic, strong) GZSyrenaMetrics *syrenaMetrics;
 @property (nonatomic, strong) GZAdminUIHost *adminUIHostInstance;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 
@@ -88,14 +88,14 @@
 
 // ---------------------------------------------------------------------------
 
-static AppViewRuntime *_sharedRuntime = nil;
+static GZAppViewRuntime *_sharedRuntime = nil;
 
-@implementation AppViewRuntime
+@implementation GZAppViewRuntime
 
 + (instancetype)sharedRuntime {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        _sharedRuntime = [[AppViewRuntime alloc] init];
+        _sharedRuntime = [[GZAppViewRuntime alloc] init];
     });
     return _sharedRuntime;
 }
@@ -117,7 +117,7 @@ static AppViewRuntime *_sharedRuntime = nil;
         return NO;
     }
 
-    AppViewConfiguration *config = [AppViewConfiguration defaultConfiguration];
+    GZAppViewConfiguration *config = [GZAppViewConfiguration defaultConfiguration];
     // Extract the appview section if nested
     NSDictionary *avSection = dict[@"appview"] ?: dict;
     [config loadFromDictionary:avSection];
@@ -127,7 +127,7 @@ static AppViewRuntime *_sharedRuntime = nil;
 }
 
 - (void)loadConfigurationFromEnvironment {
-    _configuration = [AppViewConfiguration configurationFromEnvironment];
+    _configuration = [GZAppViewConfiguration configurationFromEnvironment];
 }
 
 // ---------------------------------------------------------------------------
@@ -137,8 +137,8 @@ static AppViewRuntime *_sharedRuntime = nil;
 - (BOOL)startWithError:(NSError **)error {
     if (_isRunning) return YES;
 
-    AppViewConfiguration *config = _configuration ?: [AppViewConfiguration defaultConfiguration];
-    _syrenaMetrics = [[SyrenaMetrics alloc] init];
+    GZAppViewConfiguration *config = _configuration ?: [GZAppViewConfiguration defaultConfiguration];
+    _syrenaMetrics = [[GZSyrenaMetrics alloc] init];
 
     NSError *configErr = nil;
     if (![config validate:&configErr]) {
@@ -156,7 +156,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     // Open database
     NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"appview.db"];
     NSError *dbErr   = nil;
-    _database = [[AppViewDatabase alloc] initWithPath:dbPath error:&dbErr];
+    _database = [[GZAppViewDatabase alloc] initWithPath:dbPath error:&dbErr];
     if (!_database) {
         if (error) *error = dbErr;
         return NO;
@@ -185,7 +185,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     _lexiconValidator = [[ATProtoLexiconValidator alloc] initWithRegistry:_lexiconRegistry];
 
     // Build relevance set
-    _relevanceSet = [[AppViewRelevanceSet alloc]
+    _relevanceSet = [[GZAppViewRelevanceSet alloc]
         initWithDatabase:_database
                 seedDIDs:config.partialSeedDIDs
                allowlist:config.partialAllowlist
@@ -213,15 +213,15 @@ static AppViewRuntime *_sharedRuntime = nil;
     }
 
     // Build indexers
-    AppViewActorIndexer *actorIdx   = [[AppViewActorIndexer alloc] initWithDatabase:_database];
-    AppViewFeedIndexer  *feedIdx    = [[AppViewFeedIndexer alloc]  initWithDatabase:_database];
-    AppViewGraphIndexer *graphIdx   = [[AppViewGraphIndexer alloc] initWithDatabase:_database
+    GZAppViewActorIndexer *actorIdx   = [[GZAppViewActorIndexer alloc] initWithDatabase:_database];
+    GZAppViewFeedIndexer  *feedIdx    = [[GZAppViewFeedIndexer alloc]  initWithDatabase:_database];
+    GZAppViewGraphIndexer *graphIdx   = [[GZAppViewGraphIndexer alloc] initWithDatabase:_database
                                                                        relevanceSet:_relevanceSet
                                                                        graphService:_graphService];
-    AppViewNotificationIndexer *notifIdx = [[AppViewNotificationIndexer alloc] initWithDatabase:_database];
-    AppViewBookmarkIndexer *bookmarkIdx = [[AppViewBookmarkIndexer alloc] initWithDatabase:_database
+    GZAppViewNotificationIndexer *notifIdx = [[GZAppViewNotificationIndexer alloc] initWithDatabase:_database];
+    GZAppViewBookmarkIndexer *bookmarkIdx = [[GZAppViewBookmarkIndexer alloc] initWithDatabase:_database
                                                                   bookmarkService:_bookmarkService];
-    AppViewGroupIndexer *groupIdx = [[AppViewGroupIndexer alloc] initWithDatabase:_database];
+    GZAppViewGroupIndexer *groupIdx = [[GZAppViewGroupIndexer alloc] initWithDatabase:_database];
 
     // Build the set of collections claimed by domain-specific indexers
     // so the generic indexer knows what to skip
@@ -246,20 +246,20 @@ static AppViewRuntime *_sharedRuntime = nil;
         @"chat.bsky.group.message",
     ]];
 
-    AppViewGenericIndexer *genericIdx = [[AppViewGenericIndexer alloc]
+    GZAppViewGenericIndexer *genericIdx = [[GZAppViewGenericIndexer alloc]
         initWithRegistry:_lexiconRegistry
                database:_database
              validator:_lexiconValidator
    domainIndexerCollections:domainCollections];
 
     // Wire collection allowlist filter (S2 scoping)
-    AppViewCollectionFilter *collectionFilter =
-        [[AppViewCollectionFilter alloc] initWithAllowlist:config.indexCollections];
+    GZAppViewCollectionFilter *collectionFilter =
+        [[GZAppViewCollectionFilter alloc] initWithAllowlist:config.indexCollections];
     genericIdx.collectionFilter = collectionFilter;
 
     _indexers = @[actorIdx, feedIdx, graphIdx, notifIdx, bookmarkIdx, groupIdx, genericIdx];
 
-    _hookRegistry = [[AppViewIndexHookRegistry alloc] initWithDatabase:_database];
+    _hookRegistry = [[GZAppViewIndexHookRegistry alloc] initWithDatabase:_database];
     
     // Register PDSSearchIndexService as an internal hook for real-time search updates
     [_hookRegistry registerHook:_searchIndexService];
@@ -268,14 +268,14 @@ static AppViewRuntime *_sharedRuntime = nil;
     [_searchIndexService populateIndexIfEmptyWithError:nil];
 
     // Build ingest engine
-    _ingestEngine = [[AppViewIngestEngine alloc]
+    _ingestEngine = [[GZAppViewIngestEngine alloc]
         initWithDatabase:_database relayURLs:config.relayURLs];
     _ingestEngine.checkpointIntervalMs = config.cursorCheckpointIntervalMs;
     _ingestEngine.delegate = self;
 
     // Build backfill orchestrator
     if (config.backfillEnabled) {
-        _orchestrator = [[AppViewBackfillOrchestrator alloc]
+        _orchestrator = [[GZAppViewBackfillOrchestrator alloc]
             initWithDatabase:_database indexers:_indexers plcURL:config.plcURL];
         _orchestrator.globalWorkerCap  = config.backfillGlobalWorkers;
         _orchestrator.perHostWorkerCap = config.backfillPerHostWorkers;
@@ -299,7 +299,7 @@ static AppViewRuntime *_sharedRuntime = nil;
         [res setBodyData:[NSData data]];
     }];
 
-    _writeProxy = [[AppViewWriteProxy alloc] initWithDatabase:_database plcUrl:config.plcURL];
+    _writeProxy = [[GZAppViewWriteProxy alloc] initWithDatabase:_database plcUrl:config.plcURL];
 
     // Initialize ATProtoJWTMinter for token verification (using shared master secret)
     ATProtoJWTMinter *jwtMinter = nil;
@@ -324,18 +324,18 @@ static AppViewRuntime *_sharedRuntime = nil;
     [xrpcPack registerRoutesWithServer:_httpServer];
 
     // Register dynamic lexicon-driven endpoints
-    _customQueryRegistry = [[AppViewCustomQueryRegistry alloc] init];
+    _customQueryRegistry = [[GZAppViewCustomQueryRegistry alloc] init];
 
     // Register domain-specific query handlers
-    AppViewGraphQueryHandler *graphQueryHandler =
-        [[AppViewGraphQueryHandler alloc] initWithGraphService:_graphService];
+    GZAppViewGraphQueryHandler *graphQueryHandler =
+        [[GZAppViewGraphQueryHandler alloc] initWithGraphService:_graphService];
     [_customQueryRegistry registerHandler:graphQueryHandler
                                   forNSID:@"app.bsky.graph.getStarterPack"];
     [_customQueryRegistry registerHandler:graphQueryHandler
                                   forNSID:@"app.bsky.graph.getStarterPacks"];
     [_customQueryRegistry registerHandler:graphQueryHandler
                                   forNSID:@"app.bsky.graph.getActorStarterPacks"];
-    _lexiconEndpointGenerator = [[AppViewLexiconEndpointGenerator alloc]
+    _lexiconEndpointGenerator = [[GZAppViewLexiconEndpointGenerator alloc]
         initWithRegistry:_lexiconRegistry
                database:_database
             httpServer:_httpServer
@@ -348,7 +348,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     }
 
     // Register admin routes
-    _adminRoutePack = [[AppViewAdminRoutePack alloc]
+    _adminRoutePack = [[GZAppViewAdminRoutePack alloc]
         initWithOrchestrator:_orchestrator
                 ingestEngine:_ingestEngine
                     database:_database
@@ -432,8 +432,8 @@ static AppViewRuntime *_sharedRuntime = nil;
 // AppViewIngestEngineDelegate
 // ---------------------------------------------------------------------------
 
-- (void)ingestEngine:(AppViewIngestEngine *)engine
-   didReceiveCommit:(AppViewIngestEvent *)event {
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine
+   didReceiveCommit:(GZAppViewIngestEvent *)event {
     [_syrenaMetrics recordIngestEvent];
     [_syrenaMetrics recordIngestCommit];
     // Notify orchestrator to ensure repo is scheduled for backfill if new
@@ -519,13 +519,13 @@ static AppViewRuntime *_sharedRuntime = nil;
     }
 }
 
-- (void)ingestEngine:(AppViewIngestEngine *)engine
-didReceiveIdentityChange:(AppViewIngestEvent *)event {
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine
+didReceiveIdentityChange:(GZAppViewIngestEvent *)event {
     GZ_LOG_DEBUG(@"[AppViewRuntime] Identity change for %@", event.did);
     [_orchestrator enqueueDIDs:@[event.did]];
 }
 
-- (void)ingestEngine:(AppViewIngestEngine *)engine
+- (void)ingestEngine:(GZAppViewIngestEngine *)engine
   didDetectGapForDID:(NSString *)did
                atSeq:(int64_t)seq {
     [_orchestrator notifyGapDetectedForDID:did atSeq:seq];
@@ -535,13 +535,13 @@ didReceiveIdentityChange:(AppViewIngestEvent *)event {
 // AppViewBackfillOrchestratorDelegate
 // ---------------------------------------------------------------------------
 
-- (void)orchestrator:(AppViewBackfillOrchestrator *)orchestrator
+- (void)orchestrator:(GZAppViewBackfillOrchestrator *)orchestrator
 didCompleteBackfillForDID:(NSString *)did {
     [_syrenaMetrics recordBackfillCompleted];
     GZ_LOG_DEBUG(@"[AppViewRuntime] Backfill complete for %@", did);
 }
 
-- (void)orchestrator:(AppViewBackfillOrchestrator *)orchestrator
+- (void)orchestrator:(GZAppViewBackfillOrchestrator *)orchestrator
 didFailBackfillForDID:(NSString *)did
                error:(NSError *)error {
     [_syrenaMetrics recordBackfillFailed];

@@ -29,16 +29,16 @@ NSString *GZBeskidAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
 }
 
 @interface GZBeskidAdminSnapshot ()
-@property(nonatomic, strong) BeskidDatabase *database;
-@property(nonatomic, strong) BeskidMetrics *metrics;
-@property(nonatomic, strong) BeskidConfiguration *configuration;
+@property(nonatomic, strong) GZBeskidDatabase *database;
+@property(nonatomic, strong) GZBeskidMetrics *metrics;
+@property(nonatomic, strong) GZBeskidConfiguration *configuration;
 @end
 
 @implementation GZBeskidAdminSnapshot
 
-- (instancetype)initWithDatabase:(BeskidDatabase *)database
-                         metrics:(BeskidMetrics *)metrics
-                   configuration:(BeskidConfiguration *)configuration {
+- (instancetype)initWithDatabase:(GZBeskidDatabase *)database
+                         metrics:(GZBeskidMetrics *)metrics
+                   configuration:(GZBeskidConfiguration *)configuration {
     self = [super init];
     if (self) {
         _database = database;

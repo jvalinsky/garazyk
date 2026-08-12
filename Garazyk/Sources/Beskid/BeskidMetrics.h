@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file BeskidMetrics.h
+ * @file GZBeskidMetrics.h
  * @abstract Thread-safe monotonic counters, entry gauges, and bounded
  *           upstream-host aggregation for the Beskid edge cache.
  */
@@ -10,7 +10,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface BeskidMetrics : NSObject
+@interface GZBeskidMetrics : NSObject
 
 /// @name Cache counters
 - (void)recordRecordHit;

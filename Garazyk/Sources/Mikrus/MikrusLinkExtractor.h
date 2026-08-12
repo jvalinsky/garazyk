@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file MikrusLinkExtractor.h
+ * @file GZMikrusLinkExtractor.h
  * @abstract Extracts link-like scalar values and JSON paths from ATProto records.
  */
 
@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Utility for extracting link subjects and metadata from records.
  */
-@interface MikrusLinkExtractor : NSObject
+@interface GZMikrusLinkExtractor : NSObject
 
 /**
  * @abstract Extracts link entries from an ATProto record.

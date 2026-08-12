@@ -17,7 +17,7 @@
 #import "AppView/Services/GraphService.h"
 
 @interface AppViewIndexerTests : XCTestCase
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @end
 
 @implementation AppViewIndexerTests
@@ -25,7 +25,7 @@
 - (void)setUp {
     [super setUp];
     NSError *error = nil;
-    self.database = [[AppViewDatabase alloc] initInMemoryWithError:&error];
+    self.database = [[GZAppViewDatabase alloc] initInMemoryWithError:&error];
     XCTAssertNotNil(self.database, @"Failed to create in-memory database: %@", error);
     BOOL migrated = [self.database runMigrations:&error];
     XCTAssertTrue(migrated, @"Failed to run migrations: %@", error);
@@ -139,10 +139,10 @@ static NSString *sMissingRkey = nil;
     return [[uri componentsSeparatedByString:@"/"] lastObject];
 }
 
-- (AppViewGenericIndexer *)makeGenericIndexer {
+- (GZAppViewGenericIndexer *)makeGenericIndexer {
     ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
     ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
-    return [[AppViewGenericIndexer alloc] initWithRegistry:registry
+    return [[GZAppViewGenericIndexer alloc] initWithRegistry:registry
                                                   database:self.database
                                                  validator:validator
                                   domainIndexerCollections:[NSSet set]];
@@ -191,26 +191,26 @@ static NSString *sMissingRkey = nil;
              @"createdAt": @"2026-01-01T00:00:00Z"};
 }
 
-#pragma mark - AppViewActorIndexer
+#pragma mark - GZAppViewActorIndexer
 
 - (void)testActorIndexerInstantiation {
-    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewActorIndexer *indexer = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
     XCTAssertNotNil(indexer);
 }
 
 - (void)testActorIndexerCanIndexProfile {
-    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewActorIndexer *indexer = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
     XCTAssertTrue([indexer canIndexCollection:@"app.bsky.actor.profile"]);
 }
 
 - (void)testActorIndexerRejectsOtherCollections {
-    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewActorIndexer *indexer = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.feed.post"]);
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.graph.follow"]);
 }
 
 - (void)testActorIndexerIndexRecord {
-    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewActorIndexer *indexer = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:[self sampleProfileRecord]
                                    did:@"did:plc:actor1"
@@ -223,7 +223,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testActorIndexerNilRkeyStoresRkeyMatchingURI {
-    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewActorIndexer *indexer = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:[self sampleProfileRecord]
                                    did:@"did:plc:actorNilRkey"
@@ -242,8 +242,8 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testActorIndexerEmptyRkeyStoresRkeyMatchingURI {
-    // AppViewBackfillWorker passes @"" when a record path carries no rkey.
-    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    // GZAppViewBackfillWorker passes @"" when a record path carries no rkey.
+    GZAppViewActorIndexer *indexer = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:[self sampleProfileRecord]
                                    did:@"did:plc:actorEmptyRkey"
@@ -262,7 +262,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testActorIndexerExplicitRkeyStoresRkeyMatchingURI {
-    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewActorIndexer *indexer = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:[self sampleProfileRecord]
                                    did:@"did:plc:actorExplicitRkey"
@@ -278,7 +278,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testActorIndexerDeleteRecord {
-    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewActorIndexer *indexer = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer deleteRecord:@"self"
                                    did:@"did:plc:actor1"
@@ -289,7 +289,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testActorIndexerDeleteRecordDoesNotReturnError {
-    AppViewActorIndexer *indexer = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewActorIndexer *indexer = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer deleteRecord:@"nonexistent"
                                    did:@"did:plc:nobody"
@@ -298,15 +298,15 @@ static NSString *sMissingRkey = nil;
     XCTAssertTrue(result);
 }
 
-#pragma mark - AppViewFeedIndexer
+#pragma mark - GZAppViewFeedIndexer
 
 - (void)testFeedIndexerInstantiation {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     XCTAssertNotNil(indexer);
 }
 
 - (void)testFeedIndexerCanIndexFeedCollections {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     XCTAssertTrue([indexer canIndexCollection:@"app.bsky.feed.post"]);
     XCTAssertTrue([indexer canIndexCollection:@"app.bsky.feed.repost"]);
     XCTAssertTrue([indexer canIndexCollection:@"app.bsky.feed.like"]);
@@ -316,13 +316,13 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testFeedIndexerRejectsNonFeedCollections {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.actor.profile"]);
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.graph.follow"]);
 }
 
 - (void)testFeedIndexerIndexPost {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:[self samplePostRecord]
                                    did:@"did:plc:author1"
@@ -335,7 +335,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testFeedIndexerIndexPostMissingTypeFails {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:@{@"text": @"no type"}
                                    did:@"did:plc:author1"
@@ -349,7 +349,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testFeedIndexerPostMissingTextAndEmbedFails {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:@{@"$type": @"app.bsky.feed.post"}
                                    did:@"did:plc:author1"
@@ -363,7 +363,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testFeedIndexerIndexLike {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:[self sampleLikeRecord]
                                    did:@"did:plc:liker1"
@@ -375,7 +375,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testFeedIndexerLikeMissingSubjectFails {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:@{@"$type": @"app.bsky.feed.like"}
                                    did:@"did:plc:liker1"
@@ -389,7 +389,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testFeedIndexerIndexRepost {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:[self sampleRepostRecord]
                                    did:@"did:plc:reposter1"
@@ -401,7 +401,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testFeedIndexerRepostMissingSubjectFails {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:@{@"$type": @"app.bsky.feed.repost"}
                                    did:@"did:plc:reposter1"
@@ -415,7 +415,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testFeedIndexerDeleteRecord {
-    AppViewFeedIndexer *indexer = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *indexer = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer deleteRecord:@"post1"
                                    did:@"did:plc:author1"
@@ -424,17 +424,17 @@ static NSString *sMissingRkey = nil;
     XCTAssertTrue(result);
 }
 
-#pragma mark - AppViewGraphIndexer
+#pragma mark - GZAppViewGraphIndexer
 
 - (void)testGraphIndexerInstantiation {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:nil];
     XCTAssertNotNil(indexer);
 }
 
 - (void)testGraphIndexerCanIndexGraphCollections {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:nil];
     XCTAssertTrue([indexer canIndexCollection:@"app.bsky.graph.follow"]);
@@ -446,7 +446,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGraphIndexerRejectsNonGraphCollections {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:nil];
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.feed.post"]);
@@ -454,7 +454,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGraphIndexerIndexFollow {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:nil];
     NSError *error = nil;
@@ -468,7 +468,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGraphIndexerIndexBlock {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:nil];
     NSError *error = nil;
@@ -482,7 +482,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGraphIndexerDeleteRecord {
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:nil];
     NSError *error = nil;
@@ -493,15 +493,15 @@ static NSString *sMissingRkey = nil;
     XCTAssertTrue(result);
 }
 
-#pragma mark - AppViewNotificationIndexer
+#pragma mark - GZAppViewNotificationIndexer
 
 - (void)testNotificationIndexerInstantiation {
-    AppViewNotificationIndexer *indexer = [[AppViewNotificationIndexer alloc] initWithDatabase:self.database];
+    GZAppViewNotificationIndexer *indexer = [[GZAppViewNotificationIndexer alloc] initWithDatabase:self.database];
     XCTAssertNotNil(indexer);
 }
 
 - (void)testNotificationIndexerCanIndexEventSources {
-    AppViewNotificationIndexer *indexer = [[AppViewNotificationIndexer alloc] initWithDatabase:self.database];
+    GZAppViewNotificationIndexer *indexer = [[GZAppViewNotificationIndexer alloc] initWithDatabase:self.database];
     XCTAssertTrue([indexer canIndexCollection:@"app.bsky.feed.like"]);
     XCTAssertTrue([indexer canIndexCollection:@"app.bsky.feed.repost"]);
     XCTAssertTrue([indexer canIndexCollection:@"app.bsky.feed.post"]);
@@ -509,13 +509,13 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testNotificationIndexerRejectsOtherCollections {
-    AppViewNotificationIndexer *indexer = [[AppViewNotificationIndexer alloc] initWithDatabase:self.database];
+    GZAppViewNotificationIndexer *indexer = [[GZAppViewNotificationIndexer alloc] initWithDatabase:self.database];
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.actor.profile"]);
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.feed.generator"]);
 }
 
 - (void)testNotificationIndexerIndexLikeGeneratesNotification {
-    AppViewNotificationIndexer *indexer = [[AppViewNotificationIndexer alloc] initWithDatabase:self.database];
+    GZAppViewNotificationIndexer *indexer = [[GZAppViewNotificationIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:[self sampleLikeRecord]
                                    did:@"did:plc:liker1"
@@ -527,7 +527,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testNotificationIndexerDeleteRecord {
-    AppViewNotificationIndexer *indexer = [[AppViewNotificationIndexer alloc] initWithDatabase:self.database];
+    GZAppViewNotificationIndexer *indexer = [[GZAppViewNotificationIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer deleteRecord:@"like1"
                                    did:@"did:plc:liker1"
@@ -540,7 +540,7 @@ static NSString *sMissingRkey = nil;
     // handleIngestEvent: passes @"" when a commit op path carries no rkey; an
     // empty rkey would store "at://<did>/app.bsky.graph.list/" which no delete matches.
     PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:self.database];
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:graphService];
     NSError *error = nil;
@@ -557,7 +557,7 @@ static NSString *sMissingRkey = nil;
 
 - (void)testGraphIndexerListitemRejectsNilRkey {
     PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:self.database];
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:graphService];
     NSError *error = nil;
@@ -576,7 +576,7 @@ static NSString *sMissingRkey = nil;
 
 - (void)testGraphIndexerDeleteListRejectsEmptyRkey {
     PDSGraphService *graphService = [[PDSGraphService alloc] initWithDatabase:self.database];
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:graphService];
     NSError *error = nil;
@@ -590,7 +590,7 @@ static NSString *sMissingRkey = nil;
 
 - (void)testGraphIndexerFollowStillAcceptsEmptyRkey {
     // follow and block never build a URI from rkey, so the guard must not reach them.
-    AppViewGraphIndexer *indexer = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewGraphIndexer *indexer = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                    relevanceSet:nil
                                                                    graphService:nil];
     NSError *error = nil;
@@ -603,26 +603,26 @@ static NSString *sMissingRkey = nil;
                   @"Follow does not use rkey and must keep working: %@", error);
 }
 
-#pragma mark - AppViewGroupIndexer
+#pragma mark - GZAppViewGroupIndexer
 
 - (void)testGroupIndexerInstantiation {
-    AppViewGroupIndexer *indexer = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGroupIndexer *indexer = [[GZAppViewGroupIndexer alloc] initWithDatabase:self.database];
     XCTAssertNotNil(indexer);
 }
 
 - (void)testGroupIndexerCanIndexGroupDefinition {
-    AppViewGroupIndexer *indexer = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGroupIndexer *indexer = [[GZAppViewGroupIndexer alloc] initWithDatabase:self.database];
     XCTAssertTrue([indexer canIndexCollection:@"chat.bsky.group.definition"]);
 }
 
 - (void)testGroupIndexerRejectsOtherCollections {
-    AppViewGroupIndexer *indexer = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGroupIndexer *indexer = [[GZAppViewGroupIndexer alloc] initWithDatabase:self.database];
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.feed.post"]);
     XCTAssertFalse([indexer canIndexCollection:@"app.bsky.graph.follow"]);
 }
 
 - (void)testGroupIndexerIndexGroup {
-    AppViewGroupIndexer *indexer = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGroupIndexer *indexer = [[GZAppViewGroupIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:[self sampleGroupRecord]
                                    did:@"did:plc:groupowner"
@@ -634,7 +634,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGroupIndexerDeleteRecord {
-    AppViewGroupIndexer *indexer = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGroupIndexer *indexer = [[GZAppViewGroupIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     BOOL result = [indexer deleteRecord:@"group1"
                                    did:@"did:plc:groupowner"
@@ -644,7 +644,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGroupIndexerEmptyRkeyStoresWellFormedURI {
-    AppViewGroupIndexer *indexer = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGroupIndexer *indexer = [[GZAppViewGroupIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     XCTAssertTrue([indexer indexRecord:[self sampleGroupRecord]
                                    did:@"did:plc:groupEmptyRkey"
@@ -660,7 +660,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGroupIndexerEmptyRkeyRoundTripsThroughDelete {
-    AppViewGroupIndexer *indexer = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGroupIndexer *indexer = [[GZAppViewGroupIndexer alloc] initWithDatabase:self.database];
     NSError *error = nil;
     XCTAssertTrue([indexer indexRecord:[self sampleGroupRecord]
                                    did:@"did:plc:groupRoundTrip"
@@ -678,10 +678,10 @@ static NSString *sMissingRkey = nil;
                    @"Delete must address the URI that indexing stored");
 }
 
-#pragma mark - AppViewGenericIndexer
+#pragma mark - GZAppViewGenericIndexer
 
 - (void)testGenericIndexerEmptyRecordRkeyStoresRkeyMatchingURI {
-    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    GZAppViewGenericIndexer *indexer = [self makeGenericIndexer];
     NSError *error = nil;
     NSDictionary *record = @{@"$type": kGenericCollection, @"rkey": @""};
     XCTAssertTrue([indexer indexRecord:record
@@ -702,7 +702,7 @@ static NSString *sMissingRkey = nil;
     ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
     ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
     NSSet *domainCollections = [NSSet setWithArray:@[@"app.bsky.feed.post", @"app.bsky.actor.profile"]];
-    AppViewGenericIndexer *indexer = [[AppViewGenericIndexer alloc] initWithRegistry:registry
+    GZAppViewGenericIndexer *indexer = [[GZAppViewGenericIndexer alloc] initWithRegistry:registry
                                                                            database:self.database
                                                                          validator:validator
                                                          domainIndexerCollections:domainCollections];
@@ -713,7 +713,7 @@ static NSString *sMissingRkey = nil;
     ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
     ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
     NSSet *domainCollections = [NSSet setWithArray:@[@"app.bsky.feed.post"]];
-    AppViewGenericIndexer *indexer = [[AppViewGenericIndexer alloc] initWithRegistry:registry
+    GZAppViewGenericIndexer *indexer = [[GZAppViewGenericIndexer alloc] initWithRegistry:registry
                                                                            database:self.database
                                                                          validator:validator
                                                          domainIndexerCollections:domainCollections];
@@ -721,7 +721,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGenericIndexerNilRkeyStoresRkeyMatchingURI {
-    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    GZAppViewGenericIndexer *indexer = [self makeGenericIndexer];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:@{@"$type": kGenericCollection, @"name": @"no rkey anywhere"}
                                    did:@"did:plc:generic1"
@@ -742,7 +742,7 @@ static NSString *sMissingRkey = nil;
 
 - (void)testGenericIndexerEmptyRkeyStoresRkeyMatchingURI {
     // The ingest dispatcher passes @"" when a commit op path carries no rkey.
-    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    GZAppViewGenericIndexer *indexer = [self makeGenericIndexer];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:@{@"$type": kGenericCollection, @"name": @"empty rkey op"}
                                    did:@"did:plc:generic2"
@@ -760,7 +760,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGenericIndexerFallsBackToRecordRkey {
-    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    GZAppViewGenericIndexer *indexer = [self makeGenericIndexer];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:@{@"$type": kGenericCollection, @"rkey": @"fromrecord"}
                                    did:@"did:plc:generic3"
@@ -776,7 +776,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGenericIndexerIgnoresNonStringRecordRkey {
-    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    GZAppViewGenericIndexer *indexer = [self makeGenericIndexer];
     NSError *error = nil;
     BOOL result = [indexer indexRecord:@{@"$type": kGenericCollection, @"rkey": @[@"not", @"a string"]}
                                    did:@"did:plc:generic4"
@@ -792,7 +792,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGenericIndexerDeleteRemovesRowIndexedUnderSameRkey {
-    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    GZAppViewGenericIndexer *indexer = [self makeGenericIndexer];
     NSError *error = nil;
     NSDictionary *record = @{@"$type": kGenericCollection, @"name": @"round trip"};
     BOOL indexed = [indexer indexRecord:record
@@ -817,7 +817,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testGenericIndexerDeleteRejectsEmptyRkey {
-    AppViewGenericIndexer *indexer = [self makeGenericIndexer];
+    GZAppViewGenericIndexer *indexer = [self makeGenericIndexer];
     NSError *error = nil;
     XCTAssertFalse([indexer deleteRecord:@""
                                      did:@"did:plc:generic6"
@@ -831,7 +831,7 @@ static NSString *sMissingRkey = nil;
 - (void)testGenericIndexerAddDomainCollection {
     ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
     ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
-    AppViewGenericIndexer *indexer = [[AppViewGenericIndexer alloc] initWithRegistry:registry
+    GZAppViewGenericIndexer *indexer = [[GZAppViewGenericIndexer alloc] initWithRegistry:registry
                                                                            database:self.database
                                                                          validator:validator
                                                          domainIndexerCollections:[NSSet set]];
@@ -839,13 +839,13 @@ static NSString *sMissingRkey = nil;
     XCTAssertFalse([indexer canIndexCollection:@"com.example.mycol"]);
 }
 
-#pragma mark - AppViewBookmarkIndexer
+#pragma mark - GZAppViewBookmarkIndexer
 
 - (void)testBookmarkIndexerKeepsOneRowPerRkey {
     // bookmarks.uri is UNIQUE, so ignoring rkey collapsed every bookmark a DID
     // owns onto a single row that INSERT OR REPLACE silently overwrote.
     PDSBookmarkService *service = [[PDSBookmarkService alloc] initWithDatabase:self.database];
-    AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
+    GZAppViewBookmarkIndexer *indexer = [[GZAppViewBookmarkIndexer alloc] initWithDatabase:self.database
                                                                       bookmarkService:service];
     NSError *error = nil;
     XCTAssertTrue([indexer indexRecord:[self sampleBookmarkRecordForSubject:@"at://did:plc:other/app.bsky.feed.post/p1"]
@@ -869,7 +869,7 @@ static NSString *sMissingRkey = nil;
 
 - (void)testBookmarkIndexerDeleteRemovesRowIndexedUnderSameRkey {
     PDSBookmarkService *service = [[PDSBookmarkService alloc] initWithDatabase:self.database];
-    AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
+    GZAppViewBookmarkIndexer *indexer = [[GZAppViewBookmarkIndexer alloc] initWithDatabase:self.database
                                                                       bookmarkService:service];
     NSError *error = nil;
     XCTAssertTrue([indexer indexRecord:[self sampleBookmarkRecordForSubject:@"at://did:plc:other/app.bsky.feed.post/p1"]
@@ -890,7 +890,7 @@ static NSString *sMissingRkey = nil;
 
 - (void)testBookmarkIndexerRejectsEmptyRkey {
     PDSBookmarkService *service = [[PDSBookmarkService alloc] initWithDatabase:self.database];
-    AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
+    GZAppViewBookmarkIndexer *indexer = [[GZAppViewBookmarkIndexer alloc] initWithDatabase:self.database
                                                                       bookmarkService:service];
     NSError *error = nil;
     XCTAssertFalse([indexer indexRecord:[self sampleBookmarkRecordForSubject:@"at://did:plc:other/app.bsky.feed.post/p1"]
@@ -906,13 +906,13 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testBookmarkIndexerInstantiation {
-    AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
+    GZAppViewBookmarkIndexer *indexer = [[GZAppViewBookmarkIndexer alloc] initWithDatabase:self.database
                                                                      bookmarkService:nil];
     XCTAssertNotNil(indexer);
 }
 
 - (void)testBookmarkIndexerConformsToIndexerProtocol {
-    AppViewBookmarkIndexer *indexer = [[AppViewBookmarkIndexer alloc] initWithDatabase:self.database
+    GZAppViewBookmarkIndexer *indexer = [[GZAppViewBookmarkIndexer alloc] initWithDatabase:self.database
                                                                      bookmarkService:nil];
     XCTAssertTrue([indexer conformsToProtocol:@protocol(AppViewIndexer)]);
 }
@@ -970,7 +970,7 @@ static NSString *sMissingRkey = nil;
 - (void)testStandardSiteDocumentWithLeafletContentIndexesWithoutDeadLetter {
     ATProtoLexiconRegistry *registry = [self freshRegistryWithLexicons];
     ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
-    AppViewGenericIndexer *indexer = [[AppViewGenericIndexer alloc]
+    GZAppViewGenericIndexer *indexer = [[GZAppViewGenericIndexer alloc]
         initWithRegistry:registry
                database:self.database
              validator:validator
@@ -1001,7 +1001,7 @@ static NSString *sMissingRkey = nil;
 - (void)testStandardSiteDocumentWithoutContentIndexesWithoutDeadLetter {
     ATProtoLexiconRegistry *registry = [self freshRegistryWithLexicons];
     ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
-    AppViewGenericIndexer *indexer = [[AppViewGenericIndexer alloc]
+    GZAppViewGenericIndexer *indexer = [[GZAppViewGenericIndexer alloc]
         initWithRegistry:registry
                database:self.database
              validator:validator
@@ -1027,7 +1027,7 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testStandardSiteDocumentCollectionFilterAllowsFamily {
-    AppViewCollectionFilter *filter = [[AppViewCollectionFilter alloc]
+    GZAppViewCollectionFilter *filter = [[GZAppViewCollectionFilter alloc]
         initWithAllowlist:@[@"site.standard."]];
     XCTAssertTrue([filter shouldIndexCollection:@"site.standard.document"]);
     XCTAssertTrue([filter shouldIndexCollection:@"site.standard.publication"]);
@@ -1038,7 +1038,7 @@ static NSString *sMissingRkey = nil;
 - (void)testStandardSiteDocumentIndexerRespectsCollectionFilter {
     ATProtoLexiconRegistry *registry = [self freshRegistryWithLexicons];
     ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
-    AppViewGenericIndexer *indexer = [[AppViewGenericIndexer alloc]
+    GZAppViewGenericIndexer *indexer = [[GZAppViewGenericIndexer alloc]
         initWithRegistry:registry
                database:self.database
              validator:validator
@@ -1047,7 +1047,7 @@ static NSString *sMissingRkey = nil;
     XCTAssertTrue([indexer canIndexCollection:@"site.standard.document"]);
     XCTAssertTrue([indexer canIndexCollection:@"pub.leaflet.document"]);
 
-    AppViewCollectionFilter *filter = [[AppViewCollectionFilter alloc]
+    GZAppViewCollectionFilter *filter = [[GZAppViewCollectionFilter alloc]
         initWithAllowlist:@[@"site.standard."]];
     indexer.collectionFilter = filter;
 
@@ -1057,13 +1057,13 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testAllIndexersConformToAppViewIndexerProtocol {
-    AppViewActorIndexer *actor = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
-    AppViewFeedIndexer *feed = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
-    AppViewGraphIndexer *graph = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewActorIndexer *actor = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewFeedIndexer *feed = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGraphIndexer *graph = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                 relevanceSet:nil
                                                                 graphService:nil];
-    AppViewNotificationIndexer *notif = [[AppViewNotificationIndexer alloc] initWithDatabase:self.database];
-    AppViewGroupIndexer *group = [[AppViewGroupIndexer alloc] initWithDatabase:self.database];
+    GZAppViewNotificationIndexer *notif = [[GZAppViewNotificationIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGroupIndexer *group = [[GZAppViewGroupIndexer alloc] initWithDatabase:self.database];
 
     XCTAssertTrue([actor conformsToProtocol:@protocol(AppViewIndexer)]);
     XCTAssertTrue([feed conformsToProtocol:@protocol(AppViewIndexer)]);
@@ -1073,11 +1073,11 @@ static NSString *sMissingRkey = nil;
 }
 
 - (void)testFeedCollectionRoutingIsExclusive {
-    AppViewFeedIndexer *feed = [[AppViewFeedIndexer alloc] initWithDatabase:self.database];
-    AppViewGraphIndexer *graph = [[AppViewGraphIndexer alloc] initWithDatabase:self.database
+    GZAppViewFeedIndexer *feed = [[GZAppViewFeedIndexer alloc] initWithDatabase:self.database];
+    GZAppViewGraphIndexer *graph = [[GZAppViewGraphIndexer alloc] initWithDatabase:self.database
                                                                 relevanceSet:nil
                                                                 graphService:nil];
-    AppViewActorIndexer *actor = [[AppViewActorIndexer alloc] initWithDatabase:self.database];
+    GZAppViewActorIndexer *actor = [[GZAppViewActorIndexer alloc] initWithDatabase:self.database];
 
     NSString *feedCollection = @"app.bsky.feed.post";
     XCTAssertTrue([feed canIndexCollection:feedCollection]);

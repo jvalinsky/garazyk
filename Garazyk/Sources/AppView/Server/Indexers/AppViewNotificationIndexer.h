@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewNotificationIndexer.h
+ @file GZAppViewNotificationIndexer.h
 
  @abstract Indexes notification-generating events: mentions, replies, quotes,
  likes of local user posts, follows of local users.
@@ -20,11 +20,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 
-@interface AppViewNotificationIndexer : NSObject <AppViewIndexer>
+@interface GZAppViewNotificationIndexer : NSObject <AppViewIndexer>
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database;
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database;
 
 @end
 

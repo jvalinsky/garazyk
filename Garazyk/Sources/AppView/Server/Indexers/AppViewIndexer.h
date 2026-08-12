@@ -18,8 +18,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewIngestEvent;
-@class AppViewPendingDelta;
+@class GZAppViewIngestEvent;
+@class GZAppViewPendingDelta;
 
 /*!
  @protocol AppViewIndexer
@@ -67,19 +67,19 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Called for live ingest events on the realtime path.
 
- @discussion This is called with a fully-decoded AppViewIngestEvent (which
+ @discussion This is called with a fully-decoded GZAppViewIngestEvent (which
  may contain multiple ops). Indexers that need to handle create/update/delete
  ops individually can implement this instead of — or in addition to —
  indexRecord:did:collection:error:.
  */
-- (BOOL)handleIngestEvent:(AppViewIngestEvent *)event error:(NSError **)error;
+- (BOOL)handleIngestEvent:(GZAppViewIngestEvent *)event error:(NSError **)error;
 
 /*!
  @method processPendingDelta:error:
 
  @abstract Replay a buffered pending delta after backfill completes.
  */
-- (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error;
+- (BOOL)processPendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error;
 
 /*!
  @method deleteRecord:did:collection:error:

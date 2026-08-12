@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewGenericQueryHandler.h
+ @file GZAppViewGenericQueryHandler.h
 
  @abstract Generic query and procedure handler for lexicon-driven endpoints.
 
@@ -10,7 +10,7 @@
  records table, and returns results in the lexicon-specified output shape.
 
  Routing priority:
- 1. Custom handler registry (AppViewCustomQueryRegistry)
+ 1. Custom handler registry (GZAppViewCustomQueryRegistry)
  2. Generic CRUD (this class)
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
@@ -21,19 +21,19 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class ATProtoLexiconRegistry;
-@class AppViewDatabase;
-@class AppViewCustomQueryRegistry;
+@class GZAppViewDatabase;
+@class GZAppViewCustomQueryRegistry;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
 
 extern NSErrorDomain const AppViewGenericQueryHandlerErrorDomain;
 
 /*!
- @class AppViewGenericQueryHandler
+ @class GZAppViewGenericQueryHandler
 
  @abstract Handles generic query and procedure requests for lexicon-driven endpoints.
  */
-@interface AppViewGenericQueryHandler : NSObject
+@interface GZAppViewGenericQueryHandler : NSObject
 
 /*!
  @method initWithRegistry:database:customHandlers:
@@ -45,8 +45,8 @@ extern NSErrorDomain const AppViewGenericQueryHandlerErrorDomain;
  @param customHandlers  The custom handler registry (takes priority over generic).
  */
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
-                         database:(AppViewDatabase *)database
-                  customHandlers:(AppViewCustomQueryRegistry *)customHandlers;
+                         database:(GZAppViewDatabase *)database
+                  customHandlers:(GZAppViewCustomQueryRegistry *)customHandlers;
 
 /*!
  @method handleQuery:response:nsid:

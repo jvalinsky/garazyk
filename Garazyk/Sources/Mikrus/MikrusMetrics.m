@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Mikrus/MikrusMetrics.h"
 
-@interface MikrusMetrics () {
+@interface GZMikrusMetrics () {
 @package
     dispatch_queue_t _queue;
     int64_t _ingestEvents, _ingestCommits, _ingestDeletes, _ingestOps, _ingestIdentities;
@@ -13,7 +13,7 @@
 }
 @end
 
-@implementation MikrusMetrics
+@implementation GZMikrusMetrics
 
 - (instancetype)init {
     self = [super init];

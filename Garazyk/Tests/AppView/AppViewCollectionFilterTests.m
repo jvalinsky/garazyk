@@ -10,7 +10,7 @@
 
 // Empty allowlist => allow all
 - (void)testEmptyAllowlistAllowsAll {
-    AppViewCollectionFilter *f = [[AppViewCollectionFilter alloc] initWithAllowlist:@[]];
+    GZAppViewCollectionFilter *f = [[GZAppViewCollectionFilter alloc] initWithAllowlist:@[]];
     XCTAssertTrue([f shouldIndexCollection:@"app.bsky.feed.post"]);
     XCTAssertTrue([f shouldIndexCollection:@"site.standard.document"]);
     XCTAssertTrue([f shouldIndexCollection:@"anything.at.all"]);
@@ -18,7 +18,7 @@
 
 // Exact match
 - (void)testExactMatch {
-    AppViewCollectionFilter *f = [[AppViewCollectionFilter alloc] initWithAllowlist:@[
+    GZAppViewCollectionFilter *f = [[GZAppViewCollectionFilter alloc] initWithAllowlist:@[
         @"site.standard.document"
     ]];
     XCTAssertTrue([f shouldIndexCollection:@"site.standard.document"]);
@@ -28,7 +28,7 @@
 
 // Prefix match (trailing dot)
 - (void)testPrefixMatch {
-    AppViewCollectionFilter *f = [[AppViewCollectionFilter alloc] initWithAllowlist:@[
+    GZAppViewCollectionFilter *f = [[GZAppViewCollectionFilter alloc] initWithAllowlist:@[
         @"site.standard."
     ]];
     XCTAssertTrue([f shouldIndexCollection:@"site.standard.document"]);
@@ -40,7 +40,7 @@
 
 // Strict prefix: "site.standard." must NOT match "site.standardX.document"
 - (void)testPrefixDoesNotMatchSuperstring {
-    AppViewCollectionFilter *f = [[AppViewCollectionFilter alloc] initWithAllowlist:@[
+    GZAppViewCollectionFilter *f = [[GZAppViewCollectionFilter alloc] initWithAllowlist:@[
         @"site.standard."
     ]];
     // "site.standardX.document" does NOT start with "site.standard." because
@@ -50,7 +50,7 @@
 
 // Multiple entries: exact + prefix
 - (void)testMultipleEntries {
-    AppViewCollectionFilter *f = [[AppViewCollectionFilter alloc] initWithAllowlist:@[
+    GZAppViewCollectionFilter *f = [[GZAppViewCollectionFilter alloc] initWithAllowlist:@[
         @"site.standard.",
         @"pub.leaflet.document"
     ]];
@@ -63,14 +63,14 @@
 
 // Empty NSID => NO
 - (void)testEmptyCollection {
-    AppViewCollectionFilter *f = [[AppViewCollectionFilter alloc] initWithAllowlist:@[]];
+    GZAppViewCollectionFilter *f = [[GZAppViewCollectionFilter alloc] initWithAllowlist:@[]];
     XCTAssertFalse([f shouldIndexCollection:@""]);
     XCTAssertFalse([f shouldIndexCollection:nil]);
 }
 
 // Non-match with non-empty allowlist
 - (void)testNonMatch {
-    AppViewCollectionFilter *f = [[AppViewCollectionFilter alloc] initWithAllowlist:@[
+    GZAppViewCollectionFilter *f = [[GZAppViewCollectionFilter alloc] initWithAllowlist:@[
         @"site.standard."
     ]];
     XCTAssertFalse([f shouldIndexCollection:@"app.bsky.feed.post"]);
@@ -80,7 +80,7 @@
 // Allowlist entry without trailing dot that is a prefix of the NSID
 // should NOT match (only exact match for non-dot entries)
 - (void)testExactEntryDoesNotPrefixMatch {
-    AppViewCollectionFilter *f = [[AppViewCollectionFilter alloc] initWithAllowlist:@[
+    GZAppViewCollectionFilter *f = [[GZAppViewCollectionFilter alloc] initWithAllowlist:@[
         @"site.standard"
     ]];
     // "site.standard" (no trailing dot) => exact match only
@@ -91,7 +91,7 @@
 
 // Allowlist with empty strings should be skipped
 - (void)testEmptyStringEntriesSkipped {
-    AppViewCollectionFilter *f = [[AppViewCollectionFilter alloc] initWithAllowlist:@[
+    GZAppViewCollectionFilter *f = [[GZAppViewCollectionFilter alloc] initWithAllowlist:@[
         @"",
         @"site.standard."
     ]];

@@ -23,21 +23,21 @@ NSString * _Nullable GZSyrenaAdminPassword(NSString * _Nullable explicitPath) {
 }
 
 @interface GZSyrenaAdminSnapshot ()
-@property (nonatomic, strong, nullable) AppViewDatabase *database;
-@property (nonatomic, strong) SyrenaMetrics *metrics;
-@property (nonatomic, strong) AppViewConfiguration *configuration;
-@property (nonatomic, strong, nullable) AppViewIngestEngine *ingestEngine;
-@property (nonatomic, strong, nullable) AppViewBackfillOrchestrator *orchestrator;
+@property (nonatomic, strong, nullable) GZAppViewDatabase *database;
+@property (nonatomic, strong) GZSyrenaMetrics *metrics;
+@property (nonatomic, strong) GZAppViewConfiguration *configuration;
+@property (nonatomic, strong, nullable) GZAppViewIngestEngine *ingestEngine;
+@property (nonatomic, strong, nullable) GZAppViewBackfillOrchestrator *orchestrator;
 @property (nonatomic, strong) NSDate *startTime;
 @end
 
 @implementation GZSyrenaAdminSnapshot
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
-                         metrics:(SyrenaMetrics *)metrics
-                   configuration:(AppViewConfiguration *)configuration
-                    ingestEngine:(AppViewIngestEngine *)ingestEngine
-         backfillOrchestrator:(AppViewBackfillOrchestrator *)orchestrator {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
+                         metrics:(GZSyrenaMetrics *)metrics
+                   configuration:(GZAppViewConfiguration *)configuration
+                    ingestEngine:(GZAppViewIngestEngine *)ingestEngine
+         backfillOrchestrator:(GZAppViewBackfillOrchestrator *)orchestrator {
     self = [super init];
     if (self) {
         _database = database;

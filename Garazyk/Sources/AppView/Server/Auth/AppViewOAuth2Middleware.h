@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewOAuth2Middleware.h
+ @file GZAppViewOAuth2Middleware.h
 
  @abstract OAuth2/DPoP authentication middleware for the AppView.
 
@@ -17,7 +17,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 @class ATProtoHttpRequest;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -38,11 +38,11 @@ typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
 };
 
 /*!
- @class AppViewOAuth2Middleware
+ @class GZAppViewOAuth2Middleware
 
  @abstract Validates OAuth2/DPoP tokens for AppView requests.
  */
-@interface AppViewOAuth2Middleware : NSObject
+@interface GZAppViewOAuth2Middleware : NSObject
 
 /*!
  @method initWithDatabase:masterSecret:
@@ -52,7 +52,7 @@ typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
  @param database     The AppView database.
  @param masterSecret The shared master secret for verifying PDS-signed JWTs.
  */
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                     masterSecret:(nullable NSString *)masterSecret;
 
 /*!

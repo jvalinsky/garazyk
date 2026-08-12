@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
-@class AppViewConfiguration;
-@class AppViewDatabase;
-@class AppViewIngestEngine;
-@class AppViewBackfillOrchestrator;
-@class SyrenaMetrics;
+@class GZAppViewConfiguration;
+@class GZAppViewDatabase;
+@class GZAppViewIngestEngine;
+@class GZAppViewBackfillOrchestrator;
+@class GZSyrenaMetrics;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -28,11 +28,11 @@ NSString * _Nullable GZSyrenaAdminPassword(NSString * _Nullable explicitPath);
  */
 @interface GZSyrenaAdminSnapshot : NSObject
 
-- (instancetype)initWithDatabase:(nullable AppViewDatabase *)database
-                         metrics:(SyrenaMetrics *)metrics
-                   configuration:(AppViewConfiguration *)configuration
-                    ingestEngine:(nullable AppViewIngestEngine *)ingestEngine
-         backfillOrchestrator:(nullable AppViewBackfillOrchestrator *)orchestrator NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithDatabase:(nullable GZAppViewDatabase *)database
+                         metrics:(GZSyrenaMetrics *)metrics
+                   configuration:(GZAppViewConfiguration *)configuration
+                    ingestEngine:(nullable GZAppViewIngestEngine *)ingestEngine
+         backfillOrchestrator:(nullable GZAppViewBackfillOrchestrator *)orchestrator NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)init NS_UNAVAILABLE;
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewOAuth2Middleware.m
+ @file GZAppViewOAuth2Middleware.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -119,18 +119,18 @@ static NSURL *AppViewOAuthExpectedDPoPURL(ATProtoHttpRequest *request) {
     return [NSURL URLWithString:urlString];
 }
 
-@interface AppViewOAuth2Middleware ()
+@interface GZAppViewOAuth2Middleware ()
 
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, copy, nullable) NSString *masterSecret;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *tokenCache;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t cacheQueue;
 
 @end
 
-@implementation AppViewOAuth2Middleware
+@implementation GZAppViewOAuth2Middleware
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                     masterSecret:(nullable NSString *)masterSecret {
     self = [super init];
     if (self) {

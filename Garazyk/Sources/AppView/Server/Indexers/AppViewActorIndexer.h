@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewActorIndexer.h
+ @file GZAppViewActorIndexer.h
 
  @abstract Indexes app.bsky.actor.profile records into the AppView database.
 
@@ -13,19 +13,19 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 
 /*!
- @class AppViewActorIndexer
+ @class GZAppViewActorIndexer
 
  @abstract Materializes actor profiles (display name, bio, avatar ATProtoCID, banner ATProtoCID).
 
  Handles:
   - app.bsky.actor.profile (create / update / delete)
  */
-@interface AppViewActorIndexer : NSObject <AppViewIndexer>
+@interface GZAppViewActorIndexer : NSObject <AppViewIndexer>
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database;
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database;
 
 @end
 

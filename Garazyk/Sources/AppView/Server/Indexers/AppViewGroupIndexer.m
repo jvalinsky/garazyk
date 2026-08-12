@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewGroupIndexer.m
+ @file GZAppViewGroupIndexer.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -12,13 +12,13 @@
 
 static NSString * const kCollectionGroupDef = @"chat.bsky.group.definition";
 
-@interface AppViewGroupIndexer ()
-@property (nonatomic, strong) AppViewDatabase *avdb;
+@interface GZAppViewGroupIndexer ()
+@property (nonatomic, strong) GZAppViewDatabase *avdb;
 @end
 
-@implementation AppViewGroupIndexer
+@implementation GZAppViewGroupIndexer
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database {
     self = [super init];
     if (!self) return nil;
     _avdb = database;

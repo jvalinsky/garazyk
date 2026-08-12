@@ -8,9 +8,9 @@
 
 #import "AppView/Server/AppViewTypes.h"
 
-#pragma mark - AppViewRepoSyncState
+#pragma mark - GZAppViewRepoSyncState
 
-@implementation AppViewRepoSyncState
+@implementation GZAppViewRepoSyncState
 
 - (instancetype)initWithDID:(NSString *)did {
     self = [super init];
@@ -23,7 +23,7 @@
 }
 
 - (id)copyWithZone:(nullable NSZone *)zone {
-    AppViewRepoSyncState *copy = [[AppViewRepoSyncState allocWithZone:zone] initWithDID:_did];
+    GZAppViewRepoSyncState *copy = [[GZAppViewRepoSyncState allocWithZone:zone] initWithDID:_did];
     copy.status        = _status;
     copy.lastRev       = _lastRev;
     copy.lastBackfillAt = _lastBackfillAt;
@@ -34,9 +34,9 @@
 
 @end
 
-#pragma mark - AppViewCheckpoint
+#pragma mark - GZAppViewCheckpoint
 
-@implementation AppViewCheckpoint
+@implementation GZAppViewCheckpoint
 
 - (instancetype)initWithRelayURL:(NSString *)relayURL seq:(int64_t)seq {
     self = [super init];
@@ -49,7 +49,7 @@
 }
 
 - (id)copyWithZone:(nullable NSZone *)zone {
-    AppViewCheckpoint *copy = [[AppViewCheckpoint allocWithZone:zone]
+    GZAppViewCheckpoint *copy = [[GZAppViewCheckpoint allocWithZone:zone]
         initWithRelayURL:_relayURL seq:_seq];
     copy.savedAt = _savedAt;
     return copy;
@@ -57,9 +57,9 @@
 
 @end
 
-#pragma mark - AppViewPendingDelta
+#pragma mark - GZAppViewPendingDelta
 
-@implementation AppViewPendingDelta
+@implementation GZAppViewPendingDelta
 
 - (instancetype)initWithDID:(NSString *)did
                         seq:(int64_t)seq
@@ -80,9 +80,9 @@
 
 @end
 
-#pragma mark - AppViewRelevanceMembership
+#pragma mark - GZAppViewRelevanceMembership
 
-@implementation AppViewRelevanceMembership
+@implementation GZAppViewRelevanceMembership
 
 - (instancetype)initWithDID:(NSString *)did
                      reason:(AppViewRelevanceReason)reason

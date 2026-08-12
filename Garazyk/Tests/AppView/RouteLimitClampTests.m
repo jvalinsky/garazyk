@@ -9,7 +9,7 @@
 #import "Core/CID.h"
 
 @interface RouteLimitClampTests : XCTestCase
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, strong) PDSFeedService *feedService;
 @property (nonatomic, strong) PDSActorService *actorService;
 @property (nonatomic, strong) PDSGraphService *graphService;
@@ -20,7 +20,7 @@
 - (void)setUp {
     [super setUp];
     NSError *error = nil;
-    self.database = [[AppViewDatabase alloc] initInMemoryWithError:&error];
+    self.database = [[GZAppViewDatabase alloc] initInMemoryWithError:&error];
     XCTAssertNotNil(self.database, @"Failed to create database: %@", error);
     XCTAssertTrue([self.database runMigrations:&error], @"Migrations failed: %@", error);
     self.feedService = [[PDSFeedService alloc] initWithDatabase:self.database];

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewLexiconEndpointGenerator.m
+ @file GZAppViewLexiconEndpointGenerator.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -21,30 +21,30 @@
 NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
     @"AppViewLexiconEndpointGenerator";
 
-@interface AppViewLexiconEndpointGenerator ()
+@interface GZAppViewLexiconEndpointGenerator ()
 
 @property (nonatomic, strong) ATProtoLexiconRegistry *registry;
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
-@property (nonatomic, strong) AppViewCustomQueryRegistry *customHandlers;
-@property (nonatomic, strong) AppViewGenericQueryHandler *queryHandler;
+@property (nonatomic, strong) GZAppViewCustomQueryRegistry *customHandlers;
+@property (nonatomic, strong) GZAppViewGenericQueryHandler *queryHandler;
 @property (nonatomic, assign) NSUInteger registeredCount;
 
 @end
 
-@implementation AppViewLexiconEndpointGenerator
+@implementation GZAppViewLexiconEndpointGenerator
 
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
-                         database:(AppViewDatabase *)database
+                         database:(GZAppViewDatabase *)database
                       httpServer:(ATProtoHttpServer *)httpServer
-                 customHandlers:(AppViewCustomQueryRegistry *)customHandlers {
+                 customHandlers:(GZAppViewCustomQueryRegistry *)customHandlers {
     self = [super init];
     if (self) {
         _registry = registry;
         _database = database;
         _httpServer = httpServer;
         _customHandlers = customHandlers;
-        _queryHandler = [[AppViewGenericQueryHandler alloc]
+        _queryHandler = [[GZAppViewGenericQueryHandler alloc]
             initWithRegistry:registry
                     database:database
              customHandlers:customHandlers];
@@ -167,7 +167,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
     [self.httpServer addRoute:@"GET"
                         path:path
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        AppViewLexiconEndpointGenerator *strongSelf = weakSelf;
+        GZAppViewLexiconEndpointGenerator *strongSelf = weakSelf;
         if (!strongSelf) {
             response.statusCode = 500;
             [response setJsonBody:@{
@@ -192,7 +192,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
     [self.httpServer addRoute:@"POST"
                         path:path
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
-        AppViewLexiconEndpointGenerator *strongSelf = weakSelf;
+        GZAppViewLexiconEndpointGenerator *strongSelf = weakSelf;
         if (!strongSelf) {
             response.statusCode = 500;
             [response setJsonBody:@{
@@ -214,7 +214,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
     return _registeredCount;
 }
 
-- (AppViewGenericQueryHandler *)queryHandler {
+- (GZAppViewGenericQueryHandler *)queryHandler {
     return _queryHandler;
 }
 

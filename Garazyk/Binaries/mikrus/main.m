@@ -132,7 +132,7 @@ int main(int argc, const char *argv[]) {
         NSString *configPath = parsedArgs[@"config"];
         BOOL noIngest = [parsedArgs[@"no-ingest"] boolValue];
 
-        MikrusRuntime *runtime = [MikrusRuntime sharedRuntime];
+        GZMikrusRuntime *runtime = [GZMikrusRuntime sharedRuntime];
         if (configPath.length > 0) {
             NSError *configError = nil;
             if (![runtime loadConfiguration:configPath error:&configError]) {
@@ -143,7 +143,7 @@ int main(int argc, const char *argv[]) {
             [runtime loadConfigurationFromEnvironment];
         }
 
-        MikrusConfiguration *config = runtime.configuration;
+        GZMikrusConfiguration *config = runtime.configuration;
         if (port > 0) config.httpPort = port;
         if (relayURLs.count > 0) config.relayURLs = relayURLs;
         if (dataDir.length > 0) config.dataDirectory = dataDir;

@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AppViewIndexer.h"
 
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface AppViewGroupIndexer : NSObject <AppViewIndexer>
+@interface GZAppViewGroupIndexer : NSObject <AppViewIndexer>
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database;
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database;
 
 @end
 

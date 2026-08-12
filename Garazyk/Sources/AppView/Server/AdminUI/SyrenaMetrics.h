@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
  * backfill delegate, query handlers, etc.).  The snapshot method produces a
  * point-in-time dictionary safe for the admin UI partial pipeline.
  */
-@interface SyrenaMetrics : NSObject
+@interface GZSyrenaMetrics : NSObject
 
 #pragma mark - Ingest counters
 

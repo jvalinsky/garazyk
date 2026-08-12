@@ -16,11 +16,11 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/XrpcErrorHelper.h"
 
-@implementation MikrusXrpcRoutePack {
-    MikrusDatabase *_database;
+@implementation GZMikrusXrpcRoutePack {
+    GZMikrusDatabase *_database;
 }
 
-- (instancetype)initWithDatabase:(MikrusDatabase *)database {
+- (instancetype)initWithDatabase:(GZMikrusDatabase *)database {
     self = [super init];
     if (!self) return nil;
     _database = database;
@@ -61,7 +61,7 @@
     if (![self checkRateLimitForRequest:request response:response]) return;
     if ([_metrics respondsToSelector:@selector(recordQueryBacklink)]) [_metrics recordQueryBacklink];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
+    GZMikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
 
     NSInteger limit = 16;
@@ -92,7 +92,7 @@
     if (![self checkRateLimitForRequest:request response:response]) return;
     if ([_metrics respondsToSelector:@selector(recordQueryBacklink)]) [_metrics recordQueryBacklink];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
+    GZMikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
 
     NSInteger limit = 16;
@@ -122,7 +122,7 @@
     if (![self checkRateLimitForRequest:request response:response]) return;
     if ([_metrics respondsToSelector:@selector(recordQueryBacklink)]) [_metrics recordQueryBacklink];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
+    GZMikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
 
     NSError *error = nil;
@@ -139,7 +139,7 @@
     if (![self checkRateLimitForRequest:request response:response]) return;
     if ([_metrics respondsToSelector:@selector(recordQueryManyToMany)]) [_metrics recordQueryManyToMany];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
+    GZMikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     NSString *pathToOther = [self requiredParam:@"pathToOther" request:request response:response];
     if (!subject || !source || !pathToOther) return;
     if (![self validatePath:pathToOther response:response]) return;
@@ -173,7 +173,7 @@
     if (![self checkRateLimitForRequest:request response:response]) return;
     if ([_metrics respondsToSelector:@selector(recordQueryManyToMany)]) [_metrics recordQueryManyToMany];
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
+    GZMikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     NSString *pathToOther = [self requiredParam:@"pathToOther" request:request response:response];
     if (!subject || !source || !pathToOther) return;
     if (![self validatePath:pathToOther response:response]) return;
@@ -294,11 +294,11 @@
     return [GZXrpcRouteSupport requiredQueryParam:name request:request response:response];
 }
 
-- (MikrusSourceSpec *)sourceFromRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
+- (GZMikrusSourceSpec *)sourceFromRequest:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response {
     NSString *sourceValue = [self requiredParam:@"source" request:request response:response];
     if (!sourceValue) return nil;
     NSError *error = nil;
-    MikrusSourceSpec *source = [MikrusSourceSpec sourceSpecWithString:sourceValue error:&error];
+    GZMikrusSourceSpec *source = [GZMikrusSourceSpec sourceSpecWithString:sourceValue error:&error];
     if (!source) {
         [self writeInvalidRequest:error.localizedDescription ?: @"Invalid source" response:response];
         return nil;
@@ -308,7 +308,7 @@
 
 - (BOOL)validatePath:(NSString *)path response:(ATProtoHttpResponse *)response {
     NSError *error = nil;
-    if (![MikrusSourceSpec validatePath:path error:&error]) {
+    if (![GZMikrusSourceSpec validatePath:path error:&error]) {
         [self writeInvalidRequest:error.localizedDescription ?: @"Invalid path" response:response];
         return NO;
     }

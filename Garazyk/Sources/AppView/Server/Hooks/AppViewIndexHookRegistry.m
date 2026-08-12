@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewIndexHookRegistry.m
+ @file GZAppViewIndexHookRegistry.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -12,17 +12,17 @@
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
-@interface AppViewIndexHookRegistry ()
+@interface GZAppViewIndexHookRegistry ()
 
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, id<AppViewIndexHook>> *hooks;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t hookQueue;
 
 @end
 
-@implementation AppViewIndexHookRegistry
+@implementation GZAppViewIndexHookRegistry
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database {
     self = [super init];
     if (self) {
         _database = database;

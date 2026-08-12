@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewRelevanceSet.h
+ @file GZAppViewRelevanceSet.h
 
  @abstract Interest-graph partial mode: manages the relevance set R.
 
@@ -15,7 +15,7 @@
   4. Recent interaction expansion (DID interacted with by an R-member,
      expires after ttlHours).
 
- Membership is persisted in the AppViewDatabase relevance table and an
+ Membership is persisted in the GZAppViewDatabase relevance table and an
  in-memory NSSet is kept for fast O(1) isDIDRelevant: checks.
 
  Thread-safety: All public methods are safe to call from any thread.
@@ -28,14 +28,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 
 /*!
- @interface AppViewRelevanceSet
+ @interface GZAppViewRelevanceSet
 
  @abstract Manages the interest-graph relevance set for partial-mode operation.
  */
-@interface AppViewRelevanceSet : NSObject
+@interface GZAppViewRelevanceSet : NSObject
 
 /*! TTL in hours for dynamic memberships (follows-of-seeds, recent interactions). Default 168 (7 days). */
 @property (nonatomic, assign) NSUInteger ttlHours;
@@ -48,7 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param allowlist  Permanent allowlist DIDs.
  @param ttlHours   TTL for dynamic memberships.
  */
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                         seedDIDs:(NSArray<NSString *> *)seedDIDs
                        allowlist:(NSArray<NSString *> *)allowlist
                         ttlHours:(NSUInteger)ttlHours;

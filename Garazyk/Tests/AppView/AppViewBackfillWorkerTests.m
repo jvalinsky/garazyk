@@ -31,7 +31,7 @@
 }
 @end
 
-@interface AppViewBackfillWorker (Test)
+@interface GZAppViewBackfillWorker (Test)
 - (nullable NSString *)_parseRepoArchiveAndIndex:(NSData *)archiveData
                                           forDID:(NSString *)did
                                            error:(NSError **)error;
@@ -43,9 +43,9 @@
 
 @interface AppViewBackfillWorkerTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
-@property (nonatomic, strong) AppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, strong) BackfillWorkerMockIndexer *indexer;
-@property (nonatomic, strong) AppViewBackfillWorker *worker;
+@property (nonatomic, strong) GZAppViewBackfillWorker *worker;
 @end
 
 @implementation AppViewBackfillWorkerTests
@@ -57,12 +57,12 @@
     
     NSString *dbPath = [self.testDirectory stringByAppendingPathComponent:@"appview_test.db"];
     NSError *error = nil;
-    self.database = [[AppViewDatabase alloc] initWithPath:dbPath error:&error];
+    self.database = [[GZAppViewDatabase alloc] initWithPath:dbPath error:&error];
     XCTAssertNotNil(self.database, @"Failed to init database: %@", error);
     [self.database runMigrations:&error];
     
     self.indexer = [[BackfillWorkerMockIndexer alloc] init];
-    self.worker = [[AppViewBackfillWorker alloc] initWithDID:@"did:plc:test"
+    self.worker = [[GZAppViewBackfillWorker alloc] initWithDID:@"did:plc:test"
                                                      database:self.database
                                                      indexers:@[self.indexer]
                                                      plcURL:@"http://localhost:2582"];

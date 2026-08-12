@@ -15,7 +15,7 @@
 @class PDSBookmarkService;
 @class PDSContactService;
 @class PDSSearchIndexService;
-@class AppViewWriteProxy;
+@class GZAppViewWriteProxy;
 /** @abstract Query interface used by AppView routes that need PDS-backed reads. */
 @protocol PDSQueryDatabase;
 @class ATProtoJWTMinter;
@@ -48,7 +48,7 @@
 /** @abstract Optional service for indexed actor and post search. */
 @property (nonatomic, strong, readonly) PDSSearchIndexService *searchIndexService;
 /** @abstract Optional write proxy for delegated repository writes. */
-@property (nonatomic, strong, readonly) AppViewWriteProxy *writeProxy;
+@property (nonatomic, strong, readonly) GZAppViewWriteProxy *writeProxy;
 /** @abstract Optional PDS query database used by selected routes. */
 @property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;
 /** @abstract Optional ATProtoJWT issuer used by authenticated AppView extensions. */

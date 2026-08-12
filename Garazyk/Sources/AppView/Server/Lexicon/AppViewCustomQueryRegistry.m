@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewCustomQueryRegistry.m
+ @file GZAppViewCustomQueryRegistry.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -11,14 +11,14 @@
 
 NSErrorDomain const AppViewCustomQueryRegistryErrorDomain = @"AppViewCustomQueryRegistry";
 
-@interface AppViewCustomQueryRegistry ()
+@interface GZAppViewCustomQueryRegistry ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, id<AppViewLexiconQueryHandler>> *handlers;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t registryQueue;
 
 @end
 
-@implementation AppViewCustomQueryRegistry
+@implementation GZAppViewCustomQueryRegistry
 
 - (instancetype)init {
     self = [super init];

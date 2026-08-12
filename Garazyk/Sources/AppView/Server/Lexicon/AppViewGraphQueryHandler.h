@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewGraphQueryHandler.h
+ @file GZAppViewGraphQueryHandler.h
 
  @abstract Custom query handler for app.bsky.graph XRPC endpoints.
 
@@ -22,7 +22,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface AppViewGraphQueryHandler : NSObject <AppViewLexiconQueryHandler>
+@interface GZAppViewGraphQueryHandler : NSObject <AppViewLexiconQueryHandler>
 
 - (instancetype)initWithGraphService:(PDSGraphService *)graphService;
 

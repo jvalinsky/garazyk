@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewWebhookHook.m
+ @file GZAppViewWebhookHook.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -10,14 +10,14 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Debug/GZLogger.h"
 
-@interface AppViewWebhookHook ()
+@interface GZAppViewWebhookHook ()
 
 @property (nonatomic, copy) NSString *webhookURL;
 @property (nonatomic, copy, nullable) NSArray<NSString *> *hookCollections;
 
 @end
 
-@implementation AppViewWebhookHook
+@implementation GZAppViewWebhookHook
 
 - (instancetype)initWithWebhookURL:(NSString *)webhookURL
                        collections:(nullable NSArray<NSString *> *)collections {

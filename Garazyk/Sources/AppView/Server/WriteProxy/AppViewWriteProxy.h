@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewWriteProxy.h
+ @file GZAppViewWriteProxy.h
 
  @abstract Proxies write requests from the AppView to the user's PDS.
 
@@ -22,7 +22,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
 
@@ -42,11 +42,11 @@ typedef NS_ENUM(NSInteger, AppViewWriteProxyErrorCode) {
 };
 
 /*!
- @class AppViewWriteProxy
+ @class GZAppViewWriteProxy
 
  @abstract Proxies write requests from the AppView to the user's PDS.
  */
-@interface AppViewWriteProxy : NSObject
+@interface GZAppViewWriteProxy : NSObject
 
 /*!
  @method initWithDatabase:plcUrl:
@@ -56,7 +56,7 @@ typedef NS_ENUM(NSInteger, AppViewWriteProxyErrorCode) {
  @param database The AppView database.
  @param plcUrl   The base URL of the PLC server.
  */
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                           plcUrl:(nullable NSString *)plcUrl;
 
 /*!

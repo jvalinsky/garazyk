@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file MikrusDatabase.h
+ * @file GZMikrusDatabase.h
  * @abstract SQLite-backed link index for Microcosm Mikrus-style queries.
  */
 
@@ -9,7 +9,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class MikrusSourceSpec;
+@class GZMikrusSourceSpec;
 
 /**
  * @abstract Error domain for Mikrus database operations.
@@ -19,7 +19,7 @@ extern NSString * const MikrusDatabaseErrorDomain;
 /**
  * @abstract Database manager for Mikrus link indexing.
  */
-@interface MikrusDatabase : NSObject
+@interface GZMikrusDatabase : NSObject
 
 /**
  * @abstract Initializes the database connection.
@@ -92,7 +92,7 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @abstract Performs the backlinkRecordsForSubject operation.
  */
 - (nullable NSArray<NSDictionary *> *)backlinkRecordsForSubject:(NSString *)subject
-                                                         source:(MikrusSourceSpec *)source
+                                                         source:(GZMikrusSourceSpec *)source
                                                      didFilters:(NSArray<NSString *> *)didFilters
                                                           limit:(NSInteger)limit
                                                          cursor:(nullable NSString *)cursor
@@ -115,7 +115,7 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @abstract Performs the backlinkDIDsForSubject operation.
  */
 - (nullable NSArray<NSString *> *)backlinkDIDsForSubject:(NSString *)subject
-                                                  source:(MikrusSourceSpec *)source
+                                                  source:(GZMikrusSourceSpec *)source
                                                    limit:(NSInteger)limit
                                                   cursor:(nullable NSString *)cursor
                                               nextCursor:(NSString * _Nullable * _Nullable)nextCursor
@@ -130,7 +130,7 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @return Backlink count.
  */
 - (NSInteger)backlinksCountForSubject:(NSString *)subject
-                                source:(MikrusSourceSpec *)source
+                                source:(GZMikrusSourceSpec *)source
                                  error:(NSError **)error;
 
 /**
@@ -150,7 +150,7 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @abstract Performs the manyToManyItemsForSubject operation.
  */
 - (nullable NSArray<NSDictionary *> *)manyToManyItemsForSubject:(NSString *)subject
-                                                         source:(MikrusSourceSpec *)source
+                                                         source:(GZMikrusSourceSpec *)source
                                                     pathToOther:(NSString *)pathToOther
                                                      linkDIDs:(NSArray<NSString *> *)linkDIDs
                                                   otherSubjects:(NSArray<NSString *> *)otherSubjects
@@ -176,7 +176,7 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @abstract Performs the manyToManyCountsForSubject operation.
  */
 - (nullable NSArray<NSDictionary *> *)manyToManyCountsForSubject:(NSString *)subject
-                                                          source:(MikrusSourceSpec *)source
+                                                          source:(GZMikrusSourceSpec *)source
                                                      pathToOther:(NSString *)pathToOther
                                                             dids:(NSArray<NSString *> *)dids
                                                    otherSubjects:(NSArray<NSString *> *)otherSubjects

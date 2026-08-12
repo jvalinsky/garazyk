@@ -49,7 +49,7 @@ NSInteger parseLimitParam(ATProtoHttpRequest *request, NSInteger defaultLimit, N
     PDSBookmarkService *_bookmarkService;
     PDSContactService *_contactService;
     PDSSearchIndexService *_searchIndexService;
-    AppViewWriteProxy *_writeProxy;
+    GZAppViewWriteProxy *_writeProxy;
     id<PDSQueryDatabase> _database;
     ATProtoJWTMinter *_jwtMinter;
 }
@@ -63,7 +63,7 @@ NSInteger parseLimitParam(ATProtoHttpRequest *request, NSInteger defaultLimit, N
                      bookmarkService:(nullable PDSBookmarkService *)bookmarkService
                       contactService:(nullable PDSContactService *)contactService
                   searchIndexService:(nullable PDSSearchIndexService *)searchIndexService
-                         writeProxy:(nullable AppViewWriteProxy *)writeProxy
+                         writeProxy:(nullable GZAppViewWriteProxy *)writeProxy
                           database:(nullable id<PDSQueryDatabase>)database
                          jwtMinter:(nullable ATProtoJWTMinter *)jwtMinter
 {

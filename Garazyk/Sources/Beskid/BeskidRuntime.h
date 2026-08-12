@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
- * @file BeskidRuntime.h
+ * @file GZBeskidRuntime.h
  * @abstract Top-level coordinator for the Beskid edge record and identity cache.
  */
 
@@ -11,23 +11,23 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class BeskidConfiguration;
-@class BeskidDatabase;
+@class GZBeskidConfiguration;
+@class GZBeskidDatabase;
 
 /**
  * @abstract Coordinates the initialization and lifecycle of the Beskid service.
  */
-@interface BeskidRuntime : NSObject <GZServiceRuntimeProtocol>
+@interface GZBeskidRuntime : NSObject <GZServiceRuntimeProtocol>
 
 /**
  * @abstract Current service configuration.
  */
-@property (nonatomic, strong, readonly) BeskidConfiguration *configuration;
+@property (nonatomic, strong, readonly) GZBeskidConfiguration *configuration;
 
 /**
  * @abstract Database handle for the edge cache.
  */
-@property (nonatomic, strong, readonly) BeskidDatabase *database;
+@property (nonatomic, strong, readonly) GZBeskidDatabase *database;
 
 /**
  * @abstract Whether the runtime service is actively running.

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewSearchIndexHook.h
+ @file GZAppViewSearchIndexHook.h
 
  @abstract Index hook that pushes records to a search index.
 
@@ -18,11 +18,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class AppViewSearchIndexHook
+ @class GZAppViewSearchIndexHook
 
  @abstract Pushes indexed records to a search endpoint.
  */
-@interface AppViewSearchIndexHook : NSObject <AppViewIndexHook>
+@interface GZAppViewSearchIndexHook : NSObject <AppViewIndexHook>
 
 /*!
  @method initWithSearchEndpoint:

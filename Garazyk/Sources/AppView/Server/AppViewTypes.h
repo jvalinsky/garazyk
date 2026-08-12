@@ -35,11 +35,11 @@ typedef NS_ENUM(NSInteger, AppViewRepoSyncStatus) {
 };
 
 /*!
- @interface AppViewRepoSyncState
+ @interface GZAppViewRepoSyncState
 
  @abstract Persistent per-repo backfill state.
  */
-@interface AppViewRepoSyncState : NSObject <NSCopying>
+@interface GZAppViewRepoSyncState : NSObject <NSCopying>
 
 /*! DID of the repository. */
 @property (nonatomic, copy)   NSString *did;
@@ -66,7 +66,7 @@ typedef NS_ENUM(NSInteger, AppViewRepoSyncStatus) {
 #pragma mark - Global Cursor Checkpoint
 
 /*!
- @interface AppViewCheckpoint
+ @interface GZAppViewCheckpoint
 
  @abstract Durable cursor for the global subscribeRepos stream.
 
@@ -74,7 +74,7 @@ typedef NS_ENUM(NSInteger, AppViewRepoSyncStatus) {
  restart it can resume from the last confirmed position rather than replaying
  the full network history.
  */
-@interface AppViewCheckpoint : NSObject <NSCopying>
+@interface GZAppViewCheckpoint : NSObject <NSCopying>
 
 /*! Relay URL this checkpoint belongs to. */
 @property (nonatomic, copy) NSString *relayURL;
@@ -92,7 +92,7 @@ typedef NS_ENUM(NSInteger, AppViewRepoSyncStatus) {
 #pragma mark - Pending Repo Delta
 
 /*!
- @interface AppViewPendingDelta
+ @interface GZAppViewPendingDelta
 
  @abstract A live ingest event queued for a repo whose backfill is in-flight.
 
@@ -100,7 +100,7 @@ typedef NS_ENUM(NSInteger, AppViewRepoSyncStatus) {
  state, the event is not immediately materialized. Instead it is stored here and
  replayed (in sequence order) once the backfill completes.
  */
-@interface AppViewPendingDelta : NSObject
+@interface GZAppViewPendingDelta : NSObject
 
 /*! DID of the repo. */
 @property (nonatomic, copy)   NSString *did;
@@ -147,11 +147,11 @@ typedef NS_ENUM(NSInteger, AppViewRelevanceReason) {
 };
 
 /*!
- @interface AppViewRelevanceMembership
+ @interface GZAppViewRelevanceMembership
 
  @abstract A single entry in the interest-graph relevance set.
  */
-@interface AppViewRelevanceMembership : NSObject
+@interface GZAppViewRelevanceMembership : NSObject
 
 /*! DID that is a member. */
 @property (nonatomic, copy)   NSString *did;

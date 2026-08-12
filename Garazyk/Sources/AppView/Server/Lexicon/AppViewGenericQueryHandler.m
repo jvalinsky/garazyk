@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewGenericQueryHandler.m
+ @file GZAppViewGenericQueryHandler.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -23,19 +23,19 @@ NSErrorDomain const AppViewGenericQueryHandlerErrorDomain = @"AppViewGenericQuer
 static NSInteger const kDefaultLimit = 50;
 static NSInteger const kMaxLimit = 100;
 
-@interface AppViewGenericQueryHandler ()
+@interface GZAppViewGenericQueryHandler ()
 
 @property (nonatomic, strong) ATProtoLexiconRegistry *registry;
-@property (nonatomic, strong) AppViewDatabase *database;
-@property (nonatomic, strong) AppViewCustomQueryRegistry *customHandlers;
+@property (nonatomic, strong) GZAppViewDatabase *database;
+@property (nonatomic, strong) GZAppViewCustomQueryRegistry *customHandlers;
 
 @end
 
-@implementation AppViewGenericQueryHandler
+@implementation GZAppViewGenericQueryHandler
 
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
-                         database:(AppViewDatabase *)database
-                  customHandlers:(AppViewCustomQueryRegistry *)customHandlers {
+                         database:(GZAppViewDatabase *)database
+                  customHandlers:(GZAppViewCustomQueryRegistry *)customHandlers {
     self = [super init];
     if (self) {
         _registry = registry;

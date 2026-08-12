@@ -5,7 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /** Thread-safe monotonic counters for the Mikrus link-index service. */
-@interface MikrusMetrics : NSObject
+@interface GZMikrusMetrics : NSObject
 
 /// Ingest counters
 - (void)recordIngestEvent;

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewRuntime.h
+ @file GZAppViewRuntime.h
 
  @abstract Top-level coordinator for the standalone AppView server.
 
- @discussion AppViewRuntime owns and wires together all three planes:
-  - Ingest: AppViewIngestEngine + ATProtoRelayClient connections
-  - Backfill: AppViewBackfillOrchestrator + worker pool
+ @discussion GZAppViewRuntime owns and wires together all three planes:
+  - Ingest: GZAppViewIngestEngine + ATProtoRelayClient connections
+  - Backfill: GZAppViewBackfillOrchestrator + worker pool
   - Query API: HTTP server with app.bsky.* XRPC routes
 
  Lifecycle:
@@ -25,8 +25,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewConfiguration;
-@class AppViewDatabase;
+@class GZAppViewConfiguration;
+@class GZAppViewDatabase;
 @class PDSAppViewVideoUriBuilder;
 @class GZDatabaseConnectionManager;
 @protocol AppViewRouteRegistration;
@@ -34,13 +34,13 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Manages the full lifecycle of a standalone AppView server instance.
  */
-@interface AppViewRuntime : NSObject <GZServiceRuntimeProtocol>
+@interface GZAppViewRuntime : NSObject <GZServiceRuntimeProtocol>
 
 /*! The active configuration. Populated after loadConfiguration*. */
-@property (nonatomic, strong, readonly) AppViewConfiguration *configuration;
+@property (nonatomic, strong, readonly) GZAppViewConfiguration *configuration;
 
 /*! Returns the AppView database. */
-@property (nonatomic, strong, readonly) AppViewDatabase *database;
+@property (nonatomic, strong, readonly) GZAppViewDatabase *database;
 
 /*! Returns YES if the runtime is running. */
 @property (nonatomic, readonly) BOOL isRunning;

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewGraphIndexer.m
+ @file GZAppViewGraphIndexer.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -31,16 +31,16 @@ static NSSet<NSString *> *graphCollections(void) {
     return s;
 }
 
-@interface AppViewGraphIndexer ()
-@property (nonatomic, strong) AppViewDatabase *avdb;
-@property (nonatomic, weak)   AppViewRelevanceSet *relevanceSet;
+@interface GZAppViewGraphIndexer ()
+@property (nonatomic, strong) GZAppViewDatabase *avdb;
+@property (nonatomic, weak)   GZAppViewRelevanceSet *relevanceSet;
 @property (nonatomic, strong) PDSGraphService *graphService;
 @end
 
-@implementation AppViewGraphIndexer
+@implementation GZAppViewGraphIndexer
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
-                    relevanceSet:(nullable AppViewRelevanceSet *)relevanceSet
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
+                    relevanceSet:(nullable GZAppViewRelevanceSet *)relevanceSet
                     graphService:(nullable PDSGraphService *)graphService {
     self = [super init];
     if (!self) return nil;
@@ -107,7 +107,7 @@ static NSSet<NSString *> *graphCollections(void) {
     return YES;
 }
 
-- (BOOL)handleIngestEvent:(AppViewIngestEvent *)event error:(NSError **)error {
+- (BOOL)handleIngestEvent:(GZAppViewIngestEvent *)event error:(NSError **)error {
     for (NSDictionary *op in event.ops) {
         NSString *action = op[@"action"];
         NSString *path   = op[@"path"];
@@ -131,7 +131,7 @@ static NSSet<NSString *> *graphCollections(void) {
     return YES;
 }
 
-- (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error {
+- (BOOL)processPendingDelta:(GZAppViewPendingDelta *)delta error:(NSError **)error {
     GZ_LOG_DEBUG(@"[AppViewGraphIndexer] Replaying pending delta for %@", delta.did);
     return YES;
 }

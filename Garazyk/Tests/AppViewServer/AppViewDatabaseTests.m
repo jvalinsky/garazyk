@@ -3,7 +3,7 @@
 /*!
  @file AppViewDatabaseTests.m
 
- @abstract Unit tests for AppViewDatabase — schema, checkpoint persistence,
+ @abstract Unit tests for GZAppViewDatabase — schema, checkpoint persistence,
  repo sync state machine, pending deltas, event log idempotency, and
  relevance set membership.
 
@@ -87,7 +87,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 }
 
 @interface AppViewDatabaseTests : XCTestCase
-@property (nonatomic, strong) AppViewDatabase *db;
+@property (nonatomic, strong) GZAppViewDatabase *db;
 @end
 
 @implementation AppViewDatabaseTests
@@ -95,7 +95,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 - (void)setUp {
     [super setUp];
     NSError *err = nil;
-    self.db = [[AppViewDatabase alloc] initInMemoryWithError:&err];
+    self.db = [[GZAppViewDatabase alloc] initInMemoryWithError:&err];
     XCTAssertNotNil(self.db, @"Failed to open in-memory AppViewDatabase: %@", err);
     XCTAssertTrue([self.db runMigrations:&err], @"Migrations failed: %@", err);
 }
@@ -110,13 +110,13 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 // ---------------------------------------------------------------------------
 
 - (void)testCheckpointRoundTrip {
-    AppViewCheckpoint *cp = [[AppViewCheckpoint alloc]
+    GZAppViewCheckpoint *cp = [[GZAppViewCheckpoint alloc]
         initWithRelayURL:@"wss://bsky.network" seq:12345];
 
     NSError *err = nil;
     XCTAssertTrue([self.db saveCheckpoint:cp error:&err], @"Save failed: %@", err);
 
-    AppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://bsky.network" error:&err];
+    GZAppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://bsky.network" error:&err];
     XCTAssertNotNil(loaded);
     XCTAssertEqual(loaded.seq, 12345LL);
     XCTAssertEqualObjects(loaded.relayURL, @"wss://bsky.network");
@@ -124,21 +124,21 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 
 - (void)testCheckpointUpsert {
     NSError *err = nil;
-    AppViewCheckpoint *cp1 = [[AppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:100];
-    AppViewCheckpoint *cp2 = [[AppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:200];
+    GZAppViewCheckpoint *cp1 = [[GZAppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:100];
+    GZAppViewCheckpoint *cp2 = [[GZAppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:200];
 
     XCTAssertTrue([self.db saveCheckpoint:cp1 error:&err]);
     XCTAssertTrue([self.db saveCheckpoint:cp2 error:&err]);
 
-    AppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://test.relay" error:&err];
+    GZAppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://test.relay" error:&err];
     XCTAssertEqual(loaded.seq, 200LL, @"Upsert should update to latest seq");
 }
 
 - (void)testCheckpointDoesNotMoveBackward {
     NSError *err = nil;
-    XCTAssertTrue([self.db saveCheckpoint:[[AppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:200] error:&err]);
-    XCTAssertTrue([self.db saveCheckpoint:[[AppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:100] error:&err]);
-    AppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://test.relay" error:&err];
+    XCTAssertTrue([self.db saveCheckpoint:[[GZAppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:200] error:&err]);
+    XCTAssertTrue([self.db saveCheckpoint:[[GZAppViewCheckpoint alloc] initWithRelayURL:@"wss://test.relay" seq:100] error:&err]);
+    GZAppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://test.relay" error:&err];
     XCTAssertEqual(loaded.seq, 200LL);
 }
 
@@ -165,7 +165,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 
 - (void)testCheckpointMissingReturnsNil {
     NSError *err = nil;
-    AppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://nonexistent" error:&err];
+    GZAppViewCheckpoint *loaded = [self.db loadCheckpointForRelayURL:@"wss://nonexistent" error:&err];
     XCTAssertNil(loaded);
     XCTAssertNil(err);
 }
@@ -179,7 +179,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     NSError *error = nil;
     XCTAssertTrue(CreateLegacyAppViewFixture(path, &error), @"%@", error);
 
-    AppViewDatabase *database = [[AppViewDatabase alloc] initWithPath:path error:&error];
+    GZAppViewDatabase *database = [[GZAppViewDatabase alloc] initWithPath:path error:&error];
     XCTAssertNotNil(database, @"%@", error);
     XCTAssertTrue([database runMigrations:&error], @"%@", error);
 
@@ -213,11 +213,11 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     [database close];
 
     // Reopen and migrate again — should be a no-op
-    database = [[AppViewDatabase alloc] initWithPath:path error:&error];
+    database = [[GZAppViewDatabase alloc] initWithPath:path error:&error];
     XCTAssertNotNil(database, @"%@", error);
     XCTAssertTrue([database runMigrations:&error], @"%@", error);
 
-    AppViewCheckpoint *checkpoint = [database loadCheckpointForRelayURL:@"wss://legacy.relay"
+    GZAppViewCheckpoint *checkpoint = [database loadCheckpointForRelayURL:@"wss://legacy.relay"
                                                                     error:&error];
     XCTAssertNotNil(checkpoint, @"%@", error);
     XCTAssertEqual(checkpoint.seq, 4242LL);
@@ -246,7 +246,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     NSString *path = AppViewMigrationFixturePath();
     NSError *error = nil;
 
-    AppViewDatabase *database = [[AppViewDatabase alloc] initWithPath:path error:&error];
+    GZAppViewDatabase *database = [[GZAppViewDatabase alloc] initWithPath:path error:&error];
     XCTAssertNotNil(database, @"%@", error);
     XCTAssertTrue([database runMigrations:&error], @"First migration: %@", error);
     XCTAssertTrue([database runMigrations:&error], @"Second migration: %@", error);
@@ -273,7 +273,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
                                             "INSERT INTO appview_schema_version(version) VALUES(3);",
                                             &error), @"%@", error);
 
-    AppViewDatabase *database = [[AppViewDatabase alloc] initWithPath:path error:&error];
+    GZAppViewDatabase *database = [[GZAppViewDatabase alloc] initWithPath:path error:&error];
     XCTAssertNotNil(database, @"%@", error);
     XCTAssertTrue([database runMigrations:&error], @"%@", error);
 
@@ -290,7 +290,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertEqual(versions.count, 5U, @"All five migrations must be recorded");
 
     // Legacy data must be preserved
-    AppViewCheckpoint *checkpoint = [database loadCheckpointForRelayURL:@"wss://legacy.relay"
+    GZAppViewCheckpoint *checkpoint = [database loadCheckpointForRelayURL:@"wss://legacy.relay"
                                                                     error:nil];
     XCTAssertNotNil(checkpoint);
     XCTAssertEqual(checkpoint.seq, 4242LL);
@@ -303,14 +303,14 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 // ---------------------------------------------------------------------------
 
 - (void)testRepoSyncStateRoundTrip {
-    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:test1"];
+    GZAppViewRepoSyncState *state = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:test1"];
     state.status     = AppViewRepoSyncStatusPending;
     state.errorCount = 0;
 
     NSError *err = nil;
     XCTAssertTrue([self.db upsertRepoSyncState:state error:&err]);
 
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:test1" error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:test1" error:&err];
     XCTAssertNotNil(loaded);
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusPending);
     XCTAssertEqual(loaded.errorCount, 0);
@@ -321,7 +321,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     NSError *err = nil;
 
     for (NSString *did in dids) {
-        AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:did];
+        GZAppViewRepoSyncState *s = [[GZAppViewRepoSyncState alloc] initWithDID:did];
         [self.db upsertRepoSyncState:s error:nil];
     }
 
@@ -336,7 +336,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 
 - (void)testMarkDirtyReposAsProcessing {
     NSError *err = nil;
-    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:dirty-processing"];
+    GZAppViewRepoSyncState *state = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:dirty-processing"];
     state.status = AppViewRepoSyncStatusDirty;
     XCTAssertTrue([self.db upsertRepoSyncState:state error:&err]);
 
@@ -344,18 +344,18 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertNil(err);
     XCTAssertEqual(transitioned.count, 1u);
 
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:state.did error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:state.did error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusProcessing);
 }
 
 - (void)testMarkRepoSynced {
     NSError *err = nil;
-    AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:synced"];
+    GZAppViewRepoSyncState *s = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:synced"];
     [self.db upsertRepoSyncState:s error:nil];
 
     XCTAssertTrue([self.db markRepoSynced:@"did:plc:synced" lastRev:@"abc123" error:&err]);
 
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:synced" error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:synced" error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced);
     XCTAssertEqualObjects(loaded.lastRev, @"abc123");
     XCTAssertEqual(loaded.errorCount, 0);
@@ -363,25 +363,25 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 
 - (void)testMarkRepoDirty {
     NSError *err = nil;
-    AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:dirty"];
+    GZAppViewRepoSyncState *s = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:dirty"];
     s.status = AppViewRepoSyncStatusSynced;
     [self.db upsertRepoSyncState:s error:nil];
 
     XCTAssertTrue([self.db markRepoDirty:@"did:plc:dirty" error:&err]);
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:dirty" error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:dirty" error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusDirty);
 }
 
 - (void)testRecordBackfillError {
     NSError *err = nil;
-    AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:errors"];
+    GZAppViewRepoSyncState *s = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:errors"];
     s.status = AppViewRepoSyncStatusProcessing;
     [self.db upsertRepoSyncState:s error:nil];
 
     [self.db recordBackfillError:@"did:plc:errors" message:@"HTTP 503" error:nil];
     [self.db recordBackfillError:@"did:plc:errors" message:@"timeout" error:nil];
 
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:errors" error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:errors" error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusDirty);
     XCTAssertEqual(loaded.errorCount, 2);
     XCTAssertEqualObjects(loaded.lastError, @"timeout");
@@ -392,7 +392,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     // Insert repos with different error counts
     for (NSInteger i = 0; i < 5; i++) {
         NSString *did = [NSString stringWithFormat:@"did:plc:repo%ld", (long)i];
-        AppViewRepoSyncState *s = [[AppViewRepoSyncState alloc] initWithDID:did];
+        GZAppViewRepoSyncState *s = [[GZAppViewRepoSyncState alloc] initWithDID:did];
         s.status = AppViewRepoSyncStatusDirty;
         [self.db upsertRepoSyncState:s error:nil];
         for (NSInteger j = 0; j < i; j++) {
@@ -404,8 +404,8 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
                                                      limit:10 error:&err];
     XCTAssertEqual(dirty.count, 5u);
     // Ordered by error_count ASC
-    XCTAssertEqual(((AppViewRepoSyncState *)dirty[0]).errorCount, 0);
-    XCTAssertEqual(((AppViewRepoSyncState *)dirty[4]).errorCount, 4);
+    XCTAssertEqual(((GZAppViewRepoSyncState *)dirty[0]).errorCount, 0);
+    XCTAssertEqual(((GZAppViewRepoSyncState *)dirty[4]).errorCount, 4);
 }
 
 // ---------------------------------------------------------------------------
@@ -414,17 +414,17 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 
 - (void)testPendingDeltaEnqueueDequeue {
     NSError *err = nil;
-    AppViewPendingDelta *d1 = [[AppViewPendingDelta alloc]
+    GZAppViewPendingDelta *d1 = [[GZAppViewPendingDelta alloc]
         initWithDID:@"did:plc:x" seq:10 commitCID:@"cid1" rev:@"rev1"
         rawEnvelope:[NSData data]];
-    AppViewPendingDelta *d2 = [[AppViewPendingDelta alloc]
+    GZAppViewPendingDelta *d2 = [[GZAppViewPendingDelta alloc]
         initWithDID:@"did:plc:x" seq:20 commitCID:@"cid2" rev:@"rev2"
         rawEnvelope:[NSData data]];
 
     XCTAssertTrue([self.db enqueuePendingDelta:d1 error:&err]);
     XCTAssertTrue([self.db enqueuePendingDelta:d2 error:&err]);
 
-    NSArray<AppViewPendingDelta *> *dequeued = [self.db dequeuePendingDeltasForDID:@"did:plc:x" error:&err];
+    NSArray<GZAppViewPendingDelta *> *dequeued = [self.db dequeuePendingDeltasForDID:@"did:plc:x" error:&err];
     XCTAssertEqual(dequeued.count, 2u);
     XCTAssertEqual(dequeued[0].seq, 10LL, @"Should be ordered by seq ASC");
     XCTAssertEqual(dequeued[1].seq, 20LL);
@@ -435,7 +435,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 }
 
 - (void)testPendingDeltaIdempotency {
-    AppViewPendingDelta *d = [[AppViewPendingDelta alloc]
+    GZAppViewPendingDelta *d = [[GZAppViewPendingDelta alloc]
         initWithDID:@"did:plc:y" seq:5 commitCID:@"cid" rev:@"rev"
         rawEnvelope:[NSData data]];
 
@@ -500,7 +500,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 
 - (void)testRepoSnapshotStoresGenericRecordsBlocksAndMarksSynced {
     NSError *err = nil;
-    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:snapshot"];
+    GZAppViewRepoSyncState *state = [[GZAppViewRepoSyncState alloc] initWithDID:@"did:plc:snapshot"];
     state.status = AppViewRepoSyncStatusProcessing;
     XCTAssertTrue([self.db upsertRepoSyncState:state error:&err]);
 
@@ -528,7 +528,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 1);
     XCTAssertEqual([self.db getTotalBlocksCountWithError:&err], 1);
 
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:snapshot" error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:snapshot" error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced);
     XCTAssertEqualObjects(loaded.lastRev, @"rev-snapshot");
 
@@ -615,7 +615,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 // ---------------------------------------------------------------------------
 
 - (void)testRelevancePermanentMembership {
-    AppViewRelevanceMembership *m = [[AppViewRelevanceMembership alloc]
+    GZAppViewRelevanceMembership *m = [[GZAppViewRelevanceMembership alloc]
         initWithDID:@"did:plc:seed" reason:AppViewRelevanceReasonSeed expiresAt:nil];
 
     NSError *err = nil;
@@ -626,7 +626,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
 
 - (void)testRelevanceExpiredMembership {
     NSDate *pastDate = [NSDate dateWithTimeIntervalSinceNow:-3600]; // 1 hour ago
-    AppViewRelevanceMembership *m = [[AppViewRelevanceMembership alloc]
+    GZAppViewRelevanceMembership *m = [[GZAppViewRelevanceMembership alloc]
         initWithDID:@"did:plc:expired"
              reason:AppViewRelevanceReasonRecentInteraction
           expiresAt:pastDate];
@@ -648,17 +648,17 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     NSError *err = nil;
     for (NSInteger i = 0; i < 5; i++) {
         NSString *did = [NSString stringWithFormat:@"did:plc:expired%ld", (long)i];
-        AppViewRelevanceMembership *m = [[AppViewRelevanceMembership alloc]
+        GZAppViewRelevanceMembership *m = [[GZAppViewRelevanceMembership alloc]
             initWithDID:did reason:AppViewRelevanceReasonFollowOfSeed expiresAt:past];
         [self.db upsertRelevanceMembership:m error:&err];
     }
     // One permanent entry that should survive
-    AppViewRelevanceMembership *permanent = [[AppViewRelevanceMembership alloc]
+    GZAppViewRelevanceMembership *permanent = [[GZAppViewRelevanceMembership alloc]
         initWithDID:@"did:plc:permanent" reason:AppViewRelevanceReasonSeed expiresAt:nil];
     [self.db upsertRelevanceMembership:permanent error:&err];
 
     // One future-expiring entry
-    AppViewRelevanceMembership *future_m = [[AppViewRelevanceMembership alloc]
+    GZAppViewRelevanceMembership *future_m = [[GZAppViewRelevanceMembership alloc]
         initWithDID:@"did:plc:future" reason:AppViewRelevanceReasonFollowOfSeed expiresAt:future];
     [self.db upsertRelevanceMembership:future_m error:&err];
 
@@ -722,7 +722,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
                                  params:@[@"at://did:plc:takedown/app.bsky.feed.post/one", did, @"hello"] error:nil];
 
     // Seed pending delta
-    AppViewPendingDelta *delta = [[AppViewPendingDelta alloc]
+    GZAppViewPendingDelta *delta = [[GZAppViewPendingDelta alloc]
         initWithDID:did seq:10 commitCID:@"cid1" rev:@"rev1" rawEnvelope:[NSData data]];
     [self.db enqueuePendingDelta:delta error:nil];
 
@@ -731,7 +731,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
                         rawRecord:[NSData data] validationError:@"test" error:nil];
 
     // Seed repo sync state
-    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:did];
+    GZAppViewRepoSyncState *state = [[GZAppViewRepoSyncState alloc] initWithDID:did];
     state.status = AppViewRepoSyncStatusSynced;
     [self.db upsertRepoSyncState:state error:nil];
 
@@ -757,7 +757,7 @@ static BOOL ExecuteAppViewFixtureSQL(NSString *path, const char *sql, NSError **
     XCTAssertEqual(dead.count, 0u);
 
     // Repo sync state should be tombstoned (dirty for backfill on reinstatement)
-    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:did error:&err];
+    GZAppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:did error:&err];
     XCTAssertEqual(loaded.status, AppViewRepoSyncStatusDirty);
     XCTAssertEqualObjects(loaded.lastError, @"takendown");
 }

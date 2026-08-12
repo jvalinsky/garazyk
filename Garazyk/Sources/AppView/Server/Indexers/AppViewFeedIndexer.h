@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewFeedIndexer.h
+ @file GZAppViewFeedIndexer.h
 
  @abstract Indexes app.bsky.feed.* records: posts, reposts, likes, feed generators.
 
@@ -21,11 +21,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 
-@interface AppViewFeedIndexer : NSObject <AppViewIndexer>
+@interface GZAppViewFeedIndexer : NSObject <AppViewIndexer>
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database;
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database;
 
 @end
 

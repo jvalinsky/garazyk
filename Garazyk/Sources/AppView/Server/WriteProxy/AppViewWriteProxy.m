@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewWriteProxy.m
+ @file GZAppViewWriteProxy.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -17,15 +17,15 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
 
 #import "PLC/DIDPLCResolver.h"
 
-@interface AppViewWriteProxy ()
-@property (nonatomic, strong) AppViewDatabase *database;
+@interface GZAppViewWriteProxy ()
+@property (nonatomic, strong) GZAppViewDatabase *database;
 @property (nonatomic, copy, nullable) NSString *plcUrl;
 @property (nonatomic, strong, nullable) ATProtoDIDPLCResolver *resolver;
 @end
 
-@implementation AppViewWriteProxy
+@implementation GZAppViewWriteProxy
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database
                           plcUrl:(nullable NSString *)plcUrl {
     self = [super init];
     if (self) {
@@ -38,7 +38,7 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
     return self;
 }
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(GZAppViewDatabase *)database {
     return [self initWithDatabase:database plcUrl:nil];
 }
 

@@ -58,7 +58,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
   // blocks, ATProtoFirehose, AppView ingest, sync, identity, profile records)
   // route through the strict [ATProtoDagCBOR decodeDataAsJSON:] path --
   // the same dispatch as the direct-from-DagCBOR identity at
-  // AppViewBackfillWorker.m:422. CTAP2 / generic-CBOR callers (lexicon
+  // GZAppViewBackfillWorker.m:422. CTAP2 / generic-CBOR callers (lexicon
   // schemas and similar non-ATProtoCID'd payloads) stay on the legacy
   // [ATProtoCBORDecoder decode:] path.
   if (self.isContentAddressed) {

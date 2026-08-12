@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-// Tests the bsky_feed_threadgates migration path in AppViewDatabase.runMigrations:
-// (AppViewDatabase.m: kSchemaV1 CREATE TABLE + ALTER TABLE ADD COLUMN uri + CREATE UNIQUE INDEX).
-// Uses an in-memory AppViewDatabase so tests are fast and leave no disk state.
+// Tests the bsky_feed_threadgates migration path in GZAppViewDatabase.runMigrations:
+// (GZAppViewDatabase.m: kSchemaV1 CREATE TABLE + ALTER TABLE ADD COLUMN uri + CREATE UNIQUE INDEX).
+// Uses an in-memory GZAppViewDatabase so tests are fast and leave no disk state.
 #import <XCTest/XCTest.h>
 #import "AppView/Server/AppViewDatabase.h"
 
 @interface ThreadgateMigrationTests : XCTestCase
-@property (nonatomic, strong) AppViewDatabase *db;
+@property (nonatomic, strong) GZAppViewDatabase *db;
 @end
 
 @implementation ThreadgateMigrationTests
@@ -15,7 +15,7 @@
 - (void)setUp {
     [super setUp];
     NSError *err = nil;
-    self.db = [[AppViewDatabase alloc] initInMemoryWithError:&err];
+    self.db = [[GZAppViewDatabase alloc] initInMemoryWithError:&err];
     XCTAssertNotNil(self.db, @"In-memory AppViewDatabase init failed: %@", err);
 }
 

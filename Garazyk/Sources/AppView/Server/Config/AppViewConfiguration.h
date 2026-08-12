@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewConfiguration.h
+ @file GZAppViewConfiguration.h
 
  @abstract Configuration contract for the standalone AppView server.
 
@@ -54,11 +54,11 @@ typedef NS_ENUM(NSInteger, AppViewMode) {
 };
 
 /*!
- @class AppViewConfiguration
+ @class GZAppViewConfiguration
 
  @abstract Configuration for the standalone AppView runtime.
  */
-@interface AppViewConfiguration : NSObject
+@interface GZAppViewConfiguration : NSObject
 
 #pragma mark - Core
 

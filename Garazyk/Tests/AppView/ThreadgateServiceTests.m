@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Unit tests for PDSFeedService -indexThreadgate:did:uri:cid:error: and
 // -unindexThreadgateWithURI:error: (PDSFeedService.m:657–684).
-// Schema under test: bsky_feed_threadgates table in AppViewDatabase.m kSchemaV1.
+// Schema under test: bsky_feed_threadgates table in GZAppViewDatabase.m kSchemaV1.
 #import <XCTest/XCTest.h>
 #import "AppView/Services/FeedService.h"
 #import "Database/PDSDatabase.h"

@@ -21,18 +21,18 @@ NSString *GZMikrusAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
 }
 
 @interface GZMikrusAdminSnapshot ()
-@property(nonatomic, strong) MikrusDatabase *database;
-@property(nonatomic, strong) MikrusMetrics *metrics;
-@property(nonatomic, strong) MikrusConfiguration *configuration;
-@property(nonatomic, weak) AppViewIngestEngine *ingestEngine;
+@property(nonatomic, strong) GZMikrusDatabase *database;
+@property(nonatomic, strong) GZMikrusMetrics *metrics;
+@property(nonatomic, strong) GZMikrusConfiguration *configuration;
+@property(nonatomic, weak) GZAppViewIngestEngine *ingestEngine;
 @end
 
 @implementation GZMikrusAdminSnapshot
 
-- (instancetype)initWithDatabase:(MikrusDatabase *)database
-                         metrics:(MikrusMetrics *)metrics
-                   configuration:(MikrusConfiguration *)configuration
-                    ingestEngine:(nullable AppViewIngestEngine *)ingestEngine {
+- (instancetype)initWithDatabase:(GZMikrusDatabase *)database
+                         metrics:(GZMikrusMetrics *)metrics
+                   configuration:(GZMikrusConfiguration *)configuration
+                    ingestEngine:(nullable GZAppViewIngestEngine *)ingestEngine {
     self = [super init];
     if (self) {
         _database = database;

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewWebhookHook.h
+ @file GZAppViewWebhookHook.h
 
  @abstract Index hook that sends HTTP POST notifications to a webhook URL.
 
@@ -18,11 +18,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class AppViewWebhookHook
+ @class GZAppViewWebhookHook
 
  @abstract Sends HTTP POST notifications to a configured webhook URL.
  */
-@interface AppViewWebhookHook : NSObject <AppViewIndexHook>
+@interface GZAppViewWebhookHook : NSObject <AppViewIndexHook>
 
 /*!
  @method initWithWebhookURL:collections:

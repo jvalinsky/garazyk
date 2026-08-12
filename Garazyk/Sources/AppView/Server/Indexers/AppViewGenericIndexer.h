@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewGenericIndexer.h
+ @file GZAppViewGenericIndexer.h
 
  @abstract Generic record indexer for lexicon-driven collections.
 
@@ -21,16 +21,16 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class ATProtoLexiconRegistry;
-@class AppViewDatabase;
+@class GZAppViewDatabase;
 @class ATProtoLexiconValidator;
-@class AppViewCollectionFilter;
+@class GZAppViewCollectionFilter;
 
 /*!
- @class AppViewGenericIndexer
+ @class GZAppViewGenericIndexer
 
  @abstract Generic record indexer for third-party lexicon collections.
  */
-@interface AppViewGenericIndexer : NSObject <AppViewIndexer>
+@interface GZAppViewGenericIndexer : NSObject <AppViewIndexer>
 
 /*!
  @method initWithRegistry:database:validator:domainIndexerCollections:
@@ -44,7 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
                                  The generic indexer will not claim these.
  */
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
-                         database:(AppViewDatabase *)database
+                         database:(GZAppViewDatabase *)database
                        validator:(ATProtoLexiconValidator *)validator
        domainIndexerCollections:(NSSet<NSString *> *)domainIndexerCollections;
 
@@ -64,7 +64,7 @@ NS_ASSUME_NONNULL_BEGIN
  indexer only claims collections that pass the filter. Empty filter
  (default) => allow all collections with a loaded lexicon.
  */
-@property (nonatomic, strong, nullable) AppViewCollectionFilter *collectionFilter;
+@property (nonatomic, strong, nullable) GZAppViewCollectionFilter *collectionFilter;
 
 @end
 

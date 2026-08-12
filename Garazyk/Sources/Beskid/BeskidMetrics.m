@@ -5,7 +5,7 @@
 
 static const NSUInteger kMaxUpstreamHosts = 32;
 
-@interface BeskidMetrics () {
+@interface GZBeskidMetrics () {
 @package
     dispatch_queue_t _queue;
     // record cache
@@ -28,7 +28,7 @@ static const NSUInteger kMaxUpstreamHosts = 32;
 }
 @end
 
-@implementation BeskidMetrics
+@implementation GZBeskidMetrics
 
 - (instancetype)init {
     self = [super init];

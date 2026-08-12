@@ -21,9 +21,9 @@ static NSString *BeskidTestDBPath(NSString *name) {
     return [dir stringByAppendingPathComponent:@"test.db"];
 }
 
-static BeskidDatabase *BeskidOpenTestDB(XCTestCase *testCase) {
+static GZBeskidDatabase *BeskidOpenTestDB(XCTestCase *testCase) {
     NSError *error = nil;
-    BeskidDatabase *db = [[BeskidDatabase alloc] initWithPath:BeskidTestDBPath(testCase.name)
+    GZBeskidDatabase *db = [[GZBeskidDatabase alloc] initWithPath:BeskidTestDBPath(testCase.name)
                                                         error:&error];
     XCTAssertNotNil(db, @"open db: %@", error);
     XCTAssertTrue([db runMigrations:&error], @"migrate db: %@", error);
@@ -48,7 +48,7 @@ static ATProtoHttpRequest *BeskidRequest(NSString *path, NSDictionary *queryPara
 @implementation BeskidConfigurationTests
 
 - (void)testConfigurationDefaults {
-    BeskidConfiguration *config = [BeskidConfiguration defaultConfiguration];
+    GZBeskidConfiguration *config = [GZBeskidConfiguration defaultConfiguration];
     XCTAssertEqual(config.httpPort, 8085u);
     XCTAssertEqualObjects(config.domain, @"slingshot.microcosm.blue");
     XCTAssertEqual(config.cacheRecordTtlSeconds, 3600);
@@ -58,7 +58,7 @@ static ATProtoHttpRequest *BeskidRequest(NSString *path, NSDictionary *queryPara
 }
 
 - (void)testConfigurationValidation {
-    BeskidConfiguration *config = [BeskidConfiguration defaultConfiguration];
+    GZBeskidConfiguration *config = [GZBeskidConfiguration defaultConfiguration];
     NSError *error = nil;
     XCTAssertTrue([config validate:&error]);
 
@@ -75,7 +75,7 @@ static ATProtoHttpRequest *BeskidRequest(NSString *path, NSDictionary *queryPara
 @end
 
 @interface BeskidDatabaseTests : XCTestCase
-@property (nonatomic, strong) BeskidDatabase *db;
+@property (nonatomic, strong) GZBeskidDatabase *db;
 @end
 
 @implementation BeskidDatabaseTests
@@ -170,8 +170,8 @@ static ATProtoHttpRequest *BeskidRequest(NSString *path, NSDictionary *queryPara
 @end
 
 @interface BeskidXrpcRoutePackTests : XCTestCase
-@property (nonatomic, strong) BeskidDatabase *db;
-@property (nonatomic, strong) BeskidXrpcRoutePack *routes;
+@property (nonatomic, strong) GZBeskidDatabase *db;
+@property (nonatomic, strong) GZBeskidXrpcRoutePack *routes;
 @end
 
 @implementation BeskidXrpcRoutePackTests
@@ -179,7 +179,7 @@ static ATProtoHttpRequest *BeskidRequest(NSString *path, NSDictionary *queryPara
 - (void)setUp {
     [super setUp];
     self.db = BeskidOpenTestDB(self);
-    self.routes = [[BeskidXrpcRoutePack alloc] initWithDatabase:self.db];
+    self.routes = [[GZBeskidXrpcRoutePack alloc] initWithDatabase:self.db];
 }
 
 - (void)tearDown {
@@ -198,7 +198,7 @@ static ATProtoHttpRequest *BeskidRequest(NSString *path, NSDictionary *queryPara
     };
     NSMutableSet *uris = [NSMutableSet set];
     // Cast/helper traversal call test
-    BeskidXrpcRoutePack *routes = [[BeskidXrpcRoutePack alloc] initWithDatabase:self.db];
+    GZBeskidXrpcRoutePack *routes = [[GZBeskidXrpcRoutePack alloc] initWithDatabase:self.db];
     
     // We call the traversal helper directly because it is intentionally private.
 #pragma clang diagnostic push

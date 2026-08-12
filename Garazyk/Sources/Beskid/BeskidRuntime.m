@@ -15,22 +15,22 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@interface BeskidRuntime ()
-@property (nonatomic, strong, readwrite) BeskidConfiguration *configuration;
-@property (nonatomic, strong, readwrite) BeskidDatabase *database;
+@interface GZBeskidRuntime ()
+@property (nonatomic, strong, readwrite) GZBeskidConfiguration *configuration;
+@property (nonatomic, strong, readwrite) GZBeskidDatabase *database;
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
-@property (nonatomic, strong) BeskidMetrics *metrics;
+@property (nonatomic, strong) GZBeskidMetrics *metrics;
 @property (nonatomic, strong) GZAdminUIHost *adminUIHostInstance;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
 
-@implementation BeskidRuntime
+@implementation GZBeskidRuntime
 
 + (instancetype)sharedRuntime {
-    static BeskidRuntime *runtime;
+    static GZBeskidRuntime *runtime;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        runtime = [[BeskidRuntime alloc] init];
+        runtime = [[GZBeskidRuntime alloc] init];
     });
     return runtime;
 }
@@ -45,7 +45,7 @@
                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid config file"}];
         return NO;
     }
-    BeskidConfiguration *config = [BeskidConfiguration defaultConfiguration];
+    GZBeskidConfiguration *config = [GZBeskidConfiguration defaultConfiguration];
     [config loadFromDictionary:json[@"beskid"] ?: json];
     if (![config validate:error]) return NO;
     self.configuration = config;
@@ -53,16 +53,16 @@
 }
 
 - (void)loadConfigurationFromEnvironment {
-    self.configuration = [BeskidConfiguration configurationFromEnvironment];
+    self.configuration = [GZBeskidConfiguration configurationFromEnvironment];
 }
 
 - (BOOL)startWithError:(NSError **)error {
     if (self.isRunning) return YES;
-    BeskidConfiguration *config = self.configuration ?: [BeskidConfiguration defaultConfiguration];
+    GZBeskidConfiguration *config = self.configuration ?: [GZBeskidConfiguration defaultConfiguration];
     if (![config validate:error]) return NO;
     self.configuration = config;
 
-    self.metrics = [[BeskidMetrics alloc] init];
+    self.metrics = [[GZBeskidMetrics alloc] init];
 
     NSError *mkdirError = nil;
     if (![[NSFileManager defaultManager] createDirectoryAtPath:config.dataDirectory
@@ -74,7 +74,7 @@
     }
 
     NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"beskid.db"];
-    self.database = [[BeskidDatabase alloc] initWithPath:dbPath error:error];
+    self.database = [[GZBeskidDatabase alloc] initWithPath:dbPath error:error];
     if (!self.database) return NO;
     if (![self.database runMigrations:error]) return NO;
     self.database.metrics = self.metrics;
@@ -109,7 +109,7 @@
     NSString *rlDbPath = [config.dataDirectory stringByAppendingPathComponent:@"ratelimits.db"];
     [rateLimiter reconfigureDatabasePath:rlDbPath];
 
-    BeskidXrpcRoutePack *routes = [[BeskidXrpcRoutePack alloc] initWithDatabase:self.database];
+    GZBeskidXrpcRoutePack *routes = [[GZBeskidXrpcRoutePack alloc] initWithDatabase:self.database];
     routes.metrics = self.metrics;
     [routes registerRoutesWithServer:self.httpServer];
 

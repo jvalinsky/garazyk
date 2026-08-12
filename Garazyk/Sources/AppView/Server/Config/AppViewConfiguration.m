@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file AppViewConfiguration.m
+ @file GZAppViewConfiguration.m
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -9,11 +9,11 @@
 #import "AppView/Server/Config/AppViewConfiguration.h"
 #import "Shared/GZConfigurationParsing.h"
 
-@interface AppViewConfiguration ()
+@interface GZAppViewConfiguration ()
 @property (nonatomic, copy) NSString *modeString;
 @end
 
-@implementation AppViewConfiguration
+@implementation GZAppViewConfiguration
 
 - (void)setModeString:(NSString *)modeString {
     if ([modeString isEqualToString:@"proxy"]) self.mode = AppViewModeProxy;
@@ -90,7 +90,7 @@
 }
 
 + (instancetype)configurationFromEnvironment {
-    AppViewConfiguration *config = [[self alloc] init];
+    GZAppViewConfiguration *config = [[self alloc] init];
     [[self sharedParser] applyEnvironmentVariables:[[NSProcessInfo processInfo] environment] toTarget:config];
     if (config.partialProxyFallbackURL.length == 0) {
         NSString *fallback = [[NSProcessInfo processInfo] environment][@"APPVIEW_PROXY_FALLBACK_URL"];

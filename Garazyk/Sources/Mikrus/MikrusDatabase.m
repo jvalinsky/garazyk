@@ -71,13 +71,13 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
     return json;
 }
 
-@interface MikrusDatabase ()
+@interface GZMikrusDatabase ()
 @property (nonatomic, strong) ATProtoConnectionPool *pool;
 @property (nonatomic, strong) ATProtoConnectionManagerPooled *connectionManager;
 @property (nonatomic, strong) ATProtoDatabaseQueryRunner *queryRunner;
 @end
 
-@implementation MikrusDatabase
+@implementation GZMikrusDatabase
 
 - (nullable instancetype)initWithPath:(NSString *)path error:(NSError **)error {
     self = [super init];
@@ -212,8 +212,8 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
     NSString *json = jsonData ? [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding] : @"{}";
     NSMutableArray<NSDictionary<NSString *, NSString *> *> *linkEntries =
-        [[MikrusLinkExtractor linkEntriesInRecord:record] mutableCopy];
-    if ([MikrusLinkExtractor isLinkSubject:rkey]) {
+        [[GZMikrusLinkExtractor linkEntriesInRecord:record] mutableCopy];
+    if ([GZMikrusLinkExtractor isLinkSubject:rkey]) {
         [linkEntries addObject:@{@"path": @".", @"subject": rkey}];
     }
     int64_t indexedAt = MikrusIndexValue(seq);
@@ -275,7 +275,7 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
 }
 
 - (nullable NSArray<NSDictionary *> *)backlinkRecordsForSubject:(NSString *)subject
-                                                         source:(MikrusSourceSpec *)source
+                                                         source:(GZMikrusSourceSpec *)source
                                                      didFilters:(NSArray<NSString *> *)didFilters
                                                           limit:(NSInteger)limit
                                                          cursor:(nullable NSString *)cursor
@@ -344,7 +344,7 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
 }
 
 - (nullable NSArray<NSString *> *)backlinkDIDsForSubject:(NSString *)subject
-                                                  source:(MikrusSourceSpec *)source
+                                                  source:(GZMikrusSourceSpec *)source
                                                    limit:(NSInteger)limit
                                                   cursor:(nullable NSString *)cursor
                                               nextCursor:(NSString * _Nullable * _Nullable)nextCursor
@@ -400,7 +400,7 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
 }
 
 - (NSInteger)backlinksCountForSubject:(NSString *)subject
-                                source:(MikrusSourceSpec *)source
+                                source:(GZMikrusSourceSpec *)source
                                  error:(NSError **)error {
     NSString *sql =
         @"SELECT COUNT(*) AS total FROM mikrus_links "
@@ -411,7 +411,7 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
 }
 
 - (nullable NSArray<NSDictionary *> *)manyToManyItemsForSubject:(NSString *)subject
-                                                         source:(MikrusSourceSpec *)source
+                                                         source:(GZMikrusSourceSpec *)source
                                                     pathToOther:(NSString *)pathToOther
                                                        linkDIDs:(NSArray<NSString *> *)linkDIDs
                                                   otherSubjects:(NSArray<NSString *> *)otherSubjects
@@ -486,7 +486,7 @@ static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **erro
 }
 
 - (nullable NSArray<NSDictionary *> *)manyToManyCountsForSubject:(NSString *)subject
-                                                          source:(MikrusSourceSpec *)source
+                                                          source:(GZMikrusSourceSpec *)source
                                                      pathToOther:(NSString *)pathToOther
                                                             dids:(NSArray<NSString *> *)dids
                                                    otherSubjects:(NSArray<NSString *> *)otherSubjects
