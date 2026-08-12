@@ -25,6 +25,15 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract TTL in seconds for cached identities (default: 86400). */
 @property (nonatomic, assign) NSTimeInterval cacheIdentityTtlSeconds;
 
+#pragma mark - Firehose invalidation (optional)
+
+/** @abstract Enable relay firehose subscription for early cache eviction (default: NO). */
+@property (nonatomic, assign) BOOL firehoseEnabled;
+/** @abstract Relay WebSocket URL (default: ws://127.0.0.1:2587). */
+@property (nonatomic, copy) NSString *firehoseURL;
+/** @abstract Persisted cursor file; defaults to <dataDirectory>/firehose.cursor when empty. */
+@property (nonatomic, copy, nullable) NSString *firehoseCursorPath;
+
 #pragma mark - Rate Limiting
 
 /** @abstract Enable per-IP rate limiting (default: YES). */

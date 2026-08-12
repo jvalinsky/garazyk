@@ -1246,6 +1246,7 @@ int main(int argc, char *argv[]) {
       @"ATProtoMediaServiceRuntimeTests",
       @"BeskidConfigurationTests",
       @"BeskidDatabaseTests",
+      @"BeskidFirehoseInvalidatorTests",
       @"BeskidXrpcRoutePackTests",
       @"BeskidMetricsTests",
       @"BeskidAdminSnapshotTests",

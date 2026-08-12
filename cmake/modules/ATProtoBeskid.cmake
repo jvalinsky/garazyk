@@ -4,6 +4,7 @@
 set(ATPROTO_BESKID_MANIFEST
   "Garazyk/Sources/Beskid/BeskidConfiguration.m"
   "Garazyk/Sources/Beskid/BeskidDatabase.m"
+  "Garazyk/Sources/Beskid/BeskidFirehoseInvalidator.m"
   "Garazyk/Sources/Beskid/BeskidMetrics.m"
   "Garazyk/Sources/Beskid/BeskidRuntime.m"
   "Garazyk/Sources/Beskid/BeskidXrpcRoutePack.m"

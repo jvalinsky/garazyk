@@ -81,6 +81,11 @@ extern NSString * const BeskidDatabaseErrorDomain;
                       rkey:(NSString *)rkey
                      error:(NSError **)error;
 
+/**
+ * @abstract Deletes all cached records for an account (conservative invalidation).
+ */
+- (BOOL)deleteAllRecordsForDID:(NSString *)did error:(NSError **)error;
+
 #pragma mark - Identity Cache Operations
 
 /**
@@ -113,6 +118,11 @@ extern NSString * const BeskidDatabaseErrorDomain;
  * @abstract Retrieves a cached identity record for a DID.
  */
 - (nullable NSDictionary *)identityForDID:(NSString *)did error:(NSError **)error;
+
+/**
+ * @abstract Deletes a cached identity row for a DID.
+ */
+- (BOOL)deleteIdentityForDID:(NSString *)did error:(NSError **)error;
 
 #pragma mark - Metrics
 
