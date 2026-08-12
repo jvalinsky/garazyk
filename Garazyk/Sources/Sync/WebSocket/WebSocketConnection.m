@@ -357,7 +357,13 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     
     NSMutableString *handshake = [NSMutableString string];
     [handshake appendFormat:@"GET %@ HTTP/1.1\r\n", self.path];
-    [handshake appendFormat:@"Host: %@:%u\r\n", self.host, self.port];
+
+    uint16_t defaultPort = self.secureTLS ? 443 : 80;
+    if (self.port == defaultPort) {
+        [handshake appendFormat:@"Host: %@\r\n", self.host];
+    } else {
+        [handshake appendFormat:@"Host: %@:%u\r\n", self.host, self.port];
+    }
     [handshake appendFormat:@"User-Agent: %@\r\n", kWSSDefaultUserAgent];
     [handshake appendString:@"Accept: */*\r\n"];
     [handshake appendString:@"Upgrade: websocket\r\n"];
@@ -376,7 +382,6 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     [handshake appendString:@"\r\n"];
     
     GZ_LOG_SYNC_DEBUG(@"WebSocket: Sending handshake to %@:%u", self.host, self.port);
-    fprintf(stderr, "[WS-HANDSHAKE]\n%s\n", handshake.UTF8String);
     
     NSData *data = [handshake dataUsingEncoding:NSUTF8StringEncoding];
     [self writeData:data];
