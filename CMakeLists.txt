@@ -547,9 +547,10 @@ file(GLOB_RECURSE ADMIN_UI_SOURCES CONFIGURE_DEPENDS
 )
 add_library(ATProtoAdminUI STATIC ${ADMIN_UI_SOURCES})
 target_include_directories(ATProtoAdminUI PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
-  ${SECP256K1_INCLUDE_DIRS}
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks>
+  $<BUILD_INTERFACE:${SECP256K1_INCLUDE_DIRS}>
+  $<INSTALL_INTERFACE:include>
 )
 target_compile_definitions(ATProtoAdminUI PUBLIC SQLITE_THREADSAFE=2)
 target_link_libraries(ATProtoAdminUI PUBLIC ATProtoTransport ATProtoCore)
@@ -571,9 +572,10 @@ set(PDS_MODULE_TARGETS
 
 foreach(target ${PDS_MODULE_TARGETS})
   target_include_directories(${target} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
-    ${SECP256K1_INCLUDE_DIRS}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks>
+    $<BUILD_INTERFACE:${SECP256K1_INCLUDE_DIRS}>
+    $<INSTALL_INTERFACE:include>
   )
   target_compile_definitions(${target} PUBLIC
     SQLITE_THREADSAFE=2
