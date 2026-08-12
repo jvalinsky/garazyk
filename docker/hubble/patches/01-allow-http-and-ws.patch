@@ -1,0 +1,127 @@
+diff --git a/hubble-sync/src/firehose/subscribe_repos.rs b/hubble-sync/src/firehose/subscribe_repos.rs
+index abdfef1..4475133 100644
+--- a/hubble-sync/src/firehose/subscribe_repos.rs
++++ b/hubble-sync/src/firehose/subscribe_repos.rs
+@@ -297,7 +297,8 @@ impl<S: StorageEngine, A: SyncConsumer<Engine = S>, R: Resolve> FirehoseSubscrib
+         &self,
+         cursor: Option<Seq>,
+     ) -> Result<SubscriptionStream<TolerantSubscribeReposStream>, FirehoseError<S::Error>> {
+-        let base = self.host.jacquard_uri_base("wss").map_err(|e| {
++        let ws_scheme = if self.host.allow_http() { "ws" } else { "wss" };
++        let base = self.host.jacquard_uri_base(ws_scheme).map_err(|e| {
+             counter!(FIREHOSE_CONNECTS_TOTAL, "result" => "failed").increment(1);
+             FirehoseError::StreamSetupError(format!("invalid uri: {e}"))
+         })?;
+diff --git a/hubble-sync/src/host/mod.rs b/hubble-sync/src/host/mod.rs
+index 495ad62..35b9274 100644
+--- a/hubble-sync/src/host/mod.rs
++++ b/hubble-sync/src/host/mod.rs
+@@ -174,6 +174,7 @@ pub struct Host {
+     backoff: BackoffCell,
+     sync_compliance: ComplianceCell,
+     in_scope: bool, // temp: (maybe) host-based sync policy
++    allow_http: bool,
+ }
+ 
+ impl Host {
+@@ -184,6 +185,7 @@ impl Host {
+         qps: NonZeroU32,
+         concurrency: usize,
+         sync_scope: SyncScope,
++        allow_http: bool,
+     ) -> Self {
+         let mut me = Self {
+             name,
+@@ -193,6 +195,7 @@ impl Host {
+             backoff: BackoffCell::new(),
+             sync_compliance: ComplianceCell::new_unset(),
+             in_scope: true,
++            allow_http,
+         };
+         if !sync_scope.allows_host(&me) {
+             // slightly awk, oh well
+@@ -201,6 +204,11 @@ impl Host {
+         me
+     }
+ 
++    /// local/dev only: use http/ws instead of https/wss for this host.
++    pub fn allow_http(&self) -> bool {
++        self.allow_http
++    }
++
+     pub fn name(&self) -> &Hostname {
+         &self.name
+     }
+diff --git a/hubble-sync/src/host/registry.rs b/hubble-sync/src/host/registry.rs
+index 7d011f2..e853e05 100644
+--- a/hubble-sync/src/host/registry.rs
++++ b/hubble-sync/src/host/registry.rs
+@@ -22,6 +22,9 @@ pub struct HostRegistryConfig {
+     pub host_bsky_qps: Option<NonZeroU32>,
+     pub host_concurrency: Option<usize>,
+     pub host_bsky_concurrency: Option<usize>,
++    /// allow plain http/ws to upstream hosts instead of forcing https/wss.
++    /// only meant for local/dev topologies without TLS termination.
++    pub allow_http: bool,
+ }
+ 
+ pub struct HostRegistry {
+@@ -36,6 +39,7 @@ pub struct HostRegistry {
+     /// cross-origin redirects (normalized hostnames)
+     auth_forward_hosts: Vec<Hostname>,
+     sync_scope: SyncScope,
++    allow_http: bool,
+ }
+ 
+ impl HostRegistry {
+@@ -48,7 +52,7 @@ impl HostRegistry {
+     ) -> Arc<Self> {
+         let client = reqwest::Client::builder()
+             .user_agent(ua)
+-            .https_only(true)
++            .https_only(!config.allow_http)
+             .redirect(reqwest::redirect::Policy::none()) // we handle (with limits)
+             .connect_timeout(HOST_CONNECT_TIMEOUT)
+             // no .timeout() since we vary it per-reqwest: apply tokio timeout externally
+@@ -83,6 +87,7 @@ impl HostRegistry {
+                 upstream,
+                 auth_forward_hosts,
+                 sync_scope,
++                allow_http: config.allow_http,
+             }
+         })
+     }
+@@ -143,6 +148,7 @@ impl HostRegistry {
+             qps,
+             concurrency,
+             self.sync_scope,
++            self.allow_http,
+         ));
+         map.insert(hostname, Arc::downgrade(&host));
+         Ok(host)
+diff --git a/hubble-sync/src/host/xrpc.rs b/hubble-sync/src/host/xrpc.rs
+index 971e995..74843e5 100644
+--- a/hubble-sync/src/host/xrpc.rs
++++ b/hubble-sync/src/host/xrpc.rs
+@@ -123,8 +123,9 @@ impl Host {
+         R::Response: Send + Sync,
+         RespOutput<SmolStr, R::Response>: serde::de::DeserializeOwned,
+     {
++        let scheme = if self.allow_http() { "http" } else { "https" };
+         let base = self
+-            .jacquard_uri_base("https")
++            .jacquard_uri_base(scheme)
+             .map_err(HostRequestError::BadBase)?;
+ 
+         let res = self
+@@ -199,8 +200,9 @@ impl Host {
+         R: XrpcRequest + Send + Sync + serde::Serialize,
+         R::Response: XrpcResp + Send + Sync,
+     {
++        let scheme = if self.allow_http() { "http" } else { "https" };
+         let base = self
+-            .jacquard_uri_base("https")
++            .jacquard_uri_base(scheme)
+             .map_err(HostRequestError::BadBase)?;
+ 
+         let mut call = self.client.as_ref().xrpc(base.borrow());

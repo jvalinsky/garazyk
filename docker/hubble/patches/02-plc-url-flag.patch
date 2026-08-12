@@ -1,0 +1,32 @@
+diff --git a/hubble/src/main.rs b/hubble/src/main.rs
+index 479a598..adaee84 100644
+--- a/hubble/src/main.rs
++++ b/hubble/src/main.rs
+@@ -150,6 +150,15 @@ struct Args {
+     #[arg(long)]
+     upstream: String,
+ 
++    /// plc directory base url used to resolve did:plc identities
++    #[arg(long, env = "HUBBLE_PLC_URL", default_value = "https://plc.directory")]
++    plc_url: String,
++
++    /// use plain http/ws instead of https/wss for upstream and plc requests.
++    /// only for local/dev topologies without TLS termination.
++    #[arg(long, env = "HUBBLE_ALLOW_HTTP", action)]
++    allow_http: bool,
++
+     /// bearer token for com.atproto.sync.getRepo requests to the upstream host
+     ///
+     /// pds-direct upstreams only (conflicts with --upstream-mode-relay). prefer
+@@ -314,6 +323,11 @@ async fn main() -> color_eyre::Result<()> {
+     });
+ 
+     let mut config = SyncConfig {
++        plc_url: args.plc_url.clone(),
++        hosts: hubble_sync::HostRegistryConfig {
++            allow_http: args.allow_http,
++            ..Default::default()
++        },
+         max_repo_actors: args
+             .max_repo_actors
+             .unwrap_or(SyncConfig::default().max_repo_actors),
