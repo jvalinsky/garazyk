@@ -40,8 +40,8 @@ its Core HTTP slice is also landed: six Core-owned HTTP classes are prefixed.
 The namespace baseline is 283 → … → 175 → **0** (2026-08-12). Batches 4–7
 (PLC/Sync/Services/XRPC/VideoService/Runtime/Core/AppView/Beskid/Mikrus) are
 complete; **M5.4 passes on macOS**. M6.1 started: build-tree `Garazyk::`
-aliases added in `CMakeLists.txt`; install/export and relocatable includes
-remain open.
+aliases and `BUILD_INTERFACE`/`INSTALL_INTERFACE` include paths on module
+targets (2026-08-12); install/export rules and consumer tests remain open.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
