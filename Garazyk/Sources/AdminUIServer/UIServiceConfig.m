@@ -36,6 +36,28 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
 
 @implementation GZAdminUIServiceConfig
 
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        // Auto-detect Assets/ directory next to the binary so embedded
+        // admin hosts (PLC, Beskid, Mikrus, relay, etc.) that create
+        // the config with plain -init still find their static assets.
+        // configurationFromEnvironment can override with the env var.
+        NSString *binaryPath = [[NSBundle mainBundle] executablePath];
+        if (!binaryPath || binaryPath.length == 0) {
+            binaryPath = [[NSProcessInfo processInfo] arguments][0];
+        }
+        if (binaryPath) {
+            NSString *binaryDir = [binaryPath stringByDeletingLastPathComponent];
+            NSString *candidate = [binaryDir stringByAppendingPathComponent:@"Assets"];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:candidate]) {
+                _assetsDirectory = [candidate copy];
+            }
+        }
+    }
+    return self;
+}
+
 + (instancetype)configurationFromEnvironment {
     NSDictionary<NSString *, NSString *> *env = [[NSProcessInfo processInfo] environment];
 
@@ -66,17 +88,11 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     config.chatAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_CHAT_TOKEN");
     config.videoAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_VIDEO_TOKEN");
 
-    // Assets directory: env override, or auto-detect next to binary
+    // Assets directory: env var overrides the auto-detected default from -init
     NSString *assetsDir = UIEnvOptionalString(env, @"GARAZYK_UI_ASSETS_DIR");
-    if (!assetsDir) {
-        // Default: look for Assets/ next to the running binary
-        NSString *binaryPath = [[NSBundle mainBundle] executablePath] ?: [[NSProcessInfo processInfo] arguments][0];
-        if (binaryPath) {
-            NSString *binaryDir = [binaryPath stringByDeletingLastPathComponent];
-            assetsDir = [binaryDir stringByAppendingPathComponent:@"Assets"];
-        }
+    if (assetsDir) {
+        config.assetsDirectory = assetsDir;
     }
-    config.assetsDirectory = assetsDir;
 
     return config;
 }
