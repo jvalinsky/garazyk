@@ -8,6 +8,7 @@
 #import "Chat/Server/Services/ChatModerationService.h"
 #import "Chat/Server/ChatAuthManager.h"
 #import "Network/HttpServer.h"
+#import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcChatBskyActorPack.h"
@@ -121,6 +122,65 @@
                          response.statusCode = 200;
                          [response setBodyString:@"ok"];
                      }];
+
+    // Admin: list conversations (privacy-safe metadata only)
+    [self.httpServer addRoute:@"GET"
+                        path:@"/_admin/convos"
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSError *err = nil;
+        NSArray *convos = [self.chatService listAllConversationsWithLimit:25 cursor:cursor error:&err];
+        if (convos) {
+            // Privacy-safe: strip message bodies from lastMessage
+            NSMutableArray *safe = [NSMutableArray arrayWithCapacity:convos.count];
+            for (NSDictionary *c in convos) {
+                NSMutableDictionary *mc = [c mutableCopy];
+                id lastMsg = mc[@"lastMessage"];
+                if ([lastMsg isKindOfClass:[NSDictionary class]]) {
+                    NSMutableDictionary *safeMsg = [(NSDictionary *)lastMsg mutableCopy];
+                    [safeMsg removeObjectForKey:@"text"];
+                    [safeMsg removeObjectForKey:@"ciphertext"];
+                    mc[@"lastMessage"] = safeMsg;
+                }
+                [safe addObject:mc];
+            }
+            response.statusCode = 200;
+            [response setJsonBody:@{@"convos": safe, @"cursor": cursor ?: @""}];
+        } else {
+            response.statusCode = 500;
+            [response setJsonBody:@{@"error": @"convos_failed", @"message": err.localizedDescription ?: @"unknown"}];
+        }
+    }];
+
+    // Admin: get messages for a conversation (privacy-safe: metadata only)
+    [self.httpServer addRoute:@"GET"
+                        path:@"/_admin/messages"
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        NSString *convoID = [request queryParamForKey:@"convoId"];
+        if (convoID.length == 0) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"convo_id_required"}];
+            return;
+        }
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSError *err = nil;
+        NSArray *msgs = [self.chatService getMessagesForConversation:convoID limit:50 cursor:cursor error:&err];
+        if (msgs) {
+            // Privacy-safe: strip text/ciphertext, keep only metadata
+            NSMutableArray *safe = [NSMutableArray arrayWithCapacity:msgs.count];
+            for (NSDictionary *m in msgs) {
+                NSMutableDictionary *mm = [m mutableCopy];
+                [mm removeObjectForKey:@"text"];
+                [mm removeObjectForKey:@"ciphertext"];
+                [safe addObject:mm];
+            }
+            response.statusCode = 200;
+            [response setJsonBody:@{@"messages": safe, @"cursor": cursor ?: @""}];
+        } else {
+            response.statusCode = 500;
+            [response setJsonBody:@{@"error": @"messages_failed", @"message": err.localizedDescription ?: @"unknown"}];
+        }
+    }];
 
     // Root endpoint - display ASCII art
     [self.httpServer addRoute:@"GET"

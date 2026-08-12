@@ -241,28 +241,101 @@
 + (NSString *)indexesHTML:(NSDictionary *)snapshot {
     NSDictionary *indexes = snapshot[@"indexes"] ?: @{};
     NSDictionary *queries = snapshot[@"queries"] ?: @{};
+    NSDictionary *topCollections = snapshot[@"topCollections"] ?: @{};
     
-    NSMutableString *html = [NSMutableString stringWithFormat:
-        @"<section class=\"mt-md\"><h3 class=\"section-title\">Index families</h3>"
-        @"<table class=\"table\"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>"
-        @"<tr><td>Approximate total edges</td><td>%@</td></tr>"
-        @"</tbody></table></section>",
-        indexes[@"approxEdges"] ?: @0
-    ];
+    NSMutableString *html = [NSMutableString string];
+    
+    // Index Families Section
+    [html appendString:@"<section class=\"mt-md\"><h3 class=\"section-title\">Index Families</h3>"];
+    [html appendString:@"<div class=\"index-grid\">"];
+    
+    NSArray *families = @[@"backlinks", @"records", @"identities", @"manyToMany"];
+    NSArray *icons = @[@"🔗", @"📄", @"👤", @"↔"];
+    
+    for (NSUInteger i = 0; i < families.count; i++) {
+        NSString *family = families[i];
+        NSString *icon = icons[i];
+        NSDictionary *familyData = indexes[family];
+        
+        NSString *countKey = [family isEqualToString:@"backlinks"] || [family isEqualToString:@"manyToMany"] ? @"approxEdges" : @"approxCount";
+        NSNumber *count = familyData[countKey] ?: @0;
+        NSString *description = familyData[@"description"] ?: @"";
+        
+        [html appendFormat:
+         @"<div class=\"index-card\">"
+         @"<div class=\"index-icon\">%@</div>"
+         @"<div class=\"index-title\">%@</div>"
+         @"<div class=\"index-count\">%@</div>"
+         @"<div class=\"index-description\">%@</div>"
+         @"</div>",
+         icon, [self humanReadableFamily:family], count, GZAdminUIEscaped(description)];
+    }
+    
+    [html appendString:@"</div></section>"];
+    
+    // Top Collections Section
+    if (topCollections.count > 0) {
+        [html appendString:@"<section class=\"mt-md\"><h3 class=\"section-title\">Top Collections by Record Count</h3>"];
+        [html appendString:@"<table class=\"table\"><thead><tr><th>Collection</th><th class=\"text-right\">Records</th></tr></thead><tbody>"];
+        
+        // Sort collections by count descending
+        NSArray *sortedCollections = [topCollections keysSortedByValueUsingComparator:^NSComparisonResult(NSNumber *obj1, NSNumber *obj2) {
+            return [obj2 compare:obj1];
+        }];
+        
+        for (NSString *collection in sortedCollections) {
+            NSNumber *count = topCollections[collection];
+            [html appendFormat:@"<tr><td class=\"text-mono\">%@</td><td class=\"text-right metric-large\">%@</td></tr>",
+             GZAdminUIEscaped(collection), count];
+        }
+        
+        [html appendString:@"</tbody></table></section>"];
+    }
+    
+    // Query Activity Section
+    int64_t totalQueries = [queries[@"backlink"] longLongValue] + [queries[@"manyToMany"] longLongValue]
+                         + [queries[@"identity"] longLongValue] + [queries[@"record"] longLongValue];
     
     [html appendFormat:
-        @"<section class=\"mt-md\"><h3 class=\"section-title\">Query activity</h3>"
-        @"<table class=\"table\"><thead><tr><th>Family</th><th>Requests</th></tr></thead><tbody>"
-        @"<tr><td>Backlinks</td><td>%@</td></tr>"
-        @"<tr><td>Many-to-many</td><td>%@</td></tr>"
-        @"<tr><td>Identity</td><td>%@</td></tr>"
-        @"<tr><td>Record lookup</td><td>%@</td></tr>"
-        @"</tbody></table></section>",
-        queries[@"backlink"] ?: @0, queries[@"manyToMany"] ?: @0,
-        queries[@"identity"] ?: @0, queries[@"record"] ?: @0
-    ];
+        @"<section class=\"mt-md\"><h3 class=\"section-title\">Query Activity</h3>"
+        @"<div class=\"query-stats\">"
+        @"<div class=\"query-total\">Total: <strong>%lld</strong> queries</div>"
+        @"</div>"
+        @"<table class=\"table\"><thead><tr><th>Query Family</th><th class=\"text-right\">Requests</th><th class=\"text-right\">Percentage</th></tr></thead><tbody>",
+        (long long)totalQueries];
+    
+    NSArray *queryFamilies = @[@"backlink", @"manyToMany", @"identity", @"record"];
+    NSArray *queryNames = @[@"Backlinks", @"Many-to-Many", @"Identity Lookups", @"Record Lookups"];
+    
+    for (NSUInteger i = 0; i < queryFamilies.count; i++) {
+        NSString *family = queryFamilies[i];
+        NSString *name = queryNames[i];
+        int64_t count = [queries[family] longLongValue];
+        double percentage = totalQueries > 0 ? (100.0 * count / totalQueries) : 0.0;
+        
+        NSString *barWidth = [NSString stringWithFormat:@"%.1f%%", percentage];
+        NSString *barClass = percentage > 50 ? @"bar-primary" : (percentage > 25 ? @"bar-success" : @"bar-secondary");
+        
+        [html appendFormat:
+         @"<tr>"
+         @"<td>%@</td>"
+         @"<td class=\"text-right\">%lld</td>"
+         @"<td class=\"text-right\">%.1f%% <div class=\"progress-bar\"><div class=\"progress-fill %@\" style=\"width: %@\"></div></div></td>"
+         @"</tr>",
+         name, (long long)count, percentage, barClass, barWidth];
+    }
+    
+    [html appendString:@"</tbody></table></section>"];
     
     return html;
+}
+
++ (NSString *)humanReadableFamily:(NSString *)family {
+    if ([family isEqualToString:@"backlinks"]) return @"Backlinks";
+    if ([family isEqualToString:@"records"]) return @"Records";
+    if ([family isEqualToString:@"identities"]) return @"Identities";
+    if ([family isEqualToString:@"manyToMany"]) return @"Many-to-Many";
+    return family;
 }
 
 + (NSString *)errorUnavailableHTML {
