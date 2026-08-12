@@ -602,6 +602,11 @@ if(APPLE)
   target_link_libraries(ATProtoMediaCore PUBLIC ${FOUNDATION})
 endif()
 
+# M6.1: build-tree aliases matching the installed Garazyk:: namespace.
+foreach(_gz_module_target ${PDS_MODULE_TARGETS})
+  add_library(Garazyk::${_gz_module_target} ALIAS ${_gz_module_target})
+endforeach()
+
 #=============================
 # Main Executables
 #=============================
