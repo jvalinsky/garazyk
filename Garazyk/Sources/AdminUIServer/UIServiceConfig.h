@@ -50,6 +50,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property(nonatomic, copy) NSArray<NSDictionary<NSString *, NSString *> *> *peerLinks;
 
+/**
+ * @abstract Base DNS host for Web Tiles unique-origin loading (no leading dot).
+ * @discussion When set (e.g. `example.test`), `load.<host>` redirects to a
+ *             random 20-letter subdomain of `<host>` for `/.well-known/web-tiles/`.
+ *             From `GARAZYK_ADMIN_UI_TILES_BASE_HOST` / `PDS_ADMIN_UI_TILES_BASE_HOST`.
+ */
+@property(nonatomic, copy, nullable) NSString *tilesBaseHost;
+
 + (instancetype)configurationFromEnvironment;
 
 /**

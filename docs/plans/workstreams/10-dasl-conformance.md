@@ -353,7 +353,7 @@ No trust-anchor chaining is performed.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
   paths are unchanged.
 
-**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (data protocol and execution policy).**
+**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (protocol, policy, unique-origin load host).**
 `AdminUIServer/UITileDataProtocol` serves the reserved `/.well-known/web-tiles/data.js` module with
 `addDataHandler`, `removeDataHandler`, `listen`, and `sendData`, using the normative
 `tiles-protocol-up-data-ready`, `tiles-protocol-up-data-payload`, and
@@ -363,21 +363,25 @@ network origin, `object-src 'none'`, `base-uri 'none'`, and the required sandbox
 permission/DNS-prefetch headers. The policy is not itself a network boundary on a normal origin;
 unique-origin hosting is still required before arbitrary tile execution. The reserved route is
 additive and does not serve arbitrary tile resources.
+`AdminUIServer/UITileLoadingHost` implements the loading-server redirect pattern: when
+`GARAZYK_ADMIN_UI_TILES_BASE_HOST` / `PDS_ADMIN_UI_TILES_BASE_HOST` is set, `load.<base>` for
+`/.well-known/web-tiles/` returns 303 to a random 20-letter subdomain of `<base>`; unique-origin
+hosts serve a shuttle HTML shell with execution-policy headers and `service-worker-allowed: /`.
+Without a base host the document routes remain 404.
 
-- Owner boundary: `Garazyk/Sources/AdminUIServer` owns the host-selected protocol module and pure
-  policy helpers. The route is registered with the existing Lab route group; existing authenticated
-  Admin UI CSP and routes are unchanged.
+- Owner boundary: `Garazyk/Sources/AdminUIServer` owns the host-selected protocol module, pure
+  policy helpers, and loading-host redirect. The route is registered with the existing Lab route
+  group; existing authenticated Admin UI CSP and routes are unchanged.
 - Evidence: `UITileExecutionPolicyTests` checks the exact restrictive policy, isolation headers,
   protocol exports, action directions, payload requirements, and malformed-message rejection.
-  `UIServerRuntimeTests` checks the reserved route, JavaScript content type, protocol exports,
-  parent-window source filtering, and absence of a network fetch sink. `UITileExecutionPolicyTests`
-  checks the policy helper independently; it is not applied to `data.js`, because CSP and sandboxing
-  must protect the tile document rather than the imported protocol module.
-- Explicit remainder: unique-origin iframe creation, CAR/MASL tile loading, blob resource mapping,
-  host-side origin authentication, and a separate Deno protocol package remain open. This slice
-  does not claim to execute arbitrary tile content or provide a full tile host.
-- Rollback: remove the additive policy/protocol helpers, reserved route, and test registration;
-  existing Admin UI routes and CSP remain unchanged.
+  `UITileLoadingHostTests` checks load/unique-origin host classification, redirect URL shape, and
+  header application. `UIServerRuntimeTests` checks the reserved `data.js` route, load-host 303,
+  unique-origin shuttle + policy headers, and 404 without a configured base host.
+- Explicit remainder: CAR/MASL tile loading, blob resource mapping, service-worker shuttle
+  scripts, host-side origin authentication, and a separate Deno protocol package remain open.
+  This slice does not claim to execute arbitrary tile content or provide a full tile host.
+- Rollback: remove the additive policy/protocol/loading-host helpers, reserved routes, and test
+  registration; existing Admin UI routes and CSP remain unchanged.
 
 **Optional, out of tree:** contribute an Objective-C harness to hyphacoop/dasl-testing so Garazyk
 appears in the published conformance report.

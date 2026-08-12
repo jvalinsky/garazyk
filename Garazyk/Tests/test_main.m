@@ -1195,6 +1195,7 @@ int main(int argc, char *argv[]) {
       @"GZHTMLTests",
       @"UIServerRuntimeTests",
       @"UITileExecutionPolicyTests",
+      @"UITileLoadingHostTests",
       @"UILabAuthTests",
       @"UILabIntegrationTests",
       @"PDSRegistrationGateTests",

@@ -95,6 +95,9 @@ void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSSt
 - (void)registerDataExplorerRoutes;
 /** @abstract Registers development-lab routes. */
 - (void)registerLabRoutes;
+/** @abstract Serves or redirects Web Tiles unique-origin documents. */
+- (void)handleWebTilesDocumentRequest:(ATProtoHttpRequest *)request
+                             response:(ATProtoHttpResponse *)response;
 /** @abstract Registers Ozone administration routes. */
 - (void)registerOzoneRoutes;
 /** @abstract Registers UI security-management routes. */
