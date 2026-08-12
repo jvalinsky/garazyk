@@ -160,6 +160,45 @@ static GZBeskidFirehoseInvalidator *BeskidMakeInvalidator(GZBeskidDatabase *db, 
     XCTAssertEqual([snapshot[@"firehose"][@"invalidationsAccount"] longLongValue], 1);
 }
 
+- (void)testCommitInvalidationThenReseedServesUpdatedRecord {
+    NSError *error = nil;
+    NSString *did = @"did:plc:erin";
+    NSString *collection = @"app.bsky.feed.post";
+    NSString *rkey = @"3jzfc2jmkm7s2";
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    NSString *path = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+    NSDictionary *stale = @{@"$type": collection, @"text": @"stale"};
+    NSDictionary *fresh = @{@"$type": collection, @"text": @"fresh"};
+
+    XCTAssertTrue([self.db saveRecord:stale
+                                  did:did
+                           collection:collection
+                                 rkey:rkey
+                                  cid:@"bafyreistale000000000000000000000000000000000000000000000000"
+                                  ttl:3600
+                                error:&error], @"seed stale: %@", error);
+
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
+    event.repo = did;
+    event.seq = 50;
+    event.ops = @[@{@"action": @"update", @"path": path}];
+    [self.invalidator handleCommitEvent:event];
+
+    NSDictionary *afterInvalidate = [self.db recordByURI:uri cid:nil error:nil];
+    XCTAssertNil(afterInvalidate);
+
+    XCTAssertTrue([self.db saveRecord:fresh
+                                  did:did
+                           collection:collection
+                                 rkey:rkey
+                                  cid:@"bafyreifresh000000000000000000000000000000000000000000000000"
+                                  ttl:3600
+                                error:&error], @"reseed fresh: %@", error);
+    NSDictionary *cached = [self.db recordByURI:uri cid:nil error:nil];
+    XCTAssertNotNil(cached);
+    XCTAssertEqualObjects(cached[@"value"][@"text"], @"fresh");
+}
+
 - (void)testFirehoseDisabledByDefault {
     GZBeskidConfiguration *config = [GZBeskidConfiguration defaultConfiguration];
     XCTAssertFalse(config.firehoseEnabled);
