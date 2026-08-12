@@ -18,6 +18,13 @@
 // trusting argument construction alone. Tagged "integration" (see
 // PDSGatedClassMap in test_main.m) and skipped cleanly when ffmpeg is absent,
 // consistent with ATProtoVideoTranscoderIntegrationTests et al.
+//
+// Each test method re-runs the generator against its own fixture rather than
+// sharing one. That costs a few seconds across the suite but keeps every
+// assertion independently attributable: a failure names the property that
+// broke (segment format, init segment, numbering width, playlist/disk
+// agreement, producedFiles completeness) instead of one method failing for any
+// of five reasons.
 
 @interface VideoHLSGeneratorTests : XCTestCase
 @property (nonatomic, strong, nullable) ATProtoVideoHLSGenerator *generator;
@@ -110,101 +117,211 @@
     [super tearDown];
 }
 
-#pragma mark - fMP4 tree shape
+#pragma mark - Helpers
 
-- (void)testGeneratesFragmentedMP4TreeWithInitSegmentsAndWideNumbering {
-    if (![[self class] ffmpegIsAvailable]) {
-        XCTSkip(@"ffmpeg not available");
-    }
-    if (!self.fixtureURL) {
-        XCTSkip(@"failed to generate fixture video via ffmpeg");
-    }
+// YES when the suite cannot run at all (no ffmpeg, or fixture generation
+// failed). Callers must invoke XCTSkip themselves: XCTSkip expands to a return,
+// so skipping from inside a helper would return from the helper and let the
+// test body continue.
+- (BOOL)prerequisitesMissing {
+    return ![[self class] ffmpegIsAvailable] || self.fixtureURL == nil;
+}
 
+// Runs the generator under test. Records a failure and returns nil when
+// generation fails, so each test body can bail without repeating the assert.
+- (nullable VideoHLSResult *)generateHLS {
     NSError *error = nil;
     VideoHLSResult *result = [self.generator generateHLSFromVideoAtURL:self.fixtureURL
-                                                                    did:@"did:plc:hlstest"
-                                                                    cid:@"bafyreihlstest"
-                                                          thumbnailData:nil
-                                                                  error:&error];
+                                                                   did:@"did:plc:hlstest"
+                                                                   cid:@"bafyreihlstest"
+                                                         thumbnailData:nil
+                                                                 error:&error];
     XCTAssertNotNil(result, @"HLS generation failed: %@", error);
+    return result;
+}
+
+// Absolute directory holding one variant's playlist, init segment, and media
+// segments.
+- (NSString *)variantDirectoryForVariant:(NSDictionary *)variant {
+    return [variant[@"playlistPath"] stringByDeletingLastPathComponent];
+}
+
+- (NSArray<NSString *> *)segmentFilenamesInDirectory:(NSString *)directory {
+    NSArray<NSString *> *entries =
+        [[NSFileManager defaultManager] contentsOfDirectoryAtPath:directory error:nil] ?: @[];
+    NSPredicate *segmentPredicate = [NSPredicate predicateWithBlock:^BOOL(NSString *filename, NSDictionary *bindings) {
+        return [filename hasPrefix:@"segment_"] && [filename hasSuffix:@".m4s"];
+    }];
+    return [entries filteredArrayUsingPredicate:segmentPredicate];
+}
+
+- (nullable NSString *)contentsOfFileAtPath:(NSString *)path {
+    return [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+}
+
+#pragma mark - Segment container format
+
+- (void)testProducesFragmentedMP4SegmentsAndNoMPEGTSArtifacts {
+    if ([self prerequisitesMissing]) {
+        XCTSkip(@"ffmpeg unavailable or fixture generation failed");
+    }
+    VideoHLSResult *result = [self generateHLS];
     if (!result) {
         return;
     }
 
-    NSFileManager *fm = [NSFileManager defaultManager];
-
-    XCTAssertTrue([fm fileExistsAtPath:result.masterPlaylistPath]);
-    XCTAssertEqual(result.variants.count, (NSUInteger)2); // 360p + 720p, include1080p is NO
-
-    NSString *masterContents = [NSString stringWithContentsOfFile:result.masterPlaylistPath
-                                                          encoding:NSUTF8StringEncoding
-                                                             error:nil];
-    XCTAssertNotNil(masterContents);
-
     for (NSDictionary *variant in result.variants) {
-        NSString *variantPlaylistPath = variant[@"playlistPath"];
-        XCTAssertTrue([fm fileExistsAtPath:variantPlaylistPath], @"variant playlist missing at %@", variantPlaylistPath);
+        NSString *variantDir = [self variantDirectoryForVariant:variant];
+        XCTAssertTrue([self segmentFilenamesInDirectory:variantDir].count > 0,
+                      @"no .m4s segments produced in %@", variantDir);
 
-        // Master playlist references this variant's playlist by its
-        // hlsDir-relative path (e.g. "360p/video.m3u8").
-        NSString *variantDir = [variantPlaylistPath stringByDeletingLastPathComponent];
-        NSString *variantName = variantDir.lastPathComponent;
-        NSString *variantRelative = [NSString stringWithFormat:@"%@/video.m3u8", variantName];
-        XCTAssertTrue([masterContents containsString:variantRelative],
-                       @"master playlist missing reference to %@", variantRelative);
+        NSArray<NSString *> *entries =
+            [[NSFileManager defaultManager] contentsOfDirectoryAtPath:variantDir error:nil] ?: @[];
+        for (NSString *entry in entries) {
+            XCTAssertFalse([entry hasSuffix:@".ts"], @"unexpected legacy .ts file: %@", entry);
+        }
+    }
+}
 
-        // Init segment landed inside the variant's own directory.
+#pragma mark - Init segments
+
+- (void)testEachVariantHasInitSegmentReferencedByEXTXMAP {
+    if ([self prerequisitesMissing]) {
+        XCTSkip(@"ffmpeg unavailable or fixture generation failed");
+    }
+    VideoHLSResult *result = [self generateHLS];
+    if (!result) {
+        return;
+    }
+
+    // ffmpeg resolves -hls_fmp4_init_filename against the playlist's own
+    // directory rather than the process CWD, so a bare filename must land the
+    // init segment beside its variant playlist.
+    for (NSDictionary *variant in result.variants) {
+        NSString *variantDir = [self variantDirectoryForVariant:variant];
         NSString *initPath = [variantDir stringByAppendingPathComponent:@"init.mp4"];
-        XCTAssertTrue([fm fileExistsAtPath:initPath], @"init segment missing at %@", initPath);
+        XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath:initPath],
+                      @"init segment missing at %@", initPath);
 
-        NSString *variantPlaylistContents = [NSString stringWithContentsOfFile:variantPlaylistPath
-                                                                        encoding:NSUTF8StringEncoding
-                                                                           error:nil];
-        XCTAssertNotNil(variantPlaylistContents);
-        XCTAssertTrue([variantPlaylistContents containsString:@"#EXT-X-MAP:URI=\"init.mp4\""],
-                       @"variant playlist %@ missing correct #EXT-X-MAP line: %@",
-                       variantName, variantPlaylistContents);
+        NSString *playlist = [self contentsOfFileAtPath:variant[@"playlistPath"]];
+        XCTAssertNotNil(playlist);
+        XCTAssertTrue([playlist containsString:@"#EXT-X-MAP:URI=\"init.mp4\""],
+                      @"variant playlist %@ missing correct #EXT-X-MAP line: %@",
+                      variantDir.lastPathComponent, playlist);
+    }
+}
 
-        NSArray<NSString *> *entries = [fm contentsOfDirectoryAtPath:variantDir error:nil] ?: @[];
-        NSPredicate *segmentPredicate = [NSPredicate predicateWithBlock:^BOOL(NSString *filename, NSDictionary *bindings) {
-            return [filename hasPrefix:@"segment_"] && [filename hasSuffix:@".m4s"];
-        }];
-        NSArray<NSString *> *segments = [entries filteredArrayUsingPredicate:segmentPredicate];
-        XCTAssertTrue(segments.count > 0, @"no .m4s segments produced in %@", variantDir);
+#pragma mark - Segment numbering width
+
+- (void)testSegmentNumberingIsAtLeastFiveDigits {
+    if ([self prerequisitesMissing]) {
+        XCTSkip(@"ffmpeg unavailable or fixture generation failed");
+    }
+    VideoHLSResult *result = [self generateHLS];
+    if (!result) {
+        return;
+    }
+
+    // The defect this guards: segment_%03d wraps at 1000 segments -- 100
+    // minutes at the configured -hls_time 6 -- silently overwriting earlier
+    // segments of any longer video.
+    for (NSDictionary *variant in result.variants) {
+        NSString *variantDir = [self variantDirectoryForVariant:variant];
+        NSArray<NSString *> *segments = [self segmentFilenamesInDirectory:variantDir];
+        XCTAssertTrue(segments.count > 0, @"no segments to check numbering width in %@", variantDir);
 
         for (NSString *segmentFilename in segments) {
             NSString *numberPart = [segmentFilename stringByReplacingOccurrencesOfString:@"segment_" withString:@""];
             numberPart = [numberPart stringByReplacingOccurrencesOfString:@".m4s" withString:@""];
             XCTAssertGreaterThanOrEqual(numberPart.length, (NSUInteger)5,
-                                         @"segment numbering width < 5 digits: %@", segmentFilename);
-            XCTAssertTrue([variantPlaylistContents containsString:segmentFilename],
-                           @"variant playlist does not reference %@", segmentFilename);
-        }
-
-        // No leftover MPEG-TS artifacts from the old encoder path.
-        for (NSString *entry in entries) {
-            XCTAssertFalse([entry hasSuffix:@".ts"], @"unexpected legacy .ts file: %@", entry);
+                                        @"segment numbering width < 5 digits: %@", segmentFilename);
         }
     }
+}
 
-    // producedFiles is a complete, disk-accurate map -- a later caller should
-    // never need to re-scan the output directory.
+#pragma mark - Playlist structure
+
+- (void)testMasterPlaylistReferencesEveryVariantPlaylist {
+    if ([self prerequisitesMissing]) {
+        XCTSkip(@"ffmpeg unavailable or fixture generation failed");
+    }
+    VideoHLSResult *result = [self generateHLS];
+    if (!result) {
+        return;
+    }
+
+    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath:result.masterPlaylistPath]);
+    XCTAssertEqual(result.variants.count, (NSUInteger)2); // 360p + 720p, include1080p is NO
+
+    NSString *masterContents = [self contentsOfFileAtPath:result.masterPlaylistPath];
+    XCTAssertNotNil(masterContents);
+
+    for (NSDictionary *variant in result.variants) {
+        NSString *variantPlaylistPath = variant[@"playlistPath"];
+        XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath:variantPlaylistPath],
+                      @"variant playlist missing at %@", variantPlaylistPath);
+
+        // Master references each variant by its hlsDir-relative path,
+        // e.g. "360p/video.m3u8".
+        NSString *variantName = [self variantDirectoryForVariant:variant].lastPathComponent;
+        NSString *variantRelative = [NSString stringWithFormat:@"%@/video.m3u8", variantName];
+        XCTAssertTrue([masterContents containsString:variantRelative],
+                      @"master playlist missing reference to %@", variantRelative);
+    }
+}
+
+- (void)testVariantPlaylistsReferenceEverySegmentOnDisk {
+    if ([self prerequisitesMissing]) {
+        XCTSkip(@"ffmpeg unavailable or fixture generation failed");
+    }
+    VideoHLSResult *result = [self generateHLS];
+    if (!result) {
+        return;
+    }
+
+    for (NSDictionary *variant in result.variants) {
+        NSString *variantDir = [self variantDirectoryForVariant:variant];
+        NSString *playlist = [self contentsOfFileAtPath:variant[@"playlistPath"]];
+        XCTAssertNotNil(playlist);
+
+        for (NSString *segmentFilename in [self segmentFilenamesInDirectory:variantDir]) {
+            XCTAssertTrue([playlist containsString:segmentFilename],
+                          @"variant playlist does not reference %@", segmentFilename);
+        }
+    }
+}
+
+#pragma mark - producedFiles
+
+- (void)testProducedFilesMapsEveryFileOnDisk {
+    if ([self prerequisitesMissing]) {
+        XCTSkip(@"ffmpeg unavailable or fixture generation failed");
+    }
+    VideoHLSResult *result = [self generateHLS];
+    if (!result) {
+        return;
+    }
+
+    // producedFiles must be complete and disk-accurate: a later phase builds
+    // the MASL manifest straight off this map and must never re-scan the
+    // output directory.
     XCTAssertNotNil(result.producedFiles);
     XCTAssertEqualObjects(result.producedFiles[@"/"], result.masterPlaylistPath);
 
+    NSFileManager *fm = [NSFileManager defaultManager];
     NSUInteger diskFileCount = 1; // master playlist
     for (NSDictionary *variant in result.variants) {
-        NSString *variantDir = [variant[@"playlistPath"] stringByDeletingLastPathComponent];
+        NSString *variantDir = [self variantDirectoryForVariant:variant];
         NSArray<NSString *> *entries = [fm contentsOfDirectoryAtPath:variantDir error:nil] ?: @[];
         diskFileCount += entries.count; // video.m3u8 + init.mp4 + segment_*.m4s
     }
     XCTAssertEqual(result.producedFiles.count, diskFileCount,
-                    @"producedFiles count does not match files actually on disk");
+                   @"producedFiles count does not match files actually on disk");
 
     for (NSString *bundlePath in result.producedFiles) {
         NSString *diskPath = result.producedFiles[bundlePath];
         XCTAssertTrue([fm fileExistsAtPath:diskPath],
-                       @"producedFiles entry %@ -> %@ does not exist on disk", bundlePath, diskPath);
+                      @"producedFiles entry %@ -> %@ does not exist on disk", bundlePath, diskPath);
     }
 }
 
