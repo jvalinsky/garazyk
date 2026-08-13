@@ -408,7 +408,10 @@ activeManifest∩digitalSourceType. Proven in claim-bound multi-assertion stores
   All registered in `Tests/test_main.m`.
 - Explicit remainder: ingredient `validationResults` / embedded-manifest verify,
   gathered/redacted assertions, soft-binding algorithm compute/verify, and Merkle
-  `bmffHash` remain open.
+  `bmffHash` remain open. Execution prompts:
+  [phase-31](../prompts/phase-31-s2pa-ingredient-verify.md),
+  [phase-32](../prompts/phase-32-s2pa-merkle-bmff.md),
+  [phase-33](../prompts/phase-33-s2pa-soft-binding-algs.md).
   **MUXL producer wiring (2026-08-13):**
   `ATProtoMUXLPlayback` `presentationByHardBindingSegment:` /
   `verifyHardBoundPresentation:` prepends/verifies S2PA uuid over a canonical
@@ -458,7 +461,9 @@ CAR via injected HTTP `com.atproto.sync.getBlob`.
   CAR root, multi-path resolve + 404), `ATProtoWebTileMothershipTests` (resolve-path mediation +
   getBlob stub load).
 - Explicit remainder: Deno `@dasl/tiles` protocol package and live Admin UI embedding of an
-  arbitrary tile remain open. This slice does not claim a full browser tile host product.
+  arbitrary tile remain open. Execution prompt:
+  [phase-34](../prompts/phase-34-dasl-tiles-package-and-embed.md).
+  This slice does not claim a full browser tile host product.
 - Rollback: remove the additive policy/protocol/loading-host/WebTile/Mothership helpers, reserved
   routes, and test registration; existing Admin UI routes and CSP remain unchanged.
 

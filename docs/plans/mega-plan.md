@@ -563,8 +563,15 @@ for full traceability; mirrored in the
     C2PA claim/assertion-store graph (hash.data + MUXL hard-bind +
     `c2pa.hash.bmff.v3` + soft-binding + claim store + ingredient.v3 +
     transcoder auto-sign (opt-in) landed 2026-08-13; ingredient validate /
-    Merkle / soft-alg remainders open) and Web Tiles Deno package / live embed
-    remainders (mothership resolve-path + getBlob load landed 2026-08-13).
+    Merkle / soft-alg remainders open — execution prompts
+    [phase-31](prompts/phase-31-s2pa-ingredient-verify.md),
+    [phase-32](prompts/phase-32-s2pa-merkle-bmff.md),
+    [phase-33](prompts/phase-33-s2pa-soft-binding-algs.md); Web Tiles Deno
+    package / live embed remainders —
+    [phase-34](prompts/phase-34-dasl-tiles-package-and-embed.md)
+    (mothership resolve-path + getBlob load landed 2026-08-13). WS16 iroh
+    Phase 4+ remains blocked —
+    [phase-35](prompts/phase-35-ws16-iroh-sidecar.md).
     Phase 8 PFP
     producer (`ATProtoPFPProducer`) + Ozone `moderation_subjects.pfp` column
     (V19) + Hamming match APIs completed 2026-08-12. PDQ Hamming comparison;

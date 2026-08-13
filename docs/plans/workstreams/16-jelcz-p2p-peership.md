@@ -32,6 +32,8 @@ Garazyk context: [ADR 0036](../../adr/0036-content-addressed-video-distribution.
 **Phases 0–3 complete. Phase 1 ADR accepted ([ADR 0038](../../adr/0038-jelcz-p2p-layering.md)).**
 Phases 4+ (iroh sidecar / live Streamplace mesh) remain **blocked** on
 [## Blocked on](#blocked-on) unless an explicit lab exception is recorded.
+Execution prompt (blocked until the same inputs clear):
+[phase-35](../prompts/phase-35-ws16-iroh-sidecar.md).
 
 ## Decision (locked for this workstream)
 
