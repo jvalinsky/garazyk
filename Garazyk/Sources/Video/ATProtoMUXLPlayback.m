@@ -4,6 +4,8 @@
 #import "Video/ATProtoMUXLFMP4.h"
 #import "MediaCore/ATProtoMUXLBox.h"
 #import "MediaCore/ATProtoMUXLFragment.h"
+#import "Security/S2PA/ATProtoS2PAJUMBF.h"
+#import "Auth/Crypto/Secp256k1.h"
 #include <string.h>
 
 NSString * const ATProtoMUXLPlaybackErrorDomain = @"com.atproto.muxl.playback";
@@ -247,6 +249,70 @@ static BOOL MUXLPlaybackReadBox(const uint8_t *bytes, NSUInteger length, NSUInte
     if (!recovered || ![recovered isEqualToData:segments]) {
         MUXLPlaybackSetError(error, ATProtoMUXLPlaybackErrorInvalidPresentation,
                              @"MUXL flat MP4 round-trip altered segment bytes");
+        return NO;
+    }
+    return YES;
+}
+
++ (nullable NSData *)presentationByHardBindingSegment:(NSData *)segment
+                                          withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                  did:(nullable NSString *)did
+                                            notBefore:(NSDate *)notBefore
+                                             notAfter:(NSDate *)notAfter
+                                                error:(NSError **)error {
+    if (![segment isKindOfClass:[NSData class]] || segment.length == 0 || !keyPair) {
+        MUXLPlaybackSetError(error, ATProtoMUXLPlaybackErrorInvalidArgument,
+                             @"MUXL S2PA hard binding requires segment and key pair");
+        return nil;
+    }
+    // Ensure the payload is a recognizable MUXL segment stream before signing.
+    if (![self splitSegments:segment error:error]) {
+        return nil;
+    }
+    NSData *bound = [ATProtoS2PAJUMBF presentationHardBindingMediaData:segment
+                                                          withKeyPair:keyPair
+                                                                  did:did
+                                                            notBefore:notBefore
+                                                             notAfter:notAfter
+                                                                error:error];
+    if (!bound) {
+        if (error && !*error) {
+            MUXLPlaybackSetError(error, ATProtoMUXLPlaybackErrorInvalidPresentation,
+                                 @"MUXL S2PA hard binding failed");
+        }
+        return nil;
+    }
+    return bound;
+}
+
++ (BOOL)verifyHardBoundPresentation:(NSData *)presentation
+                        expectedDID:(nullable NSString *)expectedDID
+                              error:(NSError **)error {
+    if (![presentation isKindOfClass:[NSData class]] || presentation.length < 24) {
+        MUXLPlaybackSetError(error, ATProtoMUXLPlaybackErrorInvalidArgument,
+                             @"MUXL hard-bound presentation is truncated");
+        return NO;
+    }
+    const uint8_t *bytes = presentation.bytes;
+    uint64_t size = 0;
+    const char *type = NULL;
+    NSUInteger header = 0;
+    if (!MUXLPlaybackReadBox(bytes, presentation.length, 0, &size, &type, &header) ||
+        memcmp(type, "uuid", 4) != 0) {
+        MUXLPlaybackSetError(error, ATProtoMUXLPlaybackErrorInvalidPresentation,
+                             @"MUXL hard-bound presentation must begin with uuid box");
+        return NO;
+    }
+    NSData *uuidBox = [presentation subdataWithRange:NSMakeRange(0, (NSUInteger)size)];
+    NSData *segment = [presentation subdataWithRange:
+        NSMakeRange((NSUInteger)size, presentation.length - (NSUInteger)size)];
+    if (![ATProtoS2PAJUMBF verifyUUIDBox:uuidBox
+                   hardBoundToMediaData:segment
+                           expectedDID:expectedDID
+                                 error:error]) {
+        return NO;
+    }
+    if (![self splitSegments:segment error:error]) {
         return NO;
     }
     return YES;

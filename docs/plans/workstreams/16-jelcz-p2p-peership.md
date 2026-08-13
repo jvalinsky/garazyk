@@ -183,8 +183,10 @@ in jelcz deferred. Admin/demo announce API wraps the same write path.
 (after restaging Linux jelcz): `./scripts/demo/streamplace_peership_smoke.sh`
 — A seed → B/C `peered-verified` via `jelcz-a` DNS → B local `getVideoBlob`
 byte-identical; catalog 0 live / 12 VOD. Host mesh:
-`./scripts/demo/jelcz_https_mesh_demo.sh` OK. Live PDS announce gate: configure
-`JELCZ_ORIGIN_ANNOUNCE*` against local-network PDS and call announce-origin.
+`./scripts/demo/jelcz_https_mesh_demo.sh` OK. Live PDS announce:
+`./scripts/demo/jelcz_origin_announce_smoke.sh` — createAccount →
+announce-origin → getRecord → retract-origin (jelcz uses URLSession client for
+PDS writes; SafeHTTP SSRF blocks loopback).
 
 **Rollback:** unset `JELCZ_ORIGIN_ANNOUNCE` → pull-only peering (Phase 2).
 

@@ -11,6 +11,7 @@
 #import "Video/ATProtoMUXLFMP4.h"
 #import "MediaCore/ATProtoMUXLBox.h"
 #import "MediaCore/ATProtoMUXLFragment.h"
+#import "Auth/Crypto/Secp256k1.h"
 
 @interface ATProtoMUXLPlaybackTests : XCTestCase
 @end
@@ -91,6 +92,33 @@
     NSError *error = nil;
     XCTAssertNil([ATProtoMUXLPlayback splitSegments:truncated error:&error]);
     XCTAssertEqual(error.code, ATProtoMUXLPlaybackErrorInvalidSegment);
+}
+
+- (void)testS2PAHardBindingPreservesCanonicalMUXL {
+    NSData *seg = [self mintSegmentSeq:1 dts:0 sync:YES];
+    uint8_t privateKeyBytes[32] = {0};
+    privateKeyBytes[31] = 7;
+    ATProtoSecp256k1KeyPair *pair =
+        [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:[NSData dataWithBytes:privateKeyBytes
+                                                                       length:32]
+                                                   error:nil];
+    XCTAssertNotNil(pair);
+    NSError *error = nil;
+    NSData *bound =
+        [ATProtoMUXLPlayback presentationByHardBindingSegment:seg
+                                                  withKeyPair:pair
+                                                          did:nil
+                                                    notBefore:[NSDate dateWithTimeIntervalSince1970:1]
+                                                     notAfter:[NSDate dateWithTimeIntervalSince1970:2]
+                                                        error:&error];
+    XCTAssertNotNil(bound, @"%@", error);
+    XCTAssertTrue(bound.length > seg.length);
+    XCTAssertTrue([ATProtoMUXLPlayback verifyHardBoundPresentation:bound
+                                                       expectedDID:pair.didKeyString
+                                                             error:&error],
+                  @"%@", error);
+    NSData *recovered = [ATProtoMUXLPlayback canonicalSegmentsFromPresentation:bound error:&error];
+    XCTAssertEqualObjects(recovered, seg);
 }
 
 @end
