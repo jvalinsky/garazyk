@@ -5,7 +5,7 @@ title: Docs Noncanonical
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **209**
+Total documents in this view: **213**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -18,6 +18,7 @@ Total documents in this view: **209**
 | [docs/20-explanation/guides/relay-subscribe-repos-ws-stability.md](../20-explanation/guides/relay-subscribe-repos-ws-stability.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/repo-export-formats.md](../20-explanation/guides/repo-export-formats.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/star-lite-vs-car-export-benchmark.md](../20-explanation/guides/star-lite-vs-car-export-benchmark.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
+| [docs/20-explanation/guides/streamplace-jelcz-peership-lab.md](../20-explanation/guides/streamplace-jelcz-peership-lab.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/adr/0001-compat-shims-must-not-depend-on-database.md](../adr/0001-compat-shims-must-not-depend-on-database.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0002-defer-appview-database-queryrunner-migration.md](../adr/0002-defer-appview-database-queryrunner-migration.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
@@ -57,6 +58,7 @@ Total documents in this view: **209**
 | [docs/adr/0035-account-migration-bring-your-own-did.md](../adr/0035-account-migration-bring-your-own-did.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/adr/0037-video-segment-profile-short-vs-long.md](../adr/0037-video-segment-profile-short-vs-long.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
+| [docs/adr/0038-jelcz-p2p-layering.md](../adr/0038-jelcz-p2p-layering.md) | `decision-record` | [docs/index.md](../index.md) | `docs` | `published` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/00-methodology.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/01-inventory-matrix.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/02-risk-scores.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
@@ -177,6 +179,8 @@ Total documents in this view: **209**
 | [docs/plans/workstreams/13-beskid-edge-reconciliation.md](../plans/workstreams/13-beskid-edge-reconciliation.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/14-beskid-firehose-invalidation-phase0.md](../plans/workstreams/14-beskid-firehose-invalidation-phase0.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/14-beskid-firehose-invalidation.md](../plans/workstreams/14-beskid-firehose-invalidation.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/15-streamplace-vod-peership.md](../plans/workstreams/15-streamplace-vod-peership.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/16-jelcz-p2p-peership.md](../plans/workstreams/16-jelcz-p2p-peership.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/chat.md](../plans/workstreams/service-admin-uis/chat.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |

@@ -46,6 +46,16 @@
             "type": "string",
             "format": "datetime",
             "description": "Last successful heartbeat from this origin."
+          },
+          "irohTicket": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Optional iroh ticket for node↔node fetch (ADR 0038). Empty when HTTPS-only."
+          },
+          "httpsBase": {
+            "type": "string",
+            "format": "uri",
+            "description": "Optional explicit HTTPS provider base when distinct from watchBaseUrl (ADR 0038)."
           }
         }
       }

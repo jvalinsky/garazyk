@@ -431,6 +431,13 @@ budget; and Bitswap has no range semantics, which makes seeking pathological.
 
 ## See also
 
+- [Workstream 15: Streamplace VOD peership](../plans/workstreams/15-streamplace-vod-peership.md)
+  — HTTPS `getVideoBlob` pull/serve compat with Streamplace nodes; does not
+  change this ADR’s `tools.garazyk.*` NSID decision or reopen live iroh.
+- [Workstream 16: Jelcz P2P peership](../plans/workstreams/16-jelcz-p2p-peership.md)
+  — origin-record + iroh sidecar plan; reopen criteria for live iroh.
+- [Streamplace and jelcz peership lab](../20-explanation/guides/streamplace-jelcz-peership-lab.md)
+  — local Docker lab (Streamplace + ATProto + multi-jelcz HTTPS mesh).
 - [Workstream 12: content-addressed video](../plans/workstreams/12-content-addressed-video.md)
   — phased execution, gates, and rollback.
 - [ADR 0013](0013-blob-lifecycle-conformance.md) — the blob lifecycle this

@@ -56,6 +56,14 @@
         }
         config.caMirrorProviders = providers.count > 0 ? [providers copy] : nil;
     }
+    config.streamplaceMirrorBase =
+        env[[prefix stringByAppendingString:@"_STREAMPLACE_MIRROR_BASE"]];
+    config.streamplaceAttributionDID =
+        env[[prefix stringByAppendingString:@"_STREAMPLACE_ATTRIBUTION_DID"]];
+    config.enableStreamplaceServeCompat =
+        [self envBool:env key:[prefix stringByAppendingString:@"_STREAMPLACE_SERVE_COMPAT"] default:NO];
+    config.enableStreamplacePeerDemo =
+        [self envBool:env key:[prefix stringByAppendingString:@"_STREAMPLACE_DEMO"] default:NO];
 
     config.s3Bucket         = env[[prefix stringByAppendingString:@"_S3_BUCKET"]];
     config.s3Region         = env[[prefix stringByAppendingString:@"_S3_REGION"]] ?: @"us-east-1";

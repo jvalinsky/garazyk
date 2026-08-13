@@ -29,10 +29,13 @@ title: Garazyk Documentation
 - [Relay subscribeRepos WebSocket stability probe](20-explanation/guides/relay-subscribe-repos-ws-stability.md)
 - [Deployment](20-explanation/guides/DEPLOYMENT.md)
 - [NixOS build and deployment](20-explanation/guides/NIXOS.md)
+- [Streamplace and jelcz peership lab](20-explanation/guides/streamplace-jelcz-peership-lab.md)
 - [Video discovery and peer-sharing options](20-explanation/guides/video-discovery-and-peer-sharing-options.md)
 - [IBLT for atproto reconciliation](20-explanation/guides/iblt-for-atproto-reconciliation.md)
 - [Range-based set reconciliation and the Willow protocol](20-explanation/guides/range-based-set-reconciliation.md)
 - [Decision records](adr/)
+  - including [ADR 0038: jelcz P2P layering](adr/0038-jelcz-p2p-layering.md)
+
 ## Project planning
 
 - [Current plans](plans/README.md)

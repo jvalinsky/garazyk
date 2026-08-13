@@ -1,0 +1,25 @@
+{
+  "origins": [
+    {
+      "$type": "place.stream.broadcast.origin",
+      "streamer": "did:plc:example-streamer",
+      "server": "did:web:streamplace",
+      "broadcaster": "did:web:streamplace",
+      "updatedAt": "2026-08-12T00:00:00Z",
+      "websocketURL": "http://streamplace:38080/",
+      "irohTicket": ""
+    },
+    {
+      "$type": "tools.garazyk.video.origin",
+      "server": "did:web:jelcz-a.local",
+      "watchBaseUrl": "http://jelcz-a:2596/",
+      "manifestCid": "bafyreibaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "createdAt": "2026-08-12T00:00:00Z",
+      "lastSeenAt": "2026-08-12T00:00:00Z",
+      "subject": {
+        "uri": "at://did:plc:example/tools.garazyk.video/1",
+        "cid": "bafyreiexample"
+      }
+    }
+  ]
+}

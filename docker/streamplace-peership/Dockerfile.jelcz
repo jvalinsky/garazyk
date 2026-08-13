@@ -1,0 +1,56 @@
+# Dockerfile for jelcz peership demo nodes (WS15/WS16).
+#
+# Build context MUST be the repository root (see docker-compose.yml).
+# Requires Linux jelcz + libs from scripts/stage_binaries.ts:
+#   deno run -A scripts/stage_binaries.ts
+#
+# This image is intentionally thin: Garazyk ATProto services stay on the
+# existing docker/local-network stack; Streamplace is the upstream OCI image.
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    ffmpeg \
+    libcurl4 \
+    libffi8 \
+    libicu70 \
+    libqrencode4 \
+    libreadline8 \
+    libsqlite3-0 \
+    libssl3 \
+    libxml2 \
+    libxslt1.1 \
+    tzdata \
+    zlib1g \
+    libzstd1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pre-staged Linux ELF binaries (same layout as docker/local-network/Dockerfile.local).
+COPY docker/local-network/staging/bin/jelcz /usr/local/bin/jelcz
+COPY docker/local-network/staging/lib /usr/local/lib
+RUN ldconfig
+
+# Demo UI + vendored hls.js (loaded from disk via JELCZ_DEMO_UI_PATH).
+COPY Garazyk/Resources/jelcz-demo /opt/jelcz-demo
+
+RUN mkdir -p /var/lib/jelcz \
+    && useradd -r -s /usr/sbin/nologin -d /var/lib/jelcz jelcz \
+    && chown -R jelcz:jelcz /var/lib/jelcz /opt/jelcz-demo
+
+USER jelcz
+WORKDIR /var/lib/jelcz
+
+ENV JELCZ_DATA_DIR=/var/lib/jelcz \
+    JELCZ_DEMO_UI_PATH=/opt/jelcz-demo/streamplace-peer.html \
+    JELCZ_STREAMPLACE_DEMO=1 \
+    JELCZ_STREAMPLACE_SERVE_COMPAT=1 \
+    JELCZ_CA_MIRROR_FETCH=1
+
+EXPOSE 2596
+ENTRYPOINT ["/usr/local/bin/jelcz"]
+CMD ["serve", "--port", "2596", "--data-dir", "/var/lib/jelcz"]

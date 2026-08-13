@@ -19,6 +19,18 @@ title: Codebase Map
 | `docs/`             | Project documentation                                    |
 | `lexicons/`         | AT Protocol lexicons                                     |
 
+Notable Docker topologies:
+
+| Path | Purpose |
+| --- | --- |
+| `docker/local-network/` | Full local ATProto network (PLC, PDS, relay, AppView, jelcz, …) |
+| `docker/streamplace-peership/` | Streamplace + 3× jelcz HTTPS peership lab (joins local-network) |
+| `docker/pds/` | Standalone PDS compose |
+
+Demo entrypoints: `scripts/demo/streamplace_peership_*.sh`,
+`scripts/demo/jelcz_*_demo.sh`. Guide:
+[Streamplace and jelcz peership lab](../20-explanation/guides/streamplace-jelcz-peership-lab.md).
+
 ## Objective-C source
 
 The main source areas are:
