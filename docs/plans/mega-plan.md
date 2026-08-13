@@ -564,7 +564,7 @@ for full traceability; mirrored in the
     `c2pa.hash.bmff.v3` + soft-binding + claim store + ingredient.v3 +
     transcoder auto-sign (opt-in) + ingredient `validationResults` /
     embedded-manifest verify + Merkle bmffHash (leaf-row) landed 2026-08-13;
-    soft-alg remainders open — execution prompt
+    soft-binding `com.joinmonolith.sha256` compute/verify landed 2026-08-13 —
     [phase-33](prompts/phase-33-s2pa-soft-binding-algs.md); Web Tiles Deno
     `@garazyk/tiles` + live Admin UI embed landed 2026-08-13 —
     [phase-34](prompts/phase-34-dasl-tiles-package-and-embed.md) complete

@@ -49,8 +49,9 @@ COSE + leaf + JUMBF uuid + SHA-256 hard binding + `c2pa.hash.data` assertion
 landed 2026-08-13; claim-map-v2 + assertion store landed 2026-08-13;
 ingredient claims (v3 encode + validationResults / embedded-manifest verify
 landed 2026-08-13), Merkle bmffHash (leaf-row profile) landed 2026-08-13;
-soft-binding algorithms remain open. Transcoder auto-sign landed 2026-08-13
-(opt-in). Phase 7 production paths remain open.
+soft-binding `com.joinmonolith.sha256` compute/verify landed 2026-08-13.
+Transcoder auto-sign landed 2026-08-13 (opt-in, hard-bind only). Phase 7
+production paths remain open.
 Phase 11 mothership resolve-path + getBlob load landed 2026-08-13; Deno
 `@garazyk/tiles` + live Admin UI embed landed 2026-08-13 (not a full browser
 tile-host product; JSR publish still deferred with Phase 5).
@@ -385,10 +386,14 @@ whole/`fixedBlockSize`/`variableBlockSizes` mdat payloads; C2PA unbalanced
 promote tree; leaf-row stored in `hashes`; when `hash`+`merkle` both present,
 mandatory `/mdat` subset `{offset=16,length=0}` applies. Nested xpath beyond a
 single root 4cc remains out of profile (use root paths + `subset`). Fragmented
-`initHash` / aux merkle boxes remain open. Soft bindings and gathered/redacted
-assertions remain open. **`c2pa.soft-binding` (2026-08-13):**
-`ATProtoS2PASoftBindingAssertion` encodes/decodes alg + blocks (value + optional
-timespan scope); does not run watermark/fingerprint algorithms.
+`initHash` / aux merkle boxes remain open. Gathered/redacted assertions remain
+open. **`c2pa.soft-binding` (2026-08-13):** `ATProtoS2PASoftBindingAssertion`
+encodes/decodes alg + blocks (value + optional timespan scope). **Algorithm
+compute/verify (2026-08-13):** Soft Binding Algorithm List entry
+`com.joinmonolith.sha256` — exact SHA-256 fingerprint over caller-supplied
+media bytes; timespan selects which block to match (caller scopes bytes);
+`scope.region` / ROI and watermark embedding are out of scope. Soft bindings
+do not replace hard bindings. Test string `phash` is non-normative.
 **Claim + assertion store (2026-08-13):** `ATProtoS2PAClaim` builds
 `c2pa.claim.v2` with `created_assertions` hashed URIs, a `c2pa.assertions`
 JUMBF store (`cbor` content boxes), and JUMBF claim-bound sign/verify
@@ -419,12 +424,12 @@ tamper → `HashMismatch`). Gathered/redacted assertions remain open.
   hashed URIs + claim-bound JUMBF sign/verify),
   `ATProtoS2PAIngredientAssertionTests`, and `ATProtoS2PAJUMBFTests`.
   All registered in `Tests/test_main.m`.
-- Explicit remainder: gathered/redacted assertions and soft-binding algorithm
-  compute/verify remain open. Merkle `bmffHash` (leaf-row, non-fragmented)
-  completed 2026-08-13
-  ([phase-32](../prompts/phase-32-s2pa-merkle-bmff.md)). Nested xpath stays
-  root-only + `subset`. Execution prompts:
-  [phase-33](../prompts/phase-33-s2pa-soft-binding-algs.md).
+- Explicit remainder: gathered/redacted assertions remain open. Merkle
+  `bmffHash` (leaf-row, non-fragmented) completed 2026-08-13
+  ([phase-32](../prompts/phase-32-s2pa-merkle-bmff.md)). Soft-binding
+  compute/verify completed 2026-08-13
+  ([phase-33](../prompts/phase-33-s2pa-soft-binding-algs.md)). Nested xpath
+  stays root-only + `subset`.
   **MUXL producer wiring (2026-08-13):**
   `ATProtoMUXLPlayback` `presentationByHardBindingSegment:` /
   `verifyHardBoundPresentation:` prepends/verifies S2PA uuid over a canonical
@@ -435,7 +440,8 @@ tamper → `HashMismatch`). Gathered/redacted assertions remain open.
   `ATProtoMUXLTranscoderBridge` `hardBoundPackage:withKeyPair:…` hard-binds each
   MUXL segment and `writePackage:` emits `segment_*.s2pa.m4s`. Opt-in via
   `enableS2PAAutoSign` + `s2paSigningKeyPair` on `ATProtoVideoProcessor` /
-  `ATProtoVideoWorker` (default OFF; requires MUXL packaging). Evidence:
+  `ATProtoVideoWorker` (default OFF; requires MUXL packaging; hard-bind only —
+  does not emit soft-binding assertions). Evidence:
   `ATProtoMUXLTranscoderBridgeTests` `testHardBoundPackageWritesS2PASegments`.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
   paths are unchanged.

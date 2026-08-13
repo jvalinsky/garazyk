@@ -29,16 +29,14 @@
     NSData *hashCBOR = [hash encodeCBOR:&error];
     XCTAssertNotNil(hashCBOR);
 
-    ATProtoS2PASoftBindingBlock *block =
-        [ATProtoS2PASoftBindingBlock blockWithValue:[@"fp" dataUsingEncoding:NSUTF8StringEncoding]
-                                           timespan:nil];
     ATProtoS2PASoftBindingAssertion *soft =
-        [[ATProtoS2PASoftBindingAssertion alloc] initWithAlg:@"phash"
-                                                      blocks:@[ block ]
-                                                        name:nil
-                                                   algParams:nil];
+        [ATProtoS2PASoftBindingAssertion assertionMonolithSHA256ForData:media
+                                                               timespan:nil
+                                                                   name:nil
+                                                                  error:&error];
+    XCTAssertNotNil(soft, @"%@", error);
     NSData *softCBOR = [soft encodeCBOR:&error];
-    XCTAssertNotNil(softCBOR);
+    XCTAssertNotNil(softCBOR, @"%@", error);
 
     return @[
         [ATProtoS2PAStoredAssertion assertionWithLabel:ATProtoS2PAHashDataAssertionLabel
