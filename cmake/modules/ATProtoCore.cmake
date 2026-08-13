@@ -43,6 +43,7 @@ set(ATPROTO_CORE_MANIFEST
   "Garazyk/Sources/Core/ATProtoWebTile.m"
   "Garazyk/Sources/Core/ATProtoMultibase.m"
   "Garazyk/Sources/Core/ATProtoPFP.m"
+  "Garazyk/Sources/Core/ATProtoPFPProducer.m"
   "Garazyk/Sources/Core/ATProtoRASLURL.m"
   "Garazyk/Sources/Core/ATProtoServiceContainer.m"
   "Garazyk/Sources/Core/ATProtoValidator.m"
