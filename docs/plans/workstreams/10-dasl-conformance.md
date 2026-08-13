@@ -33,7 +33,7 @@ and legacy blob references require accepting non-DASL CID spellings) while addin
 strict path used only where content-addressing integrity depends on it. Full rationale, defect
 list, and consequences: [ADR 0032](../../adr/0032-dasl-conformance-profiles.md).
 
-## Status (2026-08-03)
+## Status (updated 2026-08-12)
 
 Phases 1–11 have bounded, independently gated slices; the macOS portion of the Phase 0 close-out is verified.
 Phase 0 (this doc + ADR 0032) landed alongside the initial implementation, deliberately after
@@ -42,8 +42,9 @@ parsing, a registered GET/HEAD well-known route, bounded local block/blob resolu
 SHA-256 CID verification, and an SSRF-safe parallel client. Phase 6 has the reusable BLAKE3
 streaming verifier, range mapper, and verified HTTP range integration that keeps the sidecar
 caller-supplied. Phases 7–11 are
-bounded document, identifier, media, COSE, and data-protocol/policy slices; their explicit
-production integration remainders remain open.
+bounded document, identifier, media, COSE, and data-protocol/policy slices; Phase 8
+(PFP producer + Ozone column) and Phase 9 (MUXL) are complete. Phase 7 production
+paths and Phase 10–11 explicit production integration remainders remain open.
 
 Phase 0 evidence: `build/tests/AllTests --gated=run` passes 4,955 tests with 0 failures;
 `scripts/check_module_boundaries.sh build` reports no new violations with 26 baseline
@@ -276,28 +277,34 @@ CID assignment or existing blob path was changed.
 - Rollback: remove the additive MASL path/CAR metadata APIs and focused tests; existing root-only
   CAR serialization and blob upload behavior remain unchanged.
 
-**Phase 8 — PFP — PARTIAL (identifier + PDQ Hamming comparator).** `Core/ATProtoPFP`
-implements the registered PDQ (`0x01`, 32-byte inline hash) and TMK+PDQF (`0x02`,
-36-byte strict base-DASL CID) forms, plus PDQ Hamming-distance comparison with
-the ThreatExchange recommended match threshold (≤ 31). It enforces the lowercase
-`p` prefix, lowercase RFC4648 base32 with zero trailing padding bits, canonical
-unsigned varints, exact algorithm-specific lengths, no trailing bytes, and
-strict CID validation. It also exposes the exact `{"__pfp": "p…"}` JSON
-pseudo-type boundary. No PDQ/TMK producer or Ozone storage integration is
-invented here.
+**Phase 8 — PFP — COMPLETE (identifier + PDQ Hamming + Meta PDQ producer +
+Ozone subject column).** `Core/ATProtoPFP` implements the registered PDQ
+(`0x01`, 32-byte inline hash) and TMK+PDQF (`0x02`, 36-byte strict base-DASL
+CID) forms, plus PDQ Hamming-distance comparison with the ThreatExchange
+recommended match threshold (≤ 31). It enforces the lowercase `p` prefix,
+lowercase RFC4648 base32 with zero trailing padding bits, canonical unsigned
+varints, exact algorithm-specific lengths, no trailing bytes, and strict CID
+validation. It also exposes the exact `{"__pfp": "p…"}` JSON pseudo-type
+boundary.
+`Core/ATProtoPFPProducer` hashes float luma or packed RGB8 into DASL PDQ PFPs
+using Meta ThreatExchange float-luma PDQ (Jarosz → 64×64 → 16×16 DCT → median
+bits); image decode/resize remains caller-owned. TMK video production stays
+out of scope.
+Ozone stores a nullable `pfp TEXT` on `moderation_subjects` (fresh schema +
+migration `PDSV19ModerationSubjectPFP`), with `PDSModerationService`
+`setSubjectPFP:…` and `subjectsMatchingPDQ:maxDistance:limit:error:`.
 
-- Owner boundary: `Garazyk/Sources/Core` for the immutable identifier, JSON
-  boundary, and PDQ distance metric; future producer/storage integration belongs
-  to Ozone moderation only after a producer contract is selected.
-- Evidence: `ATProtoPFPTests` covers PDQ and TMK+PDQF byte/string round-trips,
-  exact pseudo-type parsing, Hamming distance (identity / one-bit / TMK reject),
-  unknown algorithms, length/truncation/trailing-data failures, non-canonical
-  varints, strict CID rejection, and lowercase/padding base32 rejection.
+- Owner boundary: `Garazyk/Sources/Core` for identifier, JSON boundary, PDQ
+  distance, and the PDQ producer; Ozone moderation owns subject storage and
+  Hamming match queries.
+- Evidence: `ATProtoPFPTests` (identifier/comparator), `ATProtoPFPProducerTests`
+  (deterministic RGB hash, near-duplicate Hamming ≤ recommended distance,
+  invalid-buffer reject), `ModerationServiceTests/testSetAndMatchSubjectPFP`.
   Registered in `Tests/test_main.m`.
-- Explicit remainder: no perceptual-hash producer and no Ozone moderation
-  database column are wired by this slice.
-- Rollback: additive identifier/comparator APIs and test registration; no
-  existing moderation or media caller depends on PFP.
+- Explicit remainder: none for Phase 8. Callers still supply decoded pixels;
+  no automatic blob→PFP pipeline or TMK producer.
+- Rollback: drop producer sources/`ATProtoCore` export, V19 migration + schema
+  column, moderation APIs/tests; identifier APIs remain independently usable.
 
 **Phase 9 — MUXL — COMPLETE (catalog + fragments + fMP4 + flat MP4 + elst +
 playback sanity + transcoder bridge).**
