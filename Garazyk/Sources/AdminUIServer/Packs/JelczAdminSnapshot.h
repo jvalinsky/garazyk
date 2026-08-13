@@ -34,7 +34,8 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * Keys: health, worker, queue (countsByState, depth, oldestAgeSeconds),
  *       throughput (completed24h, failed24h), storage, config (limits,
- *       hlsVariants, storageBackend), pdsUploadHealth.
+ *       hlsVariants, storageBackend), distribution (CA/MUXL/watch posture),
+ *       pdsUploadHealth.
  */
 @property (nonatomic, readonly) NSDictionary *snapshot;
 
@@ -80,8 +81,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param config    Media service configuration for capacity/limits.
  * @param uptimeSeconds Seconds since the service started.
  */
-- (instancetype)initWithWorker:(id)worker
-                      jobStore:(id)jobStore
+- (instancetype)initWithWorker:(nullable id)worker
+                      jobStore:(nullable id)jobStore
                         config:(NSDictionary *)config
                   uptimeSeconds:(NSTimeInterval)uptimeSeconds;
 

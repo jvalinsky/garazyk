@@ -23,6 +23,14 @@ NS_ASSUME_NONNULL_BEGIN
 /** @abstract Renders capacity and configuration summary. */
 + (NSString *)renderVideoCapacityPartial:(NSDictionary *)result;
 
+/**
+ * @abstract Renders CA VOD / MUXL / reclaim distribution posture.
+ *
+ * Explains what @c /watch serves and which feature flags are live — never
+ * filesystem paths or credentials.
+ */
++ (NSString *)renderVideoDistributionPartial:(NSDictionary *)snapshot;
+
 /** @abstract Renders video quota information. */
 + (NSString *)renderVideoQuotasPartial:(NSDictionary *)result;
 

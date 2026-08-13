@@ -92,6 +92,7 @@ Port `2590` is the embedded PDS admin UI on `kaszlak` (not a separate binary).
 | Germ | **Done 2026-08-12:** retain fix + `germ_admin_loopback_smoke.ts` live metrics |
 | AppView | **Done 2026-08-12:** Exceptions / Probe / Actor dig tabs + allowlisted probe |
 | Mikrus / Beskid | Pack completion vs brief acceptance (see briefs) |
+| Video (jelcz) | **In progress 2026-08-12:** CA/MUXL Distribution tab + product-aware Jobs; live smoke remainders |
 | Relay | **Done 2026-08-12:** live-event inspector fields (`lastEventAt`, `eventsByKind`) |
 | Ozone | Embedded listener only if a standalone Ozone binary is created (not in current fleet) |
 | Fleet | **M5 complete (2026-08-12):** standalone admin binary retired; Overview/Connections dropped; peer switcher + schemat/hamownia retarget landed |

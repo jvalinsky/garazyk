@@ -1265,6 +1265,7 @@ int main(int argc, char *argv[]) {
       @"ATProtoCARASLWellKnownTests",
       @"ATProtoMediaXrpcPackTests",
       @"JelczCLITests",
+      @"JelczAdminUIPackTests",
       @"JelczCommandTests",
       @"JelczDatabaseTests",
       @"ATProtoMediaServiceRuntimeTests",

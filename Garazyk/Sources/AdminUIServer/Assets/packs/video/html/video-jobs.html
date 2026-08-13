@@ -2,12 +2,20 @@
 <div class="alert alert-destructive">{{message}}</div>
 {{/error}}
 {{^error}}
-<table class="table"><thead><tr><th>Job ID</th><th>DID</th><th>State</th><th>Created</th><th>Actions</th></tr></thead><tbody>
+<table class="table"><thead><tr><th>Job</th><th>DID</th><th>State</th><th>Product</th><th>Progress</th><th>Created</th><th></th></tr></thead><tbody>
 {{#jobs}}
-<tr><td class="text-mono text-sm">{{jobId}}</td><td class="text-mono text-sm">{{did}}</td><td><span class="{{badgeClass}}">{{state}}</span></td><td class="text-sm">{{createdAt}}</td><td><button type="button" class="btn btn-secondary btn-sm" hx-get="/admin/partials/video-job-detail?jobId={{jobId}}" hx-target="closest .admin-partial" hx-swap="innerHTML">View</button></td></tr>
+<tr>
+  <td class="text-mono text-sm">{{jobId}}</td>
+  <td class="text-mono text-sm" title="{{did}}">{{didShort}}</td>
+  <td><span class="{{badgeClass}}">{{state}}</span></td>
+  <td><span class="{{productBadgeClass}}">{{product}}</span></td>
+  <td class="text-mono text-sm">{{progressLabel}}</td>
+  <td class="text-sm">{{createdAt}}</td>
+  <td><button type="button" class="btn btn-secondary btn-sm" hx-get="/admin/partials/video-job-detail?jobId={{jobId}}" hx-target="closest .admin-partial" hx-swap="innerHTML">View</button></td>
+</tr>
 {{/jobs}}
 {{^jobs}}
-<tr><td colspan="5" class="text-center text-secondary p-lg">No video jobs found.</td></tr>
+<tr><td colspan="7" class="text-center text-secondary p-lg">No video jobs found.</td></tr>
 {{/jobs}}
 </tbody></table>
 {{/error}}

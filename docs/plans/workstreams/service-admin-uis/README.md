@@ -26,7 +26,7 @@ moving every surface onto the shared `ATProtoAdminUI` host.
 | Edge cache | `beskid` | Record and identity read-through caches | Health route only; no admin pack | [Beskid](beskid.md) |
 | Chat | `syrena-chat` | Conversations, messages, groups, moderation | Embedded pack with privacy-safe overview; NixOS module + deploy example | [Chat](chat.md) |
 | E2EE mailbox | `germ` | Ephemeral and rendezvous mailboxes | Full embedded pack with aggregate counters, `/admin/metrics`, NixOS module + deploy example | [Germ](germ.md) |
-| Video | `jelcz` | Uploads, transcoding, thumbnails and HLS | Embedded pack with real-time job counters, full overview dashboard, NixOS module + deploy example | [Video](video.md) |
+| Video | `jelcz` | Uploads, transcoding, CA VOD / MUXL distribution | Embedded pack with Overview / Jobs / Distribution / Capacity; CA-aware DTO allowlist | [Video](video.md) |
 | PDS | `kaszlak` | Accounts, repositories, blobs, moderation and labs | Embedded listener + six packs on `main` (`bbc84dd4`); crimson `ui.garazyk.xyz` cutover; M4 hardening still open | [PDS](pds.md) |
 
 the former monolithic admin UI is a compatibility host to retire under workstream 11 M5, not a

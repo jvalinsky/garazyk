@@ -337,7 +337,9 @@ Lab).
 lock/unlock + `admin-ui:chat-smoke`; Exceptions/Probe/Actor dig; live-event
 inspector fields; PDS snapshot + visual/browser smoke including 200% zoom).
 Remaining M4 surface is Mikrus / Beskid pack completion vs brief acceptance
-(see those briefs). Ozone remains embed-only if a standalone Ozone binary
+(see those briefs), plus Video (`jelcz`) CA-aware Distribution/Jobs UX
+(in progress 2026-08-12; see [video brief](service-admin-uis/video.md)).
+Ozone remains embed-only if a standalone Ozone binary
 appears.
 
 | Binary | Execution brief |

@@ -389,6 +389,13 @@ static int run_serve(NSArray<NSString *> *args) {
                     config:@{
                         @"maxUploadSize": @(50 * 1024 * 1024),
                         @"maxDuration": @(180),
+                        @"enableContentAddressedManifest": @(config.enableContentAddressedManifest),
+                        @"caObjectStoreConfigured": @(videoProcessor.caObjectStore != nil),
+                        @"enableCAMirrorFetch": @(config.enableCAMirrorFetch),
+                        @"caMirrorProviderCount": @(config.caMirrorProviders.count),
+                        @"caObjectSweepEnabled": @(config.caObjectSweepEnabled),
+                        @"enableMUXLPresentation": @(videoProcessor.enableMUXLPresentation),
+                        @"storageBackend": config.s3Bucket.length > 0 ? @"s3" : @"disk",
                     }
                  startTime:[NSDate date]];
         [GZJelczAdminUIPack configureHost:adminUIHost embedContext:embedContext];
@@ -415,6 +422,15 @@ static int run_serve(NSArray<NSString *> *args) {
         if (embedContext) {
             embedContext.worker = runtime.worker;
             embedContext.jobStore = runtime.worker.jobStore;
+            NSMutableDictionary *cfg = [embedContext.config mutableCopy] ?: [NSMutableDictionary dictionary];
+            cfg[@"enableContentAddressedManifest"] = @(config.enableContentAddressedManifest);
+            cfg[@"caObjectStoreConfigured"] = @(runtime.caObjectStore != nil || videoProcessor.caObjectStore != nil);
+            cfg[@"enableCAMirrorFetch"] = @(config.enableCAMirrorFetch);
+            cfg[@"caMirrorProviderCount"] = @(config.caMirrorProviders.count);
+            cfg[@"caObjectSweepEnabled"] = @(config.caObjectSweepEnabled);
+            cfg[@"enableMUXLPresentation"] = @(videoProcessor.enableMUXLPresentation);
+            cfg[@"storageBackend"] = config.s3Bucket.length > 0 ? @"s3" : @"disk";
+            embedContext.config = cfg;
         }
         GZ_LOG_INFO(@"Jelcz listening on port %lu", (unsigned long)config.port);
     }
