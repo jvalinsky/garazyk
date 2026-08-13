@@ -1,10 +1,16 @@
 ---
 phase: 31
 title: S2PA ingredient validationResults and embedded-manifest verify
-status: pending
+status: complete
 agent: worker
 depends_on: []
 ---
+
+## Progress
+
+Completed 2026-08-13: validationResults CBOR + require-with-activeManifest,
+child manifest embed + hashed-URI verify, active-manifest-scoped JUMBF extract,
+`ATProtoS2PAIngredientAssertionTests` green (round-trip, negative, embed, tamper).
 
 # Phase 31: Ingredient validationResults + embedded-manifest verify
 

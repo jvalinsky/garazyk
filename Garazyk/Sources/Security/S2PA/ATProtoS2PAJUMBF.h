@@ -164,11 +164,14 @@ bmffBoundToPresentation:(NSData *)presentation
  Builds a Manifest Store with assertion store + claim + signature + credentials.
  Assertion/claim content uses @c cbor boxes; signature/credentials remain @c bidb
  so existing extractors keep working.
+ Optional @c embeddedManifests are sibling JUMBF boxes (already labelled, e.g.
+ ingredient instance IDs) placed before the active @c c2pa manifest.
  */
 + (nullable NSData *)manifestStoreWithAssertionStore:(NSData *)assertionStoreJUMBF
                                            claimJUMBF:(NSData *)claimJUMBF
                                            signature:(NSData *)signature
                                         certificate:(NSData *)certificate
+                                 embeddedManifests:(nullable NSArray<NSData *> *)embeddedManifests
                                               error:(NSError **)error;
 
 /**
@@ -178,6 +181,21 @@ bmffBoundToPresentation:(NSData *)presentation
 + (nullable NSData *)uuidBoxSigningAssertions:(NSArray *)assertions
                                    instanceID:(NSString *)instanceID
                                generatorName:(NSString *)generatorName
+                                 withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                         did:(nullable NSString *)did
+                                   notBefore:(NSDate *)notBefore
+                                    notAfter:(NSDate *)notAfter
+                                       error:(NSError **)error;
+
+/**
+ Like @c uuidBoxSigningAssertions:… but places @c embeddedManifests (pre-labelled
+ ingredient manifests) as siblings under the Manifest Store before the active
+ manifest.
+ */
++ (nullable NSData *)uuidBoxSigningAssertions:(NSArray *)assertions
+                                   instanceID:(NSString *)instanceID
+                               generatorName:(NSString *)generatorName
+                           embeddedManifests:(nullable NSArray<NSData *> *)embeddedManifests
                                  withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
                                          did:(nullable NSString *)did
                                    notBefore:(NSDate *)notBefore

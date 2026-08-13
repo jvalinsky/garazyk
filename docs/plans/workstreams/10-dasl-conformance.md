@@ -1,7 +1,7 @@
 ---
 title: DASL Conformance
 status: active
-last_verified: 2026-08-12
+last_verified: 2026-08-13
 ---
 
 # DASL Conformance
@@ -47,8 +47,8 @@ bounded document, identifier, media, COSE, and data-protocol/policy slices; Phas
 COSE + leaf + JUMBF uuid + SHA-256 hard binding + `c2pa.hash.data` assertion
 (2026-08-13); `c2pa.hash.bmff.v3` root-box hashing + `c2pa.soft-binding` encode
 landed 2026-08-13; claim-map-v2 + assertion store landed 2026-08-13;
-ingredient claims (v3 encode landed 2026-08-13; validationResults / embedded
-manifest verify remain), soft-binding algorithms, and Merkle bmffHash remain
+ingredient claims (v3 encode + validationResults / embedded-manifest verify
+landed 2026-08-13), soft-binding algorithms, and Merkle bmffHash remain
 open. Transcoder auto-sign landed 2026-08-13 (opt-in). Phase 7 production paths
 remain open.
 Phase 11 mothership resolve-path + getBlob load landed 2026-08-13; Deno
@@ -390,9 +390,16 @@ JUMBF store (`cbor` content boxes), and JUMBF claim-bound sign/verify
 gathered/redacted assertions, and Merkle remain open.
 **`c2pa.ingredient.v3` (2026-08-13):** `ATProtoS2PAIngredientAssertion`
 encodes/decodes relationship + optional title/format/instanceID/description/
-digitalSourceType and activeManifest/claimSignature hashed URIs; rejects
-activeManifest∩digitalSourceType. Proven in claim-bound multi-assertion stores.
-`validationResults` and embedded-ingredient hash validation remain open.
+digitalSourceType, activeManifest/claimSignature hashed URIs, and bounded
+`validationResults` (required when `activeManifest` is set). Rejects
+activeManifest∩digitalSourceType. `parentOfEmbeddingChildStore:` relabels a
+child claim-bound active manifest, fills hashed URIs over jumb-body SHA-256,
+and returns the embed box; `verifyEmbeddedManifestsInStore:` checks digests.
+JUMBF `uuidBoxSigningAssertions:…embeddedManifests:` nests embeds beside the
+active `c2pa` manifest; claim-bound verify resolves the active manifest so
+embeds do not steal bidb/assertion-store lookups. Proven in
+`ATProtoS2PAIngredientAssertionTests` (round-trip, require-results, embed+verify,
+tamper → `HashMismatch`). Gathered/redacted assertions remain open.
 
 - Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope, leaf certificate, and
   JUMBF/BMFF carrier; it consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository
@@ -406,10 +413,10 @@ activeManifest∩digitalSourceType. Proven in claim-bound multi-assertion stores
   hashed URIs + claim-bound JUMBF sign/verify),
   `ATProtoS2PAIngredientAssertionTests`, and `ATProtoS2PAJUMBFTests`.
   All registered in `Tests/test_main.m`.
-- Explicit remainder: ingredient `validationResults` / embedded-manifest verify,
-  gathered/redacted assertions, soft-binding algorithm compute/verify, and Merkle
-  `bmffHash` remain open. Execution prompts:
-  [phase-31](../prompts/phase-31-s2pa-ingredient-verify.md),
+- Explicit remainder: gathered/redacted assertions, soft-binding algorithm
+  compute/verify, and Merkle `bmffHash` remain open. Ingredient
+  `validationResults` + embedded-manifest verify completed 2026-08-13
+  ([phase-31](../prompts/phase-31-s2pa-ingredient-verify.md)). Execution prompts:
   [phase-32](../prompts/phase-32-s2pa-merkle-bmff.md),
   [phase-33](../prompts/phase-33-s2pa-soft-binding-algs.md).
   **MUXL producer wiring (2026-08-13):**

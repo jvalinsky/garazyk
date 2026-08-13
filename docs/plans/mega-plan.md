@@ -562,9 +562,9 @@ for full traceability; mirrored in the
     `4bfd6a8a`) with focused verification; remaining open slices are full
     C2PA claim/assertion-store graph (hash.data + MUXL hard-bind +
     `c2pa.hash.bmff.v3` + soft-binding + claim store + ingredient.v3 +
-    transcoder auto-sign (opt-in) landed 2026-08-13; ingredient validate /
-    Merkle / soft-alg remainders open — execution prompts
-    [phase-31](prompts/phase-31-s2pa-ingredient-verify.md),
+    transcoder auto-sign (opt-in) + ingredient `validationResults` /
+    embedded-manifest verify landed 2026-08-13; Merkle / soft-alg remainders
+    open — execution prompts
     [phase-32](prompts/phase-32-s2pa-merkle-bmff.md),
     [phase-33](prompts/phase-33-s2pa-soft-binding-algs.md); Web Tiles Deno
     package / live embed remainders —

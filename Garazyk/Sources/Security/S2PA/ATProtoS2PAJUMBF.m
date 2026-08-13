@@ -170,6 +170,12 @@ static NSData *S2PAWriteOpaqueContent(const char type[4], NSData *payload) {
 /** Depth-first collect of every `bidb` payload under nested `jumb` boxes. */
 static BOOL S2PACollectBidbPayloads(const uint8_t *bytes, NSUInteger length,
                                     NSMutableArray<NSData *> *out,
+                                    NSError **error);
+static NSData *S2PADirectChildJUMBLabeled(NSData *store, NSString *wantLabel, NSError **error);
+static NSData *S2PAActiveManifestFromStore(NSData *store, NSError **error);
+
+static BOOL S2PACollectBidbPayloads(const uint8_t *bytes, NSUInteger length,
+                                    NSMutableArray<NSData *> *out,
                                     NSError **error) {
     NSUInteger offset = 0;
     while (offset + 8 <= length) {
@@ -210,8 +216,13 @@ static BOOL S2PACollectBidbPayloads(const uint8_t *bytes, NSUInteger length,
         return NO;
     }
 
+    // Prefer the active @c c2pa manifest so ingredient embeds do not steal the
+    // first bidb pair under DFS.
+    NSData *active = S2PAActiveManifestFromStore(store, error);
+    if (!active) return NO;
+
     NSMutableArray<NSData *> *bidbPayloads = [NSMutableArray array];
-    if (!S2PACollectBidbPayloads(store.bytes, store.length, bidbPayloads, error)) {
+    if (!S2PACollectBidbPayloads(active.bytes, active.length, bidbPayloads, error)) {
         return NO;
     }
     if (bidbPayloads.count < 2) {
@@ -539,6 +550,20 @@ bmffBoundToPresentation:(NSData *)presentation
                                            signature:(NSData *)signature
                                         certificate:(NSData *)certificate
                                               error:(NSError **)error {
+    return [self manifestStoreWithAssertionStore:assertionStoreJUMBF
+                                       claimJUMBF:claimJUMBF
+                                       signature:signature
+                                    certificate:certificate
+                             embeddedManifests:nil
+                                          error:error];
+}
+
++ (nullable NSData *)manifestStoreWithAssertionStore:(NSData *)assertionStoreJUMBF
+                                           claimJUMBF:(NSData *)claimJUMBF
+                                           signature:(NSData *)signature
+                                        certificate:(NSData *)certificate
+                                 embeddedManifests:(NSArray<NSData *> *)embeddedManifests
+                                              error:(NSError **)error {
     if (![assertionStoreJUMBF isKindOfClass:[NSData class]] || assertionStoreJUMBF.length == 0 ||
         ![claimJUMBF isKindOfClass:[NSData class]] || claimJUMBF.length == 0 ||
         ![signature isKindOfClass:[NSData class]] || signature.length == 0 ||
@@ -553,10 +578,76 @@ bmffBoundToPresentation:(NSData *)presentation
     NSData *certContent = S2PAWriteOpaqueContent(kCertContentType, certificate);
     NSData *credSuper = S2PAWriteJUMB(S2PAWriteJUMD(kC2PACredentialType, @"c2pa.credentials"),
                                       @[certContent]);
-    // Order: assertions, claim, signature, credentials — only last two use bidb.
-    NSData *manifest = S2PAWriteJUMB(S2PAWriteJUMD(kC2PAStoreType, @"c2pa"),
-                                     @[assertionStoreJUMBF, claimJUMBF, sigSuper, credSuper]);
-    return S2PAWriteJUMB(S2PAWriteJUMD(kC2PAStoreType, @"c2pa"), @[manifest]);
+    NSData *active = S2PAWriteJUMB(S2PAWriteJUMD(kC2PAStoreType, @"c2pa"),
+                                   @[assertionStoreJUMBF, claimJUMBF, sigSuper, credSuper]);
+    // Active first so naive DFS prefers the signed parent; embeds follow.
+    NSMutableArray<NSData *> *storeChildren = [NSMutableArray arrayWithObject:active];
+    for (NSData *emb in embeddedManifests ?: @[]) {
+        if (![emb isKindOfClass:[NSData class]] || emb.length < 8) {
+            S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidArgument,
+                              @"embedded manifest must be a jumb box");
+            return nil;
+        }
+        [storeChildren addObject:emb];
+    }
+    return S2PAWriteJUMB(S2PAWriteJUMD(kC2PAStoreType, @"c2pa"), storeChildren);
+}
+
+/** Direct-child jumb labeled @c want under @c store (does not recurse). */
+static NSData *S2PADirectChildJUMBLabeled(NSData *store, NSString *wantLabel, NSError **error) {
+    if (store.length < 8 || memcmp(store.bytes + 4, "jumb", 4) != 0) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidStructure, @"store truncated");
+        return nil;
+    }
+    const uint8_t *bytes = store.bytes;
+    uint32_t jumdSize = S2PAReadUInt32BE(bytes + 8);
+    if (jumdSize < 8 || 8 + jumdSize > store.length || memcmp(bytes + 12, "jumd", 4) != 0) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidStructure, @"store jumd invalid");
+        return nil;
+    }
+    NSUInteger offset = 8 + jumdSize;
+    while (offset + 8 <= store.length) {
+        uint32_t size = S2PAReadUInt32BE(bytes + offset);
+        if (size < 8 || offset + size > store.length) {
+            S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidStructure,
+                              @"invalid store child");
+            return nil;
+        }
+        if (memcmp(bytes + offset + 4, "jumb", 4) == 0 && size >= 16) {
+            uint32_t childJumd = S2PAReadUInt32BE(bytes + offset + 8);
+            if (childJumd >= 8 && 8 + childJumd <= size &&
+                memcmp(bytes + offset + 12, "jumd", 4) == 0) {
+                const uint8_t *jumdBody = bytes + offset + 16;
+                NSUInteger jumdBodyLen = childJumd - 8;
+                if (jumdBodyLen >= 18 && (jumdBody[16] & 0x02) != 0) {
+                    NSUInteger start = 17, end = 17;
+                    while (end < jumdBodyLen && jumdBody[end] != 0) end++;
+                    if (end < jumdBodyLen) {
+                        NSString *label =
+                            [[NSString alloc] initWithBytes:jumdBody + start
+                                                     length:end - start
+                                                   encoding:NSUTF8StringEncoding];
+                        if ([label isEqualToString:wantLabel]) {
+                            return [NSData dataWithBytes:bytes + offset length:size];
+                        }
+                    }
+                }
+            }
+        }
+        offset += size;
+    }
+    return nil;
+}
+
+/**
+ Active manifest box: direct child labelled @c c2pa when present (ingredient
+ embeds use other labels). Falls back to @c store for flat layouts.
+ */
+static NSData *S2PAActiveManifestFromStore(NSData *store, NSError **error) {
+    NSData *active = S2PADirectChildJUMBLabeled(store, @"c2pa", error);
+    if (active) return active;
+    if (error) *error = nil;
+    return store;
 }
 
 /** Find first jumb under the store with the given jumd label (iterative DFS). */
@@ -623,6 +714,26 @@ static NSData *S2PAFindLabeledJUMB(NSData *store, NSString *wantLabel, NSError *
                                    notBefore:(NSDate *)notBefore
                                     notAfter:(NSDate *)notAfter
                                        error:(NSError **)error {
+    return [self uuidBoxSigningAssertions:assertions
+                               instanceID:instanceID
+                           generatorName:generatorName
+                       embeddedManifests:nil
+                             withKeyPair:keyPair
+                                     did:did
+                               notBefore:notBefore
+                                notAfter:notAfter
+                                   error:error];
+}
+
++ (nullable NSData *)uuidBoxSigningAssertions:(NSArray *)assertions
+                                   instanceID:(NSString *)instanceID
+                               generatorName:(NSString *)generatorName
+                           embeddedManifests:(NSArray<NSData *> *)embeddedManifests
+                                 withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                         did:(nullable NSString *)did
+                                   notBefore:(NSDate *)notBefore
+                                    notAfter:(NSDate *)notAfter
+                                       error:(NSError **)error {
     if (![assertions isKindOfClass:[NSArray class]] || assertions.count == 0 ||
         instanceID.length == 0 || generatorName.length == 0 || !keyPair) {
         S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidArgument,
@@ -665,6 +776,7 @@ static NSData *S2PAFindLabeledJUMB(NSData *store, NSString *wantLabel, NSError *
                                                 claimJUMBF:claimBox
                                                 signature:cose
                                              certificate:leaf
+                                      embeddedManifests:embeddedManifests
                                                    error:error];
     if (!store) return nil;
     return [self bmffUUIDBoxWithManifestStore:store error:error];
@@ -675,6 +787,8 @@ static NSData *S2PAFindLabeledJUMB(NSData *store, NSString *wantLabel, NSError *
                           error:(NSError **)error {
     NSData *store = [self manifestStoreFromBMFFUUIDBox:box error:error];
     if (!store) return NO;
+    NSData *active = S2PAActiveManifestFromStore(store, error);
+    if (!active) return NO;
     NSData *signature = nil;
     NSData *certificate = nil;
     if (![self extractSignature:&signature certificate:&certificate
@@ -685,7 +799,7 @@ static NSData *S2PAFindLabeledJUMB(NSData *store, NSString *wantLabel, NSError *
     if (!payload) return NO;
     ATProtoS2PAClaim *claim = [ATProtoS2PAClaim claimFromCBOR:payload error:error];
     if (!claim) return NO;
-    NSData *assertionStore = S2PAFindLabeledJUMB(store, ATProtoS2PAAssertionStoreLabel, error);
+    NSData *assertionStore = S2PAFindLabeledJUMB(active, ATProtoS2PAAssertionStoreLabel, error);
     if (!assertionStore) return NO;
     if (![claim verifyHashedURIsAgainstAssertionStore:assertionStore error:error]) {
         return NO;
