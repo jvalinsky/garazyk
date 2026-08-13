@@ -10,6 +10,12 @@ readonly A="http://127.0.0.1:${JELCZ_A_PORT:-2596}"
 readonly B="http://127.0.0.1:${JELCZ_B_PORT:-2597}"
 readonly C="http://127.0.0.1:${JELCZ_C_PORT:-2598}"
 readonly SP="http://127.0.0.1:${STREAMPLACE_HTTP_PORT:-38080}"
+# Provider URLs as seen from inside the jelcz containers (compose service DNS).
+# Host-published ${A}/${B}/${C} are for curl from the host; 127.0.0.1 inside a
+# container is that container itself, so pull-peer must use jelcz-a/b/c.
+readonly A_PEER="${JELCZ_A_PEER_URL:-http://jelcz-a:2596}"
+readonly B_PEER="${JELCZ_B_PEER_URL:-http://jelcz-b:2597}"
+readonly C_PEER="${JELCZ_C_PEER_URL:-http://jelcz-c:2598}"
 
 log() { printf '%s\n' "$*"; }
 err() { printf 'error: %s\n' "$*" >&2; }
@@ -74,9 +80,9 @@ log "Providers on B:"
 curl -fsS "${B}/demo/streamplace/api/providers" | python3 -m json.tool
 
 log "B and C pull from A (container DNS uses jelcz-a:2596; host smoke uses published URL)…"
-# From host, peers are published ports — provider must be host-reachable.
-pull_ok "${B}" "${A}" "${CID}" "B←A"
-pull_ok "${C}" "${A}" "${CID}" "C←A"
+# From host, curl hits published ports; provider must be reachable from inside B/C.
+pull_ok "${B}" "${A_PEER}" "${CID}" "B←A"
+pull_ok "${C}" "${A_PEER}" "${CID}" "C←A"
 
 log "Verify B serves bytes from local CA…"
 code="$(curl -s -o /tmp/jelcz-peer-smoke.bin -w '%{http_code}' \
@@ -94,9 +100,9 @@ import json,sys
 d=json.loads(sys.argv[1])
 live=len(d.get("live") or [])
 vod=len(d.get("vod") or [])
-print(f"  catalog: {live} live, {vod} VOD")
+print("  catalog: %d live, %d VOD" % (live, vod))
 stats=d.get("stats") or {}
-print(f"  httpsProviders: {stats.get("httpsProviders")}")
+print("  httpsProviders: %s" % (stats.get("httpsProviders"),))
 ' "${cat_json}"
 else
   log "  catalog probe skipped/failed (Streamplace may still be warming test stream)"

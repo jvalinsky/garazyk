@@ -12,8 +12,8 @@ How to run a **local lab** where:
 
 This is the operator path for [workstream 15](../../plans/workstreams/15-streamplace-vod-peership.md)
 (HTTPS `getVideoBlob` peership) and [workstream 16](../../plans/workstreams/16-jelcz-p2p-peership.md)
-Phase 2 (multi-provider HTTPS mesh). It does **not** join Streamplace’s live
-iroh swarm.
+Phase 2 (multi-provider HTTPS mesh) and Phase 3 (remote-PDS origin announce).
+It does **not** join Streamplace’s live iroh swarm.
 
 Canonical compose and failure notes:
 [`docker/streamplace-peership/README.md`](../../../docker/streamplace-peership/README.md).
@@ -39,6 +39,8 @@ optional PDS2 (2587).
 
 # CA mesh smoke: seed A → pull B/C → local getVideoBlob
 ./scripts/demo/streamplace_peership_smoke.sh
+# Uses container DNS (jelcz-a:2596) as pull-peer provider; host URLs for curl.
+# Verified 2026-08-13 after restaging Linux jelcz (GNUstep `__unused` fix).
 
 # Optional: ffmpeg testsrc → Streamplace RTMP
 ./scripts/demo/streamplace_peership_up.sh --publish

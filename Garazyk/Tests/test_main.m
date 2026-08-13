@@ -1269,6 +1269,7 @@ int main(int argc, char *argv[]) {
       @"JelczStreamplaceBlobFetcherTests",
       @"JelczStreamplaceOriginHintsTests",
       @"JelczPeerProviderIndexTests",
+      @"JelczOriginAnnouncerTests",
       @"JelczStreamplaceCompatServeTests",
       @"JelczCommandTests",
       @"JelczDatabaseTests",

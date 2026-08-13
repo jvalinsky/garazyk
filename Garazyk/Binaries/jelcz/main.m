@@ -35,6 +35,7 @@
 #import "Video/GZJelczStreamplaceCompatServe.h"
 #import "Video/GZJelczStreamplacePeerDemo.h"
 #import "Video/GZJelczPeerProviderIndex.h"
+#import "Video/GZJelczOriginAnnouncer.h"
 #import "Core/CID.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Blob/PDSDiskBlobProvider.h"
@@ -446,6 +447,30 @@ static int run_serve(NSArray<NSString *> *args) {
             peerDemo.originEntries = originEntries;
             peerDemo.allowedStreamers = allowedStreamers;
             peerDemo.allowedBroadcasters = allowedBroadcasters;
+            BOOL announceOn = [env[@"JELCZ_ORIGIN_ANNOUNCE"] isEqualToString:@"1"]
+                || [env[@"JELCZ_ORIGIN_ANNOUNCE"] isEqualToString:@"true"]
+                || [env[@"JELCZ_ORIGIN_ANNOUNCE"] isEqualToString:@"yes"];
+            NSString *announceId = env[@"JELCZ_ORIGIN_ANNOUNCE_IDENTIFIER"];
+            NSString *announcePass = env[@"JELCZ_ORIGIN_ANNOUNCE_APP_PASSWORD"];
+            if (announceOn && announceId.length > 0 && announcePass.length > 0) {
+                NSString *pds =
+                    env[@"JELCZ_ORIGIN_ANNOUNCE_PDS_URL"] ?: config.pdsURL ?: @"http://127.0.0.1:2583";
+                NSString *serverDID =
+                    env[@"JELCZ_ORIGIN_ANNOUNCE_SERVER_DID"] ?: config.serviceDID ?: @"did:web:localhost";
+                GZJelczOriginAnnouncer *ann =
+                    [[GZJelczOriginAnnouncer alloc] initWithHTTPClient:demoHTTP
+                                                            pdsBaseURL:pds
+                                                            identifier:announceId
+                                                           appPassword:announcePass
+                                                             serverDID:serverDID];
+                ann.httpsBase = env[@"JELCZ_ORIGIN_ANNOUNCE_HTTPS_BASE"] ?: publicBase;
+                ann.irohTicket = env[@"JELCZ_ORIGIN_ANNOUNCE_IROH_TICKET"];
+                peerDemo.originAnnouncer = ann;
+                GZ_LOG_INFO(@"  Origin announce: enabled (remote PDS write → %@ as %@)",
+                             pds, announceId);
+            } else if (announceOn) {
+                GZ_LOG_WARN(@"JELCZ_ORIGIN_ANNOUNCE set without IDENTIFIER/APP_PASSWORD; announce off");
+            }
         }
         runtime.additionalXrpcSetup = ^(ATProtoXrpcDispatcher *dispatcher) {
             [dispatcher registerMethod:kGZXrpcNSID_place_stream_playback_getVideoBlob

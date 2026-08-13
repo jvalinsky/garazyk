@@ -316,7 +316,8 @@ static id sSafeValueForKey(id object, NSString *key) {
     if (!object || key.length == 0) return nil;
     @try {
         return [object valueForKey:key];
-    } @catch (__unused NSException *ex) {
+    } @catch (NSException *ex) {
+        (void)ex;
         return nil;
     }
 }

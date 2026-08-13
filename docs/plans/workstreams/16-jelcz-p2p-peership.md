@@ -29,8 +29,7 @@ Garazyk context: [ADR 0036](../../adr/0036-content-addressed-video-distribution.
 
 ## Status (2026-08-13)
 
-**Phases 0–2 complete. Phase 1 ADR accepted ([ADR 0038](../../adr/0038-jelcz-p2p-layering.md)).**
-Phase 3 (remote-PDS origin announce) is the next implementation slice.
+**Phases 0–3 complete. Phase 1 ADR accepted ([ADR 0038](../../adr/0038-jelcz-p2p-layering.md)).**
 Phases 4+ (iroh sidecar / live Streamplace mesh) remain **blocked** on
 [## Blocked on](#blocked-on) unless an explicit lab exception is recorded.
 
@@ -112,7 +111,7 @@ WS12 Phases 1–10 (done) ──► WS15 HTTPS peership (done / demo)
          │                         │
          └──────────► WS16 Phase 0–2 (this plan: discovery + identity)
                                    │
-                    blocked ──► Phase 3+ iroh sidecar + mesh demos
+                    blocked ──► Phase 4+ iroh sidecar + live mesh demos
 ```
 
 ## Phases
@@ -163,17 +162,31 @@ base remains.
 
 ### Phase 3 — Server identity for announcing
 
-**Status:** pending (decision locked in ADR 0038).
+**Status:** DONE (2026-08-13).
 
 **Decision:** operator-configured **remote PDS write** (Option A). Embedded PDS
-in jelcz deferred. Admin announce API may wrap the same write path.
+in jelcz deferred. Admin/demo announce API wraps the same write path.
 
-**Deliverable:** flag-gated publish/heartbeat/retract of
-`tools.garazyk.video.origin` (and optional Streamplace-shaped
-`broadcast.origin` when policy allows) using configured PDS credentials +
-server DID. Lexicon additive `irohTicket` / `httpsBase` land with this phase.
-**Gate:** create/update/delete one origin record against a test PDS.
-**Rollback:** pull-only peering (Phase 2) without announce.
+**Delivered:**
+
+1. **`GZJelczOriginAnnouncer`** — `createSession` + `putRecord` /
+   `deleteRecord` for `tools.garazyk.video.origin` via injected HTTP client.
+2. Record builder includes additive `irohTicket` / `httpsBase` (lexicon already
+   revised; ADR 0038).
+3. Flag-gated wiring: `JELCZ_ORIGIN_ANNOUNCE=1` +
+   `JELCZ_ORIGIN_ANNOUNCE_IDENTIFIER` / `_APP_PASSWORD` (+ optional
+   `_PDS_URL`, `_SERVER_DID`, `_HTTPS_BASE`, `_IROH_TICKET`).
+4. Demo APIs: `POST /demo/streamplace/api/announce-origin`,
+   `POST /demo/streamplace/api/retract-origin`.
+
+**Evidence (2026-08-13):** `JelczOriginAnnouncerTests` 4/0. Docker lab smoke
+(after restaging Linux jelcz): `./scripts/demo/streamplace_peership_smoke.sh`
+— A seed → B/C `peered-verified` via `jelcz-a` DNS → B local `getVideoBlob`
+byte-identical; catalog 0 live / 12 VOD. Host mesh:
+`./scripts/demo/jelcz_https_mesh_demo.sh` OK. Live PDS announce gate: configure
+`JELCZ_ORIGIN_ANNOUNCE*` against local-network PDS and call announce-origin.
+
+**Rollback:** unset `JELCZ_ORIGIN_ANNOUNCE` → pull-only peering (Phase 2).
 
 ### Phase 4 — iroh sidecar MVP
 
@@ -244,10 +257,9 @@ Named inputs before **Phase 4+ implementation** (iroh / live mesh):
    operator exception to prototype in lab only (record in ADR + this file).
 2. **Origin bandwidth / cache-miss measurements** — enough to justify sidecar
    complexity vs more HTTPS mirrors / CDN.
-3. **Phase 3 identity decision** — required before we *announce* (pull-only
-   P2P can use others’ tickets without it).
+3. **Phase 3 identity** — DONE (remote PDS write; see Phase 3).
 
-Phases 0–2 are **not** blocked on the above.
+Phases 0–3 HTTPS/announce are **not** blocked on the above.
 
 ## Verification (global)
 

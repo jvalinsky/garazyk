@@ -21,6 +21,7 @@
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
 @class GZJelczStreamplaceBlobFetcher;
+@class GZJelczOriginAnnouncer;
 @class GZJelczPeerProviderEntry;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -38,6 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSArray<GZJelczPeerProviderEntry *> *originEntries;
 @property (nonatomic, copy) NSSet<NSString *> *allowedStreamers;
 @property (nonatomic, copy) NSSet<NSString *> *allowedBroadcasters;
+
+/** Optional remote-PDS origin publisher (WS16 Phase 3 / ADR 0038 Option A). */
+@property (nonatomic, strong, nullable) GZJelczOriginAnnouncer *originAnnouncer;
 
 @property (atomic, assign, readonly) NSUInteger peeredObjectCount;
 @property (atomic, assign, readonly) NSUInteger proxiedByteCount;

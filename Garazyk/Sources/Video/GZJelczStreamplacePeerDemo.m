@@ -5,6 +5,7 @@
 #import "Video/GZJelczStreamplaceCompatServe.h"
 #import "Video/GZJelczStreamplaceOriginHints.h"
 #import "Video/GZJelczPeerProviderIndex.h"
+#import "Video/GZJelczOriginAnnouncer.h"
 #import "MediaCore/ATProtoCAObjectStore.h"
 #import "MediaCore/ATProtoCAMirrorResolver.h"
 #import "Core/CID.h"
@@ -207,6 +208,7 @@ static const NSUInteger kDemoRecentServeLimit = 24;
             @"allowedBroadcasters": self.allowedBroadcasters.allObjects ?: @[],
             @"autoIngestOrigins": @((self.allowedStreamers.count + self.allowedBroadcasters.count) > 0),
         },
+        @"originAnnounceConfigured": @(self.originAnnouncer != nil),
     };
 }
 
@@ -1000,6 +1002,88 @@ static const NSUInteger kDemoRecentServeLimit = 24;
                      return;
                  }
                  [weakSelf writeJSON:result status:200 response:response];
+             }];
+
+    [server addRoute:@"POST" path:@"/demo/streamplace/api/announce-origin"
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+                 if (!weakSelf.originAnnouncer) {
+                     [weakSelf writeJSON:@{
+                         @"error": @"AnnounceDisabled",
+                         @"message": @"set JELCZ_ORIGIN_ANNOUNCE=1 and PDS credentials"
+                     } status:503 response:response];
+                     return;
+                 }
+                 NSDictionary *body = nil;
+                 if (request.body.length > 0) {
+                     body = [NSJSONSerialization JSONObjectWithData:request.body options:0 error:nil];
+                 }
+                 NSString *subjectURI = body[@"subjectUri"] ?: body[@"uri"];
+                 NSString *subjectCID = body[@"subjectCid"] ?: body[@"cid"] ?: @"";
+                 NSString *manifestCID = body[@"manifestCid"] ?: subjectCID;
+                 NSString *watchBase = body[@"watchBaseUrl"] ?: weakSelf.publicBaseURL;
+                 NSString *httpsBase = body[@"httpsBase"] ?: weakSelf.originAnnouncer.httpsBase;
+                 NSString *irohTicket = body[@"irohTicket"] ?: weakSelf.originAnnouncer.irohTicket;
+                 NSString *rkey = body[@"rkey"];
+                 if (subjectURI.length == 0 || manifestCID.length == 0) {
+                     [weakSelf writeJSON:@{
+                         @"error": @"InvalidRequest",
+                         @"message": @"subjectUri and manifestCid (or cid) required"
+                     } status:400 response:response];
+                     return;
+                 }
+                 NSDictionary *record =
+                     [GZJelczOriginAnnouncer originRecordWithSubjectURI:subjectURI
+                                                             subjectCID:subjectCID
+                                                              serverDID:weakSelf.originAnnouncer.serverDID
+                                                           watchBaseURL:watchBase
+                                                            manifestCID:manifestCID
+                                                              httpsBase:httpsBase
+                                                             irohTicket:irohTicket
+                                                                    now:[NSDate date]];
+                 NSError *err = nil;
+                 NSDictionary *published = [weakSelf.originAnnouncer publishOriginRecord:record
+                                                                                    rkey:rkey
+                                                                                   error:&err];
+                 if (!published) {
+                     [weakSelf writeJSON:@{
+                         @"error": @"AnnounceFailed",
+                         @"message": err.localizedDescription ?: @"putRecord failed"
+                     } status:502 response:response];
+                     return;
+                 }
+                 [weakSelf writeJSON:published status:200 response:response];
+             }];
+
+    [server addRoute:@"POST" path:@"/demo/streamplace/api/retract-origin"
+             handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+                 if (!weakSelf.originAnnouncer) {
+                     [weakSelf writeJSON:@{
+                         @"error": @"AnnounceDisabled",
+                         @"message": @"set JELCZ_ORIGIN_ANNOUNCE=1 and PDS credentials"
+                     } status:503 response:response];
+                     return;
+                 }
+                 NSDictionary *body = nil;
+                 if (request.body.length > 0) {
+                     body = [NSJSONSerialization JSONObjectWithData:request.body options:0 error:nil];
+                 }
+                 NSString *rkey = body[@"rkey"];
+                 if (rkey.length == 0) {
+                     [weakSelf writeJSON:@{
+                         @"error": @"InvalidRequest",
+                         @"message": @"rkey required"
+                     } status:400 response:response];
+                     return;
+                 }
+                 NSError *err = nil;
+                 if (![weakSelf.originAnnouncer retractOriginWithRkey:rkey error:&err]) {
+                     [weakSelf writeJSON:@{
+                         @"error": @"RetractFailed",
+                         @"message": err.localizedDescription ?: @"deleteRecord failed"
+                     } status:502 response:response];
+                     return;
+                 }
+                 [weakSelf writeJSON:@{@"retracted": @YES, @"rkey": rkey} status:200 response:response];
              }];
 
     [server addRoute:@"POST" path:@"/demo/streamplace/api/peer"
