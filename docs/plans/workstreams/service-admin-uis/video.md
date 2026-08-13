@@ -1,7 +1,7 @@
 ---
 title: Video Admin UI Brief
-status: planned
-last_verified: 2026-08-11
+status: in-progress
+last_verified: 2026-08-12
 ---
 
 # Video (`jelcz`)
@@ -9,42 +9,62 @@ last_verified: 2026-08-11
 **Authority:** [workstream 11](../11-per-service-admin-uis.md), the
 [shared contract](README.md), and [ADR 0033](../../../adr/0033-per-service-embedded-admin-uis.md).
 The narrow PDS dependency is coordinated with the [PDS brief](pds.md).
+Content-addressed delivery semantics are governed by
+[ADR 0036](../../../adr/0036-content-addressed-video-distribution.md) and
+[workstream 12](../12-content-addressed-video.md); MUXL packaging by
+[workstream 10 Phase 9](../10-dasl-conformance.md).
 
 ## Outcome and evidence
 
-Move the existing Video pack into `jelcz` and expose the worker and queue state
-needed to operate transcoding. Current UI routes provide health, jobs, job
-detail, quotas, and retry. `VideoWorker` has active state, concurrency, pending
-scans, progress, retries, and processing stages. `JelczDatabase` stores a
-`service_auth_token` with each job, while the current generic detail renderer
-enumerates every returned field. The embedded plan must replace that with an
-explicit safe allowlist before serving job detail.
+Operators of `jelcz` need one place that answers four questions, in order:
+
+1. **Is the worker healthy and keeping up?** Queue depth, concurrency, oldest
+   age, 24h success/fail, PDS upload posture.
+2. **Which jobs explain a problem?** Bounded recent rows with state filters,
+   progress, and a **product** badge (`HLS` / `CA VOD` / `MUXL`).
+3. **What does `/watch` actually serve right now?** Distribution posture —
+   CA MASL vs filesystem HLS, MUXL packaging, mirror fetch, reclaim sweep —
+   without leaking store paths or credentials.
+4. **What safe action can I take?** Retry a failed job. Cancel/purge stays
+   hidden until a typed cleanup contract exists.
+
+The pack is embedded under Video ownership (`GZJelczAdminUIPack`) with a
+dedicated loopback listener. Job detail is an **allowlisted DTO**: never
+`service_auth_token`, never absolute paths, never S3/PDS secrets. Free-form
+errors collapse to short categories (`transcode`, `pds-upload`, `ca-manifest`, …).
 
 ## Dashboard shape
 
-- **Overview:** health, worker active/capacity, queue depth and oldest age,
-  throughput, failures/retries, processing latency, storage pressure, and PDS
-  upload health.
-- **Jobs:** overall and per-state counts, bounded rows, age, progress, media
-  dimensions/duration, retry count, stage and sanitized error category.
-- **Capacity:** configured upload/duration limits, active workers, temp/output
-  space, HLS variant counts, and storage backend status.
-- **Actions:** retry a failed job. Cancel or purge requires a typed worker/store
-  operation and storage cleanup contract before it appears.
+| Tab | Purpose |
+| --- | --- |
+| **Overview** | Health + queue + **Distribution posture** summary card |
+| **Jobs** | Per-state counts, filter chips, recent rows (product + progress), sectional detail (Identity / Pipeline / Distribution / Failure), retry on failed |
+| **Distribution** | Operator explanation of watch mode and feature flags (CA / MUXL / mirrors / sweep) |
+| **Capacity** | Worker limits + delivery/reclaim flags (not path listings) |
+
+## UX principles (post CA VOD)
+
+- Treat **transcode queue** and **content-addressed distribution** as two
+  related but distinct stories. Do not bury CA flags only under Capacity.
+- Prefer **product labels** over raw schema column names in tables.
+- Prefer **posture** (on/off/configured) over filesystem inventory.
+- Empty, degraded, and unreachable states must remain distinct.
+- Polling must not `COUNT(*)` the full jobs table via row scans when
+  `jobCountsByStateWithError:` is available.
 
 ## Slices and acceptance
 
-1. Add a synchronized worker/queue snapshot and materialized per-state counters;
-   avoid counting the full jobs table on each refresh.
-2. Replace dictionary enumeration with an allowlisted job DTO that excludes
-   `service_auth_token`, raw paths, PDS credentials, and unrestricted errors.
-3. Move the pack under Video ownership, retain only the narrow PDS client calls,
-   and embed the dedicated session-gated listener.
-4. Add password-file, bind/port, and storage-safe NixOS/container options.
-5. Test each job state, capacity, retry audit, PDS/storage failures, redaction,
-   auth/CSRF, worker concurrency, and HLS/upload progress during polling.
+1. ~~Synchronized worker/queue snapshot and per-state counters.~~ **Done**
+   (embedded snapshot; cheap `GROUP BY` counts on `GZJelczDatabase`).
+2. ~~Allowlisted job DTO excluding tokens/paths/unrestricted errors.~~ **Done**
+   (`JelczAdminUIPackTests` redaction + category tests, 2026-08-12).
+3. ~~Pack under Video ownership + embedded listener.~~ **Done** (`jelcz` main).
+4. ~~Password-file / bind / NixOS options.~~ **Done** (prior M4 packaging).
+5. **In progress (2026-08-12):** CA-aware Overview / Distribution / Jobs product
+   columns; remaining: live browser smoke against `jelcz` with CA on/off, and
+   retry audit under concurrent workers.
 
 Acceptance requires a regression test proving stored service-auth tokens never
-reach HTML/JSON/logs, no worker throughput regression, and safe behavior when
-the PDS is unavailable. Rollback retains the compatibility UI only after the
-allowlist fix; secret-bearing generic detail must not return.
+reach HTML/JSON, no worker throughput regression from admin polling, and safe
+behavior when the PDS is unavailable. Rollback disables only the admin
+listener; secret-bearing generic detail must not return.

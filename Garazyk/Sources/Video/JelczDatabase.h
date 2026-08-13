@@ -44,6 +44,14 @@ NS_ASSUME_NONNULL_BEGIN
                                               offset:(NSUInteger)offset
                                                error:(NSError **)error;
 
+/**
+ * @abstract Cheap per-state job counts for admin snapshots (no row payloads).
+ *
+ * Keys are persisted state strings (@c PENDING, @c PROCESSING, @c COMPLETED,
+ * @c FAILED). Missing states are omitted rather than forced to zero.
+ */
+- (nullable NSDictionary<NSString *, NSNumber *> *)jobCountsByStateWithError:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

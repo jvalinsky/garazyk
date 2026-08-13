@@ -242,4 +242,22 @@ NSString * const JelczDatabaseErrorDomain = @"com.atproto.jelcz.database";
     return rows ?: @[];
 }
 
+- (nullable NSDictionary<NSString *, NSNumber *> *)jobCountsByStateWithError:(NSError **)error {
+    NSArray<NSDictionary *> *rows =
+        [self.queryRunner executeQuery:@"SELECT state, COUNT(*) AS cnt FROM video_jobs GROUP BY state"
+                                params:nil
+                                 error:error];
+    if (!rows) return nil;
+    NSMutableDictionary<NSString *, NSNumber *> *counts = [NSMutableDictionary dictionary];
+    for (NSDictionary *row in rows) {
+        NSString *state = [row[@"state"] isKindOfClass:[NSString class]] ? row[@"state"] : nil;
+        if (state.length == 0) continue;
+        NSNumber *cnt = row[@"cnt"];
+        if ([cnt respondsToSelector:@selector(unsignedIntegerValue)]) {
+            counts[state] = @([cnt unsignedIntegerValue]);
+        }
+    }
+    return [counts copy];
+}
+
 @end

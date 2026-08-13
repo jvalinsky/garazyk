@@ -90,6 +90,8 @@ static NSSet<NSString *> *sJobDetailAllowlist(void) {
             @"createdAt", @"updatedAt", @"width", @"height",
             @"duration", @"retryCount", @"stage", @"errorCategory",
             @"mimeType", @"fileSize",
+            @"manifestBlobCid", @"processedBlobCid", @"thumbnailBlobCid",
+            @"product", @"hasProofHint",
         ]];
     });
     return keys;
@@ -104,9 +106,60 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
             @"service_auth_token", @"serviceAuthToken",
             @"pdsUrl", @"pdsAdminToken", @"pdsPassword",
             @"rawPath", @"outputPath", @"tempPath",
+            @"caObjectStoreDirectory", @"rootDirectory",
+            @"s3AccessKey", @"s3SecretKey", @"s3SecretAccessKey",
         ]];
     });
     return keys;
+}
+
+/// Maps free-form job errors to short operator categories (never raw paths).
+static NSString *sSanitizeErrorCategory(NSString *errorCode, NSString *errorMessage) {
+    if (errorCode.length > 0) {
+        return errorCode;
+    }
+    if (errorMessage.length == 0) return nil;
+    NSString *lower = errorMessage.lowercaseString;
+    if ([lower containsString:@"pds"] || [lower containsString:@"upload"]) return @"pds-upload";
+    if ([lower containsString:@"ffmpeg"] || [lower containsString:@"transcod"]) return @"transcode";
+    if ([lower containsString:@"thumbnail"]) return @"thumbnail";
+    if ([lower containsString:@"manifest"] || [lower containsString:@"masl"]) return @"ca-manifest";
+    if ([lower containsString:@"muxl"]) return @"muxl";
+    if ([lower containsString:@"disk"] || [lower containsString:@"space"] || [lower containsString:@"enospc"]) return @"storage";
+    if ([lower containsString:@"timeout"]) return @"timeout";
+    if ([lower containsString:@"denied"] || [lower containsString:@"auth"]) return @"auth";
+    // Truncate and strip path-looking tokens.
+    NSMutableString *safe = [NSMutableString string];
+    NSArray *parts = [errorMessage componentsSeparatedByCharactersInSet:
+                      [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    for (NSString *part in parts) {
+        if ([part containsString:@"/"] || [part containsString:@"\\"]) continue;
+        if (safe.length > 0) [safe appendString:@" "];
+        [safe appendString:part];
+        if (safe.length >= 72) break;
+    }
+    if (safe.length == 0) return @"failed";
+    if (safe.length > 72) return [[safe substringToIndex:72] stringByAppendingString:@"…"];
+    return [safe copy];
+}
+
+static NSString *sProductForRow(NSDictionary *row, NSDictionary *metadata) {
+    NSString *manifest = row[@"manifest_blob_cid"] ?: row[@"manifestBlobCid"];
+    if ([manifest isKindOfClass:[NSString class]] && manifest.length > 0) {
+        return @"CA VOD";
+    }
+    if ([metadata[@"vodManifestResourceCIDs"] isKindOfClass:[NSDictionary class]] ||
+        [metadata[@"manifestBlobCid"] isKindOfClass:[NSString class]]) {
+        return @"CA VOD";
+    }
+    if ([metadata[@"muxlPresentation"] boolValue] || metadata[@"muxlPackagePath"]) {
+        return @"MUXL";
+    }
+    NSString *state = [row[@"state"] isKindOfClass:[NSString class]] ? row[@"state"] : @"";
+    if ([state containsString:@"COMPLETED"] || [state isEqualToString:@"COMPLETED"]) {
+        return @"HLS";
+    }
+    return @"—";
 }
 
 @implementation GZJelczAdminSnapshot {
@@ -188,17 +241,27 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
     if (row[@"file_size"]) dto[@"fileSize"] = row[@"file_size"];
     if (row[@"retry_count"]) dto[@"retryCount"] = row[@"retry_count"];
 
+    NSString *errorCode = [row[@"error_code"] isKindOfClass:[NSString class]] ? row[@"error_code"] : nil;
     NSString *errorMessage = [row[@"error_message"] isKindOfClass:[NSString class]] ? row[@"error_message"] : nil;
-    if (errorMessage.length > 0) dto[@"errorCategory"] = errorMessage;
+    NSString *category = sSanitizeErrorCategory(errorCode, errorMessage);
+    if (category.length > 0) dto[@"errorCategory"] = category;
 
     NSString *message = [row[@"message"] isKindOfClass:[NSString class]] ? row[@"message"] : nil;
-    if (message.length > 0) dto[@"stage"] = message;
+    if (message.length > 0) {
+        // Stage labels only — never absolute paths.
+        if (![message containsString:@"/"] && ![message containsString:@"\\"]) {
+            dto[@"stage"] = message.length > 64 ? [[message substringToIndex:64] stringByAppendingString:@"…"] : message;
+        } else {
+            dto[@"stage"] = @"processing";
+        }
+    }
 
+    NSDictionary *metadata = nil;
     NSString *resultsJson = [row[@"results_json"] isKindOfClass:[NSString class]] ? row[@"results_json"] : nil;
     if (resultsJson.length > 0) {
         NSData *data = [resultsJson dataUsingEncoding:NSUTF8StringEncoding];
         NSDictionary *results = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-        NSDictionary *metadata = [results[@"metadata"] isKindOfClass:[NSDictionary class]] ? results[@"metadata"] : nil;
+        metadata = [results[@"metadata"] isKindOfClass:[NSDictionary class]] ? results[@"metadata"] : nil;
         if (metadata[@"width"]) dto[@"width"] = metadata[@"width"];
         if (metadata[@"height"]) dto[@"height"] = metadata[@"height"];
         if (metadata[@"duration"]) dto[@"duration"] = metadata[@"duration"];
@@ -207,6 +270,23 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
     if (row[@"width"]) dto[@"width"] = row[@"width"];
     if (row[@"height"]) dto[@"height"] = row[@"height"];
     if (row[@"duration_seconds"]) dto[@"duration"] = row[@"duration_seconds"];
+
+    NSString *manifest = row[@"manifest_blob_cid"] ?: row[@"manifestBlobCid"] ?: metadata[@"manifestBlobCid"];
+    if ([manifest isKindOfClass:[NSString class]] && manifest.length > 0) {
+        dto[@"manifestBlobCid"] = manifest;
+    }
+    NSString *processed = row[@"processed_blob_cid"] ?: row[@"processedBlobCid"];
+    if ([processed isKindOfClass:[NSString class]] && processed.length > 0) {
+        dto[@"processedBlobCid"] = processed;
+    }
+    NSString *thumb = row[@"thumbnail_blob_cid"] ?: row[@"thumbnailBlobCid"];
+    if ([thumb isKindOfClass:[NSString class]] && thumb.length > 0) {
+        dto[@"thumbnailBlobCid"] = thumb;
+    }
+    dto[@"product"] = sProductForRow(row, metadata ?: @{});
+    if ([metadata[@"vodManifestResourceCIDs"] isKindOfClass:[NSDictionary class]]) {
+        dto[@"hasProofHint"] = @"yes";
+    }
 
     return dto;
 }
@@ -232,19 +312,28 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
     return self;
 }
 
+static id sSafeValueForKey(id object, NSString *key) {
+    if (!object || key.length == 0) return nil;
+    @try {
+        return [object valueForKey:key];
+    } @catch (__unused NSException *ex) {
+        return nil;
+    }
+}
+
 /// Build a snapshot from direct worker + database access (embedded mode).
 - (void)buildEmbeddedSnapshotWithWorker:(id)worker
                                jobStore:(id)jobStore
                                  config:(NSDictionary *)config
                            uptimeSeconds:(NSTimeInterval)uptimeSeconds {
-    // Worker state via KVC (safe for both ATProtoVideoWorker and nil)
-    BOOL enabled = [[worker valueForKey:@"enabled"] boolValue];
-    NSInteger maxConcurrency = [[worker valueForKey:@"maxConcurrentJobs"] integerValue];
+    // Worker state via safe KVC (MediaWorker and VideoWorker differ).
+    id enabledValue = sSafeValueForKey(worker, @"enabled");
+    BOOL enabled = enabledValue ? [enabledValue boolValue] : (worker != nil);
+    NSInteger maxConcurrency = [sSafeValueForKey(worker, @"maxConcurrentJobs") integerValue];
     if (maxConcurrency <= 0) maxConcurrency = 1;
 
     _healthStatus = enabled ? @"healthy" : @"degraded";
 
-    // Per-state counts via listVideoJobsWithState: on GZJelczDatabase
     NSMutableDictionary *counts = [NSMutableDictionary dictionary];
     NSDate *oldestDate = nil;
     NSUInteger completed24h = 0, failed24h = 0;
@@ -252,29 +341,85 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
     NSTimeInterval twentyFourHours = 24 * 60 * 60;
     NSUInteger total = 0;
 
-    for (NSString *dbState in sPersistedStates()) {
-        NSArray *jobs = sJobsForPersistedState(jobStore, dbState);
-        NSString *uiState = sDbStateToUIState()[dbState] ?: dbState;
-        counts[uiState] = @(jobs.count);
-        total += jobs.count;
+    // Prefer cheap GROUP BY counts when the store offers them.
+    SEL countSel = NSSelectorFromString(@"jobCountsByStateWithError:");
+    NSDictionary<NSString *, NSNumber *> *dbCounts = nil;
+    if (jobStore && [jobStore respondsToSelector:countSel]) {
+        NSMethodSignature *sig = [jobStore methodSignatureForSelector:countSel];
+        if (sig) {
+            NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+            [inv setSelector:countSel];
+            [inv setTarget:jobStore];
+            NSError *error = nil;
+            [inv setArgument:&error atIndex:2];
+            [inv invoke];
+            __unsafe_unretained NSDictionary *result = nil;
+            [inv getReturnValue:&result];
+            dbCounts = result;
+        }
+    }
 
-        for (NSDictionary *job in jobs) {
-            NSString *created = sTimestampFromJob(job, @"createdAt");
-            if (created.length > 0) {
-                NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
-                NSDate *date = [fmt dateFromString:created];
-                if (date && (!oldestDate || [date compare:oldestDate] == NSOrderedAscending)) {
-                    oldestDate = date;
+    if (dbCounts.count > 0) {
+        for (NSString *dbState in dbCounts) {
+            NSString *uiState = sDbStateToUIState()[dbState] ?: dbState;
+            NSUInteger n = [dbCounts[dbState] unsignedIntegerValue];
+            counts[uiState] = @([counts[uiState] unsignedIntegerValue] + n);
+            total += n;
+        }
+        // Oldest age / 24h throughput still need a bounded scan of active + recent terminal jobs.
+        for (NSString *dbState in @[@"PENDING", @"PROCESSING", @"FAILED", @"COMPLETED"]) {
+            NSArray *jobs = sJobsForPersistedState(jobStore, dbState);
+            NSUInteger cap = [dbState isEqualToString:@"PENDING"] || [dbState isEqualToString:@"PROCESSING"] ? 50 : 25;
+            NSUInteger i = 0;
+            for (NSDictionary *job in jobs) {
+                if (i++ >= cap) break;
+                NSString *created = sTimestampFromJob(job, @"createdAt");
+                if (created.length > 0) {
+                    NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
+                    NSDate *date = [fmt dateFromString:created];
+                    if (date && (!oldestDate || [date compare:oldestDate] == NSOrderedAscending)) {
+                        oldestDate = date;
+                    }
+                }
+                NSString *uiState = sDbStateToUIState()[dbState] ?: dbState;
+                if ([uiState isEqualToString:@"JOB_STATE_COMPLETED"] || [uiState isEqualToString:@"JOB_STATE_FAILED"]) {
+                    NSString *updated = sTimestampFromJob(job, @"updatedAt") ?: created;
+                    if (updated.length > 0) {
+                        NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
+                        NSDate *date = [fmt dateFromString:updated];
+                        if (date && [now timeIntervalSinceDate:date] <= twentyFourHours) {
+                            if ([uiState isEqualToString:@"JOB_STATE_COMPLETED"]) completed24h++;
+                            else failed24h++;
+                        }
+                    }
                 }
             }
-            if ([uiState isEqualToString:@"JOB_STATE_COMPLETED"] || [uiState isEqualToString:@"JOB_STATE_FAILED"]) {
-                NSString *updated = sTimestampFromJob(job, @"updatedAt") ?: created;
-                if (updated.length > 0) {
+        }
+    } else {
+        for (NSString *dbState in sPersistedStates()) {
+            NSArray *jobs = sJobsForPersistedState(jobStore, dbState);
+            NSString *uiState = sDbStateToUIState()[dbState] ?: dbState;
+            counts[uiState] = @(jobs.count);
+            total += jobs.count;
+
+            for (NSDictionary *job in jobs) {
+                NSString *created = sTimestampFromJob(job, @"createdAt");
+                if (created.length > 0) {
                     NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
-                    NSDate *date = [fmt dateFromString:updated];
-                    if (date && [now timeIntervalSinceDate:date] <= twentyFourHours) {
-                        if ([uiState isEqualToString:@"JOB_STATE_COMPLETED"]) completed24h++;
-                        else failed24h++;
+                    NSDate *date = [fmt dateFromString:created];
+                    if (date && (!oldestDate || [date compare:oldestDate] == NSOrderedAscending)) {
+                        oldestDate = date;
+                    }
+                }
+                if ([uiState isEqualToString:@"JOB_STATE_COMPLETED"] || [uiState isEqualToString:@"JOB_STATE_FAILED"]) {
+                    NSString *updated = sTimestampFromJob(job, @"updatedAt") ?: created;
+                    if (updated.length > 0) {
+                        NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
+                        NSDate *date = [fmt dateFromString:updated];
+                        if (date && [now timeIntervalSinceDate:date] <= twentyFourHours) {
+                            if ([uiState isEqualToString:@"JOB_STATE_COMPLETED"]) completed24h++;
+                            else failed24h++;
+                        }
                     }
                 }
             }
@@ -303,7 +448,7 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
         @"failed24h": @(failed24h),
     };
 
-    // Storage (from config)
+    // Storage (from config) — never include filesystem paths.
     NSString *backend = config[@"storageBackend"] ?: @"disk";
     NSDictionary *storage = @{
         @"tempBytes": config[@"tempStorageBytes"] ?: @0,
@@ -315,7 +460,51 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
     NSMutableDictionary *cfg = [NSMutableDictionary dictionary];
     if (config[@"maxUploadSize"]) cfg[@"maxUploadSize"] = config[@"maxUploadSize"];
     if (config[@"maxDuration"]) cfg[@"maxDuration"] = config[@"maxDuration"];
-    cfg[@"hlsVariants"] = @(3);
+    cfg[@"hlsVariants"] = config[@"hlsVariants"] ?: @(3);
+
+    // Distribution posture (ADR 0036 / WS10 MUXL) — flags only, no secrets/paths.
+    BOOL caManifest = NO;
+    BOOL muxl = NO;
+    BOOL caStoreConfigured = NO;
+    BOOL sweepEnabled = NO;
+    BOOL mirrorFetch = [config[@"enableCAMirrorFetch"] boolValue];
+    NSUInteger mirrorProviderCount = [config[@"caMirrorProviderCount"] unsignedIntegerValue];
+    NSString *watchMode = @"filesystem-hls";
+    caManifest = [sSafeValueForKey(worker, @"enableContentAddressedManifest") boolValue];
+    muxl = [sSafeValueForKey(worker, @"enableMUXLPresentation") boolValue];
+    caStoreConfigured = sSafeValueForKey(worker, @"caObjectStore") != nil;
+    id lifecycle = sSafeValueForKey(worker, @"caObjectLifecycle");
+    if (lifecycle) {
+        sweepEnabled = [sSafeValueForKey(lifecycle, @"sweepEnabled") boolValue];
+    }
+    if ([config[@"enableContentAddressedManifest"] respondsToSelector:@selector(boolValue)]) {
+        caManifest = caManifest || [config[@"enableContentAddressedManifest"] boolValue];
+    }
+    if ([config[@"enableMUXLPresentation"] respondsToSelector:@selector(boolValue)]) {
+        muxl = muxl || [config[@"enableMUXLPresentation"] boolValue];
+    }
+    if ([config[@"caObjectStoreConfigured"] respondsToSelector:@selector(boolValue)]) {
+        caStoreConfigured = caStoreConfigured || [config[@"caObjectStoreConfigured"] boolValue];
+    }
+    if ([config[@"caObjectSweepEnabled"] respondsToSelector:@selector(boolValue)]) {
+        sweepEnabled = sweepEnabled || [config[@"caObjectSweepEnabled"] boolValue];
+    }
+    if (caManifest && caStoreConfigured) {
+        watchMode = @"masl-ca";
+    }
+
+    NSDictionary *distribution = @{
+        @"caManifestEnabled": @(caManifest),
+        @"caStoreConfigured": @(caStoreConfigured),
+        @"muxlPresentationEnabled": @(muxl),
+        @"watchMode": watchMode,
+        @"sweepEnabled": @(sweepEnabled),
+        @"mirrorFetchEnabled": @(mirrorFetch),
+        @"mirrorProviderCount": @(mirrorProviderCount),
+        @"summary": caManifest
+            ? @"Content-addressed VOD: MASL /watch + optional Bao proofs"
+            : @"Classic filesystem HLS /watch (CA manifest off)",
+    };
 
     // PDS upload health (best-effort; anonymous uploads skip PDS)
     NSString *pdsHealth = enabled ? @"healthy" : @"unknown";
@@ -340,6 +529,7 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
         @"throughput": throughput,
         @"storage": storage,
         @"config": cfg,
+        @"distribution": distribution,
         @"pdsUploadHealth": pdsHealth,
     };
 }
@@ -460,6 +650,16 @@ static NSSet<NSString *> *sSensitiveKeys(void) {
         @"throughput": throughput,
         @"storage": storage,
         @"config": config,
+        @"distribution": @{
+            @"caManifestEnabled": @NO,
+            @"caStoreConfigured": @NO,
+            @"muxlPresentationEnabled": @NO,
+            @"watchMode": @"unknown",
+            @"sweepEnabled": @NO,
+            @"mirrorFetchEnabled": @NO,
+            @"mirrorProviderCount": @0,
+            @"summary": @"Remote snapshot — distribution flags unavailable",
+        },
         @"pdsUploadHealth": pdsHealth,
     };
 }

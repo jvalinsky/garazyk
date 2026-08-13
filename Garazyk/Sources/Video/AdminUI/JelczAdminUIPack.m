@@ -58,6 +58,7 @@
     return @[
         @{ @"tabIdentifier": @"video-metrics",  @"displayName": @"Overview" },
         @{ @"tabIdentifier": @"video-jobs",     @"displayName": @"Jobs" },
+        @{ @"tabIdentifier": @"video-distribution", @"displayName": @"Distribution" },
         @{ @"tabIdentifier": @"video-capacity", @"displayName": @"Capacity" },
     ];
 }
@@ -114,10 +115,31 @@
         }
         [html appendString:[self jobsEmbeddedHTML:countRows]];
 
-        NSString *stateFilter = [req queryParamForKey:@"state"];
+        // State filter chips (bounded query params only).
+        [html appendString:@"<div class=\"search-row mb-md\" role=\"group\" aria-label=\"Filter by job state\">"];
+        NSArray *filters = @[
+            @[@"All", @""],
+            @[@"Pending", @"JOB_STATE_PENDING"],
+            @[@"Processing", @"JOB_STATE_PROCESSING"],
+            @[@"Completed", @"JOB_STATE_COMPLETED"],
+            @[@"Failed", @"JOB_STATE_FAILED"],
+        ];
+        NSString *stateFilter = [req queryParamForKey:@"state"] ?: @"";
+        for (NSArray *pair in filters) {
+            NSString *label = pair[0];
+            NSString *value = pair[1];
+            BOOL active = [stateFilter isEqualToString:value] || (value.length == 0 && stateFilter.length == 0);
+            NSString *href = value.length > 0
+                ? [NSString stringWithFormat:@"/admin/partials/video-jobs?state=%@", value]
+                : @"/admin/partials/video-jobs";
+            [html appendFormat:@"<button type=\"button\" class=\"btn btn-sm %@\" hx-get=\"%@\" hx-target=\"closest .admin-partial\" hx-swap=\"innerHTML\">%@</button> ",
+             active ? @"btn-primary" : @"btn-secondary", href, label];
+        }
+        [html appendString:@"</div>"];
+
         NSArray *jobs = [GZJelczAdminSnapshot recentJobDTOsFromStore:context.jobStore
                                                              limit:25
-                                                       stateFilter:stateFilter];
+                                                       stateFilter:stateFilter.length > 0 ? stateFilter : nil];
         [html appendString:[GZHTML sectionTitle:@"Recent jobs"]];
         [html appendString:[GZAdminUIVideoPack renderVideoJobsPartial:@{@"jobs": jobs}]];
 
@@ -157,6 +179,18 @@
         GZJelczAdminSnapshot *snapshot = [GZJelczAdminUIPack snapshotForHost:weakHost];
         if (snapshot) {
             [res setBodyString:[GZAdminUIVideoPack renderVideoCapacityPartial:snapshot.snapshot]];
+        } else {
+            [res setBodyString:[self errorUnavailableHTML]];
+        }
+    }];
+
+    // Distribution (CA VOD / MUXL / reclaim posture)
+    [host.httpServer addRoute:@"GET" path:@"/admin/partials/video-distribution" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
+        AUTH_GUARD(weakHost, req, res);
+        res.contentType = @"text/html; charset=utf-8";
+        GZJelczAdminSnapshot *snapshot = [GZJelczAdminUIPack snapshotForHost:weakHost];
+        if (snapshot) {
+            [res setBodyString:[GZAdminUIVideoPack renderVideoDistributionPartial:snapshot.snapshot]];
         } else {
             [res setBodyString:[self errorUnavailableHTML]];
         }

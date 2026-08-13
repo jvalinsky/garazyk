@@ -87,6 +87,19 @@
         [response setBodyString:[GZAdminUIVideoPack renderVideoCapacityPartial:snap.snapshot]];
     }];
 
+    // Video: Distribution posture (flags only; remote hosts lack CA wiring)
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-distribution" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        AUTH_GUARD(weakSelf, request, response);
+        NSDictionary *health = [weakSelf.backendClient fetchVideoHealth];
+        NSDictionary *jobsResult = [weakSelf.backendClient fetchVideoJobsWithState:nil limit:100 cursor:nil];
+        NSArray *jobs = [jobsResult[@"jobs"] isKindOfClass:[NSArray class]] ? jobsResult[@"jobs"] : @[];
+        NSDictionary *quotas = [weakSelf.backendClient fetchVideoUploadLimits];
+        GZJelczAdminSnapshot *snap = [[GZJelczAdminSnapshot alloc] initWithHealth:health jobs:jobs quotas:quotas];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[GZAdminUIVideoPack renderVideoDistributionPartial:snap.snapshot]];
+    }];
+
     // Video: Upload quotas
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-quotas" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
