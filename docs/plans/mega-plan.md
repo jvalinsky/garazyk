@@ -207,6 +207,21 @@ documentation, TUI, package, and refactor plans.
   9.5 GB disk headroom, not by publication. R2-R4 are blocked on publication.
   No agent may publish until a future maintainer message grants explicit
   permission.
+- **P0 open (2026-08-13): bound Zuk relay resources and correct omitted-cursor
+  delivery.** Live `bingus` evidence found `zuk` at about 6.8 GiB RSS and
+  8.2 GiB swap on a 7.7 GiB host, with a loopback no-cursor subscriber
+  repeatedly receiving the 10,000-event retained window, overflowing its
+  output queue, and reconnecting. Source review confirms omitted cursor is
+  incorrectly translated to cursor zero, ingress crosses two unbounded GCD
+  queues before synchronous identity/signature validation, replay retains up
+  to 100,000 full encoded events in memory, public crawl has no fleet quotas,
+  and the connected-upstream metric is not authoritative. Complete
+  [workstream 17](workstreams/17-zuk-relay-resource-bounds.md) through phases
+  37–42: cursor containment, bounded ingress, durable segmented replay,
+  P-256/k256 validation efficiency, crawl/observability/service guardrails,
+  and a 24-hour production canary. The target is measured bounded behavior,
+  not a queue-size increase; supporting evidence is preserved separately in
+  the workstream's dated incident record.
 
 ## Priority model
 
@@ -241,6 +256,7 @@ better-isolated steps.
 | SMTP, cloud blob, Skylab, dashboard dispositions |          3 |               3 |             3 |             2 |      3 | Decided (5/6 implemented; STAR exempted, see brief) |
 | Space app attestation (`appAccess#allowList`)  |             4 |               2 |             3 |             2 |      3 | Decided (ADR 0004 amendment) |
 | Deno repository-boundary publication           |             4 |               5 |             5 |             2 |      5 | Blocked (indefinite maintainer deferral) |
+| Zuk cursor/resource containment (workstream 17) |             5 |               5 |             5 |             4 |      5 | **P0 active** |
 
 ## Dependency order
 
@@ -665,6 +681,24 @@ for full traceability; mirrored in the
     production CA VOD evidence. Complete
     [workstream 16](workstreams/16-jelcz-p2p-peership.md). Decision:
     [ADR 0038](../adr/0038-jelcz-p2p-layering.md).
+
+17. **P0 open (added 2026-08-13):** make `zuk` protocol-correct and
+    resource-bounded after the `bingus` replay-loop incident. Complete
+    [workstream 17](workstreams/17-zuk-relay-resource-bounds.md) and its
+    execution prompts: [phase 37](prompts/phase-37-zuk-cursor-containment.md)
+    fixes omitted-cursor live-only behavior and cancels failed replay;
+    [phase 38](prompts/phase-38-zuk-bounded-ingress.md) removes unbounded
+    ingress queues and propagates watermarks to upstream sockets;
+    [phase 39](prompts/phase-39-zuk-durable-replay.md) moves replay and output
+    sequence state to a crash-safe segmented disk log;
+    [phase 40](prompts/phase-40-zuk-validation-efficiency.md) supports P-256
+    and k256 and bounds/coalesces identity resolution;
+    [phase 41](prompts/phase-41-zuk-admission-observability.md) caps public
+    crawl/upstream growth, fixes health gauges, and adds NixOS guardrails; and
+    [phase 42](prompts/phase-42-zuk-production-canary.md) requires a dated
+    24-hour canary with explicit RSS, swap, queue, traffic, log, sequence,
+    validation, disk, and rollback gates. Workstream 02 A8 remains correct
+    about retaining slow-consumer closes; this work does not loosen them.
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.

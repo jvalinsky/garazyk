@@ -5,7 +5,7 @@ title: Docs Noncanonical
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **213**
+Total documents in this view: **223**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -158,6 +158,17 @@ Total documents in this view: **213**
 | [docs/plans/mega-plan.md](../plans/mega-plan.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/phase-05-repo-boundaries.md](../plans/prompts/phase-05-repo-boundaries.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-31-s2pa-ingredient-verify.md](../plans/prompts/phase-31-s2pa-ingredient-verify.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-32-s2pa-merkle-bmff.md](../plans/prompts/phase-32-s2pa-merkle-bmff.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-33-s2pa-soft-binding-algs.md](../plans/prompts/phase-33-s2pa-soft-binding-algs.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-34-dasl-tiles-package-and-embed.md](../plans/prompts/phase-34-dasl-tiles-package-and-embed.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-35-ws16-iroh-sidecar.md](../plans/prompts/phase-35-ws16-iroh-sidecar.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-37-zuk-cursor-containment.md](../plans/prompts/phase-37-zuk-cursor-containment.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-38-zuk-bounded-ingress.md](../plans/prompts/phase-38-zuk-bounded-ingress.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-39-zuk-durable-replay.md](../plans/prompts/phase-39-zuk-durable-replay.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-40-zuk-validation-efficiency.md](../plans/prompts/phase-40-zuk-validation-efficiency.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-41-zuk-admission-observability.md](../plans/prompts/phase-41-zuk-admission-observability.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-42-zuk-production-canary.md](../plans/prompts/phase-42-zuk-production-canary.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/README.md](../plans/prompts/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/README.md](../plans/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/retired-plans.md](../plans/retired-plans.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
@@ -181,6 +192,8 @@ Total documents in this view: **213**
 | [docs/plans/workstreams/14-beskid-firehose-invalidation.md](../plans/workstreams/14-beskid-firehose-invalidation.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/15-streamplace-vod-peership.md](../plans/workstreams/15-streamplace-vod-peership.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/16-jelcz-p2p-peership.md](../plans/workstreams/16-jelcz-p2p-peership.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/17-zuk-relay-resource-bounds.md](../plans/workstreams/17-zuk-relay-resource-bounds.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/workstreams/17-zuk-relay-resource-bounds/incident-evidence.md](../plans/workstreams/17-zuk-relay-resource-bounds/incident-evidence.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/workstreams/service-admin-uis/chat.md](../plans/workstreams/service-admin-uis/chat.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
@@ -205,9 +218,6 @@ Total documents in this view: **213**
 | [docs/repo-index/tooling.md](tooling.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-05-21-e2e-run.md](../reports/2026-05-21-e2e-run.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/2026-07-17-optimization-research.md](../reports/2026-07-17-optimization-research.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/reports/2026-08-11T0139Z-relay-crawl-cloudflare-findings.md](../reports/2026-08-11T0139Z-relay-crawl-cloudflare-findings.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/reports/2026-08-11T2245Z-hubble-star-lite-sync.md](../reports/2026-08-11T2245Z-hubble-star-lite-sync.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
-| [docs/reports/docs/link-graph-report.md](../reports/docs/link-graph-report.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/reports/spec-conformance-matrix.md](../reports/spec-conformance-matrix.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/standard-site-appview-kickstart.md](../standard-site-appview-kickstart.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |
 | [docs/standard-site-appview.md](../standard-site-appview.md) | `internal-reference` | [docs/index.md](../index.md) | `docs` | `reference` |

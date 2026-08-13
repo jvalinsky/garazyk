@@ -78,9 +78,18 @@ Completed prompts are archived under
 | 33 | [phase-33](phase-33-s2pa-soft-binding-algs.md) | Soft-binding algorithm compute/verify | `complete` | — |
 | 34 | [phase-34](phase-34-dasl-tiles-package-and-embed.md) | Deno tiles package + live Admin UI embed | `complete` | — |
 | 35 | [phase-35](phase-35-ws16-iroh-sidecar.md) | WS16 iroh sidecar + live Streamplace mesh | `blocked` — production CA VOD or lab exception | — |
+| 37 | [phase-37](phase-37-zuk-cursor-containment.md) | Zuk omitted-cursor correctness and replay-loop containment | `pending` — P0 incident | — |
+| 38 | [phase-38](phase-38-zuk-bounded-ingress.md) | Byte-bounded ingress, ordered processing, and socket backpressure | `pending` | 37 |
+| 39 | [phase-39](phase-39-zuk-durable-replay.md) | Segmented disk replay and durable output sequence | `pending` | 38 |
+| 40 | [phase-40](phase-40-zuk-validation-efficiency.md) | P-256/k256 validation and bounded identity resolution | `pending` | 38 |
+| 41 | [phase-41](phase-41-zuk-admission-observability.md) | Crawl quotas, authoritative health, NixOS resource guardrails | `pending` | 38 |
+| 42 | [phase-42](phase-42-zuk-production-canary.md) | `bingus` 24-hour resource canary, rollback, and closeout | `pending` | 37–41 |
 
-**Suggested order:** 31–34 complete; next open item is 35 after unblock.
-Phases 31–34 are independent of each other for `depends_on`.
+**Suggested order:** phases 37–38 are P0 incident containment and may proceed
+in an isolated worktree without waiting for the independently blocked Phase
+35 feature lane. Then run 39; phases 40 and 41 both depend on 38 but are
+serialized by the ordinary lowest-phase loop; Phase 42 closes only after all
+five implementation phases. Phases 31–34 are complete.
 
 Phase 5 cannot start until a future maintainer message explicitly reopens JSR
 publication. Workstream 03 R1 source synchronization is complete without

@@ -10,6 +10,16 @@ last_verified: 2026-08-12
 [shared contract](README.md). This is the operational reference for the
 [PLC](plc.md), [AppView](appview.md), and [Mikrus](mikrus.md) briefs.
 
+## Related active resource work
+
+[Workstream 17](../17-zuk-relay-resource-bounds.md) owns the P0 relay
+cursor/resource incident and will extend this existing Relay-owned snapshot
+and pack with byte-counted ingress, replay, subscriber, persistence,
+validation, crawl-admission, cgroup memory, and authoritative upstream-set
+signals. It must add fields here rather than create a second dashboard. The
+current UI acceptance below remains valid; Phase 41 records the additive UI
+and NixOS evidence.
+
 ## Outcome and current evidence
 
 The legacy dashboard has been converged onto a Relay-owned operations pack.

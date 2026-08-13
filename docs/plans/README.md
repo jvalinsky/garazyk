@@ -29,6 +29,7 @@ competing roadmaps.
 | [Beskid firehose invalidation](workstreams/14-beskid-firehose-invalidation.md)                     | Edge-cache invalidation from subscribeRepos (optional ops workstream) |
 | [Streamplace VOD peership](workstreams/15-streamplace-vod-peership.md)                             | HTTPS getVideoBlob pull into jelcz CA store; optional compat serve; live iroh stays under WS12 Phase 11 |
 | [Jelcz P2P peership](workstreams/16-jelcz-p2p-peership.md)                                         | Origin-record discovery + iroh sidecar node↔node peership; reopen path for WS12 Phase 11; builds on WS15 HTTPS |
+| [Zuk relay resource bounds](workstreams/17-zuk-relay-resource-bounds.md)                            | Protocol-correct cursor handling, bounded ingress/output, durable replay, validation efficiency, crawl admission, and production resource proof |
 | [Phase execution prompts](prompts/README.md)                                                       | Derived agent prompts that execute the remaining phases; not a roadmap      |
 | [Retired plans](retired-plans.md)                                                                  | Disposition and recovery references for removed plans                       |
 
