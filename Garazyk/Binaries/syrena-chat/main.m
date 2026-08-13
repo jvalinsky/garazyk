@@ -121,9 +121,14 @@ int main(int argc, const char * argv[]) {
 
             GZAdminUIHost *adminUIHost = nil;
             if (adminPassword.length > 0) {
+                // One operator secret covers the UI session and Bearer-gated /_admin/*.
+                runtime.configuration.adminSecret = adminPassword;
+
                 GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
                 adminConfig.host = @"127.0.0.1";
-                adminConfig.port = 2598;
+                NSString *adminPortEnv = [[[NSProcessInfo processInfo] environment]
+                                         objectForKey:@"CHAT_ADMIN_UI_PORT"];
+                adminConfig.port = adminPortEnv.length > 0 ? (NSUInteger)adminPortEnv.integerValue : 2598;
                 adminConfig.adminPassword = adminPassword;
                 adminConfig.serviceIdentifier = @"chat";
                 adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig
@@ -131,8 +136,16 @@ int main(int argc, const char * argv[]) {
                 NSError *adminErr = nil;
                 if (![adminUIHost startWithError:&adminErr]) {
                     GZ_LOG_WARN(@"Chat admin UI failed to start: %@", adminErr.localizedDescription);
+                    adminUIHost = nil;
                 } else {
-                    GZ_LOG_INFO(@"Chat admin UI listening on 127.0.0.1:%lu", (unsigned long)adminConfig.port);
+                    NSURL *serviceURL = [NSURL URLWithString:
+                        [NSString stringWithFormat:@"http://127.0.0.1:%lu",
+                         (unsigned long)runtime.configuration.httpPort]];
+                    [GZChatAdminUIPack configureHost:adminUIHost
+                                     serviceBaseURL:serviceURL
+                                        adminSecret:adminPassword];
+                    GZ_LOG_INFO(@"Chat admin UI listening on 127.0.0.1:%lu",
+                                (unsigned long)adminConfig.port);
                 }
             } else {
                 GZ_LOG_INFO(@"Chat admin UI disabled: set CHAT_ADMIN_PASSWORD or --admin-password-file");

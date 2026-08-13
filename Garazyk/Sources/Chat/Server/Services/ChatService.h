@@ -218,6 +218,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)unlockConversation:(NSString *)convoId
                      error:(NSError **)error;
 
+/**
+ * @abstract Cheap COUNT(*) / PRAGMA overview for the embedded admin UI.
+ * @discussion Never walks message bodies or decrypts content.
+ */
+- (nullable NSDictionary<NSString *, id> *)adminOverviewStatsWithError:(NSError **)error;
+
 // Conversation mode (plaintext|e2ee)
 /**
  * @abstract Set conversation mode.
