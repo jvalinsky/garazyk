@@ -45,9 +45,10 @@ caller-supplied. Phases 7–11 are
 bounded document, identifier, media, COSE, and data-protocol/policy slices; Phase 8
 (PFP producer + Ozone column) and Phase 9 (MUXL) are complete. Phase 10 S2PA has
 COSE + leaf + JUMBF uuid + SHA-256 hard binding + `c2pa.hash.data` assertion
-(2026-08-13); `c2pa.hash.bmff.v3` root-box hashing landed 2026-08-13; soft
-bindings, Merkle bmffHash, full claim/assertion-store graph and
-Video/MUXL producer wiring remain open. Phase 7 production paths remain open.
+(2026-08-13); `c2pa.hash.bmff.v3` root-box hashing + `c2pa.soft-binding` encode
+landed 2026-08-13; soft-binding algorithms, Merkle bmffHash, full
+claim/assertion-store graph and Video/MUXL producer wiring remain open. Phase 7
+production paths remain open.
 Phase 11 mothership resolve-path + getBlob load landed 2026-08-13; Deno
 `@dasl/tiles` / live embed remainders remain open.
 
@@ -376,8 +377,10 @@ ranges, and `uuidBoxSigningHashDataAssertionForMediaData:` signs the assertion m
 payload. **`c2pa.hash.bmff.v3` (2026-08-13):** `ATProtoS2PAHashBMFFAssertion`
 implements root-box v3 hashing (`offset_be64 || box` with xpath/data exclusions),
 CBOR encode/decode, and a two-pass JUMBF sign/verify path that excludes the C2PA
-uuid box. Merkle trees, nested xpath, soft bindings, and the full
-claim/assertion-store graph remain open.
+uuid box. Merkle trees, nested xpath, and the full claim/assertion-store graph
+remain open. **`c2pa.soft-binding` (2026-08-13):**
+`ATProtoS2PASoftBindingAssertion` encodes/decodes alg + blocks (value + optional
+timespan scope); does not run watermark/fingerprint algorithms.
 
 - Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope, leaf certificate, and
   JUMBF/BMFF carrier; it consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository
@@ -385,10 +388,12 @@ claim/assertion-store graph remain open.
 - Evidence: `ATProtoS2PACOSETests`, `ATProtoS2PALeafCertificateTests`,
   `ATProtoS2PAHashDataAssertionTests` (empty exclusion, prefix exclusion ≡ media-only digest,
   JUMBF sign/verify), `ATProtoS2PAHashBMFFAssertionTests` (uuid exclusion + CBOR
-  round-trip, tamper detect, two-pass JUMBF sign/verify), and `ATProtoS2PAJUMBFTests`.
+  round-trip, tamper detect, two-pass JUMBF sign/verify),
+  `ATProtoS2PASoftBindingAssertionTests`, and `ATProtoS2PAJUMBFTests`.
   All registered in `Tests/test_main.m`.
 - Explicit remainder: full C2PA claim generator / assertion store (multiple assertions, ingredient
-  claims, soft bindings), Merkle `bmffHash`, and transcoder auto-sign remain open.
+  claims), soft-binding algorithm compute/verify, Merkle `bmffHash`, and transcoder auto-sign
+  remain open.
   **MUXL producer wiring (2026-08-13):**
   `ATProtoMUXLPlayback` `presentationByHardBindingSegment:` /
   `verifyHardBoundPresentation:` prepends/verifies S2PA uuid over a canonical

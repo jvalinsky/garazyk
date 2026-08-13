@@ -92,6 +92,7 @@ set(ATPROTO_CORE_MANIFEST
   "Garazyk/Sources/Security/S2PA/ATProtoS2PAJUMBF.m"
   "Garazyk/Sources/Security/S2PA/ATProtoS2PAHashDataAssertion.m"
   "Garazyk/Sources/Security/S2PA/ATProtoS2PAHashBMFFAssertion.m"
+  "Garazyk/Sources/Security/S2PA/ATProtoS2PASoftBindingAssertion.m"
   "Garazyk/Sources/Security/Space/PDSSpaceBlake3Dispatch.c"
   "Garazyk/Sources/Security/Space/PDSSpaceCommit.m"
   "Garazyk/Sources/Security/Space/PDSSpaceJWT.m"
