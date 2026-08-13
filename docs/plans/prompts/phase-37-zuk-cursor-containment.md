@@ -1,11 +1,19 @@
 ---
 phase: 37
 title: Zuk cursor correctness and replay-loop containment
-status: pending
+status: in-progress
 agent: worker
 depends_on: []
 last_updated: 2026-08-13
 ---
+
+## Progress
+
+Started 2026-08-13 under deciduous goal 424. Work is split across isolated
+worktrees with non-overlapping ownership: cursor/replay semantics, pressure
+logging/metrics, and the deterministic Hamownia regression scenario. The
+`codex/zuk-resource-plan` worktree is the integration owner; workers must not
+edit plan state or files outside their assigned boundary.
 
 # Phase 37: Zuk cursor correctness and replay-loop containment
 
