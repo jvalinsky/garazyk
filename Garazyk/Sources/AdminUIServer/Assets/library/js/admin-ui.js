@@ -776,6 +776,16 @@ async function handleForm(form) {
       }
       break;
     }
+    case 'appview-probe': {
+      const method = byID('appview-probe-method')?.value || '';
+      const actor = byID('appview-probe-actor')?.value || '';
+      const limitRaw = byID('appview-probe-limit')?.value || '';
+      const body = { method };
+      if (actor.trim()) body.actor = actor.trim();
+      if (limitRaw.trim()) body.limit = Number(limitRaw);
+      await postHTML('/admin/actions/appview-probe', body, byID('appview-probe-result'));
+      break;
+    }
     case 'load-blobs': {
       const did = byID('blob-did-input')?.value || '';
       if (did) reloadPartial(`/admin/partials/blobs?did=${encodeURIComponent(did)}`, '#blobs-content');

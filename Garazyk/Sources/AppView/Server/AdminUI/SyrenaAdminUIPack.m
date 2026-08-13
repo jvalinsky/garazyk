@@ -29,6 +29,9 @@
         @{ @"tabIdentifier": @"appview-firehose", @"displayName": @"Firehose" },
         @{ @"tabIdentifier": @"appview-reposync", @"displayName": @"Repo sync" },
         @{ @"tabIdentifier": @"appview-coverage", @"displayName": @"Coverage" },
+        @{ @"tabIdentifier": @"appview-exceptions", @"displayName": @"Exceptions" },
+        @{ @"tabIdentifier": @"appview-probe", @"displayName": @"Probe" },
+        @{ @"tabIdentifier": @"appview-actor", @"displayName": @"Actor dig" },
     ];
 }
 
@@ -319,6 +322,152 @@
     return html;
 }
 
++ (NSString *)exceptionsHTML:(NSDictionary *)exceptions {
+    NSDictionary *counts = [exceptions[@"counts"] isKindOfClass:[NSDictionary class]] ? exceptions[@"counts"] : @{};
+    NSArray *validation = [exceptions[@"validation"] isKindOfClass:[NSArray class]] ? exceptions[@"validation"] : @[];
+    NSArray *hooks = [exceptions[@"hooks"] isKindOfClass:[NSArray class]] ? exceptions[@"hooks"] : @[];
+
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Exception gauges"]];
+    [html appendString:[GZHTML detailCardWithFields:@[
+        @{@"label": @"Validation dead letters", @"html": [GZHTML monoValue:counts[@"deadLetter"] ?: @(validation.count)]},
+        @{@"label": @"Hook dead letters", @"html": [GZHTML monoValue:counts[@"hookDeadLetter"] ?: @(hooks.count)]},
+        @{@"label": @"Pending index", @"html": [GZHTML monoValue:counts[@"pendingIndex"] ?: @0]},
+    ]]];
+
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Validation dead letters"]];
+    NSMutableArray *vRows = [NSMutableArray arrayWithCapacity:validation.count];
+    for (NSDictionary *row in validation) {
+        [vRows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:row[@"createdAt"] ?: @"—" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:row[@"did"] ?: @"—" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:row[@"collection"] ?: @"—" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", row[@"seq"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:row[@"error"] ?: @"—" className:@"text-sm"],
+        ]]];
+    }
+    [html appendString:[GZHTML tableWithHeaders:@[@"When", @"DID", @"Collection", @"Seq", @"Error"]
+                                       htmlRows:vRows.count > 0 ? vRows : nil
+                                  emptyMessage:@"No validation dead letters."]];
+    [html appendString:@"</section>"];
+
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Hook dead letters"]];
+    NSMutableArray *hRows = [NSMutableArray arrayWithCapacity:hooks.count];
+    for (NSDictionary *row in hooks) {
+        [hRows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:row[@"createdAt"] ?: @"—" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:row[@"hookId"] ?: @"—" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:row[@"did"] ?: @"—" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:row[@"collection"] ?: @"—" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:row[@"uri"] ?: @"—" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:row[@"error"] ?: @"—" className:@"text-sm"],
+        ]]];
+    }
+    [html appendString:[GZHTML tableWithHeaders:@[@"When", @"Hook", @"DID", @"Collection", @"URI", @"Error"]
+                                       htmlRows:hRows.count > 0 ? hRows : nil
+                                  emptyMessage:@"No hook dead letters."]];
+    [html appendString:@"</section>"];
+    return html;
+}
+
++ (NSString *)probeHTML:(NSArray *)catalog result:(NSDictionary *)result {
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Probe"]];
+    [html appendString:@"<p class=\"text-secondary text-sm mb-md\">Allowlisted admin methods against the local index — not a full XRPC proxy.</p>"];
+
+    [html appendString:@"<form class=\"form-stack\" data-ui-form=\"appview-probe\">"
+     @"<label class=\"form-label\" for=\"appview-probe-method\">Method</label>"
+     @"<select id=\"appview-probe-method\" name=\"method\" class=\"form-input\">"];
+    for (NSDictionary *entry in catalog ?: @[]) {
+        NSString *method = entry[@"method"] ?: @"";
+        [html appendFormat:@"<option value=\"%@\">%@</option>",
+         [GZHTML escapedString:method], [GZHTML escapedString:method]];
+    }
+    [html appendString:@"</select>"
+     @"<label class=\"form-label\" for=\"appview-probe-actor\">actor (DID or handle)</label>"
+     @"<input id=\"appview-probe-actor\" name=\"actor\" class=\"form-input\" type=\"text\" autocomplete=\"off\" placeholder=\"did:plc:… or handle.example\">"
+     @"<label class=\"form-label\" for=\"appview-probe-limit\">limit (optional)</label>"
+     @"<input id=\"appview-probe-limit\" name=\"limit\" class=\"form-input\" type=\"number\" min=\"1\" max=\"25\" placeholder=\"10\">"
+     @"<button type=\"submit\" class=\"btn btn-primary\">Run probe</button>"
+     @"</form>"];
+
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Catalog"]];
+    NSMutableArray *rows = [NSMutableArray array];
+    for (NSDictionary *entry in catalog ?: @[]) {
+        NSArray *params = [entry[@"params"] isKindOfClass:[NSArray class]] ? entry[@"params"] : @[];
+        [rows addObject:[GZHTML tableRowWithHtmlCells:@[
+            [GZHTML tableCellWithText:entry[@"method"] ?: @"—" className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:entry[@"description"] ?: @"—" className:@"text-sm"],
+            [GZHTML tableCellWithText:[params componentsJoinedByString:@", "] className:@"text-mono text-sm"],
+        ]]];
+    }
+    [html appendString:[GZHTML tableWithHeaders:@[@"Method", @"Purpose", @"Params"]
+                                       htmlRows:rows.count > 0 ? rows : nil
+                                  emptyMessage:@"No probe methods."]];
+    [html appendString:@"</section>"];
+
+    [html appendString:@"<section class=\"mt-md\">"];
+    [html appendString:[GZHTML sectionTitle:@"Result"]];
+    [html appendString:@"<div id=\"appview-probe-result\" aria-live=\"polite\">"];
+    if (result) {
+        if (result[@"error"]) {
+            [html appendString:[GZHTML alertWithType:@"destructive"
+                                             message:result[@"message"] ?: result[@"error"]]];
+        } else {
+            [html appendString:[GZHTML jsonViewerWithValue:result[@"result"] ?: result]];
+        }
+    } else {
+        [html appendString:[GZHTML alertWithType:@"info" message:@"Run a probe to inspect indexed state."]];
+    }
+    [html appendString:@"</div></section>"];
+    return html;
+}
+
++ (NSString *)actorDigHTML:(NSDictionary *)dig {
+    NSMutableString *html = [NSMutableString string];
+    [html appendString:[GZHTML sectionTitle:@"Actor dig"]];
+    [html appendString:@"<p class=\"text-secondary text-sm mb-md\">Hydrated card from indexed handles/profiles — not a Mikrus-style URI explorer.</p>"];
+    [html appendString:@"<form class=\"search-row d-flex gap-sm\" hx-get=\"/admin/partials/appview-actor-result\" hx-target=\"#appview-actor-result\" hx-swap=\"innerHTML\">"
+     @"<label class=\"sr-only\" for=\"appview-actor-id\">DID or handle</label>"
+     @"<input id=\"appview-actor-id\" name=\"actor\" class=\"form-input flex-1\" type=\"text\" placeholder=\"did:plc:… or handle.example\" required>"
+     @"<button type=\"submit\" class=\"btn btn-primary\">Dig</button>"
+     @"</form>"
+     @"<div id=\"appview-actor-result\" class=\"mt-md\" aria-live=\"polite\">"];
+
+    if (!dig || dig.count == 0) {
+        [html appendString:[GZHTML alertWithType:@"info" message:@"Enter a DID or handle to dig."]];
+        [html appendString:@"</div>"];
+        return html;
+    }
+    if (dig[@"error"]) {
+        [html appendString:[GZHTML alertWithType:@"warning" message:dig[@"message"] ?: dig[@"error"]]];
+        [html appendString:@"</div>"];
+        return html;
+    }
+
+    NSMutableArray *fields = [NSMutableArray arrayWithArray:@[
+        @{@"label": @"DID", @"html": [GZHTML monoValue:dig[@"did"] ?: @"—"]},
+        @{@"label": @"Handle", @"html": [GZHTML monoValue:dig[@"handle"] ?: @"—"]},
+        @{@"label": @"Display name", @"value": dig[@"displayName"] ?: @"—"},
+        @{@"label": @"Description", @"value": dig[@"description"] ?: @"—"},
+        @{@"label": @"Profile", @"html": [GZHTML monoValue:[dig[@"hasProfile"] boolValue] ? @"indexed" : @"missing"]},
+        @{@"label": @"Sync", @"html": [self statusBadgeForRepo:dig[@"syncStatus"]]},
+        @{@"label": @"Posts indexed", @"html": [GZHTML monoValue:dig[@"postsIndexed"] ?: @0]},
+    ]];
+    if (dig[@"lastRev"]) {
+        [fields addObject:@{@"label": @"Last rev", @"html": [GZHTML monoValue:dig[@"lastRev"]]}];
+    }
+    if (dig[@"profileCid"]) {
+        [fields addObject:@{@"label": @"Profile CID", @"html": [GZHTML monoValue:dig[@"profileCid"]]}];
+    }
+    [html appendString:[GZHTML detailCardWithFields:fields]];
+    [html appendString:@"</div>"];
+    return html;
+}
+
 + (NSString *)overviewHTML:(NSDictionary *)snapshot { return [self servingHTML:snapshot]; }
 + (NSString *)ingestionHTML:(NSDictionary *)snapshot { return [self firehoseHTML:snapshot]; }
 + (NSString *)backfillHTML:(NSDictionary *)snapshot {
@@ -376,6 +525,46 @@
     getPartial(@"/admin/partials/appview-coverage", ^NSString *(GZSyrenaAdminSnapshot *s) {
         return [self coverageHTML:[s snapshot]];
     });
+    getPartial(@"/admin/partials/appview-exceptions", ^NSString *(GZSyrenaAdminSnapshot *s) {
+        return [self exceptionsHTML:[s exceptionsWithLimit:25]];
+    });
+    getPartial(@"/admin/partials/appview-probe", ^NSString *(GZSyrenaAdminSnapshot *s) {
+        return [self probeHTML:[s probeCatalog] result:nil];
+    });
+    getPartial(@"/admin/partials/appview-actor", ^NSString *(GZSyrenaAdminSnapshot *s) {
+        (void)s;
+        return [self actorDigHTML:@{}];
+    });
+
+    [host.httpServer addRoute:@"GET" path:@"/admin/partials/appview-actor-result" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
+        AUTH_GUARD(weakHost, req, res);
+        res.contentType = @"text/html; charset=utf-8";
+        GZSyrenaAdminSnapshot *snapshot = snap();
+        if (!snapshot) {
+            [res setBodyString:[self errorUnavailableHTML]];
+            return;
+        }
+        NSString *actor = [req queryParamForKey:@"actor"] ?: @"";
+        NSDictionary *dig = [snapshot actorDigForIdentifier:actor];
+        // Result fragment only (form already on the tab).
+        if (dig[@"error"]) {
+            [res setBodyString:[GZHTML alertWithType:@"warning" message:dig[@"message"] ?: dig[@"error"]]];
+        } else {
+            NSMutableArray *fields = [NSMutableArray arrayWithArray:@[
+                @{@"label": @"DID", @"html": [GZHTML monoValue:dig[@"did"] ?: @"—"]},
+                @{@"label": @"Handle", @"html": [GZHTML monoValue:dig[@"handle"] ?: @"—"]},
+                @{@"label": @"Display name", @"value": dig[@"displayName"] ?: @"—"},
+                @{@"label": @"Description", @"value": dig[@"description"] ?: @"—"},
+                @{@"label": @"Profile", @"html": [GZHTML monoValue:[dig[@"hasProfile"] boolValue] ? @"indexed" : @"missing"]},
+                @{@"label": @"Sync", @"html": [self statusBadgeForRepo:dig[@"syncStatus"]]},
+                @{@"label": @"Posts indexed", @"html": [GZHTML monoValue:dig[@"postsIndexed"] ?: @0]},
+            ]];
+            if (dig[@"lastRev"]) {
+                [fields addObject:@{@"label": @"Last rev", @"html": [GZHTML monoValue:dig[@"lastRev"]]}];
+            }
+            [res setBodyString:[GZHTML detailCardWithFields:fields]];
+        }
+    }];
 
     // HTMX refresh target used by admin-ui.js after retry/cancel.
     getPartial(@"/admin/partials/appview-queue", ^NSString *(GZSyrenaAdminSnapshot *s) {
@@ -437,6 +626,36 @@
         (void)req;
         return [s rebuildScope];
     });
+
+    [host.httpServer addRoute:@"POST" path:@"/admin/actions/appview-probe" handler:^(ATProtoHttpRequest *req, ATProtoHttpResponse *res) {
+        AUTH_GUARD(weakHost, req, res);
+        res.contentType = @"text/html; charset=utf-8";
+        GZSyrenaAdminSnapshot *snapshot = snap();
+        if (!snapshot) {
+            [res setBodyString:[self errorUnavailableHTML]];
+            return;
+        }
+        NSDictionary *body = [req.jsonBody isKindOfClass:[NSDictionary class]] ? req.jsonBody : @{};
+        NSString *method = [body[@"method"] isKindOfClass:[NSString class]] ? body[@"method"] : @"";
+        NSMutableDictionary *params = [NSMutableDictionary dictionary];
+        if ([body[@"actor"] isKindOfClass:[NSString class]] && [body[@"actor"] length] > 0) {
+            params[@"actor"] = body[@"actor"];
+        }
+        if (body[@"limit"]) params[@"limit"] = body[@"limit"];
+        NSDictionary *probe = [snapshot probeMethod:method params:params];
+        if (probe[@"error"]) {
+            res.statusCode = 400;
+            [res setBodyString:[GZHTML alertWithType:@"destructive"
+                                             message:probe[@"message"] ?: probe[@"error"]]];
+        } else {
+            res.statusCode = 200;
+            NSMutableString *html = [NSMutableString string];
+            [html appendFormat:@"<p class=\"text-secondary text-sm mb-sm\">%@</p>",
+             [GZHTML monoValue:probe[@"method"] ?: method]];
+            [html appendString:[GZHTML jsonViewerWithValue:probe[@"result"] ?: @{}]];
+            [res setBodyString:html];
+        }
+    }];
 }
 
 @end

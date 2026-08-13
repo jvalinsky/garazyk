@@ -20,6 +20,12 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSString *)repoSyncHTML:(NSDictionary *)snapshot queue:(NSDictionary *)queue;
 /** Coverage tab — social index completeness. */
 + (NSString *)coverageHTML:(NSDictionary *)snapshot;
+/** Exceptions triage — bounded dead-letter tables. */
++ (NSString *)exceptionsHTML:(NSDictionary *)exceptions;
+/** Probe console — allowlisted admin method catalog + result. */
++ (NSString *)probeHTML:(NSArray *)catalog result:(nullable NSDictionary *)result;
+/** Actor dig — hydrated indexed profile card. */
++ (NSString *)actorDigHTML:(NSDictionary *)dig;
 /** Queue-only fragment for HTMX refresh (#appview-queue). */
 + (NSString *)queueTableHTML:(NSDictionary *)queue;
 

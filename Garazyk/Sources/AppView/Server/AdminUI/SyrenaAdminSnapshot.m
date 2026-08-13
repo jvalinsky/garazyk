@@ -248,4 +248,226 @@ NSString * _Nullable GZSyrenaAdminPassword(NSString * _Nullable explicitPath) {
     return @{@"success": @YES, @"message": @"Backfill scope rebuild triggered"};
 }
 
+- (NSDictionary<NSString *, id> *)exceptionsWithLimit:(NSInteger)limit {
+    NSInteger capped = MAX(1, MIN(limit > 0 ? limit : 25, 100));
+    if (!self.database) {
+        return @{@"validation": @[], @"hooks": @[], @"limit": @(capped)};
+    }
+
+    NSArray *validationRows = [self.database executeParameterizedQuery:
+        @"SELECT id, collection, seq, did, rev, cid, validation_error, created_at "
+        @"FROM appview_dead_letter ORDER BY created_at DESC LIMIT ?"
+        params:@[@(capped)]
+        error:nil] ?: @[];
+
+    NSMutableArray *validation = [NSMutableArray arrayWithCapacity:validationRows.count];
+    for (NSDictionary *row in validationRows) {
+        if (![row isKindOfClass:[NSDictionary class]]) continue;
+        [validation addObject:@{
+            @"kind": @"validation",
+            @"id": row[@"id"] ?: [NSNull null],
+            @"collection": row[@"collection"] ?: @"",
+            @"did": row[@"did"] ?: @"",
+            @"seq": row[@"seq"] ?: @0,
+            @"rev": row[@"rev"] ?: @"",
+            @"cid": row[@"cid"] ?: @"",
+            @"error": row[@"validation_error"] ?: @"",
+            @"createdAt": row[@"created_at"] ?: @"",
+        }];
+    }
+
+    NSArray *hookRows = [self.database executeParameterizedQuery:
+        @"SELECT id, hook_id, uri, did, collection, event_type, error_message, created_at "
+        @"FROM dead_letter_hooks ORDER BY created_at DESC LIMIT ?"
+        params:@[@(capped)]
+        error:nil] ?: @[];
+
+    NSMutableArray *hooks = [NSMutableArray arrayWithCapacity:hookRows.count];
+    for (NSDictionary *row in hookRows) {
+        if (![row isKindOfClass:[NSDictionary class]]) continue;
+        [hooks addObject:@{
+            @"kind": @"hook",
+            @"id": row[@"id"] ?: [NSNull null],
+            @"hookId": row[@"hook_id"] ?: @"",
+            @"uri": row[@"uri"] ?: @"",
+            @"did": row[@"did"] ?: @"",
+            @"collection": row[@"collection"] ?: @"",
+            @"eventType": row[@"event_type"] ?: @"",
+            @"error": row[@"error_message"] ?: @"",
+            @"createdAt": row[@"created_at"] ?: @"",
+        }];
+    }
+
+    return @{
+        @"validation": [validation copy],
+        @"hooks": [hooks copy],
+        @"limit": @(capped),
+        @"counts": [self snapshot][@"exceptions"] ?: @{},
+    };
+}
+
+- (NSDictionary<NSString *, id> *)actorDigForIdentifier:(NSString *)identifier {
+    NSString *raw = [identifier stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (raw.length == 0) {
+        return @{@"error": @"BadRequest", @"message": @"DID or handle required"};
+    }
+    if (!self.database) {
+        return @{@"error": @"Unavailable", @"message": @"AppView database is not attached"};
+    }
+
+    NSString *did = nil;
+    NSString *handle = nil;
+    if ([raw hasPrefix:@"did:"]) {
+        did = raw;
+        handle = [self.database resolveDIDToHandle:did error:nil];
+    } else {
+        handle = raw;
+        did = [self.database resolveHandleToDID:handle error:nil];
+        if (did.length == 0) {
+            return @{@"error": @"NotFound", @"message": @"Handle is not indexed"};
+        }
+    }
+
+    NSString *profileURI = [NSString stringWithFormat:@"at://%@/app.bsky.actor.profile/self", did];
+    NSDictionary *record = [self.database getRecordWithURI:profileURI
+                                                       did:did
+                                                collection:@"app.bsky.actor.profile"
+                                                      rkey:@"self"
+                                                     error:nil];
+    NSDictionary *value = [record[@"value"] isKindOfClass:[NSDictionary class]] ? record[@"value"] : @{};
+    NSString *displayName = [value[@"displayName"] isKindOfClass:[NSString class]] ? value[@"displayName"] : @"";
+    NSString *description = [value[@"description"] isKindOfClass:[NSString class]] ? value[@"description"] : @"";
+    if (displayName.length > 200) displayName = [displayName substringToIndex:200];
+    if (description.length > 400) description = [description substringToIndex:400];
+
+    GZAppViewRepoSyncState *sync = [self.database loadRepoSyncStateForDID:did error:nil];
+    NSString *syncStatus = @"unknown";
+    if (sync) {
+        switch (sync.status) {
+            case AppViewRepoSyncStatusPending: syncStatus = @"pending"; break;
+            case AppViewRepoSyncStatusProcessing: syncStatus = @"processing"; break;
+            case AppViewRepoSyncStatusSynced: syncStatus = @"synced"; break;
+            case AppViewRepoSyncStatusDirty: syncStatus = @"dirty"; break;
+            default: break;
+        }
+    }
+
+    NSInteger posts = 0;
+    NSArray *postCountRows = [self.database executeParameterizedQuery:
+        @"SELECT COUNT(*) AS c FROM records WHERE collection = ? AND did = ?"
+        params:@[@"app.bsky.feed.post", did]
+        error:nil];
+    if (postCountRows.count > 0) {
+        id c = postCountRows[0][@"c"];
+        if ([c respondsToSelector:@selector(integerValue)]) posts = [c integerValue];
+    }
+
+    NSMutableDictionary *out = [@{
+        @"did": did ?: @"",
+        @"handle": handle ?: @"",
+        @"displayName": displayName,
+        @"description": description,
+        @"profileUri": record[@"uri"] ?: profileURI,
+        @"profileCid": record[@"cid"] ?: @"",
+        @"hasProfile": @(record != nil),
+        @"syncStatus": syncStatus,
+        @"postsIndexed": @(posts),
+    } mutableCopy];
+    if (sync.lastRev.length > 0) out[@"lastRev"] = sync.lastRev;
+    return [out copy];
+}
+
+- (NSArray<NSDictionary<NSString *, id> *> *)probeCatalog {
+    return @[
+        @{
+            @"method": @"_admin.health",
+            @"description": @"Serving / pipeline health slice from the admin snapshot",
+            @"params": @[@"(none)"],
+        },
+        @{
+            @"method": @"_admin.exceptions",
+            @"description": @"Bounded exception triage rows (no record bodies)",
+            @"params": @[@"limit?"],
+        },
+        @{
+            @"method": @"app.bsky.actor.getProfile",
+            @"description": @"Indexed profile dig for actor (DID or handle)",
+            @"params": @[@"actor"],
+        },
+        @{
+            @"method": @"app.bsky.feed.getAuthorFeed",
+            @"description": @"Recent indexed post URIs for an actor (metadata only)",
+            @"params": @[@"actor", @"limit?"],
+        },
+    ];
+}
+
+- (NSDictionary<NSString *, id> *)probeMethod:(NSString *)method
+                                       params:(NSDictionary<NSString *, id> *)params {
+    NSString *nsid = [method stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSDictionary *p = [params isKindOfClass:[NSDictionary class]] ? params : @{};
+
+    if ([nsid isEqualToString:@"_admin.health"]) {
+        NSDictionary *snap = [self snapshot];
+        return @{
+            @"method": nsid,
+            @"result": @{
+                @"health": snap[@"health"] ?: @"unknown",
+                @"lanes": snap[@"lanes"] ?: @{},
+                @"exceptions": snap[@"exceptions"] ?: @{},
+                @"uptimeSeconds": snap[@"uptimeSeconds"] ?: @0,
+            },
+        };
+    }
+    if ([nsid isEqualToString:@"_admin.exceptions"]) {
+        NSInteger limit = [p[@"limit"] respondsToSelector:@selector(integerValue)] ? [p[@"limit"] integerValue] : 25;
+        return @{@"method": nsid, @"result": [self exceptionsWithLimit:limit]};
+    }
+    if ([nsid isEqualToString:@"app.bsky.actor.getProfile"]) {
+        NSString *actor = [p[@"actor"] isKindOfClass:[NSString class]] ? p[@"actor"] : @"";
+        NSDictionary *dig = [self actorDigForIdentifier:actor];
+        if (dig[@"error"]) return @{@"method": nsid, @"error": dig[@"error"], @"message": dig[@"message"] ?: @""};
+        return @{@"method": nsid, @"result": dig};
+    }
+    if ([nsid isEqualToString:@"app.bsky.feed.getAuthorFeed"]) {
+        NSString *actor = [p[@"actor"] isKindOfClass:[NSString class]] ? p[@"actor"] : @"";
+        NSDictionary *dig = [self actorDigForIdentifier:actor];
+        if (dig[@"error"]) return @{@"method": nsid, @"error": dig[@"error"], @"message": dig[@"message"] ?: @""};
+        NSString *did = dig[@"did"];
+        NSInteger limit = [p[@"limit"] respondsToSelector:@selector(integerValue)] ? [p[@"limit"] integerValue] : 10;
+        limit = MAX(1, MIN(limit, 25));
+        NSDictionary *page = [self.database listRecordsForCollection:@"app.bsky.feed.post"
+                                                                 did:did
+                                                               limit:limit
+                                                              cursor:nil
+                                                               error:nil] ?: @{};
+        NSArray *raw = [page[@"records"] isKindOfClass:[NSArray class]] ? page[@"records"] : @[];
+        NSMutableArray *feed = [NSMutableArray arrayWithCapacity:raw.count];
+        for (NSDictionary *row in raw) {
+            if (![row isKindOfClass:[NSDictionary class]]) continue;
+            NSDictionary *value = [row[@"value"] isKindOfClass:[NSDictionary class]] ? row[@"value"] : @{};
+            NSString *createdAt = [value[@"createdAt"] isKindOfClass:[NSString class]] ? value[@"createdAt"] : @"";
+            [feed addObject:@{
+                @"uri": row[@"uri"] ?: @"",
+                @"cid": row[@"cid"] ?: @"",
+                @"createdAt": createdAt,
+                // Intentionally omit post text — Probe is for index presence, not content review.
+            }];
+        }
+        return @{
+            @"method": nsid,
+            @"result": @{
+                @"actor": dig[@"did"] ?: @"",
+                @"handle": dig[@"handle"] ?: @"",
+                @"feed": [feed copy],
+            },
+        };
+    }
+    return @{
+        @"error": @"MethodNotAllowed",
+        @"message": @"Probe only allows the catalogued admin methods (not a full XRPC proxy).",
+        @"catalog": [self probeCatalog],
+    };
+}
+
 @end
