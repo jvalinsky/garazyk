@@ -48,6 +48,7 @@ set(ATPROTO_STORAGE_MANIFEST
   "Garazyk/Sources/Database/Utils/ATProtoDatabaseQueryRunner.m"
   "Garazyk/Sources/Database/Utils/ATProtoDatabaseUtilities.m"
   "Garazyk/Sources/Repository/CAR.m"
+  "Garazyk/Sources/Repository/ATProtoWebTile+CAR.m"
   "Garazyk/Sources/Repository/MST.m"
   "Garazyk/Sources/Repository/MSTAtomicReference.m"
   "Garazyk/Sources/Repository/MSTCacheManager.m"

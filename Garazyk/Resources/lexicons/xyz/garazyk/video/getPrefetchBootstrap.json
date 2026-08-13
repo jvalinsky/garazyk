@@ -1,0 +1,55 @@
+{
+  "lexicon": 1,
+  "id": "xyz.garazyk.video.getPrefetchBootstrap",
+  "description": "Return next-N playback bootstrap metadata for short-form feed prefetch (WS12 Phase 8 / ADR 0037). Product-surface metadata only; does not alter manifest identity or segment addressing.",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Given ordered video at-uris (typically the next window of a feed), return one playbackBootstrap per item in a single response.",
+      "parameters": {
+        "type": "params",
+        "required": ["uris"],
+        "properties": {
+          "uris": {
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 10,
+            "items": {
+              "type": "string",
+              "format": "at-uri"
+            },
+            "description": "Ordered tools.garazyk.video at-uris to bootstrap. Clients should pass at most the prefetch window (default 2)."
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["items", "windowSize", "wasteCeilingBytes"],
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxLength": 10,
+              "items": {
+                "type": "ref",
+                "ref": "tools.garazyk.video.defs#playbackBootstrap"
+              }
+            },
+            "windowSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Number of items returned (≤ requested uris)."
+            },
+            "wasteCeilingBytes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Upper bound on bytes prefetched but never played if the user swipes past the entire window (sum of firstSegmentBytes, clamped by server policy)."
+            }
+          }
+        }
+      }
+    }
+  }
+}

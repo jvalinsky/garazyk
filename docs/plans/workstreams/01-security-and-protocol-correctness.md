@@ -62,6 +62,12 @@ alongside a YES return. `PDSDatabaseOpenFailureTests` now pins the failed-open
 cleanup. The original `0x0` crash never reproduced, so its most plausible
 mechanisms on this path are closed but the underlying defect is unproven.
 
+**Recheck (2026-08-12):** `PDSDatabaseOpenFailureTests` (2),
+`PDSDatabaseBlobsTests` (8, including `testGetBlobsForDidWithPagination`), and
+`PDSDatabaseLRUTests` (6) all passed with 0 failures under `--gated=run`. No
+`EXC_BAD_ACCESS` / `0x0` reproduction. Watch item remains open until a future
+crash report proves a distinct mechanism.
+
 Next step if it recurs: capture the crash report and diff against the three
 closed mechanisms before assuming disk pressure. Related context:
 [Garazyk disk pressure](../../../CLAUDE.md) notes that full `--gated=run` runs

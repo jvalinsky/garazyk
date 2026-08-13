@@ -11,9 +11,10 @@
  subdomain of `baseHost`. Unique-origin responses carry the normative
  execution-policy headers plus `service-worker-allowed: /`.
 
- This slice does not load CAR/MASL tile resources or run a service worker;
- it only establishes the unique-origin document shell required before those
- steps.
+Unique-origin hosts also serve shuttle.js / worker.js. CAR/MASL tile validation
+and path→`{status,headers,body}` resolution live in Core/Storage
+(`ATProtoWebTile`); host-side origin helpers gate postMessage peers. Full
+mothership mediation remains separate.
  */
 
 #import <Foundation/Foundation.h>
@@ -41,8 +42,27 @@ FOUNDATION_EXPORT NSString *GZAdminUITileUniqueOriginRedirectURL(NSString *schem
                                                                   NSString *baseHost,
                                                                   NSString *pathAndQuery);
 
-/** Minimal shuttle document HTML (no tile resource loading yet). */
+/** Minimal shuttle document HTML that loads shuttle.js. */
 FOUNDATION_EXPORT NSString *GZAdminUITileShuttleHTML(void);
+
+/** Shuttle bootstrap script (registers worker.js and relays messages). */
+FOUNDATION_EXPORT NSString *GZAdminUITileShuttleJavaScript(void);
+
+/** Service worker script (passthrough for /.well-known/web-tiles/). */
+FOUNDATION_EXPORT NSString *GZAdminUITileServiceWorkerJavaScript(void);
+
+/**
+ True when `origin` is `https://` or `http://` + a unique-origin host of
+ `baseHost`, or exactly the load host. Used to gate postMessage peers.
+ */
+FOUNDATION_EXPORT BOOL GZAdminUITileIsTrustedEmbedOrigin(NSString *origin, NSString *baseHost);
+
+/**
+ Builds an absolute origin (`scheme://label.baseHost`) for a unique-origin label.
+ */
+FOUNDATION_EXPORT NSString *GZAdminUITileUniqueOriginURL(NSString *scheme,
+                                                          NSString *baseHost,
+                                                          NSString *label);
 
 /**
  Applies Web Tile execution-policy headers (and `service-worker-allowed`) to a

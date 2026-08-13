@@ -52,7 +52,9 @@ typedef NS_ENUM(NSInteger, ATProtoMUXLFMP4ErrorCode) {
  Same `ftyp` as the init segment; `moov` reuses init boxes with populated
  sample tables and no `mvex`; an outer 64-bit `mdat` envelope carries the
  segment stream verbatim. `co64` offsets point at sample payloads inside that
- envelope. Segment bytes are never rewritten.
+ envelope. When a track's first `tfdt.base_media_decode_time` is non-zero,
+ Flat MP4 emits `edts`/`elst` (empty edit + media) between `tkhd` and `mdia`.
+ Segment bytes are never rewritten.
  */
 + (nullable NSData *)flatMP4WithSegments:(NSArray<NSData *> *)segments
                                    error:(NSError **)error;

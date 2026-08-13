@@ -87,12 +87,12 @@ Port `2590` is the embedded PDS admin UI on `kaszlak` (not a separate binary).
 
 | Service | Slices remaining |
 |---|---|
-| PDS (kaszlak) | Slice 4 embed **done** (`bbc84dd4`); open: bounded overview snapshot, DTO allowlists, NixOS module examples, checked-in browser/visual smoke, Lab scenario retarget |
+| PDS (kaszlak) | Slice 4 embed **done**; 2026-08-12: stats key fix, Security DTO allowlists, Lab scenario retarget, `nixos/modules/kaszlak.nix`; open: full snapshot, CI smoke evidence, broader DTOs |
 | Chat | Server-side admin endpoints for conversation/message data (beyond overview) |
-| Germ | Browser verification of live metrics rendering |
+| Germ | **Done 2026-08-12:** retain fix + `germ_admin_loopback_smoke.ts` live metrics |
 | AppView | Exceptions triage / Probe / Actor dig deferred IA |
 | Mikrus / Beskid | Pack completion vs brief acceptance (see briefs) |
-| Relay | Fresh GNUstep binary gate evidence; optional live-event inspector fields |
+| Relay | **GNUstep `zuk serve --help` evidence 2026-08-12**; optional live-event inspector fields |
 | Ozone | Embedded listener only if a standalone Ozone binary is created (not in current fleet) |
 | Fleet | **M5 complete (2026-08-12):** standalone admin binary retired; Overview/Connections dropped; peer switcher + schemat/hamownia retarget landed |
 

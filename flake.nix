@@ -243,6 +243,7 @@
         beskid = import ./nixos/modules/beskid.nix;
         mikrus = import ./nixos/modules/mikrus.nix;
         syrena = import ./nixos/modules/syrena.nix;
+        kaszlak = import ./nixos/modules/kaszlak.nix;
         cloudflaredTunnel = import ./nixos/modules/cloudflared-tunnel.nix;
       };
     };

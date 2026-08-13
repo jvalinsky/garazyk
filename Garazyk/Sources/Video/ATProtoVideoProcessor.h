@@ -10,6 +10,8 @@
 #import "MediaCore/ATProtoMediaProcessor.h"
 
 @protocol PDSBlobProvider;
+@class ATProtoCAObjectStore;
+@class ATProtoCAObjectLifecycle;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -39,6 +41,19 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Whether to include a 1080p HLS variant (default NO).
 @property (nonatomic, assign) BOOL include1080p;
+
+/**
+ Whether to build a content-addressed VOD MASL manifest after HLS (WS12 Phase 3).
+
+ Defaults to NO. When YES, @c caObjectStore must be set.
+ */
+@property (nonatomic, assign) BOOL enableContentAddressedManifest;
+
+/// CA object store used when @c enableContentAddressedManifest is YES.
+@property (nonatomic, strong, nullable) ATProtoCAObjectStore *caObjectStore;
+
+/// Optional lifecycle tracker; when set, successful manifests are published for reclaim.
+@property (nonatomic, strong, nullable) ATProtoCAObjectLifecycle *caObjectLifecycle;
 
 @end
 

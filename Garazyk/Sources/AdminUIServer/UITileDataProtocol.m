@@ -21,26 +21,42 @@ static NSError *GZAdminUITileProtocolError(NSString *message) {
 }
 
 NSString *GZAdminUITileDataProtocolJavaScript(void) {
-    // The module is intentionally limited to the protocol's structured-clone
-    // boundary. Host-side origin and capability policy remains outside this
-    // module and is not widened by the reserved route.
-    return @"const handlers = new Set();\n"
+    return GZAdminUITileDataProtocolJavaScriptWithTrustedOrigin(nil);
+}
+
+NSString *GZAdminUITileDataProtocolJavaScriptWithTrustedOrigin(NSString *trustedOrigin) {
+    NSString *targetLiteral = @"'*'";
+    NSString *originCheck = @"  // No trusted-origin gate configured.\n";
+    if (trustedOrigin.length > 0) {
+        NSMutableString *escaped = [NSMutableString string];
+        for (NSUInteger i = 0; i < trustedOrigin.length; i++) {
+            unichar c = [trustedOrigin characterAtIndex:i];
+            if (c == '\\' || c == '\'') {
+                [escaped appendFormat:@"\\%C", c];
+            } else {
+                [escaped appendFormat:@"%C", c];
+            }
+        }
+        targetLiteral = [NSString stringWithFormat:@"'%@'", escaped];
+        originCheck = [NSString stringWithFormat:
+                       @"  if (event.origin !== '%@') return;\n", escaped];
+    }
+    return [NSString stringWithFormat:
+           @"const handlers = new Set();\n"
            @"export function addDataHandler(handler) {\n"
            @"  if (typeof handler !== 'function') throw new TypeError('handler must be a function');\n"
            @"  handlers.add(handler);\n"
            @"}\n"
            @"export function removeDataHandler(handler) { handlers.delete(handler); }\n"
-           // The browser runtime does not expose a portable parent-origin
-           // discovery API to this standalone module. The embedding context
-           // must wrap/rewrite this boundary with its trusted origin policy;
-           // this bounded helper is not a confidentiality boundary.
-           @"export function listen() { window.parent.postMessage({ action: 'tiles-protocol-up-data-ready' }, '*'); }\n"
-           @"export function sendData(payload) { window.parent.postMessage({ action: 'tiles-protocol-up-data-payload', payload }, '*'); }\n"
+           @"export function listen() { window.parent.postMessage({ action: 'tiles-protocol-up-data-ready' }, %@); }\n"
+           @"export function sendData(payload) { window.parent.postMessage({ action: 'tiles-protocol-up-data-payload', payload }, %@); }\n"
            @"window.addEventListener('message', (event) => {\n"
            @"  if (event.source !== window.parent) return;\n"
+           @"%@"
            @"  if (!event.data || event.data.action !== 'tiles-protocol-down-data-payload') return;\n"
            @"  for (const handler of handlers) handler(event.data.payload);\n"
-           @"});\n";
+           @"});\n",
+           targetLiteral, targetLiteral, originCheck];
 }
 
 BOOL GZAdminUITileDataProtocolIsValidMessage(NSDictionary *message,

@@ -59,16 +59,22 @@ bust (`?v=json-mst-2`):
 
 ### Still open for full M4 acceptance
 
-1. Bounded PDS overview snapshot (slices 1–3 DTO allowlists / cheap polling).
-2. NixOS/container secret-file, bind/port, and reverse-proxy module examples
-   for the embedded listener (crimson nginx is an ops proof, not a module).
-3. Checked-in browser/visual smoke against a live `kaszlak` admin listener
-   (crimson manual smoke is not a CI gate).
-4. Lab pack remains composed but has no dedicated sidebar tab on the
-   service-scoped shell; confirm Lab OAuth scenario targets the PDS listener
-   before M5.
-5. Slice 3 DTO allowlists for account email, tokens, audit payloads, and
-   security material (still broad backend dictionaries in places).
+1. Full `PDSAdminSnapshot` (sequencer/pool/WAL/sessions) beyond server-stats
+   key mapping — **partial 2026-08-12:** `renderServerStatsPartial` now reads
+   allowlisted `*_total` / lexicon camelCase keys (Accounts/Repos/Records/Blobs/
+   blob bytes/open reports).
+2. ~~NixOS/container secret-file, bind/port, and reverse-proxy module examples~~
+   **Done 2026-08-12:** `nixos/modules/kaszlak.nix`, `nixos/examples/kaszlak.nix`,
+   `flake.nix` `nixosModules.kaszlak` (parse + type check).
+3. Checked-in browser/visual smoke already target `:2590`; re-run evidence /
+   optional CI job still open (scripts exist).
+4. ~~Lab OAuth scenario retarget~~ **Done 2026-08-12:**
+   `11_lab_oauth_login.ts` prefers `SERVICE_URLS.ui`, uses
+   `gz_admin_pds_*` cookies, and polls `/admin/partials/pds-stats`. Lab remains
+   `/lab`-only (no sidebar tab) by design.
+5. Slice 3 DTO allowlists — **partial 2026-08-12:** Security sessions /
+   app-passwords project through explicit key lists; broader account/audit/
+   explorer allowlists still open.
 
 ## Dashboard shape
 
@@ -103,13 +109,14 @@ bust (`?v=json-mst-2`):
    **Done 2026-08-12** (`bbc84dd4`; password-gated; public URL link; crimson
    cutover).
 5. Add NixOS/container secret-file, bind/port, backup-aware, and reverse-proxy
-   examples; move the Lab OAuth scenario to the PDS listener. **Open** (ops
-   nginx on crimson is not the module example).
+   examples; move the Lab OAuth scenario to the PDS listener.
+   **Done 2026-08-12** (`nixos/modules/kaszlak.nix` + example; Lab scenario
+   retargeted to embedded UI cookies/partials).
 6. Test each pack, dangerous-action confirmation, audit, auth/CSRF, pagination,
    empty/large stores, pool starvation, concurrent repository writes, 200% zoom,
    and scenario/topology compatibility. **Partial:** composition + focused
-   unit tests landed; checked-in browser/visual smoke against `kaszlak` still
-   open.
+   unit tests + existing browser/visual scripts; CI wiring of those smokes still
+   open. Security DTO allowlists landed for sessions/app-passwords.
 
 Acceptance requires all six local packs to work without fleet credentials,
 bounded polling under a representative multi-actor database, no protocol-write

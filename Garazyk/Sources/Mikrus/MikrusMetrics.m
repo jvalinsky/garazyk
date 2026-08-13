@@ -9,7 +9,7 @@
     int64_t _recordsIndexed, _recordsDeleted, _ingestErrors;
     int64_t _queriesBacklink, _queriesManyToMany, _queriesIdentity, _queriesRecord;
     int64_t _rateLimitRejects;
-    CFAbsoluteTime _startTime;
+    NSTimeInterval _startTime;
 }
 @end
 
@@ -19,7 +19,7 @@
     self = [super init];
     if (self) {
         _queue = dispatch_queue_create("blue.microcosm.mikrus.metrics", DISPATCH_QUEUE_SERIAL);
-        _startTime = CFAbsoluteTimeGetCurrent();
+        _startTime = [NSDate timeIntervalSinceReferenceDate];
     }
     return self;
 }
@@ -44,7 +44,7 @@
     __block NSDictionary *result = nil;
     dispatch_sync(_queue, ^{
         result = @{
-            @"uptimeSeconds": @((int64_t)(CFAbsoluteTimeGetCurrent() - self->_startTime)),
+            @"uptimeSeconds": @((int64_t)([NSDate timeIntervalSinceReferenceDate] - self->_startTime)),
             @"ingest": @{
                 @"events": @(self->_ingestEvents),
                 @"commits": @(self->_ingestCommits),

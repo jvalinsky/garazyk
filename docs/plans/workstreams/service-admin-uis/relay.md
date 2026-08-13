@@ -82,11 +82,14 @@ passed: PLC/PDS/relay binary topology with fixed ports, loopback admin listener,
 24 rounds of HTMX partial polling on metrics/sources while `subscribeRepos`
 delivered commit events during post creation.
 
-M4 remains in progress until the GNUstep
-binary gate has fresh successful evidence. The reduced legacy dashboard did
-not contain a maintainable per-source event inspector; restoring any omitted
-live-event or delivery counters requires adding bounded source fields first,
-not a browser-side polling shortcut.
+M4 remains in progress until optional live-event inspector fields are
+restored (requires bounded source fields first, not a browser-side polling
+shortcut).
+
+**GNUstep/Linux binary gate (2026-08-12):** `garazyk-gnustep-toolchain:local`
+built `zuk` Release (`cmake --build … --target zuk`) and
+`zuk serve --help` printed admin-ui host/port options plus
+`RELAY_ADMIN_PASSWORD(_FILE)` env docs (exit 0).
 
 **Resolved (2026-08-11 → 2026-08-12):** the prior full-suite block from host
 volume exhaustion (131 MB free, `NSPOSIXErrorDomain` 28 in

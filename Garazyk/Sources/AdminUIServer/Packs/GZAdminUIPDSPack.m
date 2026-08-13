@@ -151,10 +151,24 @@
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
+    // Prefer allowlisted *_total keys from PDSAdminService; accept camelCase lexicon aliases.
+    id repos = result[@"repos_total"] ?: result[@"repoCount"] ?: result[@"repos"] ?: @0;
+    id records = result[@"records_total"] ?: result[@"recordCount"] ?: result[@"records"] ?: @0;
+    id blobs = result[@"blobs_total"] ?: result[@"blobCount"] ?: result[@"blobs"] ?: @0;
+    id accounts = result[@"accounts_total"] ?: result[@"accountCount"] ?: result[@"accounts"] ?: @0;
+    id blobBytes = result[@"blobs_size_bytes"] ?: result[@"blobsSizeBytes"] ?: @0;
+    id reportsOpen = result[@"reports_open"] ?: result[@"reportsOpen"] ?: @0;
+    NSString *(^esc)(id) = ^NSString *(id val) {
+        if (!val || val == [NSNull null]) return @"0";
+        return GZAdminUIEscaped([val isKindOfClass:[NSString class]] ? val : [val description]);
+    };
     NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Repos:</span> <span class=\"detail-value text-mono\">%@</span></div>", GZAdminUIEscaped(result[@"repos"] ?: @"0")];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Records:</span> <span class=\"detail-value text-mono\">%@</span></div>", GZAdminUIEscaped(result[@"records"] ?: @"0")];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Blobs:</span> <span class=\"detail-value text-mono\">%@</span></div>", GZAdminUIEscaped(result[@"blobs"] ?: @"0")];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Accounts:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(accounts)];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Repos:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(repos)];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Records:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(records)];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Blobs:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(blobs)];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Blob bytes:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(blobBytes)];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Open reports:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(reportsOpen)];
     [html appendString:@"</div>"];
     return html;
 }

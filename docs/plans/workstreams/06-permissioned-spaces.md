@@ -195,6 +195,13 @@ change, and the protocol team expects spec-level changes through summer
    proposal stabilizes; enabling it earlier is an explicit operator decision
    per ADR 0004.
 
+**Progress (2026-08-12): third monthly drift check — drift recorded, pin retained.**
+`scripts/check_permissioned_spaces_drift.sh` reports proposal HEAD still
+`1caad93` and implementation PR 5187 head moved to `697d882…` with lexicon-path
+additions (`simplespace/getSpace`, `space/listBlobs`, `space/unregisterNotify`).
+Impact assessment is in `docs/permissioned-spaces-compatibility.md`; no re-pin
+and no lexicon regeneration. Next check due ~2026-09-12.
+
 **Progress (2026-07-23): second monthly drift check clean.** All three
 surfaces (proposal HEAD `1caad93`, implementation PR head `3f6c96d`, all 28
 vendored space lexicons) remain pinned with zero drift. Next check due

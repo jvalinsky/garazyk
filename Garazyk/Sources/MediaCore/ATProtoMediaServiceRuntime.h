@@ -14,7 +14,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class ATProtoHttpServer;
 @class ATProtoMediaWorker;
+@class ATProtoCAObjectStore;
+@class ATProtoCAWatchService;
+@class ATProtoCAObjectLifecycle;
+@class ATProtoCARASLWellKnown;
+@class ATProtoCAMirrorResolver;
 @protocol PDSBlobProvider;
+@protocol ATProtoCAMediaDenylist;
+@protocol ATProtoCAMirrorFetching;
 
 /**
  * @abstract Boots and manages a standalone media CDN service.
@@ -37,6 +44,35 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// The background job worker (nil before start).
 @property (nonatomic, readonly, nullable) ATProtoMediaWorker *worker;
+
+/**
+ Content-addressed object store for VOD watch serving (WS12).
+
+ When set together with @c configuration.enableContentAddressedManifest, the
+ runtime registers MASL-backed @c /watch/* routes.
+ */
+@property (nonatomic, strong, nullable) ATProtoCAObjectStore *caObjectStore;
+
+/// Optional moderation denylist consulted before streaming CA bytes.
+@property (nonatomic, strong, nullable) id<ATProtoCAMediaDenylist> caMediaDenylist;
+
+/**
+ Optional mirror fetcher injected by the composition root (jelcz). Used only
+ when @c configuration.enableCAMirrorFetch is YES.
+ */
+@property (nonatomic, strong, nullable) id<ATProtoCAMirrorFetching> caMirrorFetcher;
+
+/// Active CA watch service after start (nil when CA routes are disabled).
+@property (nonatomic, strong, readonly, nullable) ATProtoCAWatchService *caWatchService;
+
+/// Active CA RASL well-known service after start (nil without a CA store).
+@property (nonatomic, strong, readonly, nullable) ATProtoCARASLWellKnown *caRASLWellKnown;
+
+/// Active mirror resolver after start (nil when mirror fetch is off).
+@property (nonatomic, strong, readonly, nullable) ATProtoCAMirrorResolver *caMirrorResolver;
+
+/// Manifest refcount / reclaim controller (nil when CA store is unset).
+@property (nonatomic, strong, readonly, nullable) ATProtoCAObjectLifecycle *caObjectLifecycle;
 
 /**
  * @abstract Initializes the runtime with configuration, a processor, and a

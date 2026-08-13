@@ -196,6 +196,18 @@
     };
   }
 
+  NSString *manifestCid = job[@"manifest_blob_cid"];
+  if (manifestCid && ![manifestCid isEqual:[NSNull null]] && [(NSString *)manifestCid length] > 0) {
+    resp[@"manifestBlob"] = @{
+      @"$type": @"blob",
+      @"ref": @{
+        @"$link": manifestCid
+      },
+      @"mimeType": @"application/vnd.ipld.dag-cbor",
+      @"size": @0
+    };
+  }
+
   NSString *errorMessage = job[@"error_message"];
   if (errorMessage && ![errorMessage isEqual:[NSNull null]]) {
     resp[@"error"] = errorMessage;

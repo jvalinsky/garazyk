@@ -167,6 +167,15 @@
             NSDictionary *metadata = results[@"metadata"];
             if (metadata) {
                 resp[@"metadata"] = metadata;
+                NSString *manifestCid = metadata[@"manifestBlobCid"];
+                if ([manifestCid isKindOfClass:[NSString class]] && manifestCid.length > 0) {
+                    resp[@"manifestBlob"] = @{
+                        @"$type": @"blob",
+                        @"ref": @{@"$link": manifestCid},
+                        @"mimeType": @"application/vnd.ipld.dag-cbor",
+                        @"size": @0
+                    };
+                }
             }
         }
     }

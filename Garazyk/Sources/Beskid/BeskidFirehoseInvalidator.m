@@ -145,9 +145,12 @@ static void GZBeskidWriteCursorToFile(NSString *path, int64_t cursor) {
     if (![self.database deleteRecordForDID:did collection:collection rkey:rkey error:&error]) {
         GZ_LOG_WARN(@"[Beskid] Failed to invalidate record %@/%@ for %@: %@",
                     collection, rkey, did, error.localizedDescription);
+        [self.metrics recordFirehoseInvalidationApplied:@"dropped"];
         return NO;
     }
     [self.metrics recordFirehoseInvalidation:@"commit"];
+    [self.metrics recordFirehoseInvalidationApplied:@"precise"];
+    [self.metrics markInvalidationForDID:did];
     return YES;
 }
 
@@ -157,6 +160,9 @@ static void GZBeskidWriteCursorToFile(NSString *path, int64_t cursor) {
         [self.metrics recordFirehoseParseError];
         return;
     }
+    [self.metrics recordFirehoseEventReceived:@"commit"];
+    NSTimeInterval t0 = [NSDate timeIntervalSinceReferenceDate];
+    BOOL recordedLatency = NO;
 
     BOOL sawUnknownOp = NO;
     for (NSDictionary *op in event.ops ?: @[]) {
@@ -176,14 +182,25 @@ static void GZBeskidWriteCursorToFile(NSString *path, int64_t cursor) {
             sawUnknownOp = YES;
             continue;
         }
-        (void)[self _invalidateRecordForDID:did collection:collection rkey:rkey];
+        if ([self _invalidateRecordForDID:did collection:collection rkey:rkey] && !recordedLatency) {
+            int64_t ms = (int64_t)(([NSDate timeIntervalSinceReferenceDate] - t0) * 1000.0);
+            [self.metrics recordFirehosePurgeLatencyMillis:ms];
+            recordedLatency = YES;
+        }
     }
 
     if (sawUnknownOp) {
         NSError *error = nil;
         if ([self.database deleteAllRecordsForDID:did error:&error]) {
             [self.metrics recordFirehoseInvalidation:@"commit"];
+            [self.metrics recordFirehoseInvalidationApplied:@"fallback"];
+            [self.metrics markInvalidationForDID:did];
+            if (!recordedLatency) {
+                int64_t ms = (int64_t)(([NSDate timeIntervalSinceReferenceDate] - t0) * 1000.0);
+                [self.metrics recordFirehosePurgeLatencyMillis:ms];
+            }
         } else {
+            [self.metrics recordFirehoseInvalidationApplied:@"dropped"];
             GZ_LOG_WARN(@"[Beskid] Failed conservative record purge for %@: %@",
                         did, error.localizedDescription);
         }
@@ -197,10 +214,17 @@ static void GZBeskidWriteCursorToFile(NSString *path, int64_t cursor) {
         [self.metrics recordFirehoseParseError];
         return;
     }
+    [self.metrics recordFirehoseEventReceived:@"identity"];
+    NSTimeInterval t0 = [NSDate timeIntervalSinceReferenceDate];
     NSError *error = nil;
     if ([self.database deleteIdentityForDID:event.did error:&error]) {
         [self.metrics recordFirehoseInvalidation:@"identity"];
+        [self.metrics recordFirehoseInvalidationApplied:@"precise"];
+        [self.metrics markInvalidationForDID:event.did];
+        int64_t ms = (int64_t)(([NSDate timeIntervalSinceReferenceDate] - t0) * 1000.0);
+        [self.metrics recordFirehosePurgeLatencyMillis:ms];
     } else {
+        [self.metrics recordFirehoseInvalidationApplied:@"dropped"];
         GZ_LOG_WARN(@"[Beskid] Failed to invalidate identity for %@: %@",
                     event.did, error.localizedDescription);
     }
@@ -227,10 +251,18 @@ static void GZBeskidWriteCursorToFile(NSString *path, int64_t cursor) {
         return;
     }
 
+    [self.metrics recordFirehoseEventReceived:@"account"];
+    NSTimeInterval t0 = [NSDate timeIntervalSinceReferenceDate];
     NSError *error = nil;
     (void)[self.database deleteAllRecordsForDID:event.did error:&error];
     if ([self.database deleteIdentityForDID:event.did error:&error]) {
         [self.metrics recordFirehoseInvalidation:@"account"];
+        [self.metrics recordFirehoseInvalidationApplied:@"precise"];
+        [self.metrics markInvalidationForDID:event.did];
+        int64_t ms = (int64_t)(([NSDate timeIntervalSinceReferenceDate] - t0) * 1000.0);
+        [self.metrics recordFirehosePurgeLatencyMillis:ms];
+    } else {
+        [self.metrics recordFirehoseInvalidationApplied:@"dropped"];
     }
     [self persistCursorIfNeeded:event.seq];
 }

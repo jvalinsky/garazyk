@@ -82,6 +82,9 @@ static GZBeskidFirehoseInvalidator *BeskidMakeInvalidator(GZBeskidDatabase *db, 
     XCTAssertNil(cached);
     NSDictionary *snapshot = [self.metrics snapshotDictionary];
     XCTAssertEqual([snapshot[@"firehose"][@"invalidationsCommit"] longLongValue], 1);
+    XCTAssertEqual([snapshot[@"firehose"][@"receivedCommit"] longLongValue], 1);
+    XCTAssertEqual([snapshot[@"firehose"][@"appliedPrecise"] longLongValue], 1);
+    XCTAssertGreaterThanOrEqual([snapshot[@"firehose"][@"purgeLatencyMaxMs"] longLongValue], (int64_t)0);
 }
 
 - (void)testCommitEventConservativeFallbackDeletesAllRecordsForDID {
@@ -110,6 +113,9 @@ static GZBeskidFirehoseInvalidator *BeskidMakeInvalidator(GZBeskidDatabase *db, 
 
     XCTAssertNil([self.db recordByURI:@"at://did:plc:bob/app.bsky.feed.post/abc" cid:nil error:nil]);
     XCTAssertNil([self.db recordByURI:@"at://did:plc:bob/app.bsky.feed.like/def" cid:nil error:nil]);
+    NSDictionary *snapshot = [self.metrics snapshotDictionary];
+    XCTAssertEqual([snapshot[@"firehose"][@"appliedFallback"] longLongValue], 1);
+    XCTAssertEqual([snapshot[@"firehose"][@"receivedCommit"] longLongValue], 1);
 }
 
 - (void)testIdentityEventDeletesCachedIdentity {

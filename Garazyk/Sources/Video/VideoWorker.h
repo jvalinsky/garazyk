@@ -7,6 +7,9 @@
 #import "Video/VideoHLSGenerator.h"
 #import "Blob/PDSBlobProvider.h"
 
+@class ATProtoCAObjectStore;
+@class ATProtoCAObjectLifecycle;
+
 NS_ASSUME_NONNULL_BEGIN
 
 /**
@@ -84,6 +87,19 @@ typedef NS_ENUM(NSInteger, ATProtoVideoJobState) {
  * @abstract HLS generator configuration.
  */
 @property (nonatomic, strong, nullable) ATProtoVideoHLSGenerator *hlsGenerator;
+
+/**
+ Whether to build a content-addressed VOD MASL manifest after HLS (WS12 Phase 3).
+
+ Defaults to NO. When YES, @c caObjectStore must be set.
+ */
+@property (nonatomic, assign) BOOL enableContentAddressedManifest;
+
+/// CA object store used when @c enableContentAddressedManifest is YES.
+@property (nonatomic, strong, nullable) ATProtoCAObjectStore *caObjectStore;
+
+/// Optional lifecycle tracker; when set, successful manifests are published for reclaim.
+@property (nonatomic, strong, nullable) ATProtoCAObjectLifecycle *caObjectLifecycle;
 
 /**
  * @abstract Starts the background worker.

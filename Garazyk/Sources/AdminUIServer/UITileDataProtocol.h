@@ -24,6 +24,14 @@ FOUNDATION_EXPORT NSString * const GZAdminUITileDataProtocolUpPayloadAction;
 /** Returns the deterministic JavaScript module served at the reserved route. */
 FOUNDATION_EXPORT NSString *GZAdminUITileDataProtocolJavaScript(void);
 
+/**
+ Same module with an optional trusted parent origin. When `trustedOrigin` is
+ non-empty, listen/sendData target that origin and inbound messages whose
+ `event.origin` does not match are ignored. Empty/nil keeps the prior `*`
+ target (explicitly not a confidentiality boundary).
+ */
+FOUNDATION_EXPORT NSString *GZAdminUITileDataProtocolJavaScriptWithTrustedOrigin(NSString * _Nullable trustedOrigin);
+
 /** Returns YES only for a protocol action with the expected direction and payload shape. */
 FOUNDATION_EXPORT BOOL GZAdminUITileDataProtocolIsValidMessage(NSDictionary *message,
                                                         BOOL fromHost,

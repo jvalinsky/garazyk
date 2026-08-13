@@ -20,6 +20,10 @@
           "description": "Progress within the current processing state."
         },
         "blob": { "type": "blob" },
+        "manifestBlob": {
+          "type": "blob",
+          "description": "Optional DRISL-encoded MASL manifest blob for content-addressed VOD (Garazyk / WS12)."
+        },
         "error": { "type": "string" },
         "message": { "type": "string" },
         "aspectRatio": {

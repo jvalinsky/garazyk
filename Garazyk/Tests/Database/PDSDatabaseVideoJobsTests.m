@@ -105,6 +105,7 @@
     BOOL updated = [self.database updateVideoJobResults:jobId
                                      processedBlobCid:@"bafyriprocessed1"
                                     thumbnailBlobCid:@"bafyrithumb1"
+                                     manifestBlobCid:nil
                                               error:&error];
     XCTAssertTrue(updated, @"updateVideoJobResults should succeed");
     XCTAssertNil(error);

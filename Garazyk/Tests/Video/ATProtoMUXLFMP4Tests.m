@@ -243,6 +243,66 @@
     NSData *ctts = [@"ctts" dataUsingEncoding:NSASCIIStringEncoding];
     found = [moov rangeOfData:ctts options:0 range:NSMakeRange(0, moov.length)];
     XCTAssertNotEqual(found.location, (NSUInteger)NSNotFound);
+
+    // dts==0 → no edts/elst (presentation offset rides on first tfdt only when non-zero).
+    NSData *edts = [@"edts" dataUsingEncoding:NSASCIIStringEncoding];
+    found = [moov rangeOfData:edts options:0 range:NSMakeRange(0, moov.length)];
+    XCTAssertEqual(found.location, (NSUInteger)NSNotFound);
+}
+
+- (void)testFlatMP4EmitsElstForNonZeroFirstTfdt {
+    NSData *seg = [self mintSegmentTrackID:1 sync:YES cto:0 seq:1 dts:1000];
+    NSError *error = nil;
+    NSData *flat = [ATProtoMUXLFMP4 flatMP4WithSegments:@[seg] error:&error];
+    XCTAssertNotNil(flat);
+    XCTAssertNil(error);
+    const uint8_t *bytes = flat.bytes;
+    uint32_t ftypSize = ((uint32_t)bytes[0] << 24) | ((uint32_t)bytes[1] << 16) |
+                        ((uint32_t)bytes[2] << 8) | bytes[3];
+    uint32_t moovSize = ((uint32_t)bytes[ftypSize] << 24) | ((uint32_t)bytes[ftypSize + 1] << 16) |
+                        ((uint32_t)bytes[ftypSize + 2] << 8) | bytes[ftypSize + 3];
+    NSData *moov = [flat subdataWithRange:NSMakeRange(ftypSize, moovSize)];
+    NSRange edts = [moov rangeOfData:[@"edts" dataUsingEncoding:NSASCIIStringEncoding]
+                             options:0
+                               range:NSMakeRange(0, moov.length)];
+    XCTAssertNotEqual(edts.location, (NSUInteger)NSNotFound);
+    NSRange elst = [moov rangeOfData:[@"elst" dataUsingEncoding:NSASCIIStringEncoding]
+                             options:0
+                               range:NSMakeRange(0, moov.length)];
+    XCTAssertNotEqual(elst.location, (NSUInteger)NSNotFound);
+    XCTAssertGreaterThanOrEqual(elst.location, (NSUInteger)4);
+    // rangeOfData matches the type field; box starts 4 bytes earlier (size).
+    const uint8_t *elstBytes = (const uint8_t *)moov.bytes + (elst.location - 4);
+    uint32_t entryCount = ((uint32_t)elstBytes[12] << 24) | ((uint32_t)elstBytes[13] << 16) |
+                          ((uint32_t)elstBytes[14] << 8) | elstBytes[15];
+    XCTAssertEqual(entryCount, (uint32_t)2);
+    uint32_t emptyDur = ((uint32_t)elstBytes[16] << 24) | ((uint32_t)elstBytes[17] << 16) |
+                        ((uint32_t)elstBytes[18] << 8) | elstBytes[19];
+    XCTAssertEqual(emptyDur, (uint32_t)1000); // dts 1000 @ timescale 1000 → movie ts 1000
+    int32_t mediaTime0 = (int32_t)(((uint32_t)elstBytes[20] << 24) | ((uint32_t)elstBytes[21] << 16) |
+                                   ((uint32_t)elstBytes[22] << 8) | elstBytes[23]);
+    XCTAssertEqual(mediaTime0, (int32_t)-1);
+}
+
+- (void)testFlatMP4OmitsElstWhenOnlyCTONonZero {
+    NSData *seg = [self mintSegmentTrackID:1 sync:YES cto:10 seq:1 dts:0];
+    NSError *error = nil;
+    NSData *flat = [ATProtoMUXLFMP4 flatMP4WithSegments:@[seg] error:&error];
+    XCTAssertNotNil(flat);
+    const uint8_t *bytes = flat.bytes;
+    uint32_t ftypSize = ((uint32_t)bytes[0] << 24) | ((uint32_t)bytes[1] << 16) |
+                        ((uint32_t)bytes[2] << 8) | bytes[3];
+    uint32_t moovSize = ((uint32_t)bytes[ftypSize] << 24) | ((uint32_t)bytes[ftypSize + 1] << 16) |
+                        ((uint32_t)bytes[ftypSize + 2] << 8) | bytes[ftypSize + 3];
+    NSData *moov = [flat subdataWithRange:NSMakeRange(ftypSize, moovSize)];
+    NSRange edts = [moov rangeOfData:[@"edts" dataUsingEncoding:NSASCIIStringEncoding]
+                             options:0
+                               range:NSMakeRange(0, moov.length)];
+    XCTAssertEqual(edts.location, (NSUInteger)NSNotFound);
+    NSRange ctts = [moov rangeOfData:[@"ctts" dataUsingEncoding:NSASCIIStringEncoding]
+                             options:0
+                               range:NSMakeRange(0, moov.length)];
+    XCTAssertNotEqual(ctts.location, (NSUInteger)NSNotFound);
 }
 
 - (void)testFlatMP4RejectsEmptyInput {

@@ -219,6 +219,23 @@
     XCTAssertEqualObjects(response[@"state"], @"JOB_STATE_COMPLETED");
     XCTAssertNotNil(response[@"blob"]);
     XCTAssertEqualObjects(response[@"blob"][@"$type"], @"blob");
+    XCTAssertNil(response[@"manifestBlob"]);
+}
+
+- (void)testFormatJobResponseIncludesOptionalManifestBlob {
+    NSDictionary *job = @{
+        @"job_id": @"job-2b",
+        @"did": @"did:web:test.example.com",
+        @"state": @"COMPLETED",
+        @"progress": @100,
+        @"processed_blob_cid": @"bafyreiprocessed",
+        @"manifest_blob_cid": @"bafyreimanifest",
+        @"mime_type": @"video/mp4"
+    };
+    NSDictionary *response = [ATProtoVideoXrpcPack formatJobResponse:job];
+    XCTAssertNotNil(response[@"manifestBlob"]);
+    XCTAssertEqualObjects(response[@"manifestBlob"][@"ref"][@"$link"], @"bafyreimanifest");
+    XCTAssertEqualObjects(response[@"manifestBlob"][@"$type"], @"blob");
 }
 
 - (void)testFormatJobResponseFailed {

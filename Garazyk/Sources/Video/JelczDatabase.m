@@ -83,6 +83,7 @@ NSString * const JelczDatabaseErrorDomain = @"com.atproto.jelcz.database";
         @"    error_message TEXT,"
         @"    thumbnail_blob_cid TEXT,"
         @"    processed_blob_cid TEXT,"
+        @"    manifest_blob_cid TEXT,"
         @"    service_auth_token TEXT,"
         @"    created_at TEXT NOT NULL,"
         @"    updated_at TEXT NOT NULL,"
@@ -100,7 +101,32 @@ NSString * const JelczDatabaseErrorDomain = @"com.atproto.jelcz.database";
             return NO;
         }
     }
+
+    // Additive migration for databases created before WS12 Phase 4.
+    if (![self ensureColumn:@"manifest_blob_cid" onTable:@"video_jobs" type:@"TEXT" error:error]) {
+        return NO;
+    }
+
     return YES;
+}
+
+- (BOOL)ensureColumn:(NSString *)columnName
+             onTable:(NSString *)tableName
+                type:(NSString *)type
+               error:(NSError **)error {
+    NSString *pragma = [NSString stringWithFormat:@"PRAGMA table_info(%@)", tableName];
+    NSArray<NSDictionary<NSString *, id> *> *info =
+        [self.queryRunner executeQuery:pragma params:nil error:error];
+    if (!info) {
+        return NO;
+    }
+    for (NSDictionary *row in info) {
+        if ([row[@"name"] isEqualToString:columnName]) {
+            return YES;
+        }
+    }
+    NSString *alter = [NSString stringWithFormat:@"ALTER TABLE %@ ADD COLUMN %@ %@", tableName, columnName, type];
+    return [self.queryRunner executeUpdate:alter params:nil error:error] >= 0;
 }
 
 #pragma mark - VideoJobStore protocol
@@ -149,10 +175,17 @@ NSString * const JelczDatabaseErrorDomain = @"com.atproto.jelcz.database";
 - (BOOL)updateVideoJobResults:(NSString *)jobId
              processedBlobCid:(nullable NSString *)processedBlobCid
             thumbnailBlobCid:(nullable NSString *)thumbnailBlobCid
+             manifestBlobCid:(nullable NSString *)manifestBlobCid
                        error:(NSError **)error {
     NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
-    NSString *sql = @"UPDATE video_jobs SET processed_blob_cid = ?, thumbnail_blob_cid = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
-    NSArray *params = @[processedBlobCid ?: [NSNull null], thumbnailBlobCid ?: [NSNull null], now, jobId];
+    NSString *sql = @"UPDATE video_jobs SET processed_blob_cid = ?, thumbnail_blob_cid = ?, manifest_blob_cid = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
+    NSArray *params = @[
+        processedBlobCid ?: [NSNull null],
+        thumbnailBlobCid ?: [NSNull null],
+        manifestBlobCid ?: [NSNull null],
+        now,
+        jobId
+    ];
     return [self.queryRunner executeUpdate:sql params:params error:error] >= 0;
 }
 

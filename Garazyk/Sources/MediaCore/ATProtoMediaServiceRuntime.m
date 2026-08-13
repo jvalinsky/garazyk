@@ -4,6 +4,12 @@
 #import "MediaCore/ATProtoMediaWorker.h"
 #import "MediaCore/ATProtoMediaSQLiteStore.h"
 #import "MediaCore/ATProtoMediaXrpcPack.h"
+#import "MediaCore/ATProtoCAObjectStore.h"
+#import "MediaCore/ATProtoCAMediaDenylist.h"
+#import "MediaCore/ATProtoCAWatchService.h"
+#import "MediaCore/ATProtoCAObjectLifecycle.h"
+#import "MediaCore/ATProtoCAMirrorResolver.h"
+#import "MediaCore/ATProtoCARASLWellKnown.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
@@ -17,6 +23,10 @@
 @property (nonatomic, strong, readwrite) ATProtoMediaWorker *worker;
 @property (nonatomic, strong) ATProtoMediaSQLiteStore *jobStore;
 @property (nonatomic, strong) id<PDSBlobProvider> blobProvider;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCAWatchService *caWatchService;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCAObjectLifecycle *caObjectLifecycle;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCARASLWellKnown *caRASLWellKnown;
+@property (nonatomic, strong, readwrite, nullable) ATProtoCAMirrorResolver *caMirrorResolver;
 @end
 
 @implementation ATProtoMediaServiceRuntime
@@ -160,6 +170,68 @@
         response.statusCode = 200;
         [response setJsonBody:@{}];
     }];
+
+    // CA /watch/* (WS12 Phase 5) — behind Phase 3 configuration flag.
+    if (config.enableContentAddressedManifest && self.caObjectStore) {
+        id<ATProtoCAMediaDenylist> denylist = self.caMediaDenylist;
+        if (!denylist) {
+            denylist = [[ATProtoCAMediaDenylistMemory alloc] init];
+            self.caMediaDenylist = denylist;
+        }
+
+        ATProtoCAMirrorResolver *mirrorResolver = nil;
+        if (config.enableCAMirrorFetch && self.caMirrorFetcher) {
+            mirrorResolver = [[ATProtoCAMirrorResolver alloc] initWithObjectStore:self.caObjectStore
+                                                                          fetcher:self.caMirrorFetcher];
+            mirrorResolver.mirrorFetchEnabled = YES;
+            self.caMirrorResolver = mirrorResolver;
+            GZ_LOG_INFO(@"  CA mirror fetch: enabled (%lu providers)",
+                         (unsigned long)config.caMirrorProviders.count);
+        } else {
+            self.caMirrorResolver = nil;
+            GZ_LOG_INFO(@"  CA mirror fetch: disabled");
+        }
+
+        self.caWatchService = [[ATProtoCAWatchService alloc] initWithObjectStore:self.caObjectStore
+                                                                        denylist:denylist];
+        self.caWatchService.mirrorResolver = mirrorResolver;
+        self.caWatchService.mirrorProviders = config.caMirrorProviders;
+        [self.caWatchService registerRoutesOnServer:self.httpServer];
+        GZ_LOG_INFO(@"  CA /watch routes: enabled");
+    } else {
+        self.caWatchService = nil;
+        self.caMirrorResolver = nil;
+        GZ_LOG_INFO(@"  CA /watch routes: disabled");
+    }
+
+    // CA RASL well-known (WS12 composition) — serve local CA objects to peers.
+    if (self.caObjectStore) {
+        self.caRASLWellKnown = [[ATProtoCARASLWellKnown alloc] initWithObjectStore:self.caObjectStore];
+        [self.caRASLWellKnown registerRoutesOnServer:self.httpServer];
+        GZ_LOG_INFO(@"  CA RASL /.well-known/rasl: enabled");
+    } else {
+        self.caRASLWellKnown = nil;
+    }
+
+    // CA object lifecycle (WS12 Phase 6) — available whenever a store is attached.
+    if (self.caObjectStore) {
+        NSError *lifeError = nil;
+        ATProtoCAObjectLifecycle *lifecycle =
+            [[ATProtoCAObjectLifecycle alloc] initWithObjectStore:self.caObjectStore error:&lifeError];
+        if (lifecycle) {
+            lifecycle.sweepEnabled = config.caObjectSweepEnabled;
+            lifecycle.gracePeriodSeconds = config.caObjectGracePeriodSeconds;
+            self.caObjectLifecycle = lifecycle;
+            GZ_LOG_INFO(@"  CA lifecycle: sweep=%@ grace=%.0fs",
+                         config.caObjectSweepEnabled ? @"on" : @"off",
+                         lifecycle.gracePeriodSeconds);
+        } else {
+            GZ_LOG_WARN(@"  CA lifecycle: failed to open (%@)", lifeError);
+            self.caObjectLifecycle = nil;
+        }
+    } else {
+        self.caObjectLifecycle = nil;
+    }
 
     NSError *startError = nil;
     if (![self.httpServer startWithError:&startError]) {

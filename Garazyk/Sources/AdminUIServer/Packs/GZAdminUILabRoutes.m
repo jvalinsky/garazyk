@@ -60,6 +60,42 @@
     [self.httpServer addRoute:@"GET" path:@"/.well-known/web-tiles/index.html" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         [weakSelf handleWebTilesDocumentRequest:request response:response];
     }];
+    [self.httpServer addRoute:@"GET" path:@"/.well-known/web-tiles/shuttle.js" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        [weakSelf handleWebTilesScriptRequest:request
+                                     response:response
+                                         body:GZAdminUITileShuttleJavaScript()];
+    }];
+    [self.httpServer addRoute:@"GET" path:@"/.well-known/web-tiles/worker.js" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        [weakSelf handleWebTilesScriptRequest:request
+                                     response:response
+                                         body:GZAdminUITileServiceWorkerJavaScript()];
+    }];
+}
+
+- (NSString *)webTilesHostnameFromRequest:(ATProtoHttpRequest *)request {
+    NSString *hostname = [request headerForKey:@"Host"];
+    NSRange colon = [hostname rangeOfString:@":"];
+    if (colon.location != NSNotFound) {
+        hostname = [hostname substringToIndex:colon.location];
+    }
+    return hostname;
+}
+
+- (void)handleWebTilesScriptRequest:(ATProtoHttpRequest *)request
+                           response:(ATProtoHttpResponse *)response
+                               body:(NSString *)body {
+    NSString *baseHost = self.configuration.tilesBaseHost;
+    NSString *hostname = [self webTilesHostnameFromRequest:request];
+    if (baseHost.length == 0 || !GZAdminUITileIsUniqueOriginHost(hostname, baseHost)) {
+        response.statusCode = 404;
+        response.contentType = @"text/plain; charset=utf-8";
+        [response setBodyString:@"Not Found\n"];
+        return;
+    }
+    GZAdminUITileApplyUniqueOriginHeaders(response);
+    response.statusCode = 200;
+    response.contentType = @"application/javascript; charset=utf-8";
+    [response setBodyString:body];
 }
 
 - (void)handleWebTilesDocumentRequest:(ATProtoHttpRequest *)request
@@ -72,12 +108,7 @@
         return;
     }
 
-    NSString *hostname = [request headerForKey:@"Host"];
-    // Strip optional port.
-    NSRange colon = [hostname rangeOfString:@":"];
-    if (colon.location != NSNotFound) {
-        hostname = [hostname substringToIndex:colon.location];
-    }
+    NSString *hostname = [self webTilesHostnameFromRequest:request];
 
     if (GZAdminUITileIsLoadHost(hostname, baseHost)) {
         NSString *scheme = [request headerForKey:@"X-Forwarded-Proto"];

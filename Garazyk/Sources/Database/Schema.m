@@ -662,6 +662,7 @@ NSString * const kPDSVideoJobsTableCreateSQL =
     @"error_message TEXT,"
     @"thumbnail_blob_cid TEXT,"
     @"processed_blob_cid TEXT,"
+    @"manifest_blob_cid TEXT,"
     @"created_at TEXT NOT NULL,"
     @"updated_at TEXT NOT NULL,"
     @"completed_at TEXT,"

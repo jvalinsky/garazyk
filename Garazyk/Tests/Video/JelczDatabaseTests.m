@@ -81,6 +81,70 @@ extern NSString * const JelczDatabaseErrorDomain;
     XCTAssertEqualObjects(job[@"processed_blob_cid"], [NSNull null]);
 }
 
+- (void)testManifestColumnMigrationPreservesPopulatedRows {
+    // Build a pre-Phase-4 schema DB with a populated row, then open via GZJelczDatabase
+    // and assert the additive column lands without losing data.
+    NSString *legacyPath = [NSTemporaryDirectory() stringByAppendingFormat:@"jelcz_legacy_%@.db",
+                            [[NSUUID UUID] UUIDString]];
+    sqlite3 *raw = NULL;
+    XCTAssertEqual(sqlite3_open(legacyPath.UTF8String, &raw), SQLITE_OK);
+    const char *createSQL =
+        "CREATE TABLE video_jobs ("
+        "job_id TEXT PRIMARY KEY,"
+        "did TEXT NOT NULL,"
+        "blob_cid TEXT NOT NULL,"
+        "original_filename TEXT,"
+        "mime_type TEXT,"
+        "file_size INTEGER,"
+        "duration_seconds INTEGER,"
+        "width INTEGER,"
+        "height INTEGER,"
+        "state TEXT NOT NULL DEFAULT 'PENDING',"
+        "progress INTEGER DEFAULT 0,"
+        "message TEXT,"
+        "error_code TEXT,"
+        "error_message TEXT,"
+        "thumbnail_blob_cid TEXT,"
+        "processed_blob_cid TEXT,"
+        "service_auth_token TEXT,"
+        "created_at TEXT NOT NULL,"
+        "updated_at TEXT NOT NULL,"
+        "completed_at TEXT,"
+        "expires_at TEXT,"
+        "retry_count INTEGER DEFAULT 0"
+        ")";
+    char *errmsg = NULL;
+    XCTAssertEqual(sqlite3_exec(raw, createSQL, NULL, NULL, &errmsg), SQLITE_OK, @"%s", errmsg);
+    const char *insertSQL =
+        "INSERT INTO video_jobs (job_id, did, blob_cid, mime_type, file_size, state, progress, created_at, updated_at) "
+        "VALUES ('legacy-1', 'did:plc:legacy', 'bafylegacy', 'video/mp4', 99, 'PENDING', 0, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')";
+    XCTAssertEqual(sqlite3_exec(raw, insertSQL, NULL, NULL, &errmsg), SQLITE_OK, @"%s", errmsg);
+    sqlite3_close(raw);
+
+    NSError *error = nil;
+    GZJelczDatabase *migrated = [[GZJelczDatabase alloc] initWithDatabasePath:legacyPath error:&error];
+    XCTAssertNotNil(migrated, @"%@", error);
+
+    NSDictionary *job = [migrated getVideoJobById:@"legacy-1" error:&error];
+    XCTAssertNotNil(job);
+    XCTAssertEqualObjects(job[@"did"], @"did:plc:legacy");
+    XCTAssertEqualObjects(job[@"blob_cid"], @"bafylegacy");
+    XCTAssertEqualObjects(job[@"file_size"], @99);
+    XCTAssertEqualObjects(job[@"manifest_blob_cid"], [NSNull null]);
+
+    XCTAssertTrue([migrated updateVideoJobResults:@"legacy-1"
+                                 processedBlobCid:@"bafyproc"
+                                thumbnailBlobCid:@"bafythumb"
+                                 manifestBlobCid:@"bafymanifest"
+                                           error:&error], @"%@", error);
+    job = [migrated getVideoJobById:@"legacy-1" error:&error];
+    XCTAssertEqualObjects(job[@"manifest_blob_cid"], @"bafymanifest");
+    XCTAssertEqualObjects(job[@"state"], @"COMPLETED");
+
+    [migrated closeDatabase];
+    [[NSFileManager defaultManager] removeItemAtPath:legacyPath error:nil];
+}
+
 - (void)testGetNonExistentReturnsNilWithoutError {
     NSError *error = nil;
     NSDictionary *job = [self.db getVideoJobById:@"nope" error:&error];
@@ -154,7 +218,7 @@ extern NSString * const JelczDatabaseErrorDomain;
     [self createJob:@"job-r"];
 
     NSError *error = nil;
-    BOOL ok = [self.db updateVideoJobResults:@"job-r" processedBlobCid:@"bafyproc" thumbnailBlobCid:@"bafythumb" error:&error];
+    BOOL ok = [self.db updateVideoJobResults:@"job-r" processedBlobCid:@"bafyproc" thumbnailBlobCid:@"bafythumb" manifestBlobCid:nil error:&error];
     XCTAssertTrue(ok, @"update results: %@", error);
 
     NSDictionary *job = [self.db getVideoJobById:@"job-r" error:&error];
@@ -162,13 +226,30 @@ extern NSString * const JelczDatabaseErrorDomain;
     XCTAssertEqualObjects(job[@"progress"], @100);
     XCTAssertEqualObjects(job[@"processed_blob_cid"], @"bafyproc");
     XCTAssertEqualObjects(job[@"thumbnail_blob_cid"], @"bafythumb");
+    XCTAssertEqualObjects(job[@"manifest_blob_cid"], [NSNull null]);
+}
+
+- (void)testUpdateResultsWithManifestBlobCid {
+    [self createJob:@"job-m"];
+
+    NSError *error = nil;
+    BOOL ok = [self.db updateVideoJobResults:@"job-m"
+                            processedBlobCid:@"bafyproc"
+                           thumbnailBlobCid:@"bafythumb"
+                            manifestBlobCid:@"bafymanifest"
+                                      error:&error];
+    XCTAssertTrue(ok, @"update results with manifest: %@", error);
+
+    NSDictionary *job = [self.db getVideoJobById:@"job-m" error:&error];
+    XCTAssertEqualObjects(job[@"manifest_blob_cid"], @"bafymanifest");
+    XCTAssertEqualObjects(job[@"processed_blob_cid"], @"bafyproc");
 }
 
 - (void)testUpdateResultsWithNilCidsStillCompletes {
     [self createJob:@"job-rn"];
 
     NSError *error = nil;
-    BOOL ok = [self.db updateVideoJobResults:@"job-rn" processedBlobCid:nil thumbnailBlobCid:nil error:&error];
+    BOOL ok = [self.db updateVideoJobResults:@"job-rn" processedBlobCid:nil thumbnailBlobCid:nil manifestBlobCid:nil error:&error];
     XCTAssertTrue(ok, @"update results nil: %@", error);
 
     NSDictionary *job = [self.db getVideoJobById:@"job-rn" error:&error];
@@ -176,6 +257,7 @@ extern NSString * const JelczDatabaseErrorDomain;
     XCTAssertEqualObjects(job[@"progress"], @100);
     XCTAssertEqualObjects(job[@"processed_blob_cid"], [NSNull null]);
     XCTAssertEqualObjects(job[@"thumbnail_blob_cid"], [NSNull null]);
+    XCTAssertEqualObjects(job[@"manifest_blob_cid"], [NSNull null]);
 }
 
 - (void)testIncrementRetryResetsToPendingAndCounts {
@@ -230,7 +312,7 @@ extern NSString * const JelczDatabaseErrorDomain;
     [self createJob:@"p3"];
 
     NSError *error = nil;
-    XCTAssertTrue([self.db updateVideoJobResults:@"p2" processedBlobCid:@"c" thumbnailBlobCid:@"t" error:&error]); // -> COMPLETED
+    XCTAssertTrue([self.db updateVideoJobResults:@"p2" processedBlobCid:@"c" thumbnailBlobCid:@"t" manifestBlobCid:nil error:&error]); // -> COMPLETED
     XCTAssertTrue([self.db updateVideoJobState:@"p3" state:@"PROCESSING" progress:@(10) message:nil error:&error]);
 
     NSArray<NSDictionary *> *pending = [self.db queryPendingJobsWithLimit:10 error:&error];
@@ -261,7 +343,7 @@ extern NSString * const JelczDatabaseErrorDomain;
     [self createJob:@"l3"];
 
     NSError *error = nil;
-    XCTAssertTrue([self.db updateVideoJobResults:@"l2" processedBlobCid:@"c" thumbnailBlobCid:@"t" error:&error]);
+    XCTAssertTrue([self.db updateVideoJobResults:@"l2" processedBlobCid:@"c" thumbnailBlobCid:@"t" manifestBlobCid:nil error:&error]);
 
     NSArray<NSDictionary *> *pending = [self.db listVideoJobsWithState:@"PENDING" limit:10 offset:0 error:&error];
     XCTAssertEqual(pending.count, 2u);

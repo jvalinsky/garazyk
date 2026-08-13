@@ -525,7 +525,8 @@ static NSDictionary<NSString *, NSString *> *PDSGatedClassMap(void) {
       @"PDSWebSocketTransportTests"    : @"socket",
       @"WebSocketServerTests"          : @"socket",
       @"MikrusRuntimeTests"     : @"socket",
-      @"ATProtoMediaServiceRuntimeTests" : @"socket"
+      @"ATProtoMediaServiceRuntimeTests" : @"socket",
+      @"ATProtoCAWatchServiceTests" : @"socket"
     };
   });
   return map;
@@ -939,6 +940,7 @@ int main(int argc, char *argv[]) {
       @"OAuth2ClientMetadataValidationTests",
       @"OAuth2OPTIONSHandlerTests",
       @"LexiconValidationTests",
+      @"GarazykVideoLexiconTests",
       @"ATProtoLexiconDefTests",
       @"ATProtoLexiconErrorTests",
       @"ATProtoLexiconConstraintsTests",
@@ -1217,6 +1219,7 @@ int main(int argc, char *argv[]) {
       @"ATProtoDagCBOREdgeCaseTests",
       @"DASLConformanceTests",
       @"ATProtoBDASLVerifierTests",
+      @"ATProtoBaoTests",
       @"ATProtoMASLDocumentTests",
       @"ATProtoPFPTests",
       @"ATProtoMUXLBoxTests",
@@ -1224,6 +1227,8 @@ int main(int argc, char *argv[]) {
       @"ATProtoMUXLFMP4Tests",
       @"ATProtoS2PACOSETests",
       @"ATProtoS2PALeafCertificateTests",
+      @"ATProtoS2PAJUMBFTests",
+      @"ATProtoWebTileTests",
       @"ATProtoRASLURLTests",
       @"ATProtoRASLClientTests",
       @"PDSRASLResolverTests",
@@ -1244,6 +1249,14 @@ int main(int argc, char *argv[]) {
       @"ATProtoMediaCoreTests",
       @"ATProtoMediaServiceConfigurationTests",
       @"ATProtoMediaSQLiteStoreTests",
+      @"ATProtoCAObjectStoreTests",
+      @"ATProtoVideoPrefetchBootstrapTests",
+      @"ATProtoVODManifestBuilderTests",
+      @"ATProtoCAWatchServiceTests",
+      @"ATProtoCAObjectLifecycleTests",
+      @"ATProtoCAMirrorResolverTests",
+      @"ATProtoCAMirrorHTTPSFetcherTests",
+      @"ATProtoCARASLWellKnownTests",
       @"ATProtoMediaXrpcPackTests",
       @"JelczCLITests",
       @"JelczCommandTests",

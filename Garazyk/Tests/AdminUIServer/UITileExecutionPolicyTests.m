@@ -42,6 +42,15 @@
     XCTAssertTrue([module containsString:GZAdminUITileDataProtocolDownPayloadAction]);
     XCTAssertTrue([module containsString:GZAdminUITileDataProtocolUpPayloadAction]);
     XCTAssertTrue([module containsString:@"event.source !== window.parent"]);
+    XCTAssertTrue([module containsString:@", '*'"]);
+}
+
+- (void)testDataProtocolTrustedOriginGatesPostMessage {
+    NSString *module = GZAdminUITileDataProtocolJavaScriptWithTrustedOrigin(
+        @"https://abcdefghijklmnopqrst.example.test");
+    XCTAssertTrue([module containsString:@"'https://abcdefghijklmnopqrst.example.test'"]);
+    XCTAssertTrue([module containsString:@"if (event.origin !== 'https://abcdefghijklmnopqrst.example.test') return;"]);
+    XCTAssertFalse([module containsString:@", '*'"]);
 }
 
 - (void)testDataProtocolAcceptsReadyAndPayloadMessages {

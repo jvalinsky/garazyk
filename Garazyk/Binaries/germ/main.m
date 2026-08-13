@@ -102,14 +102,15 @@ int main(int argc, const char * argv[]) {
                              objectForKey:@"GERM_ADMIN_PASSWORD"];
         }
 
+        GZAdminUIHost *adminUIHost = nil;
         if (adminPassword.length > 0) {
             GZAdminUIServiceConfig *adminConfig = [[GZAdminUIServiceConfig alloc] init];
             adminConfig.host = @"127.0.0.1";
             adminConfig.port = 2599;
             adminConfig.adminPassword = adminPassword;
             adminConfig.serviceIdentifier = @"germ";
-            GZAdminUIHost *adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig
-                                                                                  packs:@[GZGermAdminUIPack.class]];
+            adminUIHost = [[GZAdminUIHost alloc] initWithConfiguration:adminConfig
+                                                                   packs:@[GZGermAdminUIPack.class]];
             NSError *adminErr = nil;
             if (![adminUIHost startWithError:&adminErr]) {
                 GZ_LOG_WARN(@"Germ admin UI failed to start: %@", adminErr.localizedDescription);

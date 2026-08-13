@@ -299,7 +299,7 @@ invented here.
 - Rollback: additive identifier/comparator APIs and test registration; no
   existing moderation or media caller depends on PFP.
 
-**Phase 9 — MUXL — PARTIAL (catalog + fragments + fMP4 + flat MP4).**
+**Phase 9 — MUXL — PARTIAL (catalog + fragments + fMP4 + flat MP4 + elst).**
 `MediaCore/ATProtoMUXLBox` validates a canonical single-track video or audio
 catalog, encodes and decodes the normative fixed `uuid-muxl` BMFF atom with
 DRISL bytes, and composes `[uuid-muxl][moof][mdat]...` segments.
@@ -321,14 +321,15 @@ canonical segments:
   HLS/transcoder paths are unchanged.
 - Evidence: `ATProtoMUXLBoxTests`, `ATProtoMUXLFragmentTests`, and
   `ATProtoMUXLFMP4Tests` (init determinism/ordering/prepend; flat determinism,
-  verbatim envelope, `stss`/`ctts` presence, no `mvex`). All registered in
+  verbatim envelope, `stss`/`ctts` presence, no `mvex`; flat `edts`/`elst` for
+  non-zero first `tfdt`, omitted when only CTO is non-zero). All registered in
   `Tests/test_main.m`.
-- Explicit remainder: `elst` for non-zero presentation offset, playback sanity,
-  and transcoder wiring remain open.
+- Explicit remainder: playback sanity and transcoder wiring remain open.
+  (`elst` for non-zero presentation offset shipped 2026-08-12.)
 - Rollback: additive MediaCore/Video primitives and test registration; existing
   HLS/transcoder output is untouched.
 
-**Phase 10 — S2PA — PARTIAL (COSE_Sign1 ES256K + self-signed leaf).**
+**Phase 10 — S2PA — PARTIAL (COSE + leaf + bounded JUMBF uuid carrier).**
 `Security/S2PA/ATProtoS2PACOSE` implements an attached COSE_Sign1 envelope with the normative
 ES256K algorithm (`-47`), canonical protected header `{1: -47}`, empty unprotected headers, the
 COSE `Sig_structure`, and 64-byte low-S secp256k1 signatures through the existing primitive. It
@@ -339,21 +340,24 @@ trust anchors, matching S2PA's self-certifying trust model.
 v3 leaf: DID in `commonName`, secp256k1 SPKI, normative extensions (basicConstraints cA=FALSE,
 digitalSignature keyUsage, emailProtection EKU, matching SKI/AKI), and self-signature over TBS.
 No trust-anchor chaining is performed.
+`Security/S2PA/ATProtoS2PAJUMBF` builds a nested JUMBF Manifest Store (`jumb`/`jumd`/`bidb`) that
+carries the COSE envelope and leaf DER, wraps it in a BMFF `uuid` box using the C2PA user-type
+UUID (`d8fec3d6-…`), verifies by recursive `bidb` extraction + leaf + COSE checks, and prepends
+the uuid box onto unchanged media bytes for MUXL-style presentation.
 
-- Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope and leaf certificate; it
-  consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository signatures or auth JWTs.
-- Evidence: `ATProtoS2PACOSETests` covers exact protected-header bytes, Sig_structure shape,
-  deterministic signing, attached-payload extraction, payload/key tampering, unsupported
-  algorithms, non-canonical CBOR rejection, and explicit no-trust-anchor verification.
-  `ATProtoS2PALeafCertificateTests` covers deterministic minting, default `did:key` and explicit
-  DID binding, self-signature verification, SKI embedding, and validity-window rejection.
-- Explicit remainder: the C2PA claim/manifest-store schema, JUMBF embedding, and video integration
-  remain open. This slice is cryptographic COSE + leaf identity, not a complete C2PA/S2PA asset
-  manifest.
+- Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope, leaf certificate, and
+  JUMBF/BMFF carrier; it consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository
+  signatures, auth JWTs, or the Video transcoder path.
+- Evidence: `ATProtoS2PACOSETests`, `ATProtoS2PALeafCertificateTests`, and `ATProtoS2PAJUMBFTests`
+  (uuid round-trip + verify, presentation prepend, tampered-payload rejection). All registered in
+  `Tests/test_main.m`.
+- Explicit remainder: the full C2PA claim/assertion schema, hard-binding content hashes, and
+  Video/MUXL wiring remain open. This slice is cryptographic identity + a bounded uuid carrier,
+  not a complete C2PA/S2PA asset manifest.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
   paths are unchanged.
 
-**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (protocol, policy, unique-origin load host).**
+**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (protocol, policy, unique-origin host, SW scripts, CAR load + path resolve + origin helpers).**
 `AdminUIServer/UITileDataProtocol` serves the reserved `/.well-known/web-tiles/data.js` module with
 `addDataHandler`, `removeDataHandler`, `listen`, and `sendData`, using the normative
 `tiles-protocol-up-data-ready`, `tiles-protocol-up-data-payload`, and
@@ -361,27 +365,50 @@ No trust-anchor chaining is performed.
 the normative restrictive CSP and isolation/security headers: no explicit `connect-src` or external
 network origin, `object-src 'none'`, `base-uri 'none'`, and the required sandbox/COOP/CORP/referrer/
 permission/DNS-prefetch headers. The policy is not itself a network boundary on a normal origin;
-unique-origin hosting is still required before arbitrary tile execution. The reserved route is
-additive and does not serve arbitrary tile resources.
+unique-origin hosting is still required before arbitrary tile execution.
 `AdminUIServer/UITileLoadingHost` implements the loading-server redirect pattern: when
 `GARAZYK_ADMIN_UI_TILES_BASE_HOST` / `PDS_ADMIN_UI_TILES_BASE_HOST` is set, `load.<base>` for
 `/.well-known/web-tiles/` returns 303 to a random 20-letter subdomain of `<base>`; unique-origin
-hosts serve a shuttle HTML shell with execution-policy headers and `service-worker-allowed: /`.
-Without a base host the document routes remain 404.
+hosts serve a shuttle HTML shell with execution-policy headers and `service-worker-allowed: /`,
+plus `shuttle.js` / `worker.js` that register a passthrough service worker for
+`/.well-known/web-tiles/`. Without a base host the document and script routes remain 404.
+`Core/ATProtoWebTile` validates MASL bundle tiles (`name`, `/` root); `Repository/ATProtoWebTile+CAR`
+loads a CAR/`.tile` archive, retains the reader, and resolves arbitrary declared paths to
+`{status, headers, body}` (404 for undeclared / missing blocks; QS/fragment stripped). Host-side
+origin helpers (`GZAdminUITileIsTrustedEmbedOrigin`,
+`GZAdminUITileDataProtocolJavaScriptWithTrustedOrigin`) gate postMessage peers when configured.
 
-- Owner boundary: `Garazyk/Sources/AdminUIServer` owns the host-selected protocol module, pure
-  policy helpers, and loading-host redirect. The route is registered with the existing Lab route
-  group; existing authenticated Admin UI CSP and routes are unchanged.
-- Evidence: `UITileExecutionPolicyTests` checks the exact restrictive policy, isolation headers,
-  protocol exports, action directions, payload requirements, and malformed-message rejection.
-  `UITileLoadingHostTests` checks load/unique-origin host classification, redirect URL shape, and
-  header application. `UIServerRuntimeTests` checks the reserved `data.js` route, load-host 303,
-  unique-origin shuttle + policy headers, and 404 without a configured base host.
-- Explicit remainder: CAR/MASL tile loading, blob resource mapping, service-worker shuttle
-  scripts, host-side origin authentication, and a separate Deno protocol package remain open.
-  This slice does not claim to execute arbitrary tile content or provide a full tile host.
-- Rollback: remove the additive policy/protocol/loading-host helpers, reserved routes, and test
-  registration; existing Admin UI routes and CSP remain unchanged.
+- Owner boundary: `Garazyk/Sources/AdminUIServer` owns the host-selected protocol module, policy
+  helpers, loading-host redirect, and SW script routes. `Core` / `Repository` own tile validation
+  and CAR loading. Existing authenticated Admin UI CSP and routes are unchanged.
+- Evidence: `UITileExecutionPolicyTests` (incl. trusted-origin JS), `UITileLoadingHostTests` (host
+  classification, redirect, headers, shuttle/worker, trusted origin), `UIServerRuntimeTests`
+  (`data.js`, load-host 303, unique-origin shuttle + script routes), `ATProtoWebTileTests` (MASL,
+  CAR root, multi-path resolve + 404).
+- Explicit remainder: full mothership `resolve-path` mediation, Deno tiles protocol package, and
+  AT-network `getBlob` path loading remain open. This slice does not claim to execute arbitrary
+  tile content or provide a full tile host.
+- Rollback: remove the additive policy/protocol/loading-host/WebTile helpers, reserved routes, and
+  test registration; existing Admin UI routes and CSP remain unchanged.
+
+### GNUstep package + DASL harness (2026-08-12)
+
+`scripts/test/gnustep-package-dasl-evidence.sh` builds (or reuses) the
+`toolchain` target of `docker/Dockerfile.gnustep`, runs
+`scripts/test/package-consumer-smoke.sh` inside the image, then focused
+`DASLConformanceTests` / `ATProtoDagCBOREdgeCaseTests` / `ATProtoS2PACOSETests` /
+`ATProtoS2PALeafCertificateTests` / `ATProtoS2PAJUMBFTests` /
+`ATProtoWebTileTests`.
+
+**Verified 2026-08-12** on `garazyk-gnustep-toolchain:local` (arm64 OrbStack):
+- `package-consumer-smoke: OK` (relocated prefix, core-only, full-graph,
+  private-header-denied) after `GarazykConfig.cmake` reattaches GNUstep
+  Foundation/`objc`/`dispatch` include+link requirements for Linux consumers.
+- Focused DASL/S2PA/WebTile filters: 16+26+9+4+3+3 tests, **0 failures**.
+  Portability fixes landed with this evidence: `CFAbsoluteTime` →
+  `NSDate` in Mikrus/Beskid metrics, GNUstep-safe Web Tile grapheme counting,
+  and `QOS_CLASS_DEFAULT` → `DISPATCH_QUEUE_PRIORITY_DEFAULT` in Relay admin
+  UI tests.
 
 **Optional, out of tree:** contribute an Objective-C harness to hyphacoop/dasl-testing so Garazyk
 appears in the published conformance report.

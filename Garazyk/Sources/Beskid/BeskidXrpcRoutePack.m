@@ -620,8 +620,11 @@
     options.allowPrivateHosts = YES;
 
     NSString *host = components.host ?: endpoint;
+    if ([self.metrics consumeInvalidationAttributionForDID:did toHost:host]) {
+        // counted as firehose.originGetsAttributed
+    }
     [self.metrics recordUpstreamRequestToHost:host];
-    CFAbsoluteTime start = CFAbsoluteTimeGetCurrent();
+    NSTimeInterval start = [NSDate timeIntervalSinceReferenceDate];
 
     NSHTTPURLResponse *http = nil;
     NSError *fetchError = nil;
@@ -630,7 +633,7 @@
                                                                        response:&http
                                                                           error:&fetchError];
 
-    int64_t latencyMs = (int64_t)((CFAbsoluteTimeGetCurrent() - start) * 1000.0);
+    int64_t latencyMs = (int64_t)(([NSDate timeIntervalSinceReferenceDate] - start) * 1000.0);
     if (fetchError || http.statusCode < 200 || http.statusCode >= 300 || data.length == 0) {
         [self.metrics recordUpstreamFailureToHost:host];
         return nil;
