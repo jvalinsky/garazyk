@@ -1,7 +1,7 @@
 ---
 title: Test Suite Speedups
-status: active
-last_verified: 2026-08-04
+status: complete
+last_verified: 2026-08-12
 ---
 
 # Test Suite Speedups

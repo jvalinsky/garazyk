@@ -56,9 +56,14 @@ export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Lab OAuth2 Login");
   result.start();
 
-  const uiUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(/\/$/, "");
+  // Prefer the embedded PDS admin UI (`SERVICE_URLS.ui` → :2590). The retired
+  // standalone admin / web-client host is no longer the Lab target (WS11 M4/M5).
+  const uiUrl = (SERVICE_URLS.ui || SERVICE_URLS.webClient).replace(/\/$/, "");
   const adminPassword = Deno.env.get("PDS_ADMIN_UI_PASSWORD") ??
     DEFAULT_ADMIN_PASSWORD;
+  const sessionCookie = "gz_admin_pds_token";
+  const csrfCookie = "gz_admin_pds_nonce";
+  const htmxPartial = "/admin/partials/pds-stats";
 
   await timedCall(
     result,
@@ -191,11 +196,11 @@ export async function run(): Promise<ScenarioResult> {
         `login_page_status=${loginPage.status}`,
       );
 
-      const csrfCookie = firstSetCookieValue(
+      const csrfCookieValue = firstSetCookieValue(
         loginPage.headers,
-        "ui_admin_nonce",
+        csrfCookie,
       );
-      if (!csrfCookie) throw new Error("ui_admin_nonce cookie not found");
+      if (!csrfCookieValue) throw new Error(`${csrfCookie} cookie not found`);
 
       const csrfNonce = csrfNonceFromLoginPage(await loginPage.text());
       if (!csrfNonce) throw new Error("csrf nonce not found");
@@ -204,24 +209,24 @@ export async function run(): Promise<ScenarioResult> {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Cookie": `ui_admin_nonce=${csrfCookie}`,
+          "Cookie": `${csrfCookie}=${csrfCookieValue}`,
           "X-UI-Admin-Nonce": csrfNonce,
         },
         body: JSON.stringify({ password: adminPassword }),
       });
       assert.isTrue(res.status === 200, `status=${res.status}`);
 
-      let token = firstSetCookieValue(res.headers, "ui_admin_token");
+      let token = firstSetCookieValue(res.headers, sessionCookie);
 
       if (!token) {
         const body = await res.json();
-        token = body.token || body.ui_admin_token;
+        token = body.token || body.ui_admin_token || body[sessionCookie];
       }
 
       if (!token) {
         throw new Error("token not found");
       }
-      adminCookieHeader = `ui_admin_token=${token}`;
+      adminCookieHeader = `${sessionCookie}=${token}`;
     },
   );
 
@@ -243,7 +248,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Admin HTMX auth",
     async () => {
-      const res = await fetch(`${uiUrl}/admin/partials/overview`, {
+      const res = await fetch(`${uiUrl}${htmxPartial}`, {
         headers: { "HX-Request": "true" },
         redirect: "manual",
       });
@@ -256,7 +261,7 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Admin HTMX with auth",
       async () => {
-        const res = await fetch(`${uiUrl}/admin/partials/overview`, {
+        const res = await fetch(`${uiUrl}${htmxPartial}`, {
           headers: { "HX-Request": "true", "Cookie": adminCookieHeader },
           redirect: "manual",
         });

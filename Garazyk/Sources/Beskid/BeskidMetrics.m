@@ -12,24 +12,29 @@ static const NSUInteger kMaxUpstreamHosts = 32;
     int64_t _recordHits, _recordMisses, _recordExpiredReads, _recordWrites, _recordDeletes;
     // identity cache
     int64_t _identityHits, _identityMisses, _identityExpiredReads, _identityWrites;
+    int64_t _identityDeletes;
     // rate limiting
     int64_t _rateLimitRejects;
     // upstream (aggregate)
     int64_t _upstreamRequests, _upstreamSuccesses, _upstreamFailures, _upstreamTotalLatencyMs;
     // entry gauges
     int64_t _recordEntries, _identityEntries;
+    // expiry bounding
+    int64_t _recordMinExpiryAt, _identityMinExpiryAt;
+    // uptime
+    NSTimeInterval _startTime;
+    // per-host upstream
+    NSMutableArray<NSString *> *_upstreamHostKeys;
+    NSMutableDictionary<NSString *, NSMutableDictionary *> *_upstreamHosts;
     // firehose
     BOOL _firehoseConnected;
     int64_t _firehoseInvalidationsCommit, _firehoseInvalidationsIdentity, _firehoseInvalidationsAccount;
     int64_t _firehoseReconnects, _firehoseParseErrors;
-    int64_t _identityDeletes;
-    // expiry bounding
-    int64_t _recordMinExpiryAt, _identityMinExpiryAt;
-    // uptime
-    CFAbsoluteTime _startTime;
-    // per-host upstream
-    NSMutableArray<NSString *> *_upstreamHostKeys;
-    NSMutableDictionary<NSString *, NSMutableDictionary *> *_upstreamHosts;
+    int64_t _firehoseReceivedCommit, _firehoseReceivedIdentity, _firehoseReceivedAccount;
+    int64_t _firehoseAppliedPrecise, _firehoseAppliedFallback, _firehoseDropped;
+    int64_t _firehosePurgeLatencyCount, _firehosePurgeLatencyTotalMs, _firehosePurgeLatencyMaxMs;
+    int64_t _firehoseOriginGetsAttributed;
+    NSMutableDictionary<NSString *, NSNumber *> *_invalidationMarks; // did -> deadline
 }
 @end
 
@@ -39,9 +44,10 @@ static const NSUInteger kMaxUpstreamHosts = 32;
     self = [super init];
     if (self) {
         _queue = dispatch_queue_create("blue.microcosm.beskid.metrics", DISPATCH_QUEUE_SERIAL);
-        _startTime = CFAbsoluteTimeGetCurrent();
+        _startTime = [NSDate timeIntervalSinceReferenceDate];
         _upstreamHostKeys = [NSMutableArray array];
         _upstreamHosts = [NSMutableDictionary dictionary];
+        _invalidationMarks = [NSMutableDictionary dictionary];
     }
     return self;
 }
@@ -124,6 +130,71 @@ static const NSUInteger kMaxUpstreamHosts = 32;
 
 - (void)recordFirehoseParseError {
     dispatch_sync(_queue, ^{ ++self->_firehoseParseErrors; });
+}
+
+- (void)recordFirehoseEventReceived:(NSString *)type {
+    dispatch_sync(_queue, ^{
+        if ([type isEqualToString:@"identity"]) {
+            ++self->_firehoseReceivedIdentity;
+        } else if ([type isEqualToString:@"account"]) {
+            ++self->_firehoseReceivedAccount;
+        } else {
+            ++self->_firehoseReceivedCommit;
+        }
+    });
+}
+
+- (void)recordFirehoseInvalidationApplied:(NSString *)outcome {
+    dispatch_sync(_queue, ^{
+        if ([outcome isEqualToString:@"fallback"]) {
+            ++self->_firehoseAppliedFallback;
+        } else if ([outcome isEqualToString:@"dropped"]) {
+            ++self->_firehoseDropped;
+        } else {
+            ++self->_firehoseAppliedPrecise;
+        }
+    });
+}
+
+- (void)recordFirehosePurgeLatencyMillis:(int64_t)ms {
+    if (ms < 0) ms = 0;
+    dispatch_sync(_queue, ^{
+        ++self->_firehosePurgeLatencyCount;
+        self->_firehosePurgeLatencyTotalMs += ms;
+        if (ms > self->_firehosePurgeLatencyMaxMs) {
+            self->_firehosePurgeLatencyMaxMs = ms;
+        }
+    });
+}
+
+- (void)markInvalidationForDID:(NSString *)did {
+    if (did.length == 0) return;
+    NSTimeInterval deadline = [NSDate timeIntervalSinceReferenceDate] + 60.0;
+    dispatch_sync(_queue, ^{
+        while (self->_invalidationMarks.count >= 256) {
+            // Evict an arbitrary expired or oldest-ish key.
+            NSString *evict = self->_invalidationMarks.allKeys.firstObject;
+            if (!evict) break;
+            [self->_invalidationMarks removeObjectForKey:evict];
+        }
+        self->_invalidationMarks[did] = @(deadline);
+    });
+}
+
+- (BOOL)consumeInvalidationAttributionForDID:(NSString *)did toHost:(NSString *)host {
+    (void)host;
+    if (did.length == 0) return NO;
+    __block BOOL consumed = NO;
+    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    dispatch_sync(_queue, ^{
+        NSNumber *deadline = self->_invalidationMarks[did];
+        if (!deadline) return;
+        [self->_invalidationMarks removeObjectForKey:did];
+        if (deadline.doubleValue < now) return;
+        ++self->_firehoseOriginGetsAttributed;
+        consumed = YES;
+    });
+    return consumed;
 }
 
 - (void)recordIdentityDelete {
@@ -213,7 +284,7 @@ static NSDictionary *familySnapshot(NSString *name, int64_t entries,
                                      int64_t writes, int64_t deletes,
                                      int64_t minExpiry) {
     double ratio = hitRatio(hits, misses, expired);
-    NSNumber *soonest = minExpiry > 0 ? @(minExpiry) : [NSNull null];
+    id soonest = minExpiry > 0 ? @(minExpiry) : [NSNull null];
     return @{
         @"family": name,
         @"entries": @(entries), @"hits": @(hits), @"misses": @(misses),
@@ -225,7 +296,7 @@ static NSDictionary *familySnapshot(NSString *name, int64_t entries,
 - (NSDictionary<NSString *, id> *)snapshotDictionary {
     __block NSDictionary *result = nil;
     dispatch_sync(_queue, ^{
-        int64_t uptime = (int64_t)(CFAbsoluteTimeGetCurrent() - self->_startTime);
+        int64_t uptime = (int64_t)([NSDate timeIntervalSinceReferenceDate] - self->_startTime);
 
         NSDictionary *recordFam = familySnapshot(@"records",
             self->_recordEntries, self->_recordHits, self->_recordMisses,
@@ -274,6 +345,18 @@ static NSDictionary *familySnapshot(NSString *name, int64_t entries,
                 @"invalidationsCommit": @(self->_firehoseInvalidationsCommit),
                 @"invalidationsIdentity": @(self->_firehoseInvalidationsIdentity),
                 @"invalidationsAccount": @(self->_firehoseInvalidationsAccount),
+                @"receivedCommit": @(self->_firehoseReceivedCommit),
+                @"receivedIdentity": @(self->_firehoseReceivedIdentity),
+                @"receivedAccount": @(self->_firehoseReceivedAccount),
+                @"appliedPrecise": @(self->_firehoseAppliedPrecise),
+                @"appliedFallback": @(self->_firehoseAppliedFallback),
+                @"dropped": @(self->_firehoseDropped),
+                @"purgeLatencyAverageMs":
+                    self->_firehosePurgeLatencyCount > 0
+                        ? @(self->_firehosePurgeLatencyTotalMs / self->_firehosePurgeLatencyCount)
+                        : [NSNull null],
+                @"purgeLatencyMaxMs": @(self->_firehosePurgeLatencyMaxMs),
+                @"originGetsAttributed": @(self->_firehoseOriginGetsAttributed),
                 @"reconnects": @(self->_firehoseReconnects),
                 @"parseErrors": @(self->_firehoseParseErrors),
             },

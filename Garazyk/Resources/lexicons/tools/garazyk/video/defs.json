@@ -1,0 +1,108 @@
+{
+  "lexicon": 1,
+  "id": "tools.garazyk.video.defs",
+  "description": "Shared types for Garazyk content-addressed VOD records (WS12 / ADR 0036).",
+  "defs": {
+    "aspectRatio": {
+      "type": "object",
+      "description": "Width/height of the primary visual rendition.",
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "rendition": {
+      "type": "object",
+      "description": "One adaptive-bitrate ladder entry described by the MASL manifest.",
+      "required": ["name", "height"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Variant directory name used in the MASL bundle (e.g. 720p)."
+        },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "bandwidth": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nominal peak bitrate in bits per second."
+        },
+        "codecs": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "RFC 6381 codecs string when known."
+        }
+      }
+    },
+    "byteRange": {
+      "type": "object",
+      "description": "Inclusive byte offset and length for a flat-VOD first segment (or init+first).",
+      "required": ["offset", "length"],
+      "properties": {
+        "offset": { "type": "integer", "minimum": 0 },
+        "length": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "playbackBootstrap": {
+      "type": "object",
+      "description": "Prefetch-critical metadata so a feed client can start the next item without a record→manifest→segment discovery chain (ADR 0037 / WS12 Phase 8).",
+      "required": ["uri", "cid", "manifestCid"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "at-uri",
+          "description": "Stable tools.garazyk.video at-uri."
+        },
+        "cid": {
+          "type": "string",
+          "format": "cid",
+          "description": "Record CID for the video identity."
+        },
+        "manifestCid": {
+          "type": "string",
+          "format": "cid",
+          "description": "SHA-256 CID of the DRISL/MASL manifest blob."
+        },
+        "playlist": {
+          "type": "string",
+          "format": "uri",
+          "description": "Resolved /watch master playlist URL when a known origin is attached."
+        },
+        "watchBaseUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Origin base for /watch/{did}/{manifestCid}/… fetches."
+        },
+        "firstSegmentPath": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "MASL-relative media path for the first playable range (e.g. /720p/video.fmp4)."
+        },
+        "firstSegmentRange": {
+          "type": "ref",
+          "ref": "#byteRange"
+        },
+        "firstSegmentBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Declared byte budget for the first-segment prefetch (waste accounting)."
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "providers": {
+          "type": "array",
+          "maxLength": 16,
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": "Mutable provider hint URLs suitable for immediate fetch (from origin attestations)."
+        }
+      }
+    }
+  }
+}

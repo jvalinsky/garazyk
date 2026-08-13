@@ -98,6 +98,10 @@ void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSSt
 /** @abstract Serves or redirects Web Tiles unique-origin documents. */
 - (void)handleWebTilesDocumentRequest:(ATProtoHttpRequest *)request
                              response:(ATProtoHttpResponse *)response;
+/** @abstract Serves shuttle.js / worker.js on unique-origin hosts. */
+- (void)handleWebTilesScriptRequest:(ATProtoHttpRequest *)request
+                           response:(ATProtoHttpResponse *)response
+                               body:(NSString *)body;
 /** @abstract Registers Ozone administration routes. */
 - (void)registerOzoneRoutes;
 /** @abstract Registers UI security-management routes. */

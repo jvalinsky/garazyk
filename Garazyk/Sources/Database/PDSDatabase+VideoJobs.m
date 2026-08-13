@@ -12,7 +12,8 @@
 @implementation PDSDatabase (VideoJobs)
 
 - (NSDictionary *)getVideoJobById:(NSString *)jobId error:(NSError **)error {
-    NSString *sql = @"SELECT job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, message, processed_blob_cid, thumbnail_blob_cid, retry_count, error_message, created_at, updated_at FROM video_jobs WHERE job_id = ?";
+    [self ensureVideoJobsManifestColumn];
+    NSString *sql = @"SELECT job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, message, processed_blob_cid, thumbnail_blob_cid, manifest_blob_cid, retry_count, error_message, created_at, updated_at FROM video_jobs WHERE job_id = ?";
     NSArray *rows = [self executeParameterizedQuery:sql params:@[jobId] error:error];
     return rows.firstObject;
 }
@@ -78,18 +79,31 @@
 - (BOOL)updateVideoJobResults:(NSString *)jobId
            processedBlobCid:(NSString *)processedBlobCid
           thumbnailBlobCid:(NSString *)thumbnailBlobCid
+           manifestBlobCid:(NSString *)manifestBlobCid
                       error:(NSError **)error {
+    [self ensureVideoJobsManifestColumn];
     NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
-    NSString *sql = @"UPDATE video_jobs SET processed_blob_cid = ?, thumbnail_blob_cid = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
+    NSString *sql = @"UPDATE video_jobs SET processed_blob_cid = ?, thumbnail_blob_cid = ?, manifest_blob_cid = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
 
     NSArray *params = @[
         processedBlobCid ?: [NSNull null],
         thumbnailBlobCid ?: [NSNull null],
+        manifestBlobCid ?: [NSNull null],
         now,
         jobId ?: [NSNull null]
     ];
 
     return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (void)ensureVideoJobsManifestColumn {
+    NSArray *info = [self executeUnsafeRawQuery:@"PRAGMA table_info(video_jobs)" error:nil];
+    for (NSDictionary *row in info) {
+        if ([row[@"name"] isEqualToString:@"manifest_blob_cid"]) {
+            return;
+        }
+    }
+    [self executeUnsafeRawSQL:@"ALTER TABLE video_jobs ADD COLUMN manifest_blob_cid TEXT" error:nil];
 }
 
 - (BOOL)incrementVideoJobRetry:(NSString *)jobId
@@ -107,13 +121,14 @@
     NSString *sql;
     NSArray *params;
     if (state.length > 0) {
-        sql = @"SELECT job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, message, processed_blob_cid, thumbnail_blob_cid, retry_count, error_message, created_at, updated_at FROM video_jobs WHERE state = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        sql = @"SELECT job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, message, processed_blob_cid, thumbnail_blob_cid, manifest_blob_cid, retry_count, error_message, created_at, updated_at FROM video_jobs WHERE state = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
         params = @[state, @(limit), @(offset)];
     } else {
-        sql = @"SELECT job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, message, processed_blob_cid, thumbnail_blob_cid, retry_count, error_message, created_at, updated_at FROM video_jobs ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        sql = @"SELECT job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, message, processed_blob_cid, thumbnail_blob_cid, manifest_blob_cid, retry_count, error_message, created_at, updated_at FROM video_jobs ORDER BY created_at DESC LIMIT ? OFFSET ?";
         params = @[@(limit), @(offset)];
     }
 
+    [self ensureVideoJobsManifestColumn];
     return [self executeParameterizedQuery:sql params:params error:error];
 }
 

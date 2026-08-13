@@ -60,12 +60,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @param jobId The job identifier.
  * @param processedBlobCid The final transcoded blob ATProtoCID.
  * @param thumbnailBlobCid The generated thumbnail blob ATProtoCID.
+ * @param manifestBlobCid Optional DRISL MASL manifest blob ATProtoCID (WS12 Phase 4).
  * @param error Receives failure details.
  * @return YES if updated successfully.
  */
 - (BOOL)updateVideoJobResults:(NSString *)jobId
               processedBlobCid:(nullable NSString *)processedBlobCid
              thumbnailBlobCid:(nullable NSString *)thumbnailBlobCid
+              manifestBlobCid:(nullable NSString *)manifestBlobCid
                         error:(NSError **)error;
 
 /**

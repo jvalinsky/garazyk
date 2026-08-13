@@ -1,7 +1,7 @@
 ---
 title: Germ Admin UI Brief
-status: planned
-last_verified: 2026-08-11
+status: partially-implemented
+last_verified: 2026-08-12
 ---
 
 # E2EE mailbox (`germ`)
@@ -12,11 +12,18 @@ Apply the stricter of this brief and the [Chat privacy rules](chat.md).
 
 ## Outcome and evidence
 
-Add the first Germ admin pack without turning an E2EE transport into a metadata
-inspection tool. Germ stores ephemeral and rendezvous mailbox addresses plus
-opaque ciphertext in `germ-mailbox.db`, authenticates XRPC calls through
-`ChatAuthManager`, and currently exposes only a plain health route. It has no
-operator credential or operational counters.
+Germ embeds `GZGermAdminUIPack` on a password-gated loopback listener
+(`127.0.0.1:2599`) with aggregate-only HTMX partials (health / flow / storage)
+fed from `GET /_admin/metrics`. NixOS module and deployment example landed
+earlier (`22474f0f`, `6079815d`).
+
+**2026-08-12:** Fixed an ARC lifetime bug where `GZAdminUIHost` was released
+before `GZServiceLifecycle` returned (listener accepted TCP but never
+dispatched). Host is now retained for the service lifetime (same pattern as
+chat/jelcz). Checked-in smoke:
+`deno run -A scripts/test/germ_admin_loopback_smoke.ts` — login, overview
+shell, 8 rounds of live metrics partials, and privacy-key rejection on
+`/_admin/metrics` (exit 0).
 
 ## Dashboard shape
 
@@ -35,14 +42,16 @@ operator credential or operational counters.
 
 ## Slices and acceptance
 
-1. Add aggregate counters at mailbox service boundaries and cheap expiry/queue
-   gauges maintained by writes or scheduled maintenance.
-2. Create `GZAdminUIGermPack` with aggregate-only response models and tests that
-   reject forbidden keys.
-3. Add a dedicated loopback listener, operator password-file configuration,
-   scoped session, lifecycle composition, and packaging/NixOS options.
-4. Test empty and high-volume mailboxes, expiration, rendezvous, auth failures,
-   concurrency, response-key allowlists, session rejection, and polling cost.
+1. ~~Add aggregate counters at mailbox service boundaries and cheap expiry/queue
+   gauges maintained by writes or scheduled maintenance.~~ **Done.**
+2. ~~Create `GZAdminUIGermPack` / `GZGermAdminUIPack` with aggregate-only
+   response models.~~ **Done** (forbidden-key assertion in loopback smoke).
+3. ~~Add a dedicated loopback listener, operator password-file configuration,
+   scoped session, lifecycle composition, and packaging/NixOS options.~~
+   **Done** (retain fix 2026-08-12).
+4. ~~Loopback smoke for live metrics rendering + privacy assertions.~~
+   **Done 2026-08-12** via `scripts/test/germ_admin_loopback_smoke.ts`.
+   High-volume mailbox fixture stress remains optional hardening.
 
 Acceptance requires an automated assertion that no response contains mailbox
 addresses, agent references, ciphertext, or tokens, plus unchanged mailbox

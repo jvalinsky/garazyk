@@ -117,6 +117,8 @@ static GZBeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
     XCTAssertEqualObjects(value[@"health"], @"ok");
     XCTAssertEqualObjects(value[@"cache"][@"overall"][@"entries"], @0);
     XCTAssertEqualObjects(value[@"cache"][@"record"][@"entries"], @0);
+    XCTAssertNotNil(value[@"firehose"]);
+    XCTAssertEqualObjects(value[@"firehose"][@"connected"], @NO);
     [db close];
 }
 
@@ -165,6 +167,22 @@ static GZBeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
     [metrics recordRecordWriteWithExpiresAt:soon];
     NSDictionary *snap = [metrics snapshotDictionary];
     XCTAssertEqualObjects(snap[@"record"][@"soonestExpiry"], @(soon));
+}
+
+- (void)testFirehoseObservabilityCountersAndAttribution {
+    GZBeskidMetrics *metrics = [[GZBeskidMetrics alloc] init];
+    [metrics recordFirehoseEventReceived:@"commit"];
+    [metrics recordFirehoseInvalidationApplied:@"precise"];
+    [metrics recordFirehosePurgeLatencyMillis:12];
+    [metrics markInvalidationForDID:@"did:plc:attr"];
+    XCTAssertTrue([metrics consumeInvalidationAttributionForDID:@"did:plc:attr" toHost:@"pds.example"]);
+    XCTAssertFalse([metrics consumeInvalidationAttributionForDID:@"did:plc:attr" toHost:@"pds.example"]);
+    NSDictionary *firehose = [metrics snapshotDictionary][@"firehose"];
+    XCTAssertEqual([firehose[@"receivedCommit"] longLongValue], 1);
+    XCTAssertEqual([firehose[@"appliedPrecise"] longLongValue], 1);
+    XCTAssertEqualObjects(firehose[@"purgeLatencyAverageMs"], @12);
+    XCTAssertEqual([firehose[@"purgeLatencyMaxMs"] longLongValue], 12);
+    XCTAssertEqual([firehose[@"originGetsAttributed"] longLongValue], 1);
 }
 
 - (void)testDatabasePressureBytesReported {

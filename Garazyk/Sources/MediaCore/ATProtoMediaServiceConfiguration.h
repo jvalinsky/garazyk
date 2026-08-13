@@ -57,6 +57,47 @@ NS_ASSUME_NONNULL_BEGIN
 /// Option to include high-quality variants.
 @property (nonatomic, assign) BOOL includeHighQuality;
 
+/**
+ Whether to assemble a content-addressed VOD MASL manifest after HLS (WS12 Phase 3).
+
+ Defaults to NO until Phase 5 can serve the manifest. When enabled, requires a
+ usable @c caObjectStoreDirectory.
+ */
+@property (nonatomic, assign) BOOL enableContentAddressedManifest;
+
+/**
+ Root directory for the jelcz CA object store (@c objects/ + @c proofs/).
+
+ Defaults to @c {dataDirectory}/ca-objects when the feature flag is on and this
+ property is unset.
+ */
+@property (nonatomic, copy, nullable) NSString *caObjectStoreDirectory;
+
+/**
+ When YES, zero-refcount CA objects are deleted after the grace period (WS12 Phase 6).
+
+ Defaults to NO — sweep off leaves orphans on disk (growth, not data loss).
+ */
+@property (nonatomic, assign) BOOL caObjectSweepEnabled;
+
+/**
+ When YES and a mirror fetcher is injected, watch/RASL miss paths may fetch
+ verified objects from @c caMirrorProviders (WS12 Phase 10). Default NO.
+ */
+@property (nonatomic, assign) BOOL enableCAMirrorFetch;
+
+/**
+ Absolute HTTPS provider base URLs for CA mirror fetch (comma-separated env).
+ */
+@property (nonatomic, copy, nullable) NSArray<NSString *> *caMirrorProviders;
+
+/**
+ Grace period before reclaiming zero-refcount CA objects.
+
+ Default six hours; clamped to a one-hour minimum (ADR 0013 shape).
+ */
+@property (nonatomic, assign) NSTimeInterval caObjectGracePeriodSeconds;
+
 /// S3 bucket name (cloud storage, optional).
 @property (nonatomic, copy, nullable) NSString *s3Bucket;
 

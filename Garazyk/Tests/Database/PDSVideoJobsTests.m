@@ -108,6 +108,7 @@
     BOOL updated = [self.database updateVideoJobResults:@"job-3"
                                        processedBlobCid:@"bafyreiprocessed"
                                       thumbnailBlobCid:@"bafyreithumbnail"
+                                       manifestBlobCid:nil
                                                    error:&error];
     XCTAssertTrue(updated);
     XCTAssertNil(error);
@@ -194,6 +195,7 @@
     [self.database updateVideoJobResults:@"job-6"
                         processedBlobCid:@"bafyreidone"
                        thumbnailBlobCid:@"bafyreithumb"
+                        manifestBlobCid:nil
                                     error:nil];
     job = [self.database getVideoJobById:@"job-6" error:nil];
     XCTAssertEqualObjects(job[@"state"], @"COMPLETED");

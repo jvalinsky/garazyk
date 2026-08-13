@@ -20,4 +20,6 @@ if(APPLE)
     ${GARAZYK_ImageIO}
     ${GARAZYK_CoreImage}
     ${GARAZYK_CoreServices})
+else()
+  target_compile_options(full_graph_consumer PRIVATE -fobjc-arc -fblocks -fobjc-runtime=gnustep-2.2)
 endif()

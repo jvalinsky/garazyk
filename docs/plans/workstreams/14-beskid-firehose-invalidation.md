@@ -83,23 +83,27 @@ hardening for Phase 4 SLOs.
 fixture coverage (`testIdentityEventDeletesCachedIdentity`,
 `testAccountTakedownPurgesRecordsAndIdentity`).
 
-## Phase 4 — observability, SLOs, and operational safety
+## Phase 4 — PARTIAL: observability counters (2026-08-12); live SLO load-test open
 
-- **Evidence.** Without metrics, invalidation can regress hit ratio or cause
-  origin storms.
-- **Change.** Add metrics:
-  - invalidations received by type,
-  - invalidations applied vs dropped (fallback),
-  - time from firehose event to first cache purge,
-  - origin GET rate attributable to invalidations.
-- **SLO targets (initial).**
-  - staleness window p95 reduction (measure from update time to corrected
-    fetch),
-  - invalidation-induced origin GETs bounded under configurable budget.
-- **Gate.** Load test simulating bursty updates; no sustained origin
-  overload.
+- **Shipped.** `GZBeskidMetrics` records received events by type, applied
+  outcomes (`precise` / `fallback` / `dropped`), purge latency (avg/max ms),
+  reconnects, parse errors, and origin GET attribution via
+  `markInvalidationForDID:` / `consumeInvalidationAttributionForDID:`.
+  `BeskidFirehoseInvalidator` instruments commit/identity/account handlers.
+  Admin snapshot `firehose` object exposes the counters; covered by
+  `BeskidFirehoseInvalidatorTests`, `BeskidAdminSnapshotTests`, and
+  `BeskidMetricsTests` (2026-08-12 native rebuild green).
+- **Initial SLO targets (documented).**
+  - Purge latency: unit path records wall time from event accept to first
+    cache delete; operational p95 target remains TBD pending burst load test.
+  - Invalidation-induced origin GETs: attribution window marks DIDs so
+    subsequent cache misses can be counted; budget enforcement is operator
+    monitoring of `originGetsAttributed` vs traffic, not an in-process circuit
+    breaker yet.
+- **Explicit remainder.** Sustained burst load-test gate (no origin overload
+  under update storms) and optional disable-order runbook automation.
 - **Rollback.** Disable identity invalidation first, then record invalidation,
-  then the subscription.
+  then the subscription (`BESKID_FIREHOSE_ENABLED=0`).
 
 ## Optional start condition
 

@@ -1,0 +1,86 @@
+{
+  "lexicon": 1,
+  "id": "tools.garazyk.video",
+  "description": "Author-owned immutable identity for a content-addressed VOD. The manifest blob is a DRISL-encoded MASL document naming CA media objects (ADR 0036). Provider hints and redistribution consent live on separate records.",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "Video identity record authored by the video owner.",
+      "record": {
+        "type": "object",
+        "required": ["manifest", "durationMs", "createdAt"],
+        "properties": {
+          "manifest": {
+            "type": "blob",
+            "description": "DRISL-encoded MASL bundle naming VOD objects (SHA-256 atproto blob CID).",
+            "accept": ["application/vnd.ipld.dag-cbor", "application/octet-stream"],
+            "maxSize": 1048576
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Playback duration in milliseconds."
+          },
+          "aspectRatio": {
+            "type": "ref",
+            "ref": "tools.garazyk.video.defs#aspectRatio"
+          },
+          "renditions": {
+            "type": "array",
+            "maxLength": 20,
+            "items": {
+              "type": "ref",
+              "ref": "tools.garazyk.video.defs#rendition"
+            },
+            "description": "Ladder metadata for clients; byte identity remains in the manifest."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1400,
+            "maxGraphemes": 140
+          },
+          "thumb": {
+            "type": "blob",
+            "accept": ["image/*"],
+            "maxSize": 1000000
+          },
+          "compatMp4": {
+            "type": "blob",
+            "accept": ["video/mp4"],
+            "maxSize": 50000000,
+            "description": "Optional progressive MP4 for Bluesky app.bsky.embed.video compatibility. Never a DRISL manifest."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    },
+    "view": {
+      "type": "object",
+      "description": "AppView hydration of tools.garazyk.video.",
+      "required": ["uri", "cid", "author", "record"],
+      "properties": {
+        "uri": { "type": "string", "format": "at-uri" },
+        "cid": { "type": "string", "format": "cid" },
+        "author": {
+          "type": "string",
+          "format": "did",
+          "description": "Author DID. Profile view shapes may replace this in a later AppView slice."
+        },
+        "record": { "type": "unknown" },
+        "playlist": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional /watch URL for the master playlist when a known origin is attached."
+        },
+        "thumbnail": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    }
+  }
+}

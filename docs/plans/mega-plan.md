@@ -552,16 +552,14 @@ remaining program does not depend on items 1-2.
     (option 2). Full detail, evidence, and per-class failure breakdown:
     workstream 08's "GNUstep/Linux CI investigation" section.
 
-11. **Open (added 2026-07-30):** cut `AllTests` wall clock and related CI /
-    Deno cycle waste. Complete
-    [workstream 09](workstreams/09-test-suite-speedups.md). Measured baseline
-    from CI run `30512753291`: suite **~654s**, ~61% in XRPC auth-base
-    classes, driven by uncached lexicon reloads (~200–250s) and production
-    PBKDF2 in tests (~100–150s). Full critique:
-    [`test-suite-speedups-2026-07-30.md`](test-suite-speedups-2026-07-30.md).
-    Phase 1 (lexicon memoization, test-mode PBKDF2, quieter logs, dead
-    sleeps) is the highest-impact / lowest-risk entry; fixture sharing and
-    sharding follow.
+11. **Complete for shipped speedups (updated 2026-08-12):** cut `AllTests` wall
+    clock and related CI / Deno cycle waste via
+    [workstream 09](workstreams/09-test-suite-speedups.md). Phase 1 (T1–T4) and
+    Phase 3 (T6–T8) shipped; Phase 4 ccache (T9) and Hamownia (T10) shipped.
+    T5 class fixtures and T9 link-slimming are **closed, not pursued** with
+    recorded rationales in the workstream — re-open only if those constraints
+    change. Mega-plan previously left this item “Open” after Phase 1; the
+    workstream is the authority.
 
 Cross-link (added 2026-07-28): activate two new workstream 01 sub-items
 alongside this entry — **S18** (`OAuthProvider*` adapter-stack deletion,
@@ -618,9 +616,11 @@ for full traceability; mirrored in the
 14. **Open (added 2026-08-12):** make `jelcz`'s adaptive-bitrate output
     content-addressed, verifiable, and redistributable. Complete
     [workstream 12](workstreams/12-content-addressed-video.md). Decision:
-    [ADR 0036](../adr/0036-content-addressed-video-distribution.md) — one MASL
-    manifest blob per video names segments held in a `jelcz`-owned
-    content-addressed store; segments are deliberately *not* atproto blobs,
+    [ADR 0036](../adr/0036-content-addressed-video-distribution.md) (amended
+    same day) — live keeps MASL per-segment SHA-256 objects; VOD uses flat
+    range-addressable fMP4 objects (preferably one per rendition/track) with
+    BLAKE3 CIDs and Bao/outboard proofs; the atproto blob remains a SHA-256
+    MASL manifest. Media is deliberately *not* stored as atproto blobs,
     because `PDSBlobAuditUtils.m:26` only extracts blob references from record
     JSON, so CIDs appearing solely inside manifest bytes would never be promoted
     from `temporary` and would be reclaimed by ADR 0013's sweep. The HLS stage is
@@ -631,11 +631,31 @@ for full traceability; mirrored in the
     `/admin/api/media/*`). Phase 1 also closes a live defect: `segment_%03d.ts`
     (`VideoHLSGenerator.m:190`) wraps at 1,000 segments — 100 minutes at the
     configured `-hls_time 6` — silently overwriting earlier segments. Consumes
-    workstream 10's MASL, RASL, and BDASL slices; ADR 0036 records that
+    workstream 10's MASL, RASL, and BDASL/Bao slices; ADR 0036 records that
     verifiable distribution does **not** depend on workstream 10 Phase 9's
     deterministic muxer, so the two are sequenced independently. Peer transports
-    (iroh) and BDASL range verification are deferred pending evidence; IPFS is
-    rejected with reasons in ADR 0036.
+    (iroh) remain deferred pending evidence; IPFS is rejected with reasons in
+    ADR 0036. Phase 2 is complete (`ATProtoCAObjectStore` + GZBO outboard;
+    `ATProtoCAObjectStoreTests` 5/0, 2026-08-12). Phase 3 is complete
+    (`ATProtoVODManifestBuilder` + flag-gated processor/worker wiring;
+    `ATProtoVODManifestBuilderTests` 3/0, 2026-08-12). Phase 4 is complete
+    (`manifest_blob_cid` + optional `manifestBlob` on getJobStatus, 2026-08-12).
+    Phase 5 is complete (MASL `/watch` + denylist;
+    `ATProtoCAWatchServiceTests` 9/0, 2026-08-12). Phase 6 is complete
+    (`ATProtoCAObjectLifecycle` refcount + grace sweep;
+    `ATProtoCAObjectLifecycleTests` 3/0, 2026-08-12). Phase 7 is complete
+    (`tools.garazyk.video` / `.distributionPolicy` / `.origin` lexicons;
+    `compatMp4` product call; `GarazykVideoLexiconTests`, 2026-08-12).
+    Phase 8 is complete (`xyz.garazyk.video.getPrefetchBootstrap` +
+    `ATProtoVideoPrefetchBootstrap` waste ceiling / discovery-RTT model;
+    `ATProtoVideoPrefetchBootstrapTests` 6/0, 2026-08-12).     Phase 9 is complete
+    (wire-compatible Bao outboard/slice; untrusted `verifyProof` without full
+    object; `ATProtoBaoTests` 4/0 + CA store proof tests, 2026-08-12).
+    Phase 10 is complete (`ATProtoCAMirrorResolver` + injected
+    `ATProtoCAMirrorFetching`; `ATProtoCAMirrorHTTPSFetcher` +
+    `ATProtoCARASLWellKnown` composition wiring; boundary = no
+    MediaCore→Network PUBLIC link; fetcher/RASL tests + resolver 5/0,
+    2026-08-12). Phase 11 remains deferred.
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.

@@ -53,7 +53,44 @@ else()
     find_dependency(OpenSSL REQUIRED)
   endif()
   find_library(GARAZYK_SQLite3 sqlite3 REQUIRED)
-  set(GARAZYK_PLATFORM_LIBS OpenSSL::SSL OpenSSL::Crypto ${GARAZYK_SQLite3} pthread m dl resolv)
+
+  # Relocatable consumers need GNUstep Foundation headers/libs; CMake cannot
+  # export absolute host include paths through GarazykTargets.cmake reliably.
+  if(DEFINED ENV{GNUSTEP_PREFIX} AND NOT "$ENV{GNUSTEP_PREFIX}" STREQUAL "")
+    set(_gz_gnustep_prefix "$ENV{GNUSTEP_PREFIX}")
+  else()
+    set(_gz_gnustep_prefix "/usr/GNUstep/Local")
+  endif()
+  find_path(GARAZYK_GNUSTEP_FOUNDATION_INCLUDE_DIR
+    Foundation/Foundation.h
+    HINTS "${_gz_gnustep_prefix}/Library/Headers" "${_gz_gnustep_prefix}/include"
+    PATHS /usr/include/GNUstep /usr/local/include/GNUstep)
+  find_library(GARAZYK_GNUSTEP_BASE NAMES gnustep-base
+    HINTS "${_gz_gnustep_prefix}/Library/Libraries" "${_gz_gnustep_prefix}/lib"
+    PATHS /usr/lib /usr/local/lib)
+  find_library(GARAZYK_OBJC NAMES objc-2 objc
+    HINTS "${_gz_gnustep_prefix}/Library/Libraries" "${_gz_gnustep_prefix}/lib"
+    PATHS /usr/lib /usr/local/lib)
+  find_library(GARAZYK_DISPATCH NAMES dispatch
+    HINTS "${_gz_gnustep_prefix}/Library/Libraries" "${_gz_gnustep_prefix}/lib"
+    PATHS /usr/lib /usr/local/lib)
+  if(NOT GARAZYK_GNUSTEP_FOUNDATION_INCLUDE_DIR OR NOT GARAZYK_GNUSTEP_BASE OR NOT GARAZYK_OBJC)
+    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+      "Garazyk on Linux requires GNUstep Foundation (set GNUSTEP_PREFIX)")
+    set(${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+    return()
+  endif()
+  set(GARAZYK_PLATFORM_LIBS
+    ${GARAZYK_GNUSTEP_BASE}
+    ${GARAZYK_OBJC}
+    OpenSSL::SSL OpenSSL::Crypto
+    ${GARAZYK_SQLite3}
+    pthread m dl resolv)
+  if(GARAZYK_DISPATCH)
+    list(APPEND GARAZYK_PLATFORM_LIBS ${GARAZYK_DISPATCH})
+  endif()
+  set(GARAZYK_GNUSTEP_COMPILE_OPTIONS
+    -fobjc-arc -fblocks -fobjc-runtime=gnustep-2.2)
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/GarazykTargets.cmake")
@@ -75,11 +112,22 @@ foreach(_gz_target IN ITEMS
     ATProtoCore ATProtoStorage ATProtoTransport ATProtoServices ATProtoXRPC
     ATProtoSync ATProtoPLC ATProtoRuntime ATProtoMediaCore ATProtoVideoService)
   if(TARGET Garazyk::${_gz_target})
+    set(_gz_includes
+      "${GARAZYK_INCLUDE_SOURCES};${GARAZYK_INCLUDE_FRAMEWORKS}")
+    if(NOT APPLE AND GARAZYK_GNUSTEP_FOUNDATION_INCLUDE_DIR)
+      set(_gz_includes
+        "${_gz_includes};${GARAZYK_GNUSTEP_FOUNDATION_INCLUDE_DIR}")
+      # libobjc2 headers (objc/blocks_runtime.h) live under GNUSTEP_PREFIX/include.
+      if(EXISTS "${_gz_gnustep_prefix}/include/objc/blocks_runtime.h")
+        set(_gz_includes "${_gz_includes};${_gz_gnustep_prefix}/include")
+      endif()
+    endif()
     set_target_properties(Garazyk::${_gz_target} PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES
-        "${GARAZYK_INCLUDE_SOURCES};${GARAZYK_INCLUDE_FRAMEWORKS}")
-    if(APPLE)
-      target_link_libraries(Garazyk::${_gz_target} INTERFACE ${GARAZYK_PLATFORM_LIBS})
+      INTERFACE_INCLUDE_DIRECTORIES "${_gz_includes}")
+    target_link_libraries(Garazyk::${_gz_target} INTERFACE ${GARAZYK_PLATFORM_LIBS})
+    if(NOT APPLE AND GARAZYK_GNUSTEP_COMPILE_OPTIONS)
+      target_compile_options(Garazyk::${_gz_target} INTERFACE
+        ${GARAZYK_GNUSTEP_COMPILE_OPTIONS})
     endif()
   endif()
 endforeach()

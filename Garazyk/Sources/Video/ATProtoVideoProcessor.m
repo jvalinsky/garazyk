@@ -5,6 +5,9 @@
 #import "Video/VideoThumbnailGenerator.h"
 #import "Video/VideoHLSGenerator.h"
 #import "Video/VideoTranscoderBackend.h"
+#import "MediaCore/ATProtoCAObjectStore.h"
+#import "MediaCore/ATProtoVODManifestBuilder.h"
+#import "MediaCore/ATProtoCAObjectLifecycle.h"
 #import "Core/CID.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Debug/GZLogger.h"
@@ -21,6 +24,7 @@
     self = [super init];
     if (self) {
         _include1080p = NO;
+        _enableContentAddressedManifest = NO;
     }
     return self;
 }
@@ -249,6 +253,54 @@
                     }
                     GZ_LOG_INFO(@"ATProtoVideoProcessor: HLS generation complete for %@/%@ (%lu variants)",
                                  hlsDid, hlsCid, (unsigned long)hlsResult.variants.count);
+
+                    if (self.enableContentAddressedManifest) {
+                        if (!self.caObjectStore) {
+                            GZ_LOG_WARN(@"ATProtoVideoProcessor: CA manifest enabled but caObjectStore is nil");
+                        } else {
+                            NSError *manifestError = nil;
+                            ATProtoVODManifestBuildResult *manifest =
+                                [ATProtoVODManifestBuilder buildFromProducedFiles:hlsResult.producedFiles
+                                                                            store:self.caObjectStore
+                                                                            error:&manifestError];
+                            if (manifest) {
+                                NSError *putError = nil;
+                                ATProtoCID *manifestCID =
+                                    [self.caObjectStore putData:manifest.drislData
+                                                    expectedCID:nil
+                                                        profile:ATProtoCAObjectDigestProfileSHA256
+                                                          error:&putError];
+                                if (manifestCID) {
+                                    metadata[@"manifestBlobCid"] = manifestCID.stringValue;
+                                    if (self.caObjectLifecycle) {
+                                        NSError *pubError = nil;
+                                        if (![self.caObjectLifecycle publishManifestCID:manifestCID
+                                                                 referencedObjectCIDs:manifest.resourceCIDs.allValues
+                                                                                error:&pubError]) {
+                                            GZ_LOG_WARN(@"ATProtoVideoProcessor: CA lifecycle publish failed: %@",
+                                                         pubError);
+                                        }
+                                    }
+                                }
+                                NSMutableDictionary *cidMap = [NSMutableDictionary dictionary];
+                                [manifest.resourceCIDs enumerateKeysAndObjectsUsingBlock:^(NSString *path, ATProtoCID *cid, BOOL *stop) {
+                                    cidMap[path] = cid.stringValue;
+                                }];
+                                metadata[@"vodManifestResourceCIDs"] = [cidMap copy];
+                                metadata[@"vodFragmentTables"] = manifest.fragmentTables;
+                                GZ_LOG_INFO(@"ATProtoVideoProcessor: VOD MASL manifest built (%lu resources, %@)",
+                                             (unsigned long)manifest.resourceCIDs.count,
+                                             manifestCID.stringValue ?: @"(put failed)");
+                                if (!manifestCID) {
+                                    GZ_LOG_WARN(@"ATProtoVideoProcessor: VOD manifest put failed (non-fatal): %@",
+                                                 putError);
+                                }
+                            } else {
+                                GZ_LOG_WARN(@"ATProtoVideoProcessor: VOD manifest build failed (non-fatal): %@",
+                                             manifestError);
+                            }
+                        }
+                    }
                 } else {
                     GZ_LOG_WARN(@"ATProtoVideoProcessor: HLS generation failed (non-fatal): %@", hlsError);
                 }

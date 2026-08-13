@@ -27,6 +27,8 @@
 #import "MediaCore/ATProtoMediaServiceRuntime.h"
 #import "MediaCore/ATProtoMediaServiceConfiguration.h"
 #import "MediaCore/ATProtoMediaWorker.h"
+#import "MediaCore/ATProtoCAObjectStore.h"
+#import "MediaCore/ATProtoCAMirrorHTTPSFetcher.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Blob/PDSCloudStorageBlobProvider.h"
@@ -35,6 +37,7 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Debug/GZLogger.h"
 #import "MediaCore/JelczCLI.h"
 #import "CLI/GZCommandLineOptions.h"
@@ -44,6 +47,23 @@
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Video/AdminUI/JelczAdminUIPack.h"
 #import "Video/AdminUI/JelczAdminEmbedContext.h"
+
+/** Adapts ATProtoSafeHTTPClient to MediaCore's injectable HTTP surface. */
+@interface GZJelczCAMirrorHTTPAdapter : NSObject <ATProtoCAMirrorHTTPClient>
+@end
+
+@implementation GZJelczCAMirrorHTTPAdapter
+- (NSData *)sendSynchronousRequest:(NSURLRequest *)request
+                           options:(id)options
+                          response:(NSHTTPURLResponse **)response
+                             error:(NSError **)error {
+    return [[ATProtoSafeHTTPClient sharedClient]
+        sendSynchronousRequest:request
+                       options:(ATProtoSafeHTTPClientOptions *)options
+                      response:response
+                         error:error];
+}
+@end
 
 static const char *executable_name = "jelcz";
 
@@ -268,6 +288,23 @@ static int run_serve(NSArray<NSString *> *args) {
     ATProtoVideoProcessor *videoProcessor = [[ATProtoVideoProcessor alloc] init];
     videoProcessor.outputBaseUrl = config.outputBaseUrl ?: [NSString stringWithFormat:@"http://localhost:%lu", (unsigned long)config.port];
     videoProcessor.include1080p = config.includeHighQuality;
+    videoProcessor.enableContentAddressedManifest = config.enableContentAddressedManifest;
+    if (config.enableContentAddressedManifest) {
+        NSString *caRoot = config.caObjectStoreDirectory;
+        if (caRoot.length == 0) {
+            caRoot = [config.dataDirectory stringByAppendingPathComponent:@"ca-objects"];
+        }
+        NSError *caError = nil;
+        ATProtoCAObjectStore *caStore = [[ATProtoCAObjectStore alloc] initWithRootDirectory:caRoot error:&caError];
+        if (!caStore) {
+            GZ_LOG_ERROR(@"Failed to open CA object store at %@: %@", caRoot, caError);
+            return 1;
+        }
+        videoProcessor.caObjectStore = caStore;
+        GZ_LOG_INFO(@"  CA manifest: enabled (store %@)", caRoot);
+    } else {
+        GZ_LOG_INFO(@"  CA manifest: disabled (set JELCZ_CA_MANIFEST=1 to enable)");
+    }
 
     // Select the blob storage backend. MediaCore only depends on the
     // id<PDSBlobProvider> protocol, so the concrete backend is chosen and
@@ -288,6 +325,17 @@ static int run_serve(NSArray<NSString *> *args) {
     ATProtoMediaServiceRuntime *runtime = [[ATProtoMediaServiceRuntime alloc] initWithConfiguration:config
                                                                                            processor:videoProcessor
                                                                                         blobProvider:blobProvider];
+    if (videoProcessor.caObjectStore) {
+        runtime.caObjectStore = videoProcessor.caObjectStore;
+        if (config.enableCAMirrorFetch) {
+            ATProtoCAMirrorHTTPSFetcher *fetcher =
+                [[ATProtoCAMirrorHTTPSFetcher alloc]
+                    initWithHTTPClient:[[GZJelczCAMirrorHTTPAdapter alloc] init]];
+            runtime.caMirrorFetcher = fetcher;
+            GZ_LOG_INFO(@"  CA mirror fetch: fetcher wired (%lu providers)",
+                         (unsigned long)config.caMirrorProviders.count);
+        }
+    }
 
     // Configure HLS generator
     ATProtoVideoHLSGenerator *hlsGenerator = [ATProtoVideoHLSGenerator sharedGenerator];
@@ -358,7 +406,12 @@ static int run_serve(NSArray<NSString *> *args) {
     return [GZServiceLifecycle runServiceWithRuntime:runtime
                                          serviceName:@"Jelcz video processing service"
                                              onStart:^{
-        registerHLSRoutes(runtime.httpServer, hlsGenerator);
+        // Filesystem HLS /watch only when CA manifests are off. When CA is on,
+        // ATProtoMediaServiceRuntime already registered MASL-backed /watch/*.
+        if (!config.enableContentAddressedManifest) {
+            registerHLSRoutes(runtime.httpServer, hlsGenerator);
+        }
+        videoProcessor.caObjectLifecycle = runtime.caObjectLifecycle;
         if (embedContext) {
             embedContext.worker = runtime.worker;
             embedContext.jobStore = runtime.worker.jobStore;

@@ -98,7 +98,10 @@ RUN git clone --depth 1 https://github.com/gnustep/libs-base.git && \
 # ---------------------------------------------------------------------------
 # Stage 2: Build ATProtoPDS
 # ---------------------------------------------------------------------------
-FROM ubuntu:22.04 AS builder
+# Stage 2a: Toolchain image (GNUstep + build deps, no project compile).
+# Used by scripts/test/gnustep-package-dasl-evidence.sh.
+# ---------------------------------------------------------------------------
+FROM ubuntu:22.04 AS toolchain
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -106,6 +109,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     clang-14 \
     cmake \
     git \
+    python3 \
     libcurl4-openssl-dev \
     libffi-dev \
     libgnutls28-dev \
@@ -139,6 +143,14 @@ RUN echo "/usr/GNUstep/Local/Library/Libraries" > /etc/ld.so.conf.d/gnustep-loca
 
 # Make gnustep-config discoverable by CMake's find_program
 ENV PATH=/usr/GNUstep/System/Tools:$PATH
+ENV GNUSTEP_PREFIX=/usr/GNUstep/Local
+
+WORKDIR /work
+
+# ---------------------------------------------------------------------------
+# Stage 2b: Build the PDS project against the toolchain
+# ---------------------------------------------------------------------------
+FROM toolchain AS builder
 
 WORKDIR /src
 

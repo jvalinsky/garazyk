@@ -84,3 +84,24 @@ was a link to PR 5187, so it has no implementation impact.
 **Second run (2026-07-23): clean.** All three surfaces (proposal HEAD,
 implementation PR head, vendored lexicons) remain pinned with zero drift.
 Next check due ~2026-08-23.
+
+**Third run (2026-08-12T22:11:35Z): drift detected — pin retained.** Proposal
+HEAD remains `1caad93` (no proposal drift). PR 5187 head moved from pinned
+`3f6c96d` to `697d882b6f7da00a8b7b6b69ed9600b6d41bfd7b`. Lexicon-path delta
+vs the pin:
+
+| Change | Path |
+| --- | --- |
+| Added | `com/atproto/simplespace/getSpace.json` |
+| Moved / added | `com/atproto/space/getSpace.json` removed from space tree relative to pin layout; simplespace gained `getSpace` |
+| Added | `com/atproto/space/listBlobs.json` |
+| Added | `com/atproto/space/unregisterNotify.json` |
+
+**Compatibility impact (retain pin):** local vendored lexicons stay on
+`3f6c96d`. New upstream methods (`simplespace.getSpace`, `space.listBlobs`,
+`space.unregisterNotify`) and any path reshuffle of `getSpace` are **not**
+adopted until a reviewed re-pin + lexicon regeneration. Garazyk's experimental
+space surface and scenario 93 continue to match the pinned contracts.
+`permissionedSpacesEnabled` remains off by default. Do not regenerate.
+Next scheduled check ~2026-09-12 (or sooner if PR 5187 merges / announces
+breaking changes).

@@ -80,6 +80,7 @@ NSString *GZBeskidAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
         },
         @"upstreams": metricsSnapshot[@"upstreams"],
         @"rateLimitRejects": metricsSnapshot[@"rateLimitRejects"],
+        @"firehose": metricsSnapshot[@"firehose"] ?: @{},
         @"database": @{ @"storageBytes": @(storageBytes) },
     };
 }

@@ -445,6 +445,7 @@ typedef struct {
     uint64_t payloadOffset;
     BOOL sync;
     int32_t compositionTimeOffset;
+    uint64_t baseMediaDecodeTime;
 } MUXLFlatSample;
 
 static void MUXLAppendInt32BEFlat(int32_t value, NSMutableData *data) {
@@ -498,6 +499,12 @@ static BOOL MUXLParseFlatFragment(NSData *payload, NSUInteger *ioOffset,
     p += 8;
     uint32_t trackID = MUXLReadUInt32BE(bytes + p + 12);
     p += 16;
+    // tfdt version 1: size(4) type(4) version/flags(4) baseMediaDecodeTime(8)
+    uint64_t baseDecodeTime = 0;
+    if (p + 20 <= length && memcmp(bytes + p + 4, "tfdt", 4) == 0) {
+        baseDecodeTime = ((uint64_t)MUXLReadUInt32BE(bytes + p + 12) << 32) |
+                         MUXLReadUInt32BE(bytes + p + 16);
+    }
     p += 20;
     uint32_t trunFlags = ((uint32_t)bytes[p + 9] << 16) |
                          ((uint32_t)bytes[p + 10] << 8) |
@@ -518,6 +525,7 @@ static BOOL MUXLParseFlatFragment(NSData *payload, NSUInteger *ioOffset,
     outSample->payloadOffset = (uint64_t)(offset + moofSize + 8);
     outSample->sync = (flags == 0x02000000);
     outSample->compositionTimeOffset = cto;
+    outSample->baseMediaDecodeTime = baseDecodeTime;
     *outTrackID = trackID;
     *ioOffset = offset + moofSize + mdatSize;
     return YES;
@@ -761,10 +769,16 @@ static NSData *MUXLBuildFlatTRAK(const MUXLFMP4Track *track,
                                  uint64_t co64Base,
                                  NSError **error) {
     uint64_t mediaDuration = 0;
+    uint64_t presentationOffsetMedia = 0;
+    BOOL haveOffset = NO;
     for (NSValue *value in samples) {
         MUXLFlatSample sample;
         [value getValue:&sample];
         mediaDuration += sample.duration;
+        if (!haveOffset) {
+            presentationOffsetMedia = sample.baseMediaDecodeTime;
+            haveOffset = YES;
+        }
     }
     if (mediaDuration > UINT32_MAX) {
         MUXLFMP4SetError(error, ATProtoMUXLFMP4ErrorInvalidArgument,
@@ -772,6 +786,23 @@ static NSData *MUXLBuildFlatTRAK(const MUXLFMP4Track *track,
         return nil;
     }
     uint32_t duration32 = (uint32_t)mediaDuration;
+    uint64_t emptyDurationMovie = 0;
+    if (presentationOffsetMedia > 0 && track->timescale > 0) {
+        emptyDurationMovie = (presentationOffsetMedia * 1000ull) / track->timescale;
+        if (emptyDurationMovie > UINT32_MAX) {
+            MUXLFMP4SetError(error, ATProtoMUXLFMP4ErrorInvalidArgument,
+                             @"MUXL flat MP4 presentation offset exceeds uint32 movie timescale");
+            return nil;
+        }
+    }
+    uint64_t mediaDurationMovie = (mediaDuration * 1000ull) / track->timescale;
+    uint64_t tkhdDuration = mediaDurationMovie + emptyDurationMovie;
+    if (tkhdDuration > UINT32_MAX) {
+        MUXLFMP4SetError(error, ATProtoMUXLFMP4ErrorInvalidArgument,
+                         @"MUXL flat MP4 track movie duration exceeds uint32");
+        return nil;
+    }
+    uint32_t tkhdDuration32 = (uint32_t)tkhdDuration;
 
     NSMutableData *tkhd = [NSMutableData data];
     MUXLWriteFullBoxHeader(tkhd, "tkhd", 0, 3, 84);
@@ -779,7 +810,7 @@ static NSData *MUXLBuildFlatTRAK(const MUXLFMP4Track *track,
     MUXLAppendUInt32BE(0, tkhd);
     MUXLAppendUInt32BE(track->trackID, tkhd);
     MUXLAppendUInt32BE(0, tkhd);
-    MUXLAppendUInt32BE(duration32, tkhd);
+    MUXLAppendUInt32BE(tkhdDuration32, tkhd);
     MUXLAppendUInt32BE(0, tkhd);
     MUXLAppendUInt32BE(0, tkhd);
     MUXLAppendUInt16BE(0, tkhd);
@@ -789,6 +820,26 @@ static NSData *MUXLBuildFlatTRAK(const MUXLFMP4Track *track,
     MUXLAppendIdentityMatrix(tkhd);
     MUXLAppendUInt32BE(track->video ? (track->codedWidth << 16) : 0, tkhd);
     MUXLAppendUInt32BE(track->video ? (track->codedHeight << 16) : 0, tkhd);
+
+    NSData *edts = nil;
+    if (emptyDurationMovie > 0) {
+        NSMutableData *elst = [NSMutableData data];
+        // FullBox version 0: entry_count + 2 * (segment_duration u32 + media_time i32 + rate)
+        MUXLWriteFullBoxHeader(elst, "elst", 0, 0, 4 + 2 * 12);
+        MUXLAppendUInt32BE(2, elst);
+        MUXLAppendUInt32BE((uint32_t)emptyDurationMovie, elst);
+        MUXLAppendInt32BEFlat(-1, elst);
+        MUXLAppendUInt16BE(0x0001, elst);
+        MUXLAppendUInt16BE(0, elst);
+        MUXLAppendUInt32BE((uint32_t)mediaDurationMovie, elst);
+        MUXLAppendInt32BEFlat(0, elst);
+        MUXLAppendUInt16BE(0x0001, elst);
+        MUXLAppendUInt16BE(0, elst);
+        NSMutableData *edtsBox = [NSMutableData data];
+        MUXLWriteBoxHeader(edtsBox, "edts", elst.length);
+        [edtsBox appendData:elst];
+        edts = edtsBox;
+    }
 
     NSMutableData *mdhd = [NSMutableData data];
     MUXLWriteFullBoxHeader(mdhd, "mdhd", 0, 0, 20);
@@ -846,6 +897,7 @@ static NSData *MUXLBuildFlatTRAK(const MUXLFMP4Track *track,
 
     NSMutableData *trakBody = [NSMutableData data];
     [trakBody appendData:tkhd];
+    if (edts) [trakBody appendData:edts];
     [trakBody appendData:mdia];
     NSMutableData *trak = [NSMutableData data];
     MUXLWriteBoxHeader(trak, "trak", trakBody.length);
@@ -885,12 +937,21 @@ static NSData *MUXLBuildFlatMOOV(NSArray<NSNumber *> *sortedTrackIDs,
         [tracks[tid] getValue:&track];
         if (track.trackID > maxTrackID) maxTrackID = track.trackID;
         uint64_t mediaDuration = 0;
+        uint64_t presentationOffsetMedia = 0;
+        BOOL haveOffset = NO;
         for (NSValue *value in samples[tid]) {
             MUXLFlatSample sample;
             [value getValue:&sample];
             mediaDuration += sample.duration;
+            if (!haveOffset) {
+                presentationOffsetMedia = sample.baseMediaDecodeTime;
+                haveOffset = YES;
+            }
         }
         uint64_t movieDuration = (mediaDuration * 1000ull) / track.timescale;
+        if (presentationOffsetMedia > 0 && track.timescale > 0) {
+            movieDuration += (presentationOffsetMedia * 1000ull) / track.timescale;
+        }
         if (movieDuration > UINT32_MAX) {
             MUXLFMP4SetError(error, ATProtoMUXLFMP4ErrorInvalidArgument,
                              @"MUXL flat MP4 movie duration exceeds uint32");

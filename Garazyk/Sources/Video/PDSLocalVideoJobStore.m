@@ -50,11 +50,13 @@
 - (BOOL)updateVideoJobResults:(NSString *)jobId
               processedBlobCid:(nullable NSString *)processedBlobCid
              thumbnailBlobCid:(nullable NSString *)thumbnailBlobCid
+              manifestBlobCid:(nullable NSString *)manifestBlobCid
                         error:(NSError **)error {
     return [self.database updateVideoJobResults:jobId
-                          processedBlobCid:processedBlobCid
-                         thumbnailBlobCid:thumbnailBlobCid
-                                    error:error];
+                               processedBlobCid:processedBlobCid
+                              thumbnailBlobCid:thumbnailBlobCid
+                               manifestBlobCid:manifestBlobCid
+                                         error:error];
 }
 
 - (BOOL)incrementVideoJobRetry:(NSString *)jobId

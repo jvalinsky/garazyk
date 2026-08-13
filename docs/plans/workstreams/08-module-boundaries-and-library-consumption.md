@@ -43,8 +43,12 @@ complete; **M5.4 passes on macOS**. **M6.1–M6.5 pass on macOS (2026-08-12):**
 build-tree `Garazyk::` aliases, curated header install, exported
 `GarazykConfig.cmake` (ZLIB + ZSTD::zstd discovery; Apple frameworks reattached
 post-import), and `scripts/test/package-consumer-smoke.sh` (relocated prefix,
-core-only, full-graph, private-header-denied). GNUstep/Linux consumer CI
-remains open.
+core-only, full-graph, private-header-denied). **GNUstep/Linux consumer
+evidence verified 2026-08-12** via `scripts/test/gnustep-package-dasl-evidence.sh`
+(`Dockerfile.gnustep` `toolchain` target → `package-consumer-smoke: OK` +
+focused DASL/S2PA/WebTile filters, 0 failures). `GarazykConfig.cmake` now
+rediscovers GNUstep Foundation/`objc` headers and libs for relocated Linux
+consumers.
 
 M0 is now answered **yes**, with a deliberately bounded first release:
 
@@ -1818,7 +1822,9 @@ full-graph, and private-header-denied consumers). Curated header install uses
 bundles vendored `secp256k1`, records `@GARAZYK_WITH_OPENSSL@`, discovers
 ZLIB/`ZSTD::zstd`, and reattaches Apple frameworks after import (CMake cannot
 reliably export `-framework` flags). Absolute host library paths are absent
-from installed `GarazykTargets.cmake`. GNUstep/Linux consumer CI remains open.
+from installed `GarazykTargets.cmake`. **GNUstep/Linux package-consumer
+verified 2026-08-12** (`scripts/test/gnustep-package-dasl-evidence.sh`,
+`package-consumer-smoke: OK` on `garazyk-gnustep-toolchain:local`).
 
 `@compatibility_alias` is source compatibility only; it does **not** preserve
 the old runtime class symbol or provide binary compatibility. If aliases are

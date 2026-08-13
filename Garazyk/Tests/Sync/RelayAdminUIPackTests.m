@@ -111,11 +111,14 @@
     ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     GZRelayAdminSnapshot *snapshot = [[GZRelayAdminSnapshot alloc] initWithMetrics:metrics upstreamManager:self.upstreams];
     __block BOOL invalid = NO;
-    dispatch_apply(128, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^(size_t index) {
+    dispatch_apply(128, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(size_t index) {
+        (void)index;
         [metrics recordEventReceived];
-        NSDictionary *value = [snapshot snapshot];
-        if (![value[@"metrics"] isKindOfClass:NSDictionary.class] ||
-            ![value[@"upstreams"] isKindOfClass:NSArray.class]) {
+        NSDictionary *snap = [snapshot snapshot];
+        id metricsObj = snap[@"metrics"];
+        id upstreamsObj = snap[@"upstreams"];
+        if (![metricsObj isKindOfClass:[NSDictionary class]] ||
+            ![upstreamsObj isKindOfClass:[NSArray class]]) {
             @synchronized (self) { invalid = YES; }
         }
     });

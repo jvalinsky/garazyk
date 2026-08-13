@@ -381,6 +381,53 @@
     XCTAssertEqual(response.statusCode, 404);
 }
 
+- (void)testWebTilesUniqueOriginServesShuttleAndWorkerScripts {
+    self.config.tilesBaseHost = @"example.test";
+    NSDictionary *headers = @{@"Host": @"abcdefghijklmnopqrst.example.test"};
+    ATProtoHttpRequest *shuttleReq = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                                    methodString:@"GET"
+                                                                            path:@"/.well-known/web-tiles/shuttle.js"
+                                                                     queryString:@""
+                                                                      queryParams:@{}
+                                                                          version:@"HTTP/1.1"
+                                                                          headers:headers
+                                                                             body:[NSData data]
+                                                                     remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *shuttle = [self.runtime dispatchRequestForTesting:shuttleReq];
+    XCTAssertEqual(shuttle.statusCode, 200);
+    XCTAssertEqualObjects(shuttle.contentType, @"application/javascript; charset=utf-8");
+    XCTAssertTrue([shuttle.bodyString containsString:@"navigator.serviceWorker.register"]);
+    XCTAssertEqualObjects([shuttle headerForKey:@"service-worker-allowed"], @"/");
+
+    ATProtoHttpRequest *workerReq = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                                   methodString:@"GET"
+                                                                           path:@"/.well-known/web-tiles/worker.js"
+                                                                    queryString:@""
+                                                                     queryParams:@{}
+                                                                         version:@"HTTP/1.1"
+                                                                         headers:headers
+                                                                            body:[NSData data]
+                                                                    remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *worker = [self.runtime dispatchRequestForTesting:workerReq];
+    XCTAssertEqual(worker.statusCode, 200);
+    XCTAssertTrue([worker.bodyString containsString:@"addEventListener('fetch'"]);
+}
+
+- (void)testWebTilesScriptsRemain404OnNonUniqueOrigin {
+    self.config.tilesBaseHost = @"example.test";
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                  methodString:@"GET"
+                                                          path:@"/.well-known/web-tiles/shuttle.js"
+                                                   queryString:@""
+                                                    queryParams:@{}
+                                                        version:@"HTTP/1.1"
+                                                        headers:@{@"Host": @"load.example.test"}
+                                                           body:[NSData data]
+                                                   remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    XCTAssertEqual(response.statusCode, 404);
+}
+
 /*!
  @test testRuntimeStartsSuccessfully
 

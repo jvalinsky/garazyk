@@ -1,0 +1,56 @@
+{
+  "lexicon": 1,
+  "id": "tools.garazyk.video.distributionPolicy",
+  "description": "Author-mutable redistribution consent for a tools.garazyk.video subject (ADR 0036).",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "Distribution policy owned by the video author. Update or delete to revoke consent.",
+      "record": {
+        "type": "object",
+        "required": ["subject", "createdAt"],
+        "properties": {
+          "subject": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "Strong ref to the tools.garazyk.video record this policy covers."
+          },
+          "deleteAfter": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Optional hard expiry. After this time mirrors must stop serving and retract CA refs."
+          },
+          "allowedBroadcasters": {
+            "type": "array",
+            "maxLength": 100,
+            "items": {
+              "type": "string",
+              "format": "did"
+            },
+            "description": "When non-empty, only these DIDs may publish tools.garazyk.video.origin for the subject. Empty/omitted means any broadcaster may attest while the policy exists."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    },
+    "view": {
+      "type": "object",
+      "description": "AppView hydration of a distribution policy.",
+      "required": ["uri", "cid", "author", "record"],
+      "properties": {
+        "uri": { "type": "string", "format": "at-uri" },
+        "cid": { "type": "string", "format": "cid" },
+        "author": { "type": "string", "format": "did" },
+        "record": { "type": "unknown" }
+      }
+    }
+  }
+}

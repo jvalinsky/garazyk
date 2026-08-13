@@ -1000,6 +1000,12 @@ extern NSString * const kGZXrpcNSID_place_stream_live_searchActorsTypeahead;
 /*! NSID for place.stream.live.subscribeSegments. */
 extern NSString * const kGZXrpcNSID_place_stream_live_subscribeSegments;
 
+/*! NSID for place.stream.media.getVideo. */
+extern NSString * const kGZXrpcNSID_place_stream_media_getVideo;
+
+/*! NSID for place.stream.media.publishVideo. */
+extern NSString * const kGZXrpcNSID_place_stream_media_publishVideo;
+
 /*! NSID for place.stream.moderation.createBlock. */
 extern NSString * const kGZXrpcNSID_place_stream_moderation_createBlock;
 
@@ -1026,6 +1032,12 @@ extern NSString * const kGZXrpcNSID_place_stream_multistream_listTargets;
 
 /*! NSID for place.stream.multistream.putTarget. */
 extern NSString * const kGZXrpcNSID_place_stream_multistream_putTarget;
+
+/*! NSID for place.stream.playback.getVideoBlob. */
+extern NSString * const kGZXrpcNSID_place_stream_playback_getVideoBlob;
+
+/*! NSID for place.stream.playback.getVideoPlaylist. */
+extern NSString * const kGZXrpcNSID_place_stream_playback_getVideoPlaylist;
 
 /*! NSID for place.stream.server.createWebhook. */
 extern NSString * const kGZXrpcNSID_place_stream_server_createWebhook;
@@ -1290,5 +1302,8 @@ extern NSString * const kGZXrpcNSID_tools_ozone_verification_listVerifications;
 
 /*! NSID for tools.ozone.verification.revokeVerifications. */
 extern NSString * const kGZXrpcNSID_tools_ozone_verification_revokeVerifications;
+
+/*! NSID for xyz.garazyk.video.getPrefetchBootstrap. */
+extern NSString * const kGZXrpcNSID_xyz_garazyk_video_getPrefetchBootstrap;
 
 NS_ASSUME_NONNULL_END

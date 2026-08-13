@@ -36,12 +36,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @param jobId Video job identifier.
  * @param processedBlobCid ATProtoCID of the processed video blob.
  * @param thumbnailBlobCid ATProtoCID of the thumbnail blob.
+ * @param manifestBlobCid Optional DRISL MASL manifest blob ATProtoCID.
  * @param error Receives details when the operation fails.
  * @return YES when the operation succeeds; otherwise NO.
  */
 - (BOOL)updateVideoJobResults:(NSString *)jobId
-           processedBlobCid:(NSString *)processedBlobCid
-          thumbnailBlobCid:(NSString *)thumbnailBlobCid
+           processedBlobCid:(nullable NSString *)processedBlobCid
+          thumbnailBlobCid:(nullable NSString *)thumbnailBlobCid
+           manifestBlobCid:(nullable NSString *)manifestBlobCid
                       error:(NSError **)error;
 /**
  * @abstract Increment video job retry.

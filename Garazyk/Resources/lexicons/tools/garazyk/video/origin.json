@@ -1,0 +1,74 @@
+{
+  "lexicon": 1,
+  "id": "tools.garazyk.video.origin",
+  "description": "Mirror/origin attestation that a server is serving a content-addressed video via /watch (ADR 0036). Authored by the broadcaster DID, not the video author.",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "Origin attestation. Heartbeats update lastSeenAt; retract the record to leave the origin set.",
+      "record": {
+        "type": "object",
+        "required": [
+          "subject",
+          "server",
+          "watchBaseUrl",
+          "manifestCid",
+          "createdAt",
+          "lastSeenAt"
+        ],
+        "properties": {
+          "subject": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "Strong ref to the tools.garazyk.video record being served."
+          },
+          "server": {
+            "type": "string",
+            "format": "did",
+            "description": "DID of the mirror or PDS origin publishing this attestation."
+          },
+          "watchBaseUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "HTTPS base for /watch/{did}/{manifestCid}/… relative to this origin."
+          },
+          "manifestCid": {
+            "type": "string",
+            "format": "cid",
+            "description": "SHA-256 CID of the DRISL/MASL manifest blob named by the subject."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Last successful heartbeat from this origin."
+          }
+        }
+      }
+    },
+    "view": {
+      "type": "object",
+      "description": "AppView hydration of an origin attestation.",
+      "required": ["uri", "cid", "author", "record"],
+      "properties": {
+        "uri": { "type": "string", "format": "at-uri" },
+        "cid": { "type": "string", "format": "cid" },
+        "author": {
+          "type": "string",
+          "format": "did",
+          "description": "Broadcaster DID that authored the origin record."
+        },
+        "record": { "type": "unknown" },
+        "playlist": {
+          "type": "string",
+          "format": "uri",
+          "description": "Resolved master playlist URL when known."
+        }
+      }
+    }
+  }
+}

@@ -5,6 +5,9 @@
 #import "Video/VideoTranscoder.h"
 #import "Video/VideoTranscoderBackend.h"
 #import "Video/VideoHLSGenerator.h"
+#import "MediaCore/ATProtoCAObjectStore.h"
+#import "MediaCore/ATProtoVODManifestBuilder.h"
+#import "MediaCore/ATProtoCAObjectLifecycle.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
@@ -43,6 +46,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
         _enabled = NO;
         _pollInterval = 5.0;
         _maxConcurrentJobs = 2;
+        _enableContentAddressedManifest = NO;
         _workerQueue = dispatch_queue_create("com.atproto.video.worker", DISPATCH_QUEUE_SERIAL);
         _stateQueue = dispatch_queue_create("com.atproto.video.state", DISPATCH_QUEUE_SERIAL);
         _processingJobIds = [NSMutableSet set];
@@ -368,6 +372,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                     }
 
                     // Generate HLS from transcoded video (if HLS generator is configured)
+                    __block NSString *manifestBlobCid = nil;
                     if (self.hlsGenerator) {
                         [self updateJobProgress:jobId progress:72 message:@"Generating HLS streams"];
 
@@ -382,6 +387,47 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                                                                                error:&hlsError];
                             if (hlsResult) {
                                 GZ_LOG_INFO(@"HLS generation complete for job %@: %@ variants", jobId, @(hlsResult.variants.count));
+                                if (self.enableContentAddressedManifest) {
+                                    if (!self.caObjectStore) {
+                                        GZ_LOG_WARN(@"CA manifest enabled but caObjectStore is nil for job %@", jobId);
+                                    } else {
+                                        NSError *manifestError = nil;
+                                        ATProtoVODManifestBuildResult *manifest =
+                                            [ATProtoVODManifestBuilder buildFromProducedFiles:hlsResult.producedFiles
+                                                                                        store:self.caObjectStore
+                                                                                        error:&manifestError];
+                                        if (manifest) {
+                                            ATProtoCID *storedManifestCID =
+                                                [self.caObjectStore putData:manifest.drislData
+                                                                expectedCID:nil
+                                                                    profile:ATProtoCAObjectDigestProfileSHA256
+                                                                      error:&manifestError];
+                                            if (storedManifestCID) {
+                                                manifestBlobCid = storedManifestCID.stringValue;
+                                                if (self.caObjectLifecycle) {
+                                                    NSError *pubError = nil;
+                                                    NSArray<ATProtoCID *> *refs = manifest.resourceCIDs.allValues;
+                                                    if (![self.caObjectLifecycle publishManifestCID:storedManifestCID
+                                                                             referencedObjectCIDs:refs
+                                                                                            error:&pubError]) {
+                                                        GZ_LOG_WARN(@"CA lifecycle publish failed for job %@: %@",
+                                                                     jobId, pubError);
+                                                    }
+                                                }
+                                                GZ_LOG_INFO(@"VOD MASL manifest stored for job %@: %@ (%lu resources)",
+                                                             jobId,
+                                                             manifestBlobCid,
+                                                             (unsigned long)manifest.resourceCIDs.count);
+                                            } else {
+                                                GZ_LOG_WARN(@"VOD manifest put failed for job %@ (non-fatal): %@",
+                                                             jobId, manifestError);
+                                            }
+                                        } else {
+                                            GZ_LOG_WARN(@"VOD manifest build failed for job %@ (non-fatal): %@",
+                                                         jobId, manifestError);
+                                        }
+                                    }
+                                }
                             } else {
                                 GZ_LOG_WARN(@"HLS generation failed for job %@: %@", jobId, hlsError);
                                 // Non-fatal: HLS is optional, continue with PDS upload
@@ -444,6 +490,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                         BOOL updated = [self.jobStore updateVideoJobResults:jobId
                                                          processedBlobCid:originalCid.stringValue
                                                         thumbnailBlobCid:thumbnailCid.stringValue
+                                                         manifestBlobCid:manifestBlobCid
                                                                    error:&storeError];
 
                         if (updated) {

@@ -88,6 +88,12 @@ local topology are not present, and pulling/building them with 9.5 GB free would
 violate the disk-headroom constraint. R1 remains open only for that named
 runtime check; this does not reopen package publication.
 
+### Blocked on (2026-08-12 recheck)
+
+**Named input:** ≥~15 GB free on the host volume used for Docker image pulls /
+binary topology, plus a built `build/bin/syrena` (or staged Linux ELF). Until
+disk headroom clears, do not invent alternate "complete" evidence paths.
+
 ## R2. Establish publication boundaries
 
 1. Configure remotes and repository ownership.

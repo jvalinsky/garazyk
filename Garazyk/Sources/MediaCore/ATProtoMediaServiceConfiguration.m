@@ -4,6 +4,15 @@
 
 @implementation ATProtoMediaServiceConfiguration
 
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _caObjectSweepEnabled = NO;
+        _caObjectGracePeriodSeconds = 6 * 60 * 60;
+    }
+    return self;
+}
+
 + (instancetype)configurationFromEnvironmentWithPrefix:(NSString *)prefix {
     ATProtoMediaServiceConfiguration *config = [[ATProtoMediaServiceConfiguration alloc] init];
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
@@ -23,6 +32,30 @@
     config.outputDirectory  = env[[prefix stringByAppendingString:@"_OUTPUT_DIR"]];
     config.outputBaseUrl    = env[[prefix stringByAppendingString:@"_OUTPUT_BASE_URL"]];
     config.includeHighQuality = [self envBool:env key:[prefix stringByAppendingString:@"_HIGH_QUALITY"] default:NO];
+    config.enableContentAddressedManifest =
+        [self envBool:env key:[prefix stringByAppendingString:@"_CA_MANIFEST"] default:NO];
+    config.caObjectStoreDirectory = env[[prefix stringByAppendingString:@"_CA_STORE_DIR"]];
+    config.caObjectSweepEnabled =
+        [self envBool:env key:[prefix stringByAppendingString:@"_CA_SWEEP"] default:NO];
+    NSString *graceKey = [prefix stringByAppendingString:@"_CA_GRACE_SECONDS"];
+    NSString *graceEnv = env[graceKey];
+    if ([graceEnv isKindOfClass:[NSString class]] && graceEnv.length > 0) {
+        config.caObjectGracePeriodSeconds = [self envDouble:env key:graceKey default:(6 * 60 * 60)];
+    }
+    config.enableCAMirrorFetch =
+        [self envBool:env key:[prefix stringByAppendingString:@"_CA_MIRROR_FETCH"] default:NO];
+    NSString *mirrors = env[[prefix stringByAppendingString:@"_CA_MIRROR_PROVIDERS"]];
+    if ([mirrors isKindOfClass:[NSString class]] && mirrors.length > 0) {
+        NSMutableArray<NSString *> *providers = [NSMutableArray array];
+        for (NSString *part in [mirrors componentsSeparatedByString:@","]) {
+            NSString *trimmed = [part stringByTrimmingCharactersInSet:
+                                  [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if (trimmed.length > 0) {
+                [providers addObject:trimmed];
+            }
+        }
+        config.caMirrorProviders = providers.count > 0 ? [providers copy] : nil;
+    }
 
     config.s3Bucket         = env[[prefix stringByAppendingString:@"_S3_BUCKET"]];
     config.s3Region         = env[[prefix stringByAppendingString:@"_S3_REGION"]] ?: @"us-east-1";

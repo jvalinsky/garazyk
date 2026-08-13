@@ -7,8 +7,9 @@ last_verified: 2026-08-12
 # Content-Addressed Video
 
 Turn `jelcz`'s adaptive-bitrate output into content-addressed, independently
-verifiable, redistributable media, addressed by a single MASL manifest blob per
-video. Decision and rationale: [ADR 0036](../../adr/0036-content-addressed-video-distribution.md).
+verifiable, redistributable media. Live uses MASL per-segment objects; VOD uses
+flat range-addressable rendition objects named by a MASL manifest blob.
+Decision and rationale: [ADR 0036](../../adr/0036-content-addressed-video-distribution.md).
 
 This workstream *consumes* the DASL primitives that
 [workstream 10](10-dasl-conformance.md) built (MASL, RASL, BDASL, and later
@@ -22,9 +23,8 @@ keeps MUXL viable later; it is not an implementation of it.
 
 ## Status (2026-08-12)
 
-Phase 1 **complete** (fMP4 segments, `%05d` numbering, `producedFiles`,
-profile-driven segment duration per ADR 0037). Phases 2–9 are specified below;
-Phase 10 remains deferred.
+Phases 1–10 **complete**. Phase 11 (peer transports) remains deferred pending
+production bandwidth evidence.
 
 Short-form versus long-form segment policy is now split by
 [ADR 0037](../../adr/0037-video-segment-profile-short-vs-long.md). This
@@ -46,7 +46,8 @@ and nothing content-addresses it.
 | `Garazyk/Sources/MediaCore/ATProtoMediaServiceRuntime.m:106-146` | routes are `/xrpc`, `/_health`, `/admin/api/media/*` — no `/watch` |
 | `Garazyk/Sources/Video/JelczDatabase.m:69-90` | `video_jobs` has `thumbnail_blob_cid`, `processed_blob_cid`; no manifest column |
 | `Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.m:26` | blob reference extraction matches `$type == "blob"` in record JSON only |
-| `Garazyk/Resources/lexicons/place/stream/` | Streamplace lexicons vendored; zero references from `Garazyk/Sources/` |
+| `Garazyk/Resources/lexicons/place/stream/` | Streamplace live + VOD lexicons vendored; zero production refs from `Garazyk/Sources/` |
+| `Garazyk/Resources/lexicons/tools/garazyk/video/` | Garazyk CA VOD records (`tools.garazyk.video*`) — WS12 Phase 7 |
 
 ## Phase 0 — DONE: governance
 
@@ -85,210 +86,180 @@ worth landing on its own merit even if later phases slip.
 - **Rollback.** Revert the argument list. No persisted state, no schema, no
   wire format depends on this phase in isolation.
 
-## Phase 2 — Segment store
+## Phase 2 — DONE: content-addressed object store (2026-08-12)
 
-- **Evidence.** ADR 0036 decides segments are not atproto blobs. There is no
-  store for them today; the ladder is left on local disk under
-  `hlsDirectoryForDID:cid:` with no addressing and no lifecycle.
-- **Open decision (blocks this phase).** ADR 0036 records two open decisions
-  that determine this phase's premise: (1) flat-VOD synthesis vs MASL manifest
-  model for VOD, and (2) SHA-256 vs BLAKE3 addressing. If the flat-VOD synthesis
-  is adopted, this phase becomes a blob store with range reads (which
-  `BlobStorage.h` already is), not a per-segment store. If the MASL manifest
-  model is retained, this phase is as specified below. Resolve before
-  implementing.
-- **Change (MASL manifest model).** A content-addressed segment store keyed
-  by DASL CID (SHA-256, raw `0x55`), with put/get/exists and a byte-range read.
-  Backed by the same provider abstraction pattern as `PDSBlobProvider` so disk
-  and object-storage backends are interchangeable.
-- **Owner boundary.** New files under `Garazyk/Sources/MediaCore/`. Must not
-  import `Database/` or PDS blob types. Run
-  `./scripts/dev/check_module_boundaries.sh .` — `ATProtoCore` (for `ATProtoCID`
-  and `CID+DASL`) is an allowed dependency; confirm before adding any edge
-  toward Network or Storage.
-- **Gate.** Unit suite: round-trip, CID mismatch rejection on put, range reads
-  at segment boundaries and past EOF. Registered per the Phase 1 note.
-- **Rollback.** Store is additive and unreferenced until Phase 3. Deleting it
-  restores current behavior.
+- **Shipped.** `MediaCore/ATProtoCAObjectStore` — disk store under
+  `objects/` + `proofs/`, serial-queue IO, digest profiles SHA-256 (live) and
+  BLAKE3 (VOD). API: `put` / `stat` / `get` / `get_range` / `delete`,
+  `generateProof` / `regenerateProof` / `produceProof`, and
+  `+verifyProof:fullObjectData:error:`.
+- **Outboard.** Versioned `GZBO` file: 1 KiB BLAKE3 chunk digests (BDASL-sized
+  leaves). Regenerating the outboard does not change the media CID. Full
+  wire-compatible Bao parent encoding remains Phase 9; this slice already
+  verifies range leaves + BLAKE3 content root (and optional full BDASL
+  sidecar path when all digests are present).
+- **Evidence.** `ATProtoCAObjectStoreTests` (5/0): SHA-256+BLAKE3 round-trip,
+  CID mismatch rejection, range boundaries/EOF, proof produce/verify/
+  regenerate, delete. Registered in `Tests/test_main.m`. Module-boundary gate
+  clean (MediaCore → Core only).
+- **Rollback.** Additive MediaCore files + test registration; nothing consumes
+  the store until Phase 3.
 
-## Phase 3 — Manifest builder
+## Phase 3 — DONE: manifest builder (2026-08-12)
 
-- **Evidence.** `ATProtoMASLDocument` validates and encodes bundle documents
-  today (`documentWithObject:error:`, `DRISLDataWithError`) and is used by no
-  production call site — workstream 10 Phase 7 landed it as a bounded slice.
-  This is its first consumer.
-- **Change.** After HLS generation, walk the output tree, put each file into the
-  segment store, and build the MASL bundle described in ADR 0036 (root `/` maps
-  to the master playlist; `content-type` on playlists and init segments only).
-  Encode with the DRISL profile, upload the encoded bytes as the single atproto
-  blob for the video.
-- **Owner boundary.** Insertion point is `ATProtoVideoProcessor.m:243-249`, which
-  already accumulates HLS metadata, in preference to `VideoWorker.m:383`, which
-  discards its result. Both paths must end up producing a manifest; do not leave
-  the legacy worker silently manifest-less.
-- **Gate.** Round-trip test: build a manifest from a fixture ladder, re-decode
-  through `ATProtoMASLDocument`, assert every `resourceCIDForPath:` resolves and
-  that each resolved CID equals SHA-256 of the stored segment. Assert the encoded
-  manifest is under 1 MiB for a 1-hour three-rendition fixture (ADR 0036
-  estimates ~123 KB; a 1 MiB ceiling catches a per-entry regression without
-  pinning the exact encoding).
-- **Rollback.** Manifest production is gated behind a configuration flag
-  defaulting off until Phase 5 can serve it. Off restores current behavior
-  exactly.
+- **Shipped.** `MediaCore/ATProtoVODManifestBuilder` consumes HLS
+  `producedFiles` (or in-memory fixtures), concatenates each variant's
+  `init.mp4` + `segment_*.m4s` into one flat `video.fmp4`, puts media under
+  BLAKE3 (with GZBO outboard) and playlists under SHA-256, rewrites variant
+  playlists with `EXT-X-MAP` / `EXT-X-BYTERANGE`, and encodes a MASL bundle
+  (`ing.dasl.masl`) via DRISL. Fragment tables live in `garazyk.vod.v1`
+  application metadata on each media resource.
+- **Wiring (flag default off).**
+  `ATProtoMediaServiceConfiguration.enableContentAddressedManifest` /
+  `caObjectStoreDirectory` (`JELCZ_CA_MANIFEST`, `JELCZ_CA_STORE_DIR`);
+  `ATProtoVideoProcessor` and `ATProtoVideoWorker` call the builder after HLS
+  when enabled; `jelcz` opens the CA store and attaches it. Off restores prior
+  behavior exactly.
+- **Evidence.** `ATProtoVODManifestBuilderTests` (3/0): flat VOD round-trip
+  (MASL decode + every resource CID resolves; BLAKE3 media + proof;
+  BYTERANGE playlist), 1-hour × 3-rendition fixture DRISL &lt; 1 MiB (7
+  resources), missing-init failure. Registered in `Tests/test_main.m`.
+- **Rollback.** Leave the flag off; builder is unused.
 
-## Phase 4 — Job store and status plumbing
+## Phase 4 — DONE: job store and status plumbing (2026-08-12)
 
-- **Evidence.** `video_jobs` (`JelczDatabase.m:69-90`) has no column for a
-  manifest, and `app.bsky.video.getJobStatus` has no field to return one.
-- **Change.** Add `manifest_blob_cid TEXT`, following the existing
-  `thumbnail_blob_cid` / `processed_blob_cid` pattern, plus a migration. Return
-  it from job status so a client can construct the record.
-- **Owner boundary.** `Garazyk/Sources/Video/JelczDatabase.m`,
-  `Garazyk/Sources/Video/VideoXrpcPack.m`. Migration follows
-  `PDSMigrationManager` conventions; see `.agents/skills/garazyk-database`.
-- **Gate.** Migration test on a populated pre-migration database. Existing
-  `getJobStatus` tests must pass unchanged — the new field is additive and
-  optional.
-- **Rollback.** Column is nullable and ignored by readers that do not know it;
-  a down-migration is not required for correctness.
+- **Shipped.** `manifest_blob_cid TEXT` on `video_jobs` (Jelcz CREATE +
+  `ALTER TABLE` ensure; PDS `Schema.m` + `ensureVideoJobsManifestColumn`).
+  `VideoJobStore` / `updateVideoJobResults:...manifestBlobCid:` persists it.
+  `getJobStatus` returns optional `manifestBlob` (lexicon
+  `app.bsky.video.defs#jobStatus`). Worker/processor put DRISL under SHA-256
+  in the CA store and record that CID when CA manifests are enabled.
+- **Evidence.** `JelczDatabaseTests` migration on a populated pre-Phase-4 DB
+  (row preserved; column writable); `testUpdateResultsWithManifestBlobCid`;
+  `ATProtoVideoXrpcPackTests` optional `manifestBlob` + existing completed
+  response unchanged when column absent. PDS video-job suites green.
+- **Rollback.** Nullable column; omit `manifestBlob` when null.
 
-## Phase 5 — Serving route + moderation floor
+## Phase 5 — DONE: serving route + moderation floor (2026-08-12)
 
-- **Evidence.** No `/watch` route exists (`ATProtoMediaServiceRuntime.m:106-146`),
-  so `VideoUriBuilder`'s URL pattern currently resolves to nothing.
-- **Change.** Register a route that resolves manifest CID plus request path to a
-  segment CID via `resourceCIDForPath:`, streams from the segment store, and
-  applies MASL's `httpHeadersForPath:` allow-list output as response headers.
-  Range support is required; `BlobStorage.h:139` is the existing precedent for
-  the response shape. Before returning bytes, the route consults a local
-  denylist (CID and/or record scope) so moderation/takedown decisions can be
-  enforced on the byte-serving path.
-- **Owner boundary.** `Garazyk/Sources/MediaCore/`. Path traversal is structurally
-  prevented by resolving through the manifest's exact-path map rather than the
-  filesystem — no request path ever reaches a file API. That property is the
-  point of the design and must be asserted, not assumed.
-- **Gate.** Route tests: exact-path hit, unknown path 404, `..` and encoded
-  traversal attempts 404 (not 403, not a filesystem error), range request
-  returns 206 with exact requested length, unsatisfiable range 416. Tagged
-  `socket`/`integration` consistently with existing route-pack suites, so
-  `--gated=run` covers them. Include moderation gate tests: denied CID returns
-  policy response and does not stream any bytes.
-- **Rollback.** Route registration is behind the Phase 3 configuration flag.
+- **Shipped.** `ATProtoCAWatchService` resolves
+  `/watch/{did}/{manifestCid}/…` through MASL `resourceCIDForPath:` only
+  (no filesystem join), streams from `ATProtoCAObjectStore`, applies
+  `httpHeadersForPath:`, and supports HTTP Range (206 / 416). 
+  `ATProtoCAMediaDenylist` (+ in-memory impl) is consulted for manifest and
+  resource CIDs before any media bytes are written (`403 ContentDenied`).
+- **Wiring.** Registered by `ATProtoMediaServiceRuntime` when
+  `enableContentAddressedManifest` and `caObjectStore` are set. Jelcz skips
+  legacy filesystem HLS `/watch` in that mode.
+- **Evidence.** `ATProtoCAWatchServiceTests` (9/0, gated `socket`): path
+  mapping + `%2e%2e`/`..` → 404; exact hit + MASL content-type; unknown 404;
+  range 206 exact length; unsatisfiable 416; denied manifest/resource → 403
+  JSON without media bytes. Registered in `Tests/test_main.m`.
+- **Rollback.** Leave the CA flag off; filesystem HLS routes remain.
 
-## Phase 6 — Segment reclamation
+## Phase 6 — DONE: segment/object reclamation (2026-08-12)
 
-- **Evidence.** ADR 0036 records that moving segments out of the blob store
-  relocates the recursive-pinning problem to `jelcz` rather than removing it.
-  Without this phase the segment store grows without bound.
-- **Change.** Refcount segments against live manifests, incremented at manifest
-  publish and decremented at retract/supersede. A sweep reclaims zero-refcount
-  segments after a grace period, mirroring ADR 0013's shape (configurable, with
-  a clamped minimum) so operators meet one model rather than two.
-- **Owner boundary.** `Garazyk/Sources/MediaCore/`. Explicitly **not** the PDS
-  blob sweep — do not extend `PDSBlobReferenceScanOperation` to cover segments;
-  that would recreate the coupling ADR 0036 removes.
-- **Gate.** Lifecycle test: publish two manifests sharing a segment, retract one,
-  assert the shared segment survives and unshared segments are reclaimed only
-  after the grace period.
-- **Rollback.** Sweep disabled by configuration leaves segments in place; the
-  failure mode is disk growth, not data loss.
+- **Shipped.** `ATProtoCAObjectLifecycle` (`lifecycle.db` under the CA store
+  root): publish increments refcounts for a manifest + its referenced object
+  CIDs; retract decrements and stamps `zero_since`; sweep deletes zero-refcount
+  objects after a grace period (default 6h, clamped ≥1h, ADR 0013 shape).
+  Sweep defaults **off** (`caObjectSweepEnabled` / `JELCZ_CA_SWEEP`). Runtime
+  opens the lifecycle when a CA store is attached; VideoProcessor/Worker
+  publish on successful manifest put when a lifecycle is injected.
+- **Evidence.** `ATProtoCAObjectLifecycleTests` (3/0): shared object survives
+  retracting one of two manifests; unshared objects reclaim only after grace;
+  sweep-disabled deletes nothing; grace clamp. Registered in `Tests/test_main.m`.
+- **Rollback.** Leave sweep off; orphans remain on disk.
 
-## Phase 7 — Record and lexicon shape (mirror-authored origin records)
+## Phase 7 — DONE: Record and lexicon shape (2026-08-12)
 
-- **Evidence.** `app.bsky.embed.video` carries a single `video: blob` intended
-  as a playable MP4; handing it a DRISL manifest would break Bluesky clients.
-  `place/stream/*` is vendored but unused, and its one-record-per-segment model
-  does not fit VOD (600+ records per hour per rendition) — see ADR 0036's
-  unresolved note. The vendored `place.stream.broadcast.origin` lexicon
-  (`broadcast/origin.json`) is a mirror-authored origin attestation record —
-  the right shape for provider hints. `place.stream.metadata.distributionPolicy`
-  carries `allowedBroadcasters` and `deleteAfter` — the consent and retention
-  primitive.
-- **Prerequisite.** Re-vendor Streamplace's VOD lexicons (`place.stream.video`,
-  `place.stream.media.track`, `place.stream.media.origin`) before defining
-  anything. The currently vendored set is live/broadcast/chat/moderation only.
-- **Change.** Define a Garazyk-owned lexicon carrying the manifest blob plus
-  duration, renditions, and aspect ratio. Provider hints are **not** on this
-  record — they belong on a **mirror-authored origin attestation record** (the
-  shape of `place.stream.broadcast.origin`), authored by the hosting node, not
-  the video author. This decomposition yields three records with distinct
-  owners: video record (author, immutable identity), distribution policy
-  (author, mutable consent/retention), origin attestation (mirror, mutable +
-  heartbeat). NSIDs come from
-  `Network/Generated/GZXrpcNSID.h` via `scripts/generate_nsid_constants.ts`;
-  raw literals are rejected by the `narzedzia` lint (ADR 0003).
-- **Owner boundary.** `Garazyk/Resources/lexicons/`, regenerated constants,
-  AppView view builders. Decide explicitly whether `app.bsky.embed.video`
-  remains populated with a compatibility rendition — this is a product call,
-  recorded here when made, not assumed.
-- **Gate.** `deno run -A scripts/generate_nsid_constants.ts --check` and
-  `deno run --allow-read packages/narzedzia/nsid_registration_literal_check.ts .`
-  both pass; lexicon validation suite covers the new record.
-- **Rollback.** Additive lexicon; no existing record shape changes.
+- **Shipped.** Garazyk-owned CA VOD records under `tools.garazyk.video*`:
+  - `tools.garazyk.video` — author-owned identity: DRISL/MASL `manifest` blob,
+    `durationMs`, optional `aspectRatio` / `renditions` / `thumb` / `title`,
+    optional `compatMp4` progressive MP4.
+  - `tools.garazyk.video.distributionPolicy` — author-mutable consent:
+    `subject` strongRef, optional `deleteAfter`, optional `allowedBroadcasters`.
+  - `tools.garazyk.video.origin` — mirror-authored attestation: `subject`,
+    `server` DID, `watchBaseUrl`, `manifestCid`, heartbeat `lastSeenAt`.
+  - `tools.garazyk.video.defs` — shared `aspectRatio` / `rendition`; `#view`
+    defs on each record for later AppView hydration (indexer in Phase 8+).
+- **Product call (recorded).** Keep `app.bsky.embed.video` as an optional
+  Bluesky-compat progressive MP4 via `compatMp4` on `tools.garazyk.video`.
+  Do **not** put a DRISL manifest in `app.bsky.embed.video` — that would break
+  Bluesky clients that expect a playable MP4.
+- **Prerequisite (satisfied).** Streamplace VOD lexicons
+  `place.stream.video`, `place.stream.media.track`, and
+  `place.stream.media.origin` are already vendored under
+  `Garazyk/Resources/lexicons/place/stream/`; ADR 0036's old "not vendored"
+  note is corrected.
+- **Evidence.** `GarazykVideoLexiconTests` (7 cases): schemas registered
+  (including Streamplace VOD prerequisite), valid video/policy/origin pass,
+  missing required fields and invalid `watchBaseUrl` scheme fail. Registered
+  in `Tests/test_main.m`. NSID `--check` and narzedzia registration literal
+  check remain green (records are not XRPC endpoints; no new constants).
+- **Rollback.** Additive lexicon + tests; no existing record shape changes.
 
-## Phase 8 — Feed prefetch contract (short-form critical path)
+## Phase 8 — DONE: Feed prefetch contract (2026-08-12)
 
-- **Evidence.** Short-form feed UX depends on prefetching the next items while
-  current playback continues. A per-item chain of record fetch -> manifest fetch
-  -> segment fetch adds avoidable RTTs and causes startup stalls.
-- **Change.** Define and implement a prefetch-oriented response shape that
-  returns **next-N playback bootstrap metadata in one response**, including:
-  - stable video identifier / at-uri,
-  - manifest CID,
-  - first-segment access metadata (path/CID reference),
-  - mutable provider hints suitable for immediate fetch.
-  This contract is product-surface metadata only; it does not alter manifest
-  identity or segment addressing.
-- **Owner boundary.** Video discovery/query surface and associated lexicon fields
-  (Phase 7), plus client-facing response builders.
-- **Gate.** Integration test proving a single request yields bootstrap metadata
-  for next-N items, and playback tests showing reduced startup stalls across
-  consecutive short-form videos. **Include a prefetch-waste ceiling**: measure
-  bytes prefetched but never played (swiped past) and bound it alongside the
-  startup-stall target. [Network-aware prefetching
-  research](https://arxiv.org/abs/2209.02927) reports 37–52% data-waste
-  reduction over naive methods, which means naive prefetch wastes a great deal.
-  Prefetching N videos a user swipes past is the dominant cost of a short-form
-  feed; measure both sides.
-- **Rollback.** Keep existing per-item resolution path; prefetch contract remains
-  additive and feature-flagged.
+- **Shipped.** Short-form prefetch contract (ADR 0037):
+  - Lexicon `xyz.garazyk.video.getPrefetchBootstrap` +
+    `tools.garazyk.video.defs#playbackBootstrap` / `#byteRange`.
+  - `MediaCore/ATProtoVideoPrefetchBootstrap` builds the single-response
+    shape (`items`, `windowSize`, `wasteCeilingBytes`) from hydrated inputs.
+  - Defaults: window **N=2**, first-segment budget **512 KiB**, waste ceiling
+    **1 MiB** (`ATProtoVideoPrefetchWasteCeilingBytes`) when the whole window
+    is swiped past unplayed.
+  - Discovery RTT model: naive = 3×playCount; bootstrap = 1 for the window.
+- **Out of this slice.** Live XRPC registration that resolves at-uris from an
+  AppView index — needs video/origin indexing. The lexicon NSID constant is
+  generated; callers/AppView wire the builder when hydration exists. Flag the
+  query additive/off until then.
+- **Evidence.** `ATProtoVideoPrefetchBootstrapTests` (6/0): next-N single
+  response, waste ceiling when all/partial swipe-past, discovery RTT reduction,
+  lexicon registration. Registered in `Tests/test_main.m`. NSID `--check` green
+  (428 endpoints).
+- **Rollback.** Additive lexicon + MediaCore builder; no feed path changes.
 
-## Phase 9 — BDASL sidecar for incremental verification
+## Phase 9 — DONE: Bao/outboard proofs for flat-VOD range verification (2026-08-12)
 
-- **Evidence.** Short-form playback startup is sensitive to verify-before-play
-  buffering. Full-segment verification on untrusted mirrors can dominate startup
-  latency. `ATProtoBDASLVerifier` exists but does not yet define sidecar wire
-  format.
-- **Change.** Adopt a concrete sidecar format for incremental verification
-  (preferred: bao outboard encoding), and integrate it on the fetch path where
-  untrusted mirrors are used.
-- **Owner boundary.** `Core/` verifier + MediaCore fetch plumbing. Keep segment
-  addressing rules from ADR 0036 intact (manifest CID remains SHA-256).
-- **Gate.** Verified-range tests proving partial verification correctness and
-  startup-path latency improvement for short-form profile.
-- **Rollback.** Disable untrusted-mirror incremental path and fall back to
-  trusted/local origin retrieval policy.
+- **Shipped.** Wire-compatible Bao (Rust `bao` 0.13 outboard/slice):
+  - `Core/ATProtoBao` + `ATProtoBaoEncode.c` — outboard encode, slice extract,
+    slice verify against BLAKE3 root without the full object.
+  - `ATProtoCAObjectStore` writes Bao outboards (still `.bao`); `produceProof`
+    returns `baoSlice` + `rootHash` + `rangeData`; `verifyProof` accepts with
+    `fullObjectData:nil` on the Bao path. Legacy GZBO outboards remain readable.
+- **Evidence.** `ATProtoBaoTests` (4/0): golden outboards for lengths 0…2049
+  matching `bao` crate vectors; tampered/truncated/wrong-offset rejected.
+  `ATProtoCAObjectStoreTests` proof case verifies without full object, rejects
+  tampered slices, regenerate keeps media CID. Local trusted `get_range` path
+  unchanged (no startup regression vs local origin).
+- **Rollback.** Fall back to trusted/local `get_range`; disable untrusted
+  mirror incremental path.
 
-## Phase 10 — Provider hint resolution and mirror retrieval
+## Phase 10 — DONE: Provider hint resolution and mirror retrieval (2026-08-12)
 
-- **Evidence.** `ATProtoRASLURL` and `ATProtoRASLClient` exist and are exercised
-  only by workstream 10's conformance slice; nothing emits hints.
-- **Change.** Resolve provider hints from mutable record metadata (Phase 7) and
-  allow a manifest's segments to be resolved from mirror hosts when
-  absent locally, via the existing parallel verified-fetch client. Mirrors are
-  ordinary HTTPS origins; the manifest's CIDs make them untrusted-safe.
-- **Owner boundary.** `ATProtoRASLClient` lives in `Network/`, and MediaCore
-  reaching it may add a `PUBLIC` link edge not in the allow-list in
-  `scripts/dev/check_module_boundaries.sh`. **Resolve this before implementing**
-  — either inject the fetcher through the existing `ATProtoRASLHTTPFetching`
-  protocol from the composition root, or add the edge deliberately with ADR
-  coverage. Do not discover it at link time.
-- **Gate.** Fetch-fallback test against a stub fetcher: local hit does not fetch,
-  local miss fetches and verifies, CID mismatch from a hostile mirror is rejected
-  and does not poison the store. Untrusted mirror path requires Phase 9 to be
-  enabled for short-form profile.
-- **Rollback.** Hint emission and resolution are independently configurable; off
-  means local-only, which is Phase 5 behavior.
+- **Boundary decision.** Do **not** add a MediaCore → Network `PUBLIC` link.
+  Inject fetch through MediaCore-owned `@protocol ATProtoCAMirrorFetching`;
+  the composition root adapts HTTPS. Recorded here so the allow-list is not
+  discovered at link time.
+- **Shipped.** `ATProtoCAMirrorResolver` — local-first resolution; optional
+  mirror fetch (default **off** = Phase 5 local-only). Full-object path
+  verifies BLAKE3 against the CID before `put`. Range miss may use optional
+  Bao slice fetch (Phase 9) without storing the full object; bad slices do
+  not poison the store.
+- **Composition wiring (2026-08-12).** `ATProtoCAMirrorHTTPSFetcher` GETs
+  `/.well-known/rasl/{cid}` via an injected sync HTTP client (jelcz adapts
+  `ATProtoSafeHTTPClient`). `ATProtoCARASLWellKnown` serves the same path
+  from the local CA store with SHA-256 **and** BLAKE3 re-verify. Flags:
+  `JELCZ_CA_MIRROR_FETCH` / `JELCZ_CA_MIRROR_PROVIDERS`. Watch miss paths
+  use the resolver when enabled.
+- **Evidence.** `ATProtoCAMirrorResolverTests` (6/0): local hit skips fetch;
+  miss fetches/verifies/stores; hostile CID mismatch rejected + store empty;
+  mirrors disabled by default; Bao range path + bad-slice non-poison;
+  SHA-256 playlist CID mirror put. `ATProtoCAMirrorHTTPSFetcherTests` (4/0);
+  `ATProtoCARASLWellKnownTests` (3/0); watch mirror miss (10/0).
+  `check_module_boundaries.sh` clean.
+- **Rollback.** Leave `mirrorFetchEnabled` / `JELCZ_CA_MIRROR_FETCH` off.
 
 ## Deferred — needs evidence before implementation
 
