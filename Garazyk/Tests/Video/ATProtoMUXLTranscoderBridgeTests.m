@@ -12,6 +12,7 @@
 #import "Video/ATProtoMUXLFMP4.h"
 #import "MediaCore/ATProtoMUXLBox.h"
 #import "MediaCore/ATProtoMUXLFragment.h"
+#import "Auth/Crypto/Secp256k1.h"
 
 @interface ATProtoMUXLTranscoderBridgeTests : XCTestCase
 @end
@@ -110,6 +111,64 @@
     XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath:written[@"presentation"]]);
     XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath:written[@"flat"]]);
     XCTAssertEqual([(NSArray *)written[@"segments"] count], 2u);
+
+    [[NSFileManager defaultManager] removeItemAtPath:dir error:nil];
+}
+
+- (ATProtoSecp256k1KeyPair *)testKeyPair {
+    uint8_t privateKeyBytes[32] = {0};
+    privateKeyBytes[31] = 19;
+    return [ATProtoSecp256k1KeyPair keyPairWithPrivateKey:[NSData dataWithBytes:privateKeyBytes
+                                                                         length:32]
+                                                     error:nil];
+}
+
+- (void)testHardBoundPackageWritesS2PASegments {
+    NSDictionary *catalog = [self videoCatalog];
+    NSData *init = [ATProtoMUXLFMP4 initSegmentWithCatalogs:@[catalog] error:nil];
+    NSData *frag1 = [self mintFragmentSeq:1 dts:0];
+    NSData *frag2 = [self mintFragmentSeq:2 dts:40];
+
+    NSString *dir = [NSTemporaryDirectory() stringByAppendingPathComponent:
+                     [[NSUUID UUID] UUIDString]];
+    XCTAssertTrue([[NSFileManager defaultManager] createDirectoryAtPath:dir
+                                            withIntermediateDirectories:YES
+                                                             attributes:nil
+                                                                  error:nil]);
+    XCTAssertTrue([init writeToFile:[dir stringByAppendingPathComponent:@"init.mp4"] atomically:YES]);
+    XCTAssertTrue([frag1 writeToFile:[dir stringByAppendingPathComponent:@"segment_00000.m4s"]
+                          atomically:YES]);
+    XCTAssertTrue([frag2 writeToFile:[dir stringByAppendingPathComponent:@"segment_00001.m4s"]
+                          atomically:YES]);
+
+    NSError *error = nil;
+    NSDictionary *packaged = [ATProtoMUXLTranscoderBridge packageHLSVariantDirectory:dir
+                                                                               error:&error];
+    XCTAssertNotNil(packaged, @"%@", error);
+    NSDictionary *bound =
+        [ATProtoMUXLTranscoderBridge hardBoundPackage:packaged
+                                         withKeyPair:[self testKeyPair]
+                                                 did:nil
+                                           notBefore:[NSDate dateWithTimeIntervalSince1970:1]
+                                            notAfter:[NSDate dateWithTimeIntervalSince1970:2]
+                                               error:&error];
+    XCTAssertNotNil(bound, @"%@", error);
+    XCTAssertEqualObjects(bound[@"s2paHardBound"], @YES);
+    XCTAssertEqual([(NSArray *)bound[@"s2paSegments"] count], 2u);
+    XCTAssertEqual([(NSArray *)bound[@"segments"] count], 2u);
+
+    NSDictionary *written = [ATProtoMUXLTranscoderBridge writePackage:bound
+                                                          toDirectory:dir
+                                                                error:&error];
+    XCTAssertNotNil(written, @"%@", error);
+    XCTAssertEqual([(NSArray *)written[@"s2paSegments"] count], 2u);
+    NSString *s2pa0 = written[@"s2paSegments"][0];
+    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath:s2pa0]);
+    NSData *boundBytes = [NSData dataWithContentsOfFile:s2pa0];
+    XCTAssertTrue([ATProtoMUXLPlayback verifyHardBoundPresentation:boundBytes
+                                                       expectedDID:nil
+                                                             error:&error],
+                  @"%@", error);
 
     [[NSFileManager defaultManager] removeItemAtPath:dir error:nil];
 }

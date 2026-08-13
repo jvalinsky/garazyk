@@ -27,6 +27,7 @@
         _include1080p = NO;
         _enableContentAddressedManifest = NO;
         _enableMUXLPresentation = NO;
+        _enableS2PAAutoSign = NO;
     }
     return self;
 }
@@ -271,8 +272,29 @@
                                              variantDir, muxlError);
                                 continue;
                             }
+                            NSDictionary *toWrite = packaged;
+                            if (self.enableS2PAAutoSign) {
+                                if (!self.s2paSigningKeyPair) {
+                                    GZ_LOG_WARN(@"ATProtoVideoProcessor: S2PA auto-sign enabled but s2paSigningKeyPair is nil");
+                                } else {
+                                    NSError *s2paError = nil;
+                                    NSDictionary *bound =
+                                        [ATProtoMUXLTranscoderBridge hardBoundPackage:packaged
+                                                                         withKeyPair:self.s2paSigningKeyPair
+                                                                                 did:self.s2paSigningDID ?: self.did
+                                                                           notBefore:[NSDate date]
+                                                                            notAfter:[NSDate dateWithTimeIntervalSinceNow:365 * 24 * 60 * 60]
+                                                                               error:&s2paError];
+                                    if (bound) {
+                                        toWrite = bound;
+                                    } else {
+                                        GZ_LOG_WARN(@"ATProtoVideoProcessor: S2PA hard-bind failed for %@: %@",
+                                                     variantDir, s2paError);
+                                    }
+                                }
+                            }
                             NSDictionary *written =
-                                [ATProtoMUXLTranscoderBridge writePackage:packaged
+                                [ATProtoMUXLTranscoderBridge writePackage:toWrite
                                                               toDirectory:variantDir
                                                                     error:&muxlError];
                             if (!written) {

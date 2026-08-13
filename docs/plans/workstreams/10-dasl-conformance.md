@@ -48,8 +48,9 @@ COSE + leaf + JUMBF uuid + SHA-256 hard binding + `c2pa.hash.data` assertion
 (2026-08-13); `c2pa.hash.bmff.v3` root-box hashing + `c2pa.soft-binding` encode
 landed 2026-08-13; claim-map-v2 + assertion store landed 2026-08-13;
 ingredient claims (v3 encode landed 2026-08-13; validationResults / embedded
-manifest verify remain), soft-binding algorithms, Merkle bmffHash, and
-Video/MUXL producer wiring remain open. Phase 7 production paths remain open.
+manifest verify remain), soft-binding algorithms, and Merkle bmffHash remain
+open. Transcoder auto-sign landed 2026-08-13 (opt-in). Phase 7 production paths
+remain open.
 Phase 11 mothership resolve-path + getBlob load landed 2026-08-13; Deno
 `@dasl/tiles` / live embed remainders remain open.
 
@@ -395,7 +396,8 @@ activeManifest∩digitalSourceType. Proven in claim-bound multi-assertion stores
 
 - Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope, leaf certificate, and
   JUMBF/BMFF carrier; it consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository
-  signatures, auth JWTs, or the Video transcoder path.
+  signatures or auth JWTs. Opt-in transcoder auto-sign (default OFF) lives on
+  `ATProtoMUXLTranscoderBridge` / `ATProtoVideoProcessor` / `ATProtoVideoWorker`.
 - Evidence: `ATProtoS2PACOSETests`, `ATProtoS2PALeafCertificateTests`,
   `ATProtoS2PAHashDataAssertionTests` (empty exclusion, prefix exclusion ≡ media-only digest,
   JUMBF sign/verify), `ATProtoS2PAHashBMFFAssertionTests` (uuid exclusion + CBOR
@@ -405,14 +407,20 @@ activeManifest∩digitalSourceType. Proven in claim-bound multi-assertion stores
   `ATProtoS2PAIngredientAssertionTests`, and `ATProtoS2PAJUMBFTests`.
   All registered in `Tests/test_main.m`.
 - Explicit remainder: ingredient `validationResults` / embedded-manifest verify,
-  gathered/redacted assertions, soft-binding algorithm compute/verify, Merkle
-  `bmffHash`, and transcoder auto-sign remain open.
+  gathered/redacted assertions, soft-binding algorithm compute/verify, and Merkle
+  `bmffHash` remain open.
   **MUXL producer wiring (2026-08-13):**
   `ATProtoMUXLPlayback` `presentationByHardBindingSegment:` /
   `verifyHardBoundPresentation:` prepends/verifies S2PA uuid over a canonical
   MUXL segment; `canonicalSegmentsFromPresentation:` recovers the unchanged
   segment (C2PA uuid skipped). Evidence: `ATProtoMUXLPlaybackTests`
   `testS2PAHardBindingPreservesCanonicalMUXL`.
+  **Transcoder auto-sign (2026-08-13):**
+  `ATProtoMUXLTranscoderBridge` `hardBoundPackage:withKeyPair:…` hard-binds each
+  MUXL segment and `writePackage:` emits `segment_*.s2pa.m4s`. Opt-in via
+  `enableS2PAAutoSign` + `s2paSigningKeyPair` on `ATProtoVideoProcessor` /
+  `ATProtoVideoWorker` (default OFF; requires MUXL packaging). Evidence:
+  `ATProtoMUXLTranscoderBridgeTests` `testHardBoundPackageWritesS2PASegments`.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
   paths are unchanged.
 

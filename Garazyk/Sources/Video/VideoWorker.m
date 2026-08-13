@@ -49,6 +49,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
         _maxConcurrentJobs = 2;
         _enableContentAddressedManifest = NO;
         _enableMUXLPresentation = NO;
+        _enableS2PAAutoSign = NO;
         _workerQueue = dispatch_queue_create("com.atproto.video.worker", DISPATCH_QUEUE_SERIAL);
         _stateQueue = dispatch_queue_create("com.atproto.video.state", DISPATCH_QUEUE_SERIAL);
         _processingJobIds = [NSMutableSet set];
@@ -403,7 +404,28 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                                          jobId, variant[@"resolution"] ?: variantDir, muxlError);
                                             continue;
                                         }
-                                        if (![ATProtoMUXLTranscoderBridge writePackage:packaged
+                                        NSDictionary *toWrite = packaged;
+                                        if (self.enableS2PAAutoSign) {
+                                            if (!self.s2paSigningKeyPair) {
+                                                GZ_LOG_WARN(@"S2PA auto-sign enabled but s2paSigningKeyPair is nil for job %@", jobId);
+                                            } else {
+                                                NSError *s2paError = nil;
+                                                NSDictionary *bound =
+                                                    [ATProtoMUXLTranscoderBridge hardBoundPackage:packaged
+                                                                                     withKeyPair:self.s2paSigningKeyPair
+                                                                                             did:self.s2paSigningDID ?: did
+                                                                                       notBefore:[NSDate date]
+                                                                                        notAfter:[NSDate dateWithTimeIntervalSinceNow:365 * 24 * 60 * 60]
+                                                                                           error:&s2paError];
+                                                if (bound) {
+                                                    toWrite = bound;
+                                                } else {
+                                                    GZ_LOG_WARN(@"S2PA hard-bind failed for job %@ variant %@: %@",
+                                                                 jobId, variant[@"resolution"] ?: variantDir, s2paError);
+                                                }
+                                            }
+                                        }
+                                        if (![ATProtoMUXLTranscoderBridge writePackage:toWrite
                                                                            toDirectory:variantDir
                                                                                  error:&muxlError]) {
                                             GZ_LOG_WARN(@"MUXL write failed for job %@ variant %@: %@",
