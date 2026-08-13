@@ -5,6 +5,7 @@
 #import "Video/VideoTranscoder.h"
 #import "Video/VideoTranscoderBackend.h"
 #import "Video/VideoHLSGenerator.h"
+#import "Video/ATProtoMUXLTranscoderBridge.h"
 #import "MediaCore/ATProtoCAObjectStore.h"
 #import "MediaCore/ATProtoVODManifestBuilder.h"
 #import "MediaCore/ATProtoCAObjectLifecycle.h"
@@ -47,6 +48,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
         _pollInterval = 5.0;
         _maxConcurrentJobs = 2;
         _enableContentAddressedManifest = NO;
+        _enableMUXLPresentation = NO;
         _workerQueue = dispatch_queue_create("com.atproto.video.worker", DISPATCH_QUEUE_SERIAL);
         _stateQueue = dispatch_queue_create("com.atproto.video.state", DISPATCH_QUEUE_SERIAL);
         _processingJobIds = [NSMutableSet set];
@@ -387,6 +389,28 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                                                                                error:&hlsError];
                             if (hlsResult) {
                                 GZ_LOG_INFO(@"HLS generation complete for job %@: %@ variants", jobId, @(hlsResult.variants.count));
+                                if (self.enableMUXLPresentation) {
+                                    for (NSDictionary *variant in hlsResult.variants) {
+                                        NSString *playlistPath = variant[@"playlistPath"];
+                                        NSString *variantDir = [playlistPath stringByDeletingLastPathComponent];
+                                        if (variantDir.length == 0) continue;
+                                        NSError *muxlError = nil;
+                                        NSDictionary *packaged =
+                                            [ATProtoMUXLTranscoderBridge packageHLSVariantDirectory:variantDir
+                                                                                              error:&muxlError];
+                                        if (!packaged) {
+                                            GZ_LOG_WARN(@"MUXL package failed for job %@ variant %@: %@",
+                                                         jobId, variant[@"resolution"] ?: variantDir, muxlError);
+                                            continue;
+                                        }
+                                        if (![ATProtoMUXLTranscoderBridge writePackage:packaged
+                                                                           toDirectory:variantDir
+                                                                                 error:&muxlError]) {
+                                            GZ_LOG_WARN(@"MUXL write failed for job %@ variant %@: %@",
+                                                         jobId, variant[@"resolution"] ?: variantDir, muxlError);
+                                        }
+                                    }
+                                }
                                 if (self.enableContentAddressedManifest) {
                                     if (!self.caObjectStore) {
                                         GZ_LOG_WARN(@"CA manifest enabled but caObjectStore is nil for job %@", jobId);

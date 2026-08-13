@@ -357,7 +357,7 @@ static NSData *MUXLBuildMDIA(const MUXLFMP4Track *track, NSError **error) {
 
 static NSData *MUXLBuildTRAK(const MUXLFMP4Track *track, NSError **error) {
     NSMutableData *tkhd = [NSMutableData data];
-    MUXLWriteFullBoxHeader(tkhd, "tkhd", 0, 3, 84); // enabled | in_movie
+    MUXLWriteFullBoxHeader(tkhd, "tkhd", 0, 3, 80); // enabled | in_movie; v0 body is 80 bytes
     MUXLAppendUInt32BE(0, tkhd); // creation
     MUXLAppendUInt32BE(0, tkhd); // modification
     MUXLAppendUInt32BE(track->trackID, tkhd);
@@ -805,7 +805,7 @@ static NSData *MUXLBuildFlatTRAK(const MUXLFMP4Track *track,
     uint32_t tkhdDuration32 = (uint32_t)tkhdDuration;
 
     NSMutableData *tkhd = [NSMutableData data];
-    MUXLWriteFullBoxHeader(tkhd, "tkhd", 0, 3, 84);
+    MUXLWriteFullBoxHeader(tkhd, "tkhd", 0, 3, 80); // v0 body is 80 bytes
     MUXLAppendUInt32BE(0, tkhd);
     MUXLAppendUInt32BE(0, tkhd);
     MUXLAppendUInt32BE(track->trackID, tkhd);

@@ -5,6 +5,7 @@
 #import "Video/VideoThumbnailGenerator.h"
 #import "Video/VideoHLSGenerator.h"
 #import "Video/VideoTranscoderBackend.h"
+#import "Video/ATProtoMUXLTranscoderBridge.h"
 #import "MediaCore/ATProtoCAObjectStore.h"
 #import "MediaCore/ATProtoVODManifestBuilder.h"
 #import "MediaCore/ATProtoCAObjectLifecycle.h"
@@ -25,6 +26,7 @@
     if (self) {
         _include1080p = NO;
         _enableContentAddressedManifest = NO;
+        _enableMUXLPresentation = NO;
     }
     return self;
 }
@@ -253,6 +255,42 @@
                     }
                     GZ_LOG_INFO(@"ATProtoVideoProcessor: HLS generation complete for %@/%@ (%lu variants)",
                                  hlsDid, hlsCid, (unsigned long)hlsResult.variants.count);
+
+                    if (self.enableMUXLPresentation && hlsDirectory.length > 0) {
+                        NSMutableArray *muxlVariants = [NSMutableArray array];
+                        for (NSDictionary *variant in hlsResult.variants) {
+                            NSString *playlistPath = variant[@"playlistPath"];
+                            NSString *variantDir = [playlistPath stringByDeletingLastPathComponent];
+                            if (variantDir.length == 0) continue;
+                            NSError *muxlError = nil;
+                            NSDictionary *packaged =
+                                [ATProtoMUXLTranscoderBridge packageHLSVariantDirectory:variantDir
+                                                                                  error:&muxlError];
+                            if (!packaged) {
+                                GZ_LOG_WARN(@"ATProtoVideoProcessor: MUXL package failed for %@: %@",
+                                             variantDir, muxlError);
+                                continue;
+                            }
+                            NSDictionary *written =
+                                [ATProtoMUXLTranscoderBridge writePackage:packaged
+                                                              toDirectory:variantDir
+                                                                    error:&muxlError];
+                            if (!written) {
+                                GZ_LOG_WARN(@"ATProtoVideoProcessor: MUXL write failed for %@: %@",
+                                             variantDir, muxlError);
+                                continue;
+                            }
+                            NSMutableDictionary *entry = [written mutableCopy];
+                            if (variant[@"resolution"]) entry[@"resolution"] = variant[@"resolution"];
+                            entry[@"variantDirectory"] = variantDir;
+                            [muxlVariants addObject:[entry copy]];
+                        }
+                        if (muxlVariants.count > 0) {
+                            metadata[@"muxlVariants"] = [muxlVariants copy];
+                            GZ_LOG_INFO(@"ATProtoVideoProcessor: MUXL packaging complete (%lu variants)",
+                                         (unsigned long)muxlVariants.count);
+                        }
+                    }
 
                     if (self.enableContentAddressedManifest) {
                         if (!self.caObjectStore) {

@@ -95,6 +95,13 @@ typedef NS_ENUM(NSInteger, ATProtoVideoJobState) {
  */
 @property (nonatomic, assign) BOOL enableContentAddressedManifest;
 
+/**
+ Whether to package each HLS variant into MUXL after HLS (WS10 Phase 9).
+
+ Defaults to NO. Opt-in only; default HLS output is unchanged.
+ */
+@property (nonatomic, assign) BOOL enableMUXLPresentation;
+
 /// CA object store used when @c enableContentAddressedManifest is YES.
 @property (nonatomic, strong, nullable) ATProtoCAObjectStore *caObjectStore;
 

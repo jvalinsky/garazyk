@@ -1227,6 +1227,8 @@ int main(int argc, char *argv[]) {
       @"ATProtoMUXLBoxTests",
       @"ATProtoMUXLFragmentTests",
       @"ATProtoMUXLFMP4Tests",
+      @"ATProtoMUXLPlaybackTests",
+      @"ATProtoMUXLTranscoderBridgeTests",
       @"ATProtoS2PACOSETests",
       @"ATProtoS2PALeafCertificateTests",
       @"ATProtoS2PAJUMBFTests",
