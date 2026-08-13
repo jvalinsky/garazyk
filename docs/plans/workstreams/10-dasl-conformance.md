@@ -46,8 +46,9 @@ bounded document, identifier, media, COSE, and data-protocol/policy slices; Phas
 (PFP producer + Ozone column) and Phase 9 (MUXL) are complete. Phase 10 S2PA has
 COSE + leaf + JUMBF uuid + SHA-256 hard binding + `c2pa.hash.data` assertion
 (2026-08-13); full claim/assertion-store graph and
-Video/MUXL producer wiring remain open. Phase 7 production paths and Phase 11
-explicit production integration remainders remain open.
+Video/MUXL producer wiring remain open. Phase 7 production paths remain open.
+Phase 11 mothership resolve-path + getBlob load landed 2026-08-13; Deno
+`@dasl/tiles` / live embed remainders remain open.
 
 Phase 0 evidence: `build/tests/AllTests --gated=run` passes 4,955 tests with 0 failures;
 `scripts/check_module_boundaries.sh build` reports no new violations with 26 baseline
