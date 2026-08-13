@@ -390,7 +390,7 @@ payload. Soft bindings, `bmffHash`, and the full claim/assertion-store graph rem
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
   paths are unchanged.
 
-**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (protocol, policy, unique-origin host, SW scripts, CAR load + path resolve + origin helpers).**
+**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (protocol, policy, unique-origin host, SW scripts, CAR load + path resolve + mothership mediation + getBlob load).**
 `AdminUIServer/UITileDataProtocol` serves the reserved `/.well-known/web-tiles/data.js` module with
 `addDataHandler`, `removeDataHandler`, `listen`, and `sendData`, using the normative
 `tiles-protocol-up-data-ready`, `tiles-protocol-up-data-payload`, and
@@ -410,19 +410,23 @@ loads a CAR/`.tile` archive, retains the reader, and resolves arbitrary declared
 `{status, headers, body}` (404 for undeclared / missing blocks; QS/fragment stripped). Host-side
 origin helpers (`GZAdminUITileIsTrustedEmbedOrigin`,
 `GZAdminUITileDataProtocolJavaScriptWithTrustedOrigin`) gate postMessage peers when configured.
+**Mothership + getBlob (2026-08-13):** `ATProtoWebTileMothership` mediates worker
+`resolve-path` requests (echoes `requestId`, returns `response` or `error`) and loads a tile
+CAR via injected HTTP `com.atproto.sync.getBlob`.
 
 - Owner boundary: `Garazyk/Sources/AdminUIServer` owns the host-selected protocol module, policy
-  helpers, loading-host redirect, and SW script routes. `Core` / `Repository` own tile validation
-  and CAR loading. Existing authenticated Admin UI CSP and routes are unchanged.
+  helpers, loading-host redirect, and SW script routes. `Core` / `Repository` own tile validation,
+  CAR loading, and mothership/getBlob mediation. Existing authenticated Admin UI CSP and routes
+  are unchanged.
 - Evidence: `UITileExecutionPolicyTests` (incl. trusted-origin JS), `UITileLoadingHostTests` (host
   classification, redirect, headers, shuttle/worker, trusted origin), `UIServerRuntimeTests`
   (`data.js`, load-host 303, unique-origin shuttle + script routes), `ATProtoWebTileTests` (MASL,
-  CAR root, multi-path resolve + 404).
-- Explicit remainder: full mothership `resolve-path` mediation, Deno tiles protocol package, and
-  AT-network `getBlob` path loading remain open. This slice does not claim to execute arbitrary
-  tile content or provide a full tile host.
-- Rollback: remove the additive policy/protocol/loading-host/WebTile helpers, reserved routes, and
-  test registration; existing Admin UI routes and CSP remain unchanged.
+  CAR root, multi-path resolve + 404), `ATProtoWebTileMothershipTests` (resolve-path mediation +
+  getBlob stub load).
+- Explicit remainder: Deno `@dasl/tiles` protocol package and live Admin UI embedding of an
+  arbitrary tile remain open. This slice does not claim a full browser tile host product.
+- Rollback: remove the additive policy/protocol/loading-host/WebTile/Mothership helpers, reserved
+  routes, and test registration; existing Admin UI routes and CSP remain unchanged.
 
 ### GNUstep package + DASL harness (2026-08-12)
 

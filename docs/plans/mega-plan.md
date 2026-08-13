@@ -561,7 +561,8 @@ for full traceability; mirrored in the
     and MASL slices are now implemented and merged to `main` (`da56aa18` and
     `4bfd6a8a`) with focused verification; remaining open slices are full
     C2PA claim/assertion-store graph (hash.data + MUXL hard-bind landed
-    2026-08-13) and Web Tiles host remainders.
+    2026-08-13) and Web Tiles Deno package / live embed remainders
+    (mothership resolve-path + getBlob load landed 2026-08-13).
     Phase 8 PFP
     producer (`ATProtoPFPProducer`) + Ozone `moderation_subjects.pfp` column
     (V19) + Hamming match APIs completed 2026-08-12. PDQ Hamming comparison;
