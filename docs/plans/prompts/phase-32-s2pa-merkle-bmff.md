@@ -1,10 +1,17 @@
 ---
 phase: 32
 title: S2PA c2pa.hash.bmff.v3 Merkle trees
-status: pending
+status: complete
 agent: worker
 depends_on: []
 ---
+
+## Progress
+
+Completed 2026-08-13: merkle-map CBOR; whole/fixed/variable mdat leaf digests;
+C2PA unbalanced-promote tree; leaf-row verify with hash+merkle + mandatory
+`/mdat` subset; nested xpath decided as root-only + subset; claim-bound JUMBF
+sign of Merkle assertion green. Fragmented initHash deferred.
 
 # Phase 32: Merkle bmffHash (`c2pa.hash.bmff.v3`)
 
@@ -33,7 +40,7 @@ trees over `mdat` (and optional nested xpath if chosen). Workstream 10 Phase
 
 ### Slice 1 — `merkle-map` CBOR
 
-Encode/decode: `uniqueId`, `localId`, `count`, `hashes`, optional `alg`,
+Add encode/decode: `uniqueId`, `localId`, `count`, `hashes`, optional `alg`,
 `fixedBlockSize`, `variableBlockSizes`, `initHash`.
 
 **Acceptance:** canonical CBOR round-trip; reject incomplete maps.

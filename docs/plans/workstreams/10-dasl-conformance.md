@@ -48,9 +48,9 @@ COSE + leaf + JUMBF uuid + SHA-256 hard binding + `c2pa.hash.data` assertion
 (2026-08-13); `c2pa.hash.bmff.v3` root-box hashing + `c2pa.soft-binding` encode
 landed 2026-08-13; claim-map-v2 + assertion store landed 2026-08-13;
 ingredient claims (v3 encode + validationResults / embedded-manifest verify
-landed 2026-08-13), soft-binding algorithms, and Merkle bmffHash remain
-open. Transcoder auto-sign landed 2026-08-13 (opt-in). Phase 7 production paths
-remain open.
+landed 2026-08-13), Merkle bmffHash (leaf-row profile) landed 2026-08-13;
+soft-binding algorithms remain open. Transcoder auto-sign landed 2026-08-13
+(opt-in). Phase 7 production paths remain open.
 Phase 11 mothership resolve-path + getBlob load landed 2026-08-13; Deno
 `@dasl/tiles` / live embed remainders remain open.
 
@@ -379,15 +379,20 @@ ranges, and `uuidBoxSigningHashDataAssertionForMediaData:` signs the assertion m
 payload. **`c2pa.hash.bmff.v3` (2026-08-13):** `ATProtoS2PAHashBMFFAssertion`
 implements root-box v3 hashing (`offset_be64 || box` with xpath/data exclusions),
 CBOR encode/decode, and a two-pass JUMBF sign/verify path that excludes the C2PA
-uuid box. Merkle trees, nested xpath, and the full claim/assertion-store graph
-remain open. **`c2pa.soft-binding` (2026-08-13):**
+uuid box. **Merkle (2026-08-13):** `ATProtoS2PAMerkleMap` + leaf digests for
+whole/`fixedBlockSize`/`variableBlockSizes` mdat payloads; C2PA unbalanced
+promote tree; leaf-row stored in `hashes`; when `hash`+`merkle` both present,
+mandatory `/mdat` subset `{offset=16,length=0}` applies. Nested xpath beyond a
+single root 4cc remains out of profile (use root paths + `subset`). Fragmented
+`initHash` / aux merkle boxes remain open. Soft bindings and gathered/redacted
+assertions remain open. **`c2pa.soft-binding` (2026-08-13):**
 `ATProtoS2PASoftBindingAssertion` encodes/decodes alg + blocks (value + optional
 timespan scope); does not run watermark/fingerprint algorithms.
 **Claim + assertion store (2026-08-13):** `ATProtoS2PAClaim` builds
 `c2pa.claim.v2` with `created_assertions` hashed URIs, a `c2pa.assertions`
 JUMBF store (`cbor` content boxes), and JUMBF claim-bound sign/verify
-(`uuidBoxSigningAssertions:` / `verifyUUIDBoxClaimBound:`). Ingredient claims,
-gathered/redacted assertions, and Merkle remain open.
+(`uuidBoxSigningAssertions:` / `verifyUUIDBoxClaimBound:`). Gathered/redacted
+assertions remain open.
 **`c2pa.ingredient.v3` (2026-08-13):** `ATProtoS2PAIngredientAssertion`
 encodes/decodes relationship + optional title/format/instanceID/description/
 digitalSourceType, activeManifest/claimSignature hashed URIs, and bounded
@@ -413,11 +418,11 @@ tamper → `HashMismatch`). Gathered/redacted assertions remain open.
   hashed URIs + claim-bound JUMBF sign/verify),
   `ATProtoS2PAIngredientAssertionTests`, and `ATProtoS2PAJUMBFTests`.
   All registered in `Tests/test_main.m`.
-- Explicit remainder: gathered/redacted assertions, soft-binding algorithm
-  compute/verify, and Merkle `bmffHash` remain open. Ingredient
-  `validationResults` + embedded-manifest verify completed 2026-08-13
-  ([phase-31](../prompts/phase-31-s2pa-ingredient-verify.md)). Execution prompts:
-  [phase-32](../prompts/phase-32-s2pa-merkle-bmff.md),
+- Explicit remainder: gathered/redacted assertions and soft-binding algorithm
+  compute/verify remain open. Merkle `bmffHash` (leaf-row, non-fragmented)
+  completed 2026-08-13
+  ([phase-32](../prompts/phase-32-s2pa-merkle-bmff.md)). Nested xpath stays
+  root-only + `subset`. Execution prompts:
   [phase-33](../prompts/phase-33-s2pa-soft-binding-algs.md).
   **MUXL producer wiring (2026-08-13):**
   `ATProtoMUXLPlayback` `presentationByHardBindingSegment:` /
