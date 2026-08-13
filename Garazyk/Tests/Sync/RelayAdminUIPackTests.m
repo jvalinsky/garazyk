@@ -105,6 +105,9 @@
     XCTAssertEqualObjects(source[@"hostname"], @"pds.example");
     XCTAssertNotNil(source[@"crawlState"]);
     XCTAssertNotNil(source[@"reconnectAttempts"]);
+    XCTAssertNotNil(source[@"eventsByKind"]);
+    XCTAssertNotNil(source[@"lastEventAt"]);
+    XCTAssertNotNil(source[@"connectedAt"]);
 }
 
 - (void)testSnapshotRemainsConsistentDuringConcurrentMetricUpdates {

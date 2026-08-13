@@ -49,6 +49,11 @@
             @"status": source[@"status"] ?: (isConnected ? @"connected" : @"disconnected"),
             @"repositories": source[@"repositories"] ?: source[@"repositoryCount"] ?: @0,
             @"eventsReceived": source[@"eventsReceived"] ?: @0,
+            @"eventsByKind": [source[@"eventsByKind"] isKindOfClass:NSDictionary.class]
+                ? source[@"eventsByKind"]
+                : ([source[@"eventCounts"] isKindOfClass:NSDictionary.class] ? source[@"eventCounts"] : @{}),
+            @"lastEventAt": source[@"lastEventAt"] ?: @"",
+            @"connectedAt": source[@"connectedAt"] ?: @"",
             @"cursor": source[@"cursor"] ?: source[@"seq"] ?: @0,
             @"crawlState": source[@"crawlState"] ?: @"not requested",
             @"reconnectAttempts": source[@"reconnectAttempts"] ?: @0,
@@ -165,18 +170,32 @@
         NSString *crawlError = entry[@"crawlError"];
         NSString *errorDisplay = ([crawlError isKindOfClass:[NSString class]] && crawlError.length > 0)
             ? crawlError : @"—";
+        NSDictionary *byKind = [entry[@"eventsByKind"] isKindOfClass:[NSDictionary class]] ? entry[@"eventsByKind"] : @{};
+        NSMutableArray *kindParts = [NSMutableArray array];
+        NSArray *sortedKinds = [byKind keysSortedByValueUsingComparator:^NSComparisonResult(NSNumber *a, NSNumber *b) {
+            return [b compare:a];
+        }];
+        for (NSString *kind in sortedKinds) {
+            [kindParts addObject:[NSString stringWithFormat:@"%@=%@", kind, byKind[kind]]];
+            if (kindParts.count >= 4) break;
+        }
+        NSString *kindsDisplay = kindParts.count > 0 ? [kindParts componentsJoinedByString:@" "] : @"—";
+        NSString *lastEvent = ([entry[@"lastEventAt"] isKindOfClass:[NSString class]] && [entry[@"lastEventAt"] length] > 0)
+            ? entry[@"lastEventAt"] : @"—";
         [rows addObject:[GZHTML tableRowWithHtmlCells:@[
             [GZHTML tableCellWithText:entry[@"hostname"] ?: @"" className:@"text-mono text-sm"],
             [GZHTML tableCellWithHTML:[GZHTML connectionBadge:status] className:nil],
             [GZHTML tableCellWithText:entry[@"crawlState"] ?: @"—" className:nil],
             [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"repositories"] ?: @0] className:@"text-right text-mono"],
             [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"eventsReceived"] ?: @0] className:@"text-right text-mono"],
+            [GZHTML tableCellWithText:kindsDisplay className:@"text-mono text-sm"],
+            [GZHTML tableCellWithText:lastEvent className:@"text-mono text-sm"],
             [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"cursor"] ?: @0] className:@"text-right text-mono"],
             [GZHTML tableCellWithText:[NSString stringWithFormat:@"%@", entry[@"reconnectAttempts"] ?: @0] className:@"text-right text-mono"],
             [GZHTML tableCellWithText:errorDisplay className:@"text-sm"],
         ]]];
     }
-    return [GZHTML tableWithHeaders:@[@"Source", @"Status", @"Crawl", @"Repos", @"Events", @"Cursor", @"Reconnects", @"Last crawl error"]
+    return [GZHTML tableWithHeaders:@[@"Source", @"Status", @"Crawl", @"Repos", @"Events", @"By kind", @"Last event", @"Cursor", @"Reconnects", @"Last crawl error"]
                            htmlRows:rows.count > 0 ? rows : nil
                       emptyMessage:@"No upstreams configured."];
 }
