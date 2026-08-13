@@ -306,6 +306,7 @@
            @"    review_state TEXT NOT NULL DEFAULT 'tools.ozone.moderation.defs#reviewOpen',"
            @"    last_event_id TEXT,"
            @"    updated_at REAL NOT NULL,"
+           @"    pfp TEXT,"
            @"    PRIMARY KEY(subject_did, subject_type)"
            @") WITHOUT ROWID";
 }
@@ -446,6 +447,8 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_events_created ON moderation_events(created_at);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_subjects_state ON moderation_subjects(review_state);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_subjects_pfp ON moderation_subjects(pfp) WHERE pfp IS NOT NULL;"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did);"];
     [sql appendString:@";\n"];

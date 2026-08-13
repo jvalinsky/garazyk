@@ -3,9 +3,10 @@
 #import <Foundation/Foundation.h>
 #import "Database/PDSQueryDatabase.h"
 
-NS_ASSUME_NONNULL_BEGIN
-
+@class ATProtoPFP;
 @class PDSDatabase;
+
+NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @abstract Service layer for Ozone moderation events, subject state, team data, and settings.
@@ -96,6 +97,25 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable NSArray<NSDictionary *> *)getSubjectStatuses:(NSArray<NSString *> *)subjects
                                                    error:(NSError **)error;
+
+/**
+ Stores a DASL PFP string on a moderation subject row (creates the subject if needed).
+
+ @param pfpString Canonical DASL PFP (`p…`) or nil to clear.
+ */
+- (BOOL)setSubjectPFP:(nullable NSString *)pfpString
+           subjectDid:(NSString *)subjectDid
+          subjectType:(NSString *)subjectType
+                error:(NSError **)error;
+
+/**
+ Returns subjects whose stored PDQ PFP is within @c maxDistance of @c probe
+ (inclusive). Non-PDQ or missing PFPs are skipped. Results are capped by @c limit.
+ */
+- (nullable NSArray<NSDictionary *> *)subjectsMatchingPDQ:(ATProtoPFP *)probe
+                                              maxDistance:(NSUInteger)maxDistance
+                                                    limit:(NSUInteger)limit
+                                                    error:(NSError **)error;
 
 #pragma mark - Statistics & Analytics
 

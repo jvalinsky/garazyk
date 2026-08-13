@@ -3,6 +3,7 @@
 #import "ModerationService.h"
 #import "Database/PDSDatabase.h"
 #import "Database/PDSDatabase+Transactions.h"
+#import "Core/ATProtoPFP.h"
 #import "Debug/GZLogger.h"
 
 // Lexicon-defined moderation event types (ADR 0027).
@@ -938,6 +939,81 @@ static NSString *PDSCursorString(id value) {
     return [(PDSDatabase *)self.database executeParameterizedUpdate:upsert
                                                               params:@[subjectDid, subjectType, reviewState, eventId, now]
                                                                error:error];
+}
+
+- (BOOL)setSubjectPFP:(NSString *)pfpString
+           subjectDid:(NSString *)subjectDid
+          subjectType:(NSString *)subjectType
+                error:(NSError **)error {
+    if (subjectDid.length == 0 || subjectType.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"ModerationService"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"subjectDid and subjectType are required"}];
+        }
+        return NO;
+    }
+    if (pfpString != nil) {
+        NSError *parseError = nil;
+        if (![ATProtoPFP pfpFromString:pfpString error:&parseError]) {
+            if (error) *error = parseError;
+            return NO;
+        }
+    }
+    NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+    id pfpValue = pfpString ?: [NSNull null];
+    NSString *upsert = @"INSERT INTO moderation_subjects (subject_did, subject_type, review_state, last_event_id, updated_at, pfp) "
+                       @"VALUES (?, ?, 'tools.ozone.moderation.defs#reviewOpen', NULL, ?, ?) "
+                       @"ON CONFLICT(subject_did, subject_type) DO UPDATE SET "
+                       @"pfp = excluded.pfp, "
+                       @"updated_at = excluded.updated_at";
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:upsert
+                                                              params:@[subjectDid, subjectType, now, pfpValue]
+                                                               error:error];
+}
+
+- (nullable NSArray<NSDictionary *> *)subjectsMatchingPDQ:(ATProtoPFP *)probe
+                                              maxDistance:(NSUInteger)maxDistance
+                                                    limit:(NSUInteger)limit
+                                                    error:(NSError **)error {
+    if (![probe isKindOfClass:[ATProtoPFP class]] || probe.algorithm != ATProtoPFPAlgorithmPDQ) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"ModerationService"
+                                         code:2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"probe must be a PDQ PFP"}];
+        }
+        return nil;
+    }
+    NSUInteger capped = limit == 0 ? 50 : MIN(limit, (NSUInteger)500);
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:
+                     @"SELECT subject_did, subject_type, review_state, pfp, updated_at "
+                     @"FROM moderation_subjects WHERE pfp IS NOT NULL"
+                                                                    params:@[]
+                                                                     error:error];
+    if (!rows) return nil;
+    NSMutableArray *matches = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSString *stored = row[@"pfp"];
+        if (![stored isKindOfClass:[NSString class]]) continue;
+        NSError *parseError = nil;
+        ATProtoPFP *candidate = [ATProtoPFP pfpFromString:stored error:&parseError];
+        if (!candidate || candidate.algorithm != ATProtoPFPAlgorithmPDQ) continue;
+        NSUInteger distance = 0;
+        if (![ATProtoPFP hammingDistanceBetweenPDQ:probe andPDQ:candidate distance:&distance error:nil]) {
+            continue;
+        }
+        if (distance > maxDistance) continue;
+        [matches addObject:@{
+            @"subjectDid": row[@"subject_did"] ?: @"",
+            @"subjectType": row[@"subject_type"] ?: @"",
+            @"reviewState": row[@"review_state"] ?: @"",
+            @"pfp": stored,
+            @"distance": @(distance),
+            @"updatedAt": row[@"updated_at"] ?: @0,
+        }];
+        if (matches.count >= capped) break;
+    }
+    return [matches copy];
 }
 
 @end

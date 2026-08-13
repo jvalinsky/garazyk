@@ -3,6 +3,8 @@
 #import <XCTest/XCTest.h>
 #import "Ozone/Services/ModerationService.h"
 #import "Database/PDSDatabase.h"
+#import "Core/ATProtoPFPProducer.h"
+#import "Core/ATProtoPFP.h"
 
 @interface ModerationServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *tempDir;
@@ -23,7 +25,7 @@
     
     // Initialize schema
     [self.db executeUnsafeRawSQL:@"CREATE TABLE moderation_events (id TEXT PRIMARY KEY, action TEXT NOT NULL, subject_did TEXT NOT NULL, subject_type TEXT NOT NULL, reason TEXT, created_by TEXT NOT NULL, created_at REAL NOT NULL, details_json TEXT)" error:nil];
-    [self.db executeUnsafeRawSQL:@"CREATE TABLE moderation_subjects (subject_did TEXT NOT NULL, subject_type TEXT NOT NULL, review_state TEXT NOT NULL, last_event_id TEXT, updated_at REAL NOT NULL, PRIMARY KEY(subject_did, subject_type))" error:nil];
+    [self.db executeUnsafeRawSQL:@"CREATE TABLE moderation_subjects (subject_did TEXT NOT NULL, subject_type TEXT NOT NULL, review_state TEXT NOT NULL, last_event_id TEXT, updated_at REAL NOT NULL, pfp TEXT, PRIMARY KEY(subject_did, subject_type))" error:nil];
     [self.db executeUnsafeRawSQL:@"CREATE TABLE admin_audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_did TEXT NOT NULL, action TEXT NOT NULL, subject_type TEXT NOT NULL, subject_id TEXT NOT NULL, details TEXT, created_at REAL NOT NULL)" error:nil];
     [self.db executeUnsafeRawSQL:@"CREATE TABLE moderation_safelinks (url TEXT NOT NULL, pattern TEXT NOT NULL, action TEXT NOT NULL, created_at REAL NOT NULL, updated_at REAL NOT NULL, PRIMARY KEY(url, pattern))" error:nil];
     
@@ -123,6 +125,46 @@
     XCTAssertNil(error);
     NSArray *statuses = result[@"statuses"];
     XCTAssertGreaterThan(statuses.count, 0);
+}
+
+- (void)testSetAndMatchSubjectPFP {
+    const NSUInteger w = 48;
+    const NSUInteger h = 48;
+    uint8_t *pixels = calloc(w * h * 3, 1);
+    XCTAssertTrue(pixels != NULL);
+    for (NSUInteger i = 0; i < w * h; i++) {
+        pixels[i * 3] = (uint8_t)(i % 200);
+        pixels[i * 3 + 1] = 90;
+        pixels[i * 3 + 2] = 40;
+    }
+    ATProtoPFPHashResult *hash = [ATProtoPFPProducer hashRGB8Width:w
+                                                            height:h
+                                                       bytesPerRow:w * 3
+                                                            pixels:pixels
+                                                             error:nil];
+    XCTAssertNotNil(hash);
+    free(pixels);
+
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    [self.db executeParameterizedUpdate:
+        @"INSERT INTO moderation_subjects (subject_did, subject_type, review_state, updated_at) VALUES (?, ?, ?, ?)"
+                                  params:@[@"did:plc:pfp1", @"repo", @"reviewOpen", @(now)]
+                                   error:nil];
+
+    NSError *error = nil;
+    XCTAssertTrue([self.service setSubjectPFP:[hash.pfp stringValue]
+                                   subjectDid:@"did:plc:pfp1"
+                                  subjectType:@"repo"
+                                        error:&error], @"%@", error);
+
+    NSArray *matches = [self.service subjectsMatchingPDQ:hash.pfp
+                                             maxDistance:0
+                                                   limit:10
+                                                   error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqual(matches.count, 1u);
+    XCTAssertEqualObjects(matches.firstObject[@"subjectDid"], @"did:plc:pfp1");
+    XCTAssertEqualObjects(matches.firstObject[@"pfp"], [hash.pfp stringValue]);
 }
 
 @end
