@@ -211,15 +211,54 @@
 
 - (void)testSidebarSectionsMatchPartialRoutes {
     NSArray *sections = [GZSyrenaAdminUIPack sidebarSections];
-    XCTAssertEqual(sections.count, 4u);
-    NSArray *expectedIds = @[@"appview-serving", @"appview-firehose", @"appview-reposync", @"appview-coverage"];
+    XCTAssertEqual(sections.count, 7u);
+    NSArray *expectedIds = @[@"appview-serving", @"appview-firehose", @"appview-reposync",
+                             @"appview-coverage", @"appview-exceptions", @"appview-probe", @"appview-actor"];
     for (NSUInteger i = 0; i < sections.count; i++) {
         XCTAssertEqualObjects(sections[i][@"tabIdentifier"], expectedIds[i]);
     }
-    NSArray *labels = @[@"Serving", @"Firehose", @"Repo sync", @"Coverage"];
+    NSArray *labels = @[@"Serving", @"Firehose", @"Repo sync", @"Coverage", @"Exceptions", @"Probe", @"Actor dig"];
     for (NSUInteger i = 0; i < sections.count; i++) {
         XCTAssertEqualObjects(sections[i][@"displayName"], labels[i]);
     }
+}
+
+- (void)testProbeCatalogAndHealthMethod {
+    NSArray *catalog = [self.snapshot probeCatalog];
+    XCTAssertGreaterThanOrEqual(catalog.count, 3u);
+    NSDictionary *health = [self.snapshot probeMethod:@"_admin.health" params:@{}];
+    XCTAssertEqualObjects(health[@"method"], @"_admin.health");
+    XCTAssertNotNil(health[@"result"][@"lanes"]);
+    NSDictionary *denied = [self.snapshot probeMethod:@"com.atproto.sync.getBlob" params:@{}];
+    XCTAssertEqualObjects(denied[@"error"], @"MethodNotAllowed");
+}
+
+- (void)testExceptionsAndActorDigWithoutDatabase {
+    NSDictionary *exceptions = [self.snapshot exceptionsWithLimit:10];
+    XCTAssertEqual([(NSArray *)exceptions[@"validation"] count], 0u);
+    NSDictionary *missing = [self.snapshot actorDigForIdentifier:@"did:plc:nobody"];
+    XCTAssertEqualObjects(missing[@"error"], @"Unavailable");
+}
+
+- (void)testNewPartialsRequireSession {
+    NSString *token = [self.host.authManager createSessionToken];
+    NSString *cookie = [NSString stringWithFormat:@"%@=%@", self.host.authManager.sessionCookieName, token];
+    NSDictionary *h = @{@"Cookie": cookie};
+    for (NSString *path in @[@"/admin/partials/appview-exceptions",
+                              @"/admin/partials/appview-probe",
+                              @"/admin/partials/appview-actor"]) {
+        ATProtoHttpResponse *res = [self.host dispatchRequestForTesting:
+            [self r:@"GET" path:path headers:h body:nil]];
+        XCTAssertEqual(res.statusCode, 200, @"path %@", path);
+    }
+    NSString *html = [GZSyrenaAdminUIPack exceptionsHTML:@{
+        @"counts": @{@"deadLetter": @1, @"hookDeadLetter": @2, @"pendingIndex": @3},
+        @"validation": @[@{@"createdAt": @"t", @"did": @"did:plc:x", @"collection": @"c", @"seq": @1, @"error": @"e"}],
+        @"hooks": @[],
+    }];
+    XCTAssertTrue([html containsString:@"Validation dead letters"]);
+    XCTAssertTrue([html containsString:@"did:plc:x"]);
+    XCTAssertFalse([html containsString:@"raw_record"]);
 }
 
 @end

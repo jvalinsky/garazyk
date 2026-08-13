@@ -21,7 +21,10 @@ Syrena’s admin surface is **not** a Mikrus/Beskid clone. Operator questions:
 3. **Repo sync** — funnel (pending / processing / synced / dirty), workers, enqueue DIDs, retry/cancel, rebuild scope; bounded queue table.
 4. **Coverage** — social completeness (handles, profiles, posts) + collection mix; not a generic URI explorer.
 
-Deferred (next slices): Exceptions triage list, Probe (XRPC console), Actor dig (hydrated cards).
+Deferred (next slices): ~~Exceptions triage list, Probe (XRPC console), Actor dig (hydrated cards).~~
+**Done 2026-08-12:** Exceptions / Probe / Actor dig tabs on `GZSyrenaAdminUIPack`
+(bounded dead-letter rows without `raw_record`; allowlisted Probe catalog via
+`data-ui-form=appview-probe`; Actor dig from indexed handle/profile metadata).
 
 Do **not** add a Mikrus-style Explore tab. Browse belongs as hydrated social views or Probe later.
 
@@ -78,7 +81,10 @@ the service session and CSRF for mutations.
 4. Embed the admin host and add secret-file/loopback NixOS or container options.
 5. **Serving + Repo sync IA** (2026-08-12): rename tabs, three-lane pulse,
    coverage gauges, queue UI + enqueue/retry/cancel/rebuild with CSRF.
-6. Test multiple relays, disabled ingest/backfill, stale cursor, dead letters,
+6. **Exceptions / Probe / Actor dig** (2026-08-12): sidebar tabs + snapshot
+   methods (`exceptionsWithLimit:`, `probeCatalog` / `probeMethod:params:`,
+   `actorDigForIdentifier:`). Evidence: `SyrenaAdminUITests` (19).
+7. Test multiple relays, disabled ingest/backfill, stale cursor, dead letters,
    bounded pagination, mutation audit, session/CSRF rejection, and concurrent
    ingest while the dashboard polls.
 

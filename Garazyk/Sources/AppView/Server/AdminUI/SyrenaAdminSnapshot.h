@@ -56,6 +56,28 @@ NSString * _Nullable GZSyrenaAdminPassword(NSString * _Nullable explicitPath);
 - (NSDictionary<NSString *, id> *)cancelDID:(NSString *)did;
 - (NSDictionary<NSString *, id> *)rebuildScope;
 
+/**
+ * @abstract Bounded exception triage rows (validation + hook dead letters).
+ * Omits raw record bodies; returns error message and addressing fields only.
+ */
+- (NSDictionary<NSString *, id> *)exceptionsWithLimit:(NSInteger)limit;
+
+/**
+ * @abstract Hydrated actor dig for a DID or handle (indexed profile metadata).
+ */
+- (NSDictionary<NSString *, id> *)actorDigForIdentifier:(NSString *)identifier;
+
+/**
+ * @abstract Allowlisted admin Probe methods (not a full XRPC proxy).
+ */
+- (NSArray<NSDictionary<NSString *, id> *> *)probeCatalog;
+
+/**
+ * @abstract Run one allowlisted Probe method with optional params.
+ */
+- (NSDictionary<NSString *, id> *)probeMethod:(NSString *)method
+                                       params:(nullable NSDictionary<NSString *, id> *)params;
+
 @end
 
 NS_ASSUME_NONNULL_END
