@@ -82,9 +82,10 @@ passed: PLC/PDS/relay binary topology with fixed ports, loopback admin listener,
 24 rounds of HTMX partial polling on metrics/sources while `subscribeRepos`
 delivered commit events during post creation.
 
-M4 remains in progress until optional live-event inspector fields are
-restored (requires bounded source fields first, not a browser-side polling
-shortcut).
+M4 live-event inspector fields restored on 2026-08-12 from bounded upstream
+source fields (`lastEventAt`, `connectedAt`, capped `eventsByKind` ≤8) on
+`GZRelayAdminSnapshot` / sources table — not a browser-side polling shortcut.
+Evidence: `RelayAdminUIPackTests` (8).
 
 **GNUstep/Linux binary gate (2026-08-12):** `garazyk-gnustep-toolchain:local`
 built `zuk` Release (`cmake --build … --target zuk`) and

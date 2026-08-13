@@ -57,12 +57,28 @@ NSString *GZRelayAdminPasswordFromFile(NSString *path, NSError **error) {
                 (crawlState == RelayCrawlStateCrawling ? @"crawling" :
                  (crawlState == RelayCrawlStateComplete ? @"complete" :
                   (crawlState == RelayCrawlStateFailed ? @"failed" : @"not requested")));
+            NSDate *lastEventAt = [self.upstreamManager lastEventAtForUpstream:url];
+            NSDate *connectedAt = [self.upstreamManager connectedAtForUpstream:url];
+            NSDictionary *byKind = [self.upstreamManager eventCountsByKindForUpstream:url] ?: @{};
+            // Bound kind map: keep at most 8 kinds sorted by count desc for the inspector.
+            NSArray *kindKeys = [byKind keysSortedByValueUsingComparator:^NSComparisonResult(NSNumber *a, NSNumber *b) {
+                return [b compare:a];
+            }];
+            if (kindKeys.count > 8) kindKeys = [kindKeys subarrayWithRange:NSMakeRange(0, 8)];
+            NSMutableDictionary *boundedKinds = [NSMutableDictionary dictionary];
+            for (NSString *kind in kindKeys) {
+                boundedKinds[kind] = byKind[kind] ?: @0;
+            }
+            NSISO8601DateFormatter *iso = [[NSISO8601DateFormatter alloc] init];
             [upstreams addObject:@{
                 @"url": url,
                 @"hostname": parsed.host ?: url,
                 @"connected": @([self.upstreamManager isConnectedToUpstream:url]),
                 @"status": statusName,
                 @"eventsReceived": @([self.upstreamManager eventCountForUpstream:url]),
+                @"eventsByKind": [boundedKinds copy],
+                @"lastEventAt": lastEventAt ? [iso stringFromDate:lastEventAt] : @"",
+                @"connectedAt": connectedAt ? [iso stringFromDate:connectedAt] : @"",
                 @"cursor": @([self.upstreamManager seqForUpstream:url]),
                 @"repositories": @([self.upstreamManager crawlRepoCountForUpstream:url]),
                 @"crawlState": crawlStateName,
