@@ -656,7 +656,8 @@ for full traceability; mirrored in the
     `ATProtoCAMirrorFetching`; `ATProtoCAMirrorHTTPSFetcher` +
     `ATProtoCARASLWellKnown` composition wiring; boundary = no
     MediaCore→Network PUBLIC link; fetcher/RASL tests + resolver 5/0,
-    2026-08-12). Phase 11 remains deferred.
+    2026-08-12). Phase 11 is closed-not-pursued until production CA VOD +
+    origin bandwidth evidence (2026-08-12).
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.
