@@ -299,7 +299,8 @@ invented here.
 - Rollback: additive identifier/comparator APIs and test registration; no
   existing moderation or media caller depends on PFP.
 
-**Phase 9 — MUXL — PARTIAL (catalog + fragments + fMP4 + flat MP4 + elst).**
+**Phase 9 — MUXL — COMPLETE (catalog + fragments + fMP4 + flat MP4 + elst +
+playback sanity + transcoder bridge).**
 `MediaCore/ATProtoMUXLBox` validates a canonical single-track video or audio
 catalog, encodes and decodes the normative fixed `uuid-muxl` BMFF atom with
 DRISL bytes, and composes `[uuid-muxl][moof][mdat]...` segments.
@@ -315,19 +316,28 @@ canonical segments:
 - Flat MP4 (`ftyp` + populated `moov` without `mvex` + 64-bit outer `mdat`
   envelope). Sample tables include `stts`/`ctts`/`stsz`/`stsc`/`co64`/`stss`
   as specified; `co64` points at sample payloads inside the verbatim envelope.
+`Video/ATProtoMUXLPlayback` validates fMP4 and Flat presentations for playback
+sanity (init/header strip, segment split, fragment mint checks, Flat
+round-trip).
+`Video/ATProtoMUXLTranscoderBridge` extracts a catalog from CMAF `init.mp4`,
+wraps `[moof][mdat]` HLS media segments with `uuid-muxl`, and writes a `muxl/`
+sidecar package. Flat packaging is best-effort when fragments are MUXL-minted;
+ffmpeg CMAF may omit Flat. Opt-in via `enableMUXLPresentation` on
+`ATProtoVideoProcessor` / `ATProtoVideoWorker` (default OFF — HLS playlists and
+CMAF segments stay unchanged).
 
 - Owner boundary: `Garazyk/Sources/MediaCore` for catalog/box/fragment primitives;
-  presentation-header synthesis lives in `Garazyk/Sources/Video`. Existing
-  HLS/transcoder paths are unchanged.
-- Evidence: `ATProtoMUXLBoxTests`, `ATProtoMUXLFragmentTests`, and
-  `ATProtoMUXLFMP4Tests` (init determinism/ordering/prepend; flat determinism,
-  verbatim envelope, `stss`/`ctts` presence, no `mvex`; flat `edts`/`elst` for
-  non-zero first `tfdt`, omitted when only CTO is non-zero). All registered in
-  `Tests/test_main.m`.
-- Explicit remainder: playback sanity and transcoder wiring remain open.
-  (`elst` for non-zero presentation offset shipped 2026-08-12.)
-- Rollback: additive MediaCore/Video primitives and test registration; existing
-  HLS/transcoder output is untouched.
+  presentation-header synthesis, playback checks, and transcoder bridge live in
+  `Garazyk/Sources/Video`.
+- Evidence: `ATProtoMUXLBoxTests`, `ATProtoMUXLFragmentTests`,
+  `ATProtoMUXLFMP4Tests`, `ATProtoMUXLPlaybackTests`, and
+  `ATProtoMUXLTranscoderBridgeTests` (catalog round-trip from MUXL init; HLS
+  variant directory packaging + write; fMP4/Flat playback validation). All
+  registered in `Tests/test_main.m`. Verified 2026-08-12.
+- Explicit remainder: none for Phase 9. Codec decode / player integration is out
+  of scope; CA VOD does not require MUXL determinism (ADR 0036).
+- Rollback: additive MediaCore/Video primitives, opt-in flag (default OFF), and
+  test registration; existing HLS/transcoder output is untouched unless opted in.
 
 **Phase 10 — S2PA — PARTIAL (COSE + leaf + bounded JUMBF uuid carrier).**
 `Security/S2PA/ATProtoS2PACOSE` implements an attached COSE_Sign1 envelope with the normative

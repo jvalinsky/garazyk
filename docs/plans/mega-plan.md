@@ -586,7 +586,8 @@ for full traceability; mirrored in the
     producer/Ozone wiring, S2PA claim/JUMBF embedding, and Web Tiles host
     remainders. PDQ Hamming comparison; MUXL fragment/fMP4/flat; and S2PA
     COSE + self-signed leaf certificate landed 2026-08-12. MUXL
-    playback/transcoder wiring and `elst` presentation-offset remain open.
+    playback sanity + opt-in transcoder bridge (`enableMUXLPresentation`)
+    completed Phase 9 on 2026-08-12.
     GNUstep/Linux
     full-suite evidence remains open; the compile blocker (an XCTest
     object-pointer-boxing difference in `PDSAdminServiceTests.m` /

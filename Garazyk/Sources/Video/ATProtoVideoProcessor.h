@@ -49,6 +49,15 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, assign) BOOL enableContentAddressedManifest;
 
+/**
+ Whether to package each HLS variant into MUXL segments / presentations after
+ HLS succeeds (WS10 Phase 9).
+
+ Defaults to NO. When YES, writes a @c muxl/ subdirectory beside each variant's
+ CMAF files without altering the HLS playlists or segments.
+ */
+@property (nonatomic, assign) BOOL enableMUXLPresentation;
+
 /// CA object store used when @c enableContentAddressedManifest is YES.
 @property (nonatomic, strong, nullable) ATProtoCAObjectStore *caObjectStore;
 
