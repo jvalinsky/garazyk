@@ -75,13 +75,20 @@
         [response setBodyString:[GZAdminUIPDSPack renderAccountDetailPartial:result]];
     }];
 
-    // PDS: Server stats
+    // PDS: Server stats (prefer local snapshot when embedded; else XRPC getServerStats)
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/pds-stats" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
-        NSDictionary *result = [weakSelf.backendClient fetchServerStats];
+        NSDictionary *result = nil;
+        id<GZAdminUIPDSOverviewSnapshot> local = [GZAdminUIPDSPack snapshotForHost:weakSelf];
+        if (local) {
+            result = [local snapshot];
+        }
+        if (!result) {
+            result = [weakSelf.backendClient fetchServerStats];
+        }
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[GZAdminUIPDSPack renderServerStatsPartial:result]];
+        [response setBodyString:[GZAdminUIPDSPack renderServerStatsPartial:result ?: @{}]];
     }];
 
     // PDS: Audit log

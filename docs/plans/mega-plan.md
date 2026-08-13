@@ -594,7 +594,7 @@ for full traceability; mirrored in the
     evidence remains governed by workstreams 08 and 10; no full GNUstep gate
     is claimed by this execution.
 
-13. **Complete for M5 (updated 2026-08-12); M4 briefs still open:** dissolve the
+13. **Complete for M5 (updated 2026-08-12); M4 nearly closed:** dissolve the
     single monolithic admin UI process into an admin UI owned by each service
     binary. Complete [workstream 11](workstreams/11-per-service-admin-uis.md).
     One process previously held admin credentials for the PDS, PLC, relay,
@@ -604,8 +604,9 @@ for full traceability; mirrored in the
     extracted `ATProtoAdminUI`. Decision and constraints:
     [ADR 0033](../adr/0033-per-service-embedded-admin-uis.md). M1–M3 and M5 are
     complete on `main` (standalone admin binary deleted; Overview/Connections
-    dropped; peer switcher + schemat/hamownia retarget). M4 remains in progress
-    for remaining service briefs after Relay and PDS embeds. The governed
+    dropped; peer switcher + schemat/hamownia retarget). M4 Chat / AppView /
+    Relay / PDS briefs closed 2026-08-12; Mikrus / Beskid pack acceptance
+    remain. The governed
     [per-service brief index](workstreams/service-admin-uis/README.md) adds
     cross-linked execution and acceptance plans for Relay, PLC, AppView,
     Mikrus, Beskid, Chat, Germ, Video, and PDS without creating a second

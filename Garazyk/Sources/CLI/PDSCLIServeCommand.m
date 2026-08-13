@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Admin/PDSAdminAuth.h"
+#import "Admin/AdminUI/PDSAdminSnapshot.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Auth/Crypto/JWT.h"
@@ -13,6 +14,7 @@
 #import "Network/ATProtoHttpServerBuilder.h"
 #import "Network/XrpcHandler.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Database/PDSDatabase.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "PDSCLIDefinitions.h"
 #import "Services/PDS/PDSRelayService.h"
@@ -432,7 +434,19 @@
   [[controller relayService] start];
 
   NSError *adminUIError = nil;
-  id adminUIHost = PDSAdminUIStartHost((NSUInteger)port, &adminUIError);
+  NSError *dbError = nil;
+  PDSDatabase *serviceDB = [controller serviceDatabaseWithError:&dbError];
+  GZPDSAdminSnapshot *overviewSnapshot = nil;
+  if (serviceDB) {
+    overviewSnapshot =
+        [[GZPDSAdminSnapshot alloc] initWithDatabase:serviceDB
+                                     adminStatsSource:controller.adminController
+                                     userDatabasePool:controller.userDatabasePool
+                                     serviceDatabases:controller.serviceDatabases
+                               subscribeReposHandler:controller.subscribeReposHandler
+                                            startedAt:[NSDate date]];
+  }
+  id adminUIHost = PDSAdminUIStartHost((NSUInteger)port, overviewSnapshot, &adminUIError);
   if (adminUIError) {
     printf("Failed to start PDS admin UI: %s\n",
            adminUIError.localizedDescription.UTF8String);

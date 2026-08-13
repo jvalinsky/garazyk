@@ -195,7 +195,7 @@ export async function startBinaryServices(
     PDS_USE_BIOMETRIC_PROTECTION: "false",
     PDS_USE_KEYCHAIN: "false",
     PDS_MASTER_SECRET: "test-master-secret-123",
-    PDS_ADMIN_PASSWORD: "test-admin-password",
+    PDS_ADMIN_PASSWORD: Deno.env.get("PDS_ADMIN_PASSWORD") ?? "admin-localdev",
     PDS_PHONE_VERIFICATION_PROVIDER: "twilio",
     TWILIO_ACCOUNT_SID: "AC00000000000000000000000000000000",
     TWILIO_AUTH_TOKEN: "SK00000000000000000000000000000000",
@@ -203,6 +203,7 @@ export async function startBinaryServices(
     TWILIO_API_BASE_URL: resources.manifest.mockProviders?.twilio?.hostUrl ??
       hostUrlForPort(DEFAULT_MOCK_TWILIO_PORT),
   };
+  Deno.env.set("PDS_ADMIN_PASSWORD", commonEnv.PDS_ADMIN_PASSWORD);
 
   for (const name of services) {
     const svc = BINARY_SERVICES[name];

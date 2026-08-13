@@ -4,10 +4,38 @@
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
 #import "AdminUIServer/GZAdminUIDTOProjection.h"
+#import "AdminUIServer/GZHTML.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "AdminUIServer/UITemplateEngine.h"
 
 @implementation GZAdminUIPDSPack
+
++ (NSMapTable<GZAdminUIHost *, id> *)snapshots {
+    static NSMapTable<GZAdminUIHost *, id> *snapshots;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        snapshots = [NSMapTable weakToStrongObjectsMapTable];
+    });
+    return snapshots;
+}
+
++ (void)configureHost:(GZAdminUIHost *)host snapshot:(id<GZAdminUIPDSOverviewSnapshot>)snapshot {
+    if (!host || !snapshot) {
+        return;
+    }
+    @synchronized(self) {
+        [[self snapshots] setObject:snapshot forKey:host];
+    }
+}
+
++ (nullable id<GZAdminUIPDSOverviewSnapshot>)snapshotForHost:(GZAdminUIHost *)host {
+    if (!host) {
+        return nil;
+    }
+    @synchronized(self) {
+        return [[self snapshots] objectForKey:host];
+    }
+}
 
 + (NSString *)packIdentifier {
     return @"pds";
@@ -158,12 +186,15 @@
     }
     // Prefer allowlisted *_total keys from PDSAdminService; accept camelCase lexicon aliases.
     NSDictionary *stats = GZAdminUIProjectDictionary(result, @[
+        @"health", @"uptimeSeconds",
         @"repos_total", @"repoCount", @"repos",
         @"records_total", @"recordCount", @"records",
         @"blobs_total", @"blobCount", @"blobs",
         @"accounts_total", @"accountCount", @"accounts",
         @"blobs_size_bytes", @"blobsSizeBytes",
         @"reports_open", @"reportsOpen",
+        @"sessions_active", @"sessionsActive",
+        @"httpRequestsTotal", @"httpRequestsPerSecond",
     ]);
     id repos = stats[@"repos_total"] ?: stats[@"repoCount"] ?: stats[@"repos"] ?: @0;
     id records = stats[@"records_total"] ?: stats[@"recordCount"] ?: stats[@"records"] ?: @0;
@@ -171,19 +202,68 @@
     id accounts = stats[@"accounts_total"] ?: stats[@"accountCount"] ?: stats[@"accounts"] ?: @0;
     id blobBytes = stats[@"blobs_size_bytes"] ?: stats[@"blobsSizeBytes"] ?: @0;
     id reportsOpen = stats[@"reports_open"] ?: stats[@"reportsOpen"] ?: @0;
-    NSString *(^esc)(id) = ^NSString *(id val) {
-        if (!val || val == [NSNull null]) return @"0";
-        return GZAdminUIEscaped([val isKindOfClass:[NSString class]] ? val : [val description]);
-    };
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Accounts:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(accounts)];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Repos:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(repos)];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Records:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(records)];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Blobs:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(blobs)];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Blob bytes:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(blobBytes)];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Open reports:</span> <span class=\"detail-value text-mono\">%@</span></div>", esc(reportsOpen)];
-    [html appendString:@"</div>"];
-    return html;
+    id sessions = stats[@"sessions_active"] ?: stats[@"sessionsActive"] ?: @0;
+
+    NSMutableArray<NSDictionary *> *fields = [NSMutableArray array];
+    if (stats[@"health"]) {
+        [fields addObject:@{@"label": @"Health", @"html": [GZHTML healthBadge:stats[@"health"]]}];
+    }
+    if (stats[@"uptimeSeconds"]) {
+        [fields addObject:@{
+            @"label": @"Uptime",
+            @"html": [GZHTML monoValue:[GZHTML formatUptime:[stats[@"uptimeSeconds"] longLongValue]]]
+        }];
+    }
+    [fields addObject:@{@"label": @"Accounts", @"html": [GZHTML monoValue:accounts]}];
+    [fields addObject:@{@"label": @"Repos", @"html": [GZHTML monoValue:repos]}];
+    [fields addObject:@{@"label": @"Records", @"html": [GZHTML monoValue:records]}];
+    [fields addObject:@{@"label": @"Blobs", @"html": [GZHTML monoValue:blobs]}];
+    [fields addObject:@{@"label": @"Blob bytes", @"html": [GZHTML monoValue:blobBytes]}];
+    [fields addObject:@{@"label": @"Open reports", @"html": [GZHTML monoValue:reportsOpen]}];
+    [fields addObject:@{@"label": @"Active sessions", @"html": [GZHTML monoValue:sessions]}];
+    if (stats[@"httpRequestsPerSecond"]) {
+        NSString *rps = [NSString stringWithFormat:@"%.2f", [stats[@"httpRequestsPerSecond"] doubleValue]];
+        [fields addObject:@{@"label": @"HTTP req/s", @"html": [GZHTML monoValue:rps]}];
+    }
+
+    NSDictionary *sequencer = [result[@"sequencer"] isKindOfClass:[NSDictionary class]]
+        ? GZAdminUIProjectDictionary(result[@"sequencer"], @[
+            @"currentSeq", @"subscriberCount", @"healthStatus",
+            @"backpressureWarnings", @"backpressureCritical"
+        ])
+        : @{};
+    if (sequencer.count > 0) {
+        [fields addObject:@{@"label": @"Sequencer head", @"html": [GZHTML monoValue:sequencer[@"currentSeq"] ?: @"—"]}];
+        [fields addObject:@{@"label": @"Firehose subscribers", @"html": [GZHTML monoValue:sequencer[@"subscriberCount"] ?: @0]}];
+        if (sequencer[@"healthStatus"]) {
+            [fields addObject:@{@"label": @"Sequencer", @"html": [GZHTML healthBadge:sequencer[@"healthStatus"]]}];
+        }
+    }
+
+    NSDictionary *pool = [result[@"pool"] isKindOfClass:[NSDictionary class]]
+        ? GZAdminUIProjectDictionary(result[@"pool"], @[@"cachedStores", @"maxSize", @"openFileHandles"])
+        : @{};
+    if (pool.count > 0) {
+        NSString *poolText = [NSString stringWithFormat:@"%@ / %@",
+                              pool[@"cachedStores"] ?: @0, pool[@"maxSize"] ?: @"—"];
+        [fields addObject:@{@"label": @"Actor DB pool", @"html": [GZHTML monoValue:poolText]}];
+        [fields addObject:@{@"label": @"Pool file handles", @"html": [GZHTML monoValue:pool[@"openFileHandles"] ?: @0]}];
+    }
+
+    NSDictionary *database = [result[@"database"] isKindOfClass:[NSDictionary class]]
+        ? GZAdminUIProjectDictionary(result[@"database"], @[@"storageBytes", @"journalMode", @"freelistCount"])
+        : @{};
+    if (database[@"storageBytes"]) {
+        [fields addObject:@{
+            @"label": @"Service DB",
+            @"html": [GZHTML monoValue:[GZHTML formatMegabytes:[database[@"storageBytes"] longLongValue]]]
+        }];
+    }
+    if (database[@"journalMode"]) {
+        [fields addObject:@{@"label": @"Journal mode", @"html": [GZHTML monoValue:database[@"journalMode"]]}];
+    }
+
+    return [GZHTML detailCardWithFields:fields];
 }
 
 + (NSString *)renderAuditLogPartial:(NSDictionary *)result {
