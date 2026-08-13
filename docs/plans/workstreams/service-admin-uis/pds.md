@@ -72,9 +72,11 @@ bust (`?v=json-mst-2`):
    `11_lab_oauth_login.ts` prefers `SERVICE_URLS.ui`, uses
    `gz_admin_pds_*` cookies, and polls `/admin/partials/pds-stats`. Lab remains
    `/lab`-only (no sidebar tab) by design.
-5. Slice 3 DTO allowlists — **partial 2026-08-12:** Security sessions /
-   app-passwords project through explicit key lists; broader account/audit/
-   explorer allowlists still open.
+5. ~~Slice 3 DTO allowlists~~ **Done 2026-08-12:** shared
+   `GZAdminUIDTOProjection` covers Security sessions/app-passwords, PDS
+   accounts/invites/detail/blobs/stats/audit/reports, and Data Explorer
+   describe/list/getRecord (`value` omitted from list rows). Evidence:
+   `GZAdminUIDTOProjectionTests`.
 
 ## Dashboard shape
 
@@ -103,7 +105,8 @@ bust (`?v=json-mst-2`):
    until M5 retires the compatibility host.
 3. Replace broad backend dictionaries with per-view DTO allowlists, especially
    for account email, tokens, audit payloads, repository records, and security
-   material. **Open.**
+   material. **Done 2026-08-12** (`GZAdminUIDTOProjection` + pack wiring;
+   `GZAdminUIDTOProjectionTests`).
 4. Embed the listener and internal token in `kaszlak`; migrate its admin
    credential to operator login without exposing backend tokens to the browser.
    **Done 2026-08-12** (`bbc84dd4`; password-gated; public URL link; crimson
@@ -116,7 +119,7 @@ bust (`?v=json-mst-2`):
    empty/large stores, pool starvation, concurrent repository writes, 200% zoom,
    and scenario/topology compatibility. **Partial:** composition + focused
    unit tests + existing browser/visual scripts; CI wiring of those smokes still
-   open. Security DTO allowlists landed for sessions/app-passwords.
+   open. Security/PDS/explorer DTO allowlists landed.
 
 Acceptance requires all six local packs to work without fleet credentials,
 bounded polling under a representative multi-actor database, no protocol-write

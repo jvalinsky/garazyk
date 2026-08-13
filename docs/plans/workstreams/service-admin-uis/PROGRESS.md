@@ -87,7 +87,7 @@ Port `2590` is the embedded PDS admin UI on `kaszlak` (not a separate binary).
 
 | Service | Slices remaining |
 |---|---|
-| PDS (kaszlak) | Slice 4 embed **done**; 2026-08-12: stats key fix, Security DTO allowlists, Lab scenario retarget, `nixos/modules/kaszlak.nix`; open: full snapshot, CI smoke evidence, broader DTOs |
+| PDS (kaszlak) | Slice 4 embed **done**; 2026-08-12: stats key fix, Security/PDS/explorer DTO allowlists, Lab scenario retarget, `nixos/modules/kaszlak.nix`; open: full snapshot, CI smoke evidence |
 | Chat | Server-side admin endpoints for conversation/message data (beyond overview) |
 | Germ | **Done 2026-08-12:** retain fix + `germ_admin_loopback_smoke.ts` live metrics |
 | AppView | Exceptions triage / Probe / Actor dig deferred IA |

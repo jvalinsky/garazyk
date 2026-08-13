@@ -3,6 +3,7 @@
 #import "AdminUIServer/Packs/GZAdminUIDataExplorerPack.h"
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZAdminUIDTOProjection.h"
 
 @implementation GZAdminUIDataExplorerPack
 
@@ -26,6 +27,9 @@
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
+    result = GZAdminUIProjectDictionary(result, @[
+        @"handle", @"did", @"handleIsCorrect", @"collections", @"didDoc"
+    ]);
     NSString *repoDID = GZAdminUIStringFromDict(result, @"did");
     NSMutableString *html = [NSMutableString stringWithString:GZAdminUIDetailCardOpen()];
     NSArray<NSDictionary<NSString *, NSString *> *> *fields = @[
@@ -109,7 +113,10 @@
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSArray<NSDictionary *> *records = [result[@"records"] isKindOfClass:[NSArray class]] ? result[@"records"] : @[];
+    // Drop record `value` payloads from list rows — detail view is getRecord.
+    NSArray<NSDictionary *> *records = GZAdminUIProjectDictionaries(
+        result[@"records"],
+        @[ @"uri", @"cid", @"collection", @"rkey" ]);
     NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>URI</th><th>CID</th><th>Collection</th><th>Rkey</th></tr></thead><tbody>"];
     for (NSDictionary *record in records) {
         NSString *uriRaw = [record[@"uri"] isKindOfClass:[NSString class]] ? record[@"uri"] : @"";
@@ -150,8 +157,9 @@
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-grid\">"];
     NSArray *fields = @[@"uri", @"cid", @"value"];
+    result = GZAdminUIProjectDictionary(result, fields);
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-grid\">"];
     for (NSString *key in fields) {
         id val = result[key];
         if (!val) continue;
