@@ -8,6 +8,8 @@
 
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"
+#import "Core/ATProtoPFP.h"
+#import "Core/ATProtoPFPProducer.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
 #import "Core/ATProtoDataPaths.h"

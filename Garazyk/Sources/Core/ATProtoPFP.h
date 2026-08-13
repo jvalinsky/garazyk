@@ -7,8 +7,9 @@
 
  @discussion Implements the identifier grammar from https://dasl.ing/pfp.html.
  Identifier parsing, JSON boundary, and PDQ Hamming-distance comparison are
- included. No perceptual-hash producer or Ozone storage integration is
- invented here. PDQ carries a 32-byte inline hash. TMK+PDQF carries a 36-byte
+ included. PDQ production lives in @c ATProtoPFPProducer (Meta float-luma
+ contract). Ozone stores the DASL PFP string on @c moderation_subjects.pfp.
+ PDQ carries a 32-byte inline hash. TMK+PDQF carries a 36-byte
  strict DASL ATProtoCID that addresses the potentially large fingerprint data.
  */
 
