@@ -11,6 +11,7 @@
 #import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditUtils.h"
 #import <sqlite3.h>
+#include <string.h>
 
 // Suppress -Wobjc-string-concatenation: multi-line SQL string literals
 // inside NSArray expressions are intentional C string concatenation,
@@ -1244,6 +1245,80 @@ static NSString *_Nullable PDSMigrationOwnerDIDExpression(sqlite3 *db) {
         }
         if (errMsg) sqlite3_free(errMsg);
     }
+    return YES;
+}
+
+@end
+
+#pragma mark - V19 Ozone Subject PFP Column
+
+@interface PDSV19ModerationSubjectPFP : NSObject <PDSMigration>
+@end
+
+@implementation PDSV19ModerationSubjectPFP
+
+- (NSInteger)version {
+    return 19;
+}
+
+- (NSString *)name {
+    return @"moderation_subjects_pfp_column";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    // Additive nullable DASL PFP string for Ozone subject perceptual matching.
+    // Idempotent when the column already exists (fresh schema or re-run).
+    sqlite3_stmt *stmt = NULL;
+    BOOL hasColumn = NO;
+    if (sqlite3_prepare_v2(db, "PRAGMA table_info(moderation_subjects)", -1, &stmt, NULL) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const unsigned char *name = sqlite3_column_text(stmt, 1);
+            if (name && strcmp((const char *)name, "pfp") == 0) {
+                hasColumn = YES;
+                break;
+            }
+        }
+        sqlite3_finalize(stmt);
+    }
+    if (!hasColumn) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, "ALTER TABLE moderation_subjects ADD COLUMN pfp TEXT", NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+            if (errMsg) sqlite3_free(errMsg);
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        [NSString stringWithFormat:@"V19 add pfp failed: %@", msg]}];
+            }
+            return NO;
+        }
+    }
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db,
+                          "CREATE INDEX IF NOT EXISTS idx_mod_subjects_pfp "
+                          "ON moderation_subjects(pfp) WHERE pfp IS NOT NULL",
+                          NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        if (errMsg) sqlite3_free(errMsg);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    [NSString stringWithFormat:@"V19 pfp index failed: %@", msg]}];
+        }
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    // SQLite cannot DROP COLUMN portably across all supported versions; leave
+    // the additive column in place on rollback (index drop only).
+    (void)error;
+    sqlite3_exec(db, "DROP INDEX IF EXISTS idx_mod_subjects_pfp", NULL, NULL, NULL);
     return YES;
 }
 
@@ -3466,6 +3541,7 @@ static BOOL PDSMigrationExecuteSteps(sqlite3 *db, const char * const *steps, siz
     [manager registerMigration:[[PDSV16PasswordResetTokens alloc] init]];
     [manager registerMigration:[[PDSV17EmailConfirmationTokens alloc] init]];
     [manager registerMigration:[[PDSV18RefreshTokenFamilyColumns alloc] init]];
+    [manager registerMigration:[[PDSV19ModerationSubjectPFP alloc] init]];
     return manager;
 }
 
