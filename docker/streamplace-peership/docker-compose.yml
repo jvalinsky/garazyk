@@ -1,0 +1,197 @@
+# Streamplace + multi-jelcz HTTPS peership demo (WS15 / WS16 Phase 2).
+#
+# Prerequisites:
+#   1. deno run -A scripts/stage_binaries.ts   # Linux jelcz for Dockerfile.jelcz
+#   2. Local ATProto network on Docker network local-network_local_net
+#      (./scripts/scenarios/setup_local_network.sh)
+#
+# Or use: ./scripts/demo/streamplace_peership_up.sh  (runs both)
+
+name: streamplace-peership
+
+networks:
+  # Join the Garazyk local-network compose project so jelcz can reach
+  # local-pds / local-plc / local-relay by DNS name.
+  atproto:
+    external: true
+    name: ${GARAZYK_ATPROTO_NET:-local-network_local_net}
+
+volumes:
+  streamplace_data:
+  jelcz_a_data:
+  jelcz_b_data:
+  jelcz_c_data:
+
+services:
+  # -------------------------------------------------------------------------
+  # Streamplace node — video origin (embedded PDS + test stream).
+  # Lab mode: HTTP only. Browser WebRTC may be limited without host networking;
+  # this demo targets HLS / getVideoBlob peership, not browser WebRTC.
+  # Upstream image: https://docs.stream.place/docs/guides/installing/downloading-streamplace/
+  # -------------------------------------------------------------------------
+  streamplace:
+    image: ${STREAMPLACE_IMAGE:-oci.stream.place/streamplace:latest}
+    restart: unless-stopped
+    ports:
+      - "${STREAMPLACE_HTTP_PORT:-38080}:38080"
+      - "${STREAMPLACE_RTMP_PORT:-1935}:1935"
+    environment:
+      SP_SECURE: "false"
+      SP_HTTP_ADDR: ":38080"
+      # Desktop/dev health path is /api/healthz on the public HTTP addr.
+      SP_PUBLIC_HOST: "${STREAMPLACE_PUBLIC_HOST:-127.0.0.1:38080}"
+      SP_BROADCASTER_HOST: "${STREAMPLACE_PUBLIC_HOST:-127.0.0.1:38080}"
+      SP_TEST_STREAM: "${STREAMPLACE_TEST_STREAM:-true}"
+      SP_WIDE_OPEN: "${STREAMPLACE_WIDE_OPEN:-true}"
+      # Keep the lab off the public Bluesky firehose unless explicitly wired.
+      SP_NO_FIREHOSE: "${STREAMPLACE_NO_FIREHOSE:-true}"
+      # Optional: point at Garazyk relay once firehose is desired.
+      # SP_RELAY_HOST: "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos"
+      SP_RTMP_ADDR: ":1935"
+      SP_DEBUG: "${STREAMPLACE_DEBUG:-}"
+    volumes:
+      - streamplace_data:/var/lib/streamplace
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1:38080/api/healthz >/dev/null || curl -fsS http://127.0.0.1:38080/ >/dev/null || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 36
+      start_period: 40s
+    networks:
+      atproto:
+        aliases:
+          - streamplace
+
+  # -------------------------------------------------------------------------
+  # Three jelcz peers — each owns a CA store; B/C list A (+ Streamplace) as
+  # HTTPS providers. Ports avoid colliding with local-network (video=2586,
+  # pds2=2587).
+  # -------------------------------------------------------------------------
+  jelcz-a:
+    build:
+      context: ../..
+      dockerfile: docker/streamplace-peership/Dockerfile.jelcz
+    image: ${JELCZ_PEER_IMAGE:-garazyk/jelcz-peer:local}
+    restart: unless-stopped
+    ports:
+      - "${JELCZ_A_PORT:-2596}:2596"
+    environment: &jelcz_common
+      JELCZ_PORT: "2596"
+      JELCZ_DATA_DIR: /var/lib/jelcz
+      JELCZ_PDS_URL: http://local-pds:2583
+      JELCZ_PLC_URL: http://local-plc:2582
+      JELCZ_STREAMPLACE_DEMO: "1"
+      JELCZ_STREAMPLACE_SERVE_COMPAT: "1"
+      JELCZ_CA_MIRROR_FETCH: "1"
+      JELCZ_DEMO_UI_PATH: /opt/jelcz-demo/streamplace-peer.html
+      JELCZ_STREAMPLACE_MIRROR_BASE: http://streamplace:38080
+      JELCZ_STREAMPLACE_ATTRIBUTION_DID: ${STREAMPLACE_ATTRIBUTION_DID:-did:web:stream.place}
+      # Empty allowlists = no auto-ingest of origin JSON records (env peers OK).
+      JELCZ_P2P_ALLOWED_STREAMERS: ${JELCZ_P2P_ALLOWED_STREAMERS:-}
+      JELCZ_P2P_ALLOWED_BROADCASTERS: ${JELCZ_P2P_ALLOWED_BROADCASTERS:-}
+    command: ["serve", "--port", "2596", "--data-dir", "/var/lib/jelcz"]
+    volumes:
+      - jelcz_a_data:/var/lib/jelcz
+      # Live-edit demo UI without rebuild:
+      - ../../Garazyk/Resources/jelcz-demo:/opt/jelcz-demo:ro
+    depends_on:
+      streamplace:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:2596/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    networks:
+      atproto:
+        aliases:
+          - jelcz-a
+
+  jelcz-b:
+    image: ${JELCZ_PEER_IMAGE:-garazyk/jelcz-peer:local}
+    build:
+      context: ../..
+      dockerfile: docker/streamplace-peership/Dockerfile.jelcz
+    restart: unless-stopped
+    ports:
+      - "${JELCZ_B_PORT:-2597}:2597"
+    environment:
+      <<: *jelcz_common
+      JELCZ_PORT: "2597"
+      JELCZ_PEER_HTTPS_PROVIDERS: "http://jelcz-a:2596"
+    command: ["serve", "--port", "2597", "--data-dir", "/var/lib/jelcz"]
+    volumes:
+      - jelcz_b_data:/var/lib/jelcz
+      - ../../Garazyk/Resources/jelcz-demo:/opt/jelcz-demo:ro
+    depends_on:
+      jelcz-a:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:2597/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    networks:
+      atproto:
+        aliases:
+          - jelcz-b
+
+  jelcz-c:
+    image: ${JELCZ_PEER_IMAGE:-garazyk/jelcz-peer:local}
+    build:
+      context: ../..
+      dockerfile: docker/streamplace-peership/Dockerfile.jelcz
+    restart: unless-stopped
+    ports:
+      - "${JELCZ_C_PORT:-2598}:2598"
+    environment:
+      <<: *jelcz_common
+      JELCZ_PORT: "2598"
+      # Mesh: pull from A or B; Streamplace remains bootstrap mirror base.
+      JELCZ_PEER_HTTPS_PROVIDERS: "http://jelcz-a:2596,http://jelcz-b:2597"
+    command: ["serve", "--port", "2598", "--data-dir", "/var/lib/jelcz"]
+    volumes:
+      - jelcz_c_data:/var/lib/jelcz
+      - ../../Garazyk/Resources/jelcz-demo:/opt/jelcz-demo:ro
+    depends_on:
+      jelcz-a:
+        condition: service_healthy
+      jelcz-b:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:2598/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    networks:
+      atproto:
+        aliases:
+          - jelcz-c
+
+  # Optional: push a synthetic RTMP stream into Streamplace (profile: publish).
+  rtmp-publisher:
+    profiles: ["publish"]
+    image: ${FFMPEG_IMAGE:-linuxserver/ffmpeg:latest}
+    restart: "no"
+    depends_on:
+      streamplace:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "Publishing lavfi test pattern to rtmp://streamplace:1935/live/garazyk-demo"
+        exec ffmpeg -re -f lavfi -i "testsrc=size=1280x720:rate=30" \
+          -f lavfi -i "sine=frequency=880:sample_rate=44100" \
+          -c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p \
+          -c:a aac -b:a 128k -shortest \
+          -f flv "rtmp://streamplace:1935/live/garazyk-demo"
+    networks:
+      - atproto

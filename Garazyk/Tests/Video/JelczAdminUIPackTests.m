@@ -83,6 +83,12 @@ NS_ASSUME_NONNULL_BEGIN
             @"sweepEnabled": @NO,
             @"mirrorFetchEnabled": @YES,
             @"mirrorProviderCount": @2,
+            @"streamplaceMirrorConfigured": @YES,
+            @"streamplaceAttributionDIDConfigured": @YES,
+            @"streamplaceServeCompat": @NO,
+            @"streamplaceFetchSuccessCount": @3,
+            @"streamplaceBlobNotFoundCount": @1,
+            @"streamplaceFetchFailureCount": @0,
             @"summary": @"Content-addressed VOD: MASL /watch + optional Bao proofs",
             @"rootDirectory": @"/should/never/render",
         },
@@ -90,6 +96,8 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *html = [GZAdminUIVideoPack renderVideoDistributionPartial:snapshot];
     XCTAssertTrue([html containsString:@"masl-ca"]);
     XCTAssertTrue([html containsString:@"Feature flags"]);
+    XCTAssertTrue([html containsString:@"Streamplace"]);
+    XCTAssertTrue([html containsString:@"3 / 1 / 0"]);
     XCTAssertFalse([html containsString:@"/should/never/render"]);
 }
 
@@ -105,6 +113,9 @@ NS_ASSUME_NONNULL_BEGIN
                                                   @"enableCAMirrorFetch": @NO,
                                                   @"caMirrorProviderCount": @0,
                                                   @"caObjectSweepEnabled": @NO,
+                                                  @"streamplaceMirrorConfigured": @YES,
+                                                  @"streamplaceAttributionDIDConfigured": @NO,
+                                                  @"streamplaceServeCompat": @NO,
                                                   @"maxUploadSize": @(1024),
                                                   @"maxDuration": @60,
                                               }
@@ -112,10 +123,13 @@ NS_ASSUME_NONNULL_BEGIN
     NSDictionary *dist = snap.snapshot[@"distribution"];
     XCTAssertTrue([dist[@"caManifestEnabled"] boolValue]);
     XCTAssertTrue([dist[@"muxlPresentationEnabled"] boolValue]);
+    XCTAssertTrue([dist[@"streamplaceMirrorConfigured"] boolValue]);
+    XCTAssertFalse([dist[@"streamplaceAttributionDIDConfigured"] boolValue]);
     XCTAssertEqualObjects(dist[@"watchMode"], @"masl-ca");
     NSString *overview = [GZAdminUIVideoPack renderVideoOverviewPartial:snap.snapshot];
     XCTAssertTrue([overview containsString:@"Distribution posture"]);
     XCTAssertTrue([overview containsString:@"masl-ca"]);
+    XCTAssertTrue([overview containsString:@"Streamplace"]);
 }
 
 - (void)testJobCountsByStateAreCheap {

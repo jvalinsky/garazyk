@@ -19,6 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoCAObjectLifecycle;
 @class ATProtoCARASLWellKnown;
 @class ATProtoCAMirrorResolver;
+@class ATProtoXrpcDispatcher;
 @protocol PDSBlobProvider;
 @protocol ATProtoCAMediaDenylist;
 @protocol ATProtoCAMirrorFetching;
@@ -73,6 +74,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Manifest refcount / reclaim controller (nil when CA store is unset).
 @property (nonatomic, strong, readonly, nullable) ATProtoCAObjectLifecycle *caObjectLifecycle;
+
+/**
+ Optional composition-root hook invoked after the media XRPC pack registers.
+
+ Used by jelcz to attach Streamplace getVideoBlob compat without MediaCore
+ knowing Streamplace NSIDs. Invoked once during @c startWithError:.
+ */
+@property (nonatomic, copy, nullable) void (^additionalXrpcSetup)(ATProtoXrpcDispatcher *dispatcher);
 
 /**
  * @abstract Initializes the runtime with configuration, a processor, and a

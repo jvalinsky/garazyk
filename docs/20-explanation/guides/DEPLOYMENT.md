@@ -14,6 +14,19 @@ Start the local Docker topology with:
 
 The underlying Compose file is `docker/local-network/docker-compose.yml`.
 
+### Streamplace + multi-jelcz peership lab
+
+To add a Streamplace origin and three HTTPS-peering `jelcz` nodes on the same
+Docker network (ports 38080 / 2596–2598):
+
+```sh
+./scripts/demo/streamplace_peership_up.sh
+./scripts/demo/streamplace_peership_smoke.sh
+```
+
+Guide: [Streamplace and jelcz peership lab](streamplace-jelcz-peership-lab.md).
+Compose: `docker/streamplace-peership/`.
+
 For a standalone PDS:
 
 ```sh

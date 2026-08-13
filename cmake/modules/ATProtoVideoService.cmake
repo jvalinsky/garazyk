@@ -20,4 +20,9 @@ set(ATPROTO_VIDEO_MANIFEST
   "Garazyk/Sources/Video/VideoWorker.m"
   "Garazyk/Sources/Video/AdminUI/JelczAdminEmbedContext.m"
   "Garazyk/Sources/Video/AdminUI/JelczAdminUIPack.m"
+  "Garazyk/Sources/Video/GZJelczStreamplaceBlobFetcher.m"
+  "Garazyk/Sources/Video/GZJelczStreamplaceOriginHints.m"
+  "Garazyk/Sources/Video/GZJelczPeerProviderIndex.m"
+  "Garazyk/Sources/Video/GZJelczStreamplaceCompatServe.m"
+  "Garazyk/Sources/Video/GZJelczStreamplacePeerDemo.m"
 )

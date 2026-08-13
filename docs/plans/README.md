@@ -26,8 +26,18 @@ competing roadmaps.
 | [DASL conformance](workstreams/10-dasl-conformance.md)                                             | DRISL/CID/CAR + RASL/BDASL/MASL; PFP (Phase 8) and MUXL (Phase 9) complete; S2PA/Tiles remainders open (ADR 0032) |
 | [Per-service admin UIs](workstreams/11-per-service-admin-uis.md)                                   | Dissolve the former monolithic admin UI into service-owned admin UIs behind a shared `ATProtoAdminUI` library (ADR 0033); governed [service briefs](workstreams/service-admin-uis/README.md) cover Relay, PLC, AppView, Mikrus, Beskid, Chat, Germ, Video, and PDS |
 | [Content-addressed video](workstreams/12-content-addressed-video.md)                               | MASL manifest per video, jelcz-owned segment store, verified multi-origin retrieval (ADR 0036); consumes workstream 10's MASL/RASL/BDASL slices |
+| [Beskid firehose invalidation](workstreams/14-beskid-firehose-invalidation.md)                     | Edge-cache invalidation from subscribeRepos (optional ops workstream) |
+| [Streamplace VOD peership](workstreams/15-streamplace-vod-peership.md)                             | HTTPS getVideoBlob pull into jelcz CA store; optional compat serve; live iroh stays under WS12 Phase 11 |
+| [Jelcz P2P peership](workstreams/16-jelcz-p2p-peership.md)                                         | Origin-record discovery + iroh sidecar node↔node peership; reopen path for WS12 Phase 11; builds on WS15 HTTPS |
 | [Phase execution prompts](prompts/README.md)                                                       | Derived agent prompts that execute the remaining phases; not a roadmap      |
 | [Retired plans](retired-plans.md)                                                                  | Disposition and recovery references for removed plans                       |
+
+## Related labs (not backlog)
+
+| Document | Scope |
+| --- | --- |
+| [Streamplace and jelcz peership lab](../20-explanation/guides/streamplace-jelcz-peership-lab.md) | Operator guide for Docker/host demos |
+| [docker/streamplace-peership](../../docker/streamplace-peership/README.md) | Compose + Dockerfile for Streamplace + 3× jelcz |
 
 ## Rules
 

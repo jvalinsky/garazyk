@@ -29,6 +29,13 @@
 #import "MediaCore/ATProtoMediaWorker.h"
 #import "MediaCore/ATProtoCAObjectStore.h"
 #import "MediaCore/ATProtoCAMirrorHTTPSFetcher.h"
+#import "MediaCore/ATProtoCAMirrorResolver.h"
+#import "Video/GZJelczStreamplaceBlobFetcher.h"
+#import "Video/GZJelczStreamplaceOriginHints.h"
+#import "Video/GZJelczStreamplaceCompatServe.h"
+#import "Video/GZJelczStreamplacePeerDemo.h"
+#import "Video/GZJelczPeerProviderIndex.h"
+#import "Core/CID.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Blob/PDSCloudStorageBlobProvider.h"
@@ -38,6 +45,8 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/ATProtoSafeHTTPClient.h"
+#import "Network/XrpcHandler.h"
+#import "Network/Generated/GZXrpcNSID.h"
 #import "Debug/GZLogger.h"
 #import "MediaCore/JelczCLI.h"
 #import "CLI/GZCommandLineOptions.h"
@@ -62,6 +71,39 @@
                        options:(ATProtoSafeHTTPClientOptions *)options
                       response:response
                          error:error];
+}
+@end
+
+/** Tries Streamplace getVideoBlob first, then RASL well-known. */
+@interface GZJelczCAMirrorCompositeFetcher : NSObject <ATProtoCAMirrorFetching>
+@property (nonatomic, strong) id<ATProtoCAMirrorFetching> primary;
+@property (nonatomic, strong, nullable) id<ATProtoCAMirrorFetching> secondary;
+@end
+
+@implementation GZJelczCAMirrorCompositeFetcher
+- (NSData *)fetchObjectBytesForCID:(ATProtoCID *)cid
+                         providers:(NSArray<NSString *> *)providers
+                             error:(NSError **)error {
+    NSError *primaryError = nil;
+    NSData *data = [self.primary fetchObjectBytesForCID:cid providers:providers error:&primaryError];
+    if (data) {
+        return data;
+    }
+    if (self.secondary) {
+        NSError *secondaryError = nil;
+        data = [self.secondary fetchObjectBytesForCID:cid providers:providers error:&secondaryError];
+        if (data) {
+            return data;
+        }
+        if (error) {
+            *error = secondaryError ?: primaryError;
+        }
+        return nil;
+    }
+    if (error) {
+        *error = primaryError;
+    }
+    return nil;
 }
 @end
 
@@ -289,7 +331,12 @@ static int run_serve(NSArray<NSString *> *args) {
     videoProcessor.outputBaseUrl = config.outputBaseUrl ?: [NSString stringWithFormat:@"http://localhost:%lu", (unsigned long)config.port];
     videoProcessor.include1080p = config.includeHighQuality;
     videoProcessor.enableContentAddressedManifest = config.enableContentAddressedManifest;
-    if (config.enableContentAddressedManifest) {
+    BOOL needCAStore = config.enableContentAddressedManifest
+        || config.enableStreamplaceServeCompat
+        || config.enableStreamplacePeerDemo
+        || (config.enableCAMirrorFetch && config.streamplaceMirrorBase.length > 0)
+        || ([[[NSProcessInfo processInfo] environment][@"JELCZ_PEER_HTTPS_PROVIDERS"] length] > 0);
+    if (needCAStore) {
         NSString *caRoot = config.caObjectStoreDirectory;
         if (caRoot.length == 0) {
             caRoot = [config.dataDirectory stringByAppendingPathComponent:@"ca-objects"];
@@ -301,7 +348,11 @@ static int run_serve(NSArray<NSString *> *args) {
             return 1;
         }
         videoProcessor.caObjectStore = caStore;
-        GZ_LOG_INFO(@"  CA manifest: enabled (store %@)", caRoot);
+        if (config.enableContentAddressedManifest) {
+            GZ_LOG_INFO(@"  CA manifest: enabled (store %@)", caRoot);
+        } else {
+            GZ_LOG_INFO(@"  CA store: enabled for Streamplace peership/demo (store %@)", caRoot);
+        }
     } else {
         GZ_LOG_INFO(@"  CA manifest: disabled (set JELCZ_CA_MANIFEST=1 to enable)");
     }
@@ -325,15 +376,115 @@ static int run_serve(NSArray<NSString *> *args) {
     ATProtoMediaServiceRuntime *runtime = [[ATProtoMediaServiceRuntime alloc] initWithConfiguration:config
                                                                                            processor:videoProcessor
                                                                                         blobProvider:blobProvider];
+
+    // Merge Streamplace operator base into mirror providers (WS15).
+    if (config.enableStreamplacePeerDemo && config.streamplaceMirrorBase.length == 0) {
+        config.streamplaceMirrorBase = @"https://stream.place";
+    }
+    if (config.enableStreamplacePeerDemo && config.streamplaceAttributionDID.length == 0) {
+        config.streamplaceAttributionDID = @"did:web:stream.place";
+    }
+    NSString *streamplaceBase =
+        [GZJelczStreamplaceOriginHints normalizedProviderBaseURL:config.streamplaceMirrorBase];
+
+    // WS16 Phase 2: operator HTTPS peers + optional origins JSON (consent-gated).
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSArray<NSString *> *envPeers =
+        [GZJelczPeerProviderIndex parseCSVBases:env[@"JELCZ_PEER_HTTPS_PROVIDERS"]];
+    NSSet *allowedStreamers =
+        [GZJelczPeerProviderIndex allowlistSetFromCSV:env[@"JELCZ_P2P_ALLOWED_STREAMERS"]];
+    NSSet *allowedBroadcasters =
+        [GZJelczPeerProviderIndex allowlistSetFromCSV:env[@"JELCZ_P2P_ALLOWED_BROADCASTERS"]];
+    NSArray<GZJelczPeerProviderEntry *> *originEntries = @[];
+    NSString *originsPath = env[@"JELCZ_PEER_ORIGINS_JSON"];
+    if (originsPath.length > 0) {
+        NSData *data = [NSData dataWithContentsOfFile:originsPath];
+        id json = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
+        originEntries =
+            [GZJelczPeerProviderIndex entriesFromOriginsJSONObject:json
+                                                configuredBaseURL:streamplaceBase];
+        GZ_LOG_INFO(@"  Peer origins JSON: %lu entries from %@",
+                     (unsigned long)originEntries.count, originsPath);
+    }
+    NSArray<NSString *> *mergedProviders =
+        [GZJelczPeerProviderIndex httpsProviderBasesWithBootstrap:streamplaceBase
+                                                     envPeerBases:envPeers
+                                                    originEntries:originEntries
+                                                 allowedStreamers:allowedStreamers
+                                              allowedBroadcasters:allowedBroadcasters];
+    if (mergedProviders.count > 0) {
+        config.caMirrorProviders = mergedProviders;
+        GZ_LOG_INFO(@"  HTTPS peer providers (%lu): %@",
+                     (unsigned long)mergedProviders.count,
+                     [mergedProviders componentsJoinedByString:@", "]);
+    } else if (streamplaceBase.length > 0) {
+        config.caMirrorProviders =
+            [GZJelczStreamplaceOriginHints providersByMergingStreamplaceBase:streamplaceBase
+                                                          existingProviders:config.caMirrorProviders];
+    }
+    if (streamplaceBase.length > 0 && config.streamplaceAttributionDID.length == 0) {
+        GZ_LOG_WARN(@"JELCZ_STREAMPLACE_MIRROR_BASE set without JELCZ_STREAMPLACE_ATTRIBUTION_DID; "
+                    @"Streamplace getVideoBlob mirror fetch will not be wired");
+    }
+
+    __block GZJelczStreamplaceBlobFetcher *streamplaceFetcher = nil;
+    __block GZJelczStreamplaceCompatServe *streamplaceCompat = nil;
+    __block GZJelczStreamplacePeerDemo *peerDemo = nil;
+    BOOL wantBlobServe = config.enableStreamplaceServeCompat || config.enableStreamplacePeerDemo;
+    if (videoProcessor.caObjectStore && wantBlobServe) {
+        streamplaceCompat =
+            [[GZJelczStreamplaceCompatServe alloc] initWithObjectStore:videoProcessor.caObjectStore];
+        if (config.enableStreamplacePeerDemo && streamplaceBase.length > 0) {
+            NSString *publicBase =
+                [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)config.port];
+            id<ATProtoCAMirrorHTTPClient> demoHTTP = [[GZJelczCAMirrorHTTPAdapter alloc] init];
+            peerDemo = [[GZJelczStreamplacePeerDemo alloc] initWithObjectStore:videoProcessor.caObjectStore
+                                                                    httpClient:demoHTTP
+                                                               upstreamBaseURL:streamplaceBase
+                                                                 publicBaseURL:publicBase];
+            peerDemo.peerHTTPSProviders = envPeers ?: @[];
+            peerDemo.originEntries = originEntries;
+            peerDemo.allowedStreamers = allowedStreamers;
+            peerDemo.allowedBroadcasters = allowedBroadcasters;
+        }
+        runtime.additionalXrpcSetup = ^(ATProtoXrpcDispatcher *dispatcher) {
+            [dispatcher registerMethod:kGZXrpcNSID_place_stream_playback_getVideoBlob
+                               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+                                   if (peerDemo) {
+                                       [peerDemo serveBlobForRequest:request response:response error:nil];
+                                       return;
+                                   }
+                                   [streamplaceCompat handleRequest:request response:response error:nil];
+                               }];
+        };
+        GZ_LOG_INFO(@"  Streamplace getVideoBlob serve: enabled%@",
+                    peerDemo ? @" (demo local+proxy)" : @" (local CA only)");
+    }
+
     if (videoProcessor.caObjectStore) {
         runtime.caObjectStore = videoProcessor.caObjectStore;
         if (config.enableCAMirrorFetch) {
-            ATProtoCAMirrorHTTPSFetcher *fetcher =
-                [[ATProtoCAMirrorHTTPSFetcher alloc]
-                    initWithHTTPClient:[[GZJelczCAMirrorHTTPAdapter alloc] init]];
+            id<ATProtoCAMirrorHTTPClient> http =
+                [[GZJelczCAMirrorHTTPAdapter alloc] init];
+            ATProtoCAMirrorHTTPSFetcher *raslFetcher =
+                [[ATProtoCAMirrorHTTPSFetcher alloc] initWithHTTPClient:http];
+            id<ATProtoCAMirrorFetching> fetcher = raslFetcher;
+            if (streamplaceBase.length > 0 && config.streamplaceAttributionDID.length > 0) {
+                streamplaceFetcher =
+                    [[GZJelczStreamplaceBlobFetcher alloc] initWithHTTPClient:http
+                                                              attributionDID:config.streamplaceAttributionDID];
+                GZJelczCAMirrorCompositeFetcher *composite =
+                    [[GZJelczCAMirrorCompositeFetcher alloc] init];
+                composite.primary = streamplaceFetcher;
+                composite.secondary = raslFetcher;
+                fetcher = composite;
+                GZ_LOG_INFO(@"  CA mirror fetch: Streamplace getVideoBlob + RASL (%lu providers)",
+                             (unsigned long)config.caMirrorProviders.count);
+            } else {
+                GZ_LOG_INFO(@"  CA mirror fetch: RASL fetcher wired (%lu providers)",
+                             (unsigned long)config.caMirrorProviders.count);
+            }
             runtime.caMirrorFetcher = fetcher;
-            GZ_LOG_INFO(@"  CA mirror fetch: fetcher wired (%lu providers)",
-                         (unsigned long)config.caMirrorProviders.count);
         }
     }
 
@@ -396,6 +547,13 @@ static int run_serve(NSArray<NSString *> *args) {
                         @"caObjectSweepEnabled": @(config.caObjectSweepEnabled),
                         @"enableMUXLPresentation": @(videoProcessor.enableMUXLPresentation),
                         @"storageBackend": config.s3Bucket.length > 0 ? @"s3" : @"disk",
+                        @"streamplaceMirrorConfigured": @(streamplaceBase.length > 0),
+                        @"streamplaceAttributionDIDConfigured":
+                            @(config.streamplaceAttributionDID.length > 0),
+                        @"streamplaceServeCompat": @(config.enableStreamplaceServeCompat),
+                        @"streamplaceFetchSuccessCount": @0,
+                        @"streamplaceBlobNotFoundCount": @0,
+                        @"streamplaceFetchFailureCount": @0,
                     }
                  startTime:[NSDate date]];
         [GZJelczAdminUIPack configureHost:adminUIHost embedContext:embedContext];
@@ -419,6 +577,11 @@ static int run_serve(NSArray<NSString *> *args) {
             registerHLSRoutes(runtime.httpServer, hlsGenerator);
         }
         videoProcessor.caObjectLifecycle = runtime.caObjectLifecycle;
+        if (peerDemo) {
+            [peerDemo registerRoutesOnServer:runtime.httpServer];
+            GZ_LOG_INFO(@"Streamplace peer demo UI: %@/demo/streamplace",
+                        [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)config.port]);
+        }
         if (embedContext) {
             embedContext.worker = runtime.worker;
             embedContext.jobStore = runtime.worker.jobStore;
@@ -430,6 +593,23 @@ static int run_serve(NSArray<NSString *> *args) {
             cfg[@"caObjectSweepEnabled"] = @(config.caObjectSweepEnabled);
             cfg[@"enableMUXLPresentation"] = @(videoProcessor.enableMUXLPresentation);
             cfg[@"storageBackend"] = config.s3Bucket.length > 0 ? @"s3" : @"disk";
+            cfg[@"streamplaceMirrorConfigured"] = @(streamplaceBase.length > 0);
+            cfg[@"streamplaceAttributionDIDConfigured"] =
+                @(config.streamplaceAttributionDID.length > 0);
+            cfg[@"streamplaceServeCompat"] = @(config.enableStreamplaceServeCompat);
+            if (streamplaceFetcher) {
+                NSDictionary *stats = [streamplaceFetcher allowlistedStatsDictionary];
+                cfg[@"streamplaceFetchSuccessCount"] = stats[@"successCount"] ?: @0;
+                cfg[@"streamplaceBlobNotFoundCount"] = stats[@"blobNotFoundCount"] ?: @0;
+                cfg[@"streamplaceFetchFailureCount"] = stats[@"failureCount"] ?: @0;
+                if (stats[@"lastSuccessAt"] && stats[@"lastSuccessAt"] != [NSNull null]) {
+                    cfg[@"streamplaceLastSuccessAt"] = stats[@"lastSuccessAt"];
+                }
+            } else {
+                cfg[@"streamplaceFetchSuccessCount"] = @0;
+                cfg[@"streamplaceBlobNotFoundCount"] = @0;
+                cfg[@"streamplaceFetchFailureCount"] = @0;
+            }
             embedContext.config = cfg;
         }
         GZ_LOG_INFO(@"Jelcz listening on port %lu", (unsigned long)config.port);

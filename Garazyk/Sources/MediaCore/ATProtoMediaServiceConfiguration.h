@@ -92,6 +92,30 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) NSArray<NSString *> *caMirrorProviders;
 
 /**
+ Operator Streamplace node base URL (WS15). Merged into @c caMirrorProviders.
+ Env: @c JELCZ_STREAMPLACE_MIRROR_BASE.
+ */
+@property (nonatomic, copy, nullable) NSString *streamplaceMirrorBase;
+
+/**
+ DID passed as getVideoBlob @c did= for egress accounting (WS15).
+ Env: @c JELCZ_STREAMPLACE_ATTRIBUTION_DID.
+ */
+@property (nonatomic, copy, nullable) NSString *streamplaceAttributionDID;
+
+/**
+ When YES, register Streamplace-shaped getVideoBlob against the local CA store.
+ Env: @c JELCZ_STREAMPLACE_SERVE_COMPAT. Default NO.
+ */
+@property (nonatomic, assign) BOOL enableStreamplaceServeCompat;
+
+/**
+ When YES, register the Streamplace peership demo UI + APIs on jelcz.
+ Env: @c JELCZ_STREAMPLACE_DEMO. Default NO.
+ */
+@property (nonatomic, assign) BOOL enableStreamplacePeerDemo;
+
+/**
  Grace period before reclaiming zero-refcount CA objects.
 
  Default six hours; clamped to a one-hour minimum (ADR 0013 shape).

@@ -274,6 +274,13 @@ it stays deferred with a recorded decision rather than drifting as "partial".
   dial-by-key, NAT traversal for residential seeders) and would run as a
   sidecar process, not as a link-time dependency of the Objective-C tree. IPFS
   is rejected in ADR 0036 with reasons; do not re-open without new evidence.
+  **Execution plan when reopened:** [workstream 16](16-jelcz-p2p-peership.md)
+  (origin discovery → identity/announce → iroh sidecar → Streamplace mesh /
+  Garazyk VOD). Phases 0–2 of WS16 (governance, ADR, HTTPS multi-provider
+  discovery) may proceed without reopening iroh.
+  **Related (not a Phase 11 substitute):** HTTPS VOD peership with Streamplace
+  nodes via `getVideoBlob` is [workstream 15](15-streamplace-vod-peership.md)
+  — verified mirror fetch only, no live iroh.
 
   *Blocked on:* production CA VOD deployment + origin bandwidth measurements
   (named input for reopening).

@@ -501,6 +501,14 @@ static id sSafeValueForKey(id object, NSString *key) {
         @"sweepEnabled": @(sweepEnabled),
         @"mirrorFetchEnabled": @(mirrorFetch),
         @"mirrorProviderCount": @(mirrorProviderCount),
+        @"streamplaceMirrorConfigured": @([config[@"streamplaceMirrorConfigured"] boolValue]),
+        @"streamplaceAttributionDIDConfigured":
+            @([config[@"streamplaceAttributionDIDConfigured"] boolValue]),
+        @"streamplaceServeCompat": @([config[@"streamplaceServeCompat"] boolValue]),
+        @"streamplaceFetchSuccessCount": config[@"streamplaceFetchSuccessCount"] ?: @0,
+        @"streamplaceBlobNotFoundCount": config[@"streamplaceBlobNotFoundCount"] ?: @0,
+        @"streamplaceFetchFailureCount": config[@"streamplaceFetchFailureCount"] ?: @0,
+        @"streamplaceLastSuccessAt": config[@"streamplaceLastSuccessAt"] ?: [NSNull null],
         @"summary": caManifest
             ? @"Content-addressed VOD: MASL /watch + optional Bao proofs"
             : @"Classic filesystem HLS /watch (CA manifest off)",
@@ -658,6 +666,13 @@ static id sSafeValueForKey(id object, NSString *key) {
             @"sweepEnabled": @NO,
             @"mirrorFetchEnabled": @NO,
             @"mirrorProviderCount": @0,
+            @"streamplaceMirrorConfigured": @NO,
+            @"streamplaceAttributionDIDConfigured": @NO,
+            @"streamplaceServeCompat": @NO,
+            @"streamplaceFetchSuccessCount": @0,
+            @"streamplaceBlobNotFoundCount": @0,
+            @"streamplaceFetchFailureCount": @0,
+            @"streamplaceLastSuccessAt": [NSNull null],
             @"summary": @"Remote snapshot — distribution flags unavailable",
         },
         @"pdsUploadHealth": pdsHealth,

@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-08-08
+last_verified: 2026-08-12
 ---
 
 # Garazyk Mega Plan
@@ -660,6 +660,23 @@ for full traceability; mirrored in the
     MediaCore→Network PUBLIC link; fetcher/RASL tests + resolver 5/0,
     2026-08-12). Phase 11 is closed-not-pursued until production CA VOD +
     origin bandwidth evidence (2026-08-12).
+
+15. **Complete (2026-08-13):** Streamplace VOD byte peership — pull
+    BDASL/MUXL objects over HTTPS `place.stream.playback.getVideoBlob` into
+    jelcz’s CA store; optional flag-gated compat serve. Completed
+    [workstream 15](workstreams/15-streamplace-vod-peership.md). Does **not**
+    adopt `place.stream.video` as Garazyk’s primary VOD NSID (ADR 0036) and
+    does **not** join Streamplace’s live iroh swarm (that remains WS12 Phase
+    11 / item 16). Operator env: `JELCZ_STREAMPLACE_MIRROR_BASE` +
+    `JELCZ_STREAMPLACE_ATTRIBUTION_DID`; serve-compat behind
+    `JELCZ_STREAMPLACE_SERVE_COMPAT`. Lab:
+    [Streamplace and jelcz peership lab](../20-explanation/guides/streamplace-jelcz-peership-lab.md).
+
+16. **Open (updated 2026-08-13):** jelcz P2P peership — Phases 0–2 + ADR 0038
+    done; Phase 3 remote-PDS origin announce next; iroh sidecar blocked on
+    production CA VOD evidence. Complete
+    [workstream 16](workstreams/16-jelcz-p2p-peership.md). Decision:
+    [ADR 0038](../adr/0038-jelcz-p2p-layering.md).
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
 removals without caller proof.

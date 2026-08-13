@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>jelcz · Streamplace peership</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232a6b66'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='14' fill='white' font-family='system-ui'%3Ej%3C/text%3E%3C/svg%3E" />
+  <script src="/demo/streamplace/hls.min.js"></script>
+  <style>
+    :root {
+      --bg: oklch(0.985 0.004 180);
+      --panel: oklch(1 0 0);
+      --ink: oklch(0.22 0.02 180);
+      --muted: oklch(0.42 0.025 180);
+      --line: oklch(0.88 0.015 180);
+      --teal: oklch(0.55 0.095 180);
+      --teal-ink: oklch(0.32 0.07 180);
+      --ok: oklch(0.48 0.12 145);
+      --ok-bg: oklch(0.96 0.03 145);
+      --warn: oklch(0.55 0.14 70);
+      --warn-bg: oklch(0.97 0.03 70);
+      --proxy: oklch(0.48 0.1 250);
+      --proxy-bg: oklch(0.96 0.025 250);
+      --shadow: 0 1px 0 oklch(0.2 0.02 180 / 0.04), 0 12px 32px oklch(0.3 0.03 180 / 0.06);
+      --radius: 10px;
+      --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(900px 420px at 10% -10%, oklch(0.92 0.04 180 / 0.55), transparent 60%),
+        radial-gradient(700px 380px at 100% 0%, oklch(0.94 0.03 210 / 0.4), transparent 55%),
+        var(--bg);
+    }
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 20px 64px;
+    }
+    header.hero {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+    .brand {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--teal-ink);
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      font-weight: 650;
+      text-wrap: balance;
+    }
+    .posture {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px 18px;
+      align-items: start;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      border: 1px solid oklch(0.82 0.05 145);
+      background: linear-gradient(135deg, var(--ok-bg), var(--panel) 55%);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .posture-led {
+      width: 12px;
+      height: 12px;
+      margin-top: 4px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 0 oklch(0.55 0.12 145 / 0.45);
+      animation: pulse-led 1.8s ease-out infinite;
+    }
+    .posture-led.idle {
+      background: var(--muted);
+      animation: none;
+      box-shadow: none;
+    }
+    .posture-led.proxy {
+      background: var(--proxy);
+      box-shadow: 0 0 0 0 oklch(0.48 0.1 250 / 0.4);
+      animation: pulse-led-proxy 1.4s ease-out infinite;
+    }
+    @keyframes pulse-led {
+      0% { box-shadow: 0 0 0 0 oklch(0.55 0.12 145 / 0.45); }
+      70% { box-shadow: 0 0 0 10px oklch(0.55 0.12 145 / 0); }
+      100% { box-shadow: 0 0 0 0 oklch(0.55 0.12 145 / 0); }
+    }
+    @keyframes pulse-led-proxy {
+      0% { box-shadow: 0 0 0 0 oklch(0.48 0.1 250 / 0.4); }
+      70% { box-shadow: 0 0 0 10px oklch(0.48 0.1 250 / 0); }
+      100% { box-shadow: 0 0 0 0 oklch(0.48 0.1 250 / 0); }
+    }
+    .posture h2 {
+      margin: 0 0 4px;
+      font-size: 0.95rem;
+      font-weight: 650;
+    }
+    .posture p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.4;
+      max-width: 70ch;
+    }
+    .posture-facts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .fact {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .fact em {
+      font-style: normal;
+      color: var(--teal-ink);
+      font-weight: 600;
+    }
+    .path {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 4px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+    .chip strong { color: var(--teal-ink); font-weight: 600; }
+    .chip.on {
+      border-color: oklch(0.75 0.08 145);
+      background: var(--ok-bg);
+      color: var(--ok);
+    }
+    .arrow { color: var(--muted); }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel-h {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .panel-h h2 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .panel-h .meta {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+    .stat {
+      background: var(--panel);
+      padding: 12px 14px;
+      transition: background 180ms ease;
+    }
+    .stat.tick { background: oklch(0.96 0.03 180); }
+    .stat .k {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .stat .v {
+      margin-top: 4px;
+      font-family: var(--mono);
+      font-size: 1.05rem;
+      font-weight: 500;
+    }
+    .stat .hint {
+      margin-top: 2px;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+    .list {
+      max-height: 420px;
+      overflow: auto;
+    }
+    button.item {
+      width: 100%;
+      text-align: left;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      padding: 12px 16px;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      transition: background 160ms ease;
+    }
+    button.item:hover, button.item:focus-visible {
+      background: oklch(0.97 0.02 180);
+      outline: none;
+    }
+    button.item.active {
+      background: oklch(0.95 0.035 180);
+      box-shadow: inset 3px 0 0 var(--teal);
+    }
+    .item-title {
+      font-weight: 600;
+      font-size: 0.92rem;
+      margin: 0 0 4px;
+    }
+    .item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .badge {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+    }
+    .badge.live { color: oklch(0.45 0.14 25); border-color: oklch(0.8 0.06 25); background: oklch(0.97 0.02 25); }
+    .badge.vod { color: var(--teal-ink); border-color: oklch(0.82 0.05 180); background: oklch(0.97 0.02 180); }
+    .badge.ca { color: var(--ok); border-color: oklch(0.8 0.06 145); background: var(--ok-bg); }
+    .badge.proxy { color: var(--proxy); border-color: oklch(0.82 0.05 250); background: var(--proxy-bg); }
+    .badge.warn { color: var(--warn); border-color: oklch(0.85 0.06 70); background: var(--warn-bg); }
+    .player-wrap { padding: 12px; }
+    video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: oklch(0.16 0.02 180);
+      border-radius: 8px;
+      display: block;
+    }
+    .detail {
+      padding: 0 16px 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .evidence {
+      display: none;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px dashed oklch(0.78 0.05 145);
+      background: oklch(0.98 0.015 145);
+    }
+    .evidence.open { display: grid; }
+    .evidence h3 {
+      margin: 0;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--teal-ink);
+    }
+    .evidence-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+    .cid {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 18ch;
+      color: var(--muted);
+    }
+    .objects {
+      display: grid;
+      gap: 6px;
+      max-height: 140px;
+      overflow: auto;
+    }
+    .obj {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+    }
+    .feed {
+      display: grid;
+      gap: 1px;
+      background: var(--line);
+      max-height: 180px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .feed-row {
+      display: grid;
+      grid-template-columns: 64px 88px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 10px;
+      background: var(--panel);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+    }
+    .feed-row.new { animation: row-in 220ms ease-out; }
+    @keyframes row-in {
+      from { background: oklch(0.94 0.04 180); }
+      to { background: var(--panel); }
+    }
+    .feed-empty {
+      padding: 14px 10px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      background: var(--panel);
+    }
+    .detail pre {
+      margin: 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: oklch(0.97 0.01 180);
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      line-height: 1.45;
+      overflow: auto;
+      max-height: 160px;
+      white-space: pre-wrap;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease;
+    }
+    .btn:hover { border-color: var(--teal); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: white;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-line {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      min-height: 1.2em;
+    }
+    .status-line.ok { color: var(--ok); }
+    .status-line.warn { color: var(--warn); }
+    .empty {
+      padding: 28px 16px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div class="brand">jelcz</div>
+      <h1>Streamplace peership</h1>
+      <div class="path" aria-label="Data path">
+        <span class="chip">discovery</span>
+        <span class="arrow">→</span>
+        <span class="chip"><strong>jelcz</strong> peer</span>
+        <span class="arrow">→</span>
+        <span class="chip" id="path-mode">CA / range-proxy</span>
+        <span class="arrow">→</span>
+        <span class="chip" id="path-player">player</span>
+      </div>
+    </header>
+
+    <section class="posture" aria-live="polite">
+      <div class="posture-led idle" id="peer-led" aria-hidden="true"></div>
+      <div>
+        <h2 id="posture-title">Waiting to peer</h2>
+        <p id="posture-copy">
+          Catalog metadata may come from Streamplace. Media requests stay on this jelcz origin —
+          the browser does not fetch blobs from stream.place.
+        </p>
+        <div class="posture-facts">
+          <span class="fact">browser → <em id="f-origin">jelcz</em></span>
+          <span class="fact">upstream (server) → <em id="f-up">—</em></span>
+          <span class="fact">talks to stream.place? <em id="f-direct">no</em></span>
+          <span class="fact">sessions <em id="f-sessions">0</em></span>
+          <span class="fact">HTTPS peers <em id="f-peers">—</em></span>
+        </div>
+        <div class="posture-facts" id="peer-list" style="margin-top:6px"></div>
+      </div>
+    </section>
+
+    <div class="stats" id="stats" aria-live="polite">
+      <div class="stat" id="stat-peered">
+        <div class="k">Peered into CA</div>
+        <div class="v" id="s-peered">—</div>
+        <div class="hint">verified local objects</div>
+      </div>
+      <div class="stat" id="stat-local">
+        <div class="k">Local serves</div>
+        <div class="v" id="s-local">—</div>
+        <div class="hint">X-Jelcz-Peer: ca-store</div>
+      </div>
+      <div class="stat" id="stat-proxy">
+        <div class="k">Proxy serves</div>
+        <div class="v" id="s-proxy">—</div>
+        <div class="hint">via jelcz, not browser</div>
+      </div>
+      <div class="stat" id="stat-bytes">
+        <div class="k">Proxied bytes</div>
+        <div class="v" id="s-bytes">—</div>
+        <div class="hint">server-side Ranges</div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-h">
+          <h2>Catalog</h2>
+          <div class="meta" id="catalog-meta">loading…</div>
+        </div>
+        <div class="list" id="catalog"><div class="empty">Loading…</div></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-h">
+          <h2>Playback</h2>
+          <div class="meta" id="play-meta">select a stream</div>
+        </div>
+        <div class="player-wrap">
+          <video id="video" controls playsinline></video>
+        </div>
+        <div class="detail">
+          <div class="actions">
+            <button class="btn primary" id="btn-peer" disabled>Peer & play</button>
+            <button class="btn" id="btn-refresh">Refresh</button>
+          </div>
+          <div class="status-line" id="status"></div>
+          <div class="evidence" id="evidence">
+            <h3>Session evidence</h3>
+            <div class="evidence-row" id="evidence-summary"></div>
+            <div class="objects" id="evidence-objects"></div>
+          </div>
+          <div>
+            <div class="panel-h" style="padding:0 0 8px;border:0">
+              <h2 style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Live serves from this jelcz</h2>
+              <div class="meta" id="feed-meta">idle</div>
+            </div>
+            <div class="feed" id="serve-feed"><div class="feed-empty">Peer a stream to see CA hits and range-proxy traffic.</div></div>
+          </div>
+          <pre id="peer-json">{}</pre>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let selected = null;
+    let hls = null;
+    let lastStats = {};
+    let seenServeKeys = new Set();
+    let statsTimer = null;
+
+    function fmtBytes(n) {
+      n = Number(n) || 0;
+      if (n < 1024) return n + " B";
+      if (n < 1024 ** 2) return (n / 1024).toFixed(1) + " KiB";
+      if (n < 1024 ** 3) return (n / 1024 ** 2).toFixed(1) + " MiB";
+      return (n / 1024 ** 3).toFixed(2) + " GiB";
+    }
+
+    function shortCid(cid) {
+      if (!cid) return "";
+      if (cid.length <= 18) return cid;
+      return cid.slice(0, 10) + "…" + cid.slice(-6);
+    }
+
+    function setStatus(text, cls) {
+      const el = $("status");
+      el.textContent = text;
+      el.className = "status-line" + (cls ? " " + cls : "");
+    }
+
+    function tickStat(id) {
+      const el = $(id);
+      el.classList.remove("tick");
+      void el.offsetWidth;
+      el.classList.add("tick");
+      setTimeout(() => el.classList.remove("tick"), 220);
+    }
+
+    function modeBadge(mode) {
+      const m = String(mode || "");
+      if (m === "ca-store" || m === "peered-verified" || m === "already-local") {
+        return `<span class="badge ca">${escapeHtml(m)}</span>`;
+      }
+      if (m.includes("proxy") || m === "range-proxy" || m === "live-proxy") {
+        return `<span class="badge proxy">${escapeHtml(m)}</span>`;
+      }
+      if (m.includes("fail") || m === "invalid-cid") {
+        return `<span class="badge warn">${escapeHtml(m)}</span>`;
+      }
+      return `<span class="badge">${escapeHtml(m || "—")}</span>`;
+    }
+
+    function updatePosture(stats, session) {
+      const origin = stats.browserOrigin || location.origin;
+      const up = stats.upstreamHost || (stats.peership && stats.peership.upstreamDiscoveryOnly) || "—";
+      $("f-origin").textContent = origin.replace(/^https?:\/\//, "");
+      $("f-up").textContent = typeof up === "string" && up.includes("://")
+        ? (new URL(up).host)
+        : up;
+      $("f-direct").textContent = stats.browserTalksToStreamplace ? "yes" : "no";
+      $("f-sessions").textContent = String(stats.sessionCount ?? 0);
+      const peers = stats.httpsProviders || [];
+      $("f-peers").textContent = peers.length ? String(peers.length) : "0";
+      const list = $("peer-list");
+      if (list) {
+        list.innerHTML = peers.slice(0, 6).map((p) =>
+          `<span class="fact"><em>${escapeHtml(String(p).replace(/^https?:\/\//, ""))}</em></span>`
+        ).join("");
+      }
+
+      const led = $("peer-led");
+      const local = Number(stats.localServeCount) || 0;
+      const proxy = Number(stats.proxyServeCount) || 0;
+      const active = local + proxy > 0 || !!session;
+
+      if (!active) {
+        led.className = "posture-led idle";
+        $("posture-title").textContent = "Waiting to peer";
+        $("posture-copy").textContent =
+          "Catalog metadata may come from Streamplace. Media requests stay on this jelcz origin — the browser does not fetch blobs from stream.place.";
+        $("path-mode").textContent = "CA / range-proxy";
+        $("path-mode").classList.remove("on");
+        $("path-player").classList.remove("on");
+        return;
+      }
+
+      if (session && session.kind === "live") {
+        led.className = "posture-led proxy";
+        $("posture-title").textContent = "Live peering through jelcz";
+        $("posture-copy").textContent =
+          "Playlist and segments are rewritten to this origin. Upstream segments are fetched by jelcz (X-Jelcz-Peer: live-proxy), not by the browser.";
+        $("path-mode").textContent = "live-proxy";
+      } else if (local > 0 && local >= proxy) {
+        led.className = "posture-led";
+        $("posture-title").textContent = "Serving from local CA";
+        $("posture-copy").textContent =
+          "Playback hits peered objects in jelcz’s content-addressed store (X-Jelcz-Peer: ca-store). Bytes leave this process, not stream.place.";
+        $("path-mode").textContent = "ca-store";
+      } else {
+        led.className = "posture-led proxy";
+        $("posture-title").textContent = "Range-proxying through jelcz";
+        $("posture-copy").textContent =
+          "Large objects stay upstream, but Ranges are pulled by jelcz and re-served locally (X-Jelcz-Peer: range-proxy). The player still only talks to this origin.";
+        $("path-mode").textContent = "range-proxy";
+      }
+      $("path-mode").classList.add("on");
+      $("path-player").classList.add("on");
+    }
+
+    function renderEvidence(session) {
+      const box = $("evidence");
+      if (!session || (!session.objects && !session.localPlaylistURL)) {
+        box.classList.remove("open");
+        return;
+      }
+      box.classList.add("open");
+      const parts = [];
+      parts.push(`<span class="badge ca">playbackVia: ${escapeHtml(session.playbackVia || "jelcz")}</span>`);
+      parts.push(`<span class="badge">browser→stream.place: ${session.browserTalksToStreamplace ? "yes" : "no"}</span>`);
+      if (session.mode) parts.push(modeBadge(session.mode));
+      if (session.localPlaylistURL) {
+        try {
+          const u = new URL(session.localPlaylistURL, location.origin);
+          parts.push(`<span class="fact">playlist host <em>${escapeHtml(u.host)}</em></span>`);
+        } catch (_) {}
+      }
+      $("evidence-summary").innerHTML = parts.join("");
+
+      const objs = session.objects || [];
+      const root = $("evidence-objects");
+      root.innerHTML = "";
+      if (!objs.length && session.kind === "live") {
+        root.innerHTML = `<div class="obj"><span class="badge proxy">live-proxy</span><span>segments served via jelcz</span><span></span></div>`;
+        return;
+      }
+      objs.forEach((o) => {
+        const row = document.createElement("div");
+        row.className = "obj";
+        row.innerHTML = `
+          ${modeBadge(o.status || o.mode)}
+          <span class="cid" title="${escapeHtml(o.cid || "")}">${escapeHtml(shortCid(o.cid))}</span>
+          <span>${o.size != null ? escapeHtml(fmtBytes(o.size)) : ""}</span>
+        `;
+        root.appendChild(row);
+      });
+    }
+
+    function serveKey(ev) {
+      return [ev.ts, ev.mode, ev.cid || "", ev.bytes, ev.note || ""].join("|");
+    }
+
+    function renderFeed(recent) {
+      const root = $("serve-feed");
+      const list = Array.isArray(recent) ? recent : [];
+      if (!list.length) {
+        root.innerHTML = `<div class="feed-empty">Peer a stream to see CA hits and range-proxy traffic.</div>`;
+        $("feed-meta").textContent = "idle";
+        return;
+      }
+      $("feed-meta").textContent = `${list.length} recent`;
+      root.innerHTML = "";
+      list.slice(0, 16).forEach((ev, i) => {
+        const key = serveKey(ev);
+        const isNew = !seenServeKeys.has(key);
+        seenServeKeys.add(key);
+        const row = document.createElement("div");
+        row.className = "feed-row" + (isNew && i < 3 ? " new" : "");
+        const t = ev.ts ? new Date(Number(ev.ts) * 1000) : null;
+        const time = t
+          ? t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+          : "—";
+        row.innerHTML = `
+          <span>${escapeHtml(time)}</span>
+          ${modeBadge(ev.mode)}
+          <span class="cid" title="${escapeHtml(ev.cid || ev.note || "")}">${escapeHtml(shortCid(ev.cid) || ev.note || "—")}</span>
+          <span>${escapeHtml(fmtBytes(ev.bytes))}</span>
+        `;
+        root.appendChild(row);
+      });
+      if (seenServeKeys.size > 200) {
+        seenServeKeys = new Set(list.slice(0, 40).map(serveKey));
+      }
+    }
+
+    function renderStats(stats) {
+      const prev = lastStats;
+      if (prev.peeredObjectCount != null && stats.peeredObjectCount !== prev.peeredObjectCount) {
+        tickStat("stat-peered");
+      }
+      if (prev.localServeCount != null && stats.localServeCount !== prev.localServeCount) {
+        tickStat("stat-local");
+      }
+      if (prev.proxyServeCount != null && stats.proxyServeCount !== prev.proxyServeCount) {
+        tickStat("stat-proxy");
+      }
+      if (prev.proxiedByteCount != null && stats.proxiedByteCount !== prev.proxiedByteCount) {
+        tickStat("stat-bytes");
+      }
+      $("s-peered").textContent = stats.peeredObjectCount ?? "—";
+      $("s-local").textContent = stats.localServeCount ?? "—";
+      $("s-proxy").textContent = stats.proxyServeCount ?? "—";
+      $("s-bytes").textContent = fmtBytes(stats.proxiedByteCount);
+      renderFeed(stats.recentServes);
+      updatePosture(stats, window.__lastSession || null);
+      lastStats = stats;
+    }
+
+    function renderCatalog(data) {
+      const root = $("catalog");
+      root.innerHTML = "";
+      const items = [...(data.live || []), ...(data.vod || [])];
+      $("catalog-meta").textContent =
+        `${(data.live || []).length} live · ${(data.vod || []).length} VOD`;
+      if (!items.length) {
+        root.innerHTML = `<div class="empty">Upstream returned no streams.</div>`;
+        return;
+      }
+      items.forEach((item) => {
+        const btn = document.createElement("button");
+        btn.className = "item";
+        btn.type = "button";
+        const badge = item.kind === "live"
+          ? `<span class="badge live">LIVE</span>`
+          : `<span class="badge vod">VOD</span>`;
+        const handle = item.handle || item.did || "";
+        const viewers = item.kind === "live" ? ` · ${item.viewers || 0} watching` : "";
+        const dur = item.durationMs
+          ? ` · ${(Number(item.durationMs) / 60000).toFixed(1)} min`
+          : "";
+        btn.innerHTML = `
+          <p class="item-title">${escapeHtml(item.title || "Untitled")}</p>
+          <div class="item-meta">${badge}<span>${escapeHtml(handle)}${viewers}${dur}</span></div>
+        `;
+        btn.addEventListener("click", () => selectItem(item, btn));
+        root.appendChild(btn);
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function selectItem(item, btn) {
+      selected = item;
+      document.querySelectorAll("button.item").forEach((el) => el.classList.remove("active"));
+      btn.classList.add("active");
+      $("play-meta").textContent = item.kind === "vod" ? item.uri : (item.did || item.handle || "live");
+      $("btn-peer").disabled = !(item.kind === "vod" || item.kind === "live");
+      $("peer-json").textContent = JSON.stringify(item, null, 2);
+      setStatus("");
+    }
+
+    async function loadCatalog() {
+      setStatus("Loading…");
+      const res = await fetch("/demo/streamplace/api/catalog");
+      const data = await res.json();
+      renderCatalog(data);
+      renderStats(data.stats || {});
+      setStatus("");
+    }
+
+    async function refreshStats() {
+      const res = await fetch("/demo/streamplace/api/stats");
+      renderStats(await res.json());
+    }
+
+    function startStatsPoll(ms, forMs) {
+      if (statsTimer) clearInterval(statsTimer);
+      statsTimer = setInterval(refreshStats, ms);
+      setTimeout(() => {
+        if (statsTimer) {
+          clearInterval(statsTimer);
+          statsTimer = null;
+        }
+      }, forMs);
+    }
+
+    async function peerSelected() {
+      if (!selected) return;
+      $("btn-peer").disabled = true;
+      setStatus("Peering…");
+      try {
+        const payload = selected.kind === "live"
+          ? { kind: "live", did: selected.did }
+          : { kind: "vod", uri: selected.uri };
+        const res = await fetch("/demo/streamplace/api/peer", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const session = await res.json();
+        window.__lastSession = session;
+        $("peer-json").textContent = JSON.stringify(session, null, 2);
+        renderEvidence(session);
+        if (!res.ok) {
+          setStatus(session.message || "Peer failed", "warn");
+          return;
+        }
+        const verified = (session.objects || []).filter((o) =>
+          o.status === "peered-verified" || o.status === "already-local").length;
+        const proxied = (session.objects || []).filter((o) => o.status === "range-proxy").length;
+        if (session.kind === "live") {
+          setStatus("Playing live via jelcz proxy", "ok");
+        } else {
+          setStatus(
+            `Playing via jelcz · ${verified} in CA · ${proxied} range-proxy`,
+            "ok"
+          );
+        }
+        await playLocal(session.localPlaylistURL);
+        await refreshStats();
+        startStatsPoll(1500, selected.kind === "live" ? 180000 : 45000);
+      } catch (err) {
+        setStatus(String(err), "warn");
+      } finally {
+        $("btn-peer").disabled = false;
+      }
+    }
+
+    async function playLocal(url) {
+      const video = $("video");
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+      if (window.Hls && Hls.isSupported()) {
+        hls = new Hls({ enableWorker: true, liveDurationInfinity: true });
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) setStatus("HLS " + data.type + "/" + data.details, "warn");
+        });
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = url;
+        await video.play().catch(() => {});
+      } else {
+        setStatus("HLS.js missing", "warn");
+      }
+    }
+
+    $("btn-refresh").addEventListener("click", loadCatalog);
+    $("btn-peer").addEventListener("click", peerSelected);
+    loadCatalog();
+    startStatsPoll(4000, 600000);
+  </script>
+</body>
+</html>

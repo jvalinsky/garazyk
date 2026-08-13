@@ -81,6 +81,12 @@
         @{@"label": @"Mirror fetch", @"value": [distribution[@"mirrorFetchEnabled"] boolValue]
             ? [NSString stringWithFormat:@"enabled (%@ providers)", distribution[@"mirrorProviderCount"] ?: @0]
             : @"off"},
+        @{@"label": @"Streamplace mirror", @"value": [distribution[@"streamplaceMirrorConfigured"] boolValue]
+            ? ([distribution[@"streamplaceAttributionDIDConfigured"] boolValue]
+               ? @"configured (attribution DID set)"
+               : @"base set (attribution DID missing)")
+            : @"off"},
+        @{@"label": @"Streamplace serve compat", @"value": [distribution[@"streamplaceServeCompat"] boolValue] ? @"on" : @"off"},
         @{@"label": @"CA reclaim sweep", @"value": [distribution[@"sweepEnabled"] boolValue] ? @"enabled" : @"off (orphans retained)"},
     ]]];
     [html appendString:@"</section>"];
@@ -312,6 +318,14 @@
         @{@"label": @"MUXL presentation (WS10)", @"value": [distribution[@"muxlPresentationEnabled"] boolValue] ? @"on" : @"off"},
         @{@"label": @"Verified mirror fetch", @"value": [distribution[@"mirrorFetchEnabled"] boolValue] ? @"on" : @"off"},
         @{@"label": @"Configured mirrors", @"html": [GZHTML monoValue:distribution[@"mirrorProviderCount"] ?: @0]},
+        @{@"label": @"Streamplace mirror", @"value": [distribution[@"streamplaceMirrorConfigured"] boolValue] ? @"configured" : @"off"},
+        @{@"label": @"Streamplace attribution DID", @"value": [distribution[@"streamplaceAttributionDIDConfigured"] boolValue] ? @"set" : @"missing"},
+        @{@"label": @"Streamplace serve compat", @"value": [distribution[@"streamplaceServeCompat"] boolValue] ? @"on" : @"off"},
+        @{@"label": @"Streamplace fetch OK / BlobNotFound / fail",
+          @"html": [GZHTML monoValue:[NSString stringWithFormat:@"%@ / %@ / %@",
+                                      distribution[@"streamplaceFetchSuccessCount"] ?: @0,
+                                      distribution[@"streamplaceBlobNotFoundCount"] ?: @0,
+                                      distribution[@"streamplaceFetchFailureCount"] ?: @0]]},
         @{@"label": @"Object reclaim sweep", @"value": [distribution[@"sweepEnabled"] boolValue] ? @"on" : @"off"},
     ]]];
     [html appendString:@"</section>"];

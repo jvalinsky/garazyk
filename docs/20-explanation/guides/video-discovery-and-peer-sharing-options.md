@@ -176,6 +176,9 @@ provider is the control point, and it does not require Meadowcap.
 | --- | --- | --- | --- |
 | 1 | Reliable verified retrieval | Segment-store + manifest resolution + CID verification path | Baseline correctness before optimization |
 | 2 | Practical provider discovery | Start with one source of providers: manifest hints or AppView index | Keep discovery source explicit for observability |
+| 2b | Streamplace HTTPS origin | Operator env + `getVideoBlob` peership ([WS15](../../plans/workstreams/15-streamplace-vod-peership.md)) | Verified mirror pull only; not live iroh |
+| 2c | Multi-provider + P2P | Origin records, multi-jelcz HTTPS mesh, then iroh sidecar ([WS16](../../plans/workstreams/16-jelcz-p2p-peership.md)) | iroh blocked on production evidence; discovery phases unblocked |
+| Lab | Docker peership stack | Streamplace + local ATProto + 3× jelcz ([lab guide](streamplace-jelcz-peership-lab.md)) | HTTPS mesh only; not iroh |
 | 3 | Policy hardening | Consent model (record-based offers or operator policy) | Prevent accidental "free CDN" behavior |
 | 4 | Live scaling | Optional WebRTC peer-assist for live/hot traffic | Keep as additive path, not mandatory |
 | 5 | Decentralized expansion | Optional gossip rendezvous and/or iroh sidecar | Add only with measured demand and ops capacity |
@@ -203,6 +206,15 @@ single-origin serving to multi-origin and peer-assisted distribution.
 - [Willow Confidential Sync](https://willowprotocol.org/specs/confidential-sync/)
 - [Willow 3d RBSR](https://willowprotocol.org/specs/rbsr/)
 - [Streamplace video architecture write-up](https://blog.stream.place/3mfd2zatm4c2s)
+- [Workstream 15: Streamplace VOD peership](../../plans/workstreams/15-streamplace-vod-peership.md)
+  — Garazyk’s HTTPS origin path for Streamplace MUXL/BDASL bytes
+- [Workstream 16: Jelcz P2P peership](../../plans/workstreams/16-jelcz-p2p-peership.md)
+  — origin discovery + iroh sidecar plan (Streamplace syndication model)
+- [Streamplace and jelcz peership lab](streamplace-jelcz-peership-lab.md)
+  — Docker + host demos for WS15 / WS16 Phase 2
+- [Streamplace syndication](https://blog.stream.place/3m3ngytdrws2k)
+  — `broadcast.origin` + iroh tickets + firehose fan-out
+- [Docker compose lab](../../../docker/streamplace-peership/README.md)
 - [p2pds replication model](https://tangled.org/burrito.space/p2pds/blob/main/README.md)
 - [libp2p gossipsub spec](https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md)
 - [libp2p episub notes](https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/episub.md)

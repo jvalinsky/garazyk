@@ -103,6 +103,9 @@
         @"getUploadLimits": [NSString stringWithFormat:@"%@.getUploadLimits", self.processor.mediaTypeIdentifier],
     };
     [xrpcPack registerWithDispatcher:dispatcher services:routeServices];
+    if (self.additionalXrpcSetup) {
+        self.additionalXrpcSetup(dispatcher);
+    }
 
     // ── HTTP Server ───────────────────────────────────────────
     self.httpServer = [ATProtoHttpServer serverWithPort:config.port];
