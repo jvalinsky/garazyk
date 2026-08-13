@@ -2,6 +2,7 @@
 # Entries are repository-relative; CMake validates existence, ownership, and
 # build-host independence before resolving them into target source lists.
 set(ATPROTO_RUNTIME_MANIFEST
+  "Garazyk/Sources/Admin/AdminUI/PDSAdminSnapshot.m"
   "Garazyk/Sources/Admin/Diagnostics/PDSRateLimitAdminHandler.m"
   "Garazyk/Sources/Admin/Diagnostics/PDSSystemDiagnosticsHandler.m"
   "Garazyk/Sources/Admin/PDSInstallerCommand.m"

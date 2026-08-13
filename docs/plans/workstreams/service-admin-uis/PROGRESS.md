@@ -1,7 +1,7 @@
 ---
 title: Workstream 11 Progress
 status: active
-last_verified: 2026-08-11
+last_verified: 2026-08-12
 ---
 
 # Workstream 11 — Per-Service Admin UI: Progress Summary
@@ -87,12 +87,12 @@ Port `2590` is the embedded PDS admin UI on `kaszlak` (not a separate binary).
 
 | Service | Slices remaining |
 |---|---|
-| PDS (kaszlak) | Slice 4 embed **done**; 2026-08-12: stats key fix, Security/PDS/explorer DTO allowlists, Lab scenario retarget, `nixos/modules/kaszlak.nix`; open: full snapshot, CI smoke evidence |
-| Chat | Server-side admin endpoints for conversation/message data (beyond overview) |
+| PDS (kaszlak) | Slice 4 embed **done**; 2026-08-12: snapshot + visual/browser smoke (incl. 200% zoom) + NixOS/Lab/DTO allowlists |
+| Chat | **Done 2026-08-12:** Bearer `/_admin`, headline stats, lock/unlock UI, `admin-ui:chat-smoke` |
 | Germ | **Done 2026-08-12:** retain fix + `germ_admin_loopback_smoke.ts` live metrics |
-| AppView | Exceptions triage / Probe / Actor dig deferred IA |
+| AppView | **Done 2026-08-12:** Exceptions / Probe / Actor dig tabs + allowlisted probe |
 | Mikrus / Beskid | Pack completion vs brief acceptance (see briefs) |
-| Relay | **GNUstep `zuk serve --help` evidence 2026-08-12**; optional live-event inspector fields |
+| Relay | **Done 2026-08-12:** live-event inspector fields (`lastEventAt`, `eventsByKind`) |
 | Ozone | Embedded listener only if a standalone Ozone binary is created (not in current fleet) |
 | Fleet | **M5 complete (2026-08-12):** standalone admin binary retired; Overview/Connections dropped; peer switcher + schemat/hamownia retarget landed |
 

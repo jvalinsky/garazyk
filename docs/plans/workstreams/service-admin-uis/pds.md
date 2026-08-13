@@ -59,15 +59,28 @@ bust (`?v=json-mst-2`):
 
 ### Still open for full M4 acceptance
 
-1. Full `PDSAdminSnapshot` (sequencer/pool/WAL/sessions) beyond server-stats
-   key mapping — **partial 2026-08-12:** `renderServerStatsPartial` now reads
-   allowlisted `*_total` / lexicon camelCase keys (Accounts/Repos/Records/Blobs/
-   blob bytes/open reports).
+1. ~~Full `PDSAdminSnapshot` (sequencer/pool/WAL/sessions) beyond server-stats
+   key mapping~~ **Done 2026-08-12:** `GZPDSAdminSnapshot` (Runtime) wired through
+   `PDSAdminUIStartHost(..., overviewSnapshot, …)` → `GZAdminUIPDSPack
+   configureHost:snapshot:`; `/admin/partials/pds-stats` prefers local snapshot
+   (COUNT/PRAGMA/in-memory pool counters only — no actor/blob directory scans).
+   `getServerStats` also exposes `sessions_active` + `database` for XRPC fallback.
+   Evidence: `PDSAdminSnapshotTests`.
 2. ~~NixOS/container secret-file, bind/port, and reverse-proxy module examples~~
    **Done 2026-08-12:** `nixos/modules/kaszlak.nix`, `nixos/examples/kaszlak.nix`,
    `flake.nix` `nixosModules.kaszlak` (parse + type check).
-3. Checked-in browser/visual smoke already target `:2590`; re-run evidence /
-   optional CI job still open (scripts exist).
+3. ~~Checked-in browser/visual smoke already target `:2590`; re-run evidence /
+   optional CI job still open (scripts exist).~~ **Done 2026-08-12:**
+   `scripts/admin_ui_visual_smoke_test.ts` re-run green on macOS (login a11y +
+   `/admin/partials/pds-stats` asserts Health / Active sessions / Sequencer /
+   pool / Service DB). Path-filtered CI:
+   `.github/workflows/admin-ui-smoke.yml` (also `workflow_dispatch`). Deno
+   tasks: `admin-ui:visual-smoke`, `admin-ui:browser-smoke`. Full browser smoke
+   + 200% zoom: **Done 2026-08-12** — visual smoke asserts no horizontal
+   overflow at `zoom: 200%` after login; browser smoke re-run green (CSP,
+   CSRF, keyboard focus, PDS→Ozone ARIA tabs post-M5, Lab OAuth). Binary
+   topology password aligned to `admin-localdev` /
+   `PDS_ADMIN_PASSWORD` env.
 4. ~~Lab OAuth scenario retarget~~ **Done 2026-08-12:**
    `11_lab_oauth_login.ts` prefers `SERVICE_URLS.ui`, uses
    `gz_admin_pds_*` cookies, and polls `/admin/partials/pds-stats`. Lab remains
@@ -98,7 +111,8 @@ bust (`?v=json-mst-2`):
 
 1. Define one cheap PDS overview snapshot from existing health, sequencer,
    metrics, pool, moderation, and storage components; headline polling must not
-   scan actor stores or blob directories. **Open.**
+   scan actor stores or blob directories. **Done 2026-08-12** (`GZPDSAdminSnapshot`
+   + local `/admin/partials/pds-stats`; `PDSAdminSnapshotTests`).
 2. Move all six packs and clients under PDS ownership, remove Overview and
    Connections, and keep the host service-agnostic. **Partial:** service-scoped
    shell omits Overview/Connections; packs still live under `AdminUIServer/`
@@ -118,8 +132,9 @@ bust (`?v=json-mst-2`):
 6. Test each pack, dangerous-action confirmation, audit, auth/CSRF, pagination,
    empty/large stores, pool starvation, concurrent repository writes, 200% zoom,
    and scenario/topology compatibility. **Partial:** composition + focused
-   unit tests + existing browser/visual scripts; CI wiring of those smokes still
-   open. Security/PDS/explorer DTO allowlists landed.
+   unit tests + visual smoke CI (`.github/workflows/admin-ui-smoke.yml`,
+   2026-08-12 re-run green). Full browser smoke + remaining load/zoom cases
+   still manual. Security/PDS/explorer DTO allowlists + overview snapshot landed.
 
 Acceptance requires all six local packs to work without fleet credentials,
 bounded polling under a representative multi-actor database, no protocol-write

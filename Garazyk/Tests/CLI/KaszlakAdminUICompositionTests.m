@@ -24,6 +24,7 @@
     }
 
     XCTAssertTrue([source containsString:@"PDSAdminUIStartHost"]);
+    XCTAssertTrue([source containsString:@"GZPDSAdminSnapshot"]);
     XCTAssertTrue([source containsString:@"[adminUIHost stop]"]);
     XCTAssertTrue([source containsString:@"PDS admin UI available at"]);
 }
@@ -49,6 +50,7 @@
     XCTAssertTrue([source containsString:@"GZAdminUIDataExplorerPack"]);
     XCTAssertTrue([source containsString:@"GZAdminUIMSTPack"]);
     XCTAssertTrue([source containsString:@"GZAdminUILabPack"]);
+    XCTAssertTrue([source containsString:@"configureHost:adminHost snapshot:"]);
     XCTAssertTrue([source containsString:@"PDS_ADMIN_UI_PASSWORD"]);
     XCTAssertTrue([source containsString:@"PDS_ADMIN_PASSWORD_FILE"]);
     XCTAssertTrue([source containsString:@"PDS_ADMIN_PASSWORD"]);

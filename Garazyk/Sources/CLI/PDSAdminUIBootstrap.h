@@ -8,6 +8,7 @@
 #import <Foundation/Foundation.h>
 
 @class GZAdminUIHost;
+@protocol GZAdminUIPDSOverviewSnapshot;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -23,9 +24,12 @@ NSString * _Nullable PDSAdminUIResolvePassword(void);
  @discussion Binds to PDS_ADMIN_UI_HOST / PDS_ADMIN_UI_PORT (defaults
  127.0.0.1:2590). Points the backend client at the local protocol listener.
  Uses the same operator password for UI login and /admin/login token minting.
+ When @c overviewSnapshot is non-nil, attaches it for cheap local stats polls.
  Returns nil when password is unset (admin UI disabled) or on listen failure.
  */
-GZAdminUIHost * _Nullable PDSAdminUIStartHost(NSUInteger protocolPort,
-                                              NSError * _Nullable * _Nullable error);
+GZAdminUIHost * _Nullable PDSAdminUIStartHost(
+    NSUInteger protocolPort,
+    id<GZAdminUIPDSOverviewSnapshot> _Nullable overviewSnapshot,
+    NSError * _Nullable * _Nullable error);
 
 NS_ASSUME_NONNULL_END

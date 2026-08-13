@@ -59,8 +59,10 @@ NSString * _Nullable PDSAdminUIResolvePassword(void) {
     return PDSAdminUIEnv(@"PDS_ADMIN_PASSWORD");
 }
 
-GZAdminUIHost * _Nullable PDSAdminUIStartHost(NSUInteger protocolPort,
-                                              NSError * _Nullable * _Nullable error) {
+GZAdminUIHost * _Nullable PDSAdminUIStartHost(
+    NSUInteger protocolPort,
+    id<GZAdminUIPDSOverviewSnapshot> _Nullable overviewSnapshot,
+    NSError * _Nullable * _Nullable error) {
     NSString *password = PDSAdminUIResolvePassword();
     if (password.length == 0) {
         GZ_LOG_CORE_WARN(@"PDS admin UI disabled: set PDS_ADMIN_PASSWORD "
@@ -125,6 +127,10 @@ GZAdminUIHost * _Nullable PDSAdminUIStartHost(NSUInteger protocolPort,
         [[GZAdminUIHost alloc] initWithConfiguration:adminConfig packs:packs];
     if (![adminHost startWithError:error]) {
         return nil;
+    }
+
+    if (overviewSnapshot) {
+        [GZAdminUIPDSPack configureHost:adminHost snapshot:overviewSnapshot];
     }
 
     GZ_LOG_CORE_INFO(@"PDS admin UI listening on http://%@:%lu/admin", host,

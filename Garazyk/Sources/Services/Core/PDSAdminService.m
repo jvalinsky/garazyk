@@ -719,6 +719,40 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     if (recentSignups.count > 0) {
         stats[@"recent_signups_7d"] = recentSignups.firstObject[@"count"] ?: @0;
     }
+
+    // Active refresh-token sessions (COUNT only — no directory scans).
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    NSArray *sessions = [_database executeParameterizedQuery:
+                         @"SELECT COUNT(*) AS count FROM refresh_tokens "
+                         @"WHERE expires_at > ? AND next_token IS NULL"
+                                                          params:@[@(now)]
+                                                           error:nil];
+    if (sessions.count > 0) {
+        stats[@"sessions_active"] = sessions.firstObject[@"count"] ?: @0;
+    }
+
+    // Main service DB size via in-connection PRAGMA (not actor/blob trees).
+    NSArray *pageCount = [_database executeParameterizedQuery:@"PRAGMA page_count" params:@[] error:nil];
+    NSArray *pageSize = [_database executeParameterizedQuery:@"PRAGMA page_size" params:@[] error:nil];
+    NSArray *journal = [_database executeParameterizedQuery:@"PRAGMA journal_mode" params:@[] error:nil];
+    int64_t pages = [pageCount.firstObject[@"page_count"] longLongValue];
+    int64_t psz = [pageSize.firstObject[@"page_size"] longLongValue];
+    if (psz <= 0) {
+        psz = 4096;
+    }
+    NSMutableDictionary *database = [NSMutableDictionary dictionary];
+    database[@"storageBytes"] = @(pages * psz);
+    id mode = journal.firstObject[@"journal_mode"];
+    if (!mode) {
+        NSDictionary *row = journal.firstObject;
+        if ([row isKindOfClass:[NSDictionary class]] && row.count == 1) {
+            mode = row.allValues.firstObject;
+        }
+    }
+    if (mode) {
+        database[@"journalMode"] = [mode description];
+    }
+    stats[@"database"] = [database copy];
     
     return stats;
 }

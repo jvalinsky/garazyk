@@ -63,6 +63,8 @@
     "dashboard:dev": "cd scripts/scenario-dashboard && deno task dev",
     "dashboard:dev:agent": "cd scripts/scenario-dashboard && deno task dev:agent",
     "dashboard:tui": "cd scripts/scenario-dashboard && deno task tui",
+    "admin-ui:visual-smoke": "deno run -A scripts/admin_ui_visual_smoke_test.ts",
+    "admin-ui:browser-smoke": "deno run -A scripts/admin_ui_browser_smoke_test.ts",
     "admin-ui:chat-smoke": "deno run -A scripts/test/chat_admin_loopback_smoke.ts"
   }
 }

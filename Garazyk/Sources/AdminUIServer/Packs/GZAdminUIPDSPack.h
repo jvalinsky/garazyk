@@ -2,13 +2,24 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 #import "AdminUIServer/GZAdminUIPack.h"
+#import "AdminUIServer/GZAdminUIPDSOverviewSnapshot.h"
 
+@class GZAdminUIHost;
 @class GZAdminUIServiceConfig;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /** @abstract Admin UI pack for the PDS surface. */
 @interface GZAdminUIPDSPack : NSObject <GZAdminUIPack>
+
+/**
+ Attaches a local overview snapshot so @c /admin/partials/pds-stats can avoid
+ XRPC round-trips when embedded in kaszlak.
+ */
++ (void)configureHost:(GZAdminUIHost *)host snapshot:(id<GZAdminUIPDSOverviewSnapshot>)snapshot;
+
+/** @abstract Local overview snapshot for @c host, or nil when unset. */
++ (nullable id<GZAdminUIPDSOverviewSnapshot>)snapshotForHost:(GZAdminUIHost *)host;
 
 /** @abstract Renders the PDS account-search result. */
 + (NSString *)renderAccountsPartial:(NSDictionary *)result;

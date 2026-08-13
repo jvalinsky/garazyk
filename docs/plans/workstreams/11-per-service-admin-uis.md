@@ -333,14 +333,12 @@ Lab).
 
 ### M4 status (2026-08-12)
 
-**In progress.** Relay embed evidence is recorded in the Relay brief. Other
-service briefs track their own slices. PDS listener embed for the six existing
-packs landed in `kaszlak` on `main` (`bbc84dd4`): password-gated
-`127.0.0.1:2590`, service-scoped shell, Ozone server-composed overview, MST
-SVG viz, Data Explorer JSON viewer, and crimson `ui.garazyk.xyz` cutover —
-see [PDS](service-admin-uis/pds.md). Remaining PDS M4 gates (bounded overview
-snapshot / DTO allowlists, NixOS module examples, checked-in browser smoke,
-Lab scenario retarget) stay open there.
+**Chat, AppView, Relay, and PDS briefs closed 2026-08-12** (headline stats +
+lock/unlock + `admin-ui:chat-smoke`; Exceptions/Probe/Actor dig; live-event
+inspector fields; PDS snapshot + visual/browser smoke including 200% zoom).
+Remaining M4 surface is Mikrus / Beskid pack completion vs brief acceptance
+(see those briefs). Ozone remains embed-only if a standalone Ozone binary
+appears.
 
 | Binary | Execution brief |
 | --- | --- |

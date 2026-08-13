@@ -21,8 +21,10 @@ __attribute__((weak)) NSString * _Nullable PDSAdminUIResolvePassword(void) {
 
 __attribute__((weak)) GZAdminUIHost * _Nullable PDSAdminUIStartHost(
     NSUInteger protocolPort,
+    id<GZAdminUIPDSOverviewSnapshot> _Nullable overviewSnapshot,
     NSError * _Nullable * _Nullable error) {
     (void)protocolPort;
+    (void)overviewSnapshot;
     (void)error;
     return nil;
 }

@@ -899,6 +899,7 @@ int main(int argc, char *argv[]) {
       @"PDSControllerTests",
       @"PDSPLCIntegrationTests",
       @"PDSAdminServiceTests",
+      @"PDSAdminSnapshotTests",
       @"PDSAdminControllerTests",
       @"PDSBlobAuditManagerTests",
       @"PDSAdminAuthTests",
