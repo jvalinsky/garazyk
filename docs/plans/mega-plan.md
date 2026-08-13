@@ -582,12 +582,13 @@ for full traceability; mirrored in the
     closing that row for real). A macOS full regression run passes 4,955 tests;
     module boundary and recursive-setter gates are clean. Bounded RASL/BDASL
     and MASL slices are now implemented and merged to `main` (`da56aa18` and
-    `4bfd6a8a`) with focused verification; remaining open slices are the PFP
-    producer/Ozone wiring, S2PA claim/JUMBF embedding, and Web Tiles host
-    remainders. PDQ Hamming comparison; MUXL fragment/fMP4/flat; and S2PA
-    COSE + self-signed leaf certificate landed 2026-08-12. MUXL
-    playback sanity + opt-in transcoder bridge (`enableMUXLPresentation`)
-    completed Phase 9 on 2026-08-12.
+    `4bfd6a8a`) with focused verification; remaining open slices are S2PA
+    claim/JUMBF embedding and Web Tiles host remainders. Phase 8 PFP
+    producer (`ATProtoPFPProducer`) + Ozone `moderation_subjects.pfp` column
+    (V19) + Hamming match APIs completed 2026-08-12. PDQ Hamming comparison;
+    MUXL fragment/fMP4/flat; and S2PA COSE + self-signed leaf certificate
+    landed 2026-08-12. MUXL playback sanity + opt-in transcoder bridge
+    (`enableMUXLPresentation`) completed Phase 9 on 2026-08-12.
     GNUstep/Linux
     full-suite evidence remains open; the compile blocker (an XCTest
     object-pointer-boxing difference in `PDSAdminServiceTests.m` /
