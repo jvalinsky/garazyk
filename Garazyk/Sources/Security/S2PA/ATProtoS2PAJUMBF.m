@@ -5,6 +5,7 @@
 #import "Security/S2PA/ATProtoS2PALeafCertificate.h"
 #import "Security/S2PA/ATProtoS2PAHashDataAssertion.h"
 #import "Security/S2PA/ATProtoS2PAHashBMFFAssertion.h"
+#import "Security/S2PA/ATProtoS2PAClaim.h"
 #import <CommonCrypto/CommonDigest.h>
 #include <string.h>
 
@@ -525,6 +526,168 @@ bmffBoundToPresentation:(NSData *)presentation
         [ATProtoS2PAHashBMFFAssertion assertionFromCBOR:payload error:error];
     if (!assertion) return NO;
     if (![assertion verifyAgainstBMFFData:presentation error:error]) {
+        return NO;
+    }
+    return [self verifyUUIDBox:box
+               expectedPayload:payload
+                   expectedDID:expectedDID
+                         error:error];
+}
+
++ (nullable NSData *)manifestStoreWithAssertionStore:(NSData *)assertionStoreJUMBF
+                                           claimJUMBF:(NSData *)claimJUMBF
+                                           signature:(NSData *)signature
+                                        certificate:(NSData *)certificate
+                                              error:(NSError **)error {
+    if (![assertionStoreJUMBF isKindOfClass:[NSData class]] || assertionStoreJUMBF.length == 0 ||
+        ![claimJUMBF isKindOfClass:[NSData class]] || claimJUMBF.length == 0 ||
+        ![signature isKindOfClass:[NSData class]] || signature.length == 0 ||
+        ![certificate isKindOfClass:[NSData class]] || certificate.length == 0) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidArgument,
+                          @"assertion store, claim, signature, and certificate are required");
+        return nil;
+    }
+    NSData *sigContent = S2PAWriteOpaqueContent(kSigContentType, signature);
+    NSData *sigSuper = S2PAWriteJUMB(S2PAWriteJUMD(kC2PASignatureType, @"c2pa.signature"),
+                                     @[sigContent]);
+    NSData *certContent = S2PAWriteOpaqueContent(kCertContentType, certificate);
+    NSData *credSuper = S2PAWriteJUMB(S2PAWriteJUMD(kC2PACredentialType, @"c2pa.credentials"),
+                                      @[certContent]);
+    // Order: assertions, claim, signature, credentials — only last two use bidb.
+    NSData *manifest = S2PAWriteJUMB(S2PAWriteJUMD(kC2PAStoreType, @"c2pa"),
+                                     @[assertionStoreJUMBF, claimJUMBF, sigSuper, credSuper]);
+    return S2PAWriteJUMB(S2PAWriteJUMD(kC2PAStoreType, @"c2pa"), @[manifest]);
+}
+
+/** Find first jumb under the store with the given jumd label (iterative DFS). */
+static NSData *S2PAFindLabeledJUMB(NSData *store, NSString *wantLabel, NSError **error) {
+    if (store.length < 8) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidStructure, @"store truncated");
+        return nil;
+    }
+    NSMutableArray<NSValue *> *stack = [NSMutableArray array];
+    const uint8_t *root = store.bytes;
+    [stack addObject:[NSValue valueWithRange:NSMakeRange(0, store.length)]];
+    while (stack.count > 0) {
+        NSRange range = stack.lastObject.rangeValue;
+        [stack removeLastObject];
+        const uint8_t *b = root + range.location;
+        NSUInteger len = range.length;
+        NSUInteger offset = 0;
+        while (offset + 8 <= len) {
+            uint32_t size = S2PAReadUInt32BE(b + offset);
+            if (size < 8 || offset + size > len) {
+                S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidStructure,
+                                  @"invalid box while locating labelled jumb");
+                return nil;
+            }
+            if (memcmp(b + offset + 4, "jumb", 4) == 0) {
+                if (size >= 16) {
+                    uint32_t jumdSize = S2PAReadUInt32BE(b + offset + 8);
+                    if (jumdSize >= 8 && 8 + jumdSize <= size &&
+                        memcmp(b + offset + 12, "jumd", 4) == 0) {
+                        const uint8_t *jumdBody = b + offset + 16;
+                        NSUInteger jumdBodyLen = jumdSize - 8;
+                        if (jumdBodyLen >= 18 && (jumdBody[16] & 0x02) != 0) {
+                            NSUInteger start = 17;
+                            NSUInteger end = start;
+                            while (end < jumdBodyLen && jumdBody[end] != 0) end++;
+                            if (end < jumdBodyLen) {
+                                NSString *label =
+                                    [[NSString alloc] initWithBytes:jumdBody + start
+                                                             length:end - start
+                                                           encoding:NSUTF8StringEncoding];
+                                if ([label isEqualToString:wantLabel]) {
+                                    return [NSData dataWithBytes:b + offset length:size];
+                                }
+                            }
+                        }
+                    }
+                }
+                [stack addObject:[NSValue valueWithRange:NSMakeRange(range.location + offset + 8,
+                                                                     size - 8)]];
+            }
+            offset += size;
+        }
+    }
+    S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidStructure,
+                      @"labelled jumb not found in store");
+    return nil;
+}
+
++ (nullable NSData *)uuidBoxSigningAssertions:(NSArray *)assertions
+                                   instanceID:(NSString *)instanceID
+                               generatorName:(NSString *)generatorName
+                                 withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                         did:(nullable NSString *)did
+                                   notBefore:(NSDate *)notBefore
+                                    notAfter:(NSDate *)notAfter
+                                       error:(NSError **)error {
+    if (![assertions isKindOfClass:[NSArray class]] || assertions.count == 0 ||
+        instanceID.length == 0 || generatorName.length == 0 || !keyPair) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidArgument,
+                          @"assertions, instanceID, generatorName, and keyPair are required");
+        return nil;
+    }
+    for (id obj in assertions) {
+        if (![obj isKindOfClass:[ATProtoS2PAStoredAssertion class]]) {
+            S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidArgument,
+                              @"assertions must be ATProtoS2PAStoredAssertion instances");
+            return nil;
+        }
+    }
+    ATProtoS2PAClaimGeneratorInfo *info =
+        [ATProtoS2PAClaimGeneratorInfo infoWithName:generatorName
+                                            version:@"0.1"
+                                        specVersion:@"2.2"];
+    ATProtoS2PAClaim *claim = [ATProtoS2PAClaim claimWithAssertions:assertions
+                                                         instanceID:instanceID
+                                                     generatorInfo:info
+                                                             title:nil
+                                                             error:error];
+    if (!claim) return nil;
+    NSData *claimCBOR = [claim encodeCBOR:error];
+    if (!claimCBOR) return nil;
+    NSData *assertionStore = [ATProtoS2PAClaim assertionStoreJUMBFWithAssertions:assertions
+                                                                           error:error];
+    if (!assertionStore) return nil;
+    NSData *claimBox = [ATProtoS2PAClaim claimJUMBFWithCBOR:claimCBOR error:error];
+    if (!claimBox) return nil;
+    NSData *cose = [ATProtoS2PACOSE signPayload:claimCBOR withKeyPair:keyPair error:error];
+    if (!cose) return nil;
+    NSData *leaf = [ATProtoS2PALeafCertificate certificateWithKeyPair:keyPair
+                                                                  did:did
+                                                            notBefore:notBefore
+                                                             notAfter:notAfter
+                                                                error:error];
+    if (!leaf) return nil;
+    NSData *store = [self manifestStoreWithAssertionStore:assertionStore
+                                                claimJUMBF:claimBox
+                                                signature:cose
+                                             certificate:leaf
+                                                   error:error];
+    if (!store) return nil;
+    return [self bmffUUIDBoxWithManifestStore:store error:error];
+}
+
++ (BOOL)verifyUUIDBoxClaimBound:(NSData *)box
+                    expectedDID:(nullable NSString *)expectedDID
+                          error:(NSError **)error {
+    NSData *store = [self manifestStoreFromBMFFUUIDBox:box error:error];
+    if (!store) return NO;
+    NSData *signature = nil;
+    NSData *certificate = nil;
+    if (![self extractSignature:&signature certificate:&certificate
+              fromManifestStore:store error:error]) {
+        return NO;
+    }
+    NSData *payload = [ATProtoS2PACOSE payloadFromEnvelope:signature error:error];
+    if (!payload) return NO;
+    ATProtoS2PAClaim *claim = [ATProtoS2PAClaim claimFromCBOR:payload error:error];
+    if (!claim) return NO;
+    NSData *assertionStore = S2PAFindLabeledJUMB(store, ATProtoS2PAAssertionStoreLabel, error);
+    if (!assertionStore) return NO;
+    if (![claim verifyHashedURIsAgainstAssertionStore:assertionStore error:error]) {
         return NO;
     }
     return [self verifyUUIDBox:box

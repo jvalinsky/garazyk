@@ -46,9 +46,9 @@ bounded document, identifier, media, COSE, and data-protocol/policy slices; Phas
 (PFP producer + Ozone column) and Phase 9 (MUXL) are complete. Phase 10 S2PA has
 COSE + leaf + JUMBF uuid + SHA-256 hard binding + `c2pa.hash.data` assertion
 (2026-08-13); `c2pa.hash.bmff.v3` root-box hashing + `c2pa.soft-binding` encode
-landed 2026-08-13; soft-binding algorithms, Merkle bmffHash, full
-claim/assertion-store graph and Video/MUXL producer wiring remain open. Phase 7
-production paths remain open.
+landed 2026-08-13; claim-map-v2 + assertion store landed 2026-08-13;
+ingredient claims, soft-binding algorithms, Merkle bmffHash, and
+Video/MUXL producer wiring remain open. Phase 7 production paths remain open.
 Phase 11 mothership resolve-path + getBlob load landed 2026-08-13; Deno
 `@dasl/tiles` / live embed remainders remain open.
 
@@ -381,6 +381,11 @@ uuid box. Merkle trees, nested xpath, and the full claim/assertion-store graph
 remain open. **`c2pa.soft-binding` (2026-08-13):**
 `ATProtoS2PASoftBindingAssertion` encodes/decodes alg + blocks (value + optional
 timespan scope); does not run watermark/fingerprint algorithms.
+**Claim + assertion store (2026-08-13):** `ATProtoS2PAClaim` builds
+`c2pa.claim.v2` with `created_assertions` hashed URIs, a `c2pa.assertions`
+JUMBF store (`cbor` content boxes), and JUMBF claim-bound sign/verify
+(`uuidBoxSigningAssertions:` / `verifyUUIDBoxClaimBound:`). Ingredient claims,
+gathered/redacted assertions, and Merkle remain open.
 
 - Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope, leaf certificate, and
   JUMBF/BMFF carrier; it consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository
@@ -389,10 +394,11 @@ timespan scope); does not run watermark/fingerprint algorithms.
   `ATProtoS2PAHashDataAssertionTests` (empty exclusion, prefix exclusion ≡ media-only digest,
   JUMBF sign/verify), `ATProtoS2PAHashBMFFAssertionTests` (uuid exclusion + CBOR
   round-trip, tamper detect, two-pass JUMBF sign/verify),
-  `ATProtoS2PASoftBindingAssertionTests`, and `ATProtoS2PAJUMBFTests`.
+  `ATProtoS2PASoftBindingAssertionTests`, `ATProtoS2PAClaimTests` (multi-assertion
+  hashed URIs + claim-bound JUMBF sign/verify), and `ATProtoS2PAJUMBFTests`.
   All registered in `Tests/test_main.m`.
-- Explicit remainder: full C2PA claim generator / assertion store (multiple assertions, ingredient
-  claims), soft-binding algorithm compute/verify, Merkle `bmffHash`, and transcoder auto-sign
+- Explicit remainder: ingredient claims, gathered/redacted assertions,
+  soft-binding algorithm compute/verify, Merkle `bmffHash`, and transcoder auto-sign
   remain open.
   **MUXL producer wiring (2026-08-13):**
   `ATProtoMUXLPlayback` `presentationByHardBindingSegment:` /
