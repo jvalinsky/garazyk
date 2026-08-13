@@ -79,4 +79,49 @@
     XCTAssertEqual(error.code, ATProtoS2PAJUMBFErrorVerificationFailed);
 }
 
+- (void)testHardBindingDigestIsSHA256OfMedia {
+    NSData *media = [@"muxl-canonical-bytes" dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *error = nil;
+    NSData *digest = [ATProtoS2PAJUMBF hardBindingSHA256ForMediaData:media error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqual(digest.length, (NSUInteger)32);
+    NSData *again = [ATProtoS2PAJUMBF hardBindingSHA256ForMediaData:media error:nil];
+    XCTAssertEqualObjects(digest, again);
+    XCTAssertNil([ATProtoS2PAJUMBF hardBindingSHA256ForMediaData:[NSData data] error:&error]);
+    XCTAssertEqual(error.code, ATProtoS2PAJUMBFErrorInvalidArgument);
+}
+
+- (void)testHardBindingPresentationAndVerify {
+    ATProtoSecp256k1KeyPair *pair = [self testKeyPair];
+    NSData *media = [NSData dataWithBytes:(const uint8_t[]){0x01, 0x02, 0x03, 0x04} length:4];
+    NSDate *notBefore = [NSDate dateWithTimeIntervalSince1970:1700000000];
+    NSDate *notAfter = [NSDate dateWithTimeIntervalSince1970:1800000000];
+    NSError *error = nil;
+    NSData *presentation =
+        [ATProtoS2PAJUMBF presentationHardBindingMediaData:media
+                                              withKeyPair:pair
+                                                      did:nil
+                                                notBefore:notBefore
+                                                 notAfter:notAfter
+                                                    error:&error];
+    XCTAssertNotNil(presentation);
+    XCTAssertTrue(presentation.length > media.length);
+    XCTAssertEqualObjects([presentation subdataWithRange:NSMakeRange(presentation.length - media.length,
+                                                                     media.length)],
+                          media);
+
+    NSData *box = [presentation subdataWithRange:NSMakeRange(0, presentation.length - media.length)];
+    XCTAssertTrue([ATProtoS2PAJUMBF verifyUUIDBox:box
+                            hardBoundToMediaData:media
+                                    expectedDID:pair.didKeyString
+                                          error:&error]);
+
+    NSData *tampered = [NSData dataWithBytes:(const uint8_t[]){0x01, 0x02, 0x03, 0xff} length:4];
+    XCTAssertFalse([ATProtoS2PAJUMBF verifyUUIDBox:box
+                             hardBoundToMediaData:tampered
+                                     expectedDID:nil
+                                           error:&error]);
+    XCTAssertEqual(error.code, ATProtoS2PAJUMBFErrorVerificationFailed);
+}
+
 @end

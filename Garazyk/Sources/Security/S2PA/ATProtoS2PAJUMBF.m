@@ -3,6 +3,7 @@
 #import "Security/S2PA/ATProtoS2PAJUMBF.h"
 #import "Security/S2PA/ATProtoS2PACOSE.h"
 #import "Security/S2PA/ATProtoS2PALeafCertificate.h"
+#import <CommonCrypto/CommonDigest.h>
 #include <string.h>
 
 NSString * const ATProtoS2PAJUMBFErrorDomain = @"com.atproto.s2pa.jumbf";
@@ -317,6 +318,68 @@ static BOOL S2PACollectBidbPayloads(const uint8_t *bytes, NSUInteger length,
     NSMutableData *out = [uuidBox mutableCopy];
     [out appendData:mediaData];
     return out;
+}
+
++ (nullable NSData *)hardBindingSHA256ForMediaData:(NSData *)mediaData
+                                            error:(NSError **)error {
+    if (![mediaData isKindOfClass:[NSData class]] || mediaData.length == 0) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidArgument,
+                          @"S2PA hard binding requires non-empty media bytes");
+        return nil;
+    }
+    uint8_t digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(mediaData.bytes, (CC_LONG)mediaData.length, digest);
+    return [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
+}
+
++ (nullable NSData *)uuidBoxHardBindingMediaData:(NSData *)mediaData
+                                    withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                            did:(nullable NSString *)did
+                                      notBefore:(NSDate *)notBefore
+                                       notAfter:(NSDate *)notAfter
+                                          error:(NSError **)error {
+    NSData *digest = [self hardBindingSHA256ForMediaData:mediaData error:error];
+    if (!digest) {
+        return nil;
+    }
+    return [self uuidBoxSigningPayload:digest
+                          withKeyPair:keyPair
+                                  did:did
+                            notBefore:notBefore
+                             notAfter:notAfter
+                                error:error];
+}
+
++ (BOOL)verifyUUIDBox:(NSData *)box
+ hardBoundToMediaData:(NSData *)mediaData
+          expectedDID:(nullable NSString *)expectedDID
+                error:(NSError **)error {
+    NSData *digest = [self hardBindingSHA256ForMediaData:mediaData error:error];
+    if (!digest) {
+        return NO;
+    }
+    return [self verifyUUIDBox:box
+               expectedPayload:digest
+                   expectedDID:expectedDID
+                         error:error];
+}
+
++ (nullable NSData *)presentationHardBindingMediaData:(NSData *)mediaData
+                                          withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                  did:(nullable NSString *)did
+                                            notBefore:(NSDate *)notBefore
+                                             notAfter:(NSDate *)notAfter
+                                                error:(NSError **)error {
+    NSData *box = [self uuidBoxHardBindingMediaData:mediaData
+                                       withKeyPair:keyPair
+                                               did:did
+                                         notBefore:notBefore
+                                          notAfter:notAfter
+                                             error:error];
+    if (!box) {
+        return nil;
+    }
+    return [self presentationWithUUIDBox:box mediaData:mediaData error:error];
 }
 
 @end

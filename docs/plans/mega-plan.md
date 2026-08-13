@@ -482,45 +482,22 @@ remaining program does not depend on items 1-2.
    Round-trip, empty-tree, malformed-input, and STAR→CAR conversion tests
    added (6 new test methods). All 20 STARPreorderTests pass.
 
-10. **Open (re-verified 2026-08-04):** make the ten `ATProto*` static-library
-    boundaries real and publish them as a bounded, experimental CMake config
-    package. Complete
+10. **Complete for M5–M7 + M6 package (updated 2026-08-13):** make the ten
+    `ATProto*` static-library boundaries real and publish them as a bounded,
+    experimental CMake config package. Complete
     [workstream 08](workstreams/08-module-boundaries-and-library-consumption.md).
-    M1-M4 are complete: `scripts/check_module_boundaries.sh build` reports **0
-    current / 0 baselined** violations across all ten modules and
-    `docs/module-boundary-baseline.txt` is empty, meeting M4's zero-baseline
-    acceptance gate. M5 (namespace the exported symbols) is the active
-    milestone — first step is the shrink-only namespace gate over the ~283
-    unprefixed classes; M5.3's first rename batch (internal migration
-    classes, the low-risk pilot) is complete and batch 2 (Core primitives)
-    is complete in full (all ~25 classes renamed, including `CID` at 265
-    consumers, the largest single rename in the workstream),
-    and batch 3a (the low-consumer half of Storage/Transport, 14 classes,
-    `92395144`) is complete. Batch 3b's Storage slice (17 higher-consumer
-    classes) is also complete, ratcheting the namespace baseline
-    283 → 253 → 249 → 238 → 234 → 232 → 231 → 230 → 229 → 228 → 214 → 197
-    → 191 → 175. Batch 3b (the remaining higher-consumer Storage/Transport
-    classes) is complete. M4.5 is also complete: all thirteen module source
-    sets are explicit manifests with configure-time ownership checks. Focused
-    Core/Storage/Transport builds, the post-Admin-UI native `AllTests` build,
-    and all namespace/module-boundary checks pass; the full gated suite is
-    still incomplete. The GNUstep Docker builder stopped before compilation
-    when OrbStack ran out of storage copying the source context. Batches 4-6
-    (PLC/Sync/Services/MediaCore, XRPC/VideoService,
-    Runtime) remain open.
-    **M7 is now
-    complete (2026-08-04):** the remaining host-process `exit()`/`abort()`
-    calls in `PDSApplication.m`/`PDSCLIServeCommand.m`/
-    `PDSCLIDaemonCommand.m` and the installer's hard-coded
-    `/var/db/kaszlak/log/daemon.log` fallback are fixed, `ATProtoSafeHTTPClient`/
-    `GZMetrics` were found already injectable via `ATProtoServiceContainer`,
-    and a new CI gate (`scripts/check_no_host_process_exit.sh`) rejects new
-    `exit()`/`abort()` calls in package-target sources; see workstream 08's
-    "M7 residual cleanup complete" section. M6 (relocatable install/export)
-    remains open. M0 is
-    answered yes for source-built static libraries on macOS and GNUstep/Linux;
-    prebuilt binaries, Apple frameworks/XCFrameworks, iOS, and package
-    registries remain out of scope.
+    M1–M4: module-boundary gate **0/0**. M4.5: explicit source manifests.
+    M5: namespace gate **0** unprefixed classes (batches 1–7 + M5.4, 2026-08-12).
+    M6.1–M6.5: relocatable `Garazyk::` CMake package on macOS + GNUstep
+    consumer smoke (`scripts/test/package-consumer-smoke.sh`,
+    `scripts/test/gnustep-package-dasl-evidence.sh`, 2026-08-12). M7:
+    host-process exit cleanup + CI gate. **Out of scope (do not reopen here):**
+    JSR/npm package-registry publication, prebuilt binaries, Apple
+    frameworks/XCFrameworks, CocoaPods, SwiftPM, iOS.
+
+    Residual watch (not blocking M6): full GNUstep `AllTests` flake profile
+    and CI apt toolchain truthfulness notes remain in the workstream; they do
+    not reopen package export.
 
     **GNUstep/Linux CI truthfulness (2026-08-04, P0 finding):** `ci.yml`'s
     `linux-gnustep-build-and-test` job has never been able to compile this
@@ -582,8 +559,10 @@ for full traceability; mirrored in the
     closing that row for real). A macOS full regression run passes 4,955 tests;
     module boundary and recursive-setter gates are clean. Bounded RASL/BDASL
     and MASL slices are now implemented and merged to `main` (`da56aa18` and
-    `4bfd6a8a`) with focused verification; remaining open slices are S2PA
-    claim/JUMBF embedding and Web Tiles host remainders. Phase 8 PFP
+    `4bfd6a8a`) with focused verification; remaining open slices are full
+    C2PA claim/assertion schema + Video/MUXL producer wiring (SHA-256
+    hard-binding helpers landed 2026-08-13) and Web Tiles host remainders.
+    Phase 8 PFP
     producer (`ATProtoPFPProducer`) + Ozone `moderation_subjects.pfp` column
     (V19) + Hamming match APIs completed 2026-08-12. PDQ Hamming comparison;
     MUXL fragment/fMP4/flat; and S2PA COSE + self-signed leaf certificate
@@ -672,8 +651,8 @@ for full traceability; mirrored in the
     `JELCZ_STREAMPLACE_SERVE_COMPAT`. Lab:
     [Streamplace and jelcz peership lab](../20-explanation/guides/streamplace-jelcz-peership-lab.md).
 
-16. **Open (updated 2026-08-13):** jelcz P2P peership — Phases 0–2 + ADR 0038
-    done; Phase 3 remote-PDS origin announce next; iroh sidecar blocked on
+16. **Open (updated 2026-08-13):** jelcz P2P peership — Phases 0–3 + ADR 0038
+    done (HTTPS mesh + remote-PDS origin announce); iroh sidecar blocked on
     production CA VOD evidence. Complete
     [workstream 16](workstreams/16-jelcz-p2p-peership.md). Decision:
     [ADR 0038](../adr/0038-jelcz-p2p-layering.md).
