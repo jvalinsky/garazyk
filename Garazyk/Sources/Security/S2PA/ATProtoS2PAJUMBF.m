@@ -3,6 +3,7 @@
 #import "Security/S2PA/ATProtoS2PAJUMBF.h"
 #import "Security/S2PA/ATProtoS2PACOSE.h"
 #import "Security/S2PA/ATProtoS2PALeafCertificate.h"
+#import "Security/S2PA/ATProtoS2PAHashDataAssertion.h"
 #import <CommonCrypto/CommonDigest.h>
 #include <string.h>
 
@@ -358,10 +359,69 @@ static BOOL S2PACollectBidbPayloads(const uint8_t *bytes, NSUInteger length,
     if (!digest) {
         return NO;
     }
+    // Prefer raw digest path when COSE payload is exactly 32 bytes.
+    NSData *store = [self manifestStoreFromBMFFUUIDBox:box error:error];
+    if (!store) return NO;
+    NSData *signature = nil;
+    NSData *certificate = nil;
+    if (![self extractSignature:&signature certificate:&certificate
+              fromManifestStore:store error:error]) {
+        return NO;
+    }
+    NSData *payload = [ATProtoS2PACOSE payloadFromEnvelope:signature error:error];
+    if (!payload) return NO;
+    if (payload.length == CC_SHA256_DIGEST_LENGTH) {
+        return [self verifyUUIDBox:box
+                   expectedPayload:digest
+                       expectedDID:expectedDID
+                             error:error];
+    }
+    ATProtoS2PAHashDataAssertion *assertion =
+        [ATProtoS2PAHashDataAssertion assertionFromCBOR:payload error:error];
+    if (!assertion) return NO;
+    if (![assertion verifyAgainstData:mediaData error:error]) {
+        // MUXL prepend: assertion may exclude leading uuid over the full presentation.
+        if (assertion.exclusions.count == 1) {
+            ATProtoS2PAHashDataExclusion *ex = assertion.exclusions.firstObject;
+            if (ex.start == 0 && ex.length > 0) {
+                NSMutableData *presentation = [box mutableCopy];
+                [presentation appendData:mediaData];
+                if ([assertion verifyAgainstData:presentation error:error]) {
+                    // Still need leaf + COSE verify via expected payload path.
+                    return [self verifyUUIDBox:box
+                               expectedPayload:payload
+                                   expectedDID:expectedDID
+                                         error:error];
+                }
+            }
+        }
+        return NO;
+    }
     return [self verifyUUIDBox:box
-               expectedPayload:digest
+               expectedPayload:payload
                    expectedDID:expectedDID
                          error:error];
+}
+
++ (nullable NSData *)uuidBoxSigningHashDataAssertionForMediaData:(NSData *)mediaData
+                                                     withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                             did:(nullable NSString *)did
+                                                       notBefore:(NSDate *)notBefore
+                                                        notAfter:(NSDate *)notAfter
+                                                           error:(NSError **)error {
+    ATProtoS2PAHashDataAssertion *assertion =
+        [ATProtoS2PAHashDataAssertion assertionHardBindingMediaData:mediaData
+                                                              name:ATProtoS2PAHashDataAssertionLabel
+                                                             error:error];
+    if (!assertion) return nil;
+    NSData *cbor = [assertion encodeCBOR:error];
+    if (!cbor) return nil;
+    return [self uuidBoxSigningPayload:cbor
+                          withKeyPair:keyPair
+                                  did:did
+                            notBefore:notBefore
+                             notAfter:notAfter
+                                error:error];
 }
 
 + (nullable NSData *)presentationHardBindingMediaData:(NSData *)mediaData

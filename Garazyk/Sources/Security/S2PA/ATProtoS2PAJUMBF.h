@@ -109,12 +109,24 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAJUMBFErrorCode) {
                                           error:(NSError **)error;
 
 /**
- Verifies a uuid box whose COSE payload is the SHA-256 of @c mediaData.
+ Verifies a uuid box whose COSE payload is either a raw SHA-256 digest or a
+ @c c2pa.hash.data assertion CBOR map hard-bound to @c mediaData.
  */
 + (BOOL)verifyUUIDBox:(NSData *)box
  hardBoundToMediaData:(NSData *)mediaData
           expectedDID:(nullable NSString *)expectedDID
                 error:(NSError **)error;
+
+/**
+ Signs a @c c2pa.hash.data assertion (empty exclusions over @c mediaData) and
+ returns the BMFF uuid box.
+ */
++ (nullable NSData *)uuidBoxSigningHashDataAssertionForMediaData:(NSData *)mediaData
+                                                     withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                             did:(nullable NSString *)did
+                                                       notBefore:(NSDate *)notBefore
+                                                        notAfter:(NSDate *)notAfter
+                                                           error:(NSError **)error;
 
 /**
  Hard-binds + prepends: uuid box over SHA-256(media) then media bytes.
