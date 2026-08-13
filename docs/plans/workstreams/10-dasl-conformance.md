@@ -44,7 +44,8 @@ streaming verifier, range mapper, and verified HTTP range integration that keeps
 caller-supplied. Phases 7–11 are
 bounded document, identifier, media, COSE, and data-protocol/policy slices; Phase 8
 (PFP producer + Ozone column) and Phase 9 (MUXL) are complete. Phase 10 S2PA has
-COSE + leaf + JUMBF uuid + SHA-256 hard binding (2026-08-13); full claim schema and
+COSE + leaf + JUMBF uuid + SHA-256 hard binding + `c2pa.hash.data` assertion
+(2026-08-13); full claim/assertion-store graph and
 Video/MUXL producer wiring remain open. Phase 7 production paths and Phase 11
 explicit production integration remainders remain open.
 
@@ -367,21 +368,25 @@ the uuid box onto unchanged media bytes for MUXL-style presentation.
 (uuid carrier excluded by construction); `uuidBoxHardBindingMediaData:` /
 `verifyUUIDBox:hardBoundToMediaData:` / `presentationHardBindingMediaData:` sign and check that
 digest as the COSE payload — the MUXL-friendly “hash then prepend” path.
+**`c2pa.hash.data` (2026-08-13):** `ATProtoS2PAHashDataAssertion` encodes/decodes the CBOR
+assertion (`alg`/`hash`/`exclusions`/`name`), hashes with ordered non-overlapping exclusion
+ranges, and `uuidBoxSigningHashDataAssertionForMediaData:` signs the assertion map as the COSE
+payload. Soft bindings, `bmffHash`, and the full claim/assertion-store graph remain open.
 
 - Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope, leaf certificate, and
   JUMBF/BMFF carrier; it consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository
   signatures, auth JWTs, or the Video transcoder path.
-- Evidence: `ATProtoS2PACOSETests`, `ATProtoS2PALeafCertificateTests`, and `ATProtoS2PAJUMBFTests`
-  (uuid round-trip + verify, presentation prepend, tampered-payload rejection, hard-binding
-  digest + presentation/verify + tamper). All registered in `Tests/test_main.m`.
-- Explicit remainder: the full C2PA claim/assertion schema (`c2pa.hash.data` exclusion maps, etc.)
-  remains open. **MUXL producer wiring (2026-08-13):**
+- Evidence: `ATProtoS2PACOSETests`, `ATProtoS2PALeafCertificateTests`,
+  `ATProtoS2PAHashDataAssertionTests` (empty exclusion, prefix exclusion ≡ media-only digest,
+  JUMBF sign/verify), and `ATProtoS2PAJUMBFTests`. All registered in `Tests/test_main.m`.
+- Explicit remainder: full C2PA claim generator / assertion store (multiple assertions, ingredient
+  claims, soft bindings) and transcoder auto-sign remain open.
+  **MUXL producer wiring (2026-08-13):**
   `ATProtoMUXLPlayback` `presentationByHardBindingSegment:` /
   `verifyHardBoundPresentation:` prepends/verifies S2PA uuid over a canonical
   MUXL segment; `canonicalSegmentsFromPresentation:` recovers the unchanged
   segment (C2PA uuid skipped). Evidence: `ATProtoMUXLPlaybackTests`
-  `testS2PAHardBindingPreservesCanonicalMUXL`. Full claim schema and transcoder
-  auto-sign remain out of this slice.
+  `testS2PAHardBindingPreservesCanonicalMUXL`.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
   paths are unchanged.
 
