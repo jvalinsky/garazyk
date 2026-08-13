@@ -1,10 +1,17 @@
 ---
 phase: 33
 title: S2PA soft-binding algorithm compute and verify
-status: pending
+status: complete
 agent: worker
 depends_on: []
 ---
+
+## Progress
+
+Completed 2026-08-13: Soft Binding Algorithm List entry
+`com.joinmonolith.sha256` (exact SHA-256 over supplied bytes; timespan selects
+block; ROI out of scope). Compute/verify APIs + claim hard+soft evidence;
+transcoder auto-sign remains hard-bind-only and default OFF.
 
 # Phase 33: Soft-binding algorithm compute / verify
 
@@ -28,66 +35,23 @@ match path, without substituting soft bindings for hard bindings. Workstream
   `alg-params`
 - Claim store can already carry soft-binding CBOR as a stored assertion
 
-## Blocked on (Slice 1 only)
+## Slices (landed)
 
-A recorded algorithm choice: pick an entry from the C2PA Soft Binding
-Algorithm List, **or** an explicit lab-only identifier with a short ADR /
-WS10 note that it is non-interoperable. Do not treat the test string `phash`
-as normative.
-
-Until Slice 1 lands a decision in the workstream (or ADR), do not invent
-compute code for a fake algorithm id.
-
-## Slices
-
-### Slice 1 — Algorithm decision
-
-Write the choice into WS10 (and ADR if lab-only). Name the `alg` string and
-what media inputs are supported (bytes, optional timespan).
-
-**Acceptance:** workstream paragraph exists; this phase unblocked for Slice 2.
-
-### Slice 2 — Compute API
-
-`+computeValueForData:timespan:algParams:error:` (names flexible) producing
-block `value` bytes.
-
-**Acceptance:** deterministic fixture → stable value.
-
-### Slice 3 — Verify / match API
-
-Compare computed/extracted value to assertion blocks (exact match or
-algorithm-defined tolerance — document which).
-
-**Acceptance:** match + mismatch tests.
-
-### Slice 4 — Params / metadata as needed
-
-Only if the chosen algo requires them: `alg-params`, `bindingMetadata`.
-Otherwise skip.
-
-### Slice 5 — Region scope
-
-Implement `scope.region` **or** mark ROI out of scope in WS10. Timespan-only
-is acceptable if documented.
-
-### Slice 6 — Claim-store integration
-
-Multi-assertion claim with hard binding **plus** soft binding; soft binding
-must not be treated as the hard binding.
-
-**Acceptance:** claim-bound test; hard-binding still required separately.
-
-### Slice 7 — No production auto-enable
-
-Confirm transcoder / VideoWorker do **not** enable soft-binding by default.
-Plan evidence in WS10.
+1. Algorithm decision: `com.joinmonolith.sha256` in WS10 (not lab-only; ADR not
+   required). Test string `phash` non-normative.
+2. Compute: `+computeValueForData:alg:algParams:error:` /
+   `+assertionMonolithSHA256ForData:timespan:name:error:`
+3. Verify: `-verifyAgainstData:timespan:error:` exact match
+4. Params: none required for this alg
+5. ROI: out of scope in WS10
+6. Claim hard + soft: `ATProtoS2PASoftBindingAssertionTests` /
+   `ATProtoS2PAClaimTests`
+7. No production soft auto-enable: `enableS2PAAutoSign` hard-bind only, default OFF
 
 ## Out of scope
 
 - Replacing hard bindings with soft bindings
-- Watermark embedding into media bitstreams (unless the chosen algo is exactly
-  that and is scoped in Slice 1)
+- Watermark embedding / `scope.region`
 - Merkle / ingredient / tiles / iroh
 
 ## Acceptance gate

@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Security/S2PA/ATProtoS2PASoftBindingAssertion.h"
 #import "Core/CBOR.h"
+#import <CommonCrypto/CommonDigest.h>
 
 NSString * const ATProtoS2PASoftBindingAssertionErrorDomain = @"com.atproto.s2pa.softbinding";
 NSString * const ATProtoS2PASoftBindingAssertionLabel = @"c2pa.soft-binding";
+NSString * const ATProtoS2PASoftBindingAlgorithmMonolithSHA256 = @"com.joinmonolith.sha256";
 
 static NSError *S2PASoftErr(ATProtoS2PASoftBindingAssertionErrorCode code, NSString *message) {
     return [NSError errorWithDomain:ATProtoS2PASoftBindingAssertionErrorDomain
@@ -31,6 +33,10 @@ static ATProtoCBORValue *S2PAUInt(NSUInteger v) {
     t.start = start;
     t.end = end;
     return t;
+}
+- (BOOL)isEqualToTimespan:(ATProtoS2PASoftBindingTimespan *)other {
+    if (!other) return NO;
+    return self.start == other.start && self.end == other.end;
 }
 @end
 
@@ -65,6 +71,80 @@ static ATProtoCBORValue *S2PAUInt(NSUInteger v) {
         _algParams = [algParams copy];
     }
     return self;
+}
+
++ (nullable NSData *)computeValueForData:(NSData *)data
+                                     alg:(NSString *)alg
+                               algParams:(NSData *)algParams
+                                   error:(NSError **)error {
+    (void)algParams;
+    if (![data isKindOfClass:[NSData class]] || data.length == 0) {
+        S2PASoftSetErr(error, ATProtoS2PASoftBindingAssertionErrorInvalidArgument,
+                       @"soft-binding compute requires non-empty media bytes");
+        return nil;
+    }
+    if (![alg isEqualToString:ATProtoS2PASoftBindingAlgorithmMonolithSHA256]) {
+        S2PASoftSetErr(error, ATProtoS2PASoftBindingAssertionErrorUnsupportedAlgorithm,
+                       @"only com.joinmonolith.sha256 soft-binding compute is supported");
+        return nil;
+    }
+    uint8_t digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
+    return [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
+}
+
++ (nullable instancetype)assertionMonolithSHA256ForData:(NSData *)data
+                                               timespan:(ATProtoS2PASoftBindingTimespan *)timespan
+                                                   name:(NSString *)name
+                                                  error:(NSError **)error {
+    NSData *value = [self computeValueForData:data
+                                          alg:ATProtoS2PASoftBindingAlgorithmMonolithSHA256
+                                    algParams:nil
+                                        error:error];
+    if (!value) return nil;
+    ATProtoS2PASoftBindingBlock *block =
+        [ATProtoS2PASoftBindingBlock blockWithValue:value timespan:timespan];
+    return [[self alloc] initWithAlg:ATProtoS2PASoftBindingAlgorithmMonolithSHA256
+                              blocks:@[block]
+                                name:name
+                           algParams:nil];
+}
+
+- (BOOL)verifyAgainstData:(NSData *)data
+                 timespan:(ATProtoS2PASoftBindingTimespan *)timespan
+                    error:(NSError **)error {
+    if (![self.alg isEqualToString:ATProtoS2PASoftBindingAlgorithmMonolithSHA256]) {
+        S2PASoftSetErr(error, ATProtoS2PASoftBindingAssertionErrorUnsupportedAlgorithm,
+                       @"verify only supports com.joinmonolith.sha256");
+        return NO;
+    }
+    ATProtoS2PASoftBindingBlock *matched = nil;
+    for (ATProtoS2PASoftBindingBlock *block in self.blocks) {
+        if (timespan == nil && block.timespan == nil) {
+            matched = block;
+            break;
+        }
+        if (timespan && [block.timespan isEqualToTimespan:timespan]) {
+            matched = block;
+            break;
+        }
+    }
+    if (!matched) {
+        S2PASoftSetErr(error, ATProtoS2PASoftBindingAssertionErrorInvalidArgument,
+                       @"no soft-binding block matches the requested timespan");
+        return NO;
+    }
+    NSData *computed = [[self class] computeValueForData:data
+                                                     alg:self.alg
+                                               algParams:self.algParams
+                                                   error:error];
+    if (!computed) return NO;
+    if (![computed isEqualToData:matched.value]) {
+        S2PASoftSetErr(error, ATProtoS2PASoftBindingAssertionErrorMismatch,
+                       @"soft-binding fingerprint mismatch");
+        return NO;
+    }
+    return YES;
 }
 
 - (nullable NSData *)encodeCBOR:(NSError **)error {

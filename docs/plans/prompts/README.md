@@ -73,15 +73,14 @@ Completed prompts are archived under
 | # | File | Focus | Status | Depends on |
 | - | ---- | ----- | ------ | ---------- |
 | 5 | [phase-05](phase-05-repo-boundaries.md) | Deno repo extraction and package publication | `blocked` — maintainer must lift the publication deferral | — |
-| 31 | [phase-31](phase-31-s2pa-ingredient-verify.md) | S2PA ingredient `validationResults` + embedded-manifest verify | `pending` | — |
-| 32 | [phase-32](phase-32-s2pa-merkle-bmff.md) | S2PA `c2pa.hash.bmff.v3` Merkle trees | `pending` | — |
-| 33 | [phase-33](phase-33-s2pa-soft-binding-algs.md) | Soft-binding algorithm compute/verify | `pending` (Slice 1 needs alg decision) | — |
-| 34 | [phase-34](phase-34-dasl-tiles-package-and-embed.md) | Deno tiles package + live Admin UI embed | `pending` | — |
+| 31 | [phase-31](phase-31-s2pa-ingredient-verify.md) | S2PA ingredient `validationResults` + embedded-manifest verify | `complete` | — |
+| 32 | [phase-32](phase-32-s2pa-merkle-bmff.md) | S2PA `c2pa.hash.bmff.v3` Merkle trees | `complete` | — |
+| 33 | [phase-33](phase-33-s2pa-soft-binding-algs.md) | Soft-binding algorithm compute/verify | `complete` | — |
+| 34 | [phase-34](phase-34-dasl-tiles-package-and-embed.md) | Deno tiles package + live Admin UI embed | `complete` | — |
 | 35 | [phase-35](phase-35-ws16-iroh-sidecar.md) | WS16 iroh sidecar + live Streamplace mesh | `blocked` — production CA VOD or lab exception | — |
 
-**Suggested order:** 31 → 32 → 34 → 33 (after alg decision) → 35 (after unblock).
-Phases 31–34 are independent of each other for `depends_on`; run them in
-separate worktrees if parallelizing.
+**Suggested order:** 31–34 complete; next open item is 35 after unblock.
+Phases 31–34 are independent of each other for `depends_on`.
 
 Phase 5 cannot start until a future maintainer message explicitly reopens JSR
 publication. Workstream 03 R1 source synchronization is complete without
