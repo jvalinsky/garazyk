@@ -561,9 +561,9 @@ for full traceability; mirrored in the
     and MASL slices are now implemented and merged to `main` (`da56aa18` and
     `4bfd6a8a`) with focused verification; remaining open slices are full
     C2PA claim/assertion-store graph (hash.data + MUXL hard-bind +
-    `c2pa.hash.bmff.v3` + soft-binding encode + claim/assertion-store landed
-    2026-08-13; ingredient/Merkle/soft-alg/transcoder remainders open) and Web
-    Tiles Deno package / live embed remainders
+    `c2pa.hash.bmff.v3` + soft-binding + claim store + ingredient.v3 encode
+    landed 2026-08-13; ingredient validate/Merkle/soft-alg/transcoder remainders
+    open) and Web Tiles Deno package / live embed remainders
     (mothership resolve-path + getBlob load landed 2026-08-13).
     Phase 8 PFP
     producer (`ATProtoPFPProducer`) + Ozone `moderation_subjects.pfp` column
