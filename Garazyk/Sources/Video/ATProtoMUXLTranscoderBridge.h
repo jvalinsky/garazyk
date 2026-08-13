@@ -13,6 +13,8 @@
 
 #import <Foundation/Foundation.h>
 
+@class ATProtoSecp256k1KeyPair;
+
 NS_ASSUME_NONNULL_BEGIN
 
 FOUNDATION_EXPORT NSString * const ATProtoMUXLTranscoderBridgeErrorDomain;
@@ -58,12 +60,31 @@ typedef NS_ENUM(NSInteger, ATProtoMUXLTranscoderBridgeErrorCode) {
  Writes a packaged result under @c directory/muxl/: @c init.mp4,
  @c presentation.mp4, optional @c flat.mp4, and @c segment_NNNNN.m4s files.
 
+ When @c package contains @c s2paSegments (from
+ @c +hardBoundPackage:withKeyPair:…), also writes
+ @c segment_NNNNN.s2pa.m4s beside the unbound segments.
+
  Returns path metadata (@c directory, @c init, @c presentation, optional
- @c flat, and @c segments as an array of absolute paths), or nil on I/O failure.
+ @c flat, @c segments, and optional @c s2paSegments as absolute paths), or nil
+ on I/O failure.
  */
 + (nullable NSDictionary<NSString *, id> *)writePackage:(NSDictionary<NSString *, id> *)package
                                             toDirectory:(NSString *)directory
                                                   error:(NSError **)error;
+
+/**
+ Opt-in S2PA auto-sign: hard-binds each MUXL segment in @c package via
+ @c ATProtoMUXLPlayback presentationByHardBindingSegment: and returns a copy
+ with @c s2paSegments (same count) and @c s2paHardBound=@YES. Does not alter
+ @c presentation / @c flat / unbound @c segments. Default transcoder paths are
+ unchanged until a caller opts in.
+ */
++ (nullable NSDictionary<NSString *, id> *)hardBoundPackage:(NSDictionary<NSString *, id> *)package
+                                               withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                       did:(nullable NSString *)did
+                                                 notBefore:(NSDate *)notBefore
+                                                  notAfter:(NSDate *)notAfter
+                                                     error:(NSError **)error;
 
 @end
 

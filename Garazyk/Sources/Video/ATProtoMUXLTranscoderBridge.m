@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/ATProtoMUXLTranscoderBridge.h"
 #import "Video/ATProtoMUXLFMP4.h"
+#import "Video/ATProtoMUXLPlayback.h"
 #import "MediaCore/ATProtoMUXLBox.h"
+#import "Auth/Crypto/Secp256k1.h"
 #include <string.h>
 
 NSString * const ATProtoMUXLTranscoderBridgeErrorDomain = @"com.atproto.muxl.transcoder";
@@ -405,7 +407,70 @@ static BOOL MUXLBridgeWalk(const uint8_t *bytes, NSUInteger length, NSUInteger o
     }
     paths[@"segments"] = [segmentPaths copy];
     paths[@"directory"] = muxlDir;
+
+    NSArray *s2paSegments = package[@"s2paSegments"];
+    if ([s2paSegments isKindOfClass:[NSArray class]] && s2paSegments.count > 0) {
+        if (s2paSegments.count != segments.count) {
+            MUXLBridgeSetError(error, ATProtoMUXLTranscoderBridgeErrorInvalidArgument,
+                               @"s2paSegments count must match segments");
+            return nil;
+        }
+        NSMutableArray<NSString *> *s2paPaths = [NSMutableArray arrayWithCapacity:s2paSegments.count];
+        for (NSUInteger i = 0; i < s2paSegments.count; i++) {
+            NSData *seg = s2paSegments[i];
+            if (![seg isKindOfClass:[NSData class]]) {
+                MUXLBridgeSetError(error, ATProtoMUXLTranscoderBridgeErrorInvalidFragment,
+                                   @"MUXL package s2pa segment is not data");
+                return nil;
+            }
+            NSString *name = [NSString stringWithFormat:@"segment_%05lu.s2pa.m4s", (unsigned long)i];
+            NSString *segPath = [muxlDir stringByAppendingPathComponent:name];
+            if (![seg writeToFile:segPath options:NSDataWritingAtomic error:error]) return nil;
+            [s2paPaths addObject:segPath];
+        }
+        paths[@"s2paSegments"] = [s2paPaths copy];
+        paths[@"s2paHardBound"] = @YES;
+    }
     return [paths copy];
+}
+
++ (nullable NSDictionary<NSString *, id> *)hardBoundPackage:(NSDictionary<NSString *, id> *)package
+                                               withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                       did:(nullable NSString *)did
+                                                 notBefore:(NSDate *)notBefore
+                                                  notAfter:(NSDate *)notAfter
+                                                     error:(NSError **)error {
+    if (![package isKindOfClass:[NSDictionary class]] || !keyPair) {
+        MUXLBridgeSetError(error, ATProtoMUXLTranscoderBridgeErrorInvalidArgument,
+                           @"S2PA hard-bound package requires package and key pair");
+        return nil;
+    }
+    NSArray *segments = package[@"segments"];
+    if (![segments isKindOfClass:[NSArray class]] || segments.count == 0) {
+        MUXLBridgeSetError(error, ATProtoMUXLTranscoderBridgeErrorInvalidArgument,
+                           @"package has no MUXL segments to hard-bind");
+        return nil;
+    }
+    NSMutableArray<NSData *> *bound = [NSMutableArray arrayWithCapacity:segments.count];
+    for (NSData *seg in segments) {
+        if (![seg isKindOfClass:[NSData class]]) {
+            MUXLBridgeSetError(error, ATProtoMUXLTranscoderBridgeErrorInvalidFragment,
+                               @"MUXL segment is not data");
+            return nil;
+        }
+        NSData *signedSeg = [ATProtoMUXLPlayback presentationByHardBindingSegment:seg
+                                                                      withKeyPair:keyPair
+                                                                              did:did
+                                                                        notBefore:notBefore
+                                                                         notAfter:notAfter
+                                                                            error:error];
+        if (!signedSeg) return nil;
+        [bound addObject:signedSeg];
+    }
+    NSMutableDictionary *out = [package mutableCopy];
+    out[@"s2paSegments"] = [bound copy];
+    out[@"s2paHardBound"] = @YES;
+    return [out copy];
 }
 
 @end

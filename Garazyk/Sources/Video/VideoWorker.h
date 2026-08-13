@@ -9,6 +9,7 @@
 
 @class ATProtoCAObjectStore;
 @class ATProtoCAObjectLifecycle;
+@class ATProtoSecp256k1KeyPair;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -101,6 +102,19 @@ typedef NS_ENUM(NSInteger, ATProtoVideoJobState) {
  Defaults to NO. Opt-in only; default HLS output is unchanged.
  */
 @property (nonatomic, assign) BOOL enableMUXLPresentation;
+
+/**
+ Whether to S2PA hard-bind MUXL segments after packaging (WS10 Phase 10).
+
+ Defaults to NO. Requires @c s2paSigningKeyPair when YES.
+ */
+@property (nonatomic, assign) BOOL enableS2PAAutoSign;
+
+/// Key pair used when @c enableS2PAAutoSign is YES.
+@property (nonatomic, strong, nullable) ATProtoSecp256k1KeyPair *s2paSigningKeyPair;
+
+/// Optional DID for the S2PA leaf when auto-signing.
+@property (nonatomic, copy, nullable) NSString *s2paSigningDID;
 
 /// CA object store used when @c enableContentAddressedManifest is YES.
 @property (nonatomic, strong, nullable) ATProtoCAObjectStore *caObjectStore;

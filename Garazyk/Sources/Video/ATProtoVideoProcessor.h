@@ -12,6 +12,7 @@
 @protocol PDSBlobProvider;
 @class ATProtoCAObjectStore;
 @class ATProtoCAObjectLifecycle;
+@class ATProtoSecp256k1KeyPair;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -57,6 +58,21 @@ NS_ASSUME_NONNULL_BEGIN
  CMAF files without altering the HLS playlists or segments.
  */
 @property (nonatomic, assign) BOOL enableMUXLPresentation;
+
+/**
+ Whether to S2PA hard-bind MUXL segments after packaging (WS10 Phase 10).
+
+ Defaults to NO. When YES, @c s2paSigningKeyPair must be set and
+ @c enableMUXLPresentation should be YES; writes @c segment_*.s2pa.m4s beside
+ unbound MUXL segments without altering HLS output.
+ */
+@property (nonatomic, assign) BOOL enableS2PAAutoSign;
+
+/// Key pair used when @c enableS2PAAutoSign is YES.
+@property (nonatomic, strong, nullable) ATProtoSecp256k1KeyPair *s2paSigningKeyPair;
+
+/// Optional DID bound into the S2PA leaf when auto-signing.
+@property (nonatomic, copy, nullable) NSString *s2paSigningDID;
 
 /// CA object store used when @c enableContentAddressedManifest is YES.
 @property (nonatomic, strong, nullable) ATProtoCAObjectStore *caObjectStore;
