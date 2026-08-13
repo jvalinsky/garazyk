@@ -25,4 +25,5 @@ set(ATPROTO_VIDEO_MANIFEST
   "Garazyk/Sources/Video/GZJelczPeerProviderIndex.m"
   "Garazyk/Sources/Video/GZJelczStreamplaceCompatServe.m"
   "Garazyk/Sources/Video/GZJelczStreamplacePeerDemo.m"
+  "Garazyk/Sources/Video/GZJelczOriginAnnouncer.m"
 )
