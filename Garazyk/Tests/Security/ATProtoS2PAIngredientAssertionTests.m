@@ -29,11 +29,27 @@
                                               alg:@"sha256"];
 }
 
-- (void)testParentOfRoundTrip {
+- (ATProtoS2PAIngredientValidationResults *)okResults {
+    return [ATProtoS2PAIngredientValidationResults resultsWithSingleSuccessCode:@"claimSignature.validated"
+                                                                            url:nil];
+}
+
+- (void)testParentOfRoundTripWithValidationResults {
     ATProtoS2PAHashedURI *manifest =
         [self dummyHashedURI:@"self#jumbf=/c2pa/urn:c2pa:parent-1"];
     ATProtoS2PAHashedURI *sig =
         [self dummyHashedURI:@"self#jumbf=/c2pa/urn:c2pa:parent-1/c2pa.signature"];
+    ATProtoS2PAIngredientValidationResults *results =
+        [ATProtoS2PAIngredientValidationResults
+            resultsWithSuccess:@[
+                [ATProtoS2PAIngredientValidationStatus statusWithCode:@"claimSignature.validated"
+                                                                   url:sig.url],
+            ]
+                informational:@[
+                    [ATProtoS2PAIngredientValidationStatus statusWithCode:@"time.untrusted"
+                                                                       url:nil],
+                ]
+                      failure:@[]];
     NSError *error = nil;
     ATProtoS2PAIngredientAssertion *a =
         [ATProtoS2PAIngredientAssertion parentOfWithTitle:@"source"
@@ -41,6 +57,7 @@
                                                instanceID:@"urn:uuid:ing-1"
                                            activeManifest:manifest
                                            claimSignature:sig
+                                       validationResults:results
                                                     error:&error];
     XCTAssertNotNil(a, @"%@", error);
     NSData *cbor = [a encodeCBOR:&error];
@@ -55,6 +72,43 @@
     XCTAssertEqualObjects(round.activeManifest.url, manifest.url);
     XCTAssertEqualObjects(round.activeManifest.digest, manifest.digest);
     XCTAssertEqualObjects(round.claimSignature.url, sig.url);
+    XCTAssertEqual(round.validationResults.success.count, 1u);
+    XCTAssertEqualObjects(round.validationResults.success.firstObject.code,
+                          @"claimSignature.validated");
+    XCTAssertEqualObjects(round.validationResults.success.firstObject.url, sig.url);
+    XCTAssertEqual(round.validationResults.informational.count, 1u);
+    XCTAssertEqualObjects(round.validationResults.informational.firstObject.code,
+                          @"time.untrusted");
+    XCTAssertEqual(round.validationResults.failure.count, 0u);
+}
+
+- (void)testActiveManifestRequiresValidationResults {
+    ATProtoS2PAHashedURI *manifest = [self dummyHashedURI:@"self#jumbf=/c2pa/x"];
+    NSError *error = nil;
+    ATProtoS2PAIngredientAssertion *missing =
+        [ATProtoS2PAIngredientAssertion parentOfWithTitle:@"t"
+                                                   format:nil
+                                               instanceID:nil
+                                           activeManifest:manifest
+                                           claimSignature:nil
+                                       validationResults:nil
+                                                    error:&error];
+    XCTAssertNil(missing);
+    XCTAssertEqual(error.code, ATProtoS2PAIngredientAssertionErrorInvalidArgument);
+
+    ATProtoS2PAIngredientAssertion *built =
+        [[ATProtoS2PAIngredientAssertion alloc]
+            initWithRelationship:ATProtoS2PAIngredientRelationshipParentOf
+                           title:nil
+                          format:nil
+                      instanceID:nil
+                 descriptionText:nil
+               digitalSourceType:nil
+                  activeManifest:manifest
+                  claimSignature:nil
+              validationResults:nil];
+    XCTAssertNil([built encodeCBOR:&error]);
+    XCTAssertEqual(error.code, ATProtoS2PAIngredientAssertionErrorInvalidArgument);
 }
 
 - (void)testInputToAndMutualExclusion {
@@ -78,7 +132,8 @@
                  descriptionText:nil
                digitalSourceType:@"http://example.com/src"
                   activeManifest:manifest
-                  claimSignature:nil];
+                  claimSignature:nil
+              validationResults:[self okResults]];
     XCTAssertNil([bad encodeCBOR:&error]);
     XCTAssertEqual(error.code, ATProtoS2PAIngredientAssertionErrorInvalidArgument);
 }
@@ -96,6 +151,7 @@
                                                instanceID:@"urn:uuid:p"
                                            activeManifest:[self dummyHashedURI:@"self#jumbf=/c2pa/p"]
                                            claimSignature:[self dummyHashedURI:@"self#jumbf=/c2pa/p/c2pa.signature"]
+                                       validationResults:[self okResults]
                                                     error:&error];
     NSData *ingCBOR = [ing encodeCBOR:&error];
     NSArray *assertions = @[
@@ -117,6 +173,158 @@
                                                expectedDID:pair.didKeyString
                                                      error:&error],
                   @"%@", error);
+}
+
+- (void)testEmbedChildAndVerifyHashedURIs {
+    ATProtoSecp256k1KeyPair *pair = [self testKeyPair];
+    NSError *error = nil;
+    NSData *childMedia = [@"child-bytes" dataUsingEncoding:NSUTF8StringEncoding];
+    ATProtoS2PAHashDataAssertion *childHash =
+        [ATProtoS2PAHashDataAssertion assertionHardBindingMediaData:childMedia name:nil error:&error];
+    NSData *childHashCBOR = [childHash encodeCBOR:&error];
+    NSData *childBox =
+        [ATProtoS2PAJUMBF uuidBoxSigningAssertions:@[
+            [ATProtoS2PAStoredAssertion assertionWithLabel:ATProtoS2PAHashDataAssertionLabel
+                                                      cbor:childHashCBOR],
+        ]
+                                        instanceID:@"urn:uuid:child-active"
+                                    generatorName:@"garazyk-s2pa-child"
+                                      withKeyPair:pair
+                                              did:nil
+                                        notBefore:[NSDate dateWithTimeIntervalSince1970:1]
+                                         notAfter:[NSDate dateWithTimeIntervalSince1970:2]
+                                            error:&error];
+    XCTAssertNotNil(childBox, @"%@", error);
+    NSData *childStore = [ATProtoS2PAJUMBF manifestStoreFromBMFFUUIDBox:childBox error:&error];
+    XCTAssertNotNil(childStore, @"%@", error);
+
+    NSString *ingID = @"urn:uuid:ing-embed-1";
+    NSData *embedded = nil;
+    ATProtoS2PAIngredientAssertion *ing =
+        [ATProtoS2PAIngredientAssertion parentOfEmbeddingChildStore:childStore
+                                                         instanceID:ingID
+                                                              title:@"source"
+                                                             format:@"video/mp4"
+                                              outEmbeddedManifestJUMBF:&embedded
+                                                              error:&error];
+    XCTAssertNotNil(ing, @"%@", error);
+    XCTAssertNotNil(embedded);
+    XCTAssertEqualObjects(ing.activeManifest.url,
+                          ([NSString stringWithFormat:@"self#jumbf=/c2pa/%@", ingID]));
+    XCTAssertEqualObjects(ing.claimSignature.url,
+                          ([NSString stringWithFormat:@"self#jumbf=/c2pa/%@/c2pa.signature", ingID]));
+    XCTAssertNotNil(ing.validationResults);
+    // Child store labels active as "c2pa", not ingID — verify against parent store below.
+    XCTAssertFalse([ing verifyEmbeddedManifestsInStore:childStore error:&error]);
+    XCTAssertEqual(error.code, ATProtoS2PAIngredientAssertionErrorMissingTarget);
+
+    NSData *parentMedia = [@"parent-bytes" dataUsingEncoding:NSUTF8StringEncoding];
+    ATProtoS2PAHashDataAssertion *parentHash =
+        [ATProtoS2PAHashDataAssertion assertionHardBindingMediaData:parentMedia name:nil error:&error];
+    NSData *parentHashCBOR = [parentHash encodeCBOR:&error];
+    NSData *ingCBOR = [ing encodeCBOR:&error];
+    XCTAssertNotNil(ingCBOR, @"%@", error);
+    NSArray *parentAssertions = @[
+        [ATProtoS2PAStoredAssertion assertionWithLabel:ATProtoS2PAHashDataAssertionLabel
+                                                  cbor:parentHashCBOR],
+        [ATProtoS2PAStoredAssertion assertionWithLabel:ATProtoS2PAIngredientAssertionLabel
+                                                  cbor:ingCBOR],
+    ];
+    NSData *parentBox =
+        [ATProtoS2PAJUMBF uuidBoxSigningAssertions:parentAssertions
+                                        instanceID:@"urn:uuid:parent-active"
+                                    generatorName:@"garazyk-s2pa-parent"
+                                embeddedManifests:@[embedded]
+                                      withKeyPair:pair
+                                              did:nil
+                                        notBefore:[NSDate dateWithTimeIntervalSince1970:1]
+                                         notAfter:[NSDate dateWithTimeIntervalSince1970:2]
+                                            error:&error];
+    XCTAssertNotNil(parentBox, @"%@", error);
+    XCTAssertTrue([ATProtoS2PAJUMBF verifyUUIDBoxClaimBound:parentBox
+                                               expectedDID:pair.didKeyString
+                                                     error:&error],
+                  @"%@", error);
+    NSData *parentStore = [ATProtoS2PAJUMBF manifestStoreFromBMFFUUIDBox:parentBox error:&error];
+    XCTAssertNotNil(parentStore, @"%@", error);
+    XCTAssertTrue([ing verifyEmbeddedManifestsInStore:parentStore error:&error], @"%@", error);
+}
+
+- (void)testEmbeddedManifestTamperFails {
+    ATProtoSecp256k1KeyPair *pair = [self testKeyPair];
+    NSError *error = nil;
+    NSData *childMedia = [@"tamper-child" dataUsingEncoding:NSUTF8StringEncoding];
+    ATProtoS2PAHashDataAssertion *childHash =
+        [ATProtoS2PAHashDataAssertion assertionHardBindingMediaData:childMedia name:nil error:&error];
+    NSData *childBox =
+        [ATProtoS2PAJUMBF uuidBoxSigningAssertions:@[
+            [ATProtoS2PAStoredAssertion assertionWithLabel:ATProtoS2PAHashDataAssertionLabel
+                                                      cbor:[childHash encodeCBOR:&error]],
+        ]
+                                        instanceID:@"urn:uuid:tamper-child"
+                                    generatorName:@"garazyk-s2pa"
+                                      withKeyPair:pair
+                                              did:nil
+                                        notBefore:[NSDate dateWithTimeIntervalSince1970:1]
+                                         notAfter:[NSDate dateWithTimeIntervalSince1970:2]
+                                            error:&error];
+    NSData *childStore = [ATProtoS2PAJUMBF manifestStoreFromBMFFUUIDBox:childBox error:&error];
+    NSString *ingID = @"urn:uuid:tamper-ing";
+    NSData *embedded = nil;
+    ATProtoS2PAIngredientAssertion *ing =
+        [ATProtoS2PAIngredientAssertion parentOfEmbeddingChildStore:childStore
+                                                         instanceID:ingID
+                                                              title:nil
+                                                             format:nil
+                                              outEmbeddedManifestJUMBF:&embedded
+                                                              error:&error];
+    XCTAssertNotNil(ing, @"%@", error);
+
+    NSData *parentMedia = [@"tamper-parent" dataUsingEncoding:NSUTF8StringEncoding];
+    ATProtoS2PAHashDataAssertion *parentHash =
+        [ATProtoS2PAHashDataAssertion assertionHardBindingMediaData:parentMedia name:nil error:&error];
+    NSData *parentBox =
+        [ATProtoS2PAJUMBF uuidBoxSigningAssertions:@[
+            [ATProtoS2PAStoredAssertion assertionWithLabel:ATProtoS2PAHashDataAssertionLabel
+                                                      cbor:[parentHash encodeCBOR:&error]],
+            [ATProtoS2PAStoredAssertion assertionWithLabel:ATProtoS2PAIngredientAssertionLabel
+                                                      cbor:[ing encodeCBOR:&error]],
+        ]
+                                        instanceID:@"urn:uuid:tamper-parent"
+                                    generatorName:@"garazyk-s2pa"
+                                embeddedManifests:@[embedded]
+                                      withKeyPair:pair
+                                              did:nil
+                                        notBefore:[NSDate dateWithTimeIntervalSince1970:1]
+                                         notAfter:[NSDate dateWithTimeIntervalSince1970:2]
+                                            error:&error];
+    NSData *parentStore = [ATProtoS2PAJUMBF manifestStoreFromBMFFUUIDBox:parentBox error:&error];
+    XCTAssertTrue([ing verifyEmbeddedManifestsInStore:parentStore error:&error], @"%@", error);
+
+    // Flip a byte inside the embedded manifest body (past the 8-byte jumb header).
+    NSMutableData *tamperedEmbedded = [embedded mutableCopy];
+    XCTAssertGreaterThan(tamperedEmbedded.length, 16u);
+    ((uint8_t *)tamperedEmbedded.mutableBytes)[tamperedEmbedded.length - 1] ^= 0x5a;
+    NSData *tamperedBox =
+        [ATProtoS2PAJUMBF uuidBoxSigningAssertions:@[
+            [ATProtoS2PAStoredAssertion assertionWithLabel:ATProtoS2PAHashDataAssertionLabel
+                                                      cbor:[parentHash encodeCBOR:&error]],
+            [ATProtoS2PAStoredAssertion assertionWithLabel:ATProtoS2PAIngredientAssertionLabel
+                                                      cbor:[ing encodeCBOR:&error]],
+        ]
+                                        instanceID:@"urn:uuid:tamper-parent-2"
+                                    generatorName:@"garazyk-s2pa"
+                                embeddedManifests:@[tamperedEmbedded]
+                                      withKeyPair:pair
+                                              did:nil
+                                        notBefore:[NSDate dateWithTimeIntervalSince1970:1]
+                                         notAfter:[NSDate dateWithTimeIntervalSince1970:2]
+                                            error:&error];
+    NSData *tamperedParentStore =
+        [ATProtoS2PAJUMBF manifestStoreFromBMFFUUIDBox:tamperedBox error:&error];
+    XCTAssertNotNil(tamperedParentStore, @"%@", error);
+    XCTAssertFalse([ing verifyEmbeddedManifestsInStore:tamperedParentStore error:&error]);
+    XCTAssertEqual(error.code, ATProtoS2PAIngredientAssertionErrorHashMismatch, @"%@", error);
 }
 
 @end
