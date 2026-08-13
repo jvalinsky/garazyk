@@ -1,0 +1,13 @@
+{
+  "name": "Garazyk Demo Tile",
+  "resources": {
+    "/": {
+      "content-type": "text/html; charset=utf-8",
+      "body": "<!DOCTYPE html><html><head><title>Demo Tile</title></head><body><h1>Demo Tile</h1><script src=\"/app.js\"></script></body></html>"
+    },
+    "/app.js": {
+      "content-type": "application/javascript; charset=utf-8",
+      "body": "console.log('garazyk-demo-tile');"
+    }
+  }
+}

@@ -566,9 +566,9 @@ for full traceability; mirrored in the
     embedded-manifest verify + Merkle bmffHash (leaf-row) landed 2026-08-13;
     soft-alg remainders open — execution prompt
     [phase-33](prompts/phase-33-s2pa-soft-binding-algs.md); Web Tiles Deno
-    package / live embed remainders —
-    [phase-34](prompts/phase-34-dasl-tiles-package-and-embed.md)
-    (mothership resolve-path + getBlob load landed 2026-08-13). WS16 iroh
+    `@garazyk/tiles` + live Admin UI embed landed 2026-08-13 —
+    [phase-34](prompts/phase-34-dasl-tiles-package-and-embed.md) complete
+    (mothership resolve-path + getBlob earlier; JSR still deferred). WS16 iroh
     Phase 4+ remains blocked —
     [phase-35](prompts/phase-35-ws16-iroh-sidecar.md).
     Phase 8 PFP

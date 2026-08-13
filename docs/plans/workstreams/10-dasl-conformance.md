@@ -52,7 +52,8 @@ landed 2026-08-13), Merkle bmffHash (leaf-row profile) landed 2026-08-13;
 soft-binding algorithms remain open. Transcoder auto-sign landed 2026-08-13
 (opt-in). Phase 7 production paths remain open.
 Phase 11 mothership resolve-path + getBlob load landed 2026-08-13; Deno
-`@dasl/tiles` / live embed remainders remain open.
+`@garazyk/tiles` + live Admin UI embed landed 2026-08-13 (not a full browser
+tile-host product; JSR publish still deferred with Phase 5).
 
 Phase 0 evidence: `build/tests/AllTests --gated=run` passes 4,955 tests with 0 failures;
 `scripts/check_module_boundaries.sh build` reports no new violations with 26 baseline
@@ -439,7 +440,7 @@ tamper → `HashMismatch`). Gathered/redacted assertions remain open.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
   paths are unchanged.
 
-**Phase 11 — Web Tiles + Tiles Protocols + TP Data — PARTIAL (protocol, policy, unique-origin host, SW scripts, CAR load + path resolve + mothership mediation + getBlob load).**
+**Phase 11 — Web Tiles + Tiles Protocols + TP Data — COMPLETE (bounded; 2026-08-13 embed + Deno).**
 `AdminUIServer/UITileDataProtocol` serves the reserved `/.well-known/web-tiles/data.js` module with
 `addDataHandler`, `removeDataHandler`, `listen`, and `sendData`, using the normative
 `tiles-protocol-up-data-ready`, `tiles-protocol-up-data-payload`, and
@@ -462,22 +463,32 @@ origin helpers (`GZAdminUITileIsTrustedEmbedOrigin`,
 **Mothership + getBlob (2026-08-13):** `ATProtoWebTileMothership` mediates worker
 `resolve-path` requests (echoes `requestId`, returns `response` or `error`) and loads a tile
 CAR via injected HTTP `com.atproto.sync.getBlob`.
+**Live embed + Deno `@garazyk/tiles` (2026-08-13):** `GET /lab/tiles/embed` iframes the
+load-host shuttle with trusted-origin postMessage glue (`GZAdminUITileEmbedHTML`).
+`POST /lab/tiles/mothership` is the HTTP resolve-path boundary; `GZAdminUITilePathResolver`
+is injectable on the host (default `GZAdminUIDemoTilePathResolver`; composition roots may
+wrap Repository mothership without AdminUI→Storage links). `data.js` accepts
+`?trustedOrigin=`. Workspace package `@garazyk/tiles` mirrors protocol validation,
+`MothershipClient`, and a golden logical MASL fixture. JSR publish remains deferred with
+Phase 5. This is **not** a full browser tile-host product.
 
 - Owner boundary: `Garazyk/Sources/AdminUIServer` owns the host-selected protocol module, policy
-  helpers, loading-host redirect, and SW script routes. `Core` / `Repository` own tile validation,
-  CAR loading, and mothership/getBlob mediation. Existing authenticated Admin UI CSP and routes
-  are unchanged.
+  helpers, loading-host redirect, SW script routes, embed page, and injected resolve-path HTTP
+  boundary. `Core` / `Repository` own tile validation, CAR loading, and mothership/getBlob
+  mediation. Existing authenticated Admin UI CSP and routes are unchanged.
 - Evidence: `UITileExecutionPolicyTests` (incl. trusted-origin JS), `UITileLoadingHostTests` (host
-  classification, redirect, headers, shuttle/worker, trusted origin), `UIServerRuntimeTests`
-  (`data.js`, load-host 303, unique-origin shuttle + script routes), `ATProtoWebTileTests` (MASL,
-  CAR root, multi-path resolve + 404), `ATProtoWebTileMothershipTests` (resolve-path mediation +
-  getBlob stub load).
-- Explicit remainder: Deno `@dasl/tiles` protocol package and live Admin UI embedding of an
-  arbitrary tile remain open. Execution prompt:
-  [phase-34](../prompts/phase-34-dasl-tiles-package-and-embed.md).
-  This slice does not claim a full browser tile host product.
-- Rollback: remove the additive policy/protocol/loading-host/WebTile/Mothership helpers, reserved
-  routes, and test registration; existing Admin UI routes and CSP remain unchanged.
+  classification, redirect, headers, shuttle/worker, trusted origin, embed HTML),
+  `UIServerRuntimeTests` (`data.js`, load-host 303, unique-origin shuttle + script routes, lab
+  embed + mothership + trustedOrigin query), `ATProtoWebTileTests`,
+  `ATProtoWebTileMothershipTests`, Deno `packages/tiles/protocol_test.ts`.
+  Manual smoke: set `tilesBaseHost`, open `/lab/tiles/embed`, confirm iframe hits
+  `load.<base>` and protocol ready/down-payload strings in page source.
+- Explicit remainder: none for the bounded Phase 11 slice. Full tile-host product UX and JSR
+  `@dasl/tiles` publication stay out of scope.
+  [phase-34](../prompts/phase-34-dasl-tiles-package-and-embed.md) complete.
+- Rollback: remove the additive policy/protocol/loading-host/WebTile/Mothership/embed/demo
+  helpers, reserved routes, `packages/tiles`, and test registration; existing Admin UI routes
+  and CSP remain unchanged.
 
 ### GNUstep package + DASL harness (2026-08-12)
 

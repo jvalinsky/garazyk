@@ -66,6 +66,16 @@ FOUNDATION_EXPORT NSString *GZAdminUITileUniqueOriginURL(NSString *scheme,
                                                           NSString *label);
 
 /**
+ Parent-page HTML that iframes the load-host unique-origin shuttle and
+ participates in the trusted-origin data protocol.
+ @c parentOrigin is the Admin UI origin used as @c postMessage target and
+ for inbound origin checks (mirrored in page script).
+ */
+FOUNDATION_EXPORT NSString *GZAdminUITileEmbedHTML(NSString *scheme,
+                                                   NSString *baseHost,
+                                                   NSString *parentOrigin);
+
+/**
  Applies Web Tile execution-policy headers (and `service-worker-allowed`) to a
  unique-origin response.
  */

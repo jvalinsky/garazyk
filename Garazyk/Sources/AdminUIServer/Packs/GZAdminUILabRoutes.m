@@ -11,8 +11,22 @@
 #import "AdminUIServer/UITileDataProtocol.h"
 #import "AdminUIServer/UITileExecutionPolicy.h"
 #import "AdminUIServer/UITileLoadingHost.h"
+#import "AdminUIServer/UITileDemoPathResolver.h"
+#import "AdminUIServer/UITilePathResolver.h"
 
 @implementation GZAdminUIHost (LabRoutes)
+
+- (id<GZAdminUITilePathResolver>)effectiveTilePathResolver {
+    if ([self.tilePathResolver conformsToProtocol:@protocol(GZAdminUITilePathResolver)]) {
+        return self.tilePathResolver;
+    }
+    static GZAdminUIDemoTilePathResolver *demo;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        demo = [[GZAdminUIDemoTilePathResolver alloc] init];
+    });
+    return demo;
+}
 
 - (void)registerLabRoutes {
     __weak typeof(self) weakSelf = self;
@@ -40,14 +54,54 @@
         [response setBodyString:[GZAdminUILabPack labClientMetadataJSONWithConfiguration:weakSelf.configuration]];
     }];
 
-    // Reserved Web Tiles protocol endpoint. It serves only the host-selected
-    // data-passing module; it does not serve tile resources or grant network
-    // access to a tile. Execution-policy headers belong on the tile document,
-    // not this JavaScript module response; no tile document route exists yet.
+    // Live tile embed (parent page). Requires tilesBaseHost.
+    [self.httpServer addRoute:@"GET" path:@"/lab/tiles/embed" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        NSString *baseHost = weakSelf.configuration.tilesBaseHost;
+        if (baseHost.length == 0) {
+            response.statusCode = 503;
+            response.contentType = @"text/plain; charset=utf-8";
+            [response setBodyString:@"tilesBaseHost is not configured\n"];
+            return;
+        }
+        NSString *scheme = [request headerForKey:@"X-Forwarded-Proto"];
+        if (scheme.length == 0) scheme = @"http";
+        NSString *hostHeader = [request headerForKey:@"Host"];
+        NSString *parentOrigin = [NSString stringWithFormat:@"%@://%@", scheme,
+                                  hostHeader.length > 0 ? hostHeader : @"localhost"];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:GZAdminUITileEmbedHTML(scheme, baseHost, parentOrigin)];
+    }];
+
+    // Mothership HTTP boundary for resolve-path (injected or demo fixture).
+    [self.httpServer addRoute:@"POST" path:@"/lab/tiles/mothership" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        NSError *jsonError = nil;
+        id body = request.body.length > 0
+            ? [NSJSONSerialization JSONObjectWithData:request.body options:0 error:&jsonError]
+            : @{};
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            response.statusCode = 400;
+            response.contentType = @"application/json; charset=utf-8";
+            [response setBodyString:@"{\"error\":\"expected JSON object\"}"];
+            return;
+        }
+        NSDictionary *reply = [[weakSelf effectiveTilePathResolver] handleTileRequest:body];
+        NSData *out = [NSJSONSerialization dataWithJSONObject:reply options:0 error:nil];
+        response.statusCode = 200;
+        response.contentType = @"application/json; charset=utf-8";
+        [response setBodyData:out ?: [@"{\"error\":\"encode failed\"}" dataUsingEncoding:NSUTF8StringEncoding]];
+    }];
+
+    // Reserved Web Tiles protocol endpoint. Optional ?trustedOrigin= gates
+    // postMessage peers (used by unique-origin embeds).
     [self.httpServer addRoute:@"GET" path:@"/.well-known/web-tiles/data.js" handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        NSString *trusted = request.queryParams[@"trustedOrigin"];
+        if (![trusted isKindOfClass:[NSString class]] || trusted.length == 0) {
+            trusted = nil;
+        }
         response.statusCode = 200;
         response.contentType = @"application/javascript; charset=utf-8";
-        [response setBodyString:GZAdminUITileDataProtocolJavaScript()];
+        [response setBodyString:GZAdminUITileDataProtocolJavaScriptWithTrustedOrigin(trusted)];
     }];
 
     // Unique-origin shuttle shell. When tilesBaseHost is configured, Host

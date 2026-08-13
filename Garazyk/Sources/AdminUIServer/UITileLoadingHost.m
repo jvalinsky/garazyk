@@ -189,3 +189,79 @@ BOOL GZAdminUITileIsTrustedEmbedOrigin(NSString *origin, NSString *baseHost) {
     if (GZAdminUITileIsLoadHost(host, baseHost)) return YES;
     return NO;
 }
+
+NSString *GZAdminUITileEmbedHTML(NSString *scheme, NSString *baseHost, NSString *parentOrigin) {
+    NSString *sch = scheme.length > 0 ? [scheme lowercaseString] : @"http";
+    NSString *base = GZAdminUITileNormalizedBaseHost(baseHost);
+    NSString *iframeSrc = [NSString stringWithFormat:@"%@://load.%@/.well-known/web-tiles/", sch, base];
+    NSString *parent = parentOrigin.length > 0 ? parentOrigin : @"";
+    // Escape for HTML attribute / JS string (minimal).
+    NSMutableString *escapedParent = [NSMutableString string];
+    for (NSUInteger i = 0; i < parent.length; i++) {
+        unichar c = [parent characterAtIndex:i];
+        if (c == '\\' || c == '\'' || c == '"') {
+            [escapedParent appendFormat:@"\\%C", c];
+        } else if (c == '<') {
+            [escapedParent appendString:@"\\u003c"];
+        } else {
+            [escapedParent appendFormat:@"%C", c];
+        }
+    }
+    return [NSString stringWithFormat:
+            @"<!DOCTYPE html>\n"
+            "<html lang=\"en\">\n"
+            "<head>\n"
+            "<meta charset=\"utf-8\">\n"
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+            "<title>Web Tile Embed</title>\n"
+            "<style>\n"
+            "html, body { margin: 0; height: 100%%; font-family: system-ui, sans-serif; }\n"
+            "header { padding: 0.75rem 1rem; border-bottom: 1px solid #ccc; }\n"
+            "iframe { width: 100%%; height: calc(100%% - 3rem); border: 0; }\n"
+            "#log { font-size: 0.85rem; color: #444; }\n"
+            "</style>\n"
+            "</head>\n"
+            "<body>\n"
+            "<header><strong>Garazyk tile embed</strong> <span id=\"log\"></span></header>\n"
+            "<iframe id=\"tile\" title=\"Web Tile\" src=\"%@\"></iframe>\n"
+            "<script>\n"
+            "(function () {\n"
+            "  const parentOrigin = '%@';\n"
+            "  const baseHost = '%@';\n"
+            "  const frame = document.getElementById('tile');\n"
+            "  const log = document.getElementById('log');\n"
+            "  function isTrusted(origin) {\n"
+            "    try {\n"
+            "      const u = new URL(origin);\n"
+            "      const h = u.hostname.toLowerCase();\n"
+            "      const base = baseHost.toLowerCase();\n"
+            "      if (h === 'load.' + base) return true;\n"
+            "      if (h.length > base.length + 1 && h.endsWith('.' + base)) {\n"
+            "        const label = h.slice(0, -(base.length + 1));\n"
+            "        return label.length === 20 && /^[a-z]+$/.test(label);\n"
+            "      }\n"
+            "    } catch (_) {}\n"
+            "    return false;\n"
+            "  }\n"
+            "  window.addEventListener('message', (event) => {\n"
+            "    if (event.source !== frame.contentWindow) return;\n"
+            "    if (!isTrusted(event.origin)) return;\n"
+            "    const data = event.data;\n"
+            "    if (!data || typeof data.action !== 'string') return;\n"
+            "    if (data.action === 'tiles-protocol-up-data-ready') {\n"
+            "      log.textContent = 'tile ready';\n"
+            "      event.source.postMessage({\n"
+            "        action: 'tiles-protocol-down-data-payload',\n"
+            "        payload: { hello: 'garazyk-host' }\n"
+            "      }, event.origin);\n"
+            "    } else if (data.action === 'tiles-protocol-up-data-payload') {\n"
+            "      log.textContent = 'tile payload';\n"
+            "    }\n"
+            "  });\n"
+            "})();\n"
+            "</script>\n"
+            "</body>\n"
+            "</html>\n",
+            iframeSrc, escapedParent, base];
+}
+
