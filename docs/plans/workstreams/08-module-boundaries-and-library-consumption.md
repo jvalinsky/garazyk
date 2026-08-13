@@ -1,10 +1,16 @@
 ---
 title: Module Boundaries and Library Consumption
 status: active
-last_verified: 2026-08-12
+last_verified: 2026-08-13
 ---
 
-## Verified status (2026-08-08)
+## Verified status (2026-08-13)
+
+M5–M7 and M6 package export are complete on macOS; GNUstep package-consumer
+smoke verified 2026-08-12. Mega-plan item 10 records this as complete for the
+CMake package surface. **JSR/npm registry publication remains out of scope.**
+
+Earlier verified status (2026-08-08):
 
 The earlier execution summary and the proposed Option A plan overstated the
 workstream's completion, and M4 subsequently closed for real: a current run

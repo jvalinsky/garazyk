@@ -43,8 +43,10 @@ SHA-256 CID verification, and an SSRF-safe parallel client. Phase 6 has the reus
 streaming verifier, range mapper, and verified HTTP range integration that keeps the sidecar
 caller-supplied. Phases 7–11 are
 bounded document, identifier, media, COSE, and data-protocol/policy slices; Phase 8
-(PFP producer + Ozone column) and Phase 9 (MUXL) are complete. Phase 7 production
-paths and Phase 10–11 explicit production integration remainders remain open.
+(PFP producer + Ozone column) and Phase 9 (MUXL) are complete. Phase 10 S2PA has
+COSE + leaf + JUMBF uuid + SHA-256 hard binding (2026-08-13); full claim schema and
+Video/MUXL producer wiring remain open. Phase 7 production paths and Phase 11
+explicit production integration remainders remain open.
 
 Phase 0 evidence: `build/tests/AllTests --gated=run` passes 4,955 tests with 0 failures;
 `scripts/check_module_boundaries.sh build` reports no new violations with 26 baseline
@@ -346,7 +348,7 @@ CMAF segments stay unchanged).
 - Rollback: additive MediaCore/Video primitives, opt-in flag (default OFF), and
   test registration; existing HLS/transcoder output is untouched unless opted in.
 
-**Phase 10 — S2PA — PARTIAL (COSE + leaf + bounded JUMBF uuid carrier).**
+**Phase 10 — S2PA — PARTIAL (COSE + leaf + JUMBF uuid + SHA-256 hard binding).**
 `Security/S2PA/ATProtoS2PACOSE` implements an attached COSE_Sign1 envelope with the normative
 ES256K algorithm (`-47`), canonical protected header `{1: -47}`, empty unprotected headers, the
 COSE `Sig_structure`, and 64-byte low-S secp256k1 signatures through the existing primitive. It
@@ -361,16 +363,20 @@ No trust-anchor chaining is performed.
 carries the COSE envelope and leaf DER, wraps it in a BMFF `uuid` box using the C2PA user-type
 UUID (`d8fec3d6-…`), verifies by recursive `bidb` extraction + leaf + COSE checks, and prepends
 the uuid box onto unchanged media bytes for MUXL-style presentation.
+**Hard binding (2026-08-13):** `hardBindingSHA256ForMediaData:` hashes canonical media alone
+(uuid carrier excluded by construction); `uuidBoxHardBindingMediaData:` /
+`verifyUUIDBox:hardBoundToMediaData:` / `presentationHardBindingMediaData:` sign and check that
+digest as the COSE payload — the MUXL-friendly “hash then prepend” path.
 
 - Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope, leaf certificate, and
   JUMBF/BMFF carrier; it consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository
   signatures, auth JWTs, or the Video transcoder path.
 - Evidence: `ATProtoS2PACOSETests`, `ATProtoS2PALeafCertificateTests`, and `ATProtoS2PAJUMBFTests`
-  (uuid round-trip + verify, presentation prepend, tampered-payload rejection). All registered in
-  `Tests/test_main.m`.
-- Explicit remainder: the full C2PA claim/assertion schema, hard-binding content hashes, and
-  Video/MUXL wiring remain open. This slice is cryptographic identity + a bounded uuid carrier,
-  not a complete C2PA/S2PA asset manifest.
+  (uuid round-trip + verify, presentation prepend, tampered-payload rejection, hard-binding
+  digest + presentation/verify + tamper). All registered in `Tests/test_main.m`.
+- Explicit remainder: the full C2PA claim/assertion schema (`c2pa.hash.data` exclusion maps, etc.)
+  and Video/MUXL producer wiring remain open. This slice is cryptographic identity + uuid carrier
+  + SHA-256 hard binding for prepended manifests, not a complete C2PA/S2PA asset manifest.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
   paths are unchanged.
 

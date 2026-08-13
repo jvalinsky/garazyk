@@ -9,8 +9,10 @@
  attached ES256K COSE_Sign1 envelope and the S2PA leaf certificate. The store
  is suitable as the payload of a BMFF `uuid` box using the C2PA user-type UUID
  (`d8fec3d6-1b0e-483c-9297-5828877ec481`), matching MUXL's `[uuid-c2pa]…`
- prepend pattern. This slice does not implement the full C2PA claim/assertion
- schema or hard-binding hashes.
+ prepend pattern. Hard-binding helpers hash canonical media bytes (SHA-256)
+ and use that digest as the COSE payload so the uuid carrier can be prepended
+ without invalidating the binding. Full C2PA claim/assertion schema remains
+ out of scope.
  */
 
 #import <Foundation/Foundation.h>
@@ -87,6 +89,42 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAJUMBFErrorCode) {
 + (nullable NSData *)presentationWithUUIDBox:(NSData *)uuidBox
                                    mediaData:(NSData *)mediaData
                                        error:(NSError **)error;
+
+/**
+ SHA-256 hard-binding digest over canonical media bytes (MUXL segment body).
+ The uuid/JUMBF carrier is excluded by hashing media alone before prepend.
+ */
++ (nullable NSData *)hardBindingSHA256ForMediaData:(NSData *)mediaData
+                                            error:(NSError **)error;
+
+/**
+ Signs the SHA-256 hard-binding digest of @c mediaData as the COSE payload and
+ returns the BMFF uuid box (does not prepend).
+ */
++ (nullable NSData *)uuidBoxHardBindingMediaData:(NSData *)mediaData
+                                    withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                            did:(nullable NSString *)did
+                                      notBefore:(NSDate *)notBefore
+                                       notAfter:(NSDate *)notAfter
+                                          error:(NSError **)error;
+
+/**
+ Verifies a uuid box whose COSE payload is the SHA-256 of @c mediaData.
+ */
++ (BOOL)verifyUUIDBox:(NSData *)box
+ hardBoundToMediaData:(NSData *)mediaData
+          expectedDID:(nullable NSString *)expectedDID
+                error:(NSError **)error;
+
+/**
+ Hard-binds + prepends: uuid box over SHA-256(media) then media bytes.
+ */
++ (nullable NSData *)presentationHardBindingMediaData:(NSData *)mediaData
+                                          withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                  did:(nullable NSString *)did
+                                            notBefore:(NSDate *)notBefore
+                                             notAfter:(NSDate *)notAfter
+                                                error:(NSError **)error;
 
 @end
 
