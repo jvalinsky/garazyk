@@ -1233,6 +1233,7 @@ int main(int argc, char *argv[]) {
       @"ATProtoS2PACOSETests",
       @"ATProtoS2PALeafCertificateTests",
       @"ATProtoS2PAHashDataAssertionTests",
+      @"ATProtoS2PAHashBMFFAssertionTests",
       @"ATProtoS2PAJUMBFTests",
       @"ATProtoWebTileTests",
       @"ATProtoWebTileMothershipTests",

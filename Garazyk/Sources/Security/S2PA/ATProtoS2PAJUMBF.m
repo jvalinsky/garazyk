@@ -4,6 +4,7 @@
 #import "Security/S2PA/ATProtoS2PACOSE.h"
 #import "Security/S2PA/ATProtoS2PALeafCertificate.h"
 #import "Security/S2PA/ATProtoS2PAHashDataAssertion.h"
+#import "Security/S2PA/ATProtoS2PAHashBMFFAssertion.h"
 #import <CommonCrypto/CommonDigest.h>
 #include <string.h>
 
@@ -440,6 +441,96 @@ static BOOL S2PACollectBidbPayloads(const uint8_t *bytes, NSUInteger length,
         return nil;
     }
     return [self presentationWithUUIDBox:box mediaData:mediaData error:error];
+}
+
++ (nullable NSData *)uuidBoxSigningHashBMFFAssertionForBMFFMediaData:(NSData *)bmffMedia
+                                                         withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                                 did:(nullable NSString *)did
+                                                           notBefore:(NSDate *)notBefore
+                                                            notAfter:(NSDate *)notAfter
+                                                               error:(NSError **)error {
+    if (![bmffMedia isKindOfClass:[NSData class]] || bmffMedia.length == 0 || !keyPair) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidArgument,
+                          @"BMFF media and key pair are required");
+        return nil;
+    }
+    NSArray *exclusions = @[ [ATProtoS2PAHashBMFFAssertion c2paUUIDBoxExclusion] ];
+    NSMutableData *zeroDigest = [NSMutableData dataWithLength:CC_SHA256_DIGEST_LENGTH];
+    ATProtoS2PAHashBMFFAssertion *provisional =
+        [[ATProtoS2PAHashBMFFAssertion alloc] initWithDigest:zeroDigest
+                                                  exclusions:exclusions
+                                                        name:ATProtoS2PAHashBMFFAssertionLabel];
+    NSData *provisionalCBOR = [provisional encodeCBOR:error];
+    if (!provisionalCBOR) return nil;
+    NSData *provisionalBox = [self uuidBoxSigningPayload:provisionalCBOR
+                                            withKeyPair:keyPair
+                                                    did:did
+                                              notBefore:notBefore
+                                               notAfter:notAfter
+                                                  error:error];
+    if (!provisionalBox) return nil;
+    NSMutableData *presentation = [provisionalBox mutableCopy];
+    [presentation appendData:bmffMedia];
+    NSData *digest = [ATProtoS2PAHashBMFFAssertion sha256DigestForBMFFData:presentation
+                                                                exclusions:exclusions
+                                                                     error:error];
+    if (!digest) return nil;
+    ATProtoS2PAHashBMFFAssertion *finalAssertion =
+        [[ATProtoS2PAHashBMFFAssertion alloc] initWithDigest:digest
+                                                  exclusions:exclusions
+                                                        name:ATProtoS2PAHashBMFFAssertionLabel];
+    NSData *finalCBOR = [finalAssertion encodeCBOR:error];
+    if (!finalCBOR) return nil;
+    NSData *finalBox = [self uuidBoxSigningPayload:finalCBOR
+                                      withKeyPair:keyPair
+                                              did:did
+                                        notBefore:notBefore
+                                         notAfter:notAfter
+                                            error:error];
+    if (!finalBox) return nil;
+    if (finalBox.length != provisionalBox.length) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidStructure,
+                          @"BMFF two-pass uuid box size changed after digest fill");
+        return nil;
+    }
+    return finalBox;
+}
+
++ (BOOL)verifyUUIDBox:(NSData *)box
+bmffBoundToPresentation:(NSData *)presentation
+           expectedDID:(nullable NSString *)expectedDID
+                 error:(NSError **)error {
+    if (![box isKindOfClass:[NSData class]] || box.length == 0 ||
+        ![presentation isKindOfClass:[NSData class]] || presentation.length < box.length) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorInvalidArgument,
+                          @"BMFF presentation and uuid box are required");
+        return NO;
+    }
+    if (![[presentation subdataWithRange:NSMakeRange(0, box.length)] isEqualToData:box]) {
+        S2PAJUMBFSetError(error, ATProtoS2PAJUMBFErrorVerificationFailed,
+                          @"presentation does not start with the supplied uuid box");
+        return NO;
+    }
+    NSData *store = [self manifestStoreFromBMFFUUIDBox:box error:error];
+    if (!store) return NO;
+    NSData *signature = nil;
+    NSData *certificate = nil;
+    if (![self extractSignature:&signature certificate:&certificate
+              fromManifestStore:store error:error]) {
+        return NO;
+    }
+    NSData *payload = [ATProtoS2PACOSE payloadFromEnvelope:signature error:error];
+    if (!payload) return NO;
+    ATProtoS2PAHashBMFFAssertion *assertion =
+        [ATProtoS2PAHashBMFFAssertion assertionFromCBOR:payload error:error];
+    if (!assertion) return NO;
+    if (![assertion verifyAgainstBMFFData:presentation error:error]) {
+        return NO;
+    }
+    return [self verifyUUIDBox:box
+               expectedPayload:payload
+                   expectedDID:expectedDID
+                         error:error];
 }
 
 @end

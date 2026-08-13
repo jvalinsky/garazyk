@@ -138,6 +138,28 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAJUMBFErrorCode) {
                                              notAfter:(NSDate *)notAfter
                                                 error:(NSError **)error;
 
+/**
+ Two-pass BMFF hard-bind: sizes a provisional uuid box, hashes
+ @c uuid||bmffMedia with @c /uuid C2PA exclusion (v3 offset||box), signs the
+ @c c2pa.hash.bmff.v3 assertion, returns the final uuid box (does not prepend).
+ @c bmffMedia must be a valid BMFF without the C2PA uuid box.
+ */
++ (nullable NSData *)uuidBoxSigningHashBMFFAssertionForBMFFMediaData:(NSData *)bmffMedia
+                                                         withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                                 did:(nullable NSString *)did
+                                                           notBefore:(NSDate *)notBefore
+                                                            notAfter:(NSDate *)notAfter
+                                                               error:(NSError **)error;
+
+/**
+ Verifies a uuid box whose COSE payload is a @c c2pa.hash.bmff.v3 assertion
+ against @c presentation (@c uuid||bmffMedia).
+ */
++ (BOOL)verifyUUIDBox:(NSData *)box
+  bmffBoundToPresentation:(NSData *)presentation
+             expectedDID:(nullable NSString *)expectedDID
+                   error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
