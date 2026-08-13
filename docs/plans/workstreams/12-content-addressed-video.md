@@ -23,8 +23,9 @@ keeps MUXL viable later; it is not an implementation of it.
 
 ## Status (2026-08-12)
 
-Phases 1–10 **complete**. Phase 11 (peer transports) remains deferred pending
-production bandwidth evidence.
+Phases 1–10 **complete**. Phase 11 (peer transports) is **closed-not-pursued**
+until CA VOD is in production and origin bandwidth is measured (2026-08-12
+decision); short-form peer swarming remains structurally out of scope.
 
 Short-form versus long-form segment policy is now split by
 [ADR 0037](../../adr/0037-video-segment-profile-short-vs-long.md). This
@@ -261,18 +262,21 @@ worth landing on its own merit even if later phases slip.
   `check_module_boundaries.sh` clean.
 - **Rollback.** Leave `mirrorFetchEnabled` / `JELCZ_CA_MIRROR_FETCH` off.
 
-## Deferred — needs evidence before implementation
+## Deferred — closed pending production evidence
 
-The item below is not ready. Per `docs/plans/README.md`, it needs source
-evidence, an owner boundary, a verification gate, and rollback notes recorded
-here before any implementation starts.
+The item below is **not** an open implementation backlog. Per `docs/plans/README.md`,
+it stays deferred with a recorded decision rather than drifting as "partial".
 
-- **Phase 11 — Peer transports.** Evaluated only after Phase 10 is in production
-  and origin bandwidth is measured. The candidate seam is the Phase 10 resolver.
-  iroh is the leading candidate (BLAKE3 range verification, QUIC, dial-by-key,
-  NAT traversal for residential seeders) and would run as a sidecar process, not
-  as a link-time dependency of the Objective-C tree. IPFS is rejected in ADR 0036
-  with reasons; do not re-open without new evidence.
+- **Phase 11 — Peer transports.** **Decision (2026-08-12): closed-not-pursued
+  until CA VOD is in production and origin bandwidth is measured.** Evaluated
+  only after Phase 10 is in production. The candidate seam is the Phase 10
+  resolver. iroh is the leading candidate (BLAKE3 range verification, QUIC,
+  dial-by-key, NAT traversal for residential seeders) and would run as a
+  sidecar process, not as a link-time dependency of the Objective-C tree. IPFS
+  is rejected in ADR 0036 with reasons; do not re-open without new evidence.
+
+  *Blocked on:* production CA VOD deployment + origin bandwidth measurements
+  (named input for reopening).
 
   *Short-form note:* peer transports for short-form are structurally dead, not
   just unmeasured. A WebRTC swarm needs concurrent viewers of the same asset;
