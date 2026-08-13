@@ -13,8 +13,9 @@
 
 Unique-origin hosts also serve shuttle.js / worker.js. CAR/MASL tile validation
 and path→`{status,headers,body}` resolution live in Core/Storage
-(`ATProtoWebTile`); host-side origin helpers gate postMessage peers. Full
-mothership mediation remains separate.
+(`ATProtoWebTile`). Host-side mothership mediation for worker `resolve-path`
+(and AT-network `sync.getBlob` tile loading) lives in
+`ATProtoWebTileMothership`. Deno `@dasl/tiles` remains separate.
  */
 
 #import <Foundation/Foundation.h>
