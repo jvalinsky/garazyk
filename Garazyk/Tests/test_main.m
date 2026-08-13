@@ -1236,6 +1236,7 @@ int main(int argc, char *argv[]) {
       @"ATProtoS2PAHashBMFFAssertionTests",
       @"ATProtoS2PASoftBindingAssertionTests",
       @"ATProtoS2PAClaimTests",
+      @"ATProtoS2PAIngredientAssertionTests",
       @"ATProtoS2PAJUMBFTests",
       @"ATProtoWebTileTests",
       @"ATProtoWebTileMothershipTests",
