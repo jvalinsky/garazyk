@@ -3,6 +3,7 @@
 #import "AdminUIServer/Packs/GZAdminUIPDSPack.h"
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZAdminUIDTOProjection.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "AdminUIServer/UITemplateEngine.h"
 
@@ -27,7 +28,9 @@
 }
 
 + (NSString *)renderAccountsPartial:(NSDictionary *)result {
-    NSArray<NSDictionary *> *accounts = [result[@"accounts"] isKindOfClass:[NSArray class]] ? result[@"accounts"] : @[];
+    NSArray<NSDictionary *> *accounts = GZAdminUIProjectDictionaries(
+        result[@"accounts"],
+        @[ @"did", @"handle", @"email" ]);
     NSMutableString *html = [NSMutableString stringWithString:@""];
 
     if (accounts.count > 0) {
@@ -57,16 +60,15 @@
 }
 
 + (NSString *)renderInvitesPartial:(NSDictionary *)result {
-    NSArray<NSDictionary *> *codes = [result[@"codes"] isKindOfClass:[NSArray class]] ? result[@"codes"] : @[];
+    NSArray<NSDictionary *> *codes = GZAdminUIProjectDictionaries(
+        result[@"codes"],
+        @[ @"code", @"available", @"uses" ]);
     NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Code</th><th>Available</th><th>Uses</th></tr></thead><tbody>"];
     if (result[@"error"]) {
         NSString *message = GZAdminUIEscaped(result[@"message"] ?: result[@"error"]);
         [html appendFormat:@"<tr><td colspan=\"3\" class=\"text-destructive\">%@</td></tr>", message];
     } else {
         for (NSDictionary *entry in codes) {
-            if (![entry isKindOfClass:[NSDictionary class]]) {
-                continue;
-            }
             NSString *code = GZAdminUIEscaped(entry[@"code"] ?: @"");
             // Lexicon: available is integer; uses is inviteCodeUse[].
             id availableValue = entry[@"available"];
@@ -99,11 +101,12 @@
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSString *did = result[@"did"] ?: @"";
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"account-detail-result\" aria-live=\"polite\"></div><div class=\"detail-grid\">"];
     NSArray *fields = @[@"did", @"handle", @"email", @"emailConfirmed", @"invitesDisabled", @"deactivatedAt"];
+    NSDictionary *account = GZAdminUIProjectDictionary(result, fields);
+    NSString *did = account[@"did"] ?: @"";
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"account-detail-result\" aria-live=\"polite\"></div><div class=\"detail-grid\">"];
     for (NSString *key in fields) {
-        id val = result[key];
+        id val = account[key];
         if (!val) continue;
         NSString *display = [val isKindOfClass:[NSString class]] ? GZAdminUIEscaped(val) : GZAdminUIEscaped([val description]);
         [html appendFormat:@"<div class=\"detail-field\"><span class=\"detail-label\">%@</span><span class=\"detail-value\">%@</span></div>", key, display];
@@ -123,7 +126,9 @@
         [html appendFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     } else {
         [html appendString:@"<table class=\"table\"><thead><tr><th>CID</th><th>Size</th><th>Type</th></tr></thead><tbody>"];
-        NSArray<NSDictionary *> *blobs = [result[@"blobs"] isKindOfClass:[NSArray class]] ? result[@"blobs"] : @[];
+        NSArray<NSDictionary *> *blobs = GZAdminUIProjectDictionaries(
+            result[@"blobs"],
+            @[ @"cid", @"size", @"mimeType" ]);
         for (NSDictionary *blob in blobs) {
             NSString *cid = GZAdminUIEscaped(blob[@"cid"] ?: @"");
             id sizeValue = blob[@"size"];
@@ -152,12 +157,20 @@
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
     // Prefer allowlisted *_total keys from PDSAdminService; accept camelCase lexicon aliases.
-    id repos = result[@"repos_total"] ?: result[@"repoCount"] ?: result[@"repos"] ?: @0;
-    id records = result[@"records_total"] ?: result[@"recordCount"] ?: result[@"records"] ?: @0;
-    id blobs = result[@"blobs_total"] ?: result[@"blobCount"] ?: result[@"blobs"] ?: @0;
-    id accounts = result[@"accounts_total"] ?: result[@"accountCount"] ?: result[@"accounts"] ?: @0;
-    id blobBytes = result[@"blobs_size_bytes"] ?: result[@"blobsSizeBytes"] ?: @0;
-    id reportsOpen = result[@"reports_open"] ?: result[@"reportsOpen"] ?: @0;
+    NSDictionary *stats = GZAdminUIProjectDictionary(result, @[
+        @"repos_total", @"repoCount", @"repos",
+        @"records_total", @"recordCount", @"records",
+        @"blobs_total", @"blobCount", @"blobs",
+        @"accounts_total", @"accountCount", @"accounts",
+        @"blobs_size_bytes", @"blobsSizeBytes",
+        @"reports_open", @"reportsOpen",
+    ]);
+    id repos = stats[@"repos_total"] ?: stats[@"repoCount"] ?: stats[@"repos"] ?: @0;
+    id records = stats[@"records_total"] ?: stats[@"recordCount"] ?: stats[@"records"] ?: @0;
+    id blobs = stats[@"blobs_total"] ?: stats[@"blobCount"] ?: stats[@"blobs"] ?: @0;
+    id accounts = stats[@"accounts_total"] ?: stats[@"accountCount"] ?: stats[@"accounts"] ?: @0;
+    id blobBytes = stats[@"blobs_size_bytes"] ?: stats[@"blobsSizeBytes"] ?: @0;
+    id reportsOpen = stats[@"reports_open"] ?: stats[@"reportsOpen"] ?: @0;
     NSString *(^esc)(id) = ^NSString *(id val) {
         if (!val || val == [NSNull null]) return @"0";
         return GZAdminUIEscaped([val isKindOfClass:[NSString class]] ? val : [val description]);
@@ -177,7 +190,9 @@
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSArray<NSDictionary *> *events = [result[@"events"] isKindOfClass:[NSArray class]] ? result[@"events"] : @[];
+    NSArray<NSDictionary *> *events = GZAdminUIProjectDictionaries(
+        result[@"events"],
+        @[ @"createdAt", @"action", @"subject", @"createdBy" ]);
     NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Time</th><th>Action</th><th>Subject</th><th>Created By</th></tr></thead><tbody>"];
     for (NSDictionary *event in events) {
         NSString *time = GZAdminUIEscaped(event[@"createdAt"] ?: @"");
@@ -203,7 +218,9 @@
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", GZAdminUIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSArray<NSDictionary *> *reports = [result[@"reports"] isKindOfClass:[NSArray class]] ? result[@"reports"] : @[];
+    NSArray<NSDictionary *> *reports = GZAdminUIProjectDictionaries(
+        result[@"reports"],
+        @[ @"id", @"createdAt", @"status" ]);
     NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"pds-reports-result\" aria-live=\"polite\"></div><table class=\"table\"><thead><tr><th>ID</th><th>Created At</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *report in reports) {
         NSString *reportID = GZAdminUIEscaped(report[@"id"] ?: @"");

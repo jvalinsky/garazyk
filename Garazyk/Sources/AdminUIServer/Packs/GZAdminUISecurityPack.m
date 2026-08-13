@@ -3,30 +3,8 @@
 #import "AdminUIServer/Packs/GZAdminUISecurityPack.h"
 
 #import "AdminUIServer/GZAdminUIHost+Private.h"
+#import "AdminUIServer/GZAdminUIDTOProjection.h"
 #import "AdminUIServer/UITemplateEngine.h"
-
-static NSArray<NSDictionary *> *GZAdminUIProjectDictionaries(id raw,
-                                                             NSArray<NSString *> *keys) {
-    if (![raw isKindOfClass:[NSArray class]]) {
-        return @[];
-    }
-    NSMutableArray *out = [NSMutableArray array];
-    for (id item in (NSArray *)raw) {
-        if (![item isKindOfClass:[NSDictionary class]]) {
-            continue;
-        }
-        NSDictionary *src = (NSDictionary *)item;
-        NSMutableDictionary *row = [NSMutableDictionary dictionary];
-        for (NSString *key in keys) {
-            id value = src[key];
-            if (value && value != [NSNull null]) {
-                row[key] = value;
-            }
-        }
-        [out addObject:row];
-    }
-    return out;
-}
 
 @implementation GZAdminUISecurityPack
 
