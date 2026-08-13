@@ -156,9 +156,41 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAJUMBFErrorCode) {
  against @c presentation (@c uuid||bmffMedia).
  */
 + (BOOL)verifyUUIDBox:(NSData *)box
-  bmffBoundToPresentation:(NSData *)presentation
-             expectedDID:(nullable NSString *)expectedDID
-                   error:(NSError **)error;
+bmffBoundToPresentation:(NSData *)presentation
+           expectedDID:(nullable NSString *)expectedDID
+                 error:(NSError **)error;
+
+/**
+ Builds a Manifest Store with assertion store + claim + signature + credentials.
+ Assertion/claim content uses @c cbor boxes; signature/credentials remain @c bidb
+ so existing extractors keep working.
+ */
++ (nullable NSData *)manifestStoreWithAssertionStore:(NSData *)assertionStoreJUMBF
+                                           claimJUMBF:(NSData *)claimJUMBF
+                                           signature:(NSData *)signature
+                                        certificate:(NSData *)certificate
+                                              error:(NSError **)error;
+
+/**
+ Signs a claim CBOR built for @c assertions, embeds assertion store + claim +
+ signature + credentials, and returns the BMFF uuid box.
+ */
++ (nullable NSData *)uuidBoxSigningAssertions:(NSArray *)assertions
+                                   instanceID:(NSString *)instanceID
+                               generatorName:(NSString *)generatorName
+                                 withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                         did:(nullable NSString *)did
+                                   notBefore:(NSDate *)notBefore
+                                    notAfter:(NSDate *)notAfter
+                                       error:(NSError **)error;
+
+/**
+ Verifies a claim-backed uuid box: COSE payload must be the claim CBOR, leaf
+ verifies, and each created_assertions hashed URI matches the assertion store.
+ */
++ (BOOL)verifyUUIDBoxClaimBound:(NSData *)box
+                    expectedDID:(nullable NSString *)expectedDID
+                          error:(NSError **)error;
 
 @end
 
