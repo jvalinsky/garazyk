@@ -428,6 +428,72 @@
     XCTAssertEqual(response.statusCode, 404);
 }
 
+- (void)testLabTileEmbedRequiresBaseHostAndServesIframe {
+    ATProtoHttpRequest *missing = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                                 methodString:@"GET"
+                                                                         path:@"/lab/tiles/embed"
+                                                                  queryString:@""
+                                                                   queryParams:@{}
+                                                                       version:@"HTTP/1.1"
+                                                                       headers:@{@"Host": @"admin.test"}
+                                                                          body:[NSData data]
+                                                                  remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *fail = [self.runtime dispatchRequestForTesting:missing];
+    XCTAssertEqual(fail.statusCode, 503);
+
+    self.config.tilesBaseHost = @"example.test";
+    ATProtoHttpRequest *okReq = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                               methodString:@"GET"
+                                                                       path:@"/lab/tiles/embed"
+                                                                queryString:@""
+                                                                 queryParams:@{}
+                                                                     version:@"HTTP/1.1"
+                                                                     headers:@{@"Host": @"admin.test"}
+                                                                        body:[NSData data]
+                                                                remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *ok = [self.runtime dispatchRequestForTesting:okReq];
+    XCTAssertEqual(ok.statusCode, 200);
+    XCTAssertTrue([ok.bodyString containsString:@"load.example.test"]);
+    XCTAssertTrue([ok.bodyString containsString:@"tiles-protocol-up-data-ready"]);
+    XCTAssertTrue([ok.bodyString containsString:@"tiles-protocol-down-data-payload"]);
+}
+
+- (void)testLabTileMothershipResolvePathDemoFixture {
+    NSDictionary *payload = @{@"type": @"resolve-path", @"path": @"/app.js", @"requestId": @3};
+    NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                                 methodString:@"POST"
+                                                                         path:@"/lab/tiles/mothership"
+                                                                  queryString:@""
+                                                                   queryParams:@{}
+                                                                       version:@"HTTP/1.1"
+                                                                       headers:@{@"Content-Type": @"application/json"}
+                                                                          body:body
+                                                                  remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    XCTAssertEqual(response.statusCode, 200);
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil];
+    XCTAssertEqualObjects(json[@"requestId"], @3);
+    XCTAssertEqual([json[@"response"][@"status"] integerValue], 200);
+    XCTAssertTrue([json[@"response"][@"body"] containsString:@"garazyk-demo-tile"]);
+}
+
+- (void)testWebTilesDataProtocolTrustedOriginQuery {
+    ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET
+                                                                 methodString:@"GET"
+                                                                         path:@"/.well-known/web-tiles/data.js"
+                                                                  queryString:@"trustedOrigin=http%3A%2F%2Fadmin.test"
+                                                                   queryParams:@{@"trustedOrigin": @"http://admin.test"}
+                                                                       version:@"HTTP/1.1"
+                                                                       headers:@{}
+                                                                          body:[NSData data]
+                                                                  remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.bodyString containsString:@"http://admin.test"]);
+    XCTAssertTrue([response.bodyString containsString:@"event.origin !=="]);
+}
+
 /*!
  @test testRuntimeStartsSuccessfully
 

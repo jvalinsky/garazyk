@@ -6,6 +6,7 @@
     "./packages/hamownia",
     "./packages/narzedzia",
     "./packages/tui",
+    "./packages/tiles",
     "./scripts/docs",
     "./scripts/scenario-dashboard"
   ],
@@ -45,6 +46,8 @@
     "@garazyk/tui": "./packages/tui/mod.ts",
     "@garazyk/tui/testing": "./packages/tui/testing/mod.ts",
     "@garazyk/tui/testing/": "./packages/tui/testing/",
+    "@garazyk/tiles": "./packages/tiles/mod.ts",
+    "@garazyk/tiles/": "./packages/tiles/",
     "@cliffy/command": "jsr:@cliffy/command@^1.1.0",
     "@cliffy/prompt": "jsr:@cliffy/prompt@^1.1.0",
     "@cliffy/table": "jsr:@cliffy/table@^1.1.0"

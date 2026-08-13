@@ -83,4 +83,13 @@
     XCTAssertEqualObjects(url, @"https://abcdefghijklmnopqrst.example.test");
 }
 
+- (void)testEmbedHTMLIframesLoadHostAndTrustedProtocol {
+    NSString *html = GZAdminUITileEmbedHTML(@"http", @"example.test", @"http://admin.example.test");
+    XCTAssertTrue([html containsString:@"http://load.example.test/.well-known/web-tiles/"]);
+    XCTAssertTrue([html containsString:@"tiles-protocol-up-data-ready"]);
+    XCTAssertTrue([html containsString:@"tiles-protocol-down-data-payload"]);
+    XCTAssertTrue([html containsString:@"isTrusted"]);
+    XCTAssertTrue([html containsString:@"iframe"]);
+}
+
 @end

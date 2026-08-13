@@ -65,6 +65,11 @@ void GZAdminUIApplyNonceCSP(ATProtoHttpResponse *response, NSString *nonce, NSSt
 @property(nonatomic, strong) GZAdminUIAuthManager *authManager;
 /** @abstract Synchronous proxy for configured PDS, AppView, and Ozone operations. */
 @property(nonatomic, strong) GZAdminUIBackendClient *backendClient;
+/**
+ Injected tile mothership boundary (optional). When nil, lab tile routes use
+ the built-in demo fixture resolver.
+ */
+@property(nonatomic, strong, nullable) id tilePathResolver;
 /** @abstract Indicates whether the runtime has started serving requests. */
 @property(nonatomic, assign, readwrite, getter=isRunning) BOOL running;
 

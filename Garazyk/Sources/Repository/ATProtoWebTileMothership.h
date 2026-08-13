@@ -9,7 +9,7 @@
  @c resolve-path. This mediator answers with the normative
  @c { status, headers, body } shape from a CAR-backed @c ATProtoWebTile.
  AT-network loading of the tile archive uses @c +tileWithGetBlob… below.
- Deno @dasl/tiles package remains out of scope.
+ Deno @dasl/tiles package remains out of scope — use workspace `@garazyk/tiles`.
  */
 
 #import <Foundation/Foundation.h>
