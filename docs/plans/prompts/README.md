@@ -1,6 +1,6 @@
 ---
 title: Phase Execution Prompts
-last_verified: 2026-08-08
+last_verified: 2026-08-13
 ---
 
 # Phase Execution Prompts
@@ -9,10 +9,6 @@ Self-contained agent prompts that execute the remaining mega-plan work.
 These are **derived execution prompts, not plans**: the
 [mega plan](../mega-plan.md) and workstreams stay authoritative. If a prompt
 and a workstream disagree, the workstream wins and the prompt gets fixed.
-
-Two phases remain open; see the index below. Completed prompts are archived
-rather than deleted, because several are cited by name from ADRs and review
-documents.
 
 ## Loop protocol
 
@@ -47,16 +43,14 @@ A driver (human, the primary Codex agent, or a delegated worker) repeats:
 Rules:
 
 - Never run two mutating phases concurrently in one worktree. Parallel
-  execution requires separate git worktrees (phases 1-5 are independent).
+  execution requires separate git worktrees.
   **Before starting any mutating phase, run `git status`; if another
   phase's uncommitted changes are present, commit or coordinate first —
-  never fold two phases into one commit.** (Added 2026-07-17 after
-  phases 6 and 7 mixed in the main worktree.)
+  never fold two phases into one commit.**
 - Frontmatter must stay one valid YAML block: only the declared keys
   (`phase`, `title`, `status`, `agent`, `depends_on`, optionally
   `last_updated`/`completed_at`/`commit`). Progress notes belong in a
-  `## Progress` body section, never in frontmatter. (Added 2026-07-17
-  after phase 7's frontmatter was corrupted by inline notes.)
+  `## Progress` body section, never in frontmatter.
 - Set `status: in-progress` only together with a body note saying what
   started; a bare status flip with no recorded work gets reset to
   `pending` on review.
@@ -72,18 +66,24 @@ These are Codex built-in agent types; project audit roles live under
 
 ## Phase index
 
-Only open phases live here. The 23 phases that reached `status: complete` were
-moved to [`docs/archive/planning/phase-prompts/`](../../archive/planning/phase-prompts/README.md)
-on 2026-08-05, with a table mapping each to the workstream or mega-plan entry
-that records its outcome.
+Completed prompts are archived under
+[`docs/archive/planning/phase-prompts/`](../../archive/planning/phase-prompts/README.md)
+(including phase 30 Admin UI extraction). Open prompts:
 
 | # | File | Focus | Status | Depends on |
 | - | ---- | ----- | ------ | ---------- |
 | 5 | [phase-05](phase-05-repo-boundaries.md) | Deno repo extraction and package publication | `blocked` — maintainer must lift the publication deferral | — |
-| 30 | [phase-30](phase-30-admin-ui-library-extraction.md) | Extract `ATProtoAdminUI`, invert route registration (workstream 11 M2) | `in-progress` — M2.1–M2.6 implemented; closeout checks blocked | — |
+| 31 | [phase-31](phase-31-s2pa-ingredient-verify.md) | S2PA ingredient `validationResults` + embedded-manifest verify | `pending` | — |
+| 32 | [phase-32](phase-32-s2pa-merkle-bmff.md) | S2PA `c2pa.hash.bmff.v3` Merkle trees | `pending` | — |
+| 33 | [phase-33](phase-33-s2pa-soft-binding-algs.md) | Soft-binding algorithm compute/verify | `pending` (Slice 1 needs alg decision) | — |
+| 34 | [phase-34](phase-34-dasl-tiles-package-and-embed.md) | Deno tiles package + live Admin UI embed | `pending` | — |
+| 35 | [phase-35](phase-35-ws16-iroh-sidecar.md) | WS16 iroh sidecar + live Streamplace mesh | `blocked` — production CA VOD or lab exception | — |
 
-Phase 30 is the only actionable phase prompt. Phase 5 cannot start until a
-future maintainer message explicitly reopens JSR publication (see its
-`## Blocked on` section). Workstream 03 R1 source synchronization is complete
-without publication; one no-setup runtime compatibility check remains pending
-because the local service topology is unavailable under current disk headroom.
+**Suggested order:** 31 → 32 → 34 → 33 (after alg decision) → 35 (after unblock).
+Phases 31–34 are independent of each other for `depends_on`; run them in
+separate worktrees if parallelizing.
+
+Phase 5 cannot start until a future maintainer message explicitly reopens JSR
+publication. Workstream 03 R1 source synchronization is complete without
+publication; one no-setup runtime compatibility check remains pending because
+the local service topology is unavailable under current disk headroom.
