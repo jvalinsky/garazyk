@@ -26,6 +26,7 @@
 @property (nonatomic, strong) ATProtoHttpServer *httpServer;
 @property (nonatomic, strong) ATProtoXrpcDispatcher *dispatcher;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
+@property (nonatomic, strong) NSDate *startedAt;
 @end
 
 @implementation GZChatRuntime
@@ -123,26 +124,23 @@
                          [response setBodyString:@"ok"];
                      }];
 
-    // Admin: list conversations (privacy-safe metadata only)
+    // Admin: list conversations (privacy-safe metadata only; Bearer admin secret required)
     [self.httpServer addRoute:@"GET"
                         path:@"/_admin/convos"
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        if (![self gz_authorizeAdminRequest:request response:response]) {
+            return;
+        }
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSError *err = nil;
         NSArray *convos = [self.chatService listAllConversationsWithLimit:25 cursor:cursor error:&err];
         if (convos) {
-            // Privacy-safe: strip message bodies from lastMessage
             NSMutableArray *safe = [NSMutableArray arrayWithCapacity:convos.count];
             for (NSDictionary *c in convos) {
-                NSMutableDictionary *mc = [c mutableCopy];
-                id lastMsg = mc[@"lastMessage"];
-                if ([lastMsg isKindOfClass:[NSDictionary class]]) {
-                    NSMutableDictionary *safeMsg = [(NSDictionary *)lastMsg mutableCopy];
-                    [safeMsg removeObjectForKey:@"text"];
-                    [safeMsg removeObjectForKey:@"ciphertext"];
-                    mc[@"lastMessage"] = safeMsg;
+                NSDictionary *dto = [self gz_safeConvoDTO:c];
+                if (dto) {
+                    [safe addObject:dto];
                 }
-                [safe addObject:mc];
             }
             response.statusCode = 200;
             [response setJsonBody:@{@"convos": safe, @"cursor": cursor ?: @""}];
@@ -156,6 +154,9 @@
     [self.httpServer addRoute:@"GET"
                         path:@"/_admin/messages"
                      handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        if (![self gz_authorizeAdminRequest:request response:response]) {
+            return;
+        }
         NSString *convoID = [request queryParamForKey:@"convoId"];
         if (convoID.length == 0) {
             response.statusCode = 400;
@@ -166,13 +167,12 @@
         NSError *err = nil;
         NSArray *msgs = [self.chatService getMessagesForConversation:convoID limit:50 cursor:cursor error:&err];
         if (msgs) {
-            // Privacy-safe: strip text/ciphertext, keep only metadata
             NSMutableArray *safe = [NSMutableArray arrayWithCapacity:msgs.count];
             for (NSDictionary *m in msgs) {
-                NSMutableDictionary *mm = [m mutableCopy];
-                [mm removeObjectForKey:@"text"];
-                [mm removeObjectForKey:@"ciphertext"];
-                [safe addObject:mm];
+                NSDictionary *dto = [self gz_safeMessageDTO:m];
+                if (dto) {
+                    [safe addObject:dto];
+                }
             }
             response.statusCode = 200;
             [response setJsonBody:@{@"messages": safe, @"cursor": cursor ?: @""}];
@@ -180,6 +180,84 @@
             response.statusCode = 500;
             [response setJsonBody:@{@"error": @"messages_failed", @"message": err.localizedDescription ?: @"unknown"}];
         }
+    }];
+
+    // Admin: cheap overview counters (COUNT / PRAGMA only)
+    [self.httpServer addRoute:@"GET"
+                        path:@"/_admin/stats"
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        if (![self gz_authorizeAdminRequest:request response:response]) {
+            return;
+        }
+        NSError *err = nil;
+        NSDictionary *stats = [self.chatService adminOverviewStatsWithError:&err];
+        if (!stats) {
+            response.statusCode = 500;
+            [response setJsonBody:@{@"error": @"stats_failed", @"message": err.localizedDescription ?: @"unknown"}];
+            return;
+        }
+        NSMutableDictionary *body = [stats mutableCopy];
+        NSTimeInterval uptime = self.startedAt ? [[NSDate date] timeIntervalSinceDate:self.startedAt] : 0;
+        body[@"uptimeSeconds"] = @((long long)MAX(0, uptime));
+        body[@"health"] = @"ok";
+        response.statusCode = 200;
+        [response setJsonBody:[body copy]];
+    }];
+
+    // Admin: lock conversation
+    [self.httpServer addRoute:@"POST"
+                        path:@"/_admin/lock"
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        if (![self gz_authorizeAdminRequest:request response:response]) {
+            return;
+        }
+        NSString *convoID = nil;
+        if ([request.jsonBody[@"convoId"] isKindOfClass:[NSString class]]) {
+            convoID = request.jsonBody[@"convoId"];
+        } else {
+            convoID = [request queryParamForKey:@"convoId"];
+        }
+        if (convoID.length == 0) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"convo_id_required"}];
+            return;
+        }
+        NSError *err = nil;
+        if (![self.chatService lockConversation:convoID error:&err]) {
+            response.statusCode = 500;
+            [response setJsonBody:@{@"error": @"lock_failed", @"message": err.localizedDescription ?: @"unknown"}];
+            return;
+        }
+        response.statusCode = 200;
+        [response setJsonBody:@{@"ok": @YES, @"convoId": convoID, @"locked": @YES}];
+    }];
+
+    // Admin: unlock conversation
+    [self.httpServer addRoute:@"POST"
+                        path:@"/_admin/unlock"
+                     handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+        if (![self gz_authorizeAdminRequest:request response:response]) {
+            return;
+        }
+        NSString *convoID = nil;
+        if ([request.jsonBody[@"convoId"] isKindOfClass:[NSString class]]) {
+            convoID = request.jsonBody[@"convoId"];
+        } else {
+            convoID = [request queryParamForKey:@"convoId"];
+        }
+        if (convoID.length == 0) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"convo_id_required"}];
+            return;
+        }
+        NSError *err = nil;
+        if (![self.chatService unlockConversation:convoID error:&err]) {
+            response.statusCode = 500;
+            [response setJsonBody:@{@"error": @"unlock_failed", @"message": err.localizedDescription ?: @"unknown"}];
+            return;
+        }
+        response.statusCode = 200;
+        [response setJsonBody:@{@"ok": @YES, @"convoId": convoID, @"locked": @NO}];
     }];
 
     // Root endpoint - display ASCII art
@@ -229,6 +307,7 @@
     if (![self.httpServer startWithError:error]) return NO;
     
     self.isRunning = YES;
+    self.startedAt = [NSDate date];
     GZ_LOG_INFO(@"Chat service started on port %lu", (unsigned long)self.httpPort);
     return YES;
 }
@@ -242,6 +321,84 @@
     [self.httpServer stop];
     [self.db close];
     self.isRunning = NO;
+}
+
+#pragma mark - Admin helpers
+
+- (BOOL)gz_authorizeAdminRequest:(ATProtoHttpRequest *)request
+                        response:(ATProtoHttpResponse *)response {
+    NSString *secret = self.configuration.adminSecret;
+    if (secret.length == 0) {
+        response.statusCode = 503;
+        [response setJsonBody:@{
+            @"error": @"admin_unavailable",
+            @"message": @"Chat admin secret is not configured"
+        }];
+        return NO;
+    }
+    NSString *auth = [request headerForKey:@"Authorization"];
+    if (auth.length == 0) {
+        auth = [request headerForKey:@"authorization"];
+    }
+    NSString *token = nil;
+    if ([auth hasPrefix:@"Bearer "] || [auth hasPrefix:@"bearer "]) {
+        token = [[auth substringFromIndex:7]
+            stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    }
+    if (token.length == 0 || ![token isEqualToString:secret]) {
+        response.statusCode = 401;
+        [response setJsonBody:@{@"error": @"unauthorized"}];
+        return NO;
+    }
+    return YES;
+}
+
+- (nullable NSDictionary *)gz_safeMessageDTO:(NSDictionary *)message {
+    if (![message isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+    NSMutableDictionary *dto = [NSMutableDictionary dictionary];
+    id mid = message[@"id"];
+    if (mid) dto[@"id"] = mid;
+    id sender = message[@"senderDid"] ?: message[@"sender"];
+    if (sender) dto[@"senderDid"] = sender;
+    id sentAt = message[@"createdAt"] ?: message[@"sentAt"];
+    if (sentAt) dto[@"createdAt"] = sentAt;
+    id mode = message[@"mode"] ?: message[@"type"];
+    if (mode) dto[@"mode"] = mode;
+    // Never include text, ciphertext, embedJson, or other body material.
+    return [dto copy];
+}
+
+- (nullable NSDictionary *)gz_safeConvoDTO:(NSDictionary *)convo {
+    if (![convo isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+    NSMutableDictionary *dto = [NSMutableDictionary dictionary];
+    id cid = convo[@"id"];
+    if (cid) dto[@"id"] = cid;
+    id mode = convo[@"mode"];
+    if (mode) dto[@"mode"] = mode;
+    id createdAt = convo[@"createdAt"];
+    if (createdAt) dto[@"createdAt"] = createdAt;
+    id updatedAt = convo[@"updatedAt"];
+    if (updatedAt) dto[@"updatedAt"] = updatedAt;
+    id locked = convo[@"locked"];
+    dto[@"locked"] = @([locked respondsToSelector:@selector(boolValue)] ? [locked boolValue] : NO);
+    NSArray *members = convo[@"members"];
+    if ([members isKindOfClass:[NSArray class]]) {
+        dto[@"memberCount"] = @(members.count);
+    } else {
+        dto[@"memberCount"] = @0;
+    }
+    id lastMsg = convo[@"lastMessage"];
+    if ([lastMsg isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *safeLast = [self gz_safeMessageDTO:lastMsg];
+        if (safeLast) {
+            dto[@"lastMessage"] = safeLast;
+        }
+    }
+    return [dto copy];
 }
 
 @end

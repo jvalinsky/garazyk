@@ -140,7 +140,7 @@ static BOOL ChatServiceTableExists(PDSDatabase *database, NSString *tableName) {
 
 - (nullable NSDictionary *)getConversationWithId:(NSString *)convoId
                                            error:(NSError **)error {
-    NSString *query = @"SELECT id, mode, created_at, updated_at FROM conversations WHERE id = ?";
+    NSString *query = @"SELECT id, mode, locked, created_at, updated_at FROM conversations WHERE id = ?";
     NSError *queryError = nil;
     NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
                                                                       params:@[convoId]
@@ -185,6 +185,7 @@ static BOOL ChatServiceTableExists(PDSDatabase *database, NSString *tableName) {
     NSMutableDictionary *conversation = [@{
         @"id": convoRow[@"id"],
         @"mode": convoRow[@"mode"] ?: @"plaintext",
+        @"locked": @([convoRow[@"locked"] integerValue] != 0),
         @"createdAt": convoRow[@"created_at"],
         @"updatedAt": convoRow[@"updated_at"],
         @"members": members,
@@ -595,6 +596,32 @@ static BOOL ChatServiceTableExists(PDSDatabase *database, NSString *tableName) {
     return [(PDSDatabase *)self.database executeParameterizedUpdate:query
                                             params:@[now, convoId]
                                                  error:error];
+}
+
+- (nullable NSDictionary<NSString *, id> *)adminOverviewStatsWithError:(NSError **)error {
+    PDSDatabase *db = (PDSDatabase *)self.database;
+    NSMutableDictionary *stats = [NSMutableDictionary dictionary];
+
+    NSArray *(^countQuery)(NSString *) = ^NSArray *(NSString *sql) {
+        return [db executeParameterizedQuery:sql params:@[] error:nil] ?: @[];
+    };
+
+    stats[@"conversationsTotal"] = countQuery(@"SELECT COUNT(*) AS count FROM conversations").firstObject[@"count"] ?: @0;
+    stats[@"conversationsLocked"] = countQuery(@"SELECT COUNT(*) AS count FROM conversations WHERE locked = 1").firstObject[@"count"] ?: @0;
+    stats[@"conversationsE2EE"] = countQuery(@"SELECT COUNT(*) AS count FROM conversations WHERE mode = 'e2ee'").firstObject[@"count"] ?: @0;
+    stats[@"conversationsPlaintext"] = countQuery(@"SELECT COUNT(*) AS count FROM conversations WHERE mode = 'plaintext' OR mode IS NULL OR mode = ''").firstObject[@"count"] ?: @0;
+    stats[@"membersActive"] = countQuery(@"SELECT COUNT(*) AS count FROM conversation_members WHERE status != 'left'").firstObject[@"count"] ?: @0;
+    stats[@"messagesTotal"] = countQuery(@"SELECT COUNT(*) AS count FROM messages").firstObject[@"count"] ?: @0;
+
+    NSArray *pageCount = [db executeParameterizedQuery:@"PRAGMA page_count" params:@[] error:nil];
+    NSArray *pageSize = [db executeParameterizedQuery:@"PRAGMA page_size" params:@[] error:nil];
+    int64_t pages = [pageCount.firstObject[@"page_count"] longLongValue];
+    int64_t psz = [pageSize.firstObject[@"page_size"] longLongValue];
+    if (psz <= 0) psz = 4096;
+    stats[@"database"] = @{ @"storageBytes": @(pages * psz) };
+
+    if (error) *error = nil;
+    return [stats copy];
 }
 
 #pragma mark - Conversation Mode

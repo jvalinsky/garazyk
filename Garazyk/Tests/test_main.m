@@ -1247,6 +1247,7 @@ int main(int argc, char *argv[]) {
       @"XRPCContractAuditTests",
       @"ChatGroupLifecycleTests",
       @"SyrenaChatCommandTests",
+      @"ChatAdminUIPackTests",
       @"ATProtoMediaCoreTests",
       @"ATProtoMediaServiceConfigurationTests",
       @"ATProtoMediaSQLiteStoreTests",
