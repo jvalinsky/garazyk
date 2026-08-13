@@ -375,8 +375,13 @@ digest as the COSE payload — the MUXL-friendly “hash then prepend” path.
   (uuid round-trip + verify, presentation prepend, tampered-payload rejection, hard-binding
   digest + presentation/verify + tamper). All registered in `Tests/test_main.m`.
 - Explicit remainder: the full C2PA claim/assertion schema (`c2pa.hash.data` exclusion maps, etc.)
-  and Video/MUXL producer wiring remain open. This slice is cryptographic identity + uuid carrier
-  + SHA-256 hard binding for prepended manifests, not a complete C2PA/S2PA asset manifest.
+  remains open. **MUXL producer wiring (2026-08-13):**
+  `ATProtoMUXLPlayback` `presentationByHardBindingSegment:` /
+  `verifyHardBoundPresentation:` prepends/verifies S2PA uuid over a canonical
+  MUXL segment; `canonicalSegmentsFromPresentation:` recovers the unchanged
+  segment (C2PA uuid skipped). Evidence: `ATProtoMUXLPlaybackTests`
+  `testS2PAHardBindingPreservesCanonicalMUXL`. Full claim schema and transcoder
+  auto-sign remain out of this slice.
 - Rollback: remove the additive S2PA directory and test registration; existing signing and media
   paths are unchanged.
 

@@ -42,9 +42,9 @@ optional PDS2 (2587).
 # Uses container DNS (jelcz-a:2596) as pull-peer provider; host URLs for curl.
 # Verified 2026-08-13 after restaging Linux jelcz (GNUstep `__unused` fix).
 
-# Optional: ffmpeg testsrc → Streamplace RTMP
-./scripts/demo/streamplace_peership_up.sh --publish
-```
+# Optional: live PDS origin announce (WS16 Phase 3)
+./scripts/demo/jelcz_origin_announce_smoke.sh
+# Requires local-network PDS on :2583 and build/bin/jelcz.
 
 | UI | URL |
 | --- | --- |

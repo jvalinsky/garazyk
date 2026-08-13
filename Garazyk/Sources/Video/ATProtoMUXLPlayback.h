@@ -13,6 +13,8 @@
 
 #import <Foundation/Foundation.h>
 
+@class ATProtoSecp256k1KeyPair;
+
 NS_ASSUME_NONNULL_BEGIN
 
 FOUNDATION_EXPORT NSString * const ATProtoMUXLPlaybackErrorDomain;
@@ -56,6 +58,26 @@ typedef NS_ENUM(NSInteger, ATProtoMUXLPlaybackErrorCode) {
  */
 + (nullable NSArray<NSData *> *)splitSegments:(NSData *)segmentStream
                                         error:(NSError **)error;
+
+/**
+ Prepends an S2PA/C2PA uuid box that hard-binds (SHA-256) the canonical
+ MUXL segment bytes. Recovery via @c canonicalSegmentsFromPresentation:
+ skips the C2PA uuid and returns the unchanged MUXL stream.
+ */
++ (nullable NSData *)presentationByHardBindingSegment:(NSData *)segment
+                                          withKeyPair:(ATProtoSecp256k1KeyPair *)keyPair
+                                                  did:(nullable NSString *)did
+                                            notBefore:(NSDate *)notBefore
+                                             notAfter:(NSDate *)notAfter
+                                                error:(NSError **)error;
+
+/**
+ Verifies a leading C2PA uuid box hard-bound to the trailing MUXL segment
+ bytes (everything after the first BMFF box).
+ */
++ (BOOL)verifyHardBoundPresentation:(NSData *)presentation
+                        expectedDID:(nullable NSString *)expectedDID
+                              error:(NSError **)error;
 
 @end
 

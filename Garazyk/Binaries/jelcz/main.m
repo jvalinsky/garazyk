@@ -75,6 +75,49 @@
 }
 @end
 
+/**
+ URLSession client for operator-configured PDS writes (WS16 Phase 3).
+ SafeHTTP SSRF allowlists reject loopback PDS URLs used in labs.
+ */
+@interface GZJelczAnnounceHTTPClient : NSObject <ATProtoCAMirrorHTTPClient>
+@end
+
+@implementation GZJelczAnnounceHTTPClient
+- (NSData *)sendSynchronousRequest:(NSURLRequest *)request
+                           options:(id)options
+                          response:(NSHTTPURLResponse **)response
+                             error:(NSError **)error {
+    (void)options;
+    __block NSData *body = nil;
+    __block NSHTTPURLResponse *resp = nil;
+    __block NSError *reqError = nil;
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    NSURLSessionConfiguration *cfg = [NSURLSessionConfiguration ephemeralSessionConfiguration];
+    cfg.timeoutIntervalForRequest = MAX(request.timeoutInterval, 30.0);
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:cfg];
+    [[session dataTaskWithRequest:request
+                completionHandler:^(NSData *data, NSURLResponse *urlResp, NSError *taskError) {
+                    body = data;
+                    resp = (NSHTTPURLResponse *)urlResp;
+                    reqError = taskError;
+                    dispatch_semaphore_signal(sema);
+                    [session finishTasksAndInvalidate];
+                }] resume];
+    NSTimeInterval wait = cfg.timeoutIntervalForRequest + 5.0;
+    if (dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(wait * NSEC_PER_SEC))) != 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"GZJelczAnnounceHTTPClient"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"announce HTTP timed out"}];
+        }
+        return nil;
+    }
+    if (response) *response = resp;
+    if (error && reqError) *error = reqError;
+    return reqError ? nil : body;
+}
+@end
+
 /** Tries Streamplace getVideoBlob first, then RASL well-known. */
 @interface GZJelczCAMirrorCompositeFetcher : NSObject <ATProtoCAMirrorFetching>
 @property (nonatomic, strong) id<ATProtoCAMirrorFetching> primary;
@@ -458,7 +501,7 @@ static int run_serve(NSArray<NSString *> *args) {
                 NSString *serverDID =
                     env[@"JELCZ_ORIGIN_ANNOUNCE_SERVER_DID"] ?: config.serviceDID ?: @"did:web:localhost";
                 GZJelczOriginAnnouncer *ann =
-                    [[GZJelczOriginAnnouncer alloc] initWithHTTPClient:demoHTTP
+                    [[GZJelczOriginAnnouncer alloc] initWithHTTPClient:[[GZJelczAnnounceHTTPClient alloc] init]
                                                             pdsBaseURL:pds
                                                             identifier:announceId
                                                            appPassword:announcePass
