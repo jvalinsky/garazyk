@@ -365,6 +365,14 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
       requireCapability(Role.relay, Cap.relay.subscribeRepos),
     ],
   },
+  "102": {
+    timeout: 180,
+    requires: [
+      requireCapability(Role.pds, Cap.pds.createRecord),
+      requireCapability(Role.relay, Cap.relay.subscribeRepos),
+      requireCapability(Role.relay, Cap.relay.healthCheck),
+    ],
+  },
 };
 
 /**

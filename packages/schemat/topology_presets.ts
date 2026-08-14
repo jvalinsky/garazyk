@@ -606,6 +606,46 @@ const GARAZYK_DEFAULT = defineTopology({
   },
 });
 
+/**
+ * Deliberately constrained Zuk topology used only by Scenario 102. The
+ * PDS-prefixed variables are consumed by SubscribeReposHandler in both the
+ * PDS and relay binaries; applying them here isolates relay queue and replay
+ * coverage from production defaults.
+ */
+const ZUK_CURSOR_CONTAINMENT = defineTopology({
+  name: "zuk-cursor-containment",
+  description:
+    "Garazyk relay with a tiny replay window and subscriber output limits for cursor-containment regression coverage.",
+  roles: {
+    [Role.plc]: role.inherit("garazyk-default"),
+    [Role.pds]: role.inherit("garazyk-default"),
+    [Role.relay]: role.relay({
+      name: "zuk",
+      source: localBuild,
+      entrypoint: ["/usr/local/bin/zuk"],
+      command: [
+        "serve",
+        "--upstream",
+        "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos",
+        "--port",
+        "2584",
+      ],
+      env: {
+        HOME: "/var/lib/atprotopds",
+        PDS_FIREHOSE_MAX_REPLAY: "4",
+        PDS_FIREHOSE_MAX_PENDING_SENDS: "1",
+        PDS_FIREHOSE_MAX_PENDING_BYTES: "10000",
+      },
+      ports: [port(2584)],
+      volumes: [volume.named("local_relay_data", "/var/lib/atprotopds")],
+      health: topologyHealth.http("/api/relay/health"),
+      capabilities: relayBasicCaps,
+      dependsOnRoles: [Role.pds],
+    }),
+    [Role.appview]: role.inherit("garazyk-default"),
+  },
+});
+
 const REFERENCE_PDS = defineTopology({
   name: "reference-pds",
   description:
@@ -1359,6 +1399,7 @@ const ZLAY_RELAY = defineTopology({
 });
 
 TopologyRegistry.register(GARAZYK_DEFAULT);
+TopologyRegistry.register(ZUK_CURSOR_CONTAINMENT);
 TopologyRegistry.register(REFERENCE_PDS);
 TopologyRegistry.register(REFERENCE_PLC);
 TopologyRegistry.register(APPVIEWLITE);

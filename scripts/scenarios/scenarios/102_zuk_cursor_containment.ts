@@ -1,0 +1,468 @@
+/**
+ * @module scenarios/102_zuk_cursor_containment
+ *
+ * Verifies the relay's omitted-cursor contract under deliberately small
+ * replay and outbound-queue limits. A no-cursor subscription is live-only:
+ * retained seed commits must not arrive, while a sentinel committed after the
+ * WebSocket upgrade must arrive. The check is repeated across reconnects,
+ * then a non-reading subscriber is forced through the existing bounded
+ * output path without fixed sleeps.
+ *
+ * Run with `--topology zuk-cursor-containment`. That topology applies
+ * PDS_FIREHOSE_MAX_REPLAY=4 and PDS_FIREHOSE_MAX_PENDING_{SENDS,BYTES} to
+ * Zuk, not to production deployments.
+ */
+
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { getActor, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import {
+  createAccountOrLogin,
+  now,
+  ScenarioResult,
+  timedCall,
+} from "../../lib/deno/runner.ts";
+export {
+  ScenarioResult,
+  StepResult,
+  StepStatus,
+} from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import {
+  firehoseEventFromFrame,
+  parseFirehoseFrame,
+} from "../../lib/deno/firehose.ts";
+
+const REPLAY_WINDOW = 4;
+const SEED_COUNT = REPLAY_WINDOW + 3;
+const RECONNECT_COUNT = 25;
+const EVENT_DEADLINE_MS = 12_000;
+const SLOW_CONSUMER_DEADLINE_MS = 30_000;
+const SLOW_CONSUMER_POST_COUNT = 600;
+const WS_OPCODE_BINARY = 0x2;
+const WS_OPCODE_TEXT = 0x1;
+const WS_OPCODE_CLOSE = 0x8;
+
+interface ParsedFrame {
+  opcode: number;
+  payload: Uint8Array;
+}
+
+interface RelayEvent {
+  seq: number;
+  type: string;
+  body: Record<string, unknown>;
+}
+
+interface ReadResult {
+  events: RelayEvent[];
+  closed: boolean;
+}
+
+async function connectRawWs(
+  serviceUrl: string,
+  cursor?: number,
+): Promise<Deno.Conn> {
+  const url = new URL(`${serviceUrl}/xrpc/com.atproto.sync.subscribeRepos`);
+  if (cursor !== undefined) url.searchParams.set("cursor", String(cursor));
+  const port = Number(url.port || "80");
+  const conn = await Deno.connect({ hostname: url.hostname, port });
+  const key = btoa(
+    String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))),
+  );
+  const request = `GET ${url.pathname}${url.search} HTTP/1.1\r\n` +
+    `Host: ${url.hostname}:${port}\r\n` +
+    "Upgrade: websocket\r\n" +
+    "Connection: Upgrade\r\n" +
+    `Sec-WebSocket-Key: ${key}\r\n` +
+    "Sec-WebSocket-Version: 13\r\n\r\n";
+
+  await conn.write(new TextEncoder().encode(request));
+  const responseBuffer = new Uint8Array(4096);
+  const count = await conn.read(responseBuffer);
+  const response = new TextDecoder().decode(
+    responseBuffer.subarray(0, count ?? 0),
+  );
+  if (!response.includes("101")) {
+    conn.close();
+    throw new Error(`WebSocket upgrade failed: ${response}`);
+  }
+  return conn;
+}
+
+class RawWsFrameReader {
+  #conn: Deno.Conn;
+  #buffer = new Uint8Array(0);
+
+  constructor(conn: Deno.Conn) {
+    this.#conn = conn;
+  }
+
+  #append(chunk: Uint8Array): void {
+    const combined = new Uint8Array(this.#buffer.length + chunk.length);
+    combined.set(this.#buffer);
+    combined.set(chunk, this.#buffer.length);
+    this.#buffer = combined;
+  }
+
+  #nextFrame(): ParsedFrame | undefined {
+    if (this.#buffer.length < 2) return undefined;
+    const opcode = this.#buffer[0] & 0x0f;
+    let payloadLength = this.#buffer[1] & 0x7f;
+    const masked = (this.#buffer[1] & 0x80) !== 0;
+    let offset = 2;
+    if (payloadLength === 126) {
+      if (this.#buffer.length < 4) return undefined;
+      payloadLength = (this.#buffer[2] << 8) | this.#buffer[3];
+      offset = 4;
+    } else if (payloadLength === 127) {
+      if (this.#buffer.length < 10) return undefined;
+      payloadLength = (this.#buffer[6] << 24) | (this.#buffer[7] << 16) |
+        (this.#buffer[8] << 8) | this.#buffer[9];
+      offset = 10;
+    }
+    const maskLength = masked ? 4 : 0;
+    const total = offset + maskLength + payloadLength;
+    if (this.#buffer.length < total) return undefined;
+
+    let payload = this.#buffer.slice(offset + maskLength, total);
+    if (masked) {
+      const mask = this.#buffer.slice(offset, offset + 4);
+      payload = payload.map((byte, index) => byte ^ mask[index % 4]);
+    }
+    this.#buffer = this.#buffer.slice(total);
+    return { opcode, payload };
+  }
+
+  async readUntil(
+    deadlineMs: number,
+    predicate: (events: RelayEvent[]) => boolean,
+  ): Promise<ReadResult> {
+    const events: RelayEvent[] = [];
+    let closed = false;
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try {
+        this.#conn.close();
+      } catch {
+        // The peer may already have closed the connection.
+      }
+    }, deadlineMs);
+    const readBuffer = new Uint8Array(64 * 1024);
+    try {
+      while (!timedOut) {
+        let frame = this.#nextFrame();
+        while (frame) {
+          if (frame.opcode === WS_OPCODE_CLOSE) closed = true;
+          if (
+            frame.opcode === WS_OPCODE_BINARY || frame.opcode === WS_OPCODE_TEXT
+          ) {
+            try {
+              const decoded = firehoseEventFromFrame(
+                parseFirehoseFrame(frame.payload),
+              );
+              events.push({
+                seq: decoded.seq,
+                type: decoded.type,
+                body: decoded.body,
+              });
+            } catch {
+              // A non-firehose control payload is irrelevant to this assertion.
+            }
+          }
+          if (closed || predicate(events)) return { events, closed };
+          frame = this.#nextFrame();
+        }
+        const count = await this.#conn.read(readBuffer);
+        if (count === null || count === 0) {
+          closed = true;
+          break;
+        }
+        this.#append(readBuffer.subarray(0, count));
+      }
+    } catch {
+      if (!timedOut) closed = true;
+    } finally {
+      clearTimeout(timer);
+    }
+    return { events, closed: closed && !timedOut };
+  }
+}
+
+function eventContainsRkey(event: RelayEvent, rkey: string): boolean {
+  if (event.type !== "#commit" || !Array.isArray(event.body.ops)) return false;
+  return event.body.ops.some((operation) =>
+    typeof operation === "object" && operation !== null &&
+    (operation as Record<string, unknown>).path === `app.bsky.feed.post/${rkey}`
+  );
+}
+
+function rkeyFromUri(uri: string): string {
+  const rkey = uri.split("/").at(-1);
+  if (!rkey) throw new Error(`Record URI has no rkey: ${uri}`);
+  return rkey;
+}
+
+async function createPost(
+  client: XrpcClient,
+  did: string,
+  accessJwt: string,
+  text: string,
+): Promise<string> {
+  const created = await client.records.createRecord(did, "app.bsky.feed.post", {
+    $type: "app.bsky.feed.post",
+    text,
+    createdAt: now(),
+  }, accessJwt) as { uri: string };
+  return rkeyFromUri(created.uri);
+}
+
+async function assertLiveOnlySubscription(
+  client: XrpcClient,
+  did: string,
+  accessJwt: string,
+  seedRkeys: ReadonlySet<string>,
+  label: string,
+): Promise<{ sentinelRkey: string; observed: RelayEvent[] }> {
+  const conn = await connectRawWs(SERVICE_URLS.relay);
+  const reader = new RawWsFrameReader(conn);
+  try {
+    const sentinelRkey = await createPost(
+      client,
+      did,
+      accessJwt,
+      `zuk-no-cursor-sentinel-${label}-${crypto.randomUUID()}`,
+    );
+    const read = await reader.readUntil(
+      EVENT_DEADLINE_MS,
+      (events) =>
+        events.some((event) => eventContainsRkey(event, sentinelRkey)),
+    );
+    if (read.closed) {
+      throw new Error(
+        `Subscription closed before sentinel ${sentinelRkey} arrived`,
+      );
+    }
+    if (!read.events.some((event) => eventContainsRkey(event, sentinelRkey))) {
+      throw new Error(
+        `Sentinel ${sentinelRkey} did not arrive before ${EVENT_DEADLINE_MS}ms`,
+      );
+    }
+    const replayedSeed = read.events.find((event) =>
+      [...seedRkeys].some((rkey) => eventContainsRkey(event, rkey))
+    );
+    if (replayedSeed) {
+      throw new Error(
+        `No-cursor subscription replayed seed seq=${replayedSeed.seq}`,
+      );
+    }
+    return { sentinelRkey, observed: read.events };
+  } finally {
+    try {
+      conn.close();
+    } catch {
+      // The server may have already closed it.
+    }
+  }
+}
+
+/** Runs the Zuk omitted-cursor containment regression scenario. */
+export async function run(): Promise<ScenarioResult> {
+  const result = new ScenarioResult("Zuk Cursor Containment");
+  result.start();
+  const pds = new XrpcClient(PDS1);
+  const relay = new XrpcClient(SERVICE_URLS.relay);
+
+  await timedCall(result, "PDS and relay health checks", async () => {
+    await pds.waitForHealthy(30);
+    await relay.raw.httpGet("/api/relay/health");
+  });
+  if (result.failed > 0) {
+    result.finish();
+    return result;
+  }
+
+  const actor = getActor("volt");
+  const session = await timedCall(
+    result,
+    "Create cursor containment account",
+    () => createAccountOrLogin(pds, actor),
+    (value) => `did=${value.did}`,
+  );
+  if (!session) {
+    result.finish();
+    return result;
+  }
+  actor.did = session.did;
+  actor.accessJwt = session.accessJwt;
+
+  const seedRkeys = new Set<string>();
+  await timedCall(
+    result,
+    "Seed more events than relay replay window",
+    async () => {
+      for (let index = 0; index < SEED_COUNT; index++) {
+        seedRkeys.add(
+          await createPost(
+            pds,
+            actor.did!,
+            actor.accessJwt!,
+            `zuk-retained-seed-${index}-${crypto.randomUUID()}`,
+          ),
+        );
+      }
+      return seedRkeys.size;
+    },
+    (count) => `seeded=${count} replay_window=${REPLAY_WINDOW}`,
+  );
+  if (result.failed > 0) {
+    result.finish();
+    return result;
+  }
+
+  await timedCall(
+    result,
+    "Explicit cursor zero still reads the small replay window",
+    async () => {
+      const replayConnection = await connectRawWs(SERVICE_URLS.relay, 0);
+      try {
+        const replay = await new RawWsFrameReader(replayConnection).readUntil(
+          EVENT_DEADLINE_MS,
+          (events) =>
+            [...seedRkeys].some((rkey) =>
+              events.some((event) => eventContainsRkey(event, rkey))
+            ),
+        );
+        if (
+          !replay.events.some((event) =>
+            [...seedRkeys].some((rkey) => eventContainsRkey(event, rkey))
+          )
+        ) {
+          throw new Error(
+            "Explicit cursor zero did not return any seeded relay event",
+          );
+        }
+        return replay.events.length;
+      } finally {
+        try {
+          replayConnection.close();
+        } catch {
+          // The peer may have closed after replay.
+        }
+      }
+    },
+    (observed) => `replayed=${observed} configured_window=${REPLAY_WINDOW}`,
+  );
+  if (result.failed > 0) {
+    result.finish();
+    return result;
+  }
+
+  const first = await timedCall(
+    result,
+    "No-cursor subscription receives only its live sentinel",
+    () =>
+      assertLiveOnlySubscription(
+        pds,
+        actor.did!,
+        actor.accessJwt!,
+        seedRkeys,
+        "initial",
+      ),
+    (value) =>
+      `sentinel=${value.sentinelRkey} observed=${value.observed.length}`,
+  );
+  if (!first) {
+    result.finish();
+    return result;
+  }
+
+  const reconnects = await timedCall(
+    result,
+    "Twenty-five no-cursor reconnects remain live-only",
+    async () => {
+      const sentinels: string[] = [];
+      for (let index = 1; index <= RECONNECT_COUNT; index++) {
+        const observation = await assertLiveOnlySubscription(
+          pds,
+          actor.did!,
+          actor.accessJwt!,
+          seedRkeys,
+          `reconnect-${index}`,
+        );
+        sentinels.push(observation.sentinelRkey);
+      }
+      return sentinels;
+    },
+    (sentinels) => `reconnects=${sentinels.length}`,
+  );
+  if (!reconnects) {
+    result.finish();
+    return result;
+  }
+
+  await timedCall(
+    result,
+    "Slow consumer is closed by bounded relay output",
+    async () => {
+      const slowConnection = await connectRawWs(SERVICE_URLS.relay);
+      try {
+        // Deliberately do not read while producing frames. Only after the writes
+        // complete does the bounded reader poll for close/EOF with a deadline.
+        for (let index = 0; index < SLOW_CONSUMER_POST_COUNT; index++) {
+          await createPost(
+            pds,
+            actor.did!,
+            actor.accessJwt!,
+            `zuk-slow-consumer-${index}-${crypto.randomUUID()}-${
+              "x".repeat(4096)
+            }`,
+          );
+        }
+        const read = await new RawWsFrameReader(slowConnection).readUntil(
+          SLOW_CONSUMER_DEADLINE_MS,
+          () => false,
+        );
+        if (!read.closed) {
+          throw new Error(
+            `Slow subscriber remained open after ${SLOW_CONSUMER_DEADLINE_MS}ms ` +
+              "with PDS_FIREHOSE_MAX_PENDING_SENDS=1 and PDS_FIREHOSE_MAX_PENDING_BYTES=10000",
+          );
+        }
+        return read.events.length;
+      } finally {
+        try {
+          slowConnection.close();
+        } catch {
+          // The expected outcome is an already-closed connection.
+        }
+      }
+    },
+    (observed) => `closed=true events_observed_after_poll=${observed}`,
+  );
+
+  await timedCall(
+    result,
+    "Relay remains healthy after bounded consumers",
+    async () => {
+      await relay.raw.httpGet("/api/relay/health");
+    },
+  );
+
+  result.recordArtifact("zuk_cursor_containment", {
+    replay_window: REPLAY_WINDOW,
+    seeded_events: seedRkeys.size,
+    reconnects: reconnects.length,
+    slow_consumer_post_count: SLOW_CONSUMER_POST_COUNT,
+    queue_overflow_metric:
+      "not exposed by the current relay HTTP API; closure is asserted instead",
+  });
+  result.finish();
+  return result;
+}
+
+if (import.meta.main) {
+  const result = await run();
+  result.printSummary();
+  Deno.exit(result.ok ? 0 : 1);
+}

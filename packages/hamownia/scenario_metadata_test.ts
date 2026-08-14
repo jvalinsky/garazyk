@@ -141,6 +141,27 @@ Deno.test("getRequires: cache scenarios advertise Mikrus and Beskid requirements
   );
 });
 
+Deno.test("getRequires: scenario 102 requires relay firehose and health capabilities", () => {
+  assertEquals(
+    getRequires("102").some((req) =>
+      req.role === Role.pds && req.capability === Cap.pds.createRecord
+    ),
+    true,
+  );
+  assertEquals(
+    getRequires("102").some((req) =>
+      req.role === Role.relay && req.capability === Cap.relay.subscribeRepos
+    ),
+    true,
+  );
+  assertEquals(
+    getRequires("102").some((req) =>
+      req.role === Role.relay && req.capability === Cap.relay.healthCheck
+    ),
+    true,
+  );
+});
+
 // ---------------------------------------------------------------------------
 // getTimeout
 // ---------------------------------------------------------------------------
@@ -151,6 +172,10 @@ Deno.test("getTimeout: returns undefined for scenarios without timeout override"
 
 Deno.test("getTimeout: returns undefined for unknown scenario", () => {
   assertEquals(getTimeout("nonexistent"), undefined);
+});
+
+Deno.test("getTimeout: returns the containment budget for scenario 102", () => {
+  assertEquals(getTimeout("102"), 180);
 });
 
 // ---------------------------------------------------------------------------
