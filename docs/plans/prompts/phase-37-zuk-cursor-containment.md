@@ -1,7 +1,7 @@
 ---
 phase: 37
 title: Zuk cursor correctness and replay-loop containment
-status: blocked
+status: complete
 agent: worker
 depends_on: []
 last_updated: 2026-08-13
@@ -16,26 +16,21 @@ deterministic Scenario 102 topology. Structured run
 `phase37-zuk-cursor-20260813n` passed all 10 steps, including 25 reconnects and
 slow-consumer closure under a four-send/10,000-byte output limit.
 
-## Blocked on
+## Completion evidence
 
-Repository-wide gates fail outside the Phase 37 diff:
+Completed 2026-08-13. The four unrelated repository-wide gate failures were
+resolved on the integration branch without changing the Phase 37 behavior:
+the Deno import/generated-client drift, two stale HTTP `Vary` expectations, an
+unprefixed private BMFF class, and stale Mikrus title expectations. The final
+approved native gate ran 5,377 tests with 0 failures. `deno task check`,
+`deno task lint`, and `deno task test` are green (`1,273` passed, `1` ignored),
+as are namespace, module-boundary, recursive-setter, host-exit, NSID, skill
+index, agent-role, Linux/GNUstep binary, and documentation gates.
 
-- `deno task lint` finds the pre-existing unused
-  `DEFAULT_ADMIN_PASSWORD` import in
-  `packages/schemat/topology_compiler_test.ts`.
-- `deno task test` passes 1,272 tests and fails only the pre-existing generated
-  Gruszka client artifact comparison.
-- the full gated native run reaches the pre-existing
-  `AdminAuthSyncTests.testApplicationSyncGetRepoPrefersHigherQualityCAR`
-  mismatch (`Vary: Accept, Accept-Encoding` versus `Accept`).
-- `./scripts/check_namespace.sh build` finds the pre-existing unbaselined
-  `S2PABMFFBoxInfo` class from the branch base.
-
-Phase 37 focused native suites, Deno type checking, changed-file lint, module
-boundaries, recursive-setter/host-exit checks, the Linux/GNUstep binary stage,
-and Scenario 102 are green. Resolve or rebase onto fixes for the four unrelated
-global-gate failures before changing this phase to `complete` or starting its
-dependent Phase 38.
+Structured Scenario 102 run `phase37-zuk-cursor-20260813n` remains the Phase 37
+behavioral acceptance record: 10/10 steps passed, including cursor-zero replay,
+omitted-cursor live-only delivery, 25 reconnects, bounded slow-consumer closure,
+and post-pressure Relay health.
 
 # Phase 37: Zuk cursor correctness and replay-loop containment
 
@@ -191,7 +186,7 @@ limits, or makes no-cursor delivery depend on reading the retained buffer.
 
 - Update workstream 17 Phase 37 with commit and dated evidence.
 - Update mega-plan item 17 and this frontmatter in the same change as code.
-- Record the action/outcome under deciduous goal 416.
+- Record the action/outcome under deciduous goal 424.
 - Leave Phase 38 pending unless Phase 37 rollback and production containment
   are documented.
 

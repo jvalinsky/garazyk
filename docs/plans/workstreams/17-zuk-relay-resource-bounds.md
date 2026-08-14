@@ -263,13 +263,16 @@ the incident.
   explicit cursor zero replayed retained events, omitted cursor was live-only,
   all 25 reconnects avoided retained replay, a non-reading subscriber closed
   under four-send/10,000-byte limits, and Relay health remained good.
-- Deno/type and structural gates pass for the Phase 37 diff: `deno task check`,
-  changed-file `deno lint`, source/build module boundaries,
-  `check-recursive-setters`, and `check_no_host_process_exit`.
-- Phase status remains blocked because the repository-wide lint, generated
-  client artifact, full native, and namespace gates fail in files/classes
-  outside this phase, as named in the phase prompt. Phase 38 must not start
-  until those base failures are resolved or rebased away.
+- Final repository-wide gates pass on the integrated branch: `deno task check`,
+  `deno task lint`, and `deno task test` (1,273 passed, 1 ignored); the full
+  approved native gate (5,377 tests, 0 failures); source/build module boundaries;
+  namespace, recursive-setter, host-exit, NSID, skill-index, and agent-role
+  checks; and strict generated documentation validation.
+- The unrelated base failures were resolved without changing the Phase 37
+  behavior: Deno import/generated-client drift, stale HTTP `Vary` expectations,
+  a private BMFF namespace violation, and stale Mikrus title expectations.
+  Phase 37 is complete; Phase 38 is now the next dependency-eligible incident
+  containment phase.
 
 Rollback: revert the behavior slice and operator profile together. A rollback
 knowingly restores the no-cursor replay defect and is only acceptable while

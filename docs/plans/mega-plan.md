@@ -221,11 +221,10 @@ documentation, TUI, package, and refactor plans.
   P-256/k256 validation efficiency, crawl/observability/service guardrails,
   and a 24-hour production canary. The target is measured bounded behavior,
   not a queue-size increase; supporting evidence is preserved separately in
-  the workstream's dated incident record. Phase 37 implementation and its
-  25-reconnect/slow-consumer structured scenario are green on
-  `codex/zuk-resource-plan`; phase state remains blocked on four unrelated
-  repository-wide gate failures documented in the Phase 37 prompt. Phase 38
-  remains pending and must not start through that blocked dependency.
+  the workstream's dated incident record. Phase 37 implementation, its
+  25-reconnect/slow-consumer structured scenario, Linux/GNUstep build, and all
+  repository-wide gates are green on `codex/zuk-resource-plan`; Phase 37 is
+  complete. Phase 38 is now the next dependency-eligible P0 containment phase.
 
 ## Priority model
 
