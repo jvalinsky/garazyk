@@ -2,6 +2,7 @@ import { assertEquals } from "@std/assert";
 import {
   downstreamConnectionsReleased,
   eventAtOrBeforeAttachment,
+  graphemeCount,
   parseRelayHealthState,
   relayCurrentSequence,
   relaySequenceIsStable,
@@ -78,11 +79,13 @@ Deno.test("downstreamConnectionsReleased requires the pre-connect baseline", () 
   assertEquals(downstreamConnectionsReleased(3, 2), false);
 });
 
-Deno.test("slowConsumerPostText remains below the feed-post text maximum", () => {
+Deno.test("slowConsumerPostText satisfies feed grapheme and wire-pressure bounds", () => {
   const text = slowConsumerPostText(
     127,
     "12345678-1234-1234-1234-123456789012",
   );
-  assertEquals(text.length, 2_800);
-  assertEquals(text.startsWith("zuk-slow-consumer-127-"), true);
+  assertEquals(text.length <= 3_000, true);
+  assertEquals(graphemeCount(text) <= 300, true);
+  assertEquals(new TextEncoder().encode(text).length >= 4_000, true);
+  assertEquals(text.startsWith("z127-"), true);
 });
