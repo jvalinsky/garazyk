@@ -161,7 +161,7 @@
 
   XCTAssertEqual(response.statusCode, HttpStatusOK);
   XCTAssertEqualObjects(response.contentType, STARContentTypeL0);
-  XCTAssertEqualObjects([response headerForKey:@"Vary"], @"Accept");
+  XCTAssertEqualObjects([response headerForKey:@"Vary"], @"Accept, Accept-Encoding");
   XCTAssertTrue(STARDetectFormatFromData(response.body));
 
   NSError *parseError = nil;
@@ -185,7 +185,7 @@
 
   XCTAssertEqual(response.statusCode, HttpStatusOK);
   XCTAssertEqualObjects(response.contentType, CARContentType);
-  XCTAssertEqualObjects([response headerForKey:@"Vary"], @"Accept");
+  XCTAssertEqualObjects([response headerForKey:@"Vary"], @"Accept, Accept-Encoding");
   XCTAssertFalse(STARDetectFormatFromData(response.body));
 }
 
