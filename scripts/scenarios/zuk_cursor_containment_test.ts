@@ -1,5 +1,8 @@
 import { assertEquals } from "@std/assert";
-import { splitWebSocketUpgradeResponse } from "./scenarios/102_zuk_cursor_containment.ts";
+import {
+  relayCurrentSequence,
+  splitWebSocketUpgradeResponse,
+} from "./scenarios/102_zuk_cursor_containment.ts";
 
 Deno.test("splitWebSocketUpgradeResponse preserves a coalesced first WebSocket frame", () => {
   const header =
@@ -22,4 +25,24 @@ Deno.test("splitWebSocketUpgradeResponse waits for a complete header", () => {
     "HTTP/1.1 101 Switching Protocols\r\n",
   );
   assertEquals(splitWebSocketUpgradeResponse(partial), undefined);
+});
+
+Deno.test("relayCurrentSequence accepts the relay health sequence", () => {
+  assertEquals(relayCurrentSequence({ currentSequence: 42 }), 42);
+});
+
+Deno.test("relayCurrentSequence rejects absent or invalid health sequences", () => {
+  for (
+    const response of [undefined, {}, { currentSequence: -1 }, {
+      currentSequence: "42",
+    }]
+  ) {
+    let failed = false;
+    try {
+      relayCurrentSequence(response);
+    } catch {
+      failed = true;
+    }
+    assertEquals(failed, true);
+  }
 });

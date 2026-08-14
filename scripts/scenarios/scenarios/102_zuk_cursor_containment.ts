@@ -36,6 +36,8 @@ const REPLAY_WINDOW = 4;
 const SEED_COUNT = REPLAY_WINDOW + 3;
 const RECONNECT_COUNT = 25;
 const EVENT_DEADLINE_MS = 12_000;
+const RELAY_CATCH_UP_DEADLINE_MS = 12_000;
+const RELAY_CATCH_UP_POLL_MS = 100;
 const SLOW_CONSUMER_DEADLINE_MS = 30_000;
 // 128 × 8 KiB is safely beyond a typical loopback TCP receive window while
 // remaining practical inside the scenario's 180-second end-to-end budget.
@@ -66,6 +68,44 @@ interface ReadResult {
 interface RawWsConnection {
   conn: Deno.Conn;
   initialBytes: Uint8Array;
+}
+
+/** Extract the monotonic output sequence from the relay health response. */
+export function relayCurrentSequence(health: unknown): number {
+  if (!health || typeof health !== "object") {
+    throw new Error("Relay health response was not an object");
+  }
+  const currentSequence = (health as Record<string, unknown>).currentSequence;
+  if (
+    typeof currentSequence !== "number" ||
+    !Number.isSafeInteger(currentSequence) ||
+    currentSequence < 0
+  ) {
+    throw new Error(
+      "Relay health response did not contain a non-negative integer currentSequence",
+    );
+  }
+  return currentSequence;
+}
+
+/** Poll relay health until its output sequence includes the named writes. */
+async function waitForRelaySequence(
+  relay: XrpcClient,
+  minimumSequence: number,
+): Promise<number> {
+  const deadline = Date.now() + RELAY_CATCH_UP_DEADLINE_MS;
+  let observed = -1;
+  while (Date.now() < deadline) {
+    observed = relayCurrentSequence(
+      await relay.raw.httpGet("/api/relay/health"),
+    );
+    if (observed >= minimumSequence) return observed;
+    await new Promise((resolve) => setTimeout(resolve, RELAY_CATCH_UP_POLL_MS));
+  }
+  throw new Error(
+    `Relay currentSequence=${observed} did not reach ${minimumSequence} within ` +
+      `${RELAY_CATCH_UP_DEADLINE_MS}ms`,
+  );
 }
 
 /** Splits a complete HTTP upgrade response from any coalesced WebSocket bytes. */
@@ -161,17 +201,17 @@ async function connectRawWs(
 
 class RawWsFrameReader {
   #conn: Deno.Conn;
-  #buffer: Uint8Array = new Uint8Array(0);
+  #buffer: Uint8Array<ArrayBufferLike> = new Uint8Array(0);
 
   constructor(
     conn: Deno.Conn,
-    initialBytes: Uint8Array = new Uint8Array(0),
+    initialBytes: Uint8Array<ArrayBufferLike> = new Uint8Array(0),
   ) {
     this.#conn = conn;
     this.#buffer = initialBytes;
   }
 
-  #append(chunk: Uint8Array): void {
+  #append(chunk: Uint8Array<ArrayBufferLike>): void {
     const combined = new Uint8Array(this.#buffer.length + chunk.length);
     combined.set(this.#buffer);
     combined.set(chunk, this.#buffer.length);
@@ -370,6 +410,18 @@ export async function run(): Promise<ScenarioResult> {
   actor.did = session.did;
   actor.accessJwt = session.accessJwt;
 
+  const sequenceBeforeSeed = await timedCall(
+    result,
+    "Capture relay sequence before retained seed",
+    async () =>
+      relayCurrentSequence(await relay.raw.httpGet("/api/relay/health")),
+    (sequence) => `current_sequence=${sequence}`,
+  );
+  if (sequenceBeforeSeed === null) {
+    result.finish();
+    return result;
+  }
+
   const seedRkeys = new Set<string>();
   await timedCall(
     result,
@@ -388,6 +440,20 @@ export async function run(): Promise<ScenarioResult> {
       return seedRkeys.size;
     },
     (count) => `seeded=${count} replay_window=${REPLAY_WINDOW}`,
+  );
+  if (result.failed > 0) {
+    result.finish();
+    return result;
+  }
+
+  await timedCall(
+    result,
+    "Wait for relay to ingest retained seed",
+    () => waitForRelaySequence(relay, sequenceBeforeSeed + SEED_COUNT),
+    (sequence) =>
+      `current_sequence=${sequence} required=${
+        sequenceBeforeSeed + SEED_COUNT
+      }`,
   );
   if (result.failed > 0) {
     result.finish();

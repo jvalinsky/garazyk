@@ -633,7 +633,7 @@ const ZUK_CURSOR_CONTAINMENT = defineTopology({
       env: {
         HOME: "/var/lib/atprotopds",
         PDS_FIREHOSE_MAX_REPLAY: "4",
-        PDS_FIREHOSE_MAX_PENDING_SENDS: "1",
+        PDS_FIREHOSE_MAX_PENDING_SENDS: "4",
         PDS_FIREHOSE_MAX_PENDING_BYTES: "10000",
       },
       ports: [port(2584)],
