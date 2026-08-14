@@ -230,12 +230,29 @@
     ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
     NSDictionary *before = [metrics snapshotDictionary];
     int64_t failuresBefore = [before[@"signatureValidationFailure"] longLongValue];
+    int64_t signingKeyBefore = [before[@"signatureValidationFailuresByCategory"][@"signing-key"] longLongValue];
     ATProtoRelayValidationOutcome *outcome = [validator validateCommitEvent:event];
     NSDictionary *after = [metrics snapshotDictionary];
     int64_t failuresAfter = [after[@"signatureValidationFailure"] longLongValue];
+    int64_t signingKeyAfter = [after[@"signatureValidationFailuresByCategory"][@"signing-key"] longLongValue];
 
     XCTAssertEqual(outcome.result, RelayValidationResultInvalidSignature);
     XCTAssertEqual(failuresAfter, failuresBefore + 1);
+    XCTAssertEqual(signingKeyAfter, signingKeyBefore + 1);
+}
+
+- (void)testValidationPolicyDoesNotCountForwardingBeforeDelivery {
+    ATProtoRelayMetrics *metrics = [ATProtoRelayMetrics sharedMetrics];
+    int64_t forwardedBefore = [[metrics snapshotDictionary][@"eventsForwarded"] longLongValue];
+    int64_t validatedBefore = [[metrics snapshotDictionary][@"eventsValidated"] longLongValue];
+
+    ATProtoRelayEventValidator *validator =
+        [[ATProtoRelayEventValidator alloc] initWithValidationMode:RelayValidationModeLogOnly];
+    XCTAssertTrue([validator shouldForwardEvent:[ATProtoRelayValidationOutcome validOutcome]]);
+
+    NSDictionary *after = [metrics snapshotDictionary];
+    XCTAssertEqual([after[@"eventsForwarded"] longLongValue], forwardedBefore);
+    XCTAssertEqual([after[@"eventsValidated"] longLongValue], validatedBefore + 1);
 }
 
 - (void)testSignatureValidationModesRetainAvailabilityPolicy {

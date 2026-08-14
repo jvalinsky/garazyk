@@ -2,6 +2,19 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Relay/RelayMetrics.h"
 
+static NSString *RelayCanonicalSignatureFailureCategory(NSString *category) {
+    static NSSet<NSString *> *allowedCategories;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        allowedCategories = [NSSet setWithArray:@[
+            @"resolver-unavailable", @"did-resolution", @"did-document",
+            @"signing-key", @"commit-block", @"commit-identity",
+            @"signature-mismatch", @"unknown"
+        ]];
+    });
+    return [allowedCategories containsObject:category] ? [category copy] : @"unknown";
+}
+
 @interface ATProtoRelayMetrics ()
 
 @property (nonatomic, assign, readwrite) int64_t upstreamConnections;
@@ -15,6 +28,7 @@
 @property (nonatomic, assign, readwrite) int64_t mstValidationFailure;
 @property (nonatomic, assign, readwrite) int64_t signatureValidationSuccess;
 @property (nonatomic, assign, readwrite) int64_t signatureValidationFailure;
+@property (nonatomic, readwrite, copy) NSDictionary<NSString *, NSNumber *> *signatureValidationFailuresByCategory;
 @property (nonatomic, assign, readwrite) int64_t continuityBaselines;
 @property (nonatomic, assign, readwrite) int64_t continuityVerified;
 @property (nonatomic, assign, readwrite) int64_t continuityFailures;
@@ -41,6 +55,7 @@
     self = [super init];
     if (self) {
         _metricsQueue = dispatch_queue_create("com.atproto.relay.metrics", DISPATCH_QUEUE_SERIAL);
+        _signatureValidationFailuresByCategory = @{};
     }
     return self;
 }
@@ -128,8 +143,18 @@
 }
 
 - (void)recordSignatureValidationFailure {
+    [self recordSignatureValidationFailureWithCategory:@"unknown"];
+}
+
+- (void)recordSignatureValidationFailureWithCategory:(NSString *)category {
+    NSString *stableCategory = RelayCanonicalSignatureFailureCategory(category);
     dispatch_async(_metricsQueue, ^{
         self.signatureValidationFailure++;
+        NSMutableDictionary<NSString *, NSNumber *> *failures =
+            [self.signatureValidationFailuresByCategory mutableCopy] ?: [NSMutableDictionary dictionary];
+        int64_t count = [failures[stableCategory] longLongValue];
+        failures[stableCategory] = @(count + 1);
+        self.signatureValidationFailuresByCategory = [failures copy];
     });
 }
 
@@ -226,6 +251,17 @@
         [metrics appendFormat:@"relay_signature_validation_total{result=\"success\"} %lld\n", (long long)self.signatureValidationSuccess];
         [metrics appendFormat:@"relay_signature_validation_total{result=\"failure\"} %lld\n\n", (long long)self.signatureValidationFailure];
 
+        [metrics appendString:@"# HELP relay_signature_validation_failures_total Signature validation failures by stable category\n"];
+        [metrics appendString:@"# TYPE relay_signature_validation_failures_total counter\n"];
+        NSArray<NSString *> *signatureCategories =
+            [[self.signatureValidationFailuresByCategory allKeys] sortedArrayUsingSelector:@selector(compare:)];
+        for (NSString *category in signatureCategories) {
+            [metrics appendFormat:@"relay_signature_validation_failures_total{category=\"%@\"} %lld\n",
+                                  category,
+                                  (long long)[self.signatureValidationFailuresByCategory[category] longLongValue]];
+        }
+        [metrics appendString:@"\n"];
+
         [metrics appendString:@"# HELP relay_continuity_total Repository continuity outcomes\n"];
         [metrics appendFormat:@"# TYPE relay_continuity_total counter\n"];
         [metrics appendFormat:@"relay_continuity_total{result=\"baseline\"} %lld\n", (long long)self.continuityBaselines];
@@ -264,6 +300,7 @@
             @"mstValidationFailure": @(self.mstValidationFailure),
             @"signatureValidationSuccess": @(self.signatureValidationSuccess),
             @"signatureValidationFailure": @(self.signatureValidationFailure),
+            @"signatureValidationFailuresByCategory": self.signatureValidationFailuresByCategory ?: @{},
             @"continuityBaselines": @(self.continuityBaselines),
             @"continuityVerified": @(self.continuityVerified),
             @"continuityFailures": @(self.continuityFailures),

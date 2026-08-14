@@ -115,4 +115,41 @@
     XCTAssertEqual(metrics.eventsInvalidated, 1);
 }
 
+- (void)testSignatureValidationFailureCategoriesAppearInSnapshotsAndPrometheus {
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
+
+    [metrics recordSignatureValidationFailureWithCategory:@"signing-key"];
+    [metrics recordSignatureValidationFailureWithCategory:@"signing-key"];
+    [metrics recordSignatureValidationFailureWithCategory:@"did-resolution"];
+
+    NSDictionary *snapshot = [metrics snapshotDictionary];
+    NSDictionary *categories = snapshot[@"signatureValidationFailuresByCategory"];
+    XCTAssertEqual([snapshot[@"signatureValidationFailure"] longLongValue], 3LL);
+    XCTAssertEqual([categories[@"signing-key"] longLongValue], 2LL);
+    XCTAssertEqual([categories[@"did-resolution"] longLongValue], 1LL);
+
+    NSString *prometheus = [metrics renderPrometheusMetrics];
+    XCTAssertTrue([prometheus containsString:@"relay_signature_validation_failures_total{category=\"did-resolution\"} 1"]);
+    XCTAssertTrue([prometheus containsString:@"relay_signature_validation_failures_total{category=\"signing-key\"} 2"]);
+}
+
+- (void)testSignatureValidationFailureCategoriesCollapseUnknownAndMutableInput {
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
+    NSMutableString *mutableKnownCategory = [@"signing-key" mutableCopy];
+    [metrics recordSignatureValidationFailureWithCategory:mutableKnownCategory];
+    [mutableKnownCategory appendString:@"-mutated-after-recording"];
+    [metrics recordSignatureValidationFailureWithCategory:@"hostile\"label\nvalue"];
+
+    NSDictionary *snapshot = [metrics snapshotDictionary];
+    NSDictionary *categories = snapshot[@"signatureValidationFailuresByCategory"];
+    XCTAssertEqual(categories.count, 2U);
+    XCTAssertEqual([categories[@"signing-key"] longLongValue], 1LL);
+    XCTAssertEqual([categories[@"unknown"] longLongValue], 1LL);
+    XCTAssertNil(categories[@"hostile\"label\nvalue"]);
+
+    NSString *prometheus = [metrics renderPrometheusMetrics];
+    XCTAssertFalse([prometheus containsString:@"hostile\"label"]);
+    XCTAssertTrue([prometheus containsString:@"relay_signature_validation_failures_total{category=\"unknown\"} 1"]);
+}
+
 @end

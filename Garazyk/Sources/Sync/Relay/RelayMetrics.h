@@ -62,6 +62,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordSignatureValidationSuccess;
 /** Records a failed repository signature validation. */
 - (void)recordSignatureValidationFailure;
+/**
+ * @abstract Records a failed repository signature validation with a stable category.
+ * @discussion Categories are bounded diagnostic identifiers, never raw validation
+ * errors or event data. The aggregate is exposed in Prometheus and JSON snapshots.
+ */
+- (void)recordSignatureValidationFailureWithCategory:(NSString *)category;
 /** Records that a repository data-root baseline was established. */
 - (void)recordContinuityBaseline;
 /** Records that an inductive commit link was verified. */
@@ -131,6 +137,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) int64_t signatureValidationSuccess;
 /** Total failed signature validations. */
 @property (nonatomic, readonly) int64_t signatureValidationFailure;
+/** Failed signature validations grouped by stable diagnostic category. */
+@property (nonatomic, readonly, copy) NSDictionary<NSString *, NSNumber *> *signatureValidationFailuresByCategory;
 /** Repository baselines learned without a preceding data root. */
 @property (nonatomic, readonly) int64_t continuityBaselines;
 /** Successfully verified repository continuity links. */
