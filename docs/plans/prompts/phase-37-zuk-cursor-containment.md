@@ -1,7 +1,7 @@
 ---
 phase: 37
 title: Zuk cursor correctness and replay-loop containment
-status: in-progress
+status: blocked
 agent: worker
 depends_on: []
 last_updated: 2026-08-13
@@ -9,11 +9,33 @@ last_updated: 2026-08-13
 
 ## Progress
 
-Started 2026-08-13 under deciduous goal 424. Work is split across isolated
-worktrees with non-overlapping ownership: cursor/replay semantics, pressure
-logging/metrics, and the deterministic Hamownia regression scenario. The
-`codex/zuk-resource-plan` worktree is the integration owner; workers must not
-edit plan state or files outside their assigned boundary.
+Implementation and Phase 37-specific verification completed 2026-08-13 under
+deciduous goal 424. The integrated branch makes omitted cursor live-only,
+stops replay on output rejection, bounds signature diagnostics, and adds the
+deterministic Scenario 102 topology. Structured run
+`phase37-zuk-cursor-20260813n` passed all 10 steps, including 25 reconnects and
+slow-consumer closure under a four-send/10,000-byte output limit.
+
+## Blocked on
+
+Repository-wide gates fail outside the Phase 37 diff:
+
+- `deno task lint` finds the pre-existing unused
+  `DEFAULT_ADMIN_PASSWORD` import in
+  `packages/schemat/topology_compiler_test.ts`.
+- `deno task test` passes 1,272 tests and fails only the pre-existing generated
+  Gruszka client artifact comparison.
+- the full gated native run reaches the pre-existing
+  `AdminAuthSyncTests.testApplicationSyncGetRepoPrefersHigherQualityCAR`
+  mismatch (`Vary: Accept, Accept-Encoding` versus `Accept`).
+- `./scripts/check_namespace.sh build` finds the pre-existing unbaselined
+  `S2PABMFFBoxInfo` class from the branch base.
+
+Phase 37 focused native suites, Deno type checking, changed-file lint, module
+boundaries, recursive-setter/host-exit checks, the Linux/GNUstep binary stage,
+and Scenario 102 are green. Resolve or rebase onto fixes for the four unrelated
+global-gate failures before changing this phase to `complete` or starting its
+dependent Phase 38.
 
 # Phase 37: Zuk cursor correctness and replay-loop containment
 

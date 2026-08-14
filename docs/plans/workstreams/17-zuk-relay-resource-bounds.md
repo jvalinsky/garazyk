@@ -212,6 +212,65 @@ Acceptance:
 - no change to ADR 0012 future-cursor behavior;
 - Linux/GNUstep build for Sync and `zuk` because the binary/network path moves.
 
+### Emergency operator profile
+
+Use this profile only as reversible incident containment until the corrected
+binary is deployed. Apply the proxy restriction before restarting Zuk so a
+public crawl burst or the existing no-cursor loop cannot immediately recreate
+the incident.
+
+1. Identify loopback subscribers before changing or stopping them. Capture
+   `sudo ss -tpn '( sport = :2470 )'` and
+   `sudo lsof -nP -iTCP:2470 -sTCP:ESTABLISHED`, map each PID to its systemd
+   unit/cgroup, and record its owner. Do not kill an unidentified client.
+2. At the existing reverse proxy, deny public POST access to
+   `/xrpc/com.atproto.sync.requestCrawl` and `/api/relay/requestCrawl`. Keep any
+   operator crawl path on the authenticated loopback admin listener only.
+3. Add a temporary systemd drop-in for `zuk` with these existing settings:
+
+   ```ini
+   [Service]
+   Environment=GZ_LOG_LEVEL=error
+   Environment=PDS_FIREHOSE_MAX_REPLAY=256
+   Environment=PDS_FIREHOSE_MAX_PENDING_SENDS=64
+   Environment=PDS_FIREHOSE_MAX_PENDING_BYTES=1048576
+   ```
+
+   These values reduce replay and output exposure; they do not enlarge or
+   remove a queue bound. Do not add `MemoryMax` here—Phase 41 owns cgroup
+   guardrails after internal ingress limits exist.
+4. Reload configuration, verify the proxy denial from outside, and restart Zuk
+   only after the reconnecting client is contained or a Phase 37 binary is
+   ready. Immediately verify health, actual downstream/upstream sockets,
+   cgroup memory/swap, output-queue closures, and one-minute log counts.
+5. Roll back the source/configuration slice together. If the binary rollback
+   restores the omitted-cursor defect, leave public crawl blocked and restrict
+   the looping downstream at the proxy until the corrected binary returns.
+
+### Evidence (2026-08-13)
+
+- Integrated commits: `303c8115` (cursor/replay admission), `1e56794f`
+  (bounded signature diagnostics), `30fb1693` plus `5d319593`–`2deea1ad`
+  (Scenario 102, typed isolation, framing and deterministic lifecycle/pressure
+  synchronization).
+- Native focused tests: `SubscribeReposHandlerTests` 20/20,
+  `FirehoseTests` 6/6, `RelayClientTests` 11/11,
+  `RelayEventValidatorTests` 16/16, and `RelayMetricsTests` 10 passed with one
+  existing skipped asynchronous test. `AllTests` builds successfully.
+- Linux/GNUstep gate: `deno run -A scripts/stage_binaries.ts` built and staged
+  all nine ELF binaries, including changed Sync code and `zuk`.
+- Structured Hamownia run `phase37-zuk-cursor-20260813n`: 10/10 steps passed;
+  explicit cursor zero replayed retained events, omitted cursor was live-only,
+  all 25 reconnects avoided retained replay, a non-reading subscriber closed
+  under four-send/10,000-byte limits, and Relay health remained good.
+- Deno/type and structural gates pass for the Phase 37 diff: `deno task check`,
+  changed-file `deno lint`, source/build module boundaries,
+  `check-recursive-setters`, and `check_no_host_process_exit`.
+- Phase status remains blocked because the repository-wide lint, generated
+  client artifact, full native, and namespace gates fail in files/classes
+  outside this phase, as named in the phase prompt. Phase 38 must not start
+  until those base failures are resolved or rebased away.
+
 Rollback: revert the behavior slice and operator profile together. A rollback
 knowingly restores the no-cursor replay defect and is only acceptable while
 downstream access is restricted at the reverse proxy.

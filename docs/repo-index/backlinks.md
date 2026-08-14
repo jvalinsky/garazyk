@@ -1274,7 +1274,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **381**
+Inbound links: **383**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -1897,7 +1897,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **286**
+Inbound links: **299**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1908,7 +1908,7 @@ Inbound links: **286**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **88**
+Inbound links: **100**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1917,7 +1917,7 @@ Inbound links: **88**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **214**
+Inbound links: **227**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1991,6 +1991,13 @@ Inbound links: **2**
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/reports/2026-07-17-optimization-research.md`
+
+Inbound links: **2**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/reports/docs/link-graph-report.md`
 
 Inbound links: **2**
 
