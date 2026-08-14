@@ -71,6 +71,18 @@ interface RawWsConnection {
   initialBytes: Uint8Array;
 }
 
+interface AttachedRawWsConnection extends RawWsConnection {
+  attachmentSequence: number;
+}
+
+/** Return the first received data event that predates confirmed attachment. */
+export function eventAtOrBeforeAttachment(
+  events: readonly { seq: number }[],
+  attachmentSequence: number,
+): { seq: number } | undefined {
+  return events.find((event) => event.seq <= attachmentSequence);
+}
+
 /** Typed relay state exposed by the health endpoint. */
 export interface RelayHealthState {
   currentSequence: number;
@@ -270,12 +282,15 @@ async function connectRawWs(
 async function connectAttachedRawWs(
   relay: XrpcClient,
   cursor?: number,
-): Promise<RawWsConnection> {
+): Promise<AttachedRawWsConnection> {
   const before = (await relayHealthState(relay)).downstreamConnections;
   const connection = await connectRawWs(SERVICE_URLS.relay, cursor);
   try {
     await waitForRelayDownstreamConnections(relay, before + 1);
-    return connection;
+    return {
+      ...connection,
+      attachmentSequence: (await relayHealthState(relay)).currentSequence,
+    };
   } catch (error) {
     try {
       connection.conn.close();
@@ -423,7 +438,6 @@ async function assertLiveOnlySubscription(
   client: XrpcClient,
   did: string,
   accessJwt: string,
-  seedRkeys: ReadonlySet<string>,
   label: string,
 ): Promise<{ sentinelRkey: string; observed: RelayEvent[] }> {
   const connection = await connectAttachedRawWs(relay);
@@ -450,12 +464,14 @@ async function assertLiveOnlySubscription(
         `Sentinel ${sentinelRkey} did not arrive before ${EVENT_DEADLINE_MS}ms`,
       );
     }
-    const replayedSeed = read.events.find((event) =>
-      [...seedRkeys].some((rkey) => eventContainsRkey(event, rkey))
+    const replayedEvent = eventAtOrBeforeAttachment(
+      read.events,
+      connection.attachmentSequence,
     );
-    if (replayedSeed) {
+    if (replayedEvent) {
       throw new Error(
-        `No-cursor subscription replayed seed seq=${replayedSeed.seq}`,
+        `No-cursor subscription received seq=${replayedEvent.seq} at or before ` +
+          `confirmed attachment sequence=${connection.attachmentSequence}`,
       );
     }
     return { sentinelRkey, observed: read.events };
@@ -597,7 +613,6 @@ export async function run(): Promise<ScenarioResult> {
         pds,
         actor.did!,
         actor.accessJwt!,
-        seedRkeys,
         "initial",
       ),
     (value) =>
@@ -619,7 +634,6 @@ export async function run(): Promise<ScenarioResult> {
           pds,
           actor.did!,
           actor.accessJwt!,
-          seedRkeys,
           `reconnect-${index}`,
         );
         sentinels.push(observation.sentinelRkey);

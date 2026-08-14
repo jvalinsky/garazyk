@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
 import {
+  eventAtOrBeforeAttachment,
   parseRelayHealthState,
   relayCurrentSequence,
   relaySequenceIsStable,
@@ -59,4 +60,12 @@ Deno.test("relaySequenceIsStable requires several equal observations", () => {
   assertEquals(relaySequenceIsStable([4, 4, 4], 3), true);
   assertEquals(relaySequenceIsStable([3, 4, 4], 3), false);
   assertEquals(relaySequenceIsStable([4, 4], 3), false);
+});
+
+Deno.test("eventAtOrBeforeAttachment detects retained events without inspecting commit ops", () => {
+  assertEquals(
+    eventAtOrBeforeAttachment([{ seq: 8 }, { seq: 9 }], 8),
+    { seq: 8 },
+  );
+  assertEquals(eventAtOrBeforeAttachment([{ seq: 9 }], 8), undefined);
 });
