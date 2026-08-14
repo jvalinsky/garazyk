@@ -38,6 +38,7 @@ const RECONNECT_COUNT = 25;
 const EVENT_DEADLINE_MS = 12_000;
 const RELAY_CATCH_UP_DEADLINE_MS = 12_000;
 const RELAY_CATCH_UP_POLL_MS = 100;
+const RELAY_QUIESCENCE_POLLS = 5;
 const SLOW_CONSUMER_DEADLINE_MS = 30_000;
 // 128 × 8 KiB is safely beyond a typical loopback TCP receive window while
 // remaining practical inside the scenario's 180-second end-to-end budget.
@@ -70,12 +71,19 @@ interface RawWsConnection {
   initialBytes: Uint8Array;
 }
 
-/** Extract the monotonic output sequence from the relay health response. */
-export function relayCurrentSequence(health: unknown): number {
+/** Typed relay state exposed by the health endpoint. */
+export interface RelayHealthState {
+  currentSequence: number;
+  downstreamConnections: number;
+}
+
+/** Parse the relay fields used as scenario synchronization barriers. */
+export function parseRelayHealthState(health: unknown): RelayHealthState {
   if (!health || typeof health !== "object") {
     throw new Error("Relay health response was not an object");
   }
-  const currentSequence = (health as Record<string, unknown>).currentSequence;
+  const response = health as Record<string, unknown>;
+  const currentSequence = response.currentSequence;
   if (
     typeof currentSequence !== "number" ||
     !Number.isSafeInteger(currentSequence) ||
@@ -85,7 +93,35 @@ export function relayCurrentSequence(health: unknown): number {
       "Relay health response did not contain a non-negative integer currentSequence",
     );
   }
-  return currentSequence;
+  const downstreamConnections = response.downstreamConnections;
+  if (
+    typeof downstreamConnections !== "number" ||
+    !Number.isSafeInteger(downstreamConnections) || downstreamConnections < 0
+  ) {
+    throw new Error(
+      "Relay health response did not contain a non-negative integer downstreamConnections",
+    );
+  }
+  return { currentSequence, downstreamConnections };
+}
+
+/** Extract the monotonic output sequence from the relay health response. */
+export function relayCurrentSequence(health: unknown): number {
+  return parseRelayHealthState(health).currentSequence;
+}
+
+/** Whether repeated observations establish that the relay has quiesced. */
+export function relaySequenceIsStable(
+  observations: readonly number[],
+  requiredObservations = RELAY_QUIESCENCE_POLLS,
+): boolean {
+  if (observations.length < requiredObservations) return false;
+  const recent = observations.slice(-requiredObservations);
+  return recent.every((sequence) => sequence === recent[0]);
+}
+
+async function relayHealthState(relay: XrpcClient): Promise<RelayHealthState> {
+  return parseRelayHealthState(await relay.raw.httpGet("/api/relay/health"));
 }
 
 /** Poll relay health until its output sequence includes the named writes. */
@@ -96,14 +132,45 @@ async function waitForRelaySequence(
   const deadline = Date.now() + RELAY_CATCH_UP_DEADLINE_MS;
   let observed = -1;
   while (Date.now() < deadline) {
-    observed = relayCurrentSequence(
-      await relay.raw.httpGet("/api/relay/health"),
-    );
+    observed = (await relayHealthState(relay)).currentSequence;
     if (observed >= minimumSequence) return observed;
     await new Promise((resolve) => setTimeout(resolve, RELAY_CATCH_UP_POLL_MS));
   }
   throw new Error(
     `Relay currentSequence=${observed} did not reach ${minimumSequence} within ` +
+      `${RELAY_CATCH_UP_DEADLINE_MS}ms`,
+  );
+}
+
+/** Wait for account/identity propagation to stop changing relay output. */
+async function waitForRelayQuiescence(relay: XrpcClient): Promise<number> {
+  const deadline = Date.now() + RELAY_CATCH_UP_DEADLINE_MS;
+  const observations: number[] = [];
+  while (Date.now() < deadline) {
+    observations.push((await relayHealthState(relay)).currentSequence);
+    if (relaySequenceIsStable(observations)) return observations.at(-1)!;
+    await new Promise((resolve) => setTimeout(resolve, RELAY_CATCH_UP_POLL_MS));
+  }
+  throw new Error(
+    `Relay currentSequence did not stabilize across ${RELAY_QUIESCENCE_POLLS} polls: ` +
+      observations.slice(-RELAY_QUIESCENCE_POLLS).join(","),
+  );
+}
+
+/** Wait until a raw WebSocket upgrade is visible in relay subscriber state. */
+async function waitForRelayDownstreamConnections(
+  relay: XrpcClient,
+  minimumConnections: number,
+): Promise<number> {
+  const deadline = Date.now() + RELAY_CATCH_UP_DEADLINE_MS;
+  let observed = -1;
+  while (Date.now() < deadline) {
+    observed = (await relayHealthState(relay)).downstreamConnections;
+    if (observed >= minimumConnections) return observed;
+    await new Promise((resolve) => setTimeout(resolve, RELAY_CATCH_UP_POLL_MS));
+  }
+  throw new Error(
+    `Relay downstreamConnections=${observed} did not reach ${minimumConnections} within ` +
       `${RELAY_CATCH_UP_DEADLINE_MS}ms`,
   );
 }
@@ -195,6 +262,26 @@ async function connectRawWs(
     return { conn, initialBytes: await readWebSocketUpgrade(conn) };
   } catch (error) {
     conn.close();
+    throw error;
+  }
+}
+
+/** Upgrade a subscription and wait for the relay to publish its attachment. */
+async function connectAttachedRawWs(
+  relay: XrpcClient,
+  cursor?: number,
+): Promise<RawWsConnection> {
+  const before = (await relayHealthState(relay)).downstreamConnections;
+  const connection = await connectRawWs(SERVICE_URLS.relay, cursor);
+  try {
+    await waitForRelayDownstreamConnections(relay, before + 1);
+    return connection;
+  } catch (error) {
+    try {
+      connection.conn.close();
+    } catch {
+      // The connection may have already been closed by the relay.
+    }
     throw error;
   }
 }
@@ -332,13 +419,14 @@ async function createPost(
 }
 
 async function assertLiveOnlySubscription(
+  relay: XrpcClient,
   client: XrpcClient,
   did: string,
   accessJwt: string,
   seedRkeys: ReadonlySet<string>,
   label: string,
 ): Promise<{ sentinelRkey: string; observed: RelayEvent[] }> {
-  const connection = await connectRawWs(SERVICE_URLS.relay);
+  const connection = await connectAttachedRawWs(relay);
   const reader = new RawWsFrameReader(connection.conn, connection.initialBytes);
   try {
     const sentinelRkey = await createPost(
@@ -412,9 +500,8 @@ export async function run(): Promise<ScenarioResult> {
 
   const sequenceBeforeSeed = await timedCall(
     result,
-    "Capture relay sequence before retained seed",
-    async () =>
-      relayCurrentSequence(await relay.raw.httpGet("/api/relay/health")),
+    "Wait for relay account propagation to quiesce",
+    () => waitForRelayQuiescence(relay),
     (sequence) => `current_sequence=${sequence}`,
   );
   if (sequenceBeforeSeed === null) {
@@ -464,7 +551,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Explicit cursor zero still reads the small replay window",
     async () => {
-      const replayConnection = await connectRawWs(SERVICE_URLS.relay, 0);
+      const replayConnection = await connectAttachedRawWs(relay, 0);
       try {
         const replay = await new RawWsFrameReader(
           replayConnection.conn,
@@ -506,6 +593,7 @@ export async function run(): Promise<ScenarioResult> {
     "No-cursor subscription receives only its live sentinel",
     () =>
       assertLiveOnlySubscription(
+        relay,
         pds,
         actor.did!,
         actor.accessJwt!,
@@ -527,6 +615,7 @@ export async function run(): Promise<ScenarioResult> {
       const sentinels: string[] = [];
       for (let index = 1; index <= RECONNECT_COUNT; index++) {
         const observation = await assertLiveOnlySubscription(
+          relay,
           pds,
           actor.did!,
           actor.accessJwt!,
@@ -548,7 +637,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Slow consumer is closed by bounded relay output",
     async () => {
-      const slowConnection = await connectRawWs(SERVICE_URLS.relay);
+      const slowConnection = await connectAttachedRawWs(relay);
       try {
         // Deliberately do not read while producing frames. Only after the writes
         // complete does the bounded reader poll for close/EOF with a deadline.
@@ -572,7 +661,7 @@ export async function run(): Promise<ScenarioResult> {
         if (!read.closed) {
           throw new Error(
             `Slow subscriber remained open after ${SLOW_CONSUMER_DEADLINE_MS}ms ` +
-              "with PDS_FIREHOSE_MAX_PENDING_SENDS=1 and PDS_FIREHOSE_MAX_PENDING_BYTES=10000",
+              "with PDS_FIREHOSE_MAX_PENDING_SENDS=4 and PDS_FIREHOSE_MAX_PENDING_BYTES=10000",
           );
         }
         return read.events.length;

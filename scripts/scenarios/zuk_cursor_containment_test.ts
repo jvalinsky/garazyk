@@ -1,6 +1,8 @@
 import { assertEquals } from "@std/assert";
 import {
+  parseRelayHealthState,
   relayCurrentSequence,
+  relaySequenceIsStable,
   splitWebSocketUpgradeResponse,
 } from "./scenarios/102_zuk_cursor_containment.ts";
 
@@ -28,14 +30,20 @@ Deno.test("splitWebSocketUpgradeResponse waits for a complete header", () => {
 });
 
 Deno.test("relayCurrentSequence accepts the relay health sequence", () => {
-  assertEquals(relayCurrentSequence({ currentSequence: 42 }), 42);
+  const health = { currentSequence: 42, downstreamConnections: 3 };
+  assertEquals(relayCurrentSequence(health), 42);
+  assertEquals(parseRelayHealthState(health), health);
 });
 
 Deno.test("relayCurrentSequence rejects absent or invalid health sequences", () => {
   for (
-    const response of [undefined, {}, { currentSequence: -1 }, {
+    const response of [undefined, {}, {
+      currentSequence: -1,
+      downstreamConnections: 0,
+    }, {
       currentSequence: "42",
-    }]
+      downstreamConnections: 0,
+    }, { currentSequence: 42, downstreamConnections: -1 }]
   ) {
     let failed = false;
     try {
@@ -45,4 +53,10 @@ Deno.test("relayCurrentSequence rejects absent or invalid health sequences", () 
     }
     assertEquals(failed, true);
   }
+});
+
+Deno.test("relaySequenceIsStable requires several equal observations", () => {
+  assertEquals(relaySequenceIsStable([4, 4, 4], 3), true);
+  assertEquals(relaySequenceIsStable([3, 4, 4], 3), false);
+  assertEquals(relaySequenceIsStable([4, 4], 3), false);
 });
