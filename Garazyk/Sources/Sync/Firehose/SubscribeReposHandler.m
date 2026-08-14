@@ -95,6 +95,7 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
                        message:(NSString *)message
                   toConnection:(ATProtoWebSocketConnection *)connection;
 - (void)detachConnection:(ATProtoWebSocketConnection *)connection;
+- (void)attachConnection:(ATProtoWebSocketConnection *)connection;
 - (BOOL)sendEventData:(NSData *)eventData
     toConnectionWithBackpressureCheck:(ATProtoWebSocketConnection *)connection;
 + (NSString *)rfc3339Timestamp;
@@ -341,20 +342,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   webSocketConnection.heartbeatInterval = 5.0;
   webSocketConnection.heartbeatTimeout = 5.0;
   webSocketConnection.delegate = self;
-  __block NSUInteger count = 0;
-  dispatch_sync(_connectionsQueue, ^{
-    [_attachedConnections addObject:webSocketConnection];
-    count = _attachedConnections.count;
-  });
-  [[GZMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
-  [self.relayMetrics recordDownstreamConnected];
-
-  if ([self.delegate respondsToSelector:@selector(
-                      subscribeReposHandler:didAcceptConnection:)]) {
-    [self.delegate subscribeReposHandler:self
-                     didAcceptConnection:webSocketConnection];
-  }
-
   [webSocketConnection startOnExistingTransport];
   [self sendInitialRepositoryStateToConnection:webSocketConnection
                                         cursor:[request queryParamForKey:@"cursor"]];
@@ -370,19 +357,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
   connection.heartbeatInterval = 5.0;
   connection.heartbeatTimeout = 5.0;
-  __block NSUInteger count = 0;
-  dispatch_sync(_connectionsQueue, ^{
-    [_attachedConnections addObject:connection];
-    count = _attachedConnections.count;
-  });
-  [[GZMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
-  [self.relayMetrics recordDownstreamConnected];
-
-  if ([self.delegate respondsToSelector:@selector
-                     (subscribeReposHandler:didAcceptConnection:)]) {
-    [self.delegate subscribeReposHandler:self didAcceptConnection:connection];
-  }
-
   [self sendInitialRepositoryStateToConnection:connection cursor:nil];
 }
 
@@ -849,6 +823,16 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)broadcastEventData:(NSData *)eventData {
+  if (!eventData) {
+    return;
+  }
+
+  /*
+   * Replay and live delivery share syncQueue. A cursor subscription therefore
+   * observes retained events followed by subsequently published events, with
+   * no concurrent fanout slipping between replay and live delivery.
+   */
+  void (^broadcast)(void) = ^{
   __block NSArray<ATProtoWebSocketConnection *> *snapshot;
   dispatch_sync(_connectionsQueue, ^{
     snapshot = [_attachedConnections allObjects];
@@ -859,11 +843,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     GZ_LOG_SYNC_INFO(@"[Relay] No subscribers, skipping broadcast");
     return;
   }
-  // Single dispatch + loop: reduces per-event dispatch overhead from O(N)
-  // to O(1). sendEventData:toConnectionWithBackpressureCheck: is
-  // non-blocking (drops slow consumers), so the loop won't stall.
-  dispatch_async(self.broadcastFanoutQueue, ^{
-    for (ATProtoWebSocketConnection *connection in snapshot) {
+  // sendEventData:toConnectionWithBackpressureCheck: is non-blocking, so
+  // serializing subscriber admission does not wait for socket writes.
+  for (ATProtoWebSocketConnection *connection in snapshot) {
       NSUInteger pCount = connection.pendingSendCount;
       NSUInteger pBytes = connection.pendingSendBytes;
       if (pCount > 10 || pBytes > 100000) {
@@ -880,8 +862,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                            (unsigned long)connection.pendingSendCount,
                            (unsigned long)connection.pendingSendBytes);
       }
-    }
-  });
+  }
+  };
+
+  if (dispatch_get_specific(kSubscribeReposEventQueueKey) != NULL) {
+    broadcast();
+  } else {
+    dispatch_async(self.syncQueue, broadcast);
+  }
 }
 
 - (void)sendInitialRepositoryStateToConnection:(ATProtoWebSocketConnection *)connection
@@ -928,6 +916,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (!strongSelf || strongSelf.stopping) return;
     GZ_LOG_SYNC_INFO(@"Async worker started: processing initial state for connection %@", connection.remoteAddress);
 
+    // Attach and initialize in one syncQueue operation. Broadcasts use the
+    // same queue, so a live event cannot be delivered between attachment and
+    // retained replay (or the live-only omitted-cursor handoff).
+    [strongSelf attachConnection:connection];
+
     if (hasCursor && !cursorValid) {
       [strongSelf sendErrorFrameWithCode:kSubscribeReposErrorInvalidCursor
                            message:@"cursor must be a non-negative integer"
@@ -942,7 +935,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     // Deviation: treat future cursor as outdated cursor instead. Relays cache
     // stale cursors and retry indefinitely, creating a loop (indigo #1231).
     // Sending OutdatedCursor info and replaying from beginning breaks the loop.
-    NSUInteger requestedReplayCursor = hasCursor ? parsedCursor : 0;
+    if (!hasCursor) {
+      // The subscriber was attached above on syncQueue. A later broadcast is
+      // therefore live delivery; retained history is never consulted.
+      GZ_LOG_SYNC_INFO(@"No cursor provided; attached for live events without replay.");
+      return;
+    }
+
+    NSUInteger requestedReplayCursor = parsedCursor;
     if (hasCursor && parsedCursor > strongSelf.session.sequenceNumber) {
       GZ_LOG_SYNC_WARN(
           @"Future cursor %lu is ahead of server sequence %lu; "
@@ -954,8 +954,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                         message:@"Requested cursor is ahead of server sequence; replaying from beginning"
                    toConnection:connection];
       requestedReplayCursor = 0;
-    } else if (!hasCursor) {
-      GZ_LOG_SYNC_INFO(@"No cursor provided; replaying retained events before switching to live updates.");
     } else if (parsedCursor == 0) {
       GZ_LOG_SYNC_INFO(@"Client requested cursor=0; replaying all retained events from the beginning.");
     }
@@ -988,7 +986,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)replayEventsAfterCursor:(NSUInteger)cursor
                    toConnection:(ATProtoWebSocketConnection *)connection {
-    dispatch_semaphore_wait(_backfillSemaphore, dispatch_time(DISPATCH_TIME_NOW, 60 * NSEC_PER_SEC));
+    if (dispatch_semaphore_wait(_backfillSemaphore,
+                                dispatch_time(DISPATCH_TIME_NOW, 60 * NSEC_PER_SEC)) != 0) {
+        GZ_LOG_SYNC_WARN(@"Timed out waiting to begin replay for connection %@",
+                         connection.remoteAddress);
+        return;
+    }
 
     @try {
         // Try service databases first (PDS mode)
@@ -1041,7 +1044,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                     }
                 }
 
-                [connection sendMessage:eventData];
+                if (![self sendEventData:eventData
+                    toConnectionWithBackpressureCheck:connection]) {
+                    GZ_LOG_SYNC_INFO(@"Stopping replay for %@ after output admission rejected an event",
+                                     connection.remoteAddress);
+                    return;
+                }
             }
             GZ_LOG_SYNC_INFO(@"Backfill complete for connection %@", connection.remoteAddress);
             return;
@@ -1068,7 +1076,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
             for (id event in bufferedEvents) {
                 NSData *eventData = [self _encodeBufferedEvent:event];
                 if (eventData) {
-                    [connection sendMessage:eventData];
+                    if (![self sendEventData:eventData
+                        toConnectionWithBackpressureCheck:connection]) {
+                        GZ_LOG_SYNC_INFO(@"Stopping buffered replay for %@ after output admission rejected an event",
+                                         connection.remoteAddress);
+                        return;
+                    }
                 }
             }
             GZ_LOG_SYNC_INFO(@"Buffer replay complete for connection %@", connection.remoteAddress);
@@ -1228,16 +1241,41 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
 }
 
+- (void)attachConnection:(ATProtoWebSocketConnection *)connection {
+  __block BOOL added = NO;
+  __block NSUInteger count = 0;
+  dispatch_sync(_connectionsQueue, ^{
+    if (![_attachedConnections containsObject:connection]) {
+      [_attachedConnections addObject:connection];
+      added = YES;
+    }
+    count = _attachedConnections.count;
+  });
+  if (!added) {
+    return;
+  }
+
+  [[GZMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
+  [self.relayMetrics recordDownstreamConnected];
+  if ([self.delegate respondsToSelector:@selector(
+                    subscribeReposHandler:didAcceptConnection:)]) {
+    [self.delegate subscribeReposHandler:self didAcceptConnection:connection];
+  }
+}
+
 - (BOOL)sendEventData:(NSData *)eventData
     toConnectionWithBackpressureCheck:(ATProtoWebSocketConnection *)connection {
-  if (!eventData || !connection) {
+  if (!eventData || !connection || self.stopping ||
+      connection.state == WebSocketConnectionStateClosing ||
+      connection.state == WebSocketConnectionStateClosed) {
     return NO;
   }
 
   NSUInteger pendingCount = connection.pendingSendCount;
   NSUInteger pendingBytes = connection.pendingSendBytes;
   if (pendingCount >= self.maxPendingSendsPerConnection ||
-      pendingBytes >= self.maxPendingBytesPerConnection) {
+      pendingBytes >= self.maxPendingBytesPerConnection ||
+      eventData.length > self.maxPendingBytesPerConnection - pendingBytes) {
     GZ_LOG_SYNC_WARN(@"[Firehose] Dropping slow consumer %@: pendingSends=%lu/%lu "
                        "pendingBytes=%lu/%lu",
                        connection.remoteAddress,

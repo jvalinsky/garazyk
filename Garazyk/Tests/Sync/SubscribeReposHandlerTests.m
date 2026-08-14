@@ -27,6 +27,7 @@
 @property (nonatomic, copy) NSString *closedReason;
 @property (nonatomic, assign) NSUInteger simulatedPendingSendCount;
 @property (nonatomic, assign) NSUInteger simulatedPendingSendBytes;
+@property (nonatomic, copy) void (^didSendMessage)(MockWebSocketConnection *connection);
 @end
 
 @implementation MockWebSocketConnection
@@ -41,6 +42,9 @@
 }
 - (void)sendMessage:(NSData *)message {
     [_sentMessages addObject:message];
+    if (self.didSendMessage) {
+        self.didSendMessage(self);
+    }
 }
 - (NSDictionary *)queryParams {
     return _mockQueryParams;
@@ -415,6 +419,120 @@
         XCTAssertEqualObjects(msg1[@"did"], @"did:plc:replay2");
         XCTAssertEqualObjects(msg2[@"did"], @"did:plc:replay3");
     }
+}
+#endif
+
+#ifndef GNUSTEP
+- (void)testOmittedCursorAttachesLiveWithoutReplayingRetainedEvents {
+    [self.handler broadcastIdentityChange:@"did:plc:retained-one"
+                                   handle:@"retained-one.test"];
+    [self.handler broadcastIdentityChange:@"did:plc:retained-two"
+                                   handle:@"retained-two.test"];
+    [self waitForHandlerIdle];
+
+    MockWebSocketConnection *connection = [[MockWebSocketConnection alloc] init];
+    [self.handler sendInitialRepositoryStateToConnection:connection cursor:nil];
+    [self waitForHandlerIdle];
+
+    XCTAssertEqual(connection.sentMessages.count, 0U,
+                   @"An omitted cursor must not replay retained events");
+
+    [self.handler broadcastIdentityChange:@"did:plc:live-after-attach"
+                                   handle:@"live-after-attach.test"];
+    [self waitForHandlerIdle];
+
+    XCTAssertEqual(connection.sentMessages.count, 1U);
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    NSInteger op = 0;
+    NSString *type = nil;
+    NSDictionary *payload = [formatter decodeEventFromData:connection.sentMessages.firstObject
+                                                        op:&op
+                                                   msgType:&type
+                                                     error:nil];
+    XCTAssertEqual(op, 1);
+    XCTAssertEqualObjects(type, @"#identity");
+    XCTAssertEqualObjects(payload[@"did"], @"did:plc:live-after-attach");
+}
+#endif
+
+#ifndef GNUSTEP
+- (void)testCursorAtCurrentSequenceReplaysNothing {
+    [self.handler broadcastIdentityChange:@"did:plc:current-cursor"
+                                   handle:@"current-cursor.test"];
+    [self waitForHandlerIdle];
+
+    MockWebSocketConnection *connection = [[MockWebSocketConnection alloc] init];
+    [self.handler sendInitialRepositoryStateToConnection:connection cursor:@"1"];
+    [self waitForHandlerIdle];
+
+    XCTAssertEqual(connection.sentMessages.count, 0U);
+    XCTAssertFalse(connection.didClose);
+}
+#endif
+
+#ifndef GNUSTEP
+- (void)testReplayCrossesOverToLiveWithoutGapOrDuplicate {
+    [self.handler broadcastIdentityChange:@"did:plc:crossover-one"
+                                   handle:@"crossover-one.test"];
+    [self.handler broadcastIdentityChange:@"did:plc:crossover-two"
+                                   handle:@"crossover-two.test"];
+    [self waitForHandlerIdle];
+
+    MockWebSocketConnection *connection = [[MockWebSocketConnection alloc] init];
+    [self.handler sendInitialRepositoryStateToConnection:connection cursor:@"0"];
+    // Queue a live event immediately after subscription setup. It must be
+    // delivered after the retained window, even though attachment has not yet
+    // run when this call returns.
+    [self.handler broadcastIdentityChange:@"did:plc:crossover-live"
+                                   handle:@"crossover-live.test"];
+    [self waitForHandlerIdle];
+
+    XCTAssertEqual(connection.sentMessages.count, 3U);
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    NSMutableArray<NSNumber *> *sequences = [NSMutableArray array];
+    for (NSData *message in connection.sentMessages) {
+        NSDictionary *payload = [formatter decodeEventFromData:message
+                                                            op:nil
+                                                       msgType:nil
+                                                         error:nil];
+        [sequences addObject:payload[@"seq"]];
+    }
+    XCTAssertEqualObjects(sequences, (@[ @1, @2, @3 ]));
+}
+#endif
+
+#ifndef GNUSTEP
+- (void)testReplayStopsWhenOutputAdmissionRejectsNextEvent {
+    self.handler.maxPendingSendsPerConnection = 1;
+    [self.handler broadcastIdentityChange:@"did:plc:cancel-one" handle:@"cancel-one.test"];
+    [self.handler broadcastIdentityChange:@"did:plc:cancel-two" handle:@"cancel-two.test"];
+    [self.handler broadcastIdentityChange:@"did:plc:cancel-three" handle:@"cancel-three.test"];
+    [self waitForHandlerIdle];
+
+    MockWebSocketConnection *connection = [[MockWebSocketConnection alloc] init];
+    connection.didSendMessage = ^(MockWebSocketConnection *sentConnection) {
+        if (sentConnection.sentMessages.count == 1U) {
+            sentConnection.simulatedPendingSendCount = 1;
+        }
+    };
+
+    [self.handler sendInitialRepositoryStateToConnection:connection cursor:@"0"];
+    [self waitForHandlerIdle];
+
+    XCTAssertTrue(connection.didClose);
+    XCTAssertEqual(connection.closedCode, 1008);
+    XCTAssertEqual(connection.sentMessages.count, 2U,
+                   @"Only the accepted event and ConsumerTooSlow error may be sent");
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    NSInteger firstOp = 0;
+    NSString *firstType = nil;
+    NSDictionary *firstPayload = [formatter decodeEventFromData:connection.sentMessages.firstObject
+                                                              op:&firstOp
+                                                         msgType:&firstType
+                                                           error:nil];
+    XCTAssertEqual(firstOp, 1);
+    XCTAssertEqualObjects(firstType, @"#identity");
+    XCTAssertEqualObjects(firstPayload[@"did"], @"did:plc:cancel-one");
 }
 #endif
 
