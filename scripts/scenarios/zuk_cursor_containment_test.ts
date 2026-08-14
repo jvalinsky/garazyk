@@ -5,6 +5,7 @@ import {
   parseRelayHealthState,
   relayCurrentSequence,
   relaySequenceIsStable,
+  slowConsumerPostText,
   splitWebSocketUpgradeResponse,
 } from "./scenarios/102_zuk_cursor_containment.ts";
 
@@ -75,4 +76,13 @@ Deno.test("downstreamConnectionsReleased requires the pre-connect baseline", () 
   assertEquals(downstreamConnectionsReleased(2, 2), true);
   assertEquals(downstreamConnectionsReleased(1, 2), true);
   assertEquals(downstreamConnectionsReleased(3, 2), false);
+});
+
+Deno.test("slowConsumerPostText remains below the feed-post text maximum", () => {
+  const text = slowConsumerPostText(
+    127,
+    "12345678-1234-1234-1234-123456789012",
+  );
+  assertEquals(text.length, 2_800);
+  assertEquals(text.startsWith("zuk-slow-consumer-127-"), true);
 });

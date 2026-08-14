@@ -40,10 +40,10 @@ const RELAY_CATCH_UP_DEADLINE_MS = 12_000;
 const RELAY_CATCH_UP_POLL_MS = 100;
 const RELAY_QUIESCENCE_POLLS = 5;
 const SLOW_CONSUMER_DEADLINE_MS = 30_000;
-// 128 × 8 KiB is safely beyond a typical loopback TCP receive window while
-// remaining practical inside the scenario's 180-second end-to-end budget.
+// 128 × 2.8 KiB remains well beyond the 10 KiB/4-send fixture limits while
+// staying within app.bsky.feed.post's 3,000-character text constraint.
 const SLOW_CONSUMER_POST_COUNT = 128;
-const SLOW_CONSUMER_RECORD_PADDING_BYTES = 8 * 1024;
+const SLOW_CONSUMER_TEXT_MAX_LENGTH = 2_800;
 const UPGRADE_HEADER_MAX_BYTES = 32 * 1024;
 const UPGRADE_HEADER_DEADLINE_MS = 5_000;
 const WS_OPCODE_BINARY = 0x2;
@@ -90,6 +90,15 @@ export function downstreamConnectionsReleased(
   baselineConnections: number,
 ): boolean {
   return observedConnections <= baselineConnections;
+}
+
+/** Build a lexicon-valid, pressure-generating slow-consumer post body. */
+export function slowConsumerPostText(index: number, nonce: string): string {
+  const prefix = `zuk-slow-consumer-${index}-${nonce}-`;
+  if (prefix.length > SLOW_CONSUMER_TEXT_MAX_LENGTH) {
+    throw new Error("Slow-consumer post prefix exceeds its text budget");
+  }
+  return prefix + "x".repeat(SLOW_CONSUMER_TEXT_MAX_LENGTH - prefix.length);
 }
 
 /** Typed relay state exposed by the health endpoint. */
@@ -696,9 +705,7 @@ export async function run(): Promise<ScenarioResult> {
             pds,
             actor.did!,
             actor.accessJwt!,
-            `zuk-slow-consumer-${index}-${crypto.randomUUID()}-${
-              "x".repeat(SLOW_CONSUMER_RECORD_PADDING_BYTES)
-            }`,
+            slowConsumerPostText(index, crypto.randomUUID()),
           );
         }
         const read = await new RawWsFrameReader(
