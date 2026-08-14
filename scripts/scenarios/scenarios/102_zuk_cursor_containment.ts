@@ -37,7 +37,12 @@ const SEED_COUNT = REPLAY_WINDOW + 3;
 const RECONNECT_COUNT = 25;
 const EVENT_DEADLINE_MS = 12_000;
 const SLOW_CONSUMER_DEADLINE_MS = 30_000;
-const SLOW_CONSUMER_POST_COUNT = 600;
+// 128 × 8 KiB is safely beyond a typical loopback TCP receive window while
+// remaining practical inside the scenario's 180-second end-to-end budget.
+const SLOW_CONSUMER_POST_COUNT = 128;
+const SLOW_CONSUMER_RECORD_PADDING_BYTES = 8 * 1024;
+const UPGRADE_HEADER_MAX_BYTES = 32 * 1024;
+const UPGRADE_HEADER_DEADLINE_MS = 5_000;
 const WS_OPCODE_BINARY = 0x2;
 const WS_OPCODE_TEXT = 0x1;
 const WS_OPCODE_CLOSE = 0x8;
@@ -58,10 +63,79 @@ interface ReadResult {
   closed: boolean;
 }
 
+interface RawWsConnection {
+  conn: Deno.Conn;
+  initialBytes: Uint8Array;
+}
+
+/** Splits a complete HTTP upgrade response from any coalesced WebSocket bytes. */
+export function splitWebSocketUpgradeResponse(
+  bytes: Uint8Array,
+): { header: string; remaining: Uint8Array } | undefined {
+  for (let index = 0; index + 3 < bytes.length; index++) {
+    if (
+      bytes[index] === 0x0d && bytes[index + 1] === 0x0a &&
+      bytes[index + 2] === 0x0d && bytes[index + 3] === 0x0a
+    ) {
+      return {
+        header: new TextDecoder().decode(bytes.subarray(0, index + 4)),
+        remaining: bytes.slice(index + 4),
+      };
+    }
+  }
+  return undefined;
+}
+
+async function readWebSocketUpgrade(
+  conn: Deno.Conn,
+): Promise<Uint8Array> {
+  let responseBytes = new Uint8Array(0);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    try {
+      conn.close();
+    } catch {
+      // The peer may already have closed the connection.
+    }
+  }, UPGRADE_HEADER_DEADLINE_MS);
+  const buffer = new Uint8Array(4096);
+  try {
+    while (!timedOut && responseBytes.length < UPGRADE_HEADER_MAX_BYTES) {
+      const count = await conn.read(buffer);
+      if (count === null || count === 0) break;
+      const combined = new Uint8Array(responseBytes.length + count);
+      combined.set(responseBytes);
+      combined.set(buffer.subarray(0, count), responseBytes.length);
+      responseBytes = combined;
+      const response = splitWebSocketUpgradeResponse(responseBytes);
+      if (response) {
+        if (!/^HTTP\/1\.1 101(?:\s|$)/.test(response.header)) {
+          throw new Error(`WebSocket upgrade failed: ${response.header}`);
+        }
+        return response.remaining;
+      }
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+  if (timedOut) {
+    throw new Error(
+      `WebSocket upgrade timed out after ${UPGRADE_HEADER_DEADLINE_MS}ms`,
+    );
+  }
+  if (responseBytes.length >= UPGRADE_HEADER_MAX_BYTES) {
+    throw new Error(
+      `WebSocket upgrade headers exceeded ${UPGRADE_HEADER_MAX_BYTES} bytes`,
+    );
+  }
+  throw new Error("WebSocket closed before completing its upgrade response");
+}
+
 async function connectRawWs(
   serviceUrl: string,
   cursor?: number,
-): Promise<Deno.Conn> {
+): Promise<RawWsConnection> {
   const url = new URL(`${serviceUrl}/xrpc/com.atproto.sync.subscribeRepos`);
   if (cursor !== undefined) url.searchParams.set("cursor", String(cursor));
   const port = Number(url.port || "80");
@@ -77,24 +151,21 @@ async function connectRawWs(
     "Sec-WebSocket-Version: 13\r\n\r\n";
 
   await conn.write(new TextEncoder().encode(request));
-  const responseBuffer = new Uint8Array(4096);
-  const count = await conn.read(responseBuffer);
-  const response = new TextDecoder().decode(
-    responseBuffer.subarray(0, count ?? 0),
-  );
-  if (!response.includes("101")) {
+  try {
+    return { conn, initialBytes: await readWebSocketUpgrade(conn) };
+  } catch (error) {
     conn.close();
-    throw new Error(`WebSocket upgrade failed: ${response}`);
+    throw error;
   }
-  return conn;
 }
 
 class RawWsFrameReader {
   #conn: Deno.Conn;
   #buffer = new Uint8Array(0);
 
-  constructor(conn: Deno.Conn) {
+  constructor(conn: Deno.Conn, initialBytes = new Uint8Array(0)) {
     this.#conn = conn;
+    this.#buffer = initialBytes;
   }
 
   #append(chunk: Uint8Array): void {
@@ -224,8 +295,8 @@ async function assertLiveOnlySubscription(
   seedRkeys: ReadonlySet<string>,
   label: string,
 ): Promise<{ sentinelRkey: string; observed: RelayEvent[] }> {
-  const conn = await connectRawWs(SERVICE_URLS.relay);
-  const reader = new RawWsFrameReader(conn);
+  const connection = await connectRawWs(SERVICE_URLS.relay);
+  const reader = new RawWsFrameReader(connection.conn, connection.initialBytes);
   try {
     const sentinelRkey = await createPost(
       client,
@@ -259,7 +330,7 @@ async function assertLiveOnlySubscription(
     return { sentinelRkey, observed: read.events };
   } finally {
     try {
-      conn.close();
+      connection.conn.close();
     } catch {
       // The server may have already closed it.
     }
@@ -326,7 +397,10 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       const replayConnection = await connectRawWs(SERVICE_URLS.relay, 0);
       try {
-        const replay = await new RawWsFrameReader(replayConnection).readUntil(
+        const replay = new RawWsFrameReader(
+          replayConnection.conn,
+          replayConnection.initialBytes,
+        ).readUntil(
           EVENT_DEADLINE_MS,
           (events) =>
             [...seedRkeys].some((rkey) =>
@@ -345,7 +419,7 @@ export async function run(): Promise<ScenarioResult> {
         return replay.events.length;
       } finally {
         try {
-          replayConnection.close();
+          replayConnection.conn.close();
         } catch {
           // The peer may have closed after replay.
         }
@@ -415,11 +489,14 @@ export async function run(): Promise<ScenarioResult> {
             actor.did!,
             actor.accessJwt!,
             `zuk-slow-consumer-${index}-${crypto.randomUUID()}-${
-              "x".repeat(4096)
+              "x".repeat(SLOW_CONSUMER_RECORD_PADDING_BYTES)
             }`,
           );
         }
-        const read = await new RawWsFrameReader(slowConnection).readUntil(
+        const read = await new RawWsFrameReader(
+          slowConnection.conn,
+          slowConnection.initialBytes,
+        ).readUntil(
           SLOW_CONSUMER_DEADLINE_MS,
           () => false,
         );
@@ -432,7 +509,7 @@ export async function run(): Promise<ScenarioResult> {
         return read.events.length;
       } finally {
         try {
-          slowConnection.close();
+          slowConnection.conn.close();
         } catch {
           // The expected outcome is an already-closed connection.
         }
