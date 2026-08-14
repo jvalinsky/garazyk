@@ -40,15 +40,15 @@ const RELAY_CATCH_UP_DEADLINE_MS = 12_000;
 const RELAY_CATCH_UP_POLL_MS = 100;
 const RELAY_QUIESCENCE_POLLS = 5;
 const SLOW_CONSUMER_DEADLINE_MS = 30_000;
-// 128 × >4 KiB UTF-8 text remains well beyond the 10 KiB/4-send fixture
-// limits while respecting both app.bsky.feed.post's maxLength and
+// 128 × 2.7–3.0 KiB UTF-8 text remains well beyond the 10 KiB/4-send fixture
+// limits while respecting the server's byte-counted maxLength and
 // maxGraphemes constraints.
 const SLOW_CONSUMER_POST_COUNT = 128;
-const SLOW_CONSUMER_TEXT_MAX_CODE_UNITS = 3_000;
+const SLOW_CONSUMER_TEXT_MAX_UTF8_BYTES = 3_000;
 const SLOW_CONSUMER_TEXT_MAX_GRAPHEMES = 300;
 const SLOW_CONSUMER_TEXT_TARGET_GRAPHEMES = 290;
-const SLOW_CONSUMER_TEXT_MIN_UTF8_BYTES = 4_000;
-const SLOW_CONSUMER_COMBINING_MARKS_PER_CLUSTER = 10;
+const SLOW_CONSUMER_TEXT_MIN_UTF8_BYTES = 2_700;
+const SLOW_CONSUMER_COMBINING_MARKS_PER_CLUSTER = 5;
 const UPGRADE_HEADER_MAX_BYTES = 32 * 1024;
 const UPGRADE_HEADER_DEADLINE_MS = 5_000;
 const WS_OPCODE_BINARY = 0x2;
@@ -117,12 +117,12 @@ export function slowConsumerPostText(index: number, nonce: string): string {
   const text = prefix + cluster.repeat(clusterCount);
   const utf8Bytes = new TextEncoder().encode(text).length;
   if (
-    text.length > SLOW_CONSUMER_TEXT_MAX_CODE_UNITS ||
+    utf8Bytes > SLOW_CONSUMER_TEXT_MAX_UTF8_BYTES ||
     graphemeCount(text) > SLOW_CONSUMER_TEXT_MAX_GRAPHEMES ||
     utf8Bytes < SLOW_CONSUMER_TEXT_MIN_UTF8_BYTES
   ) {
     throw new Error(
-      "Slow-consumer post does not satisfy its lexicon/pressure bounds",
+      "Slow-consumer post does not satisfy server byte/grapheme pressure bounds",
     );
   }
   return text;

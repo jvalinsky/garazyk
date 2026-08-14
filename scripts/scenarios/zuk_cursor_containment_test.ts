@@ -79,13 +79,14 @@ Deno.test("downstreamConnectionsReleased requires the pre-connect baseline", () 
   assertEquals(downstreamConnectionsReleased(3, 2), false);
 });
 
-Deno.test("slowConsumerPostText satisfies feed grapheme and wire-pressure bounds", () => {
+Deno.test("slowConsumerPostText satisfies server byte, grapheme, and pressure bounds", () => {
   const text = slowConsumerPostText(
     127,
     "12345678-1234-1234-1234-123456789012",
   );
-  assertEquals(text.length <= 3_000, true);
   assertEquals(graphemeCount(text) <= 300, true);
-  assertEquals(new TextEncoder().encode(text).length >= 4_000, true);
+  const utf8Bytes = new TextEncoder().encode(text).length;
+  assertEquals(utf8Bytes <= 3_000, true);
+  assertEquals(utf8Bytes >= 2_700, true);
   assertEquals(text.startsWith("z127-"), true);
 });
