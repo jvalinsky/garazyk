@@ -161,9 +161,12 @@ async function connectRawWs(
 
 class RawWsFrameReader {
   #conn: Deno.Conn;
-  #buffer = new Uint8Array(0);
+  #buffer: Uint8Array = new Uint8Array(0);
 
-  constructor(conn: Deno.Conn, initialBytes = new Uint8Array(0)) {
+  constructor(
+    conn: Deno.Conn,
+    initialBytes: Uint8Array = new Uint8Array(0),
+  ) {
     this.#conn = conn;
     this.#buffer = initialBytes;
   }
@@ -397,7 +400,7 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       const replayConnection = await connectRawWs(SERVICE_URLS.relay, 0);
       try {
-        const replay = new RawWsFrameReader(
+        const replay = await new RawWsFrameReader(
           replayConnection.conn,
           replayConnection.initialBytes,
         ).readUntil(
