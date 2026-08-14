@@ -16,7 +16,12 @@ import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { TopologyRegistry } from "@garazyk/schemat";
 import type { AgentTriageResult } from "./cli/agent.ts";
-import { classifyBoundary, toSummary, triageReports } from "./cli/agent.ts";
+import {
+  buildAgentRunnerArgs,
+  classifyBoundary,
+  toSummary,
+  triageReports,
+} from "./cli/agent.ts";
 import { MultiSink } from "./events.ts";
 import type {
   RunFinishedEvent,
@@ -1071,6 +1076,7 @@ Deno.test("CLI: agent run --help shows all options", async () => {
   assertMatch(stdout, /--binary/);
   assertMatch(stdout, /--pds2/);
   assertMatch(stdout, /--keep-running/);
+  assertMatch(stdout, /--isolation/);
   assertMatch(stdout, /--topology/);
   assertMatch(stdout, /--runner/);
   assertMatch(stdout, /--run-id/);
@@ -1079,6 +1085,16 @@ Deno.test("CLI: agent run --help shows all options", async () => {
   assertMatch(stdout, /--client-flow/);
   assertMatch(stdout, /--allow-hybrid-network/);
   assertMatch(stdout, /NDJSON/);
+});
+
+Deno.test("buildAgentRunnerArgs: propagates requested resource isolation", () => {
+  const args = buildAgentRunnerArgs({ isolation: "shared" }, ["102"]);
+  assertEquals(args.isolation, "shared");
+  assertEquals(args.scenarioIds, ["102"]);
+});
+
+Deno.test("buildAgentRunnerArgs: defaults resource isolation to auto", () => {
+  assertEquals(buildAgentRunnerArgs({}, []).isolation, "auto");
 });
 
 Deno.test("CLI: agent triage --help shows options", async () => {
@@ -1108,6 +1124,19 @@ Deno.test("CLI: agent run with invalid runner enum exits non-zero", async () => 
   // Should fail with non-zero exit code due to invalid enum value
   assertEquals(code !== 0, true);
   assertMatch(stderr, /runner/);
+});
+
+Deno.test("CLI: agent run with invalid isolation enum exits non-zero", async () => {
+  const { stderr, code } = await spawnCli([
+    "agent",
+    "run",
+    "--isolation",
+    "exclusive",
+    "01",
+  ]);
+
+  assertEquals(code !== 0, true);
+  assertMatch(stderr, /isolation/);
 });
 
 Deno.test("CLI: agent run with invalid client-flow enum exits non-zero", async () => {

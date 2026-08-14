@@ -91,6 +91,39 @@ export interface AgentTriageResult {
   diagnosticsDir?: string;
 }
 
+/** Build the shared runner arguments for an `agent run` invocation. */
+export function buildAgentRunnerArgs(
+  options: Record<string, unknown>,
+  scenarioIds: string[],
+): RunnerArgs {
+  return {
+    scenarioIds,
+    list: false,
+    setupOnly: false,
+    setup: options.setup === true,
+    noSetup: options.setup === false,
+    teardown: (options.teardown as boolean) ?? false,
+    teardownOnly: false,
+    binary: (options.binary as boolean) ?? false,
+    pds2: (options.pds2 as boolean) ?? false,
+    verbose: (options.verbose as boolean) ?? false,
+    noJson: false,
+    keepRunning: (options.keepRunning as boolean) ?? false,
+    collectDiagnostics: false,
+    isolation: (options.isolation as RunnerArgs["isolation"]) ?? "auto",
+    timeout: (options.timeout as number) ?? 120,
+    allowHybridNetwork: (options.allowHybridNetwork as boolean) ?? false,
+    otel: false,
+    runner: (options.runner as "host" | "docker") ?? "host",
+    webClient: options.webClient as string | undefined,
+    clientFlow: (options.clientFlow as BrowserFlow) ?? "none",
+    runId: options.runId as string | undefined,
+    diagnosticsDir: undefined,
+    reportsDir: undefined,
+    topology: options.topology as string | undefined,
+  };
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────
 
 /** Exported for testing. */
@@ -231,6 +264,17 @@ const agentRunCommand = new Command()
   .option("--binary", "Start services from build/bin instead of Docker.")
   .option("--pds2", "Include the second PDS.")
   .option("--keep-running", "Leave services running after execution.")
+  .type(
+    "isolation",
+    new EnumType(
+      ["auto", "shared", "legacy-fixed"] as const,
+    ),
+  )
+  .option(
+    "--isolation <mode:isolation>",
+    "Resource isolation: auto, shared, or legacy-fixed.",
+    { default: "auto" as const },
+  )
   .option("--teardown", "Run teardown after scenarios complete.")
   .option(
     "--allow-hybrid-network",
@@ -295,32 +339,7 @@ const agentRunCommand = new Command()
         );
       }
 
-      const args: RunnerArgs = {
-        scenarioIds: scenarioIds ?? [],
-        list: false,
-        setupOnly: false,
-        setup: options.setup === true,
-        noSetup: options.setup === false,
-        teardown: (options.teardown as boolean) ?? false,
-        teardownOnly: false,
-        binary: (options.binary as boolean) ?? false,
-        pds2: (options.pds2 as boolean) ?? false,
-        verbose: (options.verbose as boolean) ?? false,
-        noJson: false,
-        keepRunning: (options.keepRunning as boolean) ?? false,
-        collectDiagnostics: false,
-        isolation: "auto",
-        timeout: (options.timeout as number) ?? 120,
-        allowHybridNetwork: (options.allowHybridNetwork as boolean) ?? false,
-        otel: false,
-        runner: (options.runner as "host" | "docker") ?? "host",
-        webClient: options.webClient as string | undefined,
-        clientFlow: (options.clientFlow as BrowserFlow) ?? "none",
-        runId: options.runId as string | undefined,
-        diagnosticsDir: undefined,
-        reportsDir: undefined,
-        topology: options.topology as string | undefined,
-      };
+      const args = buildAgentRunnerArgs(options, scenarioIds ?? []);
 
       await executeRunnerArgs(args, {
         repoRoot: root,
