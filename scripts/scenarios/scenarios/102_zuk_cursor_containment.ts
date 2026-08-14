@@ -72,6 +72,7 @@ interface RawWsConnection {
 }
 
 interface AttachedRawWsConnection extends RawWsConnection {
+  downstreamBaseline: number;
   attachmentSequence: number;
 }
 
@@ -81,6 +82,14 @@ export function eventAtOrBeforeAttachment(
   attachmentSequence: number,
 ): { seq: number } | undefined {
   return events.find((event) => event.seq <= attachmentSequence);
+}
+
+/** Whether relay subscriber state proves a connection has detached. */
+export function downstreamConnectionsReleased(
+  observedConnections: number,
+  baselineConnections: number,
+): boolean {
+  return observedConnections <= baselineConnections;
 }
 
 /** Typed relay state exposed by the health endpoint. */
@@ -187,6 +196,26 @@ async function waitForRelayDownstreamConnections(
   );
 }
 
+/** Wait for a closed test subscriber to disappear from relay state. */
+async function waitForRelayDownstreamRelease(
+  relay: XrpcClient,
+  baselineConnections: number,
+): Promise<number> {
+  const deadline = Date.now() + RELAY_CATCH_UP_DEADLINE_MS;
+  let observed = -1;
+  while (Date.now() < deadline) {
+    observed = (await relayHealthState(relay)).downstreamConnections;
+    if (downstreamConnectionsReleased(observed, baselineConnections)) {
+      return observed;
+    }
+    await new Promise((resolve) => setTimeout(resolve, RELAY_CATCH_UP_POLL_MS));
+  }
+  throw new Error(
+    `Relay downstreamConnections=${observed} did not return to baseline ` +
+      `${baselineConnections} within ${RELAY_CATCH_UP_DEADLINE_MS}ms`,
+  );
+}
+
 /** Splits a complete HTTP upgrade response from any coalesced WebSocket bytes. */
 export function splitWebSocketUpgradeResponse(
   bytes: Uint8Array,
@@ -289,6 +318,7 @@ async function connectAttachedRawWs(
     await waitForRelayDownstreamConnections(relay, before + 1);
     return {
       ...connection,
+      downstreamBaseline: before,
       attachmentSequence: (await relayHealthState(relay)).currentSequence,
     };
   } catch (error) {
@@ -297,8 +327,22 @@ async function connectAttachedRawWs(
     } catch {
       // The connection may have already been closed by the relay.
     }
+    await waitForRelayDownstreamRelease(relay, before);
     throw error;
   }
+}
+
+/** Close a test subscriber and make its relay lifecycle observable before reuse. */
+async function closeAttachedRawWs(
+  relay: XrpcClient,
+  connection: AttachedRawWsConnection,
+): Promise<void> {
+  try {
+    connection.conn.close();
+  } catch {
+    // A slow-consumer close can win this race; relay state is still checked.
+  }
+  await waitForRelayDownstreamRelease(relay, connection.downstreamBaseline);
 }
 
 class RawWsFrameReader {
@@ -476,11 +520,7 @@ async function assertLiveOnlySubscription(
     }
     return { sentinelRkey, observed: read.events };
   } finally {
-    try {
-      connection.conn.close();
-    } catch {
-      // The server may have already closed it.
-    }
+    await closeAttachedRawWs(relay, connection);
   }
 }
 
@@ -590,11 +630,7 @@ export async function run(): Promise<ScenarioResult> {
         }
         return replay.events.length;
       } finally {
-        try {
-          replayConnection.conn.close();
-        } catch {
-          // The peer may have closed after replay.
-        }
+        await closeAttachedRawWs(relay, replayConnection);
       }
     },
     (observed) => `replayed=${observed} configured_window=${REPLAY_WINDOW}`,
@@ -680,11 +716,7 @@ export async function run(): Promise<ScenarioResult> {
         }
         return read.events.length;
       } finally {
-        try {
-          slowConnection.conn.close();
-        } catch {
-          // The expected outcome is an already-closed connection.
-        }
+        await closeAttachedRawWs(relay, slowConnection);
       }
     },
     (observed) => `closed=true events_observed_after_poll=${observed}`,

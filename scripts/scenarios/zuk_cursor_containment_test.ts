@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
 import {
+  downstreamConnectionsReleased,
   eventAtOrBeforeAttachment,
   parseRelayHealthState,
   relayCurrentSequence,
@@ -68,4 +69,10 @@ Deno.test("eventAtOrBeforeAttachment detects retained events without inspecting 
     { seq: 8 },
   );
   assertEquals(eventAtOrBeforeAttachment([{ seq: 9 }], 8), undefined);
+});
+
+Deno.test("downstreamConnectionsReleased requires the pre-connect baseline", () => {
+  assertEquals(downstreamConnectionsReleased(2, 2), true);
+  assertEquals(downstreamConnectionsReleased(1, 2), true);
+  assertEquals(downstreamConnectionsReleased(3, 2), false);
 });
