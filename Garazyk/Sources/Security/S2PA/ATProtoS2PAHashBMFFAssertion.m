@@ -226,13 +226,13 @@ static NSData *S2PAC2PABMFFUUID(void) {
     return [NSData dataWithBytes:uuid length:16];
 }
 
-@interface S2PABMFFBoxInfo : NSObject
+@interface ATProtoS2PABMFFBoxInfo : NSObject
 @property (nonatomic, assign) NSUInteger fileOffset;
 @property (nonatomic, assign) NSUInteger length;
 @property (nonatomic, copy) NSString *type;
 @end
 
-@implementation S2PABMFFBoxInfo
+@implementation ATProtoS2PABMFFBoxInfo
 @end
 
 @implementation ATProtoS2PAHashBMFFAssertion
@@ -273,7 +273,7 @@ static NSData *S2PAC2PABMFFUUID(void) {
                                                     subsets:@[subset]];
 }
 
-+ (nullable S2PABMFFBoxInfo *)readBoxAt:(NSUInteger)offset
++ (nullable ATProtoS2PABMFFBoxInfo *)readBoxAt:(NSUInteger)offset
                                  inData:(NSData *)data
                                   error:(NSError **)error {
     if (offset + 8 > data.length) {
@@ -319,18 +319,18 @@ static NSData *S2PAC2PABMFFUUID(void) {
                        @"BMFF box type invalid");
         return nil;
     }
-    S2PABMFFBoxInfo *box = [[S2PABMFFBoxInfo alloc] init];
+    ATProtoS2PABMFFBoxInfo *box = [[ATProtoS2PABMFFBoxInfo alloc] init];
     box.fileOffset = offset;
     box.length = boxLen;
     box.type = type;
     return box;
 }
 
-+ (nullable NSArray<S2PABMFFBoxInfo *> *)parseRootBoxes:(NSData *)data error:(NSError **)error {
-    NSMutableArray<S2PABMFFBoxInfo *> *boxes = [NSMutableArray array];
++ (nullable NSArray<ATProtoS2PABMFFBoxInfo *> *)parseRootBoxes:(NSData *)data error:(NSError **)error {
+    NSMutableArray<ATProtoS2PABMFFBoxInfo *> *boxes = [NSMutableArray array];
     NSUInteger offset = 0;
     while (offset < data.length) {
-        S2PABMFFBoxInfo *box = [self readBoxAt:offset inData:data error:error];
+        ATProtoS2PABMFFBoxInfo *box = [self readBoxAt:offset inData:data error:error];
         if (!box) return nil;
         [boxes addObject:box];
         if (box.length == 0) break;
@@ -381,7 +381,7 @@ static NSData *S2PAC2PABMFFUUID(void) {
     return occurrenceIndex == (NSUInteger)want;
 }
 
-+ (BOOL)box:(S2PABMFFBoxInfo *)box
++ (BOOL)box:(ATProtoS2PABMFFBoxInfo *)box
     inData:(NSData *)data
 matchesExclusion:(ATProtoS2PAHashBMFFExclusion *)ex {
     for (ATProtoS2PAHashBMFFDataMatch *m in ex.dataMatches ?: @[]) {
@@ -392,7 +392,7 @@ matchesExclusion:(ATProtoS2PAHashBMFFExclusion *)ex {
     return YES;
 }
 
-+ (nullable NSData *)bytesForBox:(S2PABMFFBoxInfo *)box
++ (nullable NSData *)bytesForBox:(ATProtoS2PABMFFBoxInfo *)box
                           inData:(NSData *)data
                          subsets:(NSArray<ATProtoS2PAHashBMFFSubset *> *)subsets
                            error:(NSError **)error {
@@ -436,13 +436,13 @@ matchesExclusion:(ATProtoS2PAHashBMFFExclusion *)ex {
     }
 }
 
-+ (BOOL)hashRootBoxes:(NSArray<S2PABMFFBoxInfo *> *)rootBoxes
++ (BOOL)hashRootBoxes:(NSArray<ATProtoS2PABMFFBoxInfo *> *)rootBoxes
                inData:(NSData *)data
            exclusions:(NSArray<ATProtoS2PAHashBMFFExclusion *> *)exclusions
                   ctx:(CC_SHA256_CTX *)ctx
                 error:(NSError **)error {
     NSMutableDictionary<NSString *, NSNumber *> *seen = [NSMutableDictionary dictionary];
-    for (S2PABMFFBoxInfo *box in rootBoxes) {
+    for (ATProtoS2PABMFFBoxInfo *box in rootBoxes) {
         NSUInteger occ = seen[box.type].unsignedIntegerValue + 1;
         seen[box.type] = @(occ);
 
@@ -595,7 +595,7 @@ matchesExclusion:(ATProtoS2PAHashBMFFExclusion *)ex {
     NSArray *roots = [self parseRootBoxes:data error:error];
     if (!roots) return nil;
     NSInteger mdatIndex = -1;
-    for (S2PABMFFBoxInfo *box in roots) {
+    for (ATProtoS2PABMFFBoxInfo *box in roots) {
         if (![box.type isEqualToString:@"mdat"]) continue;
         mdatIndex++;
         if (mdatIndex != localId) continue;
