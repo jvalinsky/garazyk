@@ -418,6 +418,20 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     _connectLastError = 0;
 }
 
+static dispatch_queue_t atproto_dns_queue(void) {
+    static dispatch_queue_t queues[4];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        for (int i = 0; i < 4; i++) {
+            NSString *name = [NSString stringWithFormat:@"com.atproto.network.dns.%d", i];
+            queues[i] = dispatch_queue_create(name.UTF8String, DISPATCH_QUEUE_SERIAL);
+        }
+    });
+    static _Atomic uint32_t counter = 0;
+    uint32_t idx = __atomic_fetch_add(&counter, 1, __ATOMIC_RELAXED) % 4;
+    return queues[idx];
+}
+
 - (void)beginOutboundConnect {
     if (_queue == NULL || _isCancelled) {
         return;
@@ -425,36 +439,50 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
 
     [self cleanupConnectState];
 
-    char portString[16];
-    snprintf(portString, sizeof(portString), "%lu", (unsigned long)_port);
-
-    struct addrinfo hints;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_family = AF_UNSPEC;
-
-    struct addrinfo *res = NULL;
-    int gai = getaddrinfo([_host UTF8String], portString, &hints, &res);
-    if (gai != 0 || res == NULL) {
-        if (self.stateChangedHandler) {
-            NSString *message = gai != 0 ? [NSString stringWithUTF8String:gai_strerror(gai)] : @"No address candidates";
-            self.stateChangedHandler(ATProtoNetworkConnectionStateFailed,
-                                     [NSError errorWithDomain:@"ATProtoNetworkTransport"
-                                                         code:-2
-                                                     userInfo:@{NSLocalizedDescriptionKey: message ?: @"Address resolution failed"}]);
+    NSString *hostToResolve = _host;
+    NSString *portToResolve = [NSString stringWithFormat:@"%lu", (unsigned long)_port];
+    
+    dispatch_async(atproto_dns_queue(), ^{
+        if (self->_isCancelled) {
+            return;
         }
-        return;
-    }
 
-    _connectAddrInfo = res;
-    _connectAddrInfoCurrent = res;
-    _connectCandidateIndex = 0;
-    _connectCurrentCandidateIndex = 0;
-    _connectCurrentCandidateFamily = AF_UNSPEC;
-    [_connectFailures removeAllObjects];
+        struct addrinfo hints;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
+        hints.ai_family = AF_UNSPEC;
 
-    [self startConnectToNextCandidate];
+        struct addrinfo *res = NULL;
+        int gai = getaddrinfo([hostToResolve UTF8String], [portToResolve UTF8String], &hints, &res);
+        
+        dispatch_async(self->_queue, ^{
+            if (self->_isCancelled) {
+                if (res) freeaddrinfo(res);
+                return;
+            }
+            
+            if (gai != 0 || res == NULL) {
+                if (self.stateChangedHandler) {
+                    NSString *message = gai != 0 ? [NSString stringWithUTF8String:gai_strerror(gai)] : @"No address candidates";
+                    self.stateChangedHandler(ATProtoNetworkConnectionStateFailed,
+                                             [NSError errorWithDomain:@"ATProtoNetworkTransport"
+                                                                 code:-2
+                                                             userInfo:@{NSLocalizedDescriptionKey: message ?: @"Address resolution failed"}]);
+                }
+                return;
+            }
+
+            self->_connectAddrInfo = res;
+            self->_connectAddrInfoCurrent = res;
+            self->_connectCandidateIndex = 0;
+            self->_connectCurrentCandidateIndex = 0;
+            self->_connectCurrentCandidateFamily = AF_UNSPEC;
+            [self->_connectFailures removeAllObjects];
+
+            [self startConnectToNextCandidate];
+        });
+    });
 }
 
 - (void)startConnectToNextCandidate {
