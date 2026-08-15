@@ -112,6 +112,7 @@ in
       } // lib.optionalAttrs (cfg.adminPasswordFile != null) {
         LoadCredential = [ "relay-admin-password:${cfg.adminPasswordFile}" ];
         Environment = [
+          "TZ=UTC"
           "RELAY_ADMIN_PASSWORD_FILE=%d/relay-admin-password"
           "GARAZYK_RELAY_ADMIN_UI_HOST=${cfg.adminHost}"
           "GARAZYK_RELAY_ADMIN_UI_PORT=${toString cfg.adminPort}"
