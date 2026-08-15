@@ -256,17 +256,22 @@ async fn fetch(
         state.node.register_peer(addr);
     }
 
-    let bytes = fetch_with_timeout(state.fetch_timeout, state.node.fetch_from(hash, provider))
-        .await
-        .map_err(|_| api_error(StatusCode::GATEWAY_TIMEOUT, "fetch timed out"))?
-        .map_err(|e| api_error(StatusCode::BAD_GATEWAY, e.to_string()))?;
-
-    if bytes.len() > state.max_fetch_bytes {
-        return Err(api_error(
-            StatusCode::PAYLOAD_TOO_LARGE,
-            "fetched blob exceeds max_fetch_bytes",
-        ));
-    }
+    let bytes = fetch_with_timeout(
+        state.fetch_timeout,
+        state
+            .node
+            .fetch_from_bounded(hash, provider, state.max_fetch_bytes as u64),
+    )
+    .await
+    .map_err(|_| api_error(StatusCode::GATEWAY_TIMEOUT, "fetch timed out"))?
+    .map_err(|e| {
+        let msg = e.to_string();
+        if msg.contains("exceeds limit") {
+            api_error(StatusCode::PAYLOAD_TOO_LARGE, msg)
+        } else {
+            api_error(StatusCode::BAD_GATEWAY, msg)
+        }
+    })?;
 
     Ok((
         StatusCode::OK,
