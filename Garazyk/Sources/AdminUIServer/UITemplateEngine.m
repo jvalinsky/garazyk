@@ -49,9 +49,41 @@ static NSString *TemplateFilePath(NSString *assetRoot,
 }
 
 + (NSString *)renderTemplate:(NSString *)templateName context:(NSDictionary<NSString *, id> *)context {
-    NSString *bundlePath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"AdminUIAssets"];
+    NSString *bundlePath = nil;
+    NSString *envAssetsDir = [[[NSProcessInfo processInfo] environment] objectForKey:@"GARAZYK_ADMIN_UI_ASSETS_DIR"];
+    if (envAssetsDir.length > 0 && [[NSFileManager defaultManager] fileExistsAtPath:envAssetsDir]) {
+        bundlePath = envAssetsDir;
+    }
+    if (!bundlePath) {
+        NSString *binaryPath = [[NSBundle mainBundle] executablePath];
+        if (!binaryPath || binaryPath.length == 0) {
+            NSArray<NSString *> *args = [[NSProcessInfo processInfo] arguments];
+            if (args.count > 0) binaryPath = args[0];
+        }
+        if (binaryPath.length > 0) {
+            NSString *binaryDir = [binaryPath stringByDeletingLastPathComponent];
+            NSString *candidate = [binaryDir stringByAppendingPathComponent:@"Assets"];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:candidate]) {
+                bundlePath = candidate;
+            }
+        }
+    }
+    if (!bundlePath) {
+        NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
+        if (resourcePath.length > 0) {
+            NSString *candidateAssets = [resourcePath stringByAppendingPathComponent:@"Assets"];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:candidateAssets]) {
+                bundlePath = candidateAssets;
+            } else {
+                NSString *candidateAdmin = [resourcePath stringByAppendingPathComponent:@"AdminUIAssets"];
+                if ([[NSFileManager defaultManager] fileExistsAtPath:candidateAdmin]) {
+                    bundlePath = candidateAdmin;
+                }
+            }
+        }
+    }
     NSString *sourceRoot = bundlePath;
-    if (![[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
+    if (!bundlePath || ![[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
         // Fallback for unit tests running from repository root. Shared assets
         // are library-owned; pack templates live beside this directory.
         bundlePath = @"Garazyk/Sources/AdminUIServer/Assets/library";

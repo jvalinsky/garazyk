@@ -24,6 +24,7 @@ interface RunOptions {
   collectDiagnostics?: boolean;
   allowHybridNetwork?: boolean;
   keepRunning?: boolean;
+  json?: boolean;
   noJson?: boolean;
   otel?: boolean;
   runId?: string;
@@ -107,6 +108,7 @@ export const runCommand = new Command()
       collectDiagnostics,
       allowHybridNetwork,
       keepRunning,
+      json,
       noJson,
       otel,
       runId,
@@ -132,13 +134,15 @@ export const runCommand = new Command()
       list: list ?? false,
       setupOnly: setupOnly ?? false,
       setup: setup ?? false,
-      noSetup: noSetup ?? false,
+      // Cliffy parses a --no-foo option as foo=false. Keep the explicit
+      // noFoo fields for callers/tests that construct RunOptions directly.
+      noSetup: noSetup ?? setup === false,
       teardown: teardown ?? false,
       teardownOnly: teardownOnly ?? stop ?? false,
       binary: binary ?? false,
       pds2: pds2 ?? false,
       verbose: verbose ?? false,
-      noJson: noJson ?? false,
+      noJson: noJson ?? json === false,
       keepRunning: keepRunning ?? false,
       collectDiagnostics: collectDiagnostics ?? false,
       isolation: "auto",

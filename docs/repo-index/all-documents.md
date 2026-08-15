@@ -5,7 +5,7 @@ title: All Documents
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **284**
+Total documents in this view: **291**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -81,6 +81,7 @@ Total documents in this view: **284**
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/04-ranked-roadmap.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/04-ranked-roadmap.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/05-skill-notes.md](../archive/agents-scratchpad/scratchpad/2026-05-13-refactor-opportunities/05-skill-notes.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/agents-scratchpad/scratchpad/script-conversion/MEMORY.md](../archive/agents-scratchpad/scratchpad/script-conversion/MEMORY.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
+| [docs/archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md](../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/planning/linux_shim_refactor.md](../archive/planning/linux_shim_refactor.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/planning/linux_shim_research_arc4random.md](../archive/planning/linux_shim_research_arc4random.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
 | [docs/archive/planning/linux_shim_research_cccrypt.md](../archive/planning/linux_shim_research_cccrypt.md) | `archive` | [docs/index.md](../index.md) | `docs` | `archived` |
@@ -174,6 +175,12 @@ Total documents in this view: **284**
 | [docs/plans/mega-plan.md](../plans/mega-plan.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/phase-05-repo-boundaries.md](../plans/prompts/phase-05-repo-boundaries.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-31-s2pa-ingredient-verify.md](../plans/prompts/phase-31-s2pa-ingredient-verify.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-32-s2pa-merkle-bmff.md](../plans/prompts/phase-32-s2pa-merkle-bmff.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-33-s2pa-soft-binding-algs.md](../plans/prompts/phase-33-s2pa-soft-binding-algs.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-34-dasl-tiles-package-and-embed.md](../plans/prompts/phase-34-dasl-tiles-package-and-embed.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-35-ws16-iroh-sidecar.md](../plans/prompts/phase-35-ws16-iroh-sidecar.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md](../plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/README.md](../plans/prompts/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/README.md](../plans/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/retired-plans.md](../plans/retired-plans.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |

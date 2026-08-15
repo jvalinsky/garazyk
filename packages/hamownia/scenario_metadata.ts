@@ -18,6 +18,8 @@ import { validateRoleCapability } from "@garazyk/schemat";
  * Metadata describing a scenario's requirements and capabilities.
  */
 export interface ScenarioManifest {
+  /** Whether another operator-owned topology provides this scenario's services */
+  externalLifecycle?: boolean;
   /** Roles/capabilities required for this scenario to run */
   requires?: ScenarioRequirement[];
   /** Roles/capabilities that enhance the scenario but aren't required */
@@ -48,6 +50,8 @@ export interface ScenarioInfo {
   name: string;
   /** Absolute path to scenario file */
   path: string;
+  /** Whether Hamownia must not start or preflight its managed ATProto topology */
+  externalLifecycle?: boolean;
   /** Whether this scenario requires PDS2 */
   needsPds2: boolean;
   /** Whether this scenario requires PDS3 */
@@ -365,6 +369,14 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
       requireCapability(Role.relay, Cap.relay.subscribeRepos),
     ],
   },
+  // This scenario targets the separately-operated Streamplace/Jelcz Compose
+  // lab. It is opt-in at runtime with JELCZ_PEERSHIP_LAB=1; Hamownia's
+  // standard topology does not own that lab's service lifecycle.
+  "100": { timeout: 180, externalLifecycle: true },
+  // Track B is separately operated and must not be preflighted or started by
+  // Hamownia's standard topology. Scenario 101 itself verifies an immutable
+  // Streamplace source revision before accepting any live iroh evidence.
+  "101": { timeout: 360, externalLifecycle: true },
 };
 
 /**

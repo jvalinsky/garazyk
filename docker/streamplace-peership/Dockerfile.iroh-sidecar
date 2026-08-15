@@ -1,0 +1,27 @@
+# Track A iroh-blobs sidecar for Docker mesh demos (WS16 phase-35 S7).
+#
+# Build context: repository root (see docker-compose.yml).
+
+FROM rust:1.91-bookworm AS builder
+WORKDIR /src
+COPY tools/jelcz-iroh-blobs-sidecar/Cargo.toml tools/jelcz-iroh-blobs-sidecar/Cargo.lock* ./
+COPY tools/jelcz-iroh-blobs-sidecar/src ./src
+RUN cargo build --release
+
+FROM debian:bookworm-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /src/target/release/jelcz-iroh-blobs-sidecar /usr/local/bin/jelcz-iroh-blobs-sidecar
+
+EXPOSE 17352
+HEALTHCHECK --interval=5s --timeout=3s --retries=20 --start-period=10s \
+  CMD curl -fsS http://127.0.0.1:17352/v1/health >/dev/null || exit 1
+
+ENTRYPOINT ["/usr/local/bin/jelcz-iroh-blobs-sidecar"]
+CMD ["--listen", "0.0.0.0:17352", "--bind-all"]

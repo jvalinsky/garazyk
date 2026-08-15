@@ -555,7 +555,11 @@ export async function executeRunnerArgs(
       const explicitUrls = Boolean(Deno.env.get("PDS_URL")) ||
         Object.keys(serviceUrlsFromResourceManifest(resourceManifest)).length >
           0;
-      if (!resourceManifest && !explicitUrls) {
+      const externalOnly = explicitlyRequestedScenarios.length > 0 &&
+        explicitlyRequestedScenarios.every((scenario) =>
+          scenario.externalLifecycle
+        );
+      if (!resourceManifest && !explicitUrls && !externalOnly) {
         throw new Error(
           "--no-setup requires --resource-manifest, ATPROTO_RESOURCE_MANIFEST, or explicit service URL env vars",
         );

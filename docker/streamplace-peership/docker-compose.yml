@@ -1,4 +1,4 @@
-# Streamplace + multi-jelcz HTTPS peership demo (WS15 / WS16 Phase 2).
+# Streamplace + multi-jelcz HTTP + iroh sidecar mesh demo (WS15 / WS16).
 #
 # Prerequisites:
 #   1. deno run -A scripts/stage_binaries.ts   # Linux jelcz for Dockerfile.jelcz
@@ -7,11 +7,21 @@
 #
 # Or use: ./scripts/demo/streamplace_peership_up.sh  (runs both)
 
-name: streamplace-peership
+# The wrapper scripts pass --project-name explicitly. Keeping this fallback lets
+# manual `docker compose` use the same project-scoped volume names.
+name: ${COMPOSE_PROJECT_NAME:-streamplace-peership-demo}
+
+x-mesh-nodes: &mesh_nodes >-
+  [{"name":"jelcz-a","jelcz":"http://jelcz-a:${JELCZ_A_LISTEN_PORT:-2596}","sidecar":"http://iroh-a:${IROH_SIDECAR_PORT:-17352}","ui":"http://${LAB_PUBLIC_HOST:-127.0.0.1}:${JELCZ_A_HOST_PORT:-2596}","kind":"jelcz"},{"name":"jelcz-b","jelcz":"http://jelcz-b:${JELCZ_B_LISTEN_PORT:-2597}","sidecar":"http://iroh-b:${IROH_SIDECAR_PORT:-17352}","ui":"http://${LAB_PUBLIC_HOST:-127.0.0.1}:${JELCZ_B_HOST_PORT:-2597}","kind":"jelcz"},{"name":"jelcz-c","jelcz":"http://jelcz-c:${JELCZ_C_LISTEN_PORT:-2598}","sidecar":"http://iroh-c:${IROH_SIDECAR_PORT:-17352}","ui":"http://${LAB_PUBLIC_HOST:-127.0.0.1}:${JELCZ_C_HOST_PORT:-2598}","kind":"jelcz"}]
 
 networks:
+  # Project-scoped data plane. Keeping service DNS names off the shared
+  # ATProto network prevents parallel acceptance projects from resolving an
+  # older project's jelcz-a/iroh-a/streamplace container.
+  peership:
   # Join the Garazyk local-network compose project so jelcz can reach
-  # local-pds / local-plc / local-relay by DNS name.
+  # local-pds / local-plc / local-relay by DNS name. Only jelcz-a needs this
+  # control-plane attachment; peering services remain project-isolated.
   atproto:
     external: true
     name: ${GARAZYK_ATPROTO_NET:-local-network_local_net}
@@ -30,24 +40,30 @@ services:
   # Upstream image: https://docs.stream.place/docs/guides/installing/downloading-streamplace/
   # -------------------------------------------------------------------------
   streamplace:
-    image: ${STREAMPLACE_IMAGE:-oci.stream.place/streamplace:latest}
+    # Deliberately required: use a tested immutable version or digest, never
+    # an implicit `latest` image for a reproducible lab run.
+    image: ${STREAMPLACE_IMAGE:?Set STREAMPLACE_IMAGE to a tested immutable Streamplace tag or digest in .env}
     restart: unless-stopped
     ports:
-      - "${STREAMPLACE_HTTP_PORT:-38080}:38080"
-      - "${STREAMPLACE_RTMP_PORT:-1935}:1935"
+      - "${LAB_BIND_ADDRESS:-127.0.0.1}:${STREAMPLACE_HTTP_HOST_PORT:-38080}:${STREAMPLACE_HTTP_LISTEN_PORT:-38080}"
+      - "${LAB_BIND_ADDRESS:-127.0.0.1}:${STREAMPLACE_RTMP_HOST_PORT:-1935}:${STREAMPLACE_RTMP_LISTEN_PORT:-1935}"
     environment:
       SP_SECURE: "false"
-      SP_HTTP_ADDR: ":38080"
+      SP_HTTP_ADDR: ":${STREAMPLACE_HTTP_LISTEN_PORT:-38080}"
       # Desktop/dev health path is /api/healthz on the public HTTP addr.
-      SP_PUBLIC_HOST: "${STREAMPLACE_PUBLIC_HOST:-127.0.0.1:38080}"
-      SP_BROADCASTER_HOST: "${STREAMPLACE_PUBLIC_HOST:-127.0.0.1:38080}"
+      # This host URL is for browser/ATProto-visible links; containers use
+      # streamplace:${STREAMPLACE_HTTP_LISTEN_PORT:-38080} on the private network.
+      SP_PUBLIC_HOST: "${LAB_PUBLIC_HOST:-127.0.0.1}:${STREAMPLACE_HTTP_HOST_PORT:-38080}"
+      SP_BROADCASTER_HOST: "${LAB_PUBLIC_HOST:-127.0.0.1}:${STREAMPLACE_HTTP_HOST_PORT:-38080}"
       SP_TEST_STREAM: "${STREAMPLACE_TEST_STREAM:-true}"
+      # Lab-only convenience. Production-style demos must set this false and
+      # configure the corresponding Streamplace allow-list policy explicitly.
       SP_WIDE_OPEN: "${STREAMPLACE_WIDE_OPEN:-true}"
       # Keep the lab off the public Bluesky firehose unless explicitly wired.
       SP_NO_FIREHOSE: "${STREAMPLACE_NO_FIREHOSE:-true}"
       # Optional: point at Garazyk relay once firehose is desired.
       # SP_RELAY_HOST: "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos"
-      SP_RTMP_ADDR: ":1935"
+      SP_RTMP_ADDR: ":${STREAMPLACE_RTMP_LISTEN_PORT:-1935}"
       SP_DEBUG: "${STREAMPLACE_DEBUG:-}"
     volumes:
       - streamplace_data:/var/lib/streamplace
@@ -55,20 +71,85 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -fsS http://127.0.0.1:38080/api/healthz >/dev/null || curl -fsS http://127.0.0.1:38080/ >/dev/null || exit 1",
+          "curl -fsS http://127.0.0.1:${STREAMPLACE_HTTP_LISTEN_PORT:-38080}/api/healthz >/dev/null || curl -fsS http://127.0.0.1:${STREAMPLACE_HTTP_LISTEN_PORT:-38080}/ >/dev/null || exit 1",
         ]
       interval: 5s
       timeout: 5s
       retries: 36
       start_period: 40s
     networks:
-      atproto:
+      peership:
         aliases:
           - streamplace
 
   # -------------------------------------------------------------------------
+  # iroh-blobs sidecars — one per jelcz peer (Track A lab, WS16 phase-35 S7).
+  # -------------------------------------------------------------------------
+  iroh-a:
+    build:
+      context: ../..
+      dockerfile: docker/streamplace-peership/Dockerfile.iroh-sidecar
+    image: ${IROH_SIDECAR_IMAGE:-garazyk/jelcz-iroh-sidecar:local}
+    restart: unless-stopped
+    # No host port: sidecars remain reachable only by their paired jelcz over
+    # the Compose network. `--bind-all` is required for that private network.
+    command: ["--listen", "0.0.0.0:${IROH_SIDECAR_PORT:-17352}", "--bind-all"]
+    environment:
+      JELCZ_IROH_SIDECAR_CAPABILITY: "${JELCZ_IROH_SIDECAR_CAPABILITY:?Set JELCZ_IROH_SIDECAR_CAPABILITY or use streamplace_peership_up.sh}"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:${IROH_SIDECAR_PORT:-17352}/v1/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    networks:
+      peership:
+        aliases:
+          - iroh-a
+
+  iroh-b:
+    image: ${IROH_SIDECAR_IMAGE:-garazyk/jelcz-iroh-sidecar:local}
+    build:
+      context: ../..
+      dockerfile: docker/streamplace-peership/Dockerfile.iroh-sidecar
+    restart: unless-stopped
+    command: ["--listen", "0.0.0.0:${IROH_SIDECAR_PORT:-17352}", "--bind-all"]
+    environment:
+      JELCZ_IROH_SIDECAR_CAPABILITY: "${JELCZ_IROH_SIDECAR_CAPABILITY:?Set JELCZ_IROH_SIDECAR_CAPABILITY or use streamplace_peership_up.sh}"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:${IROH_SIDECAR_PORT:-17352}/v1/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    networks:
+      peership:
+        aliases:
+          - iroh-b
+
+  iroh-c:
+    image: ${IROH_SIDECAR_IMAGE:-garazyk/jelcz-iroh-sidecar:local}
+    build:
+      context: ../..
+      dockerfile: docker/streamplace-peership/Dockerfile.iroh-sidecar
+    restart: unless-stopped
+    command: ["--listen", "0.0.0.0:${IROH_SIDECAR_PORT:-17352}", "--bind-all"]
+    environment:
+      JELCZ_IROH_SIDECAR_CAPABILITY: "${JELCZ_IROH_SIDECAR_CAPABILITY:?Set JELCZ_IROH_SIDECAR_CAPABILITY or use streamplace_peership_up.sh}"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:${IROH_SIDECAR_PORT:-17352}/v1/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    networks:
+      peership:
+        aliases:
+          - iroh-c
+
+  # -------------------------------------------------------------------------
   # Three jelcz peers — each owns a CA store; B/C list A (+ Streamplace) as
-  # HTTPS providers. Ports avoid colliding with local-network (video=2586,
+  # HTTP providers inside this bridge-network lab. Ports avoid colliding with local-network (video=2586,
   # pds2=2587).
   # -------------------------------------------------------------------------
   jelcz-a:
@@ -78,39 +159,62 @@ services:
     image: ${JELCZ_PEER_IMAGE:-garazyk/jelcz-peer:local}
     restart: unless-stopped
     ports:
-      - "${JELCZ_A_PORT:-2596}:2596"
+      - "${LAB_BIND_ADDRESS:-127.0.0.1}:${JELCZ_A_HOST_PORT:-2596}:${JELCZ_A_LISTEN_PORT:-2596}"
     environment: &jelcz_common
-      JELCZ_PORT: "2596"
       JELCZ_DATA_DIR: /var/lib/jelcz
       JELCZ_PDS_URL: http://local-pds:2583
       JELCZ_PLC_URL: http://local-plc:2582
       JELCZ_STREAMPLACE_DEMO: "1"
       JELCZ_STREAMPLACE_SERVE_COMPAT: "1"
       JELCZ_CA_MIRROR_FETCH: "1"
+      # The wrapper supplies a per-project token at startup.  Manual Compose
+      # runs must provide one explicitly; mutation APIs must never come up
+      # unauthenticated merely because an env file left the value blank.
+      JELCZ_DEMO_API_TOKEN: "${JELCZ_DEMO_API_TOKEN:?Set JELCZ_DEMO_API_TOKEN or use streamplace_peership_up.sh}"
       JELCZ_DEMO_UI_PATH: /opt/jelcz-demo/streamplace-peer.html
-      JELCZ_STREAMPLACE_MIRROR_BASE: http://streamplace:38080
+      # `streamplace` is a container DNS name. Do not substitute the host URL
+      # above: 127.0.0.1 inside this container is the jelcz container itself.
+      JELCZ_STREAMPLACE_MIRROR_BASE: http://streamplace:${STREAMPLACE_HTTP_LISTEN_PORT:-38080}
       JELCZ_STREAMPLACE_ATTRIBUTION_DID: ${STREAMPLACE_ATTRIBUTION_DID:-did:web:stream.place}
-      # Empty allowlists = no auto-ingest of origin JSON records (env peers OK).
+      JELCZ_P2P: "1"
+      JELCZ_IROH_SIDECAR_TRUST_LAN: "1"
+      JELCZ_IROH_SIDECAR_CAPABILITY: "${JELCZ_IROH_SIDECAR_CAPABILITY:?Set JELCZ_IROH_SIDECAR_CAPABILITY or use streamplace_peership_up.sh}"
+      JELCZ_MESH_NODES: *mesh_nodes
       JELCZ_P2P_ALLOWED_STREAMERS: ${JELCZ_P2P_ALLOWED_STREAMERS:-}
       JELCZ_P2P_ALLOWED_BROADCASTERS: ${JELCZ_P2P_ALLOWED_BROADCASTERS:-}
-    command: ["serve", "--port", "2596", "--data-dir", "/var/lib/jelcz"]
+      JELCZ_PORT: "${JELCZ_A_LISTEN_PORT:-2596}"
+      JELCZ_NODE_NAME: jelcz-a
+      JELCZ_PUBLIC_BASE_URL: http://${LAB_PUBLIC_HOST:-127.0.0.1}:${JELCZ_A_HOST_PORT:-2596}
+      # Only jelcz-a may opt into the disposable Docker PDS federation smoke.
+      # Values arrive through the Compose boundary and are blank/off by default.
+      JELCZ_ORIGIN_ANNOUNCE: "${JELCZ_ORIGIN_ANNOUNCE:-0}"
+      JELCZ_ORIGIN_ANNOUNCE_IDENTIFIER: "${JELCZ_ORIGIN_ANNOUNCE_IDENTIFIER:-}"
+      JELCZ_ORIGIN_ANNOUNCE_APP_PASSWORD: "${JELCZ_ORIGIN_ANNOUNCE_APP_PASSWORD:-}"
+      JELCZ_ORIGIN_ANNOUNCE_PDS_URL: "${JELCZ_ORIGIN_ANNOUNCE_PDS_URL:-http://local-pds:2583}"
+      JELCZ_ORIGIN_ANNOUNCE_SERVER_DID: "${JELCZ_ORIGIN_ANNOUNCE_SERVER_DID:-}"
+      JELCZ_ORIGIN_ANNOUNCE_HTTPS_BASE: "${JELCZ_ORIGIN_ANNOUNCE_HTTPS_BASE:-}"
+      JELCZ_IROH_SIDECAR_URL: http://iroh-a:${IROH_SIDECAR_PORT:-17352}
+      JELCZ_IROH_PEER_SIDECARS: http://iroh-b:${IROH_SIDECAR_PORT:-17352},http://iroh-c:${IROH_SIDECAR_PORT:-17352}
+    command: ["serve", "--port", "${JELCZ_A_LISTEN_PORT:-2596}", "--data-dir", "/var/lib/jelcz"]
     volumes:
       - jelcz_a_data:/var/lib/jelcz
-      # Live-edit demo UI without rebuild:
       - ../../Garazyk/Resources/jelcz-demo:/opt/jelcz-demo:ro
     depends_on:
       streamplace:
         condition: service_healthy
+      iroh-a:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:2596/_health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:${JELCZ_A_LISTEN_PORT:-2596}/_health"]
       interval: 5s
       timeout: 3s
       retries: 20
       start_period: 15s
     networks:
-      atproto:
+      peership:
         aliases:
           - jelcz-a
+      atproto: {}
 
   jelcz-b:
     image: ${JELCZ_PEER_IMAGE:-garazyk/jelcz-peer:local}
@@ -119,26 +223,38 @@ services:
       dockerfile: docker/streamplace-peership/Dockerfile.jelcz
     restart: unless-stopped
     ports:
-      - "${JELCZ_B_PORT:-2597}:2597"
+      - "${LAB_BIND_ADDRESS:-127.0.0.1}:${JELCZ_B_HOST_PORT:-2597}:${JELCZ_B_LISTEN_PORT:-2597}"
     environment:
       <<: *jelcz_common
-      JELCZ_PORT: "2597"
-      JELCZ_PEER_HTTPS_PROVIDERS: "http://jelcz-a:2596"
-    command: ["serve", "--port", "2597", "--data-dir", "/var/lib/jelcz"]
+      JELCZ_PORT: "${JELCZ_B_LISTEN_PORT:-2597}"
+      JELCZ_NODE_NAME: jelcz-b
+      JELCZ_ORIGIN_ANNOUNCE: "0"
+      JELCZ_ORIGIN_ANNOUNCE_IDENTIFIER: ""
+      JELCZ_ORIGIN_ANNOUNCE_APP_PASSWORD: ""
+      JELCZ_ORIGIN_ANNOUNCE_PDS_URL: ""
+      JELCZ_ORIGIN_ANNOUNCE_SERVER_DID: ""
+      JELCZ_ORIGIN_ANNOUNCE_HTTPS_BASE: ""
+      JELCZ_PUBLIC_BASE_URL: http://${LAB_PUBLIC_HOST:-127.0.0.1}:${JELCZ_B_HOST_PORT:-2597}
+      JELCZ_IROH_SIDECAR_URL: http://iroh-b:${IROH_SIDECAR_PORT:-17352}
+      JELCZ_IROH_PEER_SIDECARS: http://iroh-a:${IROH_SIDECAR_PORT:-17352},http://iroh-c:${IROH_SIDECAR_PORT:-17352}
+      JELCZ_PEER_HTTPS_PROVIDERS: "http://jelcz-a:${JELCZ_A_LISTEN_PORT:-2596}"
+    command: ["serve", "--port", "${JELCZ_B_LISTEN_PORT:-2597}", "--data-dir", "/var/lib/jelcz"]
     volumes:
       - jelcz_b_data:/var/lib/jelcz
       - ../../Garazyk/Resources/jelcz-demo:/opt/jelcz-demo:ro
     depends_on:
       jelcz-a:
         condition: service_healthy
+      iroh-b:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:2597/_health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:${JELCZ_B_LISTEN_PORT:-2597}/_health"]
       interval: 5s
       timeout: 3s
       retries: 20
       start_period: 15s
     networks:
-      atproto:
+      peership:
         aliases:
           - jelcz-b
 
@@ -149,13 +265,22 @@ services:
       dockerfile: docker/streamplace-peership/Dockerfile.jelcz
     restart: unless-stopped
     ports:
-      - "${JELCZ_C_PORT:-2598}:2598"
+      - "${LAB_BIND_ADDRESS:-127.0.0.1}:${JELCZ_C_HOST_PORT:-2598}:${JELCZ_C_LISTEN_PORT:-2598}"
     environment:
       <<: *jelcz_common
-      JELCZ_PORT: "2598"
-      # Mesh: pull from A or B; Streamplace remains bootstrap mirror base.
-      JELCZ_PEER_HTTPS_PROVIDERS: "http://jelcz-a:2596,http://jelcz-b:2597"
-    command: ["serve", "--port", "2598", "--data-dir", "/var/lib/jelcz"]
+      JELCZ_PORT: "${JELCZ_C_LISTEN_PORT:-2598}"
+      JELCZ_NODE_NAME: jelcz-c
+      JELCZ_ORIGIN_ANNOUNCE: "0"
+      JELCZ_ORIGIN_ANNOUNCE_IDENTIFIER: ""
+      JELCZ_ORIGIN_ANNOUNCE_APP_PASSWORD: ""
+      JELCZ_ORIGIN_ANNOUNCE_PDS_URL: ""
+      JELCZ_ORIGIN_ANNOUNCE_SERVER_DID: ""
+      JELCZ_ORIGIN_ANNOUNCE_HTTPS_BASE: ""
+      JELCZ_PUBLIC_BASE_URL: http://${LAB_PUBLIC_HOST:-127.0.0.1}:${JELCZ_C_HOST_PORT:-2598}
+      JELCZ_IROH_SIDECAR_URL: http://iroh-c:${IROH_SIDECAR_PORT:-17352}
+      JELCZ_IROH_PEER_SIDECARS: http://iroh-a:${IROH_SIDECAR_PORT:-17352},http://iroh-b:${IROH_SIDECAR_PORT:-17352}
+      JELCZ_PEER_HTTPS_PROVIDERS: "http://jelcz-a:${JELCZ_A_LISTEN_PORT:-2596},http://jelcz-b:${JELCZ_B_LISTEN_PORT:-2597}"
+    command: ["serve", "--port", "${JELCZ_C_LISTEN_PORT:-2598}", "--data-dir", "/var/lib/jelcz"]
     volumes:
       - jelcz_c_data:/var/lib/jelcz
       - ../../Garazyk/Resources/jelcz-demo:/opt/jelcz-demo:ro
@@ -164,21 +289,25 @@ services:
         condition: service_healthy
       jelcz-b:
         condition: service_healthy
+      iroh-c:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:2598/_health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:${JELCZ_C_LISTEN_PORT:-2598}/_health"]
       interval: 5s
       timeout: 3s
       retries: 20
       start_period: 15s
     networks:
-      atproto:
+      peership:
         aliases:
           - jelcz-c
 
   # Optional: push a synthetic RTMP stream into Streamplace (profile: publish).
   rtmp-publisher:
     profiles: ["publish"]
-    image: ${FFMPEG_IMAGE:-linuxserver/ffmpeg:latest}
+    # Pinned fallback keeps non-publish `config` / `ps` usable without an
+    # FFmpeg setting; operators may override it with their tested immutable ref.
+    image: ${FFMPEG_IMAGE:-jrottenberg/ffmpeg:7.1-alpine}
     restart: "no"
     depends_on:
       streamplace:
@@ -187,11 +316,11 @@ services:
     command:
       - |
         set -e
-        echo "Publishing lavfi test pattern to rtmp://streamplace:1935/live/garazyk-demo"
+        echo "Publishing lavfi test pattern to rtmp://streamplace:${STREAMPLACE_RTMP_LISTEN_PORT:-1935}/live/garazyk-demo"
         exec ffmpeg -re -f lavfi -i "testsrc=size=1280x720:rate=30" \
           -f lavfi -i "sine=frequency=880:sample_rate=44100" \
           -c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p \
           -c:a aac -b:a 128k -shortest \
-          -f flv "rtmp://streamplace:1935/live/garazyk-demo"
+          -f flv "rtmp://streamplace:${STREAMPLACE_RTMP_LISTEN_PORT:-1935}/live/garazyk-demo"
     networks:
-      - atproto
+      - peership

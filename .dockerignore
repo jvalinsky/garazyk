@@ -8,6 +8,10 @@ build/
 build-*/
 # build (uncommented to allow binary staging for fast deployment)
 build-linux
+# Rust/other nested build outputs are never source inputs. In particular, the
+# iroh sidecar target tree can exceed 2 GB and exhaust Docker storage while a
+# GNUstep image is merely copying its context.
+**/target/
 *.log
 *.cast
 *.profraw

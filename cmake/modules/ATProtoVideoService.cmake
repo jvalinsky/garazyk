@@ -26,4 +26,9 @@ set(ATPROTO_VIDEO_MANIFEST
   "Garazyk/Sources/Video/GZJelczStreamplaceCompatServe.m"
   "Garazyk/Sources/Video/GZJelczStreamplacePeerDemo.m"
   "Garazyk/Sources/Video/GZJelczOriginAnnouncer.m"
+  "Garazyk/Sources/Video/GZJelczIrohSidecarBlobFetcher.m"
+  "Garazyk/Sources/Video/GZJelczIrohSidecarURL.m"
+  "Garazyk/Sources/Video/GZJelczIrohSidecarPeerRegistry.m"
+  "Garazyk/Sources/Video/GZJelczP2PConfiguration.m"
+  "Garazyk/Sources/Video/GZJelczStreamplaceIrohBridge.m"
 )

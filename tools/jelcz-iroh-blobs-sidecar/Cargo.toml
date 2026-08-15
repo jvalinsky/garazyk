@@ -1,0 +1,32 @@
+[package]
+name = "jelcz-iroh-blobs-sidecar"
+version = "0.1.0"
+edition = "2021"
+license = "Unlicense OR CC0-1.0"
+publish = false
+description = "Track A lab sidecar: iroh 1.x + iroh-blobs offer/fetch for Garazyk CA/VOD"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "jelcz-iroh-blobs-sidecar"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+axum = "0.8"
+base64 = "0.22"
+bytes = "1.10"
+clap = { version = "4.5", features = ["derive"] }
+iroh = "1.0"
+iroh-blobs = "0.103"
+iroh-tickets = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "net"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tower = "0.5"

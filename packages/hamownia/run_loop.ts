@@ -24,15 +24,15 @@ import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology, TopologyManifestV2 } from "@garazyk/schemat";
 import { HumanReadableSink, type ScenarioRunEventSink } from "./events.ts";
 import {
+  type CrashedContainer,
   createInitialRunLoopState,
   recordScenarioResult,
+  type RunLoopState,
   setAbortedForCrash,
   setCrashedContainer,
   totalFailed,
   totalPassed,
   totalSkipped,
-  type CrashedContainer,
-  type RunLoopState,
 } from "./run_loop_state.ts";
 
 /** Result returned by the scenario execution loop. */
@@ -194,8 +194,12 @@ export async function runScenarioLoop(
       });
       await writeProgress(i, scenario, true);
 
-      const health = await checkEssentialServicesHealth(topology);
-      const crashSnapshot = runState.crashedContainer;
+      const health = scenario.externalLifecycle
+        ? { ok: true }
+        : await checkEssentialServicesHealth(topology);
+      const crashSnapshot = scenario.externalLifecycle
+        ? null
+        : runState.crashedContainer;
 
       if (!health.ok || crashSnapshot !== null) {
         const crashInfo = health.message ||

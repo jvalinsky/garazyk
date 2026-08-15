@@ -13,6 +13,7 @@ set(ATPROTO_MEDIA_CORE_MANIFEST
   "Garazyk/Sources/MediaCore/ATProtoCAMirrorResolver.m"
   "Garazyk/Sources/MediaCore/ATProtoCAMirrorHTTPSFetcher.m"
   "Garazyk/Sources/MediaCore/ATProtoCARASLWellKnown.m"
+  "Garazyk/Sources/MediaCore/ATProtoIrohBlobHashMapping.m"
   "Garazyk/Sources/MediaCore/ATProtoMediaSQLiteStore.m"
   "Garazyk/Sources/MediaCore/ATProtoMediaServiceConfiguration.m"
   "Garazyk/Sources/MediaCore/ATProtoMediaWorker.m"

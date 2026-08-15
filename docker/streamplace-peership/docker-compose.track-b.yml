@@ -1,0 +1,234 @@
+# Streamplace live iroh Track B acceptance override (WS16 phase 36).
+#
+# Invoke only with the base compose file and the `track-b` profile:
+#   docker compose --env-file docker/streamplace-peership/.env \
+#     --env-file docker/streamplace-peership/track-b.env.example \
+#     -f docker/streamplace-peership/docker-compose.yml \
+#     -f docker/streamplace-peership/docker-compose.track-b.yml \
+#     --profile track-b up -d
+#
+# This is intentionally separate from Dockerfile.iroh-sidecar and the Track A
+# iroh-blobs services.  The bridge image must implement the Streamplace 0.93
+# wire protocol: NodeTicket -> /iroh/streamplace/1 -> Subscribe(streamer DID)
+# -> pushed MUXL segments.  It must also expose the `acceptance-report --json`
+# command consumed by Scenario 101.  No iroh-blobs transfer is Track B proof.
+
+x-track-b-fault-peer: &track_b_fault_peer
+  profiles: ["track-b"]
+  image: ${JELCZ_STREAMPLACE_TRACK_B_BRIDGE_IMAGE:?Set JELCZ_STREAMPLACE_TRACK_B_BRIDGE_IMAGE to the separate Streamplace Track B bridge image}
+  build:
+    context: ../..
+    dockerfile: docker/streamplace-peership/Dockerfile.streamplace-iroh-bridge
+  restart: unless-stopped
+  networks:
+    - peership
+  read_only: true
+  cap_drop: ["ALL"]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+
+services:
+  # The base lab's iroh-blobs sidecars are Track A.  They must not start in a
+  # Track B run (and Jelcz below is explicitly prevented from addressing them).
+  iroh-a:
+    profiles: ["track-a"]
+
+  iroh-b:
+    profiles: ["track-a"]
+
+  iroh-c:
+    profiles: ["track-a"]
+
+  jelcz-a:
+    # Track A sidecars are deliberately absent from this profile. Compose's
+    # default merge would otherwise retain the base iroh-a dependency.
+    depends_on: !override
+      streamplace-track-b-bridge:
+        condition: service_started
+    environment: &track_b_jelcz_environment
+      JELCZ_P2P: "0"
+      JELCZ_IROH_SIDECAR_URL: ""
+      JELCZ_IROH_PEER_SIDECARS: ""
+      JELCZ_STREAMPLACE_IROH_BRIDGE: "1"
+      JELCZ_STREAMPLACE_IROH_BRIDGE_URL: "http://streamplace-track-b-bridge:17353"
+      JELCZ_STREAMPLACE_IROH_BRIDGE_TOKEN: "${STREAMPLACE_TRACK_B_BRIDGE_TOKEN:?Set a private Track B bridge capability token}"
+      JELCZ_STREAMPLACE_IROH_BRIDGE_TRUST_LAN: "1"
+      JELCZ_STREAMPLACE_IROH_BRIDGE_MAX_SEGMENT_BYTES: "${STREAMPLACE_TRACK_B_MAX_SEGMENT_BYTES:-8388608}"
+      JELCZ_P2P_ALLOWED_STREAMERS: "${STREAMPLACE_TRACK_B_STREAMER_DID:?Set STREAMPLACE_TRACK_B_STREAMER_DID to the real publisher DID}"
+
+  jelcz-b:
+    depends_on: !override
+      streamplace-track-b-bridge:
+        condition: service_started
+    environment: *track_b_jelcz_environment
+
+  jelcz-c:
+    depends_on: !override
+      streamplace-track-b-bridge:
+        condition: service_started
+    environment: *track_b_jelcz_environment
+
+  streamplace:
+    profiles: ["track-b"]
+    # A Track B run may not silently reuse the general lab image.  Supply an
+    # immutable image whose OCI revision label proves the exact Streamplace
+    # next revision required by the acceptance scenario.
+    image: ${STREAMPLACE_TRACK_B_IMAGE:?Set STREAMPLACE_TRACK_B_IMAGE to an immutable Streamplace image labeled with STREAMPLACE_TRACK_B_SOURCE_REVISION}
+    environment:
+      SP_NO_FIREHOSE: "false"
+      SP_RELAY_HOST: "${STREAMPLACE_TRACK_B_RELAY_HOST:-ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos}"
+      SP_TEST_STREAM: "false"
+    labels:
+      com.garazyk.streamplace.track-b: "true"
+      com.garazyk.streamplace.source-revision: "5ba597dbedda8f2fdb84b815ee633301212f5f51"
+
+  # A deterministic RTMP publisher creates a real live source.  The image is
+  # intentionally required and immutable: this acceptance profile must not
+  # substitute a floating publisher image.
+  streamplace-track-b-publisher:
+    profiles: ["track-b"]
+    image: ${STREAMPLACE_TRACK_B_PUBLISHER_IMAGE:?Set STREAMPLACE_TRACK_B_PUBLISHER_IMAGE to an immutable FFmpeg image}
+    restart: unless-stopped
+    depends_on:
+      streamplace:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        exec ffmpeg -re -stream_loop -1 -f lavfi -i "testsrc=size=640x360:rate=30" \
+          -f lavfi -i "sine=frequency=440:sample_rate=44100" \
+          -c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p \
+          -c:a aac -b:a 96k -shortest \
+          -f flv "rtmp://streamplace:${STREAMPLACE_RTMP_LISTEN_PORT:-1935}/live/${STREAMPLACE_TRACK_B_STREAM_KEY:-garazyk-track-b}"
+    networks:
+      - peership
+
+  # No `ports:` block: the bridge is reachable only on the private Compose
+  # network.  Scenario 101 executes its report command with `docker compose
+  # exec`; it never turns this control surface into a host service.
+  streamplace-track-b-bridge:
+    profiles: ["track-b"]
+    image: ${JELCZ_STREAMPLACE_TRACK_B_BRIDGE_IMAGE:?Set JELCZ_STREAMPLACE_TRACK_B_BRIDGE_IMAGE to the separate Streamplace Track B bridge image}
+    build:
+      context: ../..
+      dockerfile: docker/streamplace-peership/Dockerfile.streamplace-iroh-bridge
+    restart: unless-stopped
+    command:
+      [
+        "serve",
+        "--firehose",
+        "${STREAMPLACE_TRACK_B_RELAY_HOST:-ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos}",
+        "--streamer",
+        "${STREAMPLACE_TRACK_B_STREAMER_DID:?Set STREAMPLACE_TRACK_B_STREAMER_DID to the real publisher DID}",
+        "--alpn",
+        "/iroh/streamplace/1",
+        "--max-segment-bytes",
+        "${STREAMPLACE_TRACK_B_MAX_SEGMENT_BYTES:-8388608}",
+        "--max-reconnects",
+        "${STREAMPLACE_TRACK_B_MAX_RECONNECTS:-3}",
+        "--bind-all",
+      ]
+    environment:
+      JELCZ_STREAMPLACE_IROH_BRIDGE_TOKEN: "${STREAMPLACE_TRACK_B_BRIDGE_TOKEN:?Set a private Track B bridge capability token}"
+      JELCZ_P2P_ALLOWED_STREAMERS: "${STREAMPLACE_TRACK_B_STREAMER_DID:?Set STREAMPLACE_TRACK_B_STREAMER_DID to the real publisher DID}"
+      JELCZ_P2P_ALLOWED_BROADCASTERS: "${STREAMPLACE_TRACK_B_BROADCASTER_DID:-}"
+      STREAMPLACE_TRACK_B_REPORT_CONTRACT: "streamplace-track-b/v1"
+      STREAMPLACE_TRACK_B_SOURCE_REVISION: "5ba597dbedda8f2fdb84b815ee633301212f5f51"
+    depends_on:
+      streamplace:
+        condition: service_healthy
+      streamplace-track-b-publisher:
+        condition: service_started
+    networks:
+      - peership
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      # The non-root bridge creates its 0600, O_NOFOLLOW evidence file here.
+      # Sticky world-writable matches normal /tmp semantics without requiring
+      # a build-time numeric bridge UID/GID in the Compose contract.
+      - /tmp:size=16m,mode=1777
+
+  # These peers are executable rejection fixtures, not acceptance authorities.
+  # Each runs the actual pinned irpc wire on the private Compose network and
+  # writes its public NodeTicket to its own tmpfs for Scenario 101 via exec.
+  streamplace-track-b-fault-wrong-streamer:
+    <<: *track_b_fault_peer
+    command:
+      [
+        "fault-peer",
+        "--mode",
+        "wrong-streamer",
+        "--streamer",
+        "${STREAMPLACE_TRACK_B_STREAMER_DID:?Set STREAMPLACE_TRACK_B_STREAMER_DID to the real publisher DID}",
+        "--max-segment-bytes",
+        "${STREAMPLACE_TRACK_B_MAX_SEGMENT_BYTES:-8388608}",
+      ]
+
+  streamplace-track-b-fault-wrong-alpn:
+    <<: *track_b_fault_peer
+    command:
+      [
+        "fault-peer",
+        "--mode",
+        "wrong-alpn",
+        "--streamer",
+        "${STREAMPLACE_TRACK_B_STREAMER_DID:?Set STREAMPLACE_TRACK_B_STREAMER_DID to the real publisher DID}",
+        "--max-segment-bytes",
+        "${STREAMPLACE_TRACK_B_MAX_SEGMENT_BYTES:-8388608}",
+      ]
+
+  streamplace-track-b-fault-wrong-from:
+    <<: *track_b_fault_peer
+    command:
+      [
+        "fault-peer",
+        "--mode",
+        "wrong-from",
+        "--streamer",
+        "${STREAMPLACE_TRACK_B_STREAMER_DID:?Set STREAMPLACE_TRACK_B_STREAMER_DID to the real publisher DID}",
+        "--max-segment-bytes",
+        "${STREAMPLACE_TRACK_B_MAX_SEGMENT_BYTES:-8388608}",
+      ]
+
+  streamplace-track-b-fault-corrupt:
+    <<: *track_b_fault_peer
+    command:
+      [
+        "fault-peer",
+        "--mode",
+        "corrupt-muxl",
+        "--streamer",
+        "${STREAMPLACE_TRACK_B_STREAMER_DID:?Set STREAMPLACE_TRACK_B_STREAMER_DID to the real publisher DID}",
+        "--max-segment-bytes",
+        "${STREAMPLACE_TRACK_B_MAX_SEGMENT_BYTES:-8388608}",
+      ]
+
+  streamplace-track-b-fault-oversize:
+    <<: *track_b_fault_peer
+    command:
+      [
+        "fault-peer",
+        "--mode",
+        "oversize-segment",
+        "--streamer",
+        "${STREAMPLACE_TRACK_B_STREAMER_DID:?Set STREAMPLACE_TRACK_B_STREAMER_DID to the real publisher DID}",
+        "--max-segment-bytes",
+        "${STREAMPLACE_TRACK_B_MAX_SEGMENT_BYTES:-8388608}",
+      ]
+
+  streamplace-track-b-fault-drop-subscribe:
+    <<: *track_b_fault_peer
+    command:
+      [
+        "fault-peer",
+        "--mode",
+        "drop-subscribe",
+        "--streamer",
+        "${STREAMPLACE_TRACK_B_STREAMER_DID:?Set STREAMPLACE_TRACK_B_STREAMER_DID to the real publisher DID}",
+        "--max-segment-bytes",
+        "${STREAMPLACE_TRACK_B_MAX_SEGMENT_BYTES:-8388608}",
+      ]

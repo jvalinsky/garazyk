@@ -17,6 +17,8 @@
  */
 
 #import <Foundation/Foundation.h>
+#include <errno.h>
+#include <stdlib.h>
 #import <signal.h>
 #import <unistd.h>
 #import <fcntl.h>
@@ -30,7 +32,13 @@
 #import "MediaCore/ATProtoCAObjectStore.h"
 #import "MediaCore/ATProtoCAMirrorHTTPSFetcher.h"
 #import "MediaCore/ATProtoCAMirrorResolver.h"
+#import "Core/GZHTTPClient.h"
 #import "Video/GZJelczStreamplaceBlobFetcher.h"
+#import "Video/GZJelczIrohSidecarBlobFetcher.h"
+#import "Video/GZJelczIrohSidecarPeerRegistry.h"
+#import "Video/GZJelczIrohSidecarURL.h"
+#import "Video/GZJelczP2PConfiguration.h"
+#import "Video/GZJelczStreamplaceIrohBridge.h"
 #import "Video/GZJelczStreamplaceOriginHints.h"
 #import "Video/GZJelczStreamplaceCompatServe.h"
 #import "Video/GZJelczStreamplacePeerDemo.h"
@@ -67,9 +75,10 @@
                            options:(id)options
                           response:(NSHTTPURLResponse **)response
                              error:(NSError **)error {
-    return [[ATProtoSafeHTTPClient sharedClient]
+    id<GZHTTPClient> client = (id<GZHTTPClient>)[ATProtoSafeHTTPClient sharedClient];
+    return [client
         sendSynchronousRequest:request
-                       options:(ATProtoSafeHTTPClientOptions *)options
+                       options:options
                       response:response
                          error:error];
 }
@@ -152,6 +161,29 @@
 @end
 
 static const char *executable_name = "jelcz";
+
+/** Parses a positive byte limit without accepting partial or overflowing input. */
+static NSUInteger jelcz_demo_byte_limit(NSString *value,
+                                        NSUInteger defaultValue,
+                                        NSUInteger maximumValue) {
+    if (value.length == 0) {
+        return defaultValue;
+    }
+    NSString *trimmed = [value stringByTrimmingCharactersInSet:
+                                   [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    errno = 0;
+    char *end = NULL;
+    unsigned long long parsed = 0;
+    parsed = strtoull(trimmed.UTF8String, &end, 10);
+    if (trimmed.length == 0 || errno != 0 || end == trimmed.UTF8String ||
+        end == NULL || *end != '\0' || parsed == 0 ||
+        parsed > maximumValue) {
+        GZ_LOG_WARN(@"Ignoring invalid JELCZ_DEMO_SEED_MAX_BYTES; using %lu",
+                    (unsigned long)defaultValue);
+        return defaultValue;
+    }
+    return (NSUInteger)parsed;
+}
 
 static int fail_with_usage(NSString *message) {
     if (message.length > 0) {
@@ -379,7 +411,10 @@ static int run_serve(NSArray<NSString *> *args) {
         || config.enableStreamplaceServeCompat
         || config.enableStreamplacePeerDemo
         || (config.enableCAMirrorFetch && config.streamplaceMirrorBase.length > 0)
-        || ([[[NSProcessInfo processInfo] environment][@"JELCZ_PEER_HTTPS_PROVIDERS"] length] > 0);
+        || ([[[NSProcessInfo processInfo] environment][@"JELCZ_PEER_HTTPS_PROVIDERS"] length] > 0)
+        || (config.enableCAMirrorFetch &&
+            [GZJelczP2PConfiguration shouldWireIrohSidecarMirrorFetcherInEnvironment:
+                [[NSProcessInfo processInfo] environment]]);
     if (needCAStore) {
         NSString *caRoot = config.caObjectStoreDirectory;
         if (caRoot.length == 0) {
@@ -450,6 +485,40 @@ static int run_serve(NSArray<NSString *> *args) {
         GZ_LOG_INFO(@"  Peer origins JSON: %lu entries from %@",
                      (unsigned long)originEntries.count, originsPath);
     }
+    BOOL streamplaceIrohBridgeEnabled =
+        [GZJelczStreamplaceIrohBridge isEnabledInEnvironment:env];
+    NSString *streamplaceIrohBridgeURL =
+        [GZJelczStreamplaceIrohBridge bridgeHTTPBaseURLFromEnvironment:env];
+    NSString *streamplaceIrohBridgeToken =
+        [env[@"JELCZ_STREAMPLACE_IROH_BRIDGE_TOKEN"] stringByTrimmingCharactersInSet:
+         [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    GZJelczStreamplaceIrohBridge *streamplaceIrohBridge = nil;
+    if (streamplaceIrohBridgeEnabled) {
+        if (streamplaceIrohBridgeToken.length == 0) {
+            GZ_LOG_WARN(@"JELCZ_STREAMPLACE_IROH_BRIDGE enabled without JELCZ_STREAMPLACE_IROH_BRIDGE_TOKEN; bridge off");
+        } else if (streamplaceIrohBridgeURL.length == 0) {
+            GZ_LOG_WARN(@"JELCZ_STREAMPLACE_IROH_BRIDGE enabled but JELCZ_STREAMPLACE_IROH_BRIDGE_URL is not loopback HTTP; bridge off");
+        } else {
+            streamplaceIrohBridge =
+                [[GZJelczStreamplaceIrohBridge alloc] initWithHTTPClient:[[GZJelczCAMirrorHTTPAdapter alloc] init]
+                                                         bridgeBaseURL:streamplaceIrohBridgeURL
+                                                       capabilityToken:streamplaceIrohBridgeToken
+                                                              trustLAN:[GZJelczStreamplaceIrohBridge trustLANInEnvironment:env]
+                                                        allowedStreamers:allowedStreamers];
+            streamplaceIrohBridge.maximumSegmentBytes =
+                [GZJelczStreamplaceIrohBridge boundedByteLimitFromEnvironment:env
+                                                                           key:@"JELCZ_STREAMPLACE_IROH_BRIDGE_MAX_SEGMENT_BYTES"
+                                                                      fallback:4ULL * 1024ULL * 1024ULL
+                                                                       maximum:64ULL * 1024ULL * 1024ULL];
+            streamplaceIrohBridge.maximumOriginAge =
+                [GZJelczStreamplaceIrohBridge boundedByteLimitFromEnvironment:env
+                                                                           key:@"JELCZ_STREAMPLACE_IROH_BRIDGE_MAX_ORIGIN_AGE_SECONDS"
+                                                                      fallback:300
+                                                                       maximum:3600];
+            GZ_LOG_INFO(@"  Streamplace live bridge: ready at %@ (receive-only; no CA/VOD persistence)",
+                         streamplaceIrohBridge.bridgeBaseURL);
+        }
+    }
     NSArray<NSString *> *mergedProviders =
         [GZJelczPeerProviderIndex httpsProviderBasesWithBootstrap:streamplaceBase
                                                      envPeerBases:envPeers
@@ -466,6 +535,73 @@ static int run_serve(NSArray<NSString *> *args) {
             [GZJelczStreamplaceOriginHints providersByMergingStreamplaceBase:streamplaceBase
                                                           existingProviders:config.caMirrorProviders];
     }
+    NSString *irohSidecarURLEnv = env[@"JELCZ_IROH_SIDECAR_URL"];
+    NSString *irohSidecarURL =
+        [GZJelczP2PConfiguration irohSidecarHTTPBaseURLFromEnvironment:env];
+    BOOL p2pEnabled = [GZJelczP2PConfiguration isP2PEnabledInEnvironment:env];
+    if (irohSidecarURLEnv.length > 0 && !p2pEnabled) {
+        GZ_LOG_WARN(@"JELCZ_IROH_SIDECAR_URL ignored (set JELCZ_P2P=1 to enable Track A iroh mirror fetch)");
+    } else if (irohSidecarURLEnv.length > 0 && p2pEnabled && !irohSidecarURL) {
+        GZ_LOG_WARN(@"JELCZ_IROH_SIDECAR_URL invalid (set JELCZ_IROH_SIDECAR_TRUST_LAN=1 for Docker/LAN)");
+    }
+    BOOL irohTrustLan = [GZJelczP2PConfiguration trustLanInEnvironment:env];
+    NSString *irohSidecarCapability = env[@"JELCZ_IROH_SIDECAR_CAPABILITY"];
+    BOOL irohSidecarConfigured =
+        [GZJelczP2PConfiguration shouldWireIrohSidecarMirrorFetcherInEnvironment:env];
+    if (p2pEnabled && irohSidecarURL.length > 0 && !irohSidecarConfigured) {
+        GZ_LOG_WARN(@"JELCZ_P2P requires a non-empty JELCZ_IROH_SIDECAR_CAPABILITY; Track A sidecar fetch is off");
+    }
+    NSArray<NSString *> *irohPeerSidecars =
+        [GZJelczPeerProviderIndex parseCSVBases:env[@"JELCZ_IROH_PEER_SIDECARS"]];
+    NSArray<NSDictionary *> *meshNodes = @[];
+    NSString *meshNodesJSON = env[@"JELCZ_MESH_NODES"];
+    if (meshNodesJSON.length > 0) {
+        id parsed = [NSJSONSerialization JSONObjectWithData:[meshNodesJSON dataUsingEncoding:NSUTF8StringEncoding]
+                                                    options:0
+                                                      error:nil];
+        if ([parsed isKindOfClass:[NSArray class]]) {
+            meshNodes = parsed;
+        }
+    }
+    NSString *nodeName = env[@"JELCZ_NODE_NAME"];
+    if (nodeName.length == 0) {
+        nodeName = @"jelcz";
+    }
+    GZJelczIrohSidecarPeerRegistry *irohPeerRegistry = nil;
+    if (irohSidecarConfigured) {
+        id<ATProtoCAMirrorHTTPClient> regHTTP = [[GZJelczCAMirrorHTTPAdapter alloc] init];
+        irohPeerRegistry =
+            [GZJelczIrohSidecarPeerRegistry registryWithHTTPClient:regHTTP
+                                                   localSidecarURL:irohSidecarURL
+                                                          peerSidecarURLs:irohPeerSidecars
+                                                                 nodeName:nodeName
+                                                          trustLan:irohTrustLan
+                                                   capabilityToken:irohSidecarCapability];
+        if (irohPeerRegistry.remoteIdentities.count > 0) {
+            NSMutableArray<NSString *> *providers =
+                [config.caMirrorProviders mutableCopy] ?: [NSMutableArray array];
+            for (NSString *hint in [irohPeerRegistry irohProviderHints]) {
+                if (![providers containsObject:hint]) {
+                    [providers addObject:hint];
+                }
+            }
+            config.caMirrorProviders = providers;
+            GZ_LOG_INFO(@"  iroh peer sidecars (%lu): %@",
+                         (unsigned long)irohPeerRegistry.remoteIdentities.count,
+                         [[irohPeerRegistry irohProviderHints] componentsJoinedByString:@", "]);
+        }
+    }
+    NSString *irohProviderEndpointId = env[@"JELCZ_IROH_PROVIDER_ENDPOINT_ID"];
+    if (irohProviderEndpointId.length > 0) {
+        NSString *irohHint =
+            [NSString stringWithFormat:@"iroh://%@", irohProviderEndpointId];
+        NSMutableArray<NSString *> *providers =
+            [config.caMirrorProviders mutableCopy] ?: [NSMutableArray array];
+        if (![providers containsObject:irohHint]) {
+            [providers insertObject:irohHint atIndex:0];
+        }
+        config.caMirrorProviders = providers;
+    }
     if (streamplaceBase.length > 0 && config.streamplaceAttributionDID.length == 0) {
         GZ_LOG_WARN(@"JELCZ_STREAMPLACE_MIRROR_BASE set without JELCZ_STREAMPLACE_ATTRIBUTION_DID; "
                     @"Streamplace getVideoBlob mirror fetch will not be wired");
@@ -479,8 +615,13 @@ static int run_serve(NSArray<NSString *> *args) {
         streamplaceCompat =
             [[GZJelczStreamplaceCompatServe alloc] initWithObjectStore:videoProcessor.caObjectStore];
         if (config.enableStreamplacePeerDemo && streamplaceBase.length > 0) {
-            NSString *publicBase =
-                [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)config.port];
+            NSString *publicBase = env[@"JELCZ_PUBLIC_BASE_URL"];
+            if (publicBase.length == 0) {
+                publicBase =
+                    [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)config.port];
+            }
+            publicBase = [[publicBase stringByTrimmingCharactersInSet:
+                           [NSCharacterSet characterSetWithCharactersInString:@"/"]] copy];
             id<ATProtoCAMirrorHTTPClient> demoHTTP = [[GZJelczCAMirrorHTTPAdapter alloc] init];
             peerDemo = [[GZJelczStreamplacePeerDemo alloc] initWithObjectStore:videoProcessor.caObjectStore
                                                                     httpClient:demoHTTP
@@ -490,6 +631,37 @@ static int run_serve(NSArray<NSString *> *args) {
             peerDemo.originEntries = originEntries;
             peerDemo.allowedStreamers = allowedStreamers;
             peerDemo.allowedBroadcasters = allowedBroadcasters;
+            peerDemo.nodeName = nodeName;
+            peerDemo.meshNodes = meshNodes;
+            peerDemo.irohSidecarURL = irohSidecarURL;
+            peerDemo.irohSidecarTrustLan = irohTrustLan;
+            peerDemo.irohPeerSidecarURLs = irohPeerSidecars;
+            peerDemo.irohSidecarCapabilityToken = irohSidecarCapability;
+            peerDemo.irohPeerRegistry = irohPeerRegistry;
+            peerDemo.irohBootstrapEndpointId = irohProviderEndpointId;
+            peerDemo.irohBootstrapEndpointTicket = env[@"JELCZ_IROH_PROVIDER_ENDPOINT_TICKET"];
+            peerDemo.streamplaceIrohBridge = streamplaceIrohBridge;
+            // Optional by design: local standalone demos stay usable without a
+            // token, while the Docker lab injects a capability at composition.
+            peerDemo.apiToken = env[@"JELCZ_DEMO_API_TOKEN"];
+            peerDemo.seedPayloadMaxBytes =
+                jelcz_demo_byte_limit(env[@"JELCZ_DEMO_SEED_MAX_BYTES"],
+                                      peerDemo.fullPeerMaxBytes,
+                                      peerDemo.fullPeerMaxBytes);
+            if (peerDemo.apiToken.length > 0) {
+                GZ_LOG_INFO(@"  Streamplace demo mutation capability: configured");
+            }
+            NSString *vodPublic = env[@"JELCZ_STREAMPLACE_PUBLIC_BASE"];
+            if (vodPublic.length > 0) {
+                NSString *normalized =
+                    [GZJelczStreamplaceOriginHints normalizedProviderBaseURL:vodPublic];
+                if (normalized.length > 0) {
+                    peerDemo.vodOriginBaseURL = normalized;
+                }
+            }
+            if (![peerDemo.vodOriginBaseURL isEqualToString:streamplaceBase]) {
+                GZ_LOG_INFO(@"  VOD origin (public catalog): %@", peerDemo.vodOriginBaseURL);
+            }
             BOOL announceOn = [env[@"JELCZ_ORIGIN_ANNOUNCE"] isEqualToString:@"1"]
                 || [env[@"JELCZ_ORIGIN_ANNOUNCE"] isEqualToString:@"true"]
                 || [env[@"JELCZ_ORIGIN_ANNOUNCE"] isEqualToString:@"yes"];
@@ -506,7 +678,12 @@ static int run_serve(NSArray<NSString *> *args) {
                                                             identifier:announceId
                                                            appPassword:announcePass
                                                              serverDID:serverDID];
-                ann.httpsBase = env[@"JELCZ_ORIGIN_ANNOUNCE_HTTPS_BASE"] ?: publicBase;
+                NSString *announceHTTPSBase = env[@"JELCZ_ORIGIN_ANNOUNCE_HTTPS_BASE"];
+                if (announceHTTPSBase.length == 0 &&
+                    [publicBase.lowercaseString hasPrefix:@"https://"]) {
+                    announceHTTPSBase = publicBase;
+                }
+                ann.httpsBase = announceHTTPSBase;
                 ann.irohTicket = env[@"JELCZ_ORIGIN_ANNOUNCE_IROH_TICKET"];
                 peerDemo.originAnnouncer = ann;
                 GZ_LOG_INFO(@"  Origin announce: enabled (remote PDS write → %@ as %@)",
@@ -537,6 +714,31 @@ static int run_serve(NSArray<NSString *> *args) {
             ATProtoCAMirrorHTTPSFetcher *raslFetcher =
                 [[ATProtoCAMirrorHTTPSFetcher alloc] initWithHTTPClient:http];
             id<ATProtoCAMirrorFetching> fetcher = raslFetcher;
+            if (irohSidecarConfigured) {
+                GZJelczIrohSidecarBlobFetcher *irohFetcher =
+                    [[GZJelczIrohSidecarBlobFetcher alloc] initWithHTTPClient:http
+                                                                sidecarBaseURL:irohSidecarURL
+                                                                      trustLan:irohTrustLan];
+                irohFetcher.defaultProviderEndpointId = irohProviderEndpointId;
+                irohFetcher.defaultProviderEndpointTicket =
+                    env[@"JELCZ_IROH_PROVIDER_ENDPOINT_TICKET"];
+                irohFetcher.capabilityToken = irohSidecarCapability;
+                if (irohPeerRegistry) {
+                    NSMutableDictionary *tickets = [NSMutableDictionary dictionary];
+                    for (GZJelczIrohSidecarPeerIdentity *peer in irohPeerRegistry.remoteIdentities) {
+                        if (peer.endpointId.length > 0 && peer.endpointTicket.length > 0) {
+                            tickets[peer.endpointId] = peer.endpointTicket;
+                        }
+                    }
+                    irohFetcher.endpointTicketsByEndpointId = tickets;
+                }
+                GZJelczCAMirrorCompositeFetcher *irohThenRasl =
+                    [[GZJelczCAMirrorCompositeFetcher alloc] init];
+                irohThenRasl.primary = irohFetcher;
+                irohThenRasl.secondary = raslFetcher;
+                fetcher = irohThenRasl;
+                GZ_LOG_INFO(@"  CA mirror fetch: iroh sidecar @ %@ + RASL", irohSidecarURL);
+            }
             if (streamplaceBase.length > 0 && config.streamplaceAttributionDID.length > 0) {
                 streamplaceFetcher =
                     [[GZJelczStreamplaceBlobFetcher alloc] initWithHTTPClient:http
@@ -544,11 +746,11 @@ static int run_serve(NSArray<NSString *> *args) {
                 GZJelczCAMirrorCompositeFetcher *composite =
                     [[GZJelczCAMirrorCompositeFetcher alloc] init];
                 composite.primary = streamplaceFetcher;
-                composite.secondary = raslFetcher;
+                composite.secondary = fetcher;
                 fetcher = composite;
-                GZ_LOG_INFO(@"  CA mirror fetch: Streamplace getVideoBlob + RASL (%lu providers)",
+                GZ_LOG_INFO(@"  CA mirror fetch: Streamplace getVideoBlob + downstream (%lu providers)",
                              (unsigned long)config.caMirrorProviders.count);
-            } else {
+            } else if (!irohSidecarConfigured) {
                 GZ_LOG_INFO(@"  CA mirror fetch: RASL fetcher wired (%lu providers)",
                              (unsigned long)config.caMirrorProviders.count);
             }
@@ -616,6 +818,9 @@ static int run_serve(NSArray<NSString *> *args) {
                         @"enableMUXLPresentation": @(videoProcessor.enableMUXLPresentation),
                         @"storageBackend": config.s3Bucket.length > 0 ? @"s3" : @"disk",
                         @"streamplaceMirrorConfigured": @(streamplaceBase.length > 0),
+                        @"irohSidecarConfigured":
+                            @([GZJelczP2PConfiguration shouldWireIrohSidecarMirrorFetcherInEnvironment:env]),
+                        @"p2pEnabled": @(p2pEnabled),
                         @"streamplaceAttributionDIDConfigured":
                             @(config.streamplaceAttributionDID.length > 0),
                         @"streamplaceServeCompat": @(config.enableStreamplaceServeCompat),
@@ -662,6 +867,9 @@ static int run_serve(NSArray<NSString *> *args) {
             cfg[@"enableMUXLPresentation"] = @(videoProcessor.enableMUXLPresentation);
             cfg[@"storageBackend"] = config.s3Bucket.length > 0 ? @"s3" : @"disk";
             cfg[@"streamplaceMirrorConfigured"] = @(streamplaceBase.length > 0);
+            cfg[@"irohSidecarConfigured"] =
+                @([GZJelczP2PConfiguration shouldWireIrohSidecarMirrorFetcherInEnvironment:env]);
+            cfg[@"p2pEnabled"] = @(p2pEnabled);
             cfg[@"streamplaceAttributionDIDConfigured"] =
                 @(config.streamplaceAttributionDID.length > 0);
             cfg[@"streamplaceServeCompat"] = @(config.enableStreamplaceServeCompat);

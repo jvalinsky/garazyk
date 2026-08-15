@@ -4,7 +4,6 @@ import {
   Cap,
   compileTopology,
   createRunResourceManifest,
-  DEFAULT_ADMIN_PASSWORD,
   defineTopology,
   health,
   port,

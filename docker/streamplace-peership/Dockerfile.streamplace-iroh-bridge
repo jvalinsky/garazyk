@@ -1,0 +1,25 @@
+# Track B Streamplace live iroh bridge (WS16 phase 36).
+#
+# Build context: repository root. This image contains only the separate bridge;
+# it does not include the Track A iroh-blobs sidecar.
+
+FROM rust:1.92-bookworm AS builder
+WORKDIR /src
+COPY tools/jelcz-streamplace-iroh-bridge/Cargo.toml \
+    tools/jelcz-streamplace-iroh-bridge/Cargo.lock ./
+COPY tools/jelcz-streamplace-iroh-bridge/src ./src
+RUN cargo build --release --locked
+
+FROM debian:bookworm-slim
+
+RUN groupadd --system bridge \
+    && useradd --system --gid bridge --no-create-home bridge
+
+COPY --from=builder /src/target/release/jelcz-streamplace-iroh-bridge \
+    /usr/local/bin/jelcz-streamplace-iroh-bridge
+
+USER bridge:bridge
+EXPOSE 17353
+
+ENTRYPOINT ["/usr/local/bin/jelcz-streamplace-iroh-bridge"]
+CMD ["serve"]

@@ -249,6 +249,14 @@ export async function verifyNetworkHealth(opts: {
   console.log(green("[PREFLIGHT] All services healthy\n"));
 }
 
+/** Whether a no-setup run still depends on Hamownia's managed ATProto services. */
+export function requiresManagedNetworkPreflight(
+  selectedScenarios: ScenarioInfo[],
+): boolean {
+  return selectedScenarios.length === 0 ||
+    selectedScenarios.some((scenario) => !scenario.externalLifecycle);
+}
+
 /** Run all relevant preflight checks based on runner configuration. */
 export async function runPreflight(options: {
   useBinary: boolean;
@@ -269,7 +277,10 @@ export async function runPreflight(options: {
     scenario.requires.some((req) => req.role === "ui")
   );
 
-  if (options.noSetup) {
+  if (
+    options.noSetup &&
+    requiresManagedNetworkPreflight(options.selectedScenarios)
+  ) {
     await verifyNetworkHealth({
       withPds2: options.withPds2,
       withPds3: options.withPds3,

@@ -1,0 +1,15 @@
+{
+  "description": "Garazyk CA/VOD CID to iroh-blobs fetch root fixtures (phase-35 S2). ObjC tests in ATProtoIrohBlobHashMappingTests are authoritative; Rust sidecar should reproduce iroh_hash_hex from payload via Bao root.",
+  "fixtures": [
+    {
+      "label": "empty",
+      "payload_utf8": "",
+      "cid": "bafkr4ifpcne3t5pzugtkaqcn5i3nzskjtpfslsnnyejlpte2spfoihzsmi"
+    },
+    {
+      "label": "small",
+      "payload_utf8": "hello-ca-store",
+      "cid": "bafkr4iadewxtddpf7wzglzmsoxbm4gqkmq6n3hieephctfxj5ht2n4b43e"
+    }
+  ]
+}

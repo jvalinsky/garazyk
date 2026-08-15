@@ -268,7 +268,60 @@
     .badge.vod { color: var(--teal-ink); border-color: oklch(0.82 0.05 180); background: oklch(0.97 0.02 180); }
     .badge.ca { color: var(--ok); border-color: oklch(0.8 0.06 145); background: var(--ok-bg); }
     .badge.proxy { color: var(--proxy); border-color: oklch(0.82 0.05 250); background: var(--proxy-bg); }
+    .badge.iroh { color: oklch(0.42 0.12 300); border-color: oklch(0.82 0.06 300); background: oklch(0.97 0.03 300); }
     .badge.warn { color: var(--warn); border-color: oklch(0.85 0.06 70); background: var(--warn-bg); }
+    .mesh-panel {
+      margin-bottom: 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .mesh-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      padding: 12px 16px 16px;
+    }
+    .mesh-node {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: oklch(0.99 0.005 180);
+    }
+    .mesh-node.local {
+      border-color: var(--teal);
+      box-shadow: inset 0 0 0 1px oklch(0.82 0.05 180);
+    }
+    .mesh-node h3 {
+      margin: 0 0 6px;
+      font-size: 0.82rem;
+      font-weight: 650;
+    }
+    .mesh-node .ep {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      color: var(--muted);
+      word-break: break-all;
+      line-height: 1.35;
+    }
+    .mesh-edges {
+      padding: 0 16px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .edge {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px dashed var(--line);
+      background: var(--panel);
+    }
+    .edge.iroh { border-color: oklch(0.78 0.06 300); color: oklch(0.42 0.12 300); }
+    .edge.https { border-color: oklch(0.78 0.05 250); color: var(--proxy); }
     .player-wrap { padding: 12px; }
     video {
       width: 100%;
@@ -449,6 +502,15 @@
       </div>
     </section>
 
+    <section class="mesh-panel" aria-live="polite">
+      <div class="panel-h">
+        <h2>Peering mesh</h2>
+        <div class="meta" id="mesh-meta">loading…</div>
+      </div>
+      <div class="mesh-grid" id="mesh-nodes"></div>
+      <div class="mesh-edges" id="mesh-edges"></div>
+    </section>
+
     <div class="stats" id="stats" aria-live="polite">
       <div class="stat" id="stat-peered">
         <div class="k">Peered into CA</div>
@@ -493,6 +555,7 @@
           <div class="actions">
             <button class="btn primary" id="btn-peer" disabled>Peer & play</button>
             <button class="btn" id="btn-refresh">Refresh</button>
+            <a class="btn" href="/demo/streamplace/overwatch">Mesh overwatch</a>
           </div>
           <div class="status-line" id="status"></div>
           <div class="evidence" id="evidence">
@@ -557,10 +620,60 @@
       if (m.includes("proxy") || m === "range-proxy" || m === "live-proxy") {
         return `<span class="badge proxy">${escapeHtml(m)}</span>`;
       }
+      if (m.includes("iroh")) {
+        return `<span class="badge iroh">${escapeHtml(m)}</span>`;
+      }
       if (m.includes("fail") || m === "invalid-cid") {
         return `<span class="badge warn">${escapeHtml(m)}</span>`;
       }
       return `<span class="badge">${escapeHtml(m || "—")}</span>`;
+    }
+
+    function shortEndpoint(id) {
+      if (!id) return "";
+      if (id.length <= 14) return id;
+      return id.slice(0, 6) + "…" + id.slice(-4);
+    }
+
+    function renderMesh(mesh) {
+      const nodes = mesh?.nodes || [];
+      const edges = mesh?.edges || [];
+      $("mesh-meta").textContent =
+        `${mesh?.nodeName || "jelcz"} · ${edges.length} peering link(s)`;
+      const root = $("mesh-nodes");
+      root.innerHTML = "";
+      nodes.forEach((n) => {
+        const div = document.createElement("div");
+        div.className = "mesh-node" + (n.local ? " local" : "");
+        const ep = n.irohEndpointId ? shortEndpoint(n.irohEndpointId) : "—";
+        div.innerHTML = `
+          <h3>${escapeHtml(n.name)}${n.local ? " (this)" : ""}</h3>
+          <div class="ep">iroh ${escapeHtml(ep)}</div>
+        `;
+        root.appendChild(div);
+      });
+      const eroot = $("mesh-edges");
+      eroot.innerHTML = "";
+      if (!edges.length) {
+        eroot.innerHTML = `<span class="edge">No peering edges discovered yet</span>`;
+        return;
+      }
+      edges.forEach((e) => {
+        const span = document.createElement("span");
+        span.className = "edge " + (e.transport || "https");
+        const arrow = e.transport === "iroh" ? "⇄" : "→";
+        span.textContent = `${e.from} ${arrow} ${e.to} (${e.transport})`;
+        eroot.appendChild(span);
+      });
+    }
+
+    async function refreshMesh() {
+      try {
+        const res = await fetch("/demo/streamplace/api/mesh");
+        renderMesh(await res.json());
+      } catch (_) {
+        $("mesh-meta").textContent = "mesh unavailable";
+      }
     }
 
     function updatePosture(stats, session) {
@@ -714,6 +827,7 @@
       $("s-proxy").textContent = stats.proxyServeCount ?? "—";
       $("s-bytes").textContent = fmtBytes(stats.proxiedByteCount);
       renderFeed(stats.recentServes);
+      if (stats.mesh) renderMesh(stats.mesh);
       updatePosture(stats, window.__lastSession || null);
       lastStats = stats;
     }
@@ -856,10 +970,12 @@
       }
     }
 
-    $("btn-refresh").addEventListener("click", loadCatalog);
+    $("btn-refresh").addEventListener("click", () => { loadCatalog(); refreshMesh(); });
     $("btn-peer").addEventListener("click", peerSelected);
     loadCatalog();
+    refreshMesh();
     startStatsPoll(4000, 600000);
+    setInterval(refreshMesh, 8000);
   </script>
 </body>
 </html>

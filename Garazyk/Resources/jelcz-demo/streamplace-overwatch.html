@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>jelcz · mesh overwatch</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a2332'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%234fd1c5' stroke-width='2'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121820;
+      --ink: #e8eef5;
+      --muted: #7a8a9e;
+      --line: #243041;
+      --teal: #4fd1c5;
+      --iroh: #c084fc;
+      --https: #60a5fa;
+      --origin: #fbbf24;
+      --ok: #34d399;
+      --warn: #f87171;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(900px 500px at 50% -20%, #1a2840 0%, transparent 60%),
+        repeating-linear-gradient(0deg, transparent, transparent 39px, #141b24 39px, #141b24 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, #141b24 39px, #141b24 40px),
+        var(--bg);
+    }
+    .shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 20px 18px 48px;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .brand {
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--teal);
+      font-weight: 700;
+    }
+    h1 {
+      margin: 4px 0 0;
+      font-size: 1.35rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    .meta {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .meta em { color: var(--teal); font-style: normal; }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 14px;
+    }
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .panel-h {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .panel-h strong { color: var(--ink); }
+    #graph-wrap {
+      position: relative;
+      min-height: 420px;
+    }
+    svg#graph {
+      width: 100%;
+      height: 420px;
+      display: block;
+    }
+    .link {
+      fill: none;
+      stroke-width: 2;
+      opacity: 0.35;
+    }
+    .link.https { stroke: var(--https); }
+    .link.iroh { stroke: var(--iroh); stroke-dasharray: 6 4; }
+    .link.active {
+      opacity: 1;
+      stroke-width: 3;
+      filter: drop-shadow(0 0 6px currentColor);
+    }
+    .node circle.shell {
+      fill: var(--panel);
+      stroke-width: 2;
+    }
+    .node.origin circle.shell { stroke: var(--origin); }
+    .node.jelcz circle.shell { stroke: var(--teal); }
+    .node.offline circle.shell { stroke: var(--warn); opacity: 0.55; }
+    .node text.label {
+      fill: var(--ink);
+      font-size: 12px;
+      font-weight: 650;
+      text-anchor: middle;
+    }
+    .node text.sub {
+      fill: var(--muted);
+      font-size: 9px;
+      font-family: var(--mono);
+      text-anchor: middle;
+    }
+    .pulse {
+      fill: var(--teal);
+      opacity: 0;
+    }
+    .pulse.iroh { fill: var(--iroh); }
+    .pulse.https { fill: var(--https); }
+    .pulse.origin { fill: var(--origin); }
+    @keyframes pulse-travel {
+      0% { opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .pulse.run {
+      animation: pulse-travel 1.1s ease-out forwards;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 14px 14px;
+      border-top: 1px solid var(--line);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 18px;
+      height: 3px;
+      margin-right: 6px;
+      vertical-align: middle;
+      border-radius: 2px;
+    }
+    .legend .l-https::before { background: var(--https); }
+    .legend .l-iroh::before {
+      background: repeating-linear-gradient(90deg, var(--iroh) 0 6px, transparent 6px 10px);
+    }
+    .legend .l-origin::before { background: var(--origin); height: 10px; width: 10px; border-radius: 50%; }
+    .feed {
+      max-height: calc(420px + 52px);
+      overflow: auto;
+    }
+    .ev {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.75rem;
+      animation: ev-in 0.25s ease-out;
+    }
+    @keyframes ev-in {
+      from { background: #1e3a34; }
+      to { background: transparent; }
+    }
+    .ev.new { background: #15202b; }
+    .ev-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .ev-time { font-family: var(--mono); color: var(--muted); font-size: 0.68rem; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+    }
+    .badge.iroh { color: var(--iroh); border-color: #5b3a7a; }
+    .badge.https { color: var(--https); border-color: #2a4a6a; }
+    .badge.local { color: var(--ok); border-color: #2a5a4a; }
+    .ev-flow {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+    .ev-flow strong { color: var(--ink); font-weight: 600; }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .stat {
+      background: var(--panel);
+      padding: 10px 12px;
+    }
+    .stat .k { font-size: 0.62rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.06em; }
+    .stat .v { font-family: var(--mono); font-size: 1rem; margin-top: 2px; }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font: inherit;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .btn:hover { border-color: var(--teal); }
+    .btn.primary { background: #1a3a36; border-color: var(--teal); color: var(--teal); }
+    a.btn { text-decoration: none; display: inline-block; }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--warn);
+      margin-right: 6px;
+    }
+    .status-dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <div class="brand">jelcz mesh overwatch</div>
+        <h1>Peering radar</h1>
+      </div>
+      <div class="meta">
+        <span class="status-dot" id="live-dot"></span>
+        <span id="status-text">connecting…</span>
+        · viewer <em id="viewer-node">—</em>
+        · updated <em id="updated-at">—</em>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <button class="btn primary" id="btn-refresh" type="button">Refresh now</button>
+      <a class="btn" href="/demo/streamplace">Peer demo UI</a>
+      <button class="btn" id="btn-seed" type="button">Seed & fan out to peers</button>
+    </div>
+
+    <div class="stats-row" id="summary">
+      <div class="stat"><div class="k">Nodes up</div><div class="v" id="s-nodes">—</div></div>
+      <div class="stat"><div class="k">Links</div><div class="v" id="s-links">—</div></div>
+      <div class="stat"><div class="k">Events (48)</div><div class="v" id="s-events">—</div></div>
+    </div>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-h"><strong>Topology</strong><span id="graph-meta">—</span></div>
+        <div id="graph-wrap">
+          <svg id="graph" viewBox="0 0 640 420" aria-label="Mesh topology graph"></svg>
+        </div>
+        <div class="legend">
+          <span class="l-origin">Streamplace origin</span>
+          <span class="l-https">HTTPS peering</span>
+          <span class="l-iroh">iroh sidecar</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-h"><strong>Transfer feed</strong><span id="feed-meta">—</span></div>
+        <div class="feed" id="feed"><div class="ev"><div class="ev-flow">Waiting for mesh activity…</div></div></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const svgNS = "http://www.w3.org/2000/svg";
+    let positions = {};
+    let seenEvents = new Set();
+    let pollTimer = null;
+
+    const LAYOUT = {
+      streamplace: { x: 320, y: 56 },
+      "jelcz-a": { x: 160, y: 280 },
+      "jelcz-b": { x: 320, y: 340 },
+      "jelcz-c": { x: 480, y: 280 },
+    };
+
+    function fmtBytes(n) {
+      n = Number(n) || 0;
+      if (n < 1024) return n + " B";
+      if (n < 1024 ** 2) return (n / 1024).toFixed(1) + " KiB";
+      return (n / 1024 ** 2).toFixed(1) + " MiB";
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function shortCid(cid) {
+      if (!cid) return "";
+      return cid.length <= 16 ? cid : cid.slice(0, 8) + "…" + cid.slice(-4);
+    }
+
+    function posFor(id) {
+      if (LAYOUT[id]) return LAYOUT[id];
+      const keys = Object.keys(LAYOUT);
+      const idx = Math.abs(hash(id)) % keys.length;
+      const base = LAYOUT[keys[idx]] || { x: 320, y: 210 };
+      return { x: base.x + (hash(id) % 40) - 20, y: base.y + (hash(id) % 30) - 15 };
+    }
+
+    function hash(s) {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+      return Math.abs(h);
+    }
+
+    function eventKey(ev) {
+      return [ev.node, ev.ts, ev.mode, ev.cid, ev.bytes, ev.fromNode].join("|");
+    }
+
+    function modeBadge(mode) {
+      const m = String(mode || "");
+      if (m.includes("iroh") || m === "mesh-fanout") return `<span class="badge iroh">${escapeHtml(m)}</span>`;
+      if (m.includes("proxy") || m.includes("peer")) return `<span class="badge https">${escapeHtml(m)}</span>`;
+      return `<span class="badge local">${escapeHtml(m || "—")}</span>`;
+    }
+
+    function drawGraph(data) {
+      const svg = $("graph");
+      svg.innerHTML = "";
+      const nodes = data.nodes || [];
+      const links = data.links || [];
+
+      nodes.forEach((n) => {
+        positions[n.id] = posFor(n.id);
+      });
+
+      const defs = document.createElementNS(svgNS, "defs");
+      svg.appendChild(defs);
+
+      links.forEach((link, i) => {
+        const from = positions[link.from];
+        const to = positions[link.to];
+        if (!from || !to) return;
+        const path = document.createElementNS(svgNS, "path");
+        const mx = (from.x + to.x) / 2;
+        const my = (from.y + to.y) / 2 - 30;
+        const d = `M ${from.x} ${from.y} Q ${mx} ${my} ${to.x} ${to.y}`;
+        path.setAttribute("d", d);
+        path.setAttribute("id", `link-${i}`);
+        path.setAttribute("class", `link ${link.transport || "https"}`);
+        path.dataset.from = link.from;
+        path.dataset.to = link.to;
+        path.dataset.transport = link.transport || "https";
+        svg.appendChild(path);
+      });
+
+      nodes.forEach((n) => {
+        const p = positions[n.id];
+        if (!p) return;
+        const g = document.createElementNS(svgNS, "g");
+        g.setAttribute("class", `node ${n.kind || "jelcz"}${n.reachable ? "" : " offline"}`);
+        g.setAttribute("transform", `translate(${p.x}, ${p.y})`);
+
+        const ring = document.createElementNS(svgNS, "circle");
+        ring.setAttribute("class", "shell");
+        ring.setAttribute("r", n.kind === "origin" ? 26 : 32);
+        g.appendChild(ring);
+
+        const dot = document.createElementNS(svgNS, "circle");
+        dot.setAttribute("r", 6);
+        dot.setAttribute("fill", n.reachable ? (n.kind === "origin" ? "var(--origin)" : "var(--teal)") : "var(--warn)");
+        g.appendChild(dot);
+
+        const label = document.createElementNS(svgNS, "text");
+        label.setAttribute("class", "label");
+        label.setAttribute("y", 48);
+        label.textContent = n.label || n.id;
+        g.appendChild(label);
+
+        const sub = document.createElementNS(svgNS, "text");
+        sub.setAttribute("class", "sub");
+        sub.setAttribute("y", 60);
+        if (n.kind === "jelcz") {
+          sub.textContent = n.reachable ? `${n.localServeCount || 0} local · ${n.peeredObjectCount || 0} peered` : "offline";
+        } else {
+          sub.textContent = "origin";
+        }
+        g.appendChild(sub);
+
+        if (n.ui && n.kind === "jelcz") {
+          const a = document.createElementNS(svgNS, "a");
+          a.setAttribute("href", n.ui + "/demo/streamplace");
+          a.setAttribute("target", "_blank");
+          a.appendChild(g);
+          svg.appendChild(a);
+        } else {
+          svg.appendChild(g);
+        }
+      });
+    }
+
+    function animateTransfer(fromId, toId, transport) {
+      if (!fromId || !toId || fromId === toId) return;
+      const svg = $("graph");
+      let path = null;
+      svg.querySelectorAll("path.link").forEach((p) => {
+        if (p.dataset.from === fromId && p.dataset.to === toId) path = p;
+      });
+      if (!path) return;
+      path.classList.add("active");
+      setTimeout(() => path.classList.remove("active"), 1200);
+
+      const pulse = document.createElementNS(svgNS, "circle");
+      pulse.setAttribute("class", `pulse run ${transport || "https"}`);
+      pulse.setAttribute("r", 5);
+      svg.appendChild(pulse);
+
+      const len = path.getTotalLength();
+      const start = performance.now();
+      const dur = 1000;
+      function frame(now) {
+        const t = Math.min(1, (now - start) / dur);
+        const pt = path.getPointAtLength(len * t);
+        pulse.setAttribute("cx", pt.x);
+        pulse.setAttribute("cy", pt.y);
+        if (t < 1) requestAnimationFrame(frame);
+        else pulse.remove();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function renderFeed(events) {
+      const root = $("feed");
+      const list = Array.isArray(events) ? events : [];
+      $("feed-meta").textContent = list.length ? `${list.length} recent` : "idle";
+      if (!list.length) {
+        root.innerHTML = `<div class="ev"><div class="ev-flow">No transfers yet — seed a blob or run the smoke script.</div></div>`;
+        return;
+      }
+      root.innerHTML = "";
+      list.slice(0, 24).forEach((ev) => {
+        const key = eventKey(ev);
+        const isNew = !seenEvents.has(key);
+        seenEvents.add(key);
+        const row = document.createElement("div");
+        row.className = "ev" + (isNew ? " new" : "");
+        const t = ev.ts ? new Date(Number(ev.ts) * 1000) : null;
+        const time = t ? t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+        const from = ev.fromNode || "—";
+        const to = ev.toNode || ev.node || "—";
+        let flow = `<strong>${escapeHtml(to)}</strong>`;
+        if (from && from !== "—" && from !== to) {
+          flow = `<strong>${escapeHtml(from)}</strong> → ${flow}`;
+        }
+        row.innerHTML = `
+          <div class="ev-top">
+            <span>${modeBadge(ev.mode)}</span>
+            <span class="ev-time">${escapeHtml(time)}</span>
+          </div>
+          <div class="ev-flow">${flow} · ${escapeHtml(fmtBytes(ev.bytes))}${ev.cid ? " · " + escapeHtml(shortCid(ev.cid)) : ""}</div>
+        `;
+        root.appendChild(row);
+        if (isNew && from && from !== to) {
+          const m = String(ev.mode || "");
+          const note = String(ev.note || "");
+          const transport = (m.includes("iroh") || note.includes("iroh-peer")) ? "iroh" : "https";
+          animateTransfer(from, to, transport);
+        }
+      });
+      if (seenEvents.size > 300) {
+        seenEvents = new Set(list.slice(0, 40).map(eventKey));
+      }
+    }
+
+    function renderSummary(data) {
+      const nodes = data.nodes || [];
+      const up = nodes.filter((n) => n.reachable !== false).length;
+      $("s-nodes").textContent = `${up}/${nodes.length}`;
+      $("s-links").textContent = String((data.links || []).length);
+      $("s-events").textContent = String((data.events || []).length);
+      $("viewer-node").textContent = data.viewerNode || "—";
+      $("graph-meta").textContent = `${(data.links || []).length} configured links`;
+      const ts = data.generatedAt ? new Date(Number(data.generatedAt) * 1000) : new Date();
+      $("updated-at").textContent = ts.toLocaleTimeString();
+    }
+
+    let refreshInFlight = false;
+    async function refresh() {
+      if (refreshInFlight) return;
+      refreshInFlight = true;
+      const ac = new AbortController();
+      const abortTimer = setTimeout(() => ac.abort(), 8000);
+      try {
+        const res = await fetch("/demo/streamplace/api/overwatch", { signal: ac.signal });
+        const data = await res.json();
+        drawGraph(data);
+        renderFeed(data.events);
+        renderSummary(data);
+        $("live-dot").classList.add("live");
+        $("status-text").textContent = "live · polling 5s";
+      } catch (err) {
+        $("live-dot").classList.remove("live");
+        $("status-text").textContent = "disconnected";
+        console.error(err);
+      } finally {
+        clearTimeout(abortTimer);
+        refreshInFlight = false;
+      }
+    }
+
+    async function seedTestBlob() {
+      $("status-text").textContent = "seeding + fanning out…";
+      const origin = location.origin;
+      const body = `overwatch-probe-${Date.now()}`;
+      const seedRes = await fetch(`${origin}/demo/streamplace/api/seed`, {
+        method: "POST",
+        headers: { "content-type": "text/plain" },
+        body,
+      });
+      const seeded = await seedRes.json();
+      if (!seedRes.ok || !seeded.cid) {
+        throw new Error(seeded.message || "seed failed");
+      }
+      if (!seeded.meshFanout) {
+        await fetch(`${origin}/demo/streamplace/api/mesh-replicate`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            cid: seeded.cid,
+            irohProvider: seeded.irohProvider || "",
+          }),
+        });
+      }
+      await refresh();
+    }
+
+    $("btn-refresh").addEventListener("click", refresh);
+    $("btn-seed").addEventListener("click", () => seedTestBlob().catch(console.error));
+    refresh();
+    pollTimer = setInterval(refresh, 5000);
+    window.addEventListener("beforeunload", () => clearInterval(pollTimer));
+  </script>
+</body>
+</html>

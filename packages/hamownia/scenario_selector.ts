@@ -50,6 +50,7 @@ export async function discoverScenarios(
         id,
         name: match[2].replace(/_/g, " "),
         path: join(scenarioDir, entry.name),
+        externalLifecycle: manifest.externalLifecycle || false,
         needsPds2: manifest.needsPds2 || false,
         needsPds3: manifest.needsPds3 || false,
         browserFlows: manifest.browserFlows || [],

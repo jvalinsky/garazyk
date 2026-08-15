@@ -97,6 +97,9 @@
 
             installPhase = ''
               install -Dm755 bin/zuk $out/bin/zuk
+              if [ -d bin/Assets ]; then
+                cp -r bin/Assets $out/bin/Assets
+              fi
             '';
 
             meta = with lib; {
@@ -132,6 +135,9 @@
 
             installPhase = ''
               install -Dm755 bin/beskid $out/bin/beskid
+              if [ -d bin/Assets ]; then
+                cp -r bin/Assets $out/bin/Assets
+              fi
             '';
 
             meta = with lib; {
@@ -150,7 +156,12 @@
             preConfigure = ''export GNUSTEP_PREFIX="${gnustepPrefix}"'';
             cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" "-DBUILD_TESTS=OFF" "-DBUILD_FUZZERS=OFF" "-DBUILD_SECP256K1=ON" ];
             buildPhase = ''cmake --build . --target mikrus --parallel 4'';
-            installPhase = ''install -Dm755 bin/mikrus $out/bin/mikrus'';
+            installPhase = ''
+              install -Dm755 bin/mikrus $out/bin/mikrus
+              if [ -d bin/Assets ]; then
+                cp -r bin/Assets $out/bin/Assets
+              fi
+            '';
             meta = with lib; { description = "Garazyk Mikrus link index"; license = [ licenses.unlicense licenses.cc0 ]; platforms = platforms.linux; };
           };
 
@@ -163,7 +174,12 @@
             preConfigure = ''export GNUSTEP_PREFIX="${gnustepPrefix}"'';
             cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" "-DBUILD_TESTS=OFF" "-DBUILD_FUZZERS=OFF" "-DBUILD_SECP256K1=ON" ];
             buildPhase = ''cmake --build . --target syrena --parallel 4'';
-            installPhase = ''install -Dm755 bin/syrena $out/bin/syrena'';
+            installPhase = ''
+              install -Dm755 bin/syrena $out/bin/syrena
+              if [ -d bin/Assets ]; then
+                cp -r bin/Assets $out/bin/Assets
+              fi
+            '';
             meta = with lib; { description = "Garazyk Syrena AppView server"; license = [ licenses.unlicense licenses.cc0 ]; platforms = platforms.linux; };
           };
 

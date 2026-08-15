@@ -1292,6 +1292,7 @@ export interface LexiconDefs {
       "did": string;
       "error"?: string;
       "jobId": string;
+      "manifestBlob"?: any /* blob */;
       "message"?: string;
       "progress"?: number;
       "state": string;
@@ -3338,6 +3339,72 @@ export interface LexiconDefs {
       "count": number;
     };
   };
+  "place.stream.media.defs": {
+    "muxlTrack": {
+      "blob": string;
+      "language"?: string;
+      "mediaType": string;
+      "signingKey"?: string;
+      "size"?: number;
+      "trackId": string;
+    };
+    "sourceClip": {
+      "end": number;
+      "start": number;
+      "video": string;
+    };
+    "sourceTracks": {
+      "tracks": Array<LexiconDefs["com.atproto.repo.strongRef"]["main"]>;
+    };
+  };
+  "place.stream.media.getVideo": {
+    "main": never;
+    "videoView": {
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "cid": string;
+      "likeCount": number;
+      "record": unknown;
+      "tracks"?: Array<LexiconDefs["place.stream.media.track"]["trackView"]>;
+      "uri": string;
+      "viewCounts": LexiconDefs["place.stream.media.getVideo"]["viewCountSummary"];
+    };
+    "viewCountSummary": {
+      "bytes": number;
+      "count": number;
+      "durationMs": number;
+      "reporters": number;
+    };
+  };
+  "place.stream.media.origin": {
+    "main": {
+      "blob": string;
+      "mimeType": string;
+      "size": number;
+    };
+  };
+  "place.stream.media.publishVideo": {
+    "main": never;
+  };
+  "place.stream.media.track": {
+    "commonMetadata": {
+      "audio"?: LexiconDefs["place.stream.segment"]["audio"];
+      "durationMs"?: number;
+      "language"?: string;
+      "video"?: LexiconDefs["place.stream.segment"]["video"];
+    };
+    "main": {
+      "metadata"?: LexiconDefs["place.stream.media.track"]["commonMetadata"] | Record<string, any>;
+      "parentTrack"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "track": LexiconDefs["place.stream.media.defs"]["muxlTrack"] | Record<string, any>;
+      "video"?: string;
+    };
+    "trackView": {
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "cid": string;
+      "record": unknown;
+      "uri": string;
+    };
+  };
   "place.stream.metadata.configuration": {
     "main": {
       "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
@@ -3452,6 +3519,12 @@ export interface LexiconDefs {
       "url": string;
     };
   };
+  "place.stream.playback.getVideoBlob": {
+    "main": never;
+  };
+  "place.stream.playback.getVideoPlaylist": {
+    "main": never;
+  };
   "place.stream.richtext.facet": {
     "main": {
       "features": Array<LexiconDefs["app.bsky.richtext.facet"]["mention"] | LexiconDefs["app.bsky.richtext.facet"]["link"] | Record<string, any>>;
@@ -3537,6 +3610,25 @@ export interface LexiconDefs {
   };
   "place.stream.server.updateWebhook": {
     "main": never;
+  };
+  "place.stream.video": {
+    "connection": {
+      "ref"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+    "main": {
+      "activity"?: any /* unresolved ref: place.stream.defs#activityGame */ | any /* unresolved ref: place.stream.defs#activityLabel */ | Record<string, any>;
+      "connections"?: Array<LexiconDefs["place.stream.video"]["connection"] | Record<string, any>>;
+      "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
+      "contentWarnings"?: LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
+      "createdAt": string;
+      "description"?: string;
+      "descriptionFacets"?: Array<any /* unresolved ref: place.stream.richtext.videoFacet */>;
+      "durationMs": number;
+      "source": LexiconDefs["place.stream.media.defs"]["sourceTracks"] | LexiconDefs["place.stream.media.defs"]["sourceClip"] | Record<string, any>;
+      "tags"?: Array<string>;
+      "thumb"?: any /* blob */;
+      "title": string;
+    };
   };
   "pub.leaflet.blocks.blockquote": {
     "main": {
@@ -4372,6 +4464,89 @@ export interface LexiconDefs {
   "tools.garazyk.sync.getRepoFiltered": {
     "main": never;
   };
+  "tools.garazyk.video": {
+    "main": {
+      "aspectRatio"?: LexiconDefs["tools.garazyk.video.defs"]["aspectRatio"];
+      "compatMp4"?: any /* blob */;
+      "createdAt": string;
+      "durationMs": number;
+      "manifest": any /* blob */;
+      "renditions"?: Array<LexiconDefs["tools.garazyk.video.defs"]["rendition"]>;
+      "thumb"?: any /* blob */;
+      "title"?: string;
+    };
+    "view": {
+      "author": string;
+      "cid": string;
+      "playlist"?: string;
+      "record": unknown;
+      "thumbnail"?: string;
+      "uri": string;
+    };
+  };
+  "tools.garazyk.video.defs": {
+    "aspectRatio": {
+      "height": number;
+      "width": number;
+    };
+    "byteRange": {
+      "length": number;
+      "offset": number;
+    };
+    "playbackBootstrap": {
+      "cid": string;
+      "durationMs"?: number;
+      "firstSegmentBytes"?: number;
+      "firstSegmentPath"?: string;
+      "firstSegmentRange"?: LexiconDefs["tools.garazyk.video.defs"]["byteRange"];
+      "manifestCid": string;
+      "playlist"?: string;
+      "providers"?: Array<string>;
+      "uri": string;
+      "watchBaseUrl"?: string;
+    };
+    "rendition": {
+      "bandwidth"?: number;
+      "codecs"?: string;
+      "height": number;
+      "name": string;
+      "width"?: number;
+    };
+  };
+  "tools.garazyk.video.distributionPolicy": {
+    "main": {
+      "allowedBroadcasters"?: Array<string>;
+      "createdAt": string;
+      "deleteAfter"?: string;
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "updatedAt"?: string;
+    };
+    "view": {
+      "author": string;
+      "cid": string;
+      "record": unknown;
+      "uri": string;
+    };
+  };
+  "tools.garazyk.video.origin": {
+    "main": {
+      "createdAt": string;
+      "httpsBase"?: string;
+      "irohTicket"?: string;
+      "lastSeenAt": string;
+      "manifestCid": string;
+      "server": string;
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "watchBaseUrl": string;
+    };
+    "view": {
+      "author": string;
+      "cid": string;
+      "playlist"?: string;
+      "record": unknown;
+      "uri": string;
+    };
+  };
   "tools.ozone.communication.createTemplate": {
     "main": never;
   };
@@ -5086,6 +5261,9 @@ export interface LexiconDefs {
       "error": string;
       "uri": string;
     };
+  };
+  "xyz.garazyk.video.getPrefetchBootstrap": {
+    "main": never;
   };
   "xyz.statusphere.status": {
     "main": {
@@ -9264,6 +9442,36 @@ export interface Lexicons {
     type: "record";
     record: LexiconDefs["place.stream.livestream"]["main"];
   };
+  "place.stream.media.getVideo": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "uri": string;
+    };
+    input: never;
+    output: LexiconDefs["place.stream.media.getVideo"]["videoView"];
+  };
+  "place.stream.media.origin": {
+    type: "record";
+    record: LexiconDefs["place.stream.media.origin"]["main"];
+  };
+  "place.stream.media.publishVideo": {
+    type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {
+      "record": LexiconDefs["place.stream.video"]["main"];
+      "uploadId": string;
+    };
+    output: {
+      "cid": string;
+      "uri": string;
+    };
+  };
+  "place.stream.media.track": {
+    type: "record";
+    record: LexiconDefs["place.stream.media.track"]["main"];
+  };
   "place.stream.metadata.configuration": {
     type: "record";
     record: LexiconDefs["place.stream.metadata.configuration"]["main"];
@@ -9381,6 +9589,30 @@ export interface Lexicons {
     type: "record";
     record: LexiconDefs["place.stream.multistream.target"]["main"];
   };
+  "place.stream.playback.getVideoBlob": {
+    type: "query";
+    outputEncoding: "video/mp4";
+    params: {
+      "cid": string;
+      "did": string;
+      "sid"?: string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
+  "place.stream.playback.getVideoPlaylist": {
+    type: "query";
+    outputEncoding: "*/*";
+    params: {
+      "end"?: number;
+      "sid"?: string;
+      "start"?: number;
+      "track"?: string;
+      "uri": string;
+    };
+    input: never;
+    output: BinaryXrpcResponse;
+  };
   "place.stream.segment": {
     type: "record";
     record: LexiconDefs["place.stream.segment"]["main"];
@@ -9474,6 +9706,10 @@ export interface Lexicons {
     output: {
       "webhook": LexiconDefs["place.stream.server.defs"]["webhook"];
     };
+  };
+  "place.stream.video": {
+    type: "record";
+    record: LexiconDefs["place.stream.video"]["main"];
   };
   "pub.leaflet.comment": {
     type: "record";
@@ -9982,6 +10218,18 @@ export interface Lexicons {
     };
     input: never;
     output: BinaryXrpcResponse;
+  };
+  "tools.garazyk.video": {
+    type: "record";
+    record: LexiconDefs["tools.garazyk.video"]["main"];
+  };
+  "tools.garazyk.video.distributionPolicy": {
+    type: "record";
+    record: LexiconDefs["tools.garazyk.video.distributionPolicy"]["main"];
+  };
+  "tools.garazyk.video.origin": {
+    type: "record";
+    record: LexiconDefs["tools.garazyk.video.origin"]["main"];
   };
   "tools.ozone.communication.createTemplate": {
     type: "procedure";
@@ -10639,6 +10887,19 @@ export interface Lexicons {
       "revokedVerifications": Array<string>;
     };
   };
+  "xyz.garazyk.video.getPrefetchBootstrap": {
+    type: "query";
+    outputEncoding: "application/json";
+    params: {
+      "uris": Array<string>;
+    };
+    input: never;
+    output: {
+      "items": Array<LexiconDefs["tools.garazyk.video.defs"]["playbackBootstrap"]>;
+      "wasteCeilingBytes": number;
+      "windowSize": number;
+    };
+  };
   "xyz.statusphere.status": {
     type: "record";
     record: LexiconDefs["xyz.statusphere.status"]["main"];
@@ -11119,6 +11380,11 @@ export const LEXICON_DEFINITION_KINDS = {
   "place.stream.live.searchActorsTypeahead": "query",
   "place.stream.live.subscribeSegments": "subscription",
   "place.stream.livestream": "record",
+  "place.stream.media.defs": "other",
+  "place.stream.media.getVideo": "query",
+  "place.stream.media.origin": "record",
+  "place.stream.media.publishVideo": "procedure",
+  "place.stream.media.track": "record",
   "place.stream.metadata.configuration": "record",
   "place.stream.metadata.contentRights": "other",
   "place.stream.metadata.contentWarnings": "other",
@@ -11136,6 +11402,8 @@ export const LEXICON_DEFINITION_KINDS = {
   "place.stream.multistream.listTargets": "query",
   "place.stream.multistream.putTarget": "procedure",
   "place.stream.multistream.target": "record",
+  "place.stream.playback.getVideoBlob": "query",
+  "place.stream.playback.getVideoPlaylist": "query",
   "place.stream.richtext.facet": "other",
   "place.stream.segment": "record",
   "place.stream.server.createWebhook": "procedure",
@@ -11146,6 +11414,7 @@ export const LEXICON_DEFINITION_KINDS = {
   "place.stream.server.listWebhooks": "query",
   "place.stream.server.settings": "record",
   "place.stream.server.updateWebhook": "procedure",
+  "place.stream.video": "record",
   "pub.leaflet.blocks.blockquote": "other",
   "pub.leaflet.blocks.bskyPost": "other",
   "pub.leaflet.blocks.button": "other",
@@ -11241,6 +11510,10 @@ export const LEXICON_DEFINITION_KINDS = {
   "tools.garazyk.account.getUsage": "query",
   "tools.garazyk.admin.getCollectionMembershipStats": "procedure",
   "tools.garazyk.sync.getRepoFiltered": "query",
+  "tools.garazyk.video": "record",
+  "tools.garazyk.video.defs": "other",
+  "tools.garazyk.video.distributionPolicy": "record",
+  "tools.garazyk.video.origin": "record",
   "tools.ozone.communication.createTemplate": "procedure",
   "tools.ozone.communication.defs": "other",
   "tools.ozone.communication.deleteTemplate": "procedure",
@@ -11298,6 +11571,7 @@ export const LEXICON_DEFINITION_KINDS = {
   "tools.ozone.verification.grantVerifications": "procedure",
   "tools.ozone.verification.listVerifications": "query",
   "tools.ozone.verification.revokeVerifications": "procedure",
+  "xyz.garazyk.video.getPrefetchBootstrap": "query",
   "xyz.statusphere.status": "record",
 } as const;
 
@@ -11625,6 +11899,8 @@ export const LEXICON_METHOD_TYPES = {
   "place.stream.live.getRecommendations": "query",
   "place.stream.live.getSegments": "query",
   "place.stream.live.searchActorsTypeahead": "query",
+  "place.stream.media.getVideo": "query",
+  "place.stream.media.publishVideo": "procedure",
   "place.stream.moderation.createBlock": "procedure",
   "place.stream.moderation.createGate": "procedure",
   "place.stream.moderation.deleteBlock": "procedure",
@@ -11634,6 +11910,8 @@ export const LEXICON_METHOD_TYPES = {
   "place.stream.multistream.deleteTarget": "procedure",
   "place.stream.multistream.listTargets": "query",
   "place.stream.multistream.putTarget": "procedure",
+  "place.stream.playback.getVideoBlob": "query",
+  "place.stream.playback.getVideoPlaylist": "query",
   "place.stream.server.createWebhook": "procedure",
   "place.stream.server.deleteWebhook": "procedure",
   "place.stream.server.getServerTime": "query",
@@ -11722,6 +12000,7 @@ export const LEXICON_METHOD_TYPES = {
   "tools.ozone.verification.grantVerifications": "procedure",
   "tools.ozone.verification.listVerifications": "query",
   "tools.ozone.verification.revokeVerifications": "procedure",
+  "xyz.garazyk.video.getPrefetchBootstrap": "query",
 } as const;
 
 export const LEXICON_METHOD_INPUT_ENCODINGS = {
@@ -11868,6 +12147,7 @@ export const LEXICON_METHOD_INPUT_ENCODINGS = {
   "com.whtwnd.blog.notifyOfNewEntry": "application/json",
   "place.stream.branding.deleteBlob": "application/json",
   "place.stream.branding.updateBlob": "application/json",
+  "place.stream.media.publishVideo": "application/json",
   "place.stream.moderation.createBlock": "application/json",
   "place.stream.moderation.createGate": "application/json",
   "place.stream.moderation.deleteBlock": "application/json",
@@ -12250,6 +12530,8 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "place.stream.live.getRecommendations": "application/json",
   "place.stream.live.getSegments": "application/json",
   "place.stream.live.searchActorsTypeahead": "application/json",
+  "place.stream.media.getVideo": "application/json",
+  "place.stream.media.publishVideo": "application/json",
   "place.stream.moderation.createBlock": "application/json",
   "place.stream.moderation.createGate": "application/json",
   "place.stream.moderation.deleteBlock": "application/json",
@@ -12259,6 +12541,8 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "place.stream.multistream.deleteTarget": "application/json",
   "place.stream.multistream.listTargets": "application/json",
   "place.stream.multistream.putTarget": "application/json",
+  "place.stream.playback.getVideoBlob": "video/mp4",
+  "place.stream.playback.getVideoPlaylist": "*/*",
   "place.stream.server.createWebhook": "application/json",
   "place.stream.server.deleteWebhook": "application/json",
   "place.stream.server.getServerTime": "application/json",
@@ -12347,6 +12631,7 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "tools.ozone.verification.grantVerifications": "application/json",
   "tools.ozone.verification.listVerifications": "application/json",
   "tools.ozone.verification.revokeVerifications": "application/json",
+  "xyz.garazyk.video.getPrefetchBootstrap": "application/json",
 } as const;
 
 
@@ -12814,6 +13099,10 @@ export interface GeneratedClient {
         "getSegments"(params?: QueryParams<"place.stream.live.getSegments">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.getSegments">>;
         "searchActorsTypeahead"(params?: QueryParams<"place.stream.live.searchActorsTypeahead">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.searchActorsTypeahead">>;
       };
+      "media": {
+        "getVideo"(params?: QueryParams<"place.stream.media.getVideo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.media.getVideo">>;
+        "publishVideo"(input?: ProcedureInput<"place.stream.media.publishVideo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.media.publishVideo">>;
+      };
       "moderation": {
         "createBlock"(input?: ProcedureInput<"place.stream.moderation.createBlock">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.createBlock">>;
         "createGate"(input?: ProcedureInput<"place.stream.moderation.createGate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.createGate">>;
@@ -12826,6 +13115,10 @@ export interface GeneratedClient {
         "deleteTarget"(input?: ProcedureInput<"place.stream.multistream.deleteTarget">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.multistream.deleteTarget">>;
         "listTargets"(params?: QueryParams<"place.stream.multistream.listTargets">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.multistream.listTargets">>;
         "putTarget"(input?: ProcedureInput<"place.stream.multistream.putTarget">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.multistream.putTarget">>;
+      };
+      "playback": {
+        "getVideoBlob"(params?: QueryParams<"place.stream.playback.getVideoBlob">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.playback.getVideoBlob">>;
+        "getVideoPlaylist"(params?: QueryParams<"place.stream.playback.getVideoPlaylist">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.playback.getVideoPlaylist">>;
       };
       "server": {
         "createWebhook"(input?: ProcedureInput<"place.stream.server.createWebhook">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.server.createWebhook">>;
@@ -12970,6 +13263,13 @@ export interface GeneratedClient {
         "grantVerifications"(input?: ProcedureInput<"tools.ozone.verification.grantVerifications">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.verification.grantVerifications">>;
         "listVerifications"(params?: QueryParams<"tools.ozone.verification.listVerifications">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.verification.listVerifications">>;
         "revokeVerifications"(input?: ProcedureInput<"tools.ozone.verification.revokeVerifications">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.verification.revokeVerifications">>;
+      };
+    };
+  };
+  "xyz": {
+    "garazyk": {
+      "video": {
+        "getPrefetchBootstrap"(params?: QueryParams<"xyz.garazyk.video.getPrefetchBootstrap">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"xyz.garazyk.video.getPrefetchBootstrap">>;
       };
     };
   };

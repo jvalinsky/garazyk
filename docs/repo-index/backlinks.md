@@ -167,10 +167,11 @@ Inbound links: **8**
 
 ## `docs/20-explanation/guides/iblt-for-atproto-reconciliation.md`
 
-Inbound links: **11**
+Inbound links: **12**
 
 - [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md)
 - [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md)
+- [docs/index.md](../index.md)
 - [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/plans/workstreams/13-beskid-edge-reconciliation.md](../plans/workstreams/13-beskid-edge-reconciliation.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
@@ -191,11 +192,12 @@ Inbound links: **8**
 
 ## `docs/20-explanation/guides/range-based-set-reconciliation.md`
 
-Inbound links: **15**
+Inbound links: **16**
 
 - [docs/20-explanation/guides/iblt-for-atproto-reconciliation.md](../20-explanation/guides/iblt-for-atproto-reconciliation.md)
 - [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md)
 - [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
+- [docs/index.md](../index.md)
 - [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/plans/workstreams/13-beskid-edge-reconciliation.md](../plans/workstreams/13-beskid-edge-reconciliation.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
@@ -239,7 +241,7 @@ Inbound links: **9**
 
 ## `docs/20-explanation/guides/streamplace-jelcz-peership-lab.md`
 
-Inbound links: **16**
+Inbound links: **17**
 
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
 - [docs/20-explanation/guides/DEPLOYMENT.md](../20-explanation/guides/DEPLOYMENT.md)
@@ -250,18 +252,18 @@ Inbound links: **16**
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/workstreams/15-streamplace-vod-peership.md](../plans/workstreams/15-streamplace-vod-peership.md)
+- [docs/plans/workstreams/16-jelcz-p2p-peership.md](../plans/workstreams/16-jelcz-p2p-peership.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md`
 
-Inbound links: **15**
+Inbound links: **14**
 
 - [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md)
 - [docs/20-explanation/guides/streamplace-jelcz-peership-lab.md](../20-explanation/guides/streamplace-jelcz-peership-lab.md)
 - [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
-- [docs/adr/0038-jelcz-p2p-layering.md](../adr/0038-jelcz-p2p-layering.md)
 - [docs/index.md](../index.md)
 - [docs/plans/workstreams/16-jelcz-p2p-peership.md](../plans/workstreams/16-jelcz-p2p-peership.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
@@ -555,7 +557,7 @@ Inbound links: **2**
 
 ## `docs/adr/0036-content-addressed-video-distribution.md`
 
-Inbound links: **25**
+Inbound links: **26**
 
 - [docs/20-explanation/guides/iblt-for-atproto-reconciliation.md](../20-explanation/guides/iblt-for-atproto-reconciliation.md)
 - [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md)
@@ -564,6 +566,7 @@ Inbound links: **25**
 - [docs/adr/0037-video-segment-profile-short-vs-long.md](../adr/0037-video-segment-profile-short-vs-long.md)
 - [docs/adr/0038-jelcz-p2p-layering.md](../adr/0038-jelcz-p2p-layering.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/phase-35-ws16-iroh-sidecar.md](../plans/prompts/phase-35-ws16-iroh-sidecar.md)
 - [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/plans/workstreams/15-streamplace-vod-peership.md](../plans/workstreams/15-streamplace-vod-peership.md)
 - [docs/plans/workstreams/16-jelcz-p2p-peership.md](../plans/workstreams/16-jelcz-p2p-peership.md)
@@ -584,10 +587,12 @@ Inbound links: **6**
 
 ## `docs/adr/0038-jelcz-p2p-layering.md`
 
-Inbound links: **12**
+Inbound links: **19**
 
+- [docs/archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md](../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md)
 - [docs/index.md](../index.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/phase-35-ws16-iroh-sidecar.md](../plans/prompts/phase-35-ws16-iroh-sidecar.md)
 - [docs/plans/workstreams/15-streamplace-vod-peership.md](../plans/workstreams/15-streamplace-vod-peership.md)
 - [docs/plans/workstreams/16-jelcz-p2p-peership.md](../plans/workstreams/16-jelcz-p2p-peership.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
@@ -641,6 +646,19 @@ Inbound links: **2**
 Inbound links: **2**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md`
+
+Inbound links: **14**
+
+- [docs/adr/0038-jelcz-p2p-layering.md](../adr/0038-jelcz-p2p-layering.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/phase-35-ws16-iroh-sidecar.md](../plans/prompts/phase-35-ws16-iroh-sidecar.md)
+- [docs/plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md](../plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md)
+- [docs/plans/workstreams/16-jelcz-p2p-peership.md](../plans/workstreams/16-jelcz-p2p-peership.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
 ## `docs/archive/planning/linux_shim_refactor.md`
@@ -1272,7 +1290,7 @@ Inbound links: **3**
 
 ## `docs/index.md`
 
-Inbound links: **385**
+Inbound links: **389**
 
 - [README.md](../../README.md)
 - [docs/01-getting-started/codebase-map.md](../01-getting-started/codebase-map.md)
@@ -1300,7 +1318,7 @@ Inbound links: **2**
 
 ## `docs/plans/mega-plan.md`
 
-Inbound links: **29**
+Inbound links: **34**
 
 - [docs/archive/planning/README.md](../archive/planning/README.md)
 - [docs/index.md](../index.md)
@@ -1321,16 +1339,82 @@ Inbound links: **3**
 
 ## `docs/plans/prompts/phase-30-admin-ui-library-extraction.md`
 
-Inbound links: **8**
+Inbound links: **7**
+
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/prompts/phase-31-s2pa-ingredient-verify.md`
+
+Inbound links: **4**
 
 - [docs/plans/prompts/README.md](../plans/prompts/README.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/plans/prompts/phase-32-s2pa-merkle-bmff.md`
+
+Inbound links: **5**
+
+- [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/prompts/phase-33-s2pa-soft-binding-algs.md`
+
+Inbound links: **6**
+
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/prompts/phase-34-dasl-tiles-package-and-embed.md`
+
+Inbound links: **5**
+
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/prompts/phase-35-ws16-iroh-sidecar.md`
+
+Inbound links: **17**
+
+- [docs/adr/0038-jelcz-p2p-layering.md](../adr/0038-jelcz-p2p-layering.md)
+- [docs/archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md](../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md](../plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md)
+- [docs/plans/workstreams/16-jelcz-p2p-peership.md](../plans/workstreams/16-jelcz-p2p-peership.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
+## `docs/plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md`
+
+Inbound links: **14**
+
+- [docs/adr/0038-jelcz-p2p-layering.md](../adr/0038-jelcz-p2p-layering.md)
+- [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/plans/prompts/phase-35-ws16-iroh-sidecar.md](../plans/prompts/phase-35-ws16-iroh-sidecar.md)
+- [docs/plans/workstreams/16-jelcz-p2p-peership.md](../plans/workstreams/16-jelcz-p2p-peership.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/plans/prompts/README.md`
 
-Inbound links: **9**
+Inbound links: **14**
 
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
@@ -1340,7 +1424,7 @@ Inbound links: **9**
 
 ## `docs/plans/README.md`
 
-Inbound links: **104**
+Inbound links: **116**
 
 - [docs/index.md](../index.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
@@ -1483,13 +1567,16 @@ Inbound links: **6**
 
 ## `docs/plans/workstreams/10-dasl-conformance.md`
 
-Inbound links: **12**
+Inbound links: **18**
 
 - [docs/adr/0032-dasl-conformance-profiles.md](../adr/0032-dasl-conformance-profiles.md)
 - [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
 - [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/phase-31-s2pa-ingredient-verify.md](../plans/prompts/phase-31-s2pa-ingredient-verify.md)
+- [docs/plans/prompts/phase-32-s2pa-merkle-bmff.md](../plans/prompts/phase-32-s2pa-merkle-bmff.md)
+- [docs/plans/prompts/phase-33-s2pa-soft-binding-algs.md](../plans/prompts/phase-33-s2pa-soft-binding-algs.md)
 - [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md)
 - [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/plans/workstreams/service-admin-uis/video.md](../plans/workstreams/service-admin-uis/video.md)
@@ -1520,13 +1607,14 @@ Inbound links: **26**
 
 ## `docs/plans/workstreams/12-content-addressed-video.md`
 
-Inbound links: **21**
+Inbound links: **22**
 
 - [docs/20-explanation/guides/iblt-for-atproto-reconciliation.md](../20-explanation/guides/iblt-for-atproto-reconciliation.md)
 - [docs/20-explanation/guides/range-based-set-reconciliation.md](../20-explanation/guides/range-based-set-reconciliation.md)
 - [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md)
 - [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
 - [docs/adr/0037-video-segment-profile-short-vs-long.md](../adr/0037-video-segment-profile-short-vs-long.md)
+- [docs/archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md](../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md)
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/workstreams/15-streamplace-vod-peership.md](../plans/workstreams/15-streamplace-vod-peership.md)
@@ -1582,14 +1670,17 @@ Inbound links: **16**
 
 ## `docs/plans/workstreams/16-jelcz-p2p-peership.md`
 
-Inbound links: **15**
+Inbound links: **23**
 
 - [docs/20-explanation/guides/streamplace-jelcz-peership-lab.md](../20-explanation/guides/streamplace-jelcz-peership-lab.md)
 - [docs/20-explanation/guides/video-discovery-and-peer-sharing-options.md](../20-explanation/guides/video-discovery-and-peer-sharing-options.md)
 - [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
 - [docs/adr/0038-jelcz-p2p-layering.md](../adr/0038-jelcz-p2p-layering.md)
+- [docs/archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md](../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md)
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/phase-35-ws16-iroh-sidecar.md](../plans/prompts/phase-35-ws16-iroh-sidecar.md)
+- [docs/plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md](../plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md)
 - [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/plans/workstreams/15-streamplace-vod-peership.md](../plans/workstreams/15-streamplace-vod-peership.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
@@ -1741,7 +1832,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **288**
+Inbound links: **289**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1752,7 +1843,7 @@ Inbound links: **288**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **87**
+Inbound links: **88**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1761,7 +1852,7 @@ Inbound links: **87**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **216**
+Inbound links: **217**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)

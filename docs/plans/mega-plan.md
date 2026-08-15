@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-08-12
+last_verified: 2026-08-13
 ---
 
 # Garazyk Mega Plan
@@ -52,7 +52,7 @@ documentation, TUI, package, and refactor plans.
 - Lexicon generation now has one package-owned core rooted at
   `Garazyk/Resources/lexicons`. It fails before overwriting output when the
   inventory or endpoint set is empty; its checked-in TypeScript artifact covers
-  519 lexicons and 392 endpoints deterministically. The Phase 3 Objective-C
+  666 lexicons and 428 endpoints deterministically. The Phase 3 Objective-C
   NSID follow-up has since landed: the generator (`2468d5e0`,
   `scripts/generate_nsid_constants.ts`) and the full call-site adoption sweep
   with a CI drift check (`0601a505`). Only the raw-literal lint remains
@@ -569,8 +569,14 @@ for full traceability; mirrored in the
     `@garazyk/tiles` + live Admin UI embed landed 2026-08-13 —
     [phase-34](prompts/phase-34-dasl-tiles-package-and-embed.md) complete
     (mothership resolve-path + getBlob earlier; JSR still deferred). WS16 iroh
-    Phase 4+ remains blocked —
-    [phase-35](prompts/phase-35-ws16-iroh-sidecar.md).
+    Track A (CA/VOD sidecar) in progress after a dated Scenario 100 transport
+    pass (ADR 0038 §6.1 lab exception,
+    [phase-35](prompts/phase-35-ws16-iroh-sidecar.md)); security review,
+    quantitative measurement, and closeout remain. Streamplace live Track B's
+    static implementation, evidence separation, and fault matrix are complete,
+    but live acceptance remains blocked —
+    [phase-36](prompts/phase-36-ws16-streamplace-iroh-bridge.md). Research:
+    [`2026-08-13-phase-35-iroh-sidecar-research.md`](../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md).
     Phase 8 PFP
     producer (`ATProtoPFPProducer`) + Ozone `moderation_subjects.pfp` column
     (V19) + Hamming match APIs completed 2026-08-12. PDQ Hamming comparison;
@@ -660,10 +666,22 @@ for full traceability; mirrored in the
     `JELCZ_STREAMPLACE_SERVE_COMPAT`. Lab:
     [Streamplace and jelcz peership lab](../20-explanation/guides/streamplace-jelcz-peership-lab.md).
 
-16. **Open (updated 2026-08-13):** jelcz P2P peership — Phases 0–3 + ADR 0038
-    done (HTTPS mesh + remote-PDS origin announce); iroh sidecar blocked on
-    production CA VOD evidence. Complete
-    [workstream 16](workstreams/16-jelcz-p2p-peership.md). Decision:
+16. **In progress (updated 2026-08-13):** jelcz P2P peership — Phases 0–3 +
+    ADR 0038 done. **Track A** lab exception recorded (ADR 0038 §6.1);
+    [phase-35](prompts/phase-35-ws16-iroh-sidecar.md) remains in progress:
+    S7 has dated two-node Scenario 100 evidence; S9 security/limits, S10
+    measurement, and S11 closeout remain.
+    **Track B** (Streamplace live) has an approved, separate pin-specific
+    bridge at Streamplace revision `5ba597dbedda8f2fdb84b815ee633301212f5f51`;
+    it remains blocked on Phase 35 completion and a dated pinned-image
+    [Scenario 101](../../scripts/scenarios/scenarios/101_streamplace_track_b_live_iroh.ts)
+    acceptance. Compatibility is decided, and the bridge's persistent report,
+    independent evidence authorities, and isolated fault matrix are implemented
+    and statically verified. Production promotion remains gated on CA VOD
+    traffic + bandwidth measurements.
+    Research:
+    [`2026-08-13-phase-35-iroh-sidecar-research.md`](../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md).
+    [workstream 16](workstreams/16-jelcz-p2p-peership.md).
     [ADR 0038](../adr/0038-jelcz-p2p-layering.md).
 
 Exit gate: cross-platform tests, protocol E2E for Relay/sync, and no public API
