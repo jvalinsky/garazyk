@@ -53,7 +53,7 @@
 
 @implementation JelczOriginAnnouncerTests
 
-- (void)testOriginRecordIncludesOptionalTicketFields {
+- (void)testOriginRecordIncludesOptionalHttpsBase {
     NSDate *now = [NSDate dateWithTimeIntervalSince1970:1700000000];
     NSDictionary *rec =
         [GZJelczOriginAnnouncer originRecordWithSubjectURI:@"at://did:plc:author/tools.garazyk.video/abc"
@@ -62,15 +62,54 @@
                                               watchBaseURL:@"https://jelcz.example"
                                                manifestCID:@"bafyManifest"
                                                  httpsBase:@"https://cdn.example"
-                                                irohTicket:@"ticket123"
+                                            irohEndpointId:nil
+                                        irohEndpointTicket:nil
                                                        now:now];
     XCTAssertEqualObjects(rec[@"$type"], @"tools.garazyk.video.origin");
     XCTAssertEqualObjects(rec[@"server"], @"did:web:jelcz.example");
     XCTAssertEqualObjects(rec[@"httpsBase"], @"https://cdn.example");
-    XCTAssertEqualObjects(rec[@"irohTicket"], @"ticket123");
+    XCTAssertNil(rec[@"irohEndpointId"]);
+    XCTAssertNil(rec[@"irohEndpointTicket"]);
+    XCTAssertNil(rec[@"irohTicket"]);
     XCTAssertEqualObjects(rec[@"subject"][@"uri"], @"at://did:plc:author/tools.garazyk.video/abc");
     XCTAssertTrue([rec[@"createdAt"] isKindOfClass:[NSString class]]);
     XCTAssertEqualObjects(rec[@"createdAt"], rec[@"lastSeenAt"]);
+}
+
+- (void)testOriginRecordIncludesEndpointIdAndTicket {
+    NSDate *now = [NSDate dateWithTimeIntervalSince1970:1700000000];
+    NSDictionary *rec =
+        [GZJelczOriginAnnouncer originRecordWithSubjectURI:@"at://did:plc:author/tools.garazyk.video/xyz"
+                                                subjectCID:@"bafyS"
+                                                 serverDID:@"did:web:jelcz.example"
+                                              watchBaseURL:@"https://jelcz.example"
+                                               manifestCID:@"bafyM"
+                                                 httpsBase:nil
+                                            irohEndpointId:@"endpointIdAbc123"
+                                        irohEndpointTicket:@"ticketForBootstrap"
+                                                       now:now];
+    XCTAssertEqualObjects(rec[@"irohEndpointId"], @"endpointIdAbc123");
+    XCTAssertEqualObjects(rec[@"irohEndpointTicket"], @"ticketForBootstrap");
+    XCTAssertNil(rec[@"irohTicket"], @"Garazyk CA/VOD origins must not set legacy irohTicket");
+    XCTAssertNil(rec[@"httpsBase"]);
+}
+
+- (void)testOriginRecordOmitsEndpointFieldsWhenNil {
+    NSDate *now = [NSDate dateWithTimeIntervalSince1970:1700000000];
+    NSDictionary *rec =
+        [GZJelczOriginAnnouncer originRecordWithSubjectURI:@"at://did:plc:a/tools.garazyk.video/1"
+                                                subjectCID:@"bafyX"
+                                                 serverDID:@"did:web:s"
+                                              watchBaseURL:@"https://s.example"
+                                               manifestCID:@"bafyM"
+                                                 httpsBase:nil
+                                            irohEndpointId:nil
+                                        irohEndpointTicket:nil
+                                                       now:now];
+    XCTAssertNil(rec[@"irohEndpointId"]);
+    XCTAssertNil(rec[@"irohEndpointTicket"]);
+    XCTAssertNil(rec[@"httpsBase"]);
+    XCTAssertNil(rec[@"irohTicket"]);
 }
 
 - (void)testPublishCreateSessionThenPutRecord {
@@ -104,7 +143,8 @@
                                               watchBaseURL:@"https://jelcz.example"
                                                manifestCID:@"bafyM"
                                                  httpsBase:nil
-                                                irohTicket:nil
+                                            irohEndpointId:nil
+                                        irohEndpointTicket:nil
                                                        now:[NSDate date]];
     NSError *error = nil;
     NSDictionary *out = [ann publishOriginRecord:record rkey:@"r1" error:&error];

@@ -27,13 +27,36 @@ Upstream playbook (Streamplace):
 Garazyk context: [ADR 0036](../../adr/0036-content-addressed-video-distribution.md),
 [video discovery guide](../../20-explanation/guides/video-discovery-and-peer-sharing-options.md).
 
-## Status (2026-08-13)
+## Status (2026-08-13; source review plus dated Track A lab evidence)
 
 **Phases 0–3 complete. Phase 1 ADR accepted ([ADR 0038](../../adr/0038-jelcz-p2p-layering.md)).**
-Phases 4+ (iroh sidecar / live Streamplace mesh) remain **blocked** on
-[## Blocked on](#blocked-on) unless an explicit lab exception is recorded.
-Execution prompt (blocked until the same inputs clear):
-[phase-35](../prompts/phase-35-ws16-iroh-sidecar.md).
+Phases 4+ Track A **in progress** (lab exception 2026-08-13). The Track B
+compatibility decision is approved and implemented as source/static evidence;
+Track B remains blocked on Phase 35 completion and a dated pinned-image live
+acceptance in [phase-36](../prompts/phase-36-ws16-streamplace-iroh-bridge.md).
+Scenario 100 supplies the dated Track A transport proof; it does not supply
+Track B or production-promotion evidence.
+
+**Research (2026-08-13):**
+[`docs/archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md`](../../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md)
+— Garazyk CA/VOD (`iroh-blobs`, iroh 1.x) and Streamplace live
+(`/iroh/streamplace/1`, NodeTicket) are **separate protocols**; two sidecar
+binaries, not one.
+
+Execution prompts:
+[phase-35](../prompts/phase-35-ws16-iroh-sidecar.md) (Track A),
+[phase-36](../prompts/phase-36-ws16-streamplace-iroh-bridge.md) (Track B).
+
+### Evidence boundary
+
+The dirty worktree contains both Track implementations and their acceptance
+procedures. Track A now has dated Scenario 100 transport evidence, closing S7.
+Its S9 capability and host-trust findings are remediated in source, while a
+pre-allocation fetch limit and compiled negative-test evidence remain open; it
+does **not** complete S9/S10/S11 or the production-promotion gate. Track B
+has source, static, focused-test, and fault-topology evidence only; it has no
+dated Scenario 101 live acceptance. The canonical Docker lab is HTTP internally
+(`SP_SECURE=false`); it proves neither HTTPS nor true TLS.
 
 ## Decision (locked for this workstream)
 
@@ -42,9 +65,10 @@ Execution prompt (blocked until the same inputs clear):
 | Discovery control plane | ATProto records + firehose/AppView index (`cid` / stream → providers). **Not** IPNI, **not** a Garazyk-owned DHT. |
 | Live Streamplace shape | Consume / optionally emit `place.stream.broadcast.origin` (`irohTicket`, `server`, `streamer`, heartbeat `updatedAt`). |
 | Garazyk VOD shape | Prefer `tools.garazyk.video.origin` (+ optional ticket field via ADR) for MASL `/watch` assets; do not adopt `place.stream.video` as primary VOD NSID (ADR 0036). |
-| Transport | **iroh sidecar process** (QUIC, dial-by-ticket/key, NAT traversal). No link-time iroh in MediaCore; no MediaCore→Network PUBLIC edge for this. |
+| Transport | **Two sidecar tracks** (see research): Track A = `iroh-blobs` on iroh 1.x for Garazyk CA/VOD; Track B = Streamplace `/iroh/streamplace/1` on iroh 0.9x ecosystem. No link-time iroh in MediaCore. |
+| Track B compatibility | Separate pin-specific bridge reproduces Streamplace revision `5ba597dbedda8f2fdb84b815ee633301212f5f51`; its custom `ProtocolHandler` binds `RecvSegment.from` to authenticated QUIC `remote_node_id`, because the upstream generic handler discards that identity. |
 | Byte trust | Untrusted peers; BLAKE3/BDASL (and Bao range proofs where needed) before CA put — same Phase 10 resolver contract. |
-| Browser path | Unchanged: browser talks HTTPS to a jelcz (or Streamplace) origin. P2P is **node↔node** backfill into CA. |
+| Browser path | Production design: browser talks HTTPS to a jelcz (or Streamplace) origin. P2P is **node↔node** backfill into CA. The canonical Docker lab uses HTTP and does not assert TLS. |
 | IPFS | Rejected (ADR 0036); do not reopen. |
 | Short-form WebRTC swarm | Out of scope (structurally dead per WS12 / ADR 0037). |
 
@@ -101,7 +125,7 @@ flowchart LR
 | --- | --- |
 | CA verify/put + mirror resolver seam | `Garazyk/Sources/MediaCore` (`ATProtoCAMirrorResolver` / `ATProtoCAMirrorFetching`) |
 | Origin record parse + provider ranking | jelcz / Video helpers (composition), optional AppView indexer later |
-| iroh sidecar binary + IPC | New process under `Garazyk/Binaries/` or `tools/` (Rust or vendored iroh CLI); ObjC talks over localhost HTTP/UDS |
+| iroh sidecar binary + IPC | **Track A:** `tools/jelcz-iroh-blobs-sidecar/` (iroh 1.x). **Track B:** `tools/jelcz-streamplace-iroh-bridge/`, a default-off, receive-only bridge for the pinned Streamplace 0.93 ecosystem. Local IPC is loopback/UDS; the Track B Compose service has no published host port. Track A's private service-name HTTP remains limited to `JELCZ_IROH_SIDECAR_TRUST_LAN=1` lab use. |
 | Publishing origins (server DID + repo write) | Needs a Garazyk-operated server identity path (embedded/static PDS pattern or operator-configured repo) — **explicit design in Phase 2** |
 | Consent / allowlists | Honor `tools.garazyk.video.distributionPolicy` and Streamplace `place.stream.metadata.distributionPolicy`; operator env analogous to `SP_ALLOWED_STREAMS` |
 | Admin / demo observability | jelcz admin Distribution + peer demo UI (peer source: `ca-store` / `https-mirror` / `iroh-peer`) |
@@ -181,65 +205,135 @@ in jelcz deferred. Admin/demo announce API wraps the same write path.
 4. Demo APIs: `POST /demo/streamplace/api/announce-origin`,
    `POST /demo/streamplace/api/retract-origin`.
 
-**Evidence (2026-08-13):** `JelczOriginAnnouncerTests` 4/0. Docker lab smoke
-(after restaging Linux jelcz): `./scripts/demo/streamplace_peership_smoke.sh`
-— A seed → B/C `peered-verified` via `jelcz-a` DNS → B local `getVideoBlob`
-byte-identical; catalog 0 live / 12 VOD. Host mesh:
-`./scripts/demo/jelcz_https_mesh_demo.sh` OK. Live PDS announce:
-`./scripts/demo/jelcz_origin_announce_smoke.sh` — createAccount →
-announce-origin → getRecord → retract-origin (jelcz uses URLSession client for
-PDS writes; SafeHTTP SSRF blocks loopback).
+**Implementation evidence:** `JelczOriginAnnouncerTests` cover the client and
+record construction. `jelcz_origin_announce_smoke.sh` defines a local-PDS
+announce → getRecord → retract procedure. No dated current run artifact is
+recorded here for Docker PDS announce/discovery or cross-PDS federation, so
+neither is claimed as live evidence.
 
 **Rollback:** unset `JELCZ_ORIGIN_ANNOUNCE` → pull-only peering (Phase 2).
 
-### Phase 4 — iroh sidecar MVP
+### Phase 4 — Track A: iroh-blobs sidecar (CA/VOD)
 
-**Status:** pending. **Blocked on** [production reopen criteria](#blocked-on)
-unless an explicit exception is recorded.
+**Status:** in-progress (2026-08-13). Track A lab exception recorded in
+[ADR 0038 §6.1](../../adr/0038-jelcz-p2p-layering.md). Production
+cost-justification gate remains open.
 
-Deliverables:
+Deliverables ([phase-35](../prompts/phase-35-ws16-iroh-sidecar.md) S0–S11):
 
-1. Sidecar process wrapping iroh (ticket listen + fetch-by-hash/CID mapping
-   documented against Streamplace’s segment addressing).
-2. Localhost IPC: jelcz asks sidecar `GET /peer/blob?cid=` → bytes or
-   range; sidecar never writes CA directly.
-3. `ATProtoCAMirrorFetching` adapter that prefers sidecar when ticketed
-   providers exist, else HTTPS (WS15 / RASL).
-4. Feature flags: `JELCZ_P2P=0` default off; `JELCZ_IROH_SIDECAR_URL=…`.
-5. Boundary check: ObjC tree stays free of iroh link deps.
+#### Track A contracts (frozen 2026-08-13, S1)
 
-**Evidence:** sidecar unit/integration tests with two local endpoints;
-hostile bytes rejected by resolver; module boundary script green.
+| Contract | Choice |
+| --- | --- |
+| Binary | `tools/jelcz-iroh-blobs-sidecar/` |
+| iroh stack | Exactly locked **iroh 1.x** + compatible **iroh-blobs** (lab: current 1.x; production maturity = separate gate) |
+| Content identity | Garazyk CA CID ↔ fixture-proven 32-byte BLAKE3 ↔ iroh `Hash` |
+| Provider identity | Stable **EndpointID**; optional bootstrap **EndpointTicket** |
+| Garazyk origin fields | Additive `irohEndpointId`, `irohEndpointTicket`; deprecate P2P use of legacy `irohTicket` on Garazyk origins |
+| IPC | UDS preferred; versioned `GET /v1/health`, `GET /v1/identity`, `POST /v1/fetch`, `POST /v1/offer`; **no** tickets in query strings |
+| Integrity | Sidecar stages bytes → `ATProtoCAMirrorResolver` verifies → CA put |
+| Flags | `JELCZ_P2P=0` default; `JELCZ_IROH_SIDECAR_URL` or UDS path |
+
+1. Separate Rust binary `tools/jelcz-iroh-blobs-sidecar/` on locked **iroh 1.x
+   + iroh-blobs** (not Streamplace 0.9x).
+2. UDS/loopback IPC: versioned `POST /v1/fetch` with EndpointID + CA CID; **no**
+   tickets in query strings.
+3. Cross-language **CID ↔ BLAKE3 ↔ iroh Hash** fixtures before network code.
+4. `ATProtoCAMirrorFetching` adapter; resolver verifies before CA put.
+5. Garazyk origin fields: prefer `irohEndpointId` + optional bootstrap ticket —
+   do **not** overload Streamplace `irohTicket` semantics.
+6. Flags: `JELCZ_P2P=0` default off; sidecar URL/UDS path env.
+7. Two-node lab demo; security limits + consent before dial.
+8. Boundary check: ObjC tree stays free of iroh link deps.
+
+**Available verification:** focused hash-mapping, sidecar-fetcher,
+mirror-integrity, and P2P-configuration tests; the sidecar crate test suite;
+`jelcz_iroh_sidecar_smoke.sh`; and the Compose assertion procedure in
+[Scenario 100](../../../scripts/scenarios/scenarios/100_jelcz_iroh_peership.ts).
+The project-scoped Compose smoke and Scenario 100 now provide dated S7
+transport evidence (12 passing steps and one explicit scope skip). S8
+(origin announce) is **complete 2026-08-14**: `tools.garazyk.video.origin`
+lexicon extended with `irohEndpointId` + optional `irohEndpointTicket`;
+`GZJelczOriginAnnouncer` factory updated; `JelczOriginAnnouncerTests` 6/6.
+S9 (security/limits) is partial: capability auth, explicit Compose-host trust,
+timeout, and two-request admission are present, but the `MemStore` fetch path
+still checks the byte limit after allocation and Rust crate tests have not been
+compiled in this session. S10 (measurement) and S11 (closeout) remain pending.
 **Rollback:** flag off → HTTPS-only.
 
-### Phase 5 — Live Streamplace mesh interoperability (opt-in)
+### Phase 5 — Track B: Streamplace live mesh (opt-in)
 
-**Status:** pending. Depends on Phase 4.
+**Status:** blocked. The maintainer-approved compatibility decision is present
+as source/static evidence; Phase 35 is still in progress and no dated real-peer
+acceptance against the required pinned Streamplace image has been recorded.
 
-- Consume real `irohTicket` values from public/staging Streamplace origins.
-- Optionally publish Garazyk origin tickets into the same lexicon when
-  Phase 3 identity exists and policy allows.
-- Honor `distributionPolicy` / `SP_ALLOWED_STREAMS`-equivalent env
-  (`JELCZ_P2P_ALLOWED_STREAMERS`).
-- **Do not** require Streamplace website listing; operator opt-in only.
+Deliverables ([phase-36](../prompts/phase-36-ws16-streamplace-iroh-bridge.md)):
 
-**Evidence:** documented opt-in smoke (not default CI) with dated log of
-ticket dial + verified segment put.
-**Rollback:** disable Streamplace ticket consumption; keep jelcz↔jelcz only.
+- Separate pin-specific binary reproducing Streamplace's
+  `/iroh/streamplace/1` wire at revision
+  `5ba597dbedda8f2fdb84b815ee633301212f5f51` (Subscribe by streamer DID,
+  pushed MUXL segments).
+- Consume real `place.stream.broadcast.origin.irohTicket` (**NodeTicket** only).
+- Bind `RecvSegment.from` to the authenticated QUIC `remote_node_id` in a
+  custom `ProtocolHandler`; do not use the upstream generic handler, which
+  loses that identity.
+- Honor `distributionPolicy` / `JELCZ_P2P_ALLOWED_STREAMERS`.
+- Keep the bridge default-off with loopback/UDS local IPC and no published
+  Compose port; require a per-run bearer capability on subscription IPC.
+- **Do not** require Streamplace website listing.
 
-### Phase 6 — VOD / long-form P2P via Garazyk origins
+**Static implementation evidence (2026-08-13):**
+`tools/jelcz-streamplace-iroh-bridge/` declares the immutable source revision,
+exact ALPN, NodeTicket parsing, bounded receive-only transport, and the custom
+identity-binding handler. Its Compose override connects Jelcz A/B/C to the
+unpublished bridge over capability-protected, explicitly lab-trusted private
+HTTP. [Scenario 101](../../../scripts/scenarios/scenarios/101_streamplace_track_b_live_iroh.ts)
+checks the private, opt-in Compose profile and requires a pinned OCI revision,
+real origin/firehose record, consent, NodeID binding, valid MUXL, and negative
+cases. This was source-reviewed only; no dated live run is claimed.
 
-**Status:** pending. Depends on Phase 4 + Phase 1 ticket field decision.
+**Acceptance evidence required:** a dated opt-in Scenario 101 pass against the
+pinned image after Phase 35 completes. The bridge now atomically persists
+bridge-owned session evidence, and `acceptance-report --json` reads that
+running-process state and fails closed until a capability-bound Jelcz
+attestation matches the exact session, ticket fingerprint, byte count, and
+content SHA-256. Scenario 101 independently proves the causal firehose
+commit/CAR and Track A exclusion. It also uses private pin-specific fault peers
+for wrong streamer, wrong ALPN, authenticated `from` spoof, corrupt MUXL,
+oversize segment, and dropped-Subscribe retry exhaustion. Isolated stale and
+malformed origin cases use capability-protected whole-fixture replacement and
+prove that bridge session evidence remains unchanged. Locked/offline `cargo
+check` and all 17 Rust library tests passed on 2026-08-13; the crate target was
+removed afterward. The executable matrix has not yet run against the required
+pinned Streamplace image, so no live acceptance is claimed.
+Direct Scenario 101 check/lint/format, 28 Hamownia metadata/preflight tests,
+the static Compose contract, module boundaries, VideoService compilation, and
+the focused peer-demo test object pass. Follow-up verification rebuilt two
+interrupted static archives (`ATProtoServices` 31/117 → 117/117 and
+`ATProtoAppViewServer` 3/29 → 29/29), after which the complete `AllTests` target
+and all dependent binaries link. The bridge and peer-demo XCTest classes pass
+17/17. The native registration audit passes after correcting the stale
+`SessionStoreTests` entry, and `PDSSessionStoreTests` passes 24/24. Full Deno
+check/lint/test also pass (1,271 passed, 0 failed, 1 ignored) after regenerating
+the checked-in Gruszka client and removing a stale Schemat test import. A full
+native gated run was started but interrupted after its integration fixtures
+slowed to 8–10 seconds per method, so no completed global `AllTests --gated=run`
+result is claimed.
+Track A/iroh-blobs evidence cannot substitute for this protocol-specific
+acceptance.
+**Rollback:** disable Track B; jelcz↔jelcz Track A and HTTPS remain.
 
-- Map MASL segment CIDs (or VOD BDASL objects) onto sidecar fetch keys.
-- Possession bitmap exchange for “which segments of manifest M?” between
-  known peers (avoid full catalog RBSR).
-- Extend `tools.garazyk.video.origin` heartbeats with ticket + optional
-  possession summary hash.
-- Admin + demo: show peer source mix (local CA / HTTPS / iroh).
+### Phase 6 — VOD origins + observability (Track A completion)
 
-**Gate:** two jelcz nodes, one seeds VOD object, second plays via P2P put
-into CA then local HTTPS to browser.
+**Status:** pending. Depends on Phase 4 Track A.
+
+- Map MASL/BDASL object CIDs onto iroh-blobs fetch keys (via S2 fixtures).
+- Optional possession bitmap exchange between known peers (deferred RBSR).
+- Extend `tools.garazyk.video.origin` with EndpointID/bootstrap fields.
+- Admin + demo: peer source mix (`ca-store` / `https-mirror` / `iroh-blobs`).
+
+**Gate:** two jelcz nodes, one seeds VOD object, second backfills via Track A
+then serves browser over HTTPS.
 **Rollback:** VOD stays on WS15 HTTPS.
 
 ### Phase 7 — Hardening and ops
@@ -254,16 +348,56 @@ into CA then local HTTPS to browser.
 
 ## Blocked on
 
-Named inputs before **Phase 4+ implementation** (iroh / live mesh):
+**Track A (Phase 4):** lab exception **recorded 2026-08-13** ([ADR 0038
+§6.1](../../adr/0038-jelcz-p2p-layering.md)). Implementation may proceed
+default-off under [phase-35](../prompts/phase-35-ws16-iroh-sidecar.md). Closeout
+still requires all of the following:
 
-1. **Production CA VOD** — at least one deployment serving real `/watch` (or
-   WS15 compat) traffic, so P2P is solving a measured cost — *or* an explicit
-   operator exception to prototype in lab only (record in ADR + this file).
-2. **Origin bandwidth / cache-miss measurements** — enough to justify sidecar
-   complexity vs more HTTPS mirrors / CDN.
-3. **Phase 3 identity** — DONE (remote PDS write; see Phase 3).
+1. Replace the post-download `MemStore` size check with progress-driven
+   cancellation plus disk-backed or otherwise bounded staging and a bounded
+   final reader. Prove partial-download cleanup and bounded overshoot, then
+   compile and run the Rust and focused Objective-C negative tests.
+2. Complete the Track A origin-announcement contract: additive
+   `irohEndpointId` plus optional `irohEndpointTicket` fields, announcer wiring,
+   generated lexicon types, and round-trip tests. The existing legacy
+   `irohTicket` announcement does not satisfy this slice.
+3. Recreate a fresh isolated Track A lab from the current image and collect the
+   S10 HTTP-versus-iroh fresh-miss/warm-hit report. The stale lab attempt is not
+   evidence.
+4. Record S8/S9/S10 evidence and complete S11 in the same change as the code.
 
-Phases 0–3 HTTPS/announce are **not** blocked on the above.
+**Production promotion** still requires:
+
+1. **Production CA VOD** — dated production `/watch` (or WS15 compat) traffic.
+2. **Origin bandwidth / cache-miss measurements** — evidence P2P beats HTTPS
+   mirrors/CDN enough to justify operational complexity.
+
+**Track B (Phase 5)** compatibility is decided: the separate, pin-specific
+bridge reproduces the wire at Streamplace revision
+`5ba597dbedda8f2fdb84b815ee633301212f5f51` and binds segment identity to the
+authenticated QUIC peer. It remains blocked on Phase 35 completion and a dated
+successful pinned-image [Scenario 101](../../../scripts/scenarios/scenarios/101_streamplace_track_b_live_iroh.ts)
+run; no such run is recorded.
+
+The current live-readiness audit also requires digest-pinned Streamplace,
+publisher, and bridge images; the Streamplace container must carry OCI revision
+`5ba597dbedda8f2fdb84b815ee633301212f5f51`. The static checker and Scenario 101
+now fail closed unless all three image references are SHA-256 digests, and the
+scenario records them as provenance. The host still needs a local PDS/relay
+firehose on ports 2583/2584, nonempty bridge/demo capabilities, the configured
+streamer DID, and enough disk to build or pull the pinned images. None of those
+live inputs is present in the current Track A-only topology.
+
+The bridge's authenticated transport, local IPC, atomic persistent evidence,
+and single-use bounded Jelcz attestation are implemented. Scenario 101 owns the
+firehose proof rather than trusting a bridge boolean. One reproducibility code
+gap was closed on 2026-08-13 by enforcing all three image digests in the static
+checker and Scenario 101. The remaining inputs are Phase 35 completion and a
+pinned live Streamplace image/publisher run of the full positive and fault
+matrix. Locked/offline Rust compilation and 17/17 library tests passed on
+2026-08-13. No dated live Scenario 101 pass is recorded.
+
+Phase 3 identity — **DONE**.
 
 ## Verification (global)
 
@@ -277,8 +411,63 @@ cmake --build build --target AllTests --parallel 4
 # Docker: Streamplace + ATProto + 3× jelcz (see docker/streamplace-peership/README.md):
 ./scripts/demo/streamplace_peership_up.sh
 ./scripts/demo/streamplace_peership_smoke.sh
+# Optional Docker jelcz-a announce → PDS read-back → retract proof:
+./scripts/demo/streamplace_peership_federation_smoke.sh
+# The Compose lab must already be running; Scenario 100 skips otherwise.
+JELCZ_PEERSHIP_LAB=1 deno task hamownia run --no-setup 100
 # Operator guide: docs/20-explanation/guides/streamplace-jelcz-peership-lab.md
 ```
+
+The Compose smoke and Scenario 100 use freshly generated payloads and require
+the destination to return 404 before each transport pull. They then require
+`peered-verified`, the expected `peerSource` (`http-peer` or `iroh-peer`),
+`blake3Verified=true`, and byte-equal local `getVideoBlob` output. If the
+Docker wrapper generated its required capabilities, run its printed validated
+runtime-loader command before either command. These commands do not prove
+the optional public catalog, deterministic Streamplace VOD, TLS, origin
+announce/discovery, or federation. The separate federation smoke is the
+Docker-PDS acceptance procedure; it is evidence only when a dated run succeeds.
+
+**Dated lab evidence (2026-08-13):** the isolated
+`codex-peership-verify` project passed the shell smoke and Hamownia Scenario 100
+passed 12 steps with one explicit scope skip. The report path was
+`scripts/scenarios/reports/runs/2026-08-13t2257z-82379/reports/100_jelcz_iroh_peership.json`.
+The optional federation smoke was invoked, but stopped before mutation because
+`http://127.0.0.1:2583` had no reachable PDS. This closes the live Track A
+HTTP/iroh transport proof, not the production promotion gate: quantitative
+origin/cache-miss measurements and Track A security closeout remain
+outstanding. The complete native target now links; the interrupted full
+`AllTests --gated=run` execution is still not claimed green.
+
+**2026-08-13 S9 security checkpoint:** protected sidecar routes require a
+per-project bearer capability; the Compose wrapper stores it with the demo
+capability in a non-printed `0600` runtime file whose parser rejects symlinks,
+unsafe permissions, and unexpected records; and Jelcz sends it on identity,
+offer, and fetch calls. `trustLan` now admits only loopback plus the exact
+`iroh-a`, `iroh-b`, and `iroh-c` Compose service names. Fetches use two-request
+admission and a 60-second timeout. These changes pass Rust formatting, shell
+syntax, Compose interpolation, diff checks, and compilation of
+`ATProtoVideoService`, `jelcz`, and the four touched Objective-C test objects.
+The follow-up security re-audit found no residual issue in those remediated
+surfaces.
+S9 remains open because the
+high-level `iroh-blobs`/`MemStore` path applies its 64 MiB check after download,
+and neither Rust compilation/tests nor the focused Objective-C test methods ran.
+Upstream 0.103 exposes streamed byte-progress and cancellation, but documents
+`MemStore` as memory-backed; the next slice must combine cancellation with
+bounded staging and prove cleanup rather than treating progress alone as the
+limit. The final native build left under 3 GiB free, so additional build or live-lab
+gates are unsafe in this session.
+
+**2026-08-13 S10 measurement attempt (not evidence):** the new
+`scripts/demo/jelcz_track_a_s10_measurement.ts` collector passed format and
+type checks but correctly refused to write a report against the existing
+isolated lab. The source's response to
+`POST /demo/streamplace/api/seed?fanout=0` contained `meshFanout` instead of
+`meshFanoutSuppressed=true`, so its older jelcz image had already populated the
+HTTP and iroh destinations. That violates the fresh-miss prerequisite. Rebuild
+only a fresh isolated Track A lab from the current image before retrying; S10
+is still pending and no quantitative result is claimed.
 
 Env (Phase 2):
 
@@ -288,6 +477,26 @@ Env (Phase 2):
 | `JELCZ_PEER_ORIGINS_JSON` | Path to JSON array/`{origins:[…]}` of origin records |
 | `JELCZ_P2P_ALLOWED_STREAMERS` | Consent; empty=deny auto-ingest; `*`=allow all |
 | `JELCZ_P2P_ALLOWED_BROADCASTERS` | Same for broadcaster/server DIDs |
+
+Track A iroh sidecar (lab, default off — see
+[streamplace-jelcz-peership-lab.md](../../20-explanation/guides/streamplace-jelcz-peership-lab.md)):
+
+| Variable | Role |
+| --- | --- |
+| `JELCZ_P2P` | Opt-in Track A iroh mirror fetch (default off) |
+| `JELCZ_IROH_SIDECAR_URL` | Loopback HTTP IPC to `jelcz-iroh-blobs-sidecar` |
+| `JELCZ_IROH_PROVIDER_ENDPOINT_ID` | Bootstrap provider EndpointID |
+| `JELCZ_IROH_PROVIDER_ENDPOINT_TICKET` | Optional bootstrap ticket |
+| `JELCZ_IROH_SIDECAR_TRUST_LAN` | Compose-lab-only permission for private sidecar service-name URLs; unset for standalone loopback-only IPC |
+| `JELCZ_IROH_SIDECAR_CAPABILITY` | Required bearer capability for identity, offer, and fetch; the Compose wrapper generates it in the private project runtime file when blank |
+| `JELCZ_DEMO_API_TOKEN` | Required in Docker (the wrapper generates a 0600 project runtime env file when blank); optional only for standalone demo compatibility |
+
+Docker config is copied from `docker/streamplace-peership/.env.example`. Its
+Streamplace image is pinned to
+`oci.stream.place/streamplace@sha256:d2b79900b03eb6a964961bc9df0423492ea8b83602f7d3c2f4b7c7a66dbf8776`
+as reviewed on 2026-08-13. `LAB_BIND_ADDRESS=127.0.0.1` is the default for
+published host ports; it does not turn the internal HTTP lab into TLS.
+
 ## Relationship to existing work
 
 | Workstream / ADR | Relationship |
@@ -299,6 +508,7 @@ Env (Phase 2):
 
 ## References
 
+- Research: [`2026-08-13-phase-35-iroh-sidecar-research.md`](../../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md)
 - Streamplace syndication blog: https://blog.stream.place/3m3ngytdrws2k
 - Lexicon: `Garazyk/Resources/lexicons/place/stream/broadcast/origin.json`
 - Lexicon: `Garazyk/Resources/lexicons/tools/garazyk/video/origin.json`

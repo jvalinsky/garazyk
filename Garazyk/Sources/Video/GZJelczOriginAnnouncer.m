@@ -53,7 +53,8 @@ NSErrorDomain const GZJelczOriginAnnouncerErrorDomain = @"GZJelczOriginAnnouncer
                                 watchBaseURL:(NSString *)watchBaseURL
                                  manifestCID:(NSString *)manifestCID
                                    httpsBase:(NSString *)httpsBase
-                                  irohTicket:(NSString *)irohTicket
+                               irohEndpointId:(NSString *)irohEndpointId
+                           irohEndpointTicket:(NSString *)irohEndpointTicket
                                          now:(NSDate *)now {
     NSString *when = [self iso8601Now:now ?: [NSDate date]];
     NSMutableDictionary *rec = [@{
@@ -71,8 +72,11 @@ NSErrorDomain const GZJelczOriginAnnouncerErrorDomain = @"GZJelczOriginAnnouncer
     if (httpsBase.length > 0) {
         rec[@"httpsBase"] = httpsBase;
     }
-    if (irohTicket.length > 0) {
-        rec[@"irohTicket"] = irohTicket;
+    if (irohEndpointId.length > 0) {
+        rec[@"irohEndpointId"] = irohEndpointId;
+    }
+    if (irohEndpointTicket.length > 0) {
+        rec[@"irohEndpointTicket"] = irohEndpointTicket;
     }
     return [rec copy];
 }

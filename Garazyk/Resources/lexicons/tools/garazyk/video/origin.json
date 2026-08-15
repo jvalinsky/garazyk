@@ -50,12 +50,22 @@
           "irohTicket": {
             "type": "string",
             "maxLength": 2048,
-            "description": "Optional iroh ticket for node↔node fetch (ADR 0038). Empty when HTTPS-only."
+            "description": "Optional legacy iroh ticket field (ADR 0038). Used on broadcast.origin for NodeTicket semantics. For Garazyk CA/VOD origins prefer irohEndpointId."
           },
           "httpsBase": {
             "type": "string",
             "format": "uri",
             "description": "Optional explicit HTTPS provider base when distinct from watchBaseUrl (ADR 0038)."
+          },
+          "irohEndpointId": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "Stable iroh EndpointID for the jelcz-iroh-blobs-sidecar (Track A, ADR 0038). Prefer this over irohTicket for Garazyk CA/VOD origins."
+          },
+          "irohEndpointTicket": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Optional bootstrap EndpointTicket for the Track A iroh-blobs sidecar. Absent when not advertising a ticket."
           }
         }
       }

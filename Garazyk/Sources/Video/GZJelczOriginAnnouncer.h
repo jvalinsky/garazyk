@@ -29,6 +29,10 @@ typedef NS_ENUM(NSInteger, GZJelczOriginAnnouncerErrorCode) {
 @property (nonatomic, copy) NSString *serverDID;
 @property (nonatomic, copy, nullable) NSString *httpsBase;
 @property (nonatomic, copy, nullable) NSString *irohTicket;
+/** Stable iroh EndpointID for Track A sidecar (ADR 0038). Prefer over irohTicket on CA/VOD origins. */
+@property (nonatomic, copy, nullable) NSString *irohEndpointId;
+/** Optional bootstrap EndpointTicket for Track A sidecar. */
+@property (nonatomic, copy, nullable) NSString *irohEndpointTicket;
 @property (nonatomic, assign) NSTimeInterval timeout;
 
 - (instancetype)init NS_UNAVAILABLE;
@@ -48,8 +52,9 @@ typedef NS_ENUM(NSInteger, GZJelczOriginAnnouncerErrorCode) {
                                 watchBaseURL:(NSString *)watchBaseURL
                                  manifestCID:(NSString *)manifestCID
                                    httpsBase:(nullable NSString *)httpsBase
-                                  irohTicket:(nullable NSString *)irohTicket
-                                        now:(NSDate *)now;
+                               irohEndpointId:(nullable NSString *)irohEndpointId
+                           irohEndpointTicket:(nullable NSString *)irohEndpointTicket
+                                         now:(NSDate *)now;
 
 /**
  createSession + putRecord. Returns @{ @"uri", @"cid", @"rkey" } on success.

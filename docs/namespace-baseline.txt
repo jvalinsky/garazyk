@@ -6,4 +6,6 @@
 # the class is prefixed or this file is edited in the same commit that
 # introduces it, so review sees the regression.
 #
-# Current inventory: 0 unprefixed classes out of 515 total (M5.1 began at 283).
+# Current inventory: 1 unprefixed class (file-private S2PA BMFF helper,
+# introduced in phase 32 S2PA BMFF; not yet renamed — see WS08 M5.3).
+S2PABMFFBoxInfo
