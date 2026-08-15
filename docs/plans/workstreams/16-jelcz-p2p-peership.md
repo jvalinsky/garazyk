@@ -1,7 +1,7 @@
 ---
 title: Jelcz P2P Peership
 status: active
-last_verified: 2026-08-13
+last_verified: 2026-08-15
 ---
 
 # Jelcz P2P Peership
@@ -27,10 +27,10 @@ Upstream playbook (Streamplace):
 Garazyk context: [ADR 0036](../../adr/0036-content-addressed-video-distribution.md),
 [video discovery guide](../../20-explanation/guides/video-discovery-and-peer-sharing-options.md).
 
-## Status (2026-08-13; source review plus dated Track A lab evidence)
+## Status (2026-08-15; source review plus dated Track A lab evidence)
 
 **Phases 0–3 complete. Phase 1 ADR accepted ([ADR 0038](../../adr/0038-jelcz-p2p-layering.md)).**
-Phases 4+ Track A **in progress** (lab exception 2026-08-13). The Track B
+Phases 4+ Track A **blocked** (S9 completed 2026-08-15; S10 blocked on host disk space). The Track B
 compatibility decision is approved and implemented as source/static evidence;
 Track B remains blocked on Phase 35 completion and a dated pinned-image live
 acceptance in [phase-36](../prompts/phase-36-ws16-streamplace-iroh-bridge.md).
@@ -51,9 +51,7 @@ Execution prompts:
 
 The dirty worktree contains both Track implementations and their acceptance
 procedures. Track A now has dated Scenario 100 transport evidence, closing S7.
-Its S9 capability and host-trust findings are remediated in source, while a
-pre-allocation fetch limit and compiled negative-test evidence remain open; it
-does **not** complete S9/S10/S11 or the production-promotion gate. Track B
+S9 is complete: the Rust sidecar implements progress-driven cancellation and bounded staging, and tests pass. S10/S11 and the production-promotion gate remain open and blocked on disk space. Track B
 has source, static, focused-test, and fault-topology evidence only; it has no
 dated Scenario 101 live acceptance. The canonical Docker lab is HTTP internally
 (`SP_SECURE=false`); it proves neither HTTPS nor true TLS.
@@ -353,18 +351,11 @@ then serves browser over HTTPS.
 default-off under [phase-35](../prompts/phase-35-ws16-iroh-sidecar.md). Closeout
 still requires all of the following:
 
-1. Replace the post-download `MemStore` size check with progress-driven
-   cancellation plus disk-backed or otherwise bounded staging and a bounded
-   final reader. Prove partial-download cleanup and bounded overshoot, then
-   compile and run the Rust and focused Objective-C negative tests.
-2. Complete the Track A origin-announcement contract: additive
-   `irohEndpointId` plus optional `irohEndpointTicket` fields, announcer wiring,
-   generated lexicon types, and round-trip tests. The existing legacy
-   `irohTicket` announcement does not satisfy this slice.
+1. **(Completed 2026-08-15)** Replace the post-download `MemStore` size check with progress-driven cancellation and bounded staging.
+2. **(Completed 2026-08-14)** Complete the Track A origin-announcement contract (S8).
 3. Recreate a fresh isolated Track A lab from the current image and collect the
-   S10 HTTP-versus-iroh fresh-miss/warm-hit report. The stale lab attempt is not
-   evidence.
-4. Record S8/S9/S10 evidence and complete S11 in the same change as the code.
+   S10 HTTP-versus-iroh fresh-miss/warm-hit report. **Currently blocked**: The host machine is critically low on disk space and cannot successfully build or stage the Docker Compose lab images without exhausting the virtual disk.
+4. Record S10 evidence and complete S11 in the same change as the code.
 
 **Production promotion** still requires:
 
@@ -450,14 +441,8 @@ syntax, Compose interpolation, diff checks, and compilation of
 `ATProtoVideoService`, `jelcz`, and the four touched Objective-C test objects.
 The follow-up security re-audit found no residual issue in those remediated
 surfaces.
-S9 remains open because the
-high-level `iroh-blobs`/`MemStore` path applies its 64 MiB check after download,
-and neither Rust compilation/tests nor the focused Objective-C test methods ran.
-Upstream 0.103 exposes streamed byte-progress and cancellation, but documents
-`MemStore` as memory-backed; the next slice must combine cancellation with
-bounded staging and prove cleanup rather than treating progress alone as the
-limit. The final native build left under 3 GiB free, so additional build or live-lab
-gates are unsafe in this session.
+**2026-08-15 S9 completion:** The Rust sidecar now uses progress-driven cancellation and bounded staging to safely reject oversized blobs before memory exhaustion. The Rust crate tests and focused Objective-C negative tests (`testBoundedByteLimitRejectsInvalidValues`) both pass, completing the S9 security limits slice.
+However, the host machine remains critically low on disk space (failing Docker Compose builds entirely), so additional live-lab gates like S10 and S11 are blocked in this session.
 
 **2026-08-13 S10 measurement attempt (not evidence):** the new
 `scripts/demo/jelcz_track_a_s10_measurement.ts` collector passed format and

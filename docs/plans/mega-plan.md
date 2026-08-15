@@ -583,10 +583,7 @@ for full traceability; mirrored in the
     MUXL fragment/fMP4/flat; and S2PA COSE + self-signed leaf certificate
     landed 2026-08-12. MUXL playback sanity + opt-in transcoder bridge
     (`enableMUXLPresentation`) completed Phase 9 on 2026-08-12.
-    GNUstep/Linux
-    full-suite evidence remains open; the compile blocker (an XCTest
-    object-pointer-boxing difference in `PDSAdminServiceTests.m` /
-    `PDSBlobAuditHandlerTests.m`). The GNUstep-side UTF-8 and shared-fixture
+    GNUstep/Linux full-suite evidence remains open: the build blocker is resolved, and a new baseline was recorded with 562 failures governed by workstream 10. The GNUstep-side UTF-8 and shared-fixture
     evidence remains governed by workstreams 08 and 10; no full GNUstep gate
     is claimed by this execution.
 

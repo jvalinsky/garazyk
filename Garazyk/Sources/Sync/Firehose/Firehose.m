@@ -192,6 +192,8 @@ BOOL FirehoseErrorIsBackpressureClose(NSError * _Nullable error) {
     NSError *error = nil;
     
     NSDictionary *payload = [self.eventFormatter decodeEventFromData:data op:&op msgType:&msgType error:&error];
+#define GZ_SAFE_OBJ(x) ((x) == [NSNull null] ? nil : (x))
+
     if (!payload || error) {
         GZ_LOG_SYNC_ERROR(@"Failed to decode firehose frame: %@", error);
         return;
@@ -201,8 +203,8 @@ BOOL FirehoseErrorIsBackpressureClose(NSError * _Nullable error) {
 
     if (op == -1) { // Error frame
         ATProtoFirehoseErrorEvent *event = [[ATProtoFirehoseErrorEvent alloc] init];
-        event.error = payload[@"error"];
-        event.message = payload[@"message"];
+        event.error = GZ_SAFE_OBJ(payload[@"error"]);
+        event.message = GZ_SAFE_OBJ(payload[@"message"]);
         [self sendEventToSubscriptions:event kind:FirehoseEventKindError];
         return;
     }
@@ -212,51 +214,51 @@ BOOL FirehoseErrorIsBackpressureClose(NSError * _Nullable error) {
         event.seq = [payload[@"seq"] longLongValue];
         event.rebase = [payload[@"rebase"] boolValue];
         event.tooBig = [payload[@"tooBig"] boolValue];
-        event.repo = payload[@"repo"];
-        event.commit = payload[@"commit"];
-        event.rev = payload[@"rev"];
-        event.since = payload[@"since"];
-        event.blocks = payload[@"blocks"];
-        event.ops = payload[@"ops"] ?: @[];
-        event.blobs = payload[@"blobs"] ?: @[];
-        event.time = payload[@"time"];
-        event.prevData = payload[@"prevData"];
+        event.repo = GZ_SAFE_OBJ(payload[@"repo"]);
+        event.commit = GZ_SAFE_OBJ(payload[@"commit"]);
+        event.rev = GZ_SAFE_OBJ(payload[@"rev"]);
+        event.since = GZ_SAFE_OBJ(payload[@"since"]);
+        event.blocks = GZ_SAFE_OBJ(payload[@"blocks"]);
+        event.ops = GZ_SAFE_OBJ(payload[@"ops"]) ?: @[];
+        event.blobs = GZ_SAFE_OBJ(payload[@"blobs"]) ?: @[];
+        event.time = GZ_SAFE_OBJ(payload[@"time"]);
+        event.prevData = GZ_SAFE_OBJ(payload[@"prevData"]);
 
         [self sendEventToSubscriptions:event kind:FirehoseEventKindCommit];
 
     } else if ([msgType isEqualToString:@"#identity"]) {
         ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
-        event.did = payload[@"did"];
+        event.did = GZ_SAFE_OBJ(payload[@"did"]);
         event.seq = [payload[@"seq"] longLongValue];
-        event.time = payload[@"time"];
-        event.handle = payload[@"handle"];
+        event.time = GZ_SAFE_OBJ(payload[@"time"]);
+        event.handle = GZ_SAFE_OBJ(payload[@"handle"]);
 
         [self sendEventToSubscriptions:event kind:FirehoseEventKindIdentity];
 
     } else if ([msgType isEqualToString:@"#account"]) {
         ATProtoFirehoseAccountEvent *event = [[ATProtoFirehoseAccountEvent alloc] init];
-        event.did = payload[@"did"];
+        event.did = GZ_SAFE_OBJ(payload[@"did"]);
         event.seq = [payload[@"seq"] longLongValue];
         event.active = [payload[@"active"] boolValue];
-        event.status = payload[@"status"];
-        event.time = payload[@"time"];
+        event.status = GZ_SAFE_OBJ(payload[@"status"]);
+        event.time = GZ_SAFE_OBJ(payload[@"time"]);
 
         [self sendEventToSubscriptions:event kind:FirehoseEventKindAccount];
 
     } else if ([msgType isEqualToString:@"#sync"]) {
         ATProtoFirehoseSyncEvent *event = [[ATProtoFirehoseSyncEvent alloc] init];
-        event.did = payload[@"did"];
+        event.did = GZ_SAFE_OBJ(payload[@"did"]);
         event.seq = [payload[@"seq"] longLongValue];
-        event.blocks = payload[@"blocks"];
-        event.rev = payload[@"rev"];
-        event.time = payload[@"time"];
+        event.blocks = GZ_SAFE_OBJ(payload[@"blocks"]);
+        event.rev = GZ_SAFE_OBJ(payload[@"rev"]);
+        event.time = GZ_SAFE_OBJ(payload[@"time"]);
 
         [self sendEventToSubscriptions:event kind:FirehoseEventKindSync];
 
     } else if ([msgType isEqualToString:@"#info"]) {
         ATProtoFirehoseInfoEvent *event = [[ATProtoFirehoseInfoEvent alloc] init];
-        event.kind = payload[@"kind"] ?: payload[@"name"];
-        event.message = payload[@"message"];
+        event.kind = GZ_SAFE_OBJ(payload[@"kind"]) ?: GZ_SAFE_OBJ(payload[@"name"]);
+        event.message = GZ_SAFE_OBJ(payload[@"message"]);
 
         [self sendEventToSubscriptions:event kind:FirehoseEventKindInfo];
     } else {

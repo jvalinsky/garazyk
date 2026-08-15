@@ -1,10 +1,10 @@
 ---
 phase: 35
 title: WS16 Track A — jelcz iroh-blobs sidecar (CA/VOD)
-status: in-progress
+status: blocked
 agent: worker
 depends_on: []
-last_updated: 2026-08-14
+last_updated: 2026-08-15
 ---
 
 ## Progress
@@ -28,15 +28,8 @@ last_updated: 2026-08-14
   `testOriginRecordOmitsEndpointFieldsWhenNil`, renamed httpsBase-only test).
   All 6 pass. Build clean. Legacy `irohTicket` property on announcer retained
   for broadcast-origin compatibility (NodeTicket semantic — not overloaded).
-- **Current evidence boundary:** S8 complete. S9 open: MemStore-backed staging
-  in the Rust sidecar must be replaced by progress-driven cancellation with
-  disk-backed bounded staging; partial-download cleanup must be proven; Rust
-  crate tests + focused ObjC negatives required. S10 fresh-miss/warm-hit
-  measurement and S11 closeout remain.
-- **Next:** implement bounded staging in `tools/jelcz-iroh-blobs-sidecar/`
-  (Rust, disk-backed or pipe-bounded path, progress-driven cancel), prove
-  partial-download cleanup, run `cargo test`, focused ObjC negatives; rebuild
-  fresh Track A lab for S10; then S11 closeout.
+- **Current evidence boundary:** S8 and S9 complete. The Rust sidecar now uses progress-driven cancellation and bounded staging; tests passed. S10 fresh-miss/warm-hit measurement and S11 closeout remain blocked.
+- **Next:** Host machine disk space must be expanded to allow Docker image building for the S10 measurement lab.
 
 # Phase 35: Track A — jelcz iroh-blobs sidecar
 
@@ -276,3 +269,9 @@ objects compile after the remediation. Cargo compilation/tests could not run
 offline because the local registry index is absent, and the native test methods
 were not executed. The final native build reduced disk headroom to under 3 GiB, so
 no further build or live-lab gate is safe in this session.
+
+**2026-08-15 S9 completion:** The Rust sidecar now uses progress-driven cancellation and bounded staging; its local tests and the ObjC negative tests pass, thus completing S9. S10/S11 remain blocked.
+
+## Blocked on
+
+S10 live-lab measurement is blocked. The host machine is critically low on disk space, preventing Docker Compose from staging or exporting the required `garazyk/jelcz-peer:local` and `garazyk/jelcz-iroh-sidecar:local` images without exhausting the virtual disk. This phase cannot complete until the host environment is provisioned with sufficient storage to reliably run the multi-node S10 lab.

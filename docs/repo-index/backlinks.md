@@ -1832,7 +1832,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **289**
+Inbound links: **296**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1843,7 +1843,7 @@ Inbound links: **289**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **88**
+Inbound links: **94**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1852,7 +1852,7 @@ Inbound links: **88**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **217**
+Inbound links: **224**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)

@@ -319,12 +319,12 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         return nil;
     }
     *commitCID = reader.rootCID;
-    return commit;
 }
 
 - (nullable ATProtoRepoCommit *)validatedCommitForEvent:(ATProtoFirehoseCommitEvent *)event
                                            error:(NSError **)error {
-    if (!event.commit || event.blocks.length == 0) {
+    if (!event.commit || ![event.blocks isKindOfClass:[NSData class]] || event.blocks.length == 0) {
+        GZ_LOG_SYNC_WARN(@"RelayDownstreamHandler: Ignoring commit event %lld for %@: no blocks", (long long)event.seq, event.repo);
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.relay.continuity"
                                          code:1
