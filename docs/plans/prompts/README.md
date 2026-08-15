@@ -77,10 +77,13 @@ Completed prompts are archived under
 | 32 | [phase-32](phase-32-s2pa-merkle-bmff.md) | S2PA `c2pa.hash.bmff.v3` Merkle trees | `complete` | — |
 | 33 | [phase-33](phase-33-s2pa-soft-binding-algs.md) | Soft-binding algorithm compute/verify | `complete` | — |
 | 34 | [phase-34](phase-34-dasl-tiles-package-and-embed.md) | Deno tiles package + live Admin UI embed | `complete` | — |
-| 35 | [phase-35](phase-35-ws16-iroh-sidecar.md) | WS16 iroh sidecar + live Streamplace mesh | `blocked` — production CA VOD or lab exception | — |
+| 35 | [phase-35](phase-35-ws16-iroh-sidecar.md) | WS16 Track A — jelcz iroh-blobs sidecar (CA/VOD) | `in-progress` — S8 complete (2026-08-14); S9 bounded-staging, S10 measurement, S11 closeout remain | — |
+| 36 | [phase-36](phase-36-ws16-streamplace-iroh-bridge.md) | WS16 Track B — Streamplace live iroh bridge | `blocked` — Phase 35 completion + dated pinned-image Scenario 101 | 35 |
 
-**Suggested order:** 31–34 complete; next open item is 35 after unblock.
-Phases 31–34 are independent of each other for `depends_on`.
+**Suggested order:** finish Phase 35 S9 bounded-staging (Rust disk-backed path,
+progress-driven cancel, `cargo test`), then S10 fresh-miss/warm-hit measurement
+in a fresh Track A lab, then S11 closeout. Phase 36 Scenario 101 follows after
+Phase 35 completes.
 
 Phase 5 cannot start until a future maintainer message explicitly reopens JSR
 publication. Workstream 03 R1 source synchronization is complete without
