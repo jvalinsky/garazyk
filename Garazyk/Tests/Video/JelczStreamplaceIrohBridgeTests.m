@@ -271,4 +271,22 @@
                                                        allowedStreamers:[NSSet set]]);
 }
 
+- (void)testBoundedByteLimitRejectsInvalidValues {
+    XCTAssertEqual([GZJelczStreamplaceIrohBridge boundedByteLimitFromEnvironment:@{ @"limit": @"1024" }
+                                                                         key:@"limit"
+                                                                    fallback:512
+                                                                    maximum:2048],
+                   1024u);
+    XCTAssertEqual([GZJelczStreamplaceIrohBridge boundedByteLimitFromEnvironment:@{ @"limit": @"-1" }
+                                                                         key:@"limit"
+                                                                    fallback:512
+                                                                    maximum:2048],
+                   512u);
+    XCTAssertEqual([GZJelczStreamplaceIrohBridge boundedByteLimitFromEnvironment:@{ @"limit": @"2049" }
+                                                                         key:@"limit"
+                                                                    fallback:512
+                                                                    maximum:2048],
+                   512u);
+}
+
 @end

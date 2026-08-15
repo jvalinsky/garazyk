@@ -249,8 +249,9 @@ static BOOL GZJelczStreamplaceIrohBridgeValidateSegment(NSData *segment, NSError
         return fallback;
     }
     NSScanner *scanner = [NSScanner scannerWithString:raw];
-    unsigned long long parsed = 0;
-    if (![scanner scanUnsignedLongLong:&parsed] || !scanner.isAtEnd || parsed == 0 || parsed > maximum) {
+    long long parsed = 0;
+    if (![scanner scanLongLong:&parsed] || !scanner.isAtEnd || parsed <= 0 ||
+        (unsigned long long)parsed > maximum) {
         return fallback;
     }
     return (NSUInteger)parsed;
