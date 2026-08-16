@@ -38,6 +38,7 @@ on 2026-08-05, unchanged. Open item: the S5 residual watch item. S21
 | S19 | DAG-CBOR routing migration | Complete (2026-07-29) |
 | S20 | HTTP transport crash-safety and request boundaries | Complete (2026-07-29), sub-tasks A–E |
 | S21 | `com.atproto.repo.listRecords` cursor pagination | **Complete** (2026-08-12) |
+| S22 | OAuth `prompt=create` signup + legacy key-seal migration | **Complete** (2026-08-16) |
 
 ## Open: S5 residual — `PDSDatabase` null-pointer flake (watch item)
 
@@ -213,6 +214,51 @@ Commit `d179ae3a`.
   `listRecords` walk.
 - Deprecated lexicon params `rkeyStart` / `rkeyEnd` left unimplemented (no
   known Garazyk client sends them).
+
+## Complete: S22 — OAuth `prompt=create` signup + legacy key-seal migration
+
+### What shipped
+
+- `POST /oauth/authorize/signup`: account creation inside the OAuth authorize
+  flow for requests carrying `prompt=create` (the ATProto client-signup path,
+  e.g. witchsky's `client.signIn(serviceUrl, {prompt: 'create'})`).
+  `OAuth2Handler+Authorization.m` — `handleAuthorizeSignup:response:` validates
+  CSRF + fields, runs the same `PDSRegistrationGate` invite check as XRPC
+  `com.atproto.server.createAccount`, calls `createAccountForEmail`,
+  initializes the repo, and returns a pending-consent session token. The
+  authorize page (`authorize.html`) now interpolates `{{prompt}}` /
+  `{{invite_required}}` and shows a signup step (handle/email/password/invite)
+  when `prompt=create`; on success it transitions to the consent step. The
+  handler is wired with `registrationGate` + `repositoryService` in
+  `ATProtoHttpOAuthRoutePack.m`.
+- Rotation-key seal migration: `PLCRotationKeyManager` retries the versioned
+  envelope with the pre-2026-05-12 PBKDF2 derivation (100k iterations) when the
+  current 600k key fails, then re-seals with the current key. Fixes deployments
+  whose `plc_rotation_key.bin` predates the 600k bump, which otherwise failed
+  with "Failed to decrypt rotation key" on every account creation.
+
+### Evidence
+
+- `OAuth2HandlerTests` 31→35, 4 new signup tests pass (full flow, missing
+  fields, bad CSRF, invite gate). Pre-existing 5 failures (issuer env var +
+  JWT-assertion `privateKey != NULL`) reproduce on pristine HEAD.
+- `PLCRotationKeyManagerTests` 5/5 pass.
+- Live E2E against `pds.garazyk.xyz`: PAR (DPoP + nonce) → 201; authorize page
+  renders signup step with `promptMode = "create"`; signup POST → 200 account
+  created (`did:plc:*`); consent → 302 with `code`; token exchange (DPoP +
+  PKCE) → 200 DPoP-bound access + refresh token.
+- Live verification: `plc_rotation_key.bin` re-sealed and decrypts under the
+  current 600k derivation.
+- Gates: `check_module_boundaries.sh build-linux`, `check_namespace.sh
+  build-linux`, `check-recursive-setters.sh`, `check_no_host_process_exit.sh`
+  all pass.
+
+### Remaining follow-ups
+
+- Confirm the full witchsky client flow in a real browser (Playwright MCP
+  pending client restart).
+- Invite codes: E2E testing consumed two admin-created codes; a fresh
+  admin-created invite is active on the deployment for manual testing.
 
 ## Cross-workstream note
 
