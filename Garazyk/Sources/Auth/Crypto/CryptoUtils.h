@@ -85,6 +85,17 @@ NS_ASSUME_NONNULL_BEGIN
     @return Derived 32-byte key, or nil on failure. */
 + (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt;
 
+/*! Derives a key from a password and salt using PBKDF2-SHA256 with an
+    explicit iteration count. Produces a 32-byte key. Used to migrate
+    material sealed under older iteration counts.
+    @param password The password/secret string (nonnull).
+    @param salt The salt data, typically 16+ bytes (nonnull).
+    @param iterations The PBKDF2 iteration count.
+    @return Derived 32-byte key, or nil on failure. */
++ (nullable NSData *)deriveKeyFromPassword:(NSString *)password
+                                      salt:(NSData *)salt
+                                iterations:(uint32_t)iterations;
+
 @end
 
 /*! Production PBKDF2-HMAC-SHA256 iteration count (OWASP 2023). */

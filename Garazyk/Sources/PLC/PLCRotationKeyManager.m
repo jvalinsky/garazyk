@@ -17,6 +17,9 @@ NSString * const PLCRotationKeyManagerErrorDomain = @"com.atproto.plc.rotation";
 static NSString *const kRotationKeyFileName = @"plc_rotation_key.bin";
 static ATProtoPLCRotationKeyManager *_sharedManager = nil;
 
+// Keys sealed before the 600k PBKDF2 bump (2026-05-12) used 100k iterations.
+static const uint32_t kLegacyRotationKeyPBKDF2Iterations = 100000;
+
 static NSString *PDSDefaultDataDirectory(void) {
     NSString *envDataDirectory = NSProcessInfo.processInfo.environment[@"PDS_DATA_DIR"];
     if (envDataDirectory.length > 0) {
@@ -60,6 +63,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
 
 - (void)ensureSecurePermissionsForPath:(NSString *)path isDirectory:(BOOL)isDir;
 - (nullable NSData *)encryptionKeyWithError:(NSError **)error;
+- (nullable NSData *)legacyEncryptionKeyWithError:(NSError **)error;
 
 @end
 
@@ -122,6 +126,26 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
             if (encKey) {
                 if ([PDSKeyEnvelope isVersionedEnvelope:keyData]) {
                     privateKeyData = [PDSKeyEnvelope openEnvelope:keyData withKey:encKey error:nil];
+                    // Migration: envelopes sealed under the pre-600k PBKDF2
+                    // derivation (100k iterations) do not open with the
+                    // current key. Retry with the legacy key and re-seal.
+                    if (!privateKeyData) {
+                        NSError *legacyError = nil;
+                        NSData *legacyKey = [self legacyEncryptionKeyWithError:&legacyError];
+                        if (legacyKey) {
+                            privateKeyData = [PDSKeyEnvelope openEnvelope:keyData
+                                                                  withKey:legacyKey
+                                                                    error:&legacyError];
+                            if (privateKeyData) {
+                                GZ_LOG_INFO(@"Rotation key sealed with legacy PBKDF2 iterations; re-sealing.");
+                                NSData *reEncrypted = [PDSKeyEnvelope seal:privateKeyData withKey:encKey error:nil];
+                                if (reEncrypted && [reEncrypted writeToFile:keyPath atomically:YES]) {
+                                    [self ensureSecurePermissionsForPath:keyPath isDirectory:NO];
+                                    GZ_LOG_INFO(@"Rotation key migrated to current PBKDF2 iterations.");
+                                }
+                            }
+                        }
+                    }
                 } else {
                     privateKeyData = [ATProtoCryptoUtils decryptData:keyData withKey:encKey];
                 }
@@ -293,6 +317,26 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
     NSData *salt = [NSData dataWithBytes:saltBytes length:sizeof(saltBytes)];
     
     return [ATProtoCryptoUtils deriveKeyFromPassword:secret salt:salt];
+}
+
+- (nullable NSData *)legacyEncryptionKeyWithError:(NSError **)error {
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
+    NSString *secret = config.masterSecret;
+    if (secret.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCRotationKeyManagerErrorDomain
+                                         code:PLCRotationKeyManagerErrorKeyStorageFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PDS_MASTER_SECRET not configured"}];
+        }
+        return nil;
+    }
+
+    static uint8_t saltBytes[] = { 0x41, 0x54, 0x50, 0x52, 0x4f, 0x54, 0x4f, 0x5f, 0x50, 0x44, 0x53, 0x5f, 0x4b, 0x45, 0x59, 0x53 };
+    NSData *salt = [NSData dataWithBytes:saltBytes length:sizeof(saltBytes)];
+
+    return [ATProtoCryptoUtils deriveKeyFromPassword:secret
+                                                salt:salt
+                                          iterations:kLegacyRotationKeyPBKDF2Iterations];
 }
 
 @end

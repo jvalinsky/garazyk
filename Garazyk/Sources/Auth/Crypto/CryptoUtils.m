@@ -197,6 +197,10 @@ uint32_t ATProtoPBKDF2IterationCount(void) {
  @return A 32-byte derived key, or nil on failure.
  */
 + (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt {
+    return [self deriveKeyFromPassword:password salt:salt iterations:ATProtoPBKDF2IterationCount()];
+}
+
++ (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt iterations:(uint32_t)iterations {
     NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
     NSMutableData *derivedKey = [NSMutableData dataWithLength:32];
     
@@ -204,7 +208,7 @@ uint32_t ATProtoPBKDF2IterationCount(void) {
                                       passwordData.bytes, passwordData.length,
                                       salt.bytes, salt.length,
                                       kCCPRFHmacAlgSHA256,
-                                      ATProtoPBKDF2IterationCount(),
+                                      iterations,
                                       derivedKey.mutableBytes, 32);
     
     if (result != kCCSuccess) {
