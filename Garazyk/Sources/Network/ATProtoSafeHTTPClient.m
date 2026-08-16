@@ -309,12 +309,29 @@ static BOOL PDSIsLoopbackHost(NSString *host) {
             if (port == 0) {
                 port = [[url.scheme lowercaseString] isEqualToString:@"https"] ? 443 : 80;
             }
+            // libcurl uses only the LAST CURLOPT_RESOLVE entry for a given
+            // host:port, so with both families pinned the final entry wins.
+            // Append IPv6 before IPv4 to make IPv4 the winner when the host
+            // resolves to both: IPv4 is reachable even where IPv6 has no
+            // route, while IPv6-only hosts still fall through to their
+            // (last) IPv6 entry.
+            NSMutableArray<NSString *> *v6Addresses = [NSMutableArray array];
+            NSMutableArray<NSString *> *v4Addresses = [NSMutableArray array];
             for (NSString *address in pinnedAddresses) {
-                NSString *numericAddress = [address containsString:@":"]
-                    ? [NSString stringWithFormat:@"[%@]", address]
-                    : address;
+                if ([address containsString:@":"]) {
+                    [v6Addresses addObject:address];
+                } else {
+                    [v4Addresses addObject:address];
+                }
+            }
+            for (NSString *address in v6Addresses) {
+                NSString *entry = [NSString stringWithFormat:@"%@:%ld:[%@]",
+                                   url.host, (long)port, address];
+                resolveEntries = curl_slist_append(resolveEntries, entry.UTF8String);
+            }
+            for (NSString *address in v4Addresses) {
                 NSString *entry = [NSString stringWithFormat:@"%@:%ld:%@",
-                                   url.host, (long)port, numericAddress];
+                                   url.host, (long)port, address];
                 resolveEntries = curl_slist_append(resolveEntries, entry.UTF8String);
             }
             curl_easy_setopt(curl, CURLOPT_RESOLVE, resolveEntries);
