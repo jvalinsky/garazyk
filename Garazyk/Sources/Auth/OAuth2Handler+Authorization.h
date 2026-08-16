@@ -46,6 +46,19 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)handleAuthorizeSignIn:(ATProtoHttpRequest *)request
                      response:(ATProtoHttpResponse *)response;
 /**
+ * @abstract Creates an account for a `prompt=create` authorization flow.
+ * @discussion Mirrors the sign-in CSRF gate and pending-consent handshake, but registers a new
+ * account instead of authenticating one. When a registration gate is configured (e.g. invite
+ * codes), the submitted handle/email/password/inviteCode form fields are validated against it
+ * before account creation; the account service then creates the account and the handler
+ * initializes its repository. On success it creates an in-memory, expiring pending-consent
+ * session and returns its opaque token in JSON.
+ * @param request The form submission containing registration fields and the CSRF token.
+ * @param response The JSON success or failure response.
+ */
+- (void)handleAuthorizeSignup:(ATProtoHttpRequest *)request
+                     response:(ATProtoHttpResponse *)response;
+/**
  * @abstract Renders the authorization HTML with validated request and client values.
  * @discussion Reads the authorization template from the configured asset path, HTML-escapes every
  * value inserted into the template, and issues an HttpOnly, SameSite=Strict CSRF cookie scoped to

@@ -50,6 +50,38 @@
             </div>
           </div>
 
+          <div id="auth-step-signup" class="hidden">
+            <div class="client-info">
+              <h2 id="signup-client-name">Application</h2>
+              <p>wants to create a new ATProto account.</p>
+              <p>Please enter your account details to continue.</p>
+            </div>
+
+            <div class="field-row-stacked">
+              <label class="form-label" for="signup-handle">Handle</label>
+              <input class="form-input" type="text" id="signup-handle" placeholder="alice.test" autocomplete="username">
+            </div>
+            <div class="field-row-stacked">
+              <label class="form-label" for="signup-email">Email</label>
+              <input class="form-input" type="email" id="signup-email" autocomplete="email">
+            </div>
+            <div class="field-row-stacked">
+              <label class="form-label" for="signup-password">Password</label>
+              <input class="form-input" type="password" id="signup-password" autocomplete="new-password">
+            </div>
+            <div class="field-row-stacked" id="signup-invite-field">
+              <label class="form-label" for="signup-invite">Invite Code</label>
+              <input class="form-input" type="text" id="signup-invite" autocomplete="off">
+            </div>
+
+            <div id="signup-error" class="auth-error" role="alert"></div>
+
+            <div class="actions">
+              <button class="btn btn-secondary" id="signup-cancel-btn">Cancel</button>
+              <button class="btn btn-primary" id="signup-submit-btn">Create Account</button>
+            </div>
+          </div>
+
           <div id="auth-step-consent" class="hidden">
             <div class="client-info">
               <h2 id="consent-client-name" tabindex="-1">Application</h2>
@@ -101,19 +133,39 @@
       const params = new URLSearchParams(window.location.search);
       const clientId = params.get("client_id") || "Unknown App";
       const scopeStr = params.get("scope") || "atproto";
-      const loginHint = params.get("login_hint");
+      const loginHint = params.get("login_hint") || "{{login_hint}}";
+
+      // prompt=create arrives via the consumed PAR request, so it is only
+      // available as the server-interpolated {{prompt}} value.
+      const promptMode = "{{prompt}}";
+      const inviteRequired = "{{invite_required}}" === "1";
+      const isSignup = promptMode === "create";
 
       // Populate client names
       const clientName = "{{client_name}}";
       document.getElementById("client-name").textContent = clientName || clientId;
       document.getElementById("consent-client-name").textContent = clientName || clientId;
+      document.getElementById("signup-client-name").textContent = clientName || clientId;
 
       // Pre-fill handle from login_hint
       const handleInput = document.getElementById("auth-handle");
+      const signupHandleInput = document.getElementById("signup-handle");
       if (loginHint) {
         handleInput.value = loginHint;
         handleInput.readOnly = true;
         handleInput.classList.add("input-readonly");
+        signupHandleInput.value = loginHint;
+        signupHandleInput.readOnly = true;
+        signupHandleInput.classList.add("input-readonly");
+      }
+
+      if (!inviteRequired) {
+        document.getElementById("signup-invite-field").style.display = "none";
+      }
+
+      if (isSignup) {
+        document.getElementById("auth-step-signin").classList.add("hidden");
+        document.getElementById("auth-step-signup").classList.remove("hidden");
       }
 
       // Populate scope list
@@ -199,8 +251,73 @@
         if (e.key === "Enter") document.getElementById("auth-signin-btn").click();
       });
 
-      // Cancel button on sign-in step — redirect back with access_denied
-      document.getElementById("auth-cancel-btn").addEventListener("click", () => {
+      // --- Sign-up (prompt=create) ---
+      document.getElementById("signup-submit-btn").addEventListener("click", async () => {
+        const handle = signupHandleInput.value.trim();
+        const email = document.getElementById("signup-email").value.trim();
+        const password = document.getElementById("signup-password").value;
+        const inviteCode = document.getElementById("signup-invite").value.trim();
+        const errorEl = document.getElementById("signup-error");
+
+        if (!handle || !email || !password) {
+          errorEl.textContent = "Please enter your handle, email, and password.";
+          errorEl.style.display = "block";
+          return;
+        }
+        if (inviteRequired && !inviteCode) {
+          errorEl.textContent = "Please enter an invite code.";
+          errorEl.style.display = "block";
+          return;
+        }
+
+        errorEl.style.display = "none";
+        document.getElementById("signup-submit-btn").disabled = true;
+        document.getElementById("signup-submit-btn").textContent = "Creating…";
+
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+            "";
+          const resp = await fetch("/oauth/authorize/signup", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-CSRF-Token": csrfToken,
+            },
+            body: new URLSearchParams({ handle, email, password, inviteCode }).toString(),
+          });
+
+          const data = await resp.json();
+
+          if (data.ok) {
+            // Success — transition to consent step
+            document.getElementById("consent-handle").textContent = handle;
+            document.querySelectorAll('input[name="session_token"]').forEach((el) => {
+              el.value = data.session_token || "";
+            });
+            document.getElementById("auth-step-signup").classList.add("hidden");
+            document.getElementById("auth-step-consent").classList.remove("hidden");
+            document.getElementById("consent-client-name").focus();
+          } else {
+            errorEl.textContent = data.error_description || data.error || "Account creation failed";
+            errorEl.style.display = "block";
+            document.getElementById("signup-submit-btn").disabled = false;
+            document.getElementById("signup-submit-btn").textContent = "Create Account";
+          }
+        } catch (e) {
+          errorEl.textContent = "Connection error. Please try again.";
+          errorEl.style.display = "block";
+          document.getElementById("signup-submit-btn").disabled = false;
+          document.getElementById("signup-submit-btn").textContent = "Create Account";
+        }
+      });
+
+      // Enter key on sign-up password field
+      document.getElementById("signup-password").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") document.getElementById("signup-submit-btn").click();
+      });
+
+      // Cancel button on sign-in/sign-up step — redirect back with access_denied
+      function cancelAuthorization() {
         const redirectUri = params.get("redirect_uri");
         const state = params.get("state");
         const responseMode = params.get("response_mode") || "query";
@@ -219,7 +336,9 @@
         } else {
           window.history.back();
         }
-      });
+      }
+      document.getElementById("auth-cancel-btn").addEventListener("click", cancelAuthorization);
+      document.getElementById("signup-cancel-btn").addEventListener("click", cancelAuthorization);
 
       // --- Passkey (WebAuthn) sign-in ---
       const passkeyBtn = document.getElementById("auth-passkey-btn");

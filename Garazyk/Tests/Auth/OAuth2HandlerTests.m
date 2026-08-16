@@ -11,6 +11,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
+#import "Registration/PDSRegistrationGate.h"
 #import "Services/PDS/PDSAccountService.h"
 #import <Security/Security.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -26,7 +27,9 @@
 @end
 
 @implementation TestAccountService
-- (nullable NSDictionary *)createAccountForEmail:(NSString *)email password:(NSString *)password handle:(NSString *)handle did:(nullable NSString *)did error:(NSError **)error { return nil; }
+- (nullable NSDictionary *)createAccountForEmail:(NSString *)email password:(NSString *)password handle:(NSString *)handle did:(nullable NSString *)did error:(NSError **)error {
+    return @{@"did": @"did:plc:signup-user", @"handle": handle, @"email": email};
+}
 - (BOOL)deleteAccount:(NSString *)did password:(NSString *)password error:(NSError **)error { return YES; }
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error { return nil; }
 - (nullable NSDictionary *)usageForDid:(NSString *)did error:(NSError **)error { return nil; }
@@ -45,6 +48,32 @@
     return nil;
 }
 - (nullable NSDictionary *)refreshAccessToken:(NSString *)refreshToken error:(NSError **)error { return nil; }
+@end
+
+@interface TestRegistrationGate : NSObject <PDSRegistrationGate>
+@property (nonatomic, copy) NSString *validInviteCode;
+@end
+
+@implementation TestRegistrationGate
+- (NSString *)gateIdentifier { return @"test-invite"; }
+- (BOOL)validateRegistrationRequest:(NSDictionary *)body
+                      configuration:(ATProtoServiceConfiguration *)configuration
+                              error:(NSError **)error {
+    NSString *invite = body[@"inviteCode"];
+    if (invite.length > 0 && [invite isEqualToString:self.validInviteCode]) {
+        return YES;
+    }
+    if (error) {
+        *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
+                                     code:invite.length > 0 ? PDSRegistrationGateErrorInvalidInviteCode
+                                                            : PDSRegistrationGateErrorInviteCodeRequired
+                                 userInfo:@{
+                                     NSLocalizedDescriptionKey:
+                                         invite.length > 0 ? @"Invalid invite code" : @"Invite code required"
+                                 }];
+    }
+    return NO;
+}
 @end
 
 @interface OAuth2HandlerTests : XCTestCase
@@ -1421,6 +1450,170 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     
     // Restore config
     [config setValue:origTrusted forKey:@"oauthTrustedClientIDs"];
+}
+
+- (void)testAuthorizeSignupCreatesAccountAndCompletesConsent {
+    NSString *redirectURI = @"http://localhost:3000/callback";
+
+    [self.database createClient:@{
+        @"client_id": @"test-client",
+        @"redirect_uris": @[redirectURI],
+        @"grant_types": @"authorization_code",
+        @"scope": @"atproto"
+    } error:nil];
+
+    NSDictionary *queryParams = @{
+        @"client_id": @"test-client",
+        @"redirect_uri": redirectURI,
+        @"response_type": @"code",
+        @"state": @"signup-state-789",
+        @"scope": @"atproto",
+        @"code_challenge": @"test_challenge",
+        @"code_challenge_method": @"S256",
+        @"prompt": @"create"
+    };
+    ATProtoHttpResponse *response =
+        [self authorizeViaPARWithParameters:queryParams clientID:@"test-client"];
+
+    XCTAssertEqual(response.statusCode, 200, @"Should serve authorize page");
+    NSString *bodyStr = [[NSString alloc] initWithData:response.body encoding:NSUTF8StringEncoding];
+    XCTAssertTrue([bodyStr containsString:@"id=\"auth-step-signup\""], @"Should contain signup step");
+    XCTAssertTrue([bodyStr containsString:@"const promptMode = \"create\";"], @"Should interpolate prompt=create");
+
+    NSString *csrfToken = @"test-csrf-token-signup";
+    NSString *signupBody = @"handle=newuser.test&email=newuser@example.com&password=signup-pass";
+    ATProtoHttpRequest *signupRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                                 methodString:@"POST"
+                                                                         path:@"/oauth/authorize/signup"
+                                                                  queryString:@""
+                                                                  queryParams:@{}
+                                                                      version:@"1.1"
+                                                                      headers:@{
+                                                                          @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                          @"X-CSRF-Token": csrfToken,
+                                                                          @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                                      }
+                                                                         body:[signupBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                                  remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *signupResponse = [[ATProtoHttpResponse alloc] init];
+    [self.handler handleAuthorizeSignup:signupRequest response:signupResponse];
+
+    XCTAssertEqual(signupResponse.statusCode, 200, @"Signup should succeed");
+    XCTAssertTrue([signupResponse.jsonBody[@"ok"] boolValue], @"Signup should report ok");
+    XCTAssertEqualObjects(signupResponse.jsonBody[@"did"], @"did:plc:signup-user");
+    NSString *sessionToken = signupResponse.jsonBody[@"session_token"];
+    XCTAssertNotNil(sessionToken, @"Should receive session token");
+
+    NSString *consentBody = [NSString stringWithFormat:@"decision=allow&client_id=test-client&state=signup-state-789&redirect_uri=%@&session_token=%@&response_type=code&code_challenge=test_challenge&code_challenge_method=S256", redirectURI, sessionToken];
+    ATProtoHttpRequest *consentRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                                  methodString:@"POST"
+                                                                          path:@"/oauth/authorize/confirm"
+                                                                   queryString:@""
+                                                                   queryParams:@{}
+                                                                       version:@"1.1"
+                                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                                          body:[consentBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                                   remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *consentResponse = [[ATProtoHttpResponse alloc] init];
+    [self.handler handleAuthorizeConfirm:consentRequest response:consentResponse];
+
+    XCTAssertEqual(consentResponse.statusCode, 302, @"Should redirect with 302");
+    NSString *location = [consentResponse headerForKey:@"Location"];
+    XCTAssertTrue([location containsString:@"code="], @"Should redirect with authorization code");
+    XCTAssertTrue([location containsString:@"state=signup-state-789"], @"Should echo state");
+}
+
+- (void)testAuthorizeSignupRejectsMissingFields {
+    NSString *csrfToken = @"test-csrf-token-missing";
+    NSString *signupBody = @"handle=newuser.test&password=signup-pass";
+    ATProtoHttpRequest *signupRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                                 methodString:@"POST"
+                                                                         path:@"/oauth/authorize/signup"
+                                                                  queryString:@""
+                                                                  queryParams:@{}
+                                                                      version:@"1.1"
+                                                                      headers:@{
+                                                                          @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                          @"X-CSRF-Token": csrfToken,
+                                                                          @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                                      }
+                                                                         body:[signupBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                                  remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *signupResponse = [[ATProtoHttpResponse alloc] init];
+    [self.handler handleAuthorizeSignup:signupRequest response:signupResponse];
+
+    XCTAssertEqual(signupResponse.statusCode, 400, @"Missing email should be rejected");
+    XCTAssertFalse([signupResponse.jsonBody[@"ok"] boolValue]);
+}
+
+- (void)testAuthorizeSignupRejectsBadCSRF {
+    NSString *signupBody = @"handle=newuser.test&email=a@b.test&password=signup-pass";
+    ATProtoHttpRequest *signupRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                                 methodString:@"POST"
+                                                                         path:@"/oauth/authorize/signup"
+                                                                  queryString:@""
+                                                                  queryParams:@{}
+                                                                      version:@"1.1"
+                                                                      headers:@{
+                                                                          @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                          @"X-CSRF-Token": @"wrong-token",
+                                                                          @"Cookie": @"csrf_token=right-token"
+                                                                      }
+                                                                         body:[signupBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                                  remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *signupResponse = [[ATProtoHttpResponse alloc] init];
+    [self.handler handleAuthorizeSignup:signupRequest response:signupResponse];
+
+    XCTAssertEqual(signupResponse.statusCode, 403, @"Mismatched CSRF should be rejected");
+    XCTAssertEqualObjects(signupResponse.jsonBody[@"error"], @"Invalid CSRF token");
+}
+
+- (void)testAuthorizeSignupEnforcesInviteCodeGate {
+    TestRegistrationGate *gate = [[TestRegistrationGate alloc] init];
+    gate.validInviteCode = @"GOOD-CODE";
+    self.handler.registrationGate = gate;
+
+    NSString *csrfToken = @"test-csrf-token-gate";
+    NSString *signupBody = @"handle=newuser.test&email=a@b.test&password=signup-pass&inviteCode=BAD-CODE";
+    ATProtoHttpRequest *signupRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                                 methodString:@"POST"
+                                                                         path:@"/oauth/authorize/signup"
+                                                                  queryString:@""
+                                                                  queryParams:@{}
+                                                                      version:@"1.1"
+                                                                      headers:@{
+                                                                          @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                          @"X-CSRF-Token": csrfToken,
+                                                                          @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                                      }
+                                                                         body:[signupBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                                  remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *signupResponse = [[ATProtoHttpResponse alloc] init];
+    [self.handler handleAuthorizeSignup:signupRequest response:signupResponse];
+
+    XCTAssertEqual(signupResponse.statusCode, 400, @"Invalid invite code should be rejected");
+    XCTAssertEqualObjects(signupResponse.jsonBody[@"error"], @"Invalid invite code");
+
+    // Valid code passes the gate and creates the account.
+    NSString *goodBody = @"handle=newuser.test&email=a@b.test&password=signup-pass&inviteCode=GOOD-CODE";
+    ATProtoHttpRequest *goodRequest = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                                methodString:@"POST"
+                                                                        path:@"/oauth/authorize/signup"
+                                                                 queryString:@""
+                                                                 queryParams:@{}
+                                                                     version:@"1.1"
+                                                                     headers:@{
+                                                                         @"Content-Type": @"application/x-www-form-urlencoded",
+                                                                         @"X-CSRF-Token": csrfToken,
+                                                                         @"Cookie": [NSString stringWithFormat:@"csrf_token=%@", csrfToken]
+                                                                     }
+                                                                        body:[goodBody dataUsingEncoding:NSUTF8StringEncoding]
+                                                                 remoteAddress:@"127.0.0.1"];
+    ATProtoHttpResponse *goodResponse = [[ATProtoHttpResponse alloc] init];
+    [self.handler handleAuthorizeSignup:goodRequest response:goodResponse];
+
+    XCTAssertEqual(goodResponse.statusCode, 200, @"Valid invite code should succeed");
+    XCTAssertTrue([goodResponse.jsonBody[@"ok"] boolValue]);
 }
 
 @end

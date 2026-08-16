@@ -24,7 +24,9 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Registration/PDSRegistrationGate.h"
 #import "Services/PDS/PDSAccountService.h"
+#import "Services/PDS/PDSRepositoryService.h"
 
 @implementation ATProtoHttpOAuthRoutePack
 
@@ -63,6 +65,25 @@
   } else if (controller.accountService) {
     oauthHandler.accountService = controller.accountService;
     accountService = controller.accountService;
+  }
+
+  if (application.repositoryService) {
+    oauthHandler.repositoryService = application.repositoryService;
+  } else if (controller.repositoryService) {
+    oauthHandler.repositoryService = controller.repositoryService;
+  }
+
+  // Build the registration gate exactly as the XRPC createAccount path does so
+  // OAuth `prompt=create` signups are gated identically (invite codes, etc.).
+  NSError *gateError = nil;
+  oauthHandler.registrationGate =
+      [PDSRegistrationGateFactory gateFromConfiguration:config
+                                       serviceDatabases:serviceDatabases
+                                                  error:&gateError];
+  if (gateError) {
+    GZ_LOG_WARN(@"ATProtoHttpOAuthRoutePack: failed to create registration "
+                @"gate for OAuth signup: %@",
+                gateError);
   }
   [oauthHandler registerRoutesWithServer:server];
   GZ_LOG_DEBUG(@"ATProtoHttpOAuthRoutePack: OAuth routes registered");

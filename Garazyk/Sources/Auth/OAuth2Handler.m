@@ -141,6 +141,12 @@ BOOL OAuthHandlerScopeIsValid(NSString *scope) {
                }];
 
   [httpServer addRoute:@"POST"
+                  path:@"/oauth/authorize/signup"
+               handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
+                 [self handleAuthorizeSignup:request response:response];
+               }];
+
+  [httpServer addRoute:@"POST"
                   path:@"/oauth/authorize/passkey/challenge"
                handler:^(ATProtoHttpRequest *request, ATProtoHttpResponse *response) {
                  [self handlePasskeyChallenge:request response:response];

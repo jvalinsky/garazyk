@@ -9,6 +9,9 @@
 #import "Auth/OAuth2Handler+Assets.h"
 #import "Auth/OAuth2Handler+ClientMetadataFetch.h"
 #import "Services/PDS/PDSAccountService.h"
+#import "Services/PDS/PDSRepositoryService.h"
+#import "Registration/PDSRegistrationGate.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/GZLogger.h"
@@ -243,6 +246,20 @@
                                          withString:loginHint];
   html = [html stringByReplacingOccurrencesOfString:@"{{response_mode}}"
                                          withString:responseMode];
+
+  // `prompt=create` renders the account-creation step instead of sign-in.
+  // The prompt value arrives via the consumed PAR parameters (the browser URL
+  // only carries request_uri), so it must be interpolated server-side and
+  // escaped like every other value dropped into the template.
+  NSString *prompt = [self escapeHtml:params[@"prompt"] ?: @""];
+  html = [html stringByReplacingOccurrencesOfString:@"{{prompt}}"
+                                         withString:prompt];
+  NSString *inviteRequired =
+      [ATProtoServiceConfiguration sharedConfiguration].inviteCodeRequired
+          ? @"1"
+          : @"0";
+  html = [html stringByReplacingOccurrencesOfString:@"{{invite_required}}"
+                                         withString:inviteRequired];
 
   [response setHeader:[NSString stringWithFormat:@"csrf_token=%@; Path=/oauth; "
                                                  @"HttpOnly; SameSite=Strict",
@@ -538,6 +555,161 @@
     [response
         setJsonBody:@{@"ok" : @NO, @"error" : @"Invalid handle or password"}];
   }
+}
+
+- (void)handleAuthorizeSignup:(ATProtoHttpRequest *)request
+                     response:(ATProtoHttpResponse *)response {
+  NSString *body = [[NSString alloc] initWithData:request.body
+                                         encoding:NSUTF8StringEncoding];
+  NSDictionary *params = [self parseFormUrlEncodedString:body];
+
+  NSString *handle = params[@"handle"];
+  NSString *email = params[@"email"];
+  NSString *password = params[@"password"];
+  NSString *inviteCode = params[@"inviteCode"];
+
+  // CSRF validation (identical to the sign-in flow)
+  NSString *csrfHeader = [request headerForKey:@"X-CSRF-Token"];
+  NSString *cookieHeader = [request headerForKey:@"Cookie"];
+  NSString *csrfCookie = nil;
+  if (cookieHeader) {
+    for (NSString *cookie in [cookieHeader componentsSeparatedByString:@";"]) {
+      NSString *trimmed =
+          [cookie stringByTrimmingCharactersInSet:[NSCharacterSet
+                                                      whitespaceCharacterSet]];
+      if ([trimmed hasPrefix:@"csrf_token="]) {
+        csrfCookie = [trimmed substringFromIndex:@"csrf_token=".length];
+        break;
+      }
+    }
+  }
+  if (!csrfHeader || !csrfCookie ||
+      ![PDSSecurityCompare constantTimeEqualString:csrfHeader
+                                            string:csrfCookie]) {
+    response.statusCode = 403;
+    [response setJsonBody:@{@"ok" : @NO, @"error" : @"Invalid CSRF token"}];
+    return;
+  }
+
+  if (!handle.length || !email.length || !password.length) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Handle, email, and password are required"
+    }];
+    return;
+  }
+
+  if (!self.accountService) {
+    GZ_LOG_AUTH_ERROR(@"Signup attempted but no accountService configured");
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Authentication service unavailable"
+    }];
+    return;
+  }
+
+  // Registration gate validation (invite codes, CAPTCHA, phone OTP, ...).
+  // Mirrors the com.atproto.server.createAccount path so a new account created
+  // through the OAuth `prompt=create` UI is gated exactly like an XRPC one.
+  if (self.registrationGate) {
+    NSError *gateError = nil;
+    NSDictionary *gateBody = @{
+      @"email" : email,
+      @"handle" : handle,
+      @"password" : password,
+      @"inviteCode" : inviteCode ?: @""
+    };
+    ATProtoServiceConfiguration *configuration =
+        [ATProtoServiceConfiguration sharedConfiguration];
+    BOOL passed = NO;
+    if ([self.registrationGate
+            respondsToSelector:@selector(validateRegistrationRequest:
+                                          configuration:remoteAddress:error:)]) {
+      passed = [self.registrationGate
+          validateRegistrationRequest:gateBody
+                        configuration:configuration
+                        remoteAddress:request.remoteAddress
+                                error:&gateError];
+    } else {
+      passed = [self.registrationGate validateRegistrationRequest:gateBody
+                                                    configuration:configuration
+                                                            error:&gateError];
+    }
+    if (!passed) {
+      NSString *gateMessage = gateError.localizedDescription
+          ?: @"Registration rejected";
+      if ([gateError.domain isEqualToString:PDSRegistrationGateErrorDomain]) {
+        switch (gateError.code) {
+          case PDSRegistrationGateErrorInviteCodeRequired:
+          case PDSRegistrationGateErrorInvalidInviteCode:
+            response.statusCode = 400;
+            [response setJsonBody:@{
+              @"ok" : @NO,
+              @"error" : @"Invalid invite code",
+              @"error_description" : gateMessage
+            }];
+            return;
+          default:
+            break;
+        }
+      }
+      response.statusCode = 400;
+      [response setJsonBody:@{
+        @"ok" : @NO,
+        @"error" : @"Registration rejected",
+        @"error_description" : gateMessage
+      }];
+      return;
+    }
+  }
+
+  NSError *createError = nil;
+  NSDictionary *result = [self.accountService createAccountForEmail:email
+                                                           password:password
+                                                             handle:handle
+                                                                did:nil
+                                                              error:&createError];
+  if (!result) {
+    GZ_LOG_AUTH_INFO(@"Signup failed for handle: %@, error: %@", handle,
+                     createError.localizedDescription ?: @"unknown");
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : createError.localizedDescription ?: @"Account creation failed"
+    }];
+    return;
+  }
+
+  NSString *createdDid = result[@"did"];
+  if (createdDid && self.repositoryService) {
+    NSError *initError = nil;
+    if (![self.repositoryService initializeRepoForDid:createdDid
+                                                error:&initError]) {
+      GZ_LOG_AUTH_ERROR(@"Failed to initialize repo for DID %@: %@", createdDid,
+                        initError);
+    }
+  }
+
+  GZ_LOG_AUTH_INFO(@"Account created during OAuth signup for handle: %@",
+                   handle);
+  NSString *sessionToken = [self createPendingConsentSessionForDid:createdDid
+                                                           handle:result[@"handle"] ?: handle];
+  if (!sessionToken) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Failed to create session token"
+    }];
+    return;
+  }
+  response.statusCode = 200;
+  [response setJsonBody:@{
+    @"ok" : @YES,
+    @"did" : createdDid ?: @"",
+    @"session_token" : sessionToken
+  }];
 }
 
 @end

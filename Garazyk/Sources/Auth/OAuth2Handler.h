@@ -24,11 +24,17 @@
 @class ATProtoHttpRequest;
 @class ATProtoHttpResponse;
 @class ATProtoJWTMinter;
+@class PDSRepositoryService;
 
 /**
  * @abstract Defines the PDSAccountService protocol contract.
  */
 @protocol PDSAccountService;
+
+/**
+ * @abstract Defines the PDSRegistrationGate protocol contract.
+ */
+@protocol PDSRegistrationGate;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -72,6 +78,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Account service for sign-in credential validation. */
 @property (nonatomic, strong, nullable) id<PDSAccountService> accountService;
+
+/*! Registration gate used to validate account creation during OAuth signup (`prompt=create`). */
+@property (nonatomic, strong, nullable) id<PDSRegistrationGate> registrationGate;
+
+/*! Repository service used to initialize a new account's repo after OAuth signup. */
+@property (nonatomic, strong, nullable) PDSRepositoryService *repositoryService;
 
 /*! Client metadata for dynamic client validation (ATProto OAuth). */
 @property (nonatomic, strong, nullable) NSDictionary *clientMetadata;
@@ -162,6 +174,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 /** Handles username and password sign-in during authorization. */
 - (void)handleAuthorizeSignIn:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
+
+/** Handles account creation during authorization (`prompt=create`). */
+- (void)handleAuthorizeSignup:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
 
 /** Issues a WebAuthn passkey challenge during authorization. */
 - (void)handlePasskeyChallenge:(ATProtoHttpRequest *)request response:(ATProtoHttpResponse *)response;
