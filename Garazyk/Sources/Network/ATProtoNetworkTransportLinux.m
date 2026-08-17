@@ -427,7 +427,7 @@ static dispatch_queue_t atproto_dns_queue(void) {
             queues[i] = dispatch_queue_create(name.UTF8String, DISPATCH_QUEUE_SERIAL);
         }
     });
-    static _Atomic uint32_t counter = 0;
+    static uint32_t counter = 0;
     uint32_t idx = __atomic_fetch_add(&counter, 1, __ATOMIC_RELAXED) % 4;
     return queues[idx];
 }
