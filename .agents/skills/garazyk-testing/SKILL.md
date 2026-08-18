@@ -152,23 +152,32 @@ Prefer `[[PDSHealthCheck alloc] initWithServiceDatabases:gTestServiceDatabases]`
 
 ## Running Tests
 
-### Full Suite
-```bash
-scripts/test/run-tests.sh
-```
-This runs `check_ui_design_system.sh` first, then executes `build/tests/AllTests`.
+**Choosing the scope of a run is its own decision — see the `garazyk-test-runs`
+skill.** A full gated pass costs ~10 minutes; the classes a change touches
+usually run in seconds. Iterate filtered, gate full.
 
-### Build + Test
+### Quick Iteration (default while editing)
 ```bash
-xcodegen generate
-xcodebuild -scheme AllTests build
-scripts/test/run-tests.sh
+scripts/test/affected-tests.sh --run
 ```
+Maps the working-tree diff to the test classes that cover it and runs only
+those. Or filter by hand:
+```bash
+cmake --build build --target AllTests --parallel 4 && \
+  ./build/tests/AllTests --gated=run -f MyTestClass
+```
+Always pass `--gated=run`, filtered runs included — without it a gated class
+reports `Tests run: 0` and scans as green.
 
-### Quick Iteration
+### Full Suite (pre-push)
 ```bash
-xcodebuild -scheme AllTests build && build/tests/AllTests -XCTest MyTestClass
+ctest --test-dir build --output-on-failure -j4 -E '^AllTests$'
 ```
+`-E '^AllTests$'` excludes the monolithic entry so the four shards run under
+`-j4`; a bare `ctest --test-dir build` runs everything twice, serially.
+
+`scripts/test/run-tests.sh` runs `check_ui_design_system.sh`, the admin-UI asset
+tests, then a single-process `build/tests/AllTests --gated=run`.
 
 ### Pre-submit Quality Gate
 Run `scripts/test/check_ui_design_system.sh` separately:
@@ -181,10 +190,12 @@ This validates HTML/CSS/JS files for inline styles and design token usage.
 
 | Task | Command |
 |------|---------|
-| Build all tests | `xcodebuild -scheme AllTests build` |
-| Run full suite | `scripts/test/run-tests.sh` |
-| Run one class | `build/tests/AllTests -XCTest ClassName` |
-| Run one method | `build/tests/AllTests -XCTest "Class/method"` |
+| Build all tests | `cmake --build build --target AllTests --parallel 4` |
+| Run affected classes | `scripts/test/affected-tests.sh --run` |
+| Run full suite (sharded) | `ctest --test-dir build --output-on-failure -j4 -E '^AllTests$'` |
+| Run one class | `build/tests/AllTests --gated=run -f ClassName` |
+| Run one method | `build/tests/AllTests --gated=run -XCTest "Class/method"` |
+| List classes + gate tags | `build/tests/AllTests --list` |
 | Registration audit | `PDS_TEST_REGISTRATION_AUDIT=1 build/tests/AllTests` |
 | Integration tests | `PDS_RUN_INTEGRATION_TESTS=1 build/tests/AllTests` |
 | Socket tests | `PDS_RUN_SOCKET_TESTS=1 build/tests/AllTests` |

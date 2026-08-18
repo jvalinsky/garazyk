@@ -6,7 +6,7 @@ title: Project Skill Index
 
 # Project Skill Index
 
-63 skills live in `.agents/skills/`. Load one with the client's
+64 skills live in `.agents/skills/`. Load one with the client's
 skill tool when a task matches its description; each `SKILL.md` holds the full
 text. Regenerate this file with:
 
@@ -32,6 +32,7 @@ deno run -A scripts/dev/generate_skill_index.ts
 | `garazyk-scenario-triage` | Triage failed Garazyk Deno/TypeScript ATProto scenario runs. |
 | `garazyk-schemat` | Topology models, registry resolution, manifests, compose compilation, and port allocation from the @garazyk/schemat Deno package. |
 | `garazyk-skylab` | Fresh/Preact web portal for Skylab. |
+| `garazyk-test-runs` | Choose the right scope for a Garazyk test run and execute it correctly. |
 | `garazyk-testing` | Garazyk PDS test infrastructure, mock patterns, environment gating, registration conventions, and runner workflow. |
 | `garazyk-tui` | Reusable Terminal User Interface primitives for Deno applications from the @garazyk/tui package. |
 | `garazyk-wasm-kernel` | Work on Garazyk's Objective-C Jupyter WASM kernel in objc-jupyter-wasm. |
