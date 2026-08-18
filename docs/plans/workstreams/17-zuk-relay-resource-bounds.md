@@ -1,7 +1,7 @@
 ---
 title: Zuk Relay Resource Bounds and Stream Correctness
 status: active
-last_verified: 2026-08-13
+last_verified: 2026-08-18
 ---
 
 # Zuk relay resource bounds and stream correctness
@@ -314,6 +314,49 @@ Acceptance:
 Rollback: keep the new code behind one relay-ingress feature flag for one
 release. Disabling it restores the previous queue path; never leave both paths
 active for the same upstream.
+
+### Evidence (2026-08-18)
+
+- Integrated commit: `4712d7eb1` (`codex/zuk-resource-plan`, pushed to
+  `origin/codex/zuk-resource-plan`).
+- A post-implementation review on 2026-08-17 found the original slice's
+  central defect: admission sat downstream of two unbounded async hops
+  (the pre-existing `dispatch_async(dispatch_get_main_queue(), ...)` in
+  `ATProtoFirehose.sendEventToSubscriptions:`, and a new per-client
+  `callbackQueue` hop added by the same slice), so the accounted bound was
+  not the bound that mattered. Findings recorded in
+  [phase-38-review-remediation.md](17-zuk-relay-resource-bounds/phase-38-review-remediation.md)
+  (F1-F15) and closed in thirteen ordered slices (R1-R13, waves A-F).
+- [ADR 0039](../../adr/0039-firehose-ingress-admission-seam.md) (Accepted)
+  records the resulting design: a nil-by-default synchronous `ingressGate`
+  on `ATProtoFirehose`, consulted before dispatch, so a full backlog stalls
+  the socket read instead of growing an unbounded GCD queue. AppView and
+  Beskid are unaffected by construction — neither installs a gate.
+  A refused frame closes the connection and reconnects from the last
+  *processed* cursor (reusing `RelayClient`'s existing backoff and
+  `reconnectUsesProcessedCursor`), rather than a new drop/silent-discard path.
+- Byte accounting uses an empirically measured decoded-cost multiplier (5x
+  wire-encoded length, from an RSS-delta benchmark against realistic commit
+  payloads) rather than treating wire size as the whole heap cost, per the
+  phase mission's explicit requirement.
+- Same-DID ordering holds across upstreams (tested); cross-DID work runs
+  concurrently. Disconnect-while-paused, generation-change races on the
+  resume path, and a stalled-resolver-holds-every-shard scenario are all
+  covered by dedicated stress tests (stress cases 1-7 from this phase's
+  prompt).
+- Rollback flag already existed pre-review (`RELAY_LEGACY_INGRESS`,
+  `RelayIngressConfiguration.boundedIngressEnabled`); untouched by this
+  slice.
+- Verified: full `AllTests --gated=run` (5,434 tests, 0 failures, 653.7s);
+  `scripts/dev/check_module_boundaries.sh .`; `scripts/check-recursive-setters.sh`.
+  Not run: the Linux/GNUstep gate (different toolchain, unavailable in the
+  executing session) and the phase's 60-minute stalled-resolver load run
+  (lab evidence, needs Docker scenario infrastructure not stood up in this
+  pass) — both remain open before Phase 42's closeout claims this phase's
+  acceptance gate in full.
+
+Phase 38 is complete; Phase 39 is now the next dependency-eligible P1
+phase.
 
 ## Phase 39 — Durable segmented replay and sequence recovery
 

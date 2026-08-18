@@ -1,7 +1,7 @@
 ---
 title: Garazyk Mega Plan
 status: active
-last_verified: 2026-08-12
+last_verified: 2026-08-18
 ---
 
 # Garazyk Mega Plan
@@ -224,7 +224,17 @@ documentation, TUI, package, and refactor plans.
   the workstream's dated incident record. Phase 37 implementation, its
   25-reconnect/slow-consumer structured scenario, Linux/GNUstep build, and all
   repository-wide gates are green on `codex/zuk-resource-plan`; Phase 37 is
-  complete. Phase 38 is now the next dependency-eligible P0 containment phase.
+  complete. **Phase 38 is now also complete (2026-08-18, `4712d7eb1`).** A
+  post-implementation review found the shipped slice's admission bound sat
+  downstream of two unbounded async hops rather than actually constraining
+  them; thirteen remediation slices (R1-R13) closed every finding, landing
+  ADR 0039 (Accepted) for the resulting synchronous-gate design. Full
+  `AllTests --gated=run` (5,434 tests, 0 failures) and module-boundary/
+  recursive-setter gates pass; the Linux/GNUstep gate and the 60-minute
+  stalled-resolver load run were not executed in this pass and remain open
+  before Phase 42 closes the workstream. See workstream 17's Phase 38
+  section for full evidence. Phase 39 (durable segmented replay) is now the
+  next dependency-eligible P1 phase.
 
 ## Priority model
 
