@@ -276,11 +276,25 @@ deployments and the OAuth consent page renders unstyled there. That is a
 packaging bug rather than CSS drift, and it needs a working Docker daemon to
 verify, so it is filed separately rather than guessed at.
 
-Also noted, not fixed: the former monolithic admin UI CMake target's `Assets/`
-POST_BUILD copy only re-runs when the target itself rebuilds (source
-`.m` changes), not on Assets-only edits — an incremental-build reliability
-gap unrelated to source-content correctness, filed as a follow-up rather
-than expanded into this slice.
+Also noted, not fixed (at the time): the former monolithic admin UI CMake
+target's `Assets/` POST_BUILD copy only re-ran when the target itself
+rebuilt (source `.m` changes), not on Assets-only edits — an
+incremental-build reliability gap unrelated to source-content correctness,
+filed as a follow-up rather than expanded into this slice.
+
+**Resolved incidentally (2026-08-18, verified by reading, not re-derived).**
+This gap no longer exists — not because it was fixed directly, but because
+workstream 11's M2.5 rebuilt the whole admin-UI asset pipeline for the
+per-service embedded UIs and used the correct pattern from the start.
+`CMakeLists.txt`'s `add_admin_ui_assets()` (~line 1237) populates
+`ADMIN_UI_ASSET_FILES` via `file(GLOB_RECURSE ... CONFIGURE_DEPENDS
+"${ADMIN_UI_LIBRARY_ASSET_DIR}/*" "${ADMIN_UI_PACK_ASSET_DIR}/*")` and feeds
+it straight into `add_custom_command(OUTPUT "${ADMIN_UI_ASSET_STAMP}" ...
+DEPENDS ${ADMIN_UI_ASSET_FILES} ...)` — the standard CMake file-dependency
+idiom, not a `POST_BUILD` side effect keyed to the target's own rebuild. An
+Assets-only edit is a real dependency-graph input now, not something that
+happens to piggyback on a source-triggered rebuild. The monolithic admin UI
+binary this finding was originally about is itself gone (workstream 11 M5).
 
 **Progress (2026-07-19): item 4 complete.** Replaced every remaining
 static inline `style="..."` in the scenario dashboard (7 files:
