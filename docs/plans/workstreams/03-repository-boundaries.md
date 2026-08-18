@@ -1,17 +1,57 @@
 ---
 title: Repository Boundaries
 status: active
-last_verified: 2026-08-08
+last_verified: 2026-08-18
 ---
 
 # Repository Boundaries
 
 ## Target
 
-Garazyk remains the Objective-C server repository. Reusable TUI code lives in
-`garazyk-tui`; ATProto test orchestration, scenarios, topology fixtures, and the
-scenario dashboard live in `garazyk-atproto-testing`. Versioned JSR packages
-form the dependency boundary.
+**Superseded 2026-08-18 — see "Supersession" below.** The target is now one
+private repo per package, vendored into the monorepo as git submodules, with
+the submodule commit pointer (not a JSR version) as the dependency boundary.
+
+The prior target, retained for history: Garazyk remains the Objective-C server
+repository. Reusable TUI code lives in `garazyk-tui`; ATProto test
+orchestration, scenarios, topology fixtures, and the scenario dashboard live in
+`garazyk-atproto-testing`. Versioned JSR packages form the dependency boundary.
+
+## Supersession (2026-08-18)
+
+Maintainer direction, this session: *"can you move all of the deno work to
+private repos (we already did some of this), until we publish can we vendor
+them as git submodules?"* — with one-repo-per-package chosen explicitly over
+the grouped layout.
+
+What changed against the prior target:
+
+- **Seven repos, not two.** `jvalinsky/garazyk-{gruszka,hamownia,laweta,
+  narzedzia,schemat,tiles,tui}`, each seeded with `git subtree split` so
+  per-package authorship history survives.
+- **Submodules, not JSR, are the dependency boundary.** This is compatible
+  with the standing publication block (deciduous #223): submodules need no
+  registry, so nothing is published.
+- **`garazyk-atproto-testing` is orphaned** by the split. It still holds the
+  grouped gruszka/hamownia/laweta/schemat layout. Archive or delete — decision
+  not yet taken.
+- **`packages/` is removed from the public monorepo's HEAD.** History still
+  exposes it; retracting the published history was considered and declined.
+
+Open blockers (deciduous #455):
+
+1. CI cannot read private submodules with `GITHUB_TOKEN`; the four
+   Deno-touching workflows now pass `submodules: recursive` but need a PAT or
+   deploy keys before they pass.
+2. `garazyk-tui` has pre-existing divergent history; its submodule points at
+   branch `monorepo-split` pending reconciliation.
+3. `hamownia`, `narzedzia`, and `laweta` import sibling packages, so they
+   cannot build standalone until publication — which R2 still defers.
+
+R2–R4 below are written against the JSR target and are stale in that respect;
+they are left in place until the submodule layout is merged and re-verified.
+
+Work landed on branch `deno-package-split` (not pushed).
 
 ## Current evidence
 
