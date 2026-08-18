@@ -28,6 +28,8 @@
 @class ATProtoFirehoseCommitEvent;
 @class ATProtoFirehoseRawEvent;
 
+#import "Sync/Relay/RelayIngressPipeline.h"
+
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
@@ -176,6 +178,14 @@ NS_ASSUME_NONNULL_BEGIN
              are rejected without advancing repository state.
  */
 - (BOOL)verifyChainForCommitEvent:(ATProtoFirehoseCommitEvent *)event;
+
+/**
+ * @abstract Processes one upstream event on an ingress shard or legacy queue.
+ */
+- (void)processUpstreamEvent:(id)event
+                 fromUpstream:(NSString *)url
+                     sequence:(int64_t)sequence
+                   completion:(nullable RelayIngressProcessCompletion)completion;
 
 @end
 

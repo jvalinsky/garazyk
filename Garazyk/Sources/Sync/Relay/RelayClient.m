@@ -10,9 +10,17 @@ NSString * const RelayClientErrorDomain = @"com.atproto.pds.relay.client";
 NSInteger const RelayClientErrorCodeConnectionFailed = 4000;
 NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
+static void *RelayClientSequenceQueueKey = &RelayClientSequenceQueueKey;
+
 @interface ATProtoRelayClient () <FirehoseSubscriptionDelegate> {
     BOOL _readingPaused;
     BOOL _shouldReconnect;
+    dispatch_queue_t _sequenceQueue;
+    // Backing storage for currentSeq/lastReceivedSequence, declared
+    // explicitly because both properties get fully custom (queue-confined)
+    // getters and setters below, which suppresses ivar auto-synthesis.
+    int64_t _currentSeq;
+    int64_t _lastReceivedSequence;
 }
 
 @property (nonatomic, strong, readwrite) NSURL *serverURL;
@@ -23,9 +31,19 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 @property (nonatomic, assign, readwrite) NSInteger reconnectAttempts;
 @property (nonatomic, strong, readwrite, nullable) ATProtoFirehose *firehose;
 @property (nonatomic, strong, readwrite, nullable) ATProtoFirehoseSubscription *subscription;
+// currentSeq/lastReceivedSequence get custom accessors below that confine
+// every read and write to _sequenceQueue (see F7): establishConnection and
+// scheduleReconnect's dispatch_after touch these from _managerQueue and
+// self.callbackQueue, noteIncomingSequence: touches them from the main
+// queue (via ATProtoFirehose.sendEventToSubscriptions:), and
+// acknowledgeProcessedSequence: touches them from RelayIngressPipeline's
+// shard queues -- at least three distinct GCD queues doing unguarded
+// read-modify-write on plain int64_t properties otherwise.
 @property (nonatomic, assign, readwrite) int64_t currentSeq;
+@property (nonatomic, assign, readwrite) int64_t lastReceivedSequence;
 @property (nonatomic, strong, readwrite) NSMutableDictionary<NSString *, NSNumber *> *cursorStorage;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readwrite) dispatch_queue_t storageQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readwrite) dispatch_queue_t callbackQueue;
 
 @end
 
@@ -46,8 +64,50 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
         _reconnectAttempts = 0;
         _cursorStorage = [NSMutableDictionary dictionary];
         _storageQueue = dispatch_queue_create("com.atproto.pds.relay.storage", DISPATCH_QUEUE_SERIAL);
+        _callbackQueue = dispatch_queue_create("com.atproto.pds.relay.callback", DISPATCH_QUEUE_SERIAL);
+        _sequenceQueue = dispatch_queue_create("com.atproto.pds.relay.sequence", DISPATCH_QUEUE_SERIAL);
+        dispatch_queue_set_specific(_sequenceQueue,
+                                    RelayClientSequenceQueueKey,
+                                    (__bridge void *)self,
+                                    NULL);
     }
     return self;
+}
+
+- (void)performOnSequenceQueue:(dispatch_block_t)block {
+    if (dispatch_get_specific(RelayClientSequenceQueueKey) == (__bridge void *)self) {
+        block();
+    } else {
+        dispatch_sync(_sequenceQueue, block);
+    }
+}
+
+- (int64_t)currentSeq {
+    __block int64_t value = 0;
+    [self performOnSequenceQueue:^{
+        value = self->_currentSeq;
+    }];
+    return value;
+}
+
+- (void)setCurrentSeq:(int64_t)currentSeq {
+    [self performOnSequenceQueue:^{
+        self->_currentSeq = currentSeq;
+    }];
+}
+
+- (int64_t)lastReceivedSequence {
+    __block int64_t value = 0;
+    [self performOnSequenceQueue:^{
+        value = self->_lastReceivedSequence;
+    }];
+    return value;
+}
+
+- (void)setLastReceivedSequence:(int64_t)lastReceivedSequence {
+    [self performOnSequenceQueue:^{
+        self->_lastReceivedSequence = lastReceivedSequence;
+    }];
 }
 
 - (void)connect {
@@ -66,6 +126,11 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
         return;
     }
 
+    // Reset the high-water mark to the reconnect cursor so frames the relay
+    // replays from self.currentSeq are accepted by noteIncomingSequence:
+    // instead of being dropped as duplicates of the pre-disconnect stream.
+    self.lastReceivedSequence = self.currentSeq;
+
     self.firehose = [self configuredFirehoseForWebSocketURL:wsURL];
     self.subscription = [self.firehose subscribeWithCursor:self.currentSeq
                                                 collections:nil
@@ -77,6 +142,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 - (ATProtoFirehose *)configuredFirehoseForWebSocketURL:(NSURL *)webSocketURL {
     ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:webSocketURL];
     firehose.accessToken = self.accessToken;
+    firehose.ingressGate = self.ingressGate;
     return firehose;
 }
 
@@ -164,9 +230,42 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     });
 }
 
+- (BOOL)noteIncomingSequence:(int64_t)sequence {
+    if (sequence <= 0) {
+        return YES;
+    }
+    BOOL reconnectUsesProcessedCursor = self.reconnectUsesProcessedCursor;
+    __block BOOL accepted = YES;
+    // Single queue-confined block so the lastReceivedSequence
+    // check-then-set is one atomic operation rather than two separate
+    // get/set round trips that another queue could interleave between.
+    [self performOnSequenceQueue:^{
+        if (self->_lastReceivedSequence > 0 && sequence <= self->_lastReceivedSequence) {
+            accepted = NO;
+            return;
+        }
+        self->_lastReceivedSequence = sequence;
+        if (!reconnectUsesProcessedCursor) {
+            self->_currentSeq = sequence;
+        }
+    }];
+    return accepted;
+}
+
+- (void)acknowledgeProcessedSequence:(int64_t)sequence {
+    // Single queue-confined block: the "if greater, advance" check must be
+    // atomic against concurrent calls from other RelayIngressPipeline shard
+    // queues, not just individually torn-read-safe.
+    [self performOnSequenceQueue:^{
+        if (sequence > self->_currentSeq) {
+            self->_currentSeq = sequence;
+        }
+    }];
+}
+
 - (void)notifyDisconnectionWithError:(NSError *)error {
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.callbackQueue, ^{
         if (delegate) {
             [delegate relayClient:self didDisconnectWithError:error];
         }
@@ -191,7 +290,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
                        self.serverURL, (long)self.reconnectAttempts, (long)self.maxReconnectAttempts,
                        delay, (long long)self.currentSeq);
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), self.callbackQueue, ^{
         if (self->_shouldReconnect && !self.isConnected) {
             [self establishConnection];
         }
@@ -205,7 +304,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     self.reconnectAttempts = 0;
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.callbackQueue, ^{
         if (delegate) {
             [delegate relayClientDidConnect:self];
         }
@@ -213,19 +312,16 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event {
-    if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
-        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic commit sequence %lld (current=%lld)",
-                         (long long)event.seq, (long long)self.currentSeq);
+    if (![self noteIncomingSequence:event.seq]) {
+        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic commit sequence %lld (received=%lld)",
+                         (long long)event.seq, (long long)self.lastReceivedSequence);
         return;
     }
 
     [self storeCursor:event.seq forRepo:event.repo];
-    if (event.seq > 0) {
-        self.currentSeq = event.seq;
-    }
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.callbackQueue, ^{
         if (delegate) {
             [delegate relayClient:self didReceiveCommitEvent:event];
         }
@@ -233,17 +329,14 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event {
-    if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
-        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic identity sequence %lld (current=%lld)",
-                         (long long)event.seq, (long long)self.currentSeq);
+    if (![self noteIncomingSequence:event.seq]) {
+        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic identity sequence %lld (received=%lld)",
+                         (long long)event.seq, (long long)self.lastReceivedSequence);
         return;
-    }
-    if (event.seq > 0) {
-        self.currentSeq = event.seq;
     }
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.callbackQueue, ^{
         if (delegate) {
             [delegate relayClient:self didReceiveIdentityEvent:event];
         }
@@ -251,17 +344,14 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveAccountEvent:(ATProtoFirehoseAccountEvent *)event {
-    if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
-        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic account sequence %lld (current=%lld)",
-                         (long long)event.seq, (long long)self.currentSeq);
+    if (![self noteIncomingSequence:event.seq]) {
+        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic account sequence %lld (received=%lld)",
+                         (long long)event.seq, (long long)self.lastReceivedSequence);
         return;
-    }
-    if (event.seq > 0) {
-        self.currentSeq = event.seq;
     }
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.callbackQueue, ^{
         if (delegate && [delegate respondsToSelector:@selector(relayClient:didReceiveAccountEvent:)]) {
             [delegate relayClient:self didReceiveAccountEvent:event];
         }
@@ -269,17 +359,14 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveSyncEvent:(ATProtoFirehoseSyncEvent *)event {
-    if (event.seq > 0 && self.currentSeq > 0 && event.seq <= self.currentSeq) {
-        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic sync sequence %lld (current=%lld)",
-                         (long long)event.seq, (long long)self.currentSeq);
+    if (![self noteIncomingSequence:event.seq]) {
+        GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic sync sequence %lld (received=%lld)",
+                         (long long)event.seq, (long long)self.lastReceivedSequence);
         return;
-    }
-    if (event.seq > 0) {
-        self.currentSeq = event.seq;
     }
 
     id<RelayClientDelegate> delegate = self.delegate;
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.callbackQueue, ^{
         if (delegate &&
             [delegate respondsToSelector:@selector(relayClient:didReceiveSyncEvent:)]) {
             [delegate relayClient:self didReceiveSyncEvent:event];
@@ -290,15 +377,14 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 - (void)firehoseSubscription:(ATProtoFirehoseSubscription *)subscription didReceiveRawEvent:(ATProtoFirehoseRawEvent *)event {
     if (event.payload[@"seq"] != nil) {
         int64_t sequence = [event.payload[@"seq"] longLongValue];
-        if (sequence > 0 && self.currentSeq > 0 && sequence <= self.currentSeq) {
-            GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic raw sequence %lld (current=%lld)",
-                             (long long)sequence, (long long)self.currentSeq);
+        if (![self noteIncomingSequence:sequence]) {
+            GZ_LOG_SYNC_WARN(@"RelayClient: Dropping non-monotonic raw sequence %lld (received=%lld)",
+                             (long long)sequence, (long long)self.lastReceivedSequence);
             return;
         }
-        if (sequence > 0) self.currentSeq = sequence;
     }
     id<RelayClientDelegate> delegate = self.delegate;
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.callbackQueue, ^{
         if (delegate && [delegate respondsToSelector:@selector(relayClient:didReceiveRawEvent:)]) {
             [delegate relayClient:self didReceiveRawEvent:event];
         }
@@ -309,7 +395,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     GZ_LOG_SYNC_WARN(@"RelayClient: Received error from relay: error=%@ message=%@", event.error, event.message);
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.callbackQueue, ^{
         if (delegate) {
             [delegate relayClient:self didReceiveErrorEvent:event];
         }
@@ -331,7 +417,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     int64_t seq = self.currentSeq;  // Capture value
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(self.callbackQueue, ^{
         if (delegate) {
             [delegate relayClient:self didReceiveCursor:seq];
         }

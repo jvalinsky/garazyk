@@ -15,6 +15,27 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)webSocketConnection:(ATProtoWebSocketConnection *)connection didCloseWithCode:(NSInteger)code reason:(NSString *)reason;
 @end
 
+/*!
+ @class FirehoseTestCloseRecordingConnection
+
+ @abstract A connection stand-in that records closeWithCode:reason: calls
+ instead of touching a real socket/session, so ADR 0039's ingressGate
+ refusal path can be verified without opening a network connection.
+ */
+@interface FirehoseTestCloseRecordingConnection : ATProtoWebSocketConnection
+@property (nonatomic, assign) NSInteger closedWithCode;
+@property (nonatomic, copy, nullable) NSString *closedWithReason;
+@property (nonatomic, assign) NSUInteger closeCallCount;
+@end
+
+@implementation FirehoseTestCloseRecordingConnection
+- (void)closeWithCode:(NSInteger)code reason:(NSString *)reason {
+    self.closedWithCode = code;
+    self.closedWithReason = reason;
+    self.closeCallCount++;
+}
+@end
+
 @interface FirehoseTestDelegate : NSObject <FirehoseSubscriptionDelegate>
 @property (nonatomic, strong) XCTestExpectation *commitExpectation;
 @property (nonatomic, strong) XCTestExpectation *identityExpectation;
@@ -188,6 +209,137 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects(delegate.closeError.userInfo[FirehoseCloseReasonKey], @"Outbound queue limit exceeded");
     XCTAssertTrue(FirehoseErrorIsBackpressureClose(delegate.closeError));
 }
+
+#ifndef GNUSTEP
+// ADR 0039, section 1/3: an installed ingressGate that refuses a Commit
+// frame must close the connection with a backpressure-classified code and
+// reason instead of delivering the event.
+- (void)testIngressGateRefusalClosesConnectionInsteadOfDelivering {
+    ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
+    FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
+    // Deliberately no commitExpectation: the event must never reach the delegate.
+    [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
+
+    FirehoseTestCloseRecordingConnection *connection =
+        [[FirehoseTestCloseRecordingConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
+    [firehose setValue:connection forKey:@"connection"];
+
+    __block BOOL gateInvoked = NO;
+    firehose.ingressGate = ^BOOL(id event, FirehoseEventKind kind) {
+        gateInvoked = YES;
+        XCTAssertEqual(kind, FirehoseEventKindCommit);
+        XCTAssertTrue([event isKindOfClass:[ATProtoFirehoseCommitEvent class]]);
+        return NO;
+    };
+
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
+    event.seq = 1;
+    event.repo = @"did:plc:alice";
+    event.commit = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    event.ops = @[@{@"action": @"create"}];
+    event.blobs = @[];
+    event.time = @"2024-01-01T00:00:00Z";
+    event.rebase = NO;
+    event.tooBig = NO;
+    event.rev = @"123";
+
+    NSError *error = nil;
+    NSData *data = [formatter encodeCommitEvent:event error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(data);
+
+    [firehose webSocketConnection:connection didReceiveMessage:data];
+
+    XCTAssertTrue(gateInvoked);
+    XCTAssertNil(delegate.commitEvent);
+    XCTAssertEqual(connection.closeCallCount, (NSUInteger)1);
+    // Must match the close vocabulary FirehoseErrorIsBackpressureClose
+    // recognizes (code 1008/1009, or "ConsumerTooSlow"/"Outbound queue").
+    XCTAssertTrue(connection.closedWithCode == 1008 || connection.closedWithCode == 1009);
+    XCTAssertTrue([connection.closedWithReason rangeOfString:@"ConsumerTooSlow" options:NSCaseInsensitiveSearch].location != NSNotFound);
+}
+
+// ADR 0039, section 1: a gate that admits the frame must deliver it exactly
+// as the nil-gate path does.
+- (void)testIngressGateAdmissionDeliversEventNormally {
+    ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
+    FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
+    delegate.commitExpectation = [self expectationWithDescription:@"commit"];
+    [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
+
+    FirehoseTestCloseRecordingConnection *connection =
+        [[FirehoseTestCloseRecordingConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
+    [firehose setValue:connection forKey:@"connection"];
+
+    __block BOOL gateInvoked = NO;
+    firehose.ingressGate = ^BOOL(id event, FirehoseEventKind kind) {
+        gateInvoked = YES;
+        return YES;
+    };
+
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
+    event.seq = 2;
+    event.repo = @"did:plc:bob";
+    event.commit = [ATProtoCID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
+    event.ops = @[@{@"action": @"create"}];
+    event.blobs = @[];
+    event.time = @"2024-01-01T00:00:00Z";
+    event.rebase = NO;
+    event.tooBig = NO;
+    event.rev = @"124";
+
+    NSError *error = nil;
+    NSData *data = [formatter encodeCommitEvent:event error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(data);
+
+    [firehose webSocketConnection:connection didReceiveMessage:data];
+
+    [self waitForExpectations:@[delegate.commitExpectation] timeout:1.0];
+    XCTAssertTrue(gateInvoked);
+    XCTAssertEqualObjects(delegate.commitEvent.repo, @"did:plc:bob");
+    XCTAssertEqual(connection.closeCallCount, (NSUInteger)0);
+}
+#endif
+
+#ifndef GNUSTEP
+// ADR 0039, section 1: #info and error frames carry no wireFrameLength and
+// no backlog cost, so they are exempt from ingressGate even when the gate
+// would refuse everything else.
+- (void)testIngressGateDoesNotApplyToErrorFrames {
+    ATProtoFirehose *firehose = [[ATProtoFirehose alloc] initWithServerURL:[NSURL URLWithString:@"wss://example.com"]];
+    FirehoseTestDelegate *delegate = [[FirehoseTestDelegate alloc] init];
+    delegate.errorExpectation = [self expectationWithDescription:@"error"];
+    [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
+
+    FirehoseTestCloseRecordingConnection *connection =
+        [[FirehoseTestCloseRecordingConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
+    [firehose setValue:connection forKey:@"connection"];
+
+    firehose.ingressGate = ^BOOL(id event, FirehoseEventKind kind) {
+        XCTFail(@"ingressGate must not be consulted for error frames");
+        return NO;
+    };
+
+    ATProtoEventFormatter *formatter = [[ATProtoEventFormatter alloc] init];
+    ATProtoFirehoseErrorEvent *event = [[ATProtoFirehoseErrorEvent alloc] init];
+    event.error = @"ServerError";
+    event.message = @"oops";
+
+    NSError *error = nil;
+    NSData *data = [formatter encodeErrorEvent:event error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(data);
+
+    [firehose webSocketConnection:connection didReceiveMessage:data];
+
+    [self waitForExpectations:@[delegate.errorExpectation] timeout:1.0];
+    XCTAssertEqualObjects(delegate.errorEvent.message, @"oops");
+    XCTAssertEqual(connection.closeCallCount, (NSUInteger)0);
+}
+#endif
 
 - (void)testBackpressureCloseHelperRecognizesConsumerTooSlow {
     NSError *error = [NSError errorWithDomain:FirehoseErrorDomain

@@ -152,4 +152,94 @@
     XCTAssertTrue([prometheus containsString:@"relay_signature_validation_failures_total{category=\"unknown\"} 1"]);
 }
 
+- (void)testPerUpstreamPauseMetrics {
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
+
+    [metrics recordIngressUpstreamPause:@"https://pds1.example"];
+    [self waitForMetricsQueue];
+    [metrics recordIngressUpstreamPause:@"https://pds1.example"];
+    [self waitForMetricsQueue];
+    [metrics recordIngressUpstreamPause:@"https://pds2.example"];
+    [self waitForMetricsQueue];
+
+    // Simulate some pause duration
+    usleep(50000); // 50ms
+
+    [metrics recordIngressUpstreamResume:@"https://pds1.example"];
+    [self waitForMetricsQueue];
+
+    NSString *prometheus = [metrics renderPrometheusMetrics];
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_upstream_pause_total{upstream=\"https://pds1.example\"} 2"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_upstream_pause_total{upstream=\"https://pds2.example\"} 1"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_upstream_paused_duration_ms_total{upstream="]);
+}
+
+- (void)testPerShardDispatchMetrics {
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
+
+    [metrics recordIngressShardDispatch:0];
+    [self waitForMetricsQueue];
+    [metrics recordIngressShardDispatch:0];
+    [self waitForMetricsQueue];
+    [metrics recordIngressShardDispatch:1];
+    [self waitForMetricsQueue];
+    [metrics recordIngressShardDispatch:3];
+    [self waitForMetricsQueue];
+
+    NSString *prometheus = [metrics renderPrometheusMetrics];
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_shard_dispatch_total{shard=\"0\"} 2"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_shard_dispatch_total{shard=\"1\"} 1"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_shard_dispatch_total{shard=\"3\"} 1"]);
+}
+
+- (void)testOldestAgeMetric {
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
+
+    [metrics recordIngressOldestAgeMs:0];
+    [self waitForMetricsQueue];
+
+    NSString *prometheus = [metrics renderPrometheusMetrics];
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_oldest_accepted_age_ms 0"]);
+
+    [metrics recordIngressOldestAgeMs:123.5];
+    [self waitForMetricsQueue];
+
+    prometheus = [metrics renderPrometheusMetrics];
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_oldest_accepted_age_ms"]);
+}
+
+- (void)testQueueDelayHistogram {
+    ATProtoRelayMetrics *metrics = [[ATProtoRelayMetrics alloc] init];
+
+    // Record delays in different buckets
+    [metrics recordIngressQueueDelayMs:0.5];   // falls in 1ms bucket
+    [self waitForMetricsQueue];
+    [metrics recordIngressQueueDelayMs:5];     // falls in 10ms bucket
+    [self waitForMetricsQueue];
+    [metrics recordIngressQueueDelayMs:25];    // falls in 50ms bucket
+    [self waitForMetricsQueue];
+    [metrics recordIngressQueueDelayMs:75];    // falls in 100ms bucket
+    [self waitForMetricsQueue];
+    [metrics recordIngressQueueDelayMs:750];   // falls in 1000ms bucket
+    [self waitForMetricsQueue];
+
+    NSString *prometheus = [metrics renderPrometheusMetrics];
+
+    // Verify histogram format and buckets exist
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_bucket"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_sum"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_count"]);
+
+    // Verify bucket structure with specific values
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_bucket{le=\"1\"}"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_bucket{le=\"10\"}"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_bucket{le=\"50\"}"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_bucket{le=\"100\"}"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_bucket{le=\"1000\"}"]);
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_bucket{le=\"+Inf\"}"]);
+
+    // Verify count is correct (5 observations)
+    XCTAssertTrue([prometheus containsString:@"relay_ingress_queue_delay_ms_count 5"]);
+}
+
 @end

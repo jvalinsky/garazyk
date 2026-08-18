@@ -12,6 +12,7 @@
 #import "Sync/Relay/RelayEventBuffer.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Sync/Relay/RelayMetrics.h"
+#import "Sync/Relay/RelayIngressAdmission.h"
 #import "Sync/Relay/RelayRepoStateManager.h"
 #import "Sync/Relay/RelayEventValidator.h"
 #import "Sync/Firehose/Firehose.h"
@@ -81,144 +82,184 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
 
 #pragma mark - RelayUpstreamManagerDelegate
 
-- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
-         didReceiveEvent:(id)event
-           fromUpstream:(NSString *)url {
+- (void)processUpstreamEvent:(id)event
+                 fromUpstream:(NSString *)url
+                     sequence:(int64_t)sequence
+                   completion:(RelayIngressProcessCompletion)completion {
     GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event from %@", url);
-    // Process on handler queue for thread safety
-    dispatch_async(self.handlerQueue, ^{
-        // Extract sequence number and event type
-        int64_t seq = 0;
-        [self.metrics recordEventReceived];
+    [self.metrics recordEventReceived];
 
-        GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event of class %@", NSStringFromClass([event class]));
-        if ([event isKindOfClass:[ATProtoFirehoseCommitEvent class]]) {
-            ATProtoFirehoseCommitEvent *commitEvent = (ATProtoFirehoseCommitEvent *)event;
+    GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event of class %@", NSStringFromClass([event class]));
+    RelayIngressReleaseReason finishReason = RelayIngressReleaseReasonProcessed;
+    int64_t seq = sequence;
+    if ([event isKindOfClass:[ATProtoFirehoseCommitEvent class]]) {
+        ATProtoFirehoseCommitEvent *commitEvent = (ATProtoFirehoseCommitEvent *)event;
 
-            if (self.eventValidator) {
-                ATProtoRelayValidationOutcome *outcome = [self.eventValidator validateCommitEvent:commitEvent];
-                if (![self.eventValidator shouldForwardEvent:outcome]) {
-                    GZ_LOG_SYNC_WARN(@"Relay: Dropping commit seq=%lld repo=%@ (validation: %d %@)",
-                                     (long long)commitEvent.seq, commitEvent.repo,
-                                     (int)outcome.result, outcome.errorMessage ?: @"");
-                    return;
-                }
+        if (self.eventValidator) {
+            ATProtoRelayValidationOutcome *outcome = [self.eventValidator validateCommitEvent:commitEvent];
+            if (![self.eventValidator shouldForwardEvent:outcome]) {
+                GZ_LOG_SYNC_WARN(@"Relay: Dropping commit seq=%lld repo=%@ (validation: %d %@)",
+                                 (long long)commitEvent.seq, commitEvent.repo,
+                                 (int)outcome.result, outcome.errorMessage ?: @"");
+                finishReason = RelayIngressReleaseReasonRejected;
+                if (completion) completion(finishReason);
+                return;
             }
+        }
 
-            if (![self verifyChainForCommitEvent:commitEvent]) {
-                GZ_LOG_SYNC_WARN(@"Relay: Not forwarding commit seq=%lld repo=%@ (continuity policy)",
-                                 (long long)commitEvent.seq, commitEvent.repo);
-                if ([self.repoStateManager statusForRepo:commitEvent.repo] ==
-                    RelayRepoStatusDesynchronized) {
+        if (![self verifyChainForCommitEvent:commitEvent]) {
+            GZ_LOG_SYNC_WARN(@"Relay: Not forwarding commit seq=%lld repo=%@ (continuity policy)",
+                             (long long)commitEvent.seq, commitEvent.repo);
+            if ([self.repoStateManager statusForRepo:commitEvent.repo] ==
+                RelayRepoStatusDesynchronized) {
+                dispatch_async(self.handlerQueue, ^{
                     [self recoverRepo:commitEvent.repo
                          fromUpstream:url
                              sequence:(int64_t)commitEvent.seq];
-                }
-                return;
+                });
             }
+            finishReason = RelayIngressReleaseReasonRejected;
+            if (completion) completion(finishReason);
+            return;
+        }
 
-            // Just broadcast. Re-sequencing happens in ATProtoSubscribeReposHandler/PDSSession.
-            if (self.subscribeReposHandler) {
-                [self.subscribeReposHandler broadcastCommitEvent:commitEvent];
-                seq = (int64_t)commitEvent.seq;
-            } else if (self.eventBuffer) {
-                seq = (int64_t)commitEvent.seq;
-                [self.eventBuffer appendEvent:commitEvent seq:seq];
-            }
-            [self.metrics recordEventForwarded];
-            [self.metrics recordSequence:seq];
+        if (self.subscribeReposHandler) {
+            [self.subscribeReposHandler broadcastCommitEvent:commitEvent];
+            seq = (int64_t)commitEvent.seq;
+        } else if (self.eventBuffer) {
+            seq = (int64_t)commitEvent.seq;
+            [self.eventBuffer appendEvent:commitEvent seq:seq];
+        }
+        [self.metrics recordEventForwarded];
+        [self.metrics recordSequence:seq];
 
-            GZ_LOG_DEBUG(@"Relay: Received and broadcast commit seq=%lld repo=%@", seq, commitEvent.repo);
+        GZ_LOG_DEBUG(@"Relay: Received and broadcast commit seq=%lld repo=%@", seq, commitEvent.repo);
+    }
+    else if ([event isKindOfClass:[ATProtoFirehoseSyncEvent class]]) {
+        ATProtoFirehoseSyncEvent *syncEvent = (ATProtoFirehoseSyncEvent *)event;
+        NSError *syncError = nil;
+        ATProtoCID *commitCID = nil;
+        ATProtoRepoCommit *commit =
+            [self validatedCommitForSyncEvent:syncEvent
+                                   commitCID:&commitCID
+                                       error:&syncError];
+        if (!commit) {
+            GZ_LOG_SYNC_WARN(@"Relay: Dropping invalid sync seq=%lld did=%@: %@",
+                             (long long)syncEvent.seq, syncEvent.did,
+                             syncError.localizedDescription ?: @"unknown");
+            [self.metrics recordEventInvalidated:@"sync-envelope"];
+            [self.metrics recordEventDropped];
+            finishReason = RelayIngressReleaseReasonRejected;
+            if (completion) completion(finishReason);
+            return;
         }
-        else if ([event isKindOfClass:[ATProtoFirehoseSyncEvent class]]) {
-            ATProtoFirehoseSyncEvent *syncEvent = (ATProtoFirehoseSyncEvent *)event;
-            NSError *syncError = nil;
-            ATProtoCID *commitCID = nil;
-            ATProtoRepoCommit *commit =
-                [self validatedCommitForSyncEvent:syncEvent
-                                       commitCID:&commitCID
-                                           error:&syncError];
-            if (!commit) {
-                GZ_LOG_SYNC_WARN(@"Relay: Dropping invalid sync seq=%lld did=%@: %@",
-                                 (long long)syncEvent.seq, syncEvent.did,
-                                 syncError.localizedDescription ?: @"unknown");
-                [self.metrics recordEventInvalidated:@"sync-envelope"];
-                [self.metrics recordEventDropped];
-                return;
-            }
 
-            [self.repoStateManager handleCommitForRepo:syncEvent.did
-                                             commitCID:commitCID.stringValue
-                                               dataCID:commit.dataCID.stringValue
-                                                   rev:syncEvent.rev ?: @""
-                                                   seq:(int64_t)syncEvent.seq];
-            [self.metrics recordSyncReset];
-            if (self.subscribeReposHandler) {
-                [self.subscribeReposHandler broadcastSyncEvent:syncEvent];
-            } else if (self.eventBuffer) {
-                [self.eventBuffer appendEvent:syncEvent seq:(int64_t)syncEvent.seq];
-            }
-            [self.metrics recordEventForwarded];
-            [self.metrics recordSequence:(int64_t)syncEvent.seq];
-            GZ_LOG_SYNC_INFO(@"Relay: Applied and broadcast sync seq=%lld did=%@",
-                             (long long)syncEvent.seq, syncEvent.did);
+        [self.repoStateManager handleCommitForRepo:syncEvent.did
+                                         commitCID:commitCID.stringValue
+                                           dataCID:commit.dataCID.stringValue
+                                               rev:syncEvent.rev ?: @""
+                                               seq:(int64_t)syncEvent.seq];
+        [self.metrics recordSyncReset];
+        if (self.subscribeReposHandler) {
+            [self.subscribeReposHandler broadcastSyncEvent:syncEvent];
+        } else if (self.eventBuffer) {
+            [self.eventBuffer appendEvent:syncEvent seq:(int64_t)syncEvent.seq];
         }
-        else if ([event isKindOfClass:[ATProtoFirehoseIdentityEvent class]]) {
-            ATProtoFirehoseIdentityEvent *identityEvent = (ATProtoFirehoseIdentityEvent *)event;
-            
-            if (self.subscribeReposHandler) {
-                [self.subscribeReposHandler broadcastIdentityChange:identityEvent.did handle:identityEvent.handle];
-                seq = (int64_t)identityEvent.seq;
-            } else if (self.eventBuffer) {
-                seq = (int64_t)identityEvent.seq;
-                [self.eventBuffer appendEvent:identityEvent seq:seq];
-            }
+        [self.metrics recordEventForwarded];
+        [self.metrics recordSequence:(int64_t)syncEvent.seq];
+        GZ_LOG_SYNC_INFO(@"Relay: Applied and broadcast sync seq=%lld did=%@",
+                         (long long)syncEvent.seq, syncEvent.did);
+    }
+    else if ([event isKindOfClass:[ATProtoFirehoseIdentityEvent class]]) {
+        ATProtoFirehoseIdentityEvent *identityEvent = (ATProtoFirehoseIdentityEvent *)event;
 
-            GZ_LOG_DEBUG(@"Relay: Received and broadcast identity seq=%lld did=%@", seq, identityEvent.did);
+        if (self.subscribeReposHandler) {
+            [self.subscribeReposHandler broadcastIdentityChange:identityEvent.did handle:identityEvent.handle];
+            seq = (int64_t)identityEvent.seq;
+        } else if (self.eventBuffer) {
+            seq = (int64_t)identityEvent.seq;
+            [self.eventBuffer appendEvent:identityEvent seq:seq];
         }
-        else if ([event isKindOfClass:[ATProtoFirehoseAccountEvent class]]) {
-            ATProtoFirehoseAccountEvent *accountEvent = (ATProtoFirehoseAccountEvent *)event;
-            
-            if (self.subscribeReposHandler) {
-                [self.subscribeReposHandler broadcastAccountStatus:accountEvent.did active:accountEvent.active status:accountEvent.status];
-                seq = (int64_t)accountEvent.seq;
-            } else if (self.eventBuffer) {
-                seq = (int64_t)accountEvent.seq;
-                [self.eventBuffer appendEvent:accountEvent seq:seq];
-            }
 
-            GZ_LOG_DEBUG(@"Relay: Received and broadcast account seq=%lld did=%@", seq, accountEvent.did);
+        GZ_LOG_DEBUG(@"Relay: Received and broadcast identity seq=%lld did=%@", seq, identityEvent.did);
+    }
+    else if ([event isKindOfClass:[ATProtoFirehoseAccountEvent class]]) {
+        ATProtoFirehoseAccountEvent *accountEvent = (ATProtoFirehoseAccountEvent *)event;
+
+        if (self.subscribeReposHandler) {
+            [self.subscribeReposHandler broadcastAccountStatus:accountEvent.did active:accountEvent.active status:accountEvent.status];
+            seq = (int64_t)accountEvent.seq;
+        } else if (self.eventBuffer) {
+            seq = (int64_t)accountEvent.seq;
+            [self.eventBuffer appendEvent:accountEvent seq:seq];
         }
-        else if ([event isKindOfClass:[ATProtoFirehoseErrorEvent class]]) {
-            ATProtoFirehoseErrorEvent *errorEvent = (ATProtoFirehoseErrorEvent *)event;
-            GZ_LOG_WARN(@"Relay: Received error from upstream %@: %@", url, errorEvent.message ?: @"unknown");
+
+        GZ_LOG_DEBUG(@"Relay: Received and broadcast account seq=%lld did=%@", seq, accountEvent.did);
+    }
+    else if ([event isKindOfClass:[ATProtoFirehoseErrorEvent class]]) {
+        ATProtoFirehoseErrorEvent *errorEvent = (ATProtoFirehoseErrorEvent *)event;
+        GZ_LOG_WARN(@"Relay: Received error from upstream %@: %@", url, errorEvent.message ?: @"unknown");
+    }
+    else if ([event isKindOfClass:[ATProtoFirehoseRawEvent class]]) {
+        ATProtoFirehoseRawEvent *rawEvent = (ATProtoFirehoseRawEvent *)event;
+        int64_t rawSequence = [rawEvent.payload[@"seq"] longLongValue];
+        if (self.eventBuffer && rawSequence > 0) {
+            [self.eventBuffer appendEvent:rawEvent.frameData seq:rawSequence];
         }
-        else if ([event isKindOfClass:[ATProtoFirehoseRawEvent class]]) {
-            ATProtoFirehoseRawEvent *rawEvent = (ATProtoFirehoseRawEvent *)event;
-            int64_t rawSequence = [rawEvent.payload[@"seq"] longLongValue];
-            if (self.eventBuffer && rawSequence > 0) {
-                [self.eventBuffer appendEvent:rawEvent.frameData seq:rawSequence];
+        if (self.subscribeReposHandler) {
+            [self.subscribeReposHandler broadcastEventData:rawEvent.frameData];
+        }
+        GZ_LOG_SYNC_INFO(@"Relay: Forwarded unknown firehose event type %@ byte-for-byte", rawEvent.messageType);
+    }
+    else if ([event isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *eventDict = (NSDictionary *)event;
+        seq = [eventDict[@"seq"] longLongValue];
+        [self.eventBuffer appendEvent:eventDict seq:seq];
+
+        if (self.subscribeReposHandler) {
+            NSData *data = [NSJSONSerialization dataWithJSONObject:eventDict options:0 error:nil];
+            if (data) {
+                [self.subscribeReposHandler broadcastEventData:data];
             }
-            if (self.subscribeReposHandler) {
-                [self.subscribeReposHandler broadcastEventData:rawEvent.frameData];
-            }
-            GZ_LOG_SYNC_INFO(@"Relay: Forwarded unknown firehose event type %@ byte-for-byte", rawEvent.messageType);
         }
-        else if ([event isKindOfClass:[NSDictionary class]]) {
-            // Raw dictionary event (legacy/fallback)
-            NSDictionary *eventDict = (NSDictionary *)event;
-            seq = [eventDict[@"seq"] longLongValue];
-            [self.eventBuffer appendEvent:eventDict seq:seq];
-            
-            if (self.subscribeReposHandler) {
-                // If it's a dict, we just broadcast as raw data (legacy path)
-                NSData *data = [NSJSONSerialization dataWithJSONObject:eventDict options:0 error:nil];
-                if (data) {
-                    [self.subscribeReposHandler broadcastEventData:data];
-                }
-            }
-        }
+    }
+
+    if (completion) {
+        completion(finishReason);
+    }
+}
+
+- (void)upstreamManager:(ATProtoRelayUpstreamManager *)manager
+         didReceiveEvent:(id)event
+           fromUpstream:(NSString *)url {
+    dispatch_async(self.handlerQueue, ^{
+        [self processUpstreamEvent:event
+                        fromUpstream:url
+                            sequence:[self sequenceForLegacyEvent:event]
+                          completion:nil];
     });
+}
+
+- (int64_t)sequenceForLegacyEvent:(id)event {
+    if ([event isKindOfClass:[ATProtoFirehoseCommitEvent class]]) {
+        return (int64_t)((ATProtoFirehoseCommitEvent *)event).seq;
+    }
+    if ([event isKindOfClass:[ATProtoFirehoseIdentityEvent class]]) {
+        return (int64_t)((ATProtoFirehoseIdentityEvent *)event).seq;
+    }
+    if ([event isKindOfClass:[ATProtoFirehoseAccountEvent class]]) {
+        return (int64_t)((ATProtoFirehoseAccountEvent *)event).seq;
+    }
+    if ([event isKindOfClass:[ATProtoFirehoseSyncEvent class]]) {
+        return (int64_t)((ATProtoFirehoseSyncEvent *)event).seq;
+    }
+    if ([event isKindOfClass:[ATProtoFirehoseRawEvent class]]) {
+        return [((ATProtoFirehoseRawEvent *)event).payload[@"seq"] longLongValue];
+    }
+    if ([event isKindOfClass:[NSDictionary class]]) {
+        return [[(NSDictionary *)event objectForKey:@"seq"] longLongValue];
+    }
+    return 0;
 }
 
 

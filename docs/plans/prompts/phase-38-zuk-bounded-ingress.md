@@ -1,7 +1,7 @@
 ---
 phase: 38
 title: Zuk bounded ingress and ordered processing
-status: pending
+status: in-progress
 agent: worker
 depends_on: [37]
 last_updated: 2026-08-13
@@ -18,6 +18,11 @@ socket reads.
 
 ## Read first
 
+- [review remediation](../workstreams/17-zuk-relay-resource-bounds/phase-38-review-remediation.md),
+  the 2026-08-17 findings against the in-flight implementation and the ordered
+  slices that close them
+- [ADR 0039](../../adr/0039-firehose-ingress-admission-seam.md) (proposed),
+  where ingress admission runs relative to firehose delivery
 - [`workstream 17`](../workstreams/17-zuk-relay-resource-bounds.md), target
   architecture, resource envelope, and Phase 38
 - [incident evidence](../workstreams/17-zuk-relay-resource-bounds/incident-evidence.md)

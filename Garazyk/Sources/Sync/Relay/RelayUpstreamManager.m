@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Relay/RelayUpstreamManager.h"
 #import "Sync/Relay/RelayMetrics.h"
+#import "Sync/Relay/RelayIngressConfiguration.h"
+#import "Sync/Relay/RelayIngressPipeline.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Debug/GZLogger.h"
 
 static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
-@interface ATProtoRelayUpstreamManager () <RelayClientDelegate>
+@interface ATProtoRelayUpstreamManager () <RelayClientDelegate, RelayIngressBackpressureDelegate>
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, ATProtoRelayClient *> *upstreamClients;
 @property (nonatomic, strong) NSMutableSet<NSString *> *connectedUpstreams;
@@ -17,6 +19,14 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 @property (nonatomic, assign) BOOL isPaused;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *reconnectAttempts;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *reconnectDelays;
+// atomic: see the header for why this pointer is not queue-confined like
+// upstreamClients below -- it is read on the WebSocket read thread inside
+// -ingressGateForUpstream:'s block and must never block on _managerQueue.
+@property (atomic, strong, readwrite, nullable) ATProtoRelayIngressPipeline *ingressPipeline;
+@property (nonatomic, strong, nullable) ATProtoRelayIngressConfiguration *ingressConfiguration;
+@property (nonatomic, assign) NSUInteger ingressGeneration;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *clientIngressGenerations;
+@property (nonatomic, strong) NSMutableSet<NSString *> *backpressurePausedUpstreams;
 
 // Host status tracking for getHostStatus endpoint
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostSeqs;           // url -> seq
@@ -75,6 +85,8 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
         _inventoryRequestedUpstreams = [NSMutableSet set];
         _crawlRequestedDates = [NSMutableDictionary dictionary];
         _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
+        _clientIngressGenerations = [NSMutableDictionary dictionary];
+        _backpressurePausedUpstreams = [NSMutableSet set];
 
         for (NSString *url in urls) {
             [self createClientForUpstream:url];
@@ -125,6 +137,10 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
     ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:httpURL];
     client.delegate = self;
+    if (self.ingressPipeline) {
+        client.reconnectUsesProcessedCursor = YES;
+        client.ingressGate = [self ingressGateForUpstream:url];
+    }
     self.upstreamClients[url] = client;
     self.reconnectAttempts[url] = @0;
     self.reconnectDelays[url] = @(self.baseReconnectInterval);
@@ -188,6 +204,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 - (void)connectAll {
     dispatch_async(_managerQueue, ^{
         if (self.isPaused) return;
+        self.ingressGeneration++;
         for (NSString *url in self.upstreamClients) {
             [self connectToUpstream:url];
         }
@@ -196,6 +213,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 - (void)disconnectAll {
     dispatch_async(_managerQueue, ^{
+        self.ingressGeneration++;
         for (ATProtoRelayClient *client in self.upstreamClients.allValues) {
             [client disconnect];
         }
@@ -300,6 +318,263 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
     return connected;
 }
 
+#pragma mark - Bounded Ingress
+
+- (void)configureBoundedIngressWithConfiguration:(ATProtoRelayIngressConfiguration *)configuration
+                                        metrics:(ATProtoRelayMetrics *)metrics
+                                   processBlock:(RelayIngressProcessBlock)processBlock {
+    if (!configuration.boundedIngressEnabled) {
+        self.ingressPipeline = nil;
+        self.ingressConfiguration = configuration;
+        return;
+    }
+    self.ingressConfiguration = configuration;
+    RelayIngressProcessBlock userBlock = [processBlock copy];
+    __weak typeof(self) weakSelf = self;
+    self.ingressPipeline = [[ATProtoRelayIngressPipeline alloc]
+        initWithConfiguration:configuration
+                      metrics:metrics
+                 processBlock:^(id event,
+                                NSString *upstreamURL,
+                                int64_t sequence,
+                                RelayIngressProcessCompletion completion) {
+        userBlock(event, upstreamURL, sequence, ^(RelayIngressReleaseReason reason) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf && reason == RelayIngressReleaseReasonProcessed) {
+                // This completion runs on RelayIngressPipeline's shard queue,
+                // not _managerQueue -- upstreamClients is only ever mutated
+                // on _managerQueue, so the read must go through it too.
+                __block ATProtoRelayClient *acked = nil;
+                [strongSelf performSynchronouslyOnManagerQueue:^{
+                    acked = strongSelf.upstreamClients[upstreamURL];
+                }];
+                [acked acknowledgeProcessedSequence:sequence];
+            }
+            completion(reason);
+        });
+    }];
+    self.ingressPipeline.backpressureDelegate = self;
+    // configureBoundedIngressWithConfiguration:... is called from whatever
+    // thread the owner sets bounded ingress up on, not necessarily
+    // _managerQueue -- upstreamClients must only be touched on that queue.
+    [self performSynchronouslyOnManagerQueue:^{
+        for (NSString *url in self.upstreamClients) {
+            ATProtoRelayClient *client = self.upstreamClients[url];
+            client.reconnectUsesProcessedCursor = YES;
+            client.ingressGate = [self ingressGateForUpstream:url];
+        }
+    }];
+}
+
+/*!
+ Builds the synchronous ATProtoFirehoseIngressGate installed on the given
+ upstream's ATProtoRelayClient (see ADR 0039). The block runs on the
+ WebSocket read thread, computes the same encodedBytes/orderingKey/sequence
+ that -submitEvent:fromClient: computes for the bounded path, and submits
+ directly to self.ingressPipeline so admission and shard dispatch happen
+ before any dispatch_async hop. Only Commit/Identity/Account/Sync events
+ ever reach this block (Firehose only consults ingressGate for those
+ kinds), so -submitEvent:fromClient: must not re-submit those same events
+ once they reach the RelayClientDelegate chain -- see
+ -eventKindIsGatedAtIngress:.
+ */
+- (ATProtoFirehoseIngressGate)ingressGateForUpstream:(NSString *)url {
+    __weak typeof(self) weakSelf = self;
+    NSString *upstreamURL = [url copy];
+    return ^BOOL(id event, FirehoseEventKind kind) {
+        (void)kind;
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) {
+            return NO;
+        }
+        ATProtoRelayIngressPipeline *pipeline = strongSelf.ingressPipeline;
+        if (!pipeline) {
+            // Bounded ingress was torn down after this gate was installed;
+            // treat as if the gate itself were absent.
+            return YES;
+        }
+
+        int64_t sequence = [strongSelf sequenceForEvent:event];
+        uint64_t encodedBytes = [ATProtoRelayIngressPipeline encodedByteLengthForEvent:event];
+        NSString *orderingKey = [ATProtoRelayIngressPipeline orderingKeyForEvent:event upstreamURL:upstreamURL];
+        NSError *submitError = nil;
+        BOOL accepted = [pipeline submitEvent:event
+                                 encodedBytes:encodedBytes
+                                  orderingKey:orderingKey
+                                 fromUpstream:upstreamURL
+                                     sequence:sequence
+                                        error:&submitError];
+        if (!accepted) {
+            GZ_LOG_SYNC_WARN(@"RelayUpstreamManager: ingress gate refused event from %@: %@",
+                             upstreamURL, submitError.localizedDescription ?: @"backlog full");
+        }
+        return accepted;
+    };
+}
+
+/*!
+ Whether -sendEventToSubscriptions:kind: gates this event's kind at the
+ ATProtoFirehose layer (see ADR 0039). Commit/Identity/Account/Sync events
+ that reach this manager's RelayClientDelegate callbacks were already
+ admitted and shard-dispatched synchronously by the ingressGate block
+ before delivery; -submitEvent:fromClient: must not submit them again.
+ Raw and legacy dictionary-encoded events are never gated at the firehose
+ layer and still take the bounded-submission path below.
+ */
+- (BOOL)eventKindIsGatedAtIngress:(id)event {
+    return [event isKindOfClass:[ATProtoFirehoseCommitEvent class]] ||
+        [event isKindOfClass:[ATProtoFirehoseIdentityEvent class]] ||
+        [event isKindOfClass:[ATProtoFirehoseAccountEvent class]] ||
+        [event isKindOfClass:[ATProtoFirehoseSyncEvent class]];
+}
+
+- (int64_t)sequenceForEvent:(id)event {
+    if ([event isKindOfClass:[ATProtoFirehoseCommitEvent class]]) {
+        return (int64_t)((ATProtoFirehoseCommitEvent *)event).seq;
+    }
+    if ([event isKindOfClass:[ATProtoFirehoseIdentityEvent class]]) {
+        return (int64_t)((ATProtoFirehoseIdentityEvent *)event).seq;
+    }
+    if ([event isKindOfClass:[ATProtoFirehoseAccountEvent class]]) {
+        return (int64_t)((ATProtoFirehoseAccountEvent *)event).seq;
+    }
+    if ([event isKindOfClass:[ATProtoFirehoseSyncEvent class]]) {
+        return (int64_t)((ATProtoFirehoseSyncEvent *)event).seq;
+    }
+    if ([event isKindOfClass:[ATProtoFirehoseRawEvent class]]) {
+        return [((ATProtoFirehoseRawEvent *)event).payload[@"seq"] longLongValue];
+    }
+    return 0;
+}
+
+- (void)submitEvent:(id)event fromClient:(ATProtoRelayClient *)client {
+    NSString *url = [self urlForClient:client];
+    if (!url) {
+        return;
+    }
+    if (!self.ingressPipeline) {
+        id<RelayUpstreamManagerDelegate> delegate = self.delegate;
+        if (delegate) {
+            [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
+        }
+        return;
+    }
+
+    if ([self eventKindIsGatedAtIngress:event]) {
+        // Admission and shard dispatch for this event already happened
+        // synchronously in ATProtoFirehose's ingressGate (ADR 0039), before
+        // this event was ever delivered through the RelayClientDelegate
+        // chain that reached this method. Submitting again here would
+        // double-admit and double-process the same event.
+        return;
+    }
+
+    int64_t sequence = [self sequenceForEvent:event];
+    uint64_t encodedBytes = [ATProtoRelayIngressPipeline encodedByteLengthForEvent:event];
+    NSString *orderingKey = [ATProtoRelayIngressPipeline orderingKeyForEvent:event upstreamURL:url];
+    NSError *submitError = nil;
+    if ([self.ingressPipeline submitEvent:event
+                             encodedBytes:encodedBytes
+                              orderingKey:orderingKey
+                             fromUpstream:url
+                                 sequence:sequence
+                                    error:&submitError]) {
+        return;
+    }
+
+    GZ_LOG_SYNC_WARN(@"RelayUpstreamManager: rejected ingress event from %@: %@",
+                     url, submitError.localizedDescription ?: @"backlog full");
+}
+
+#pragma mark - RelayIngressBackpressureDelegate
+
+/*!
+ Selective pause (F11 / R11): pauses the single connected, not-already-paused
+ upstream currently holding the most in-flight backlog bytes, rather than
+ every connected upstream. "Top-1" is deliberately the simplest defensible
+ policy for this slice, not the most sophisticated one available -- see the
+ design note in
+ docs/plans/workstreams/17-zuk-relay-resource-bounds/phase-38-review-remediation.md
+ for why, and for the Phase 42 hook (proportional/weighted selective
+ pausing) if a single upstream proves insufficient to bring the backlog back
+ under the low watermark under real load.
+
+ -ingressPipeline's -inFlightByteCountByUpstream (backed by the same
+ admitted-but-not-yet-released token tracking -noteUpstreamDisconnected:
+ uses, F10) is the *current* in-flight backlog per upstream -- unlike a
+ lifetime cumulative counter, it reflects who is contributing to the backlog
+ right now. If that data is empty, or every connected-and-unpaused upstream
+ shows zero in-flight bytes (e.g. the trip is driven by backlog whose
+ admission accounting hasn't caught up, or some other edge case), this falls
+ back to pausing everyone: a watermark trip must always result in some
+ backpressure being applied.
+ */
+- (void)ingressPipelineDidRequestPause:(ATProtoRelayIngressPipeline *)pipeline {
+    (void)pipeline;
+    dispatch_async(_managerQueue, ^{
+        NSDictionary<NSString *, NSNumber *> *inFlightByUpstream =
+            self.ingressPipeline.inFlightByteCountByUpstream ?: @{};
+
+        NSString *largestContributor = nil;
+        uint64_t largestBytes = 0;
+        for (NSString *url in [self.connectedUpstreams copy]) {
+            if ([self.backpressurePausedUpstreams containsObject:url]) {
+                continue;
+            }
+            uint64_t bytes = [inFlightByUpstream[url] unsignedLongLongValue];
+            if (bytes > largestBytes) {
+                largestBytes = bytes;
+                largestContributor = url;
+            }
+        }
+
+        NSSet<NSString *> *urlsToPause = largestContributor
+            ? [NSSet setWithObject:largestContributor]
+            : [self.connectedUpstreams copy];
+
+        for (NSString *url in urlsToPause) {
+            if ([self.backpressurePausedUpstreams containsObject:url]) {
+                continue;
+            }
+            ATProtoRelayClient *client = self.upstreamClients[url];
+            if (client && client.isConnected && !client.isReadingPaused) {
+                [client pauseReading];
+                [self.backpressurePausedUpstreams addObject:url];
+                [[ATProtoRelayMetrics sharedMetrics] recordIngressUpstreamPause:url];
+            }
+        }
+    });
+}
+
+- (void)ingressPipelineDidRequestResume:(ATProtoRelayIngressPipeline *)pipeline {
+    (void)pipeline;
+    dispatch_async(_managerQueue, ^{
+        for (NSString *url in [self.backpressurePausedUpstreams copy]) {
+            // Pause bookkeeping clears unconditionally: "is this url still
+            // marked paused" is not generation-sensitive, only the act of
+            // touching the underlying socket below is (F5). Skipping this on
+            // a generation mismatch used to strand the url in the paused set
+            // forever -- -ingressPipelineDidRequestPause: refuses to
+            // re-track a url that is already present there, so a still-
+            // connected client could never be paused or resumed again.
+            [self.backpressurePausedUpstreams removeObject:url];
+
+            NSNumber *generation = self.clientIngressGenerations[url];
+            if (generation.unsignedIntegerValue != self.ingressGeneration) {
+                // The connection this pause was recorded against may have
+                // been superseded by a reconnect/reconfigure since; do not
+                // manipulate whatever socket now lives at this url.
+                continue;
+            }
+            ATProtoRelayClient *client = self.upstreamClients[url];
+            if (client && client.isConnected && client.isReadingPaused) {
+                [client resumeReading];
+                [[ATProtoRelayMetrics sharedMetrics] recordIngressUpstreamResume:url];
+            }
+        }
+    });
+}
+
 #pragma mark - RelayClientDelegate
 
 - (void)recordEventKind:(NSString *)kind fromUpstream:(NSString *)url {
@@ -316,57 +591,42 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
 
 - (void)relayClient:(ATProtoRelayClient *)client didReceiveCommitEvent:(ATProtoFirehoseCommitEvent *)event {
     NSString *url = [self urlForClient:client];
-    id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
         [self recordEventKind:@"commit" fromUpstream:url];
     }
-    if (url && delegate) {
-        [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
-    }
+    [self submitEvent:event fromClient:client];
 }
 
 - (void)relayClient:(ATProtoRelayClient *)client didReceiveIdentityEvent:(ATProtoFirehoseIdentityEvent *)event {
     NSString *url = [self urlForClient:client];
-    id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
         [self recordEventKind:@"identity" fromUpstream:url];
     }
-    if (url && delegate) {
-        [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
-    }
+    [self submitEvent:event fromClient:client];
 }
 
 - (void)relayClient:(ATProtoRelayClient *)client didReceiveAccountEvent:(ATProtoFirehoseAccountEvent *)event {
     NSString *url = [self urlForClient:client];
-    id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
         [self recordEventKind:@"account" fromUpstream:url];
     }
-    if (url && delegate) {
-        [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
-    }
+    [self submitEvent:event fromClient:client];
 }
 
 - (void)relayClient:(ATProtoRelayClient *)client didReceiveSyncEvent:(ATProtoFirehoseSyncEvent *)event {
     NSString *url = [self urlForClient:client];
-    id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
         [self recordEventKind:@"sync" fromUpstream:url];
     }
-    if (url && delegate) {
-        [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
-    }
+    [self submitEvent:event fromClient:client];
 }
 
 - (void)relayClient:(ATProtoRelayClient *)client didReceiveRawEvent:(ATProtoFirehoseRawEvent *)event {
     NSString *url = [self urlForClient:client];
-    id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url) {
         [self recordEventKind:@"raw" fromUpstream:url];
     }
-    if (url && delegate) {
-        [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
-    }
+    [self submitEvent:event fromClient:client];
 }
 
 - (void)relayClient:(ATProtoRelayClient *)client didReceiveErrorEvent:(ATProtoFirehoseErrorEvent *)event {
@@ -390,6 +650,7 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
             self.reconnectDelays[url] = @(self.baseReconnectInterval);
             self.hostStatuses[url] = @(RelayHostStatusActive);
             self.hostConnectedDates[url] = [NSDate date];
+            self.clientIngressGenerations[url] = @(self.ingressGeneration);
         });
         [[ATProtoRelayMetrics sharedMetrics] recordUpstreamConnected];
         id<RelayUpstreamManagerDelegate> delegate = self.delegate;
@@ -406,6 +667,8 @@ static void *RelayUpstreamManagerQueueKey = &RelayUpstreamManagerQueueKey;
             [self.connectedUpstreams removeObject:url];
             self.hostStatuses[url] = @(error ? RelayHostStatusError : RelayHostStatusDisconnected);
             [self.hostConnectedDates removeObjectForKey:url];
+            [self.backpressurePausedUpstreams removeObject:url];
+            [self.ingressPipeline noteUpstreamDisconnected:url];
         });
         [[ATProtoRelayMetrics sharedMetrics] recordUpstreamDisconnected];
         id<RelayUpstreamManagerDelegate> delegate = self.delegate;

@@ -18,6 +18,7 @@
 
 #import <Foundation/Foundation.h>
 #import <stdint.h>
+#import "Sync/Relay/RelayIngressAdmission.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -151,6 +152,38 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) int64_t currentSequence;
 /** Total upstream reconnection attempts. */
 @property (nonatomic, readonly) int64_t reconnectionCount;
+
+/** Current admitted ingress event count. */
+@property (nonatomic, readonly) int64_t ingressCurrentEvents;
+/** Current admitted ingress byte backlog. */
+@property (nonatomic, readonly) int64_t ingressCurrentBytes;
+/** Peak admitted ingress event count. */
+@property (nonatomic, readonly) int64_t ingressPeakEvents;
+/** Peak admitted ingress byte backlog. */
+@property (nonatomic, readonly) int64_t ingressPeakBytes;
+/** Total ingress admissions rejected. */
+@property (nonatomic, readonly) int64_t ingressRejectedTotal;
+/** Total ingress admissions cancelled. */
+@property (nonatomic, readonly) int64_t ingressCancelledTotal;
+/** Total upstream read pauses due to ingress pressure. */
+@property (nonatomic, readonly) int64_t ingressPauseTotal;
+/** Total upstream read resumes after ingress pressure cleared. */
+@property (nonatomic, readonly) int64_t ingressResumeTotal;
+/** Accounting invariant failures (double release / underflow). */
+@property (nonatomic, readonly) int64_t ingressAccountingFailures;
+
+- (void)recordIngressAdmittedBytes:(uint64_t)bytes;
+- (void)recordIngressRejected:(NSString *)reason;
+- (void)recordIngressReleasedBytes:(uint64_t)bytes reason:(RelayIngressReleaseReason)reason;
+- (void)recordIngressHighWatermark;
+- (void)recordIngressLowWatermark;
+- (void)recordIngressAccountingFailure:(NSString *)kind;
+- (void)recordIngressWorkerServiceTimeMs:(NSTimeInterval)milliseconds;
+- (void)recordIngressUpstreamPause:(NSString *)upstreamURL;
+- (void)recordIngressUpstreamResume:(NSString *)upstreamURL;
+- (void)recordIngressShardDispatch:(NSUInteger)shardIndex;
+- (void)recordIngressOldestAgeMs:(NSTimeInterval)ageMs;
+- (void)recordIngressQueueDelayMs:(NSTimeInterval)delayMs;
 
 @end
 

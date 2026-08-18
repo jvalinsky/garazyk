@@ -22,10 +22,14 @@
 #import <stdint.h>
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Firehose/Firehose.h"
+#import "Sync/Relay/RelayIngressPipeline.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class ATProtoRelayIngressConfiguration;
+
 @class ATProtoRelayUpstreamManager;
+@class ATProtoRelayMetrics;
 @class ATProtoFirehoseRawEvent;
 
 /**
@@ -231,6 +235,29 @@ typedef NS_ENUM(NSInteger, RelayCrawlState) {
 
 /*! Returns the last inventory error summary, if any. */
 - (nullable NSString *)crawlErrorForUpstream:(NSString *)url;
+
+/**
+ * @abstract Installs the bounded ingress executor for upstream events.
+ */
+- (void)configureBoundedIngressWithConfiguration:(ATProtoRelayIngressConfiguration *)configuration
+                                        metrics:(nullable ATProtoRelayMetrics *)metrics
+                                   processBlock:(RelayIngressProcessBlock)processBlock;
+
+/**
+ * Active ingress pipeline, or nil when legacy ingress is selected.
+ *
+ * Declared @c atomic (not the codebase default @c nonatomic): this pointer
+ * is written once at configuration time from whatever thread calls
+ * -configureBoundedIngressWithConfiguration:metrics:processBlock: and read
+ * on every admitted event inside -ingressGateForUpstream:'s block, which
+ * runs synchronously on the WebSocket read thread (see ADR 0039). The gate
+ * path must not dispatch_sync onto @c _managerQueue -- that queue also
+ * serializes slow operations (connect/disconnect/HTTP validation) -- so the
+ * compiler-synthesized atomic accessors are used instead to guarantee a
+ * safe, non-torn pointer read without taking any lock that could be held by
+ * a queue blocked on the read thread.
+ */
+@property (atomic, strong, readonly, nullable) ATProtoRelayIngressPipeline *ingressPipeline;
 
 @end
 

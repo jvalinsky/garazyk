@@ -185,6 +185,40 @@ BOOL FirehoseErrorIsBackpressureClose(NSError * _Nullable error) {
     }
 }
 
+/*!
+ Consults @c ingressGate (if installed) for a fully-populated Commit,
+ Identity, Account, or Sync event immediately before delivery. Returns YES
+ when the frame should be delivered (nil gate, or gate admits). Returns NO
+ when the gate refuses the frame, having already closed the underlying
+ connection with a backpressure-classified close code/reason so the caller
+ should stop processing this frame without calling
+ sendEventToSubscriptions:kind:. See ADR 0039.
+ */
+- (BOOL)admitEventForDelivery:(id)event kind:(FirehoseEventKind)kind {
+    ATProtoFirehoseIngressGate gate = self.ingressGate;
+    if (!gate) {
+        return YES;
+    }
+
+#if DEBUG
+    NSTimeInterval gateStart = [[NSDate date] timeIntervalSinceReferenceDate];
+#endif
+    BOOL admitted = gate(event, kind);
+#if DEBUG
+    NSTimeInterval gateMs = ([[NSDate date] timeIntervalSinceReferenceDate] - gateStart) * 1000.0;
+    if (gateMs > 1.0) {
+        GZ_LOG_SYNC_WARN(@"Firehose: ingressGate took %.3fms for kind=%ld (expected sub-millisecond, in-process bookkeeping only; see ADR 0039)",
+                         gateMs, (long)kind);
+    }
+#endif
+
+    if (!admitted) {
+        GZ_LOG_SYNC_WARN(@"Firehose: ingressGate refused kind=%ld; closing connection (backpressure)", (long)kind);
+        [self.connection closeWithCode:1008 reason:@"ConsumerTooSlow"];
+    }
+    return admitted;
+}
+
 - (void)handleMessage:(NSData *)data {
     GZ_LOG_SYNC_DEBUG(@"Firehose received message of length %lu", (unsigned long)data.length);
     NSInteger op = 0;
@@ -209,6 +243,7 @@ BOOL FirehoseErrorIsBackpressureClose(NSError * _Nullable error) {
 
     if ([msgType isEqualToString:@"#commit"]) {
         ATProtoFirehoseCommitEvent *event = [[ATProtoFirehoseCommitEvent alloc] init];
+        event.wireFrameLength = data.length;
         event.seq = [payload[@"seq"] longLongValue];
         event.rebase = [payload[@"rebase"] boolValue];
         event.tooBig = [payload[@"tooBig"] boolValue];
@@ -222,36 +257,47 @@ BOOL FirehoseErrorIsBackpressureClose(NSError * _Nullable error) {
         event.time = payload[@"time"];
         event.prevData = payload[@"prevData"];
 
-        [self sendEventToSubscriptions:event kind:FirehoseEventKindCommit];
+        if ([self admitEventForDelivery:event kind:FirehoseEventKindCommit]) {
+            [self sendEventToSubscriptions:event kind:FirehoseEventKindCommit];
+        }
 
     } else if ([msgType isEqualToString:@"#identity"]) {
         ATProtoFirehoseIdentityEvent *event = [[ATProtoFirehoseIdentityEvent alloc] init];
+        event.wireFrameLength = data.length;
         event.did = payload[@"did"];
         event.seq = [payload[@"seq"] longLongValue];
         event.time = payload[@"time"];
         event.handle = payload[@"handle"];
 
-        [self sendEventToSubscriptions:event kind:FirehoseEventKindIdentity];
+        if ([self admitEventForDelivery:event kind:FirehoseEventKindIdentity]) {
+            [self sendEventToSubscriptions:event kind:FirehoseEventKindIdentity];
+        }
 
     } else if ([msgType isEqualToString:@"#account"]) {
         ATProtoFirehoseAccountEvent *event = [[ATProtoFirehoseAccountEvent alloc] init];
+        event.wireFrameLength = data.length;
         event.did = payload[@"did"];
         event.seq = [payload[@"seq"] longLongValue];
         event.active = [payload[@"active"] boolValue];
         event.status = payload[@"status"];
         event.time = payload[@"time"];
 
-        [self sendEventToSubscriptions:event kind:FirehoseEventKindAccount];
+        if ([self admitEventForDelivery:event kind:FirehoseEventKindAccount]) {
+            [self sendEventToSubscriptions:event kind:FirehoseEventKindAccount];
+        }
 
     } else if ([msgType isEqualToString:@"#sync"]) {
         ATProtoFirehoseSyncEvent *event = [[ATProtoFirehoseSyncEvent alloc] init];
+        event.wireFrameLength = data.length;
         event.did = payload[@"did"];
         event.seq = [payload[@"seq"] longLongValue];
         event.blocks = payload[@"blocks"];
         event.rev = payload[@"rev"];
         event.time = payload[@"time"];
 
-        [self sendEventToSubscriptions:event kind:FirehoseEventKindSync];
+        if ([self admitEventForDelivery:event kind:FirehoseEventKindSync]) {
+            [self sendEventToSubscriptions:event kind:FirehoseEventKindSync];
+        }
 
     } else if ([msgType isEqualToString:@"#info"]) {
         ATProtoFirehoseInfoEvent *event = [[ATProtoFirehoseInfoEvent alloc] init];

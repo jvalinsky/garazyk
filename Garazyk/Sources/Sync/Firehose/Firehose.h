@@ -65,6 +65,17 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 };
 
 /*!
+ @typedef ATProtoFirehoseIngressGate
+
+ @abstract Synchronous admission gate consulted before an event is delivered.
+
+ @discussion Returns YES to admit the event for delivery, NO to refuse it.
+ See the @c ingressGate property on @c ATProtoFirehose for the full
+ threading contract (ADR 0039).
+ */
+typedef BOOL (^ATProtoFirehoseIngressGate)(id event, FirehoseEventKind kind);
+
+/*!
  @class ATProtoFirehoseCommitEvent
 
  @abstract Represents a repository commit event.
@@ -113,6 +124,9 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*! The root ATProtoCID of the ATProtoMST tree for the previous commit. */
 @property (nonatomic, strong, nullable) ATProtoCID *prevData;
 
+/*! Encoded firehose frame length used for ingress byte accounting. */
+@property (nonatomic, assign) NSUInteger wireFrameLength;
+
 + (instancetype)eventWithRepo:(NSString *)repo commit:(ATProtoCID *)commit ops:(NSArray<NSDictionary *> *)ops;
 
 @end
@@ -141,6 +155,9 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*! Timestamp of when this message was originally broadcast (RFC-3339). */
 @property (nonatomic, copy) NSString *time;
 
+/*! Encoded firehose frame length used for ingress byte accounting. */
+@property (nonatomic, assign) NSUInteger wireFrameLength;
+
 + (instancetype)eventWithDid:(NSString *)did
                          rev:(NSString *)rev
                       blocks:(NSData *)blocks;
@@ -165,6 +182,9 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 
 /*! The new handle (may be nil if not changed). */
 @property (nonatomic, copy, nullable) NSString *handle;
+
+/*! Encoded firehose frame length used for ingress byte accounting. */
+@property (nonatomic, assign) NSUInteger wireFrameLength;
 
 + (instancetype)eventWithDid:(NSString *)did;
 
@@ -191,6 +211,9 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 
 /*! Timestamp of the event in ISO 8601 format. */
 @property (nonatomic, copy) NSString *time;
+
+/*! Encoded firehose frame length used for ingress byte accounting. */
+@property (nonatomic, assign) NSUInteger wireFrameLength;
 
 + (instancetype)eventWithDid:(NSString *)did
                       active:(BOOL)active
@@ -308,6 +331,33 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 
 /*! Heartbeat timeout for the underlying WebSocket connection. */
 @property (nonatomic, assign) NSTimeInterval heartbeatTimeout;
+
+/*!
+ @abstract Optional synchronous admission gate for event delivery.
+
+ @discussion Nil by default: delivery behaves exactly as it always has,
+ which is what AppView and Beskid observe since neither of them assigns
+ this property. When installed, the block is consulted in @c handleMessage:
+ immediately before an event would be delivered via
+ @c sendEventToSubscriptions:kind:, once the event object is fully
+ populated (@c wireFrameLength / @c seq / @c repo / @c did already set).
+ Only Commit, Identity, Account, and Sync frames are gated; @c #info and
+ error frames carry no wire-frame cost and are always delivered.
+
+ The gate runs synchronously on the WebSocket read thread, before any
+ dispatch. Returning YES delivers the frame as usual. Returning NO closes
+ the underlying connection with a backpressure-classified close code/reason
+ (see @c FirehoseErrorIsBackpressureClose) instead of delivering the frame;
+ the existing reconnect/backoff machinery in @c ATProtoRelayClient resumes
+ the stream from the last processed cursor, so no gap is introduced.
+
+ Threading contract: gate blocks run on the read thread, must return in
+ bounded, sub-millisecond time, must perform no I/O, must not acquire a
+ lock that could be held by another queue blocked on the read thread, and
+ must not call back into @c ATProtoFirehose (no re-entrancy). See
+ ADR 0039 (docs/adr/0039-firehose-ingress-admission-seam.md).
+ */
+@property (nonatomic, copy, nullable) ATProtoFirehoseIngressGate ingressGate;
 
 - (instancetype)initWithServerURL:(NSURL *)serverURL;
 

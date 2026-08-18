@@ -35,11 +35,31 @@ static NSString *RelayCanonicalSignatureFailureCategory(NSString *category) {
 @property (nonatomic, assign, readwrite) int64_t syncResets;
 @property (nonatomic, assign, readwrite) int64_t currentSequence;
 @property (nonatomic, assign, readwrite) int64_t reconnectionCount;
+@property (nonatomic, assign, readwrite) int64_t ingressCurrentEvents;
+@property (nonatomic, assign, readwrite) int64_t ingressCurrentBytes;
+@property (nonatomic, assign, readwrite) int64_t ingressPeakEvents;
+@property (nonatomic, assign, readwrite) int64_t ingressPeakBytes;
+@property (nonatomic, assign, readwrite) int64_t ingressRejectedTotal;
+@property (nonatomic, assign, readwrite) int64_t ingressCancelledTotal;
+@property (nonatomic, assign, readwrite) int64_t ingressPauseTotal;
+@property (nonatomic, assign, readwrite) int64_t ingressResumeTotal;
+@property (nonatomic, assign, readwrite) int64_t ingressAccountingFailures;
 
 @end
 
 @implementation ATProtoRelayMetrics {
     dispatch_queue_t _metricsQueue;
+    // Per-upstream pause tracking: keyed by upstream URL, contains @{ @"pauseCount": @(N), @"pausedDurationMs": @(ms), @"pauseStartTime": @(timestamp) }
+    NSMutableDictionary<NSString *, NSMutableDictionary *> *_upstreamPauseMetrics;
+    // Per-shard dispatch counts: keyed by shard index
+    NSMutableDictionary<NSNumber *, NSNumber *> *_shardDispatchCounts;
+    // Oldest accepted age gauge (latest value only)
+    NSTimeInterval _ingressOldestAgeMs;
+    // Queue delay histogram buckets: each key is a bucket boundary in ms (as NSNumber), value is cumulative count
+    NSMutableDictionary<NSNumber *, NSNumber *> *_queueDelayBuckets;
+    // Queue delay sum and count for histogram
+    NSTimeInterval _queueDelaySumMs;
+    uint64_t _queueDelayCountTotal;
 }
 
 + (instancetype)sharedMetrics {
@@ -56,6 +76,21 @@ static NSString *RelayCanonicalSignatureFailureCategory(NSString *category) {
     if (self) {
         _metricsQueue = dispatch_queue_create("com.atproto.relay.metrics", DISPATCH_QUEUE_SERIAL);
         _signatureValidationFailuresByCategory = @{};
+        _upstreamPauseMetrics = [NSMutableDictionary dictionary];
+        _shardDispatchCounts = [NSMutableDictionary dictionary];
+        _ingressOldestAgeMs = 0;
+        _queueDelayBuckets = [NSMutableDictionary dictionary];
+        // Initialize histogram buckets: 1ms, 10ms, 50ms, 100ms, 500ms, 1000ms, +Inf
+        _queueDelayBuckets[@1] = @0;
+        _queueDelayBuckets[@10] = @0;
+        _queueDelayBuckets[@50] = @0;
+        _queueDelayBuckets[@100] = @0;
+        _queueDelayBuckets[@500] = @0;
+        _queueDelayBuckets[@1000] = @0;
+        // +Inf bucket represented by a special large value
+        _queueDelayBuckets[@(UINT64_MAX)] = @0;
+        _queueDelaySumMs = 0;
+        _queueDelayCountTotal = 0;
     }
     return self;
 }
@@ -210,6 +245,131 @@ static NSString *RelayCanonicalSignatureFailureCategory(NSString *category) {
     });
 }
 
+#pragma mark - Ingress Metrics
+
+- (void)recordIngressAdmittedBytes:(uint64_t)bytes {
+    dispatch_async(_metricsQueue, ^{
+        self.ingressCurrentEvents++;
+        self.ingressCurrentBytes += (int64_t)bytes;
+        if (self.ingressCurrentEvents > self.ingressPeakEvents) {
+            self.ingressPeakEvents = self.ingressCurrentEvents;
+        }
+        if (self.ingressCurrentBytes > self.ingressPeakBytes) {
+            self.ingressPeakBytes = self.ingressCurrentBytes;
+        }
+    });
+}
+
+- (void)recordIngressRejected:(NSString *)reason {
+    (void)reason;
+    dispatch_async(_metricsQueue, ^{
+        self.ingressRejectedTotal++;
+    });
+}
+
+- (void)recordIngressReleasedBytes:(uint64_t)bytes reason:(RelayIngressReleaseReason)reason {
+    dispatch_async(_metricsQueue, ^{
+        if (self.ingressCurrentEvents > 0) {
+            self.ingressCurrentEvents--;
+        }
+        if (bytes > 0) {
+            self.ingressCurrentBytes = MAX((int64_t)0, self.ingressCurrentBytes - (int64_t)bytes);
+        }
+        if (reason == RelayIngressReleaseReasonCancelled ||
+            reason == RelayIngressReleaseReasonDisconnect ||
+            reason == RelayIngressReleaseReasonShutdown) {
+            self.ingressCancelledTotal++;
+        }
+    });
+}
+
+- (void)recordIngressCancelled:(RelayIngressReleaseReason)reason {
+    [self recordIngressReleasedBytes:0 reason:reason];
+}
+
+- (void)recordIngressHighWatermark {
+    // Transition counters are recorded by upstream pause/resume hooks.
+}
+
+- (void)recordIngressLowWatermark {
+}
+
+- (void)recordIngressAccountingFailure:(NSString *)kind {
+    (void)kind;
+    dispatch_async(_metricsQueue, ^{
+        self.ingressAccountingFailures++;
+    });
+}
+
+- (void)recordIngressWorkerServiceTimeMs:(NSTimeInterval)milliseconds {
+    (void)milliseconds;
+}
+
+- (void)recordIngressShardDispatch:(NSUInteger)shardIndex {
+    dispatch_async(_metricsQueue, ^{
+        NSNumber *shardKey = @(shardIndex);
+        int64_t count = [self->_shardDispatchCounts[shardKey] longLongValue];
+        self->_shardDispatchCounts[shardKey] = @(count + 1);
+    });
+}
+
+- (void)recordIngressOldestAgeMs:(NSTimeInterval)ageMs {
+    dispatch_async(_metricsQueue, ^{
+        self->_ingressOldestAgeMs = ageMs;
+    });
+}
+
+- (void)recordIngressQueueDelayMs:(NSTimeInterval)delayMs {
+    dispatch_async(_metricsQueue, ^{
+        self->_queueDelaySumMs += delayMs;
+        self->_queueDelayCountTotal++;
+        // Update histogram buckets cumulatively
+        NSArray<NSNumber *> *buckets = [[self->_queueDelayBuckets allKeys] sortedArrayUsingComparator:^NSComparisonResult(NSNumber *a, NSNumber *b) {
+            return [a compare:b];
+        }];
+        for (NSNumber *bucketLimit in buckets) {
+            if (delayMs <= [bucketLimit doubleValue]) {
+                uint64_t bucketCount = [self->_queueDelayBuckets[bucketLimit] unsignedLongLongValue];
+                self->_queueDelayBuckets[bucketLimit] = @(bucketCount + 1);
+            }
+        }
+    });
+}
+
+- (void)recordIngressUpstreamPause:(NSString *)upstreamURL {
+    dispatch_async(_metricsQueue, ^{
+        self.ingressPauseTotal++;
+        NSMutableDictionary *upstreamMetrics = self->_upstreamPauseMetrics[upstreamURL];
+        if (!upstreamMetrics) {
+            upstreamMetrics = [NSMutableDictionary dictionary];
+            self->_upstreamPauseMetrics[upstreamURL] = upstreamMetrics;
+        }
+        int64_t pauseCount = [upstreamMetrics[@"pauseCount"] longLongValue];
+        upstreamMetrics[@"pauseCount"] = @(pauseCount + 1);
+        upstreamMetrics[@"pauseStartTime"] = @([[NSDate date] timeIntervalSinceReferenceDate]);
+    });
+}
+
+- (void)recordIngressUpstreamResume:(NSString *)upstreamURL {
+    dispatch_async(_metricsQueue, ^{
+        self.ingressResumeTotal++;
+        NSMutableDictionary *upstreamMetrics = self->_upstreamPauseMetrics[upstreamURL];
+        if (!upstreamMetrics) {
+            upstreamMetrics = [NSMutableDictionary dictionary];
+            self->_upstreamPauseMetrics[upstreamURL] = upstreamMetrics;
+        }
+        NSNumber *pauseStartTimeNum = upstreamMetrics[@"pauseStartTime"];
+        if (pauseStartTimeNum) {
+            NSTimeInterval pauseStartTime = [pauseStartTimeNum doubleValue];
+            NSTimeInterval pausedDurationMs =
+                ([[NSDate date] timeIntervalSinceReferenceDate] - pauseStartTime) * 1000.0;
+            NSTimeInterval totalDurationMs = [upstreamMetrics[@"pausedDurationMs"] doubleValue];
+            upstreamMetrics[@"pausedDurationMs"] = @(totalDurationMs + pausedDurationMs);
+            [upstreamMetrics removeObjectForKey:@"pauseStartTime"];
+        }
+    });
+}
+
 #pragma mark - Prometheus Output
 
 - (NSString *)renderPrometheusMetrics {
@@ -279,7 +439,79 @@ static NSString *RelayCanonicalSignatureFailureCategory(NSString *category) {
         [metrics appendString:@"# HELP relay_reconnection_total Total reconnection attempts\n"];
         [metrics appendFormat:@"# TYPE relay_reconnection_total counter\n"];
         [metrics appendFormat:@"relay_reconnection_total %lld\n", (long long)self.reconnectionCount];
-        
+
+        [metrics appendString:@"\n# HELP relay_ingress_current_events Current admitted ingress events\n"];
+        [metrics appendString:@"# TYPE relay_ingress_current_events gauge\n"];
+        [metrics appendFormat:@"relay_ingress_current_events %lld\n\n", (long long)self.ingressCurrentEvents];
+
+        [metrics appendString:@"# HELP relay_ingress_current_bytes Current admitted ingress bytes\n"];
+        [metrics appendString:@"# TYPE relay_ingress_current_bytes gauge\n"];
+        [metrics appendFormat:@"relay_ingress_current_bytes %lld\n\n", (long long)self.ingressCurrentBytes];
+
+        [metrics appendString:@"# HELP relay_ingress_rejected_total Total ingress admissions rejected\n"];
+        [metrics appendString:@"# TYPE relay_ingress_rejected_total counter\n"];
+        [metrics appendFormat:@"relay_ingress_rejected_total %lld\n\n", (long long)self.ingressRejectedTotal];
+
+        [metrics appendString:@"# HELP relay_ingress_accounting_failures_total Ingress accounting invariant failures\n"];
+        [metrics appendString:@"# TYPE relay_ingress_accounting_failures_total counter\n"];
+        [metrics appendFormat:@"relay_ingress_accounting_failures_total %lld\n", (long long)self.ingressAccountingFailures];
+
+        [metrics appendString:@"\n# HELP relay_ingress_upstream_pause_total Per-upstream ingress pause count\n"];
+        [metrics appendString:@"# TYPE relay_ingress_upstream_pause_total counter\n"];
+        NSArray<NSString *> *upstreamURLs =
+            [[self->_upstreamPauseMetrics allKeys] sortedArrayUsingSelector:@selector(compare:)];
+        for (NSString *url in upstreamURLs) {
+            NSMutableDictionary *metrics_for_url = self->_upstreamPauseMetrics[url];
+            int64_t pauseCount = [metrics_for_url[@"pauseCount"] longLongValue];
+            [metrics appendFormat:@"relay_ingress_upstream_pause_total{upstream=\"%@\"} %lld\n", url, (long long)pauseCount];
+        }
+        [metrics appendString:@"\n"];
+
+        [metrics appendString:@"# HELP relay_ingress_upstream_paused_duration_ms_total Per-upstream cumulative paused duration in milliseconds\n"];
+        [metrics appendString:@"# TYPE relay_ingress_upstream_paused_duration_ms_total counter\n"];
+        for (NSString *url in upstreamURLs) {
+            NSMutableDictionary *metrics_for_url = self->_upstreamPauseMetrics[url];
+            NSTimeInterval pausedDurationMs = [metrics_for_url[@"pausedDurationMs"] doubleValue];
+            [metrics appendFormat:@"relay_ingress_upstream_paused_duration_ms_total{upstream=\"%@\"} %.0f\n", url, pausedDurationMs];
+        }
+        [metrics appendString:@"\n"];
+
+        [metrics appendString:@"# HELP relay_ingress_shard_dispatch_total Per-shard work item dispatch count\n"];
+        [metrics appendString:@"# TYPE relay_ingress_shard_dispatch_total counter\n"];
+        NSArray<NSNumber *> *shardIndices =
+            [[self->_shardDispatchCounts allKeys] sortedArrayUsingComparator:^NSComparisonResult(NSNumber *a, NSNumber *b) {
+            return [a compare:b];
+        }];
+        for (NSNumber *shardIndex in shardIndices) {
+            uint64_t dispatchCount = [self->_shardDispatchCounts[shardIndex] unsignedLongLongValue];
+            [metrics appendFormat:@"relay_ingress_shard_dispatch_total{shard=\"%lu\"} %llu\n",
+                                  (unsigned long)[shardIndex unsignedLongValue],
+                                  (unsigned long long)dispatchCount];
+        }
+        [metrics appendString:@"\n"];
+
+        [metrics appendString:@"# HELP relay_ingress_oldest_accepted_age_ms Oldest admitted event age in milliseconds\n"];
+        [metrics appendString:@"# TYPE relay_ingress_oldest_accepted_age_ms gauge\n"];
+        [metrics appendFormat:@"relay_ingress_oldest_accepted_age_ms %.0f\n", self->_ingressOldestAgeMs];
+        [metrics appendString:@"\n"];
+
+        [metrics appendString:@"# HELP relay_ingress_queue_delay_ms_bucket Queue delay histogram buckets\n"];
+        [metrics appendString:@"# TYPE relay_ingress_queue_delay_ms_bucket histogram\n"];
+        NSArray<NSNumber *> *buckets =
+            [[self->_queueDelayBuckets allKeys] sortedArrayUsingComparator:^NSComparisonResult(NSNumber *a, NSNumber *b) {
+            return [a compare:b];
+        }];
+        for (NSNumber *bucketLimit in buckets) {
+            uint64_t bucketCount = [self->_queueDelayBuckets[bucketLimit] unsignedLongLongValue];
+            if ([bucketLimit unsignedLongLongValue] == UINT64_MAX) {
+                [metrics appendFormat:@"relay_ingress_queue_delay_ms_bucket{le=\"+Inf\"} %llu\n", (unsigned long long)bucketCount];
+            } else {
+                [metrics appendFormat:@"relay_ingress_queue_delay_ms_bucket{le=\"%@\"} %llu\n", bucketLimit, (unsigned long long)bucketCount];
+            }
+        }
+        [metrics appendFormat:@"relay_ingress_queue_delay_ms_sum %.0f\n", self->_queueDelaySumMs];
+        [metrics appendFormat:@"relay_ingress_queue_delay_ms_count %llu\n", (unsigned long long)self->_queueDelayCountTotal];
+
         output = [metrics copy];
     });
     return output ?: @"";
@@ -306,7 +538,16 @@ static NSString *RelayCanonicalSignatureFailureCategory(NSString *category) {
             @"continuityFailures": @(self.continuityFailures),
             @"syncResets": @(self.syncResets),
             @"currentSequence": @(self.currentSequence),
-            @"reconnectionCount": @(self.reconnectionCount)
+            @"reconnectionCount": @(self.reconnectionCount),
+            @"ingressCurrentEvents": @(self.ingressCurrentEvents),
+            @"ingressCurrentBytes": @(self.ingressCurrentBytes),
+            @"ingressPeakEvents": @(self.ingressPeakEvents),
+            @"ingressPeakBytes": @(self.ingressPeakBytes),
+            @"ingressRejectedTotal": @(self.ingressRejectedTotal),
+            @"ingressCancelledTotal": @(self.ingressCancelledTotal),
+            @"ingressPauseTotal": @(self.ingressPauseTotal),
+            @"ingressResumeTotal": @(self.ingressResumeTotal),
+            @"ingressAccountingFailures": @(self.ingressAccountingFailures),
         };
     });
     return snapshot ?: @{};

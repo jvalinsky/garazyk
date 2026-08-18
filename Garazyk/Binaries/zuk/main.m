@@ -17,6 +17,7 @@
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Relay/RelayUpstreamManager.h"
 #import "Sync/Relay/RelayMetrics.h"
+#import "Sync/Relay/RelayIngressConfiguration.h"
 #import "Sync/Relay/RelayAPIHandler.h"
 #import "Sync/Relay/RelayEventBuffer.h"
 #import "Sync/Relay/RelayDownstreamHandler.h"
@@ -409,6 +410,29 @@ int main(int argc, const char * argv[]) {
 
         // Initialize upstream manager with configured upstreams
         ATProtoRelayUpstreamManager *upstreamManager = [[ATProtoRelayUpstreamManager alloc] initWithInitialURLs:upstreamURLs];
+
+        NSError *ingressConfigError = nil;
+        ATProtoRelayIngressConfiguration *ingressConfiguration =
+            [ATProtoRelayIngressConfiguration configurationFromEnvironment:&ingressConfigError];
+        if (!ingressConfiguration) {
+            GZ_LOG_CORE_ERROR(@"Invalid relay ingress configuration: %@",
+                              ingressConfigError.localizedDescription);
+            return 1;
+        }
+        if (ingressConfiguration.boundedIngressEnabled) {
+            ATProtoRelayDownstreamHandler *ingressHandler = downstreamHandler;
+            [upstreamManager configureBoundedIngressWithConfiguration:ingressConfiguration
+                                                              metrics:metrics
+                                                         processBlock:^(id event,
+                                                                        NSString *upstreamURL,
+                                                                        int64_t sequence,
+                                                                        RelayIngressProcessCompletion completion) {
+                [ingressHandler processUpstreamEvent:event
+                                        fromUpstream:upstreamURL
+                                            sequence:sequence
+                                          completion:completion];
+            }];
+        }
         upstreamManager.delegate = downstreamHandler;
 
         // Configure relay API handler

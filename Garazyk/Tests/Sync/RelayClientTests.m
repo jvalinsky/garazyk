@@ -17,6 +17,37 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSURL *)buildWebSocketURL;
 - (ATProtoFirehose *)configuredFirehoseForWebSocketURL:(NSURL *)webSocketURL;
 - (void)scheduleReconnect;
+- (void)establishConnection;
+@end
+
+/*!
+ @class RelayClientTestNoopFirehose
+
+ @abstract A firehose stand-in whose -connect is a no-op, so tests that need
+ to exercise -establishConnection do not perform real network I/O.
+ */
+@interface RelayClientTestNoopFirehose : ATProtoFirehose
+@end
+
+@implementation RelayClientTestNoopFirehose
+- (void)connect {
+    // Intentionally does nothing: unit tests must not open real sockets.
+}
+@end
+
+/*!
+ @class RelayClientTestReconnectClient
+
+ @abstract Relay client subclass that hands out RelayClientTestNoopFirehose
+ instances so -establishConnection can be exercised directly in tests.
+ */
+@interface RelayClientTestReconnectClient : ATProtoRelayClient
+@end
+
+@implementation RelayClientTestReconnectClient
+- (ATProtoFirehose *)configuredFirehoseForWebSocketURL:(NSURL *)webSocketURL {
+    return [[RelayClientTestNoopFirehose alloc] initWithServerURL:webSocketURL];
+}
 @end
 
 @interface RelayClientTestDelegate : NSObject <RelayClientDelegate>
@@ -104,6 +135,34 @@ NS_ASSUME_NONNULL_BEGIN
         [client configuredFirehoseForWebSocketURL:
             [NSURL URLWithString:@"wss://example.com/xrpc/com.atproto.sync.subscribeRepos"]];
     XCTAssertEqualObjects(firehose.accessToken, @"test-token");
+}
+
+// ADR 0039, section 1: ingressGate is threaded the same way as
+// reconnectUsesProcessedCursor -- a RelayClient-level opt-in that
+// -configuredFirehoseForWebSocketURL: copies onto every ATProtoFirehose it
+// creates, including across reconnects.
+- (void)testIngressGateCopiedOntoConfiguredFirehose {
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoFirehoseIngressGate gate = ^BOOL(id event, FirehoseEventKind kind) {
+        return YES;
+    };
+    client.ingressGate = gate;
+
+    ATProtoFirehose *firehose =
+        [client configuredFirehoseForWebSocketURL:
+            [NSURL URLWithString:@"wss://example.com/xrpc/com.atproto.sync.subscribeRepos"]];
+    XCTAssertEqualObjects(firehose.ingressGate, gate);
+}
+
+// AppView and Beskid never set ingressGate; -configuredFirehoseForWebSocketURL:
+// must leave the created firehose's gate nil so their delivery threading is
+// unaffected by this seam.
+- (void)testNilIngressGateStaysNilOnConfiguredFirehose {
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    ATProtoFirehose *firehose =
+        [client configuredFirehoseForWebSocketURL:
+            [NSURL URLWithString:@"wss://example.com/xrpc/com.atproto.sync.subscribeRepos"]];
+    XCTAssertNil(firehose.ingressGate);
 }
 
 - (void)testStoredCursorDoesNotRegress {
@@ -262,7 +321,126 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(client.currentSeq, 200);
     XCTAssertTrue([self waitForCursorInClient:client repo:@"did:plc:alice" expected:200]);
 }
+
+- (void)testProcessedCursorAckDoesNotAdvanceOnDecode {
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    client.reconnectUsesProcessedCursor = YES;
+    ATProtoFirehoseSubscription *subscription = [[ATProtoFirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    ATProtoCID *commitCID = [ATProtoCID cidWithDigest:[@"ack" dataUsingEncoding:NSUTF8StringEncoding]
+                                  codec:0x71];
+    ATProtoFirehoseCommitEvent *event = [ATProtoFirehoseCommitEvent eventWithRepo:@"did:plc:alice"
+                                                             commit:commitCID
+                                                                ops:@[]];
+    event.seq = 88;
+    [client firehoseSubscription:subscription didReceiveCommitEvent:event];
+    XCTAssertEqual(client.lastReceivedSequence, 88);
+    XCTAssertEqual(client.currentSeq, 0);
+    [client acknowledgeProcessedSequence:88];
+    XCTAssertEqual(client.currentSeq, 88);
+}
+
+// Regression test for F1: a reconnect must not permanently drop frames that
+// were received but not yet processed before the connection dropped.
+- (void)testReconnectResetsLastReceivedSequenceForReplayedFrames {
+    RelayClientTestReconnectClient *client =
+        [[RelayClientTestReconnectClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    client.reconnectUsesProcessedCursor = YES;
+
+    ATProtoFirehoseSubscription *subscription = [[ATProtoFirehoseSubscription alloc] initWithCursor:0 collections:nil];
+    ATProtoCID *commitCID = [ATProtoCID cidWithDigest:[@"reconnect" dataUsingEncoding:NSUTF8StringEncoding]
+                                                codec:0x71];
+
+    // The frame arrives but is never acknowledged as processed (e.g. the
+    // connection drops before processing completes). currentSeq therefore
+    // lags behind lastReceivedSequence, as it does under
+    // reconnectUsesProcessedCursor.
+    ATProtoFirehoseCommitEvent *original = [ATProtoFirehoseCommitEvent eventWithRepo:@"did:plc:alice"
+                                                                       commit:commitCID
+                                                                          ops:@[]];
+    original.seq = 88;
+    [client firehoseSubscription:subscription didReceiveCommitEvent:original];
+    XCTAssertEqual(client.lastReceivedSequence, 88);
+    XCTAssertEqual(client.currentSeq, 0);
+
+    // Reconnect: the relay replays from currentSeq (0), so the same event
+    // comes back at seq 88. Before the F1 fix this was silently dropped as
+    // non-monotonic because lastReceivedSequence was still 88.
+    [client establishConnection];
+    XCTAssertEqual(client.lastReceivedSequence, client.currentSeq);
+
+    RelayClientTestDelegate *delegate = [[RelayClientTestDelegate alloc] init];
+    delegate.commitExpectation = [self expectationWithDescription:@"replayed-commit"];
+    [client setValue:delegate forKey:@"delegate"];
+
+    ATProtoFirehoseCommitEvent *replayed = [ATProtoFirehoseCommitEvent eventWithRepo:@"did:plc:alice"
+                                                                       commit:commitCID
+                                                                          ops:@[]];
+    replayed.seq = 88;
+    [client firehoseSubscription:subscription didReceiveCommitEvent:replayed];
+
+    [self waitForExpectations:@[delegate.commitExpectation] timeout:1.0];
+    XCTAssertEqualObjects(delegate.commitEvent, replayed);
+    XCTAssertEqual(client.lastReceivedSequence, 88);
+}
 #endif
+
+// Regression test for F7: currentSeq/lastReceivedSequence used to be plain
+// unsynchronized int64_t properties touched from at least three distinct
+// GCD contexts in production -- noteIncomingSequence: from the main queue
+// (ATProtoFirehose.sendEventToSubscriptions:), acknowledgeProcessedSequence:
+// from RelayIngressPipeline's shard queues, and reads from _managerQueue /
+// self.callbackQueue (buildWebSocketURL, scheduleReconnect logging). Drives
+// concurrent writers on both properties plus concurrent readers and asserts
+// the run completes without crashing and converges on the correct final
+// value -- in particular that acknowledgeProcessedSequence:'s "if greater,
+// advance" check-then-set does not lose updates when raced against itself
+// from multiple queues.
+- (void)testConcurrentSequenceAccessIsRaceFree {
+    ATProtoRelayClient *client = [[ATProtoRelayClient alloc] initWithServerURL:[NSURL URLWithString:@"https://example.com"]];
+    client.reconnectUsesProcessedCursor = YES;
+
+    const int64_t iterations = 500;
+    dispatch_queue_t workerQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    dispatch_group_t group = dispatch_group_create();
+
+    // Simulates RelayIngressPipeline shard queues concurrently acknowledging
+    // processed sequences -- one call per shard, all racing to advance the
+    // same currentSeq ivar.
+    dispatch_group_async(group, workerQueue, ^{
+        dispatch_apply((size_t)iterations, workerQueue, ^(size_t idx) {
+            [client acknowledgeProcessedSequence:(int64_t)idx + 1];
+        });
+    });
+
+    // Simulates the main queue delivering incoming frames concurrently with
+    // the acknowledgements above (ATProtoFirehose.sendEventToSubscriptions:
+    // -> noteIncomingSequence:). reconnectUsesProcessedCursor is YES, so
+    // this only advances lastReceivedSequence, never currentSeq.
+    dispatch_group_async(group, workerQueue, ^{
+        ATProtoFirehoseSubscription *subscription =
+            [[ATProtoFirehoseSubscription alloc] initWithCursor:0 collections:nil];
+        for (int64_t seq = 1; seq <= iterations; seq++) {
+            ATProtoFirehoseIdentityEvent *event = [ATProtoFirehoseIdentityEvent eventWithDid:@"did:plc:race"];
+            event.seq = seq;
+            [client firehoseSubscription:subscription didReceiveIdentityEvent:event];
+        }
+    });
+
+    // Simulates concurrent readers (buildWebSocketURL / log call sites)
+    // hammering the getters while the writers above are in flight.
+    dispatch_group_async(group, workerQueue, ^{
+        dispatch_apply((size_t)iterations, workerQueue, ^(size_t idx) {
+            (void)idx;
+            (void)client.currentSeq;
+            (void)client.lastReceivedSequence;
+        });
+    });
+
+    XCTAssertEqual(dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC))), 0l);
+
+    XCTAssertEqual(client.currentSeq, iterations);
+    XCTAssertEqual(client.lastReceivedSequence, iterations);
+}
 
 @end
 

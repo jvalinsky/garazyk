@@ -12,6 +12,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Sync/Firehose/Firehose.h"
 
 @class ATProtoRelayClient;
 @class ATProtoFirehose;
@@ -112,6 +113,29 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 
 /*! Whether reading is currently paused. */
 @property (nonatomic, readonly) BOOL isReadingPaused;
+
+/*!
+ When YES, reconnect uses sequences acknowledged after processing rather than
+ the last decoded frame. AppView leaves this off; Zuk bounded ingress turns it on.
+ */
+@property (nonatomic, assign) BOOL reconnectUsesProcessedCursor;
+
+/*!
+ Optional synchronous admission gate, installed onto every
+ @c ATProtoFirehose this client creates (including across reconnects) by
+ @c configuredFirehoseForWebSocketURL:. Threaded the same way as
+ @c reconnectUsesProcessedCursor: it is a client-level opt-in, not a
+ per-connection one-off. AppView leaves this nil; Zuk's bounded ingress
+ installs it via @c ATProtoRelayUpstreamManager. See ADR 0039 and
+ @c ATProtoFirehose.ingressGate for the full threading contract.
+ */
+@property (nonatomic, copy, nullable) ATProtoFirehoseIngressGate ingressGate;
+
+/*! Latest sequence observed on the wire, including not-yet-processed frames. */
+@property (nonatomic, readonly) int64_t lastReceivedSequence;
+
+/*! Advances the reconnect cursor after the processing contract completes. */
+- (void)acknowledgeProcessedSequence:(int64_t)sequence;
 
 /*! Sets the access token for authentication. */
 - (void)setAccessToken:(NSString *)accessToken;
