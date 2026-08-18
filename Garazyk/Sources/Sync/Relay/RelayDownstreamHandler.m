@@ -319,6 +319,7 @@ static const NSUInteger kRelayMaximumConcurrentRecoveries = 4;
         return nil;
     }
     *commitCID = reader.rootCID;
+    return commit;
 }
 
 - (nullable ATProtoRepoCommit *)validatedCommitForEvent:(ATProtoFirehoseCommitEvent *)event
