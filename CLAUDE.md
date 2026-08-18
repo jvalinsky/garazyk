@@ -51,8 +51,22 @@ Other useful flags: `--list [-v]` (enumerate classes/methods with gate tags), `-
 and are *skipped by default*. `--gated=run` runs everything (this is what `ctest` and CI use);
 `--gated=include` runs them but marks them in the output. A green default run is not a green run.
 
-`ctest --test-dir build --output-on-failure` runs `AllTests --gated=run` plus the admin-UI asset
-sync check. `scripts/test/run-tests.sh` wraps the same thing with the UI design-system gate.
+**Run the smallest scope that answers the question.** A full gated pass is ~10 minutes;
+the classes a change actually touches usually run in seconds. `scripts/test/affected-tests.sh --run`
+maps the working-tree diff to affected classes and runs just those. Iterate filtered, then do one
+full run before pushing. The `garazyk-test-runs` skill has the decision procedure.
+
+**Use the sharded ctest path for full runs:**
+
+```bash
+ctest --test-dir build --output-on-failure -j4 -E '^AllTests$'
+```
+
+`-E '^AllTests$'` is not optional. ctest registers the monolithic `AllTests` entry *and*
+`AllTestsShard{1..4}of4`, so a bare `ctest --test-dir build` runs the whole suite twice — once
+monolithic, once as four shards — serially without `-j`. That is the usual reason a 10-minute
+suite takes 30+. CI uses the `-j4 -E` form above. `scripts/test/run-tests.sh` wraps a
+single-process run with the UI design-system gate.
 
 Standalone test executables exist for a few suites excluded from `AllTests`: `migration_tests`,
 `connection_pool_tests`, `record_cache_tests` (and `SecItemLinuxStoreTests` on Linux only).
@@ -206,7 +220,18 @@ editing.
 
 Workspace members under `packages/`: `gruszka` (XRPC clients, lexicon handling), `hamownia`
 (scenario runner), `laweta` (Docker control), `schemat` (topology definitions), `narzedzia`
-(repository lints), `tui` (terminal UI components), plus `scripts/scenario-dashboard`.
+(repository lints), `tui` (terminal UI components), `tiles`, plus `scripts/scenario-dashboard`.
+
+**Every `packages/*` member is a git submodule** pointing at a private
+`jvalinsky/garazyk-<name>` repo. A plain `git clone` leaves them empty and every Deno task
+fails; clone with `--recurse-submodules`, or run:
+
+```bash
+git submodule update --init --recursive
+```
+
+The monorepo is still where they are developed — the submodule commit pointer is what this
+repo tracks. A change to a package is a commit in its own repo plus a pointer bump here.
 
 ## Documentation map
 

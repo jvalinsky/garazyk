@@ -13,3 +13,25 @@
 [submodule "vendor/secp256k1"]
 	path = vendor/secp256k1
 	url = https://github.com/bitcoin-core/secp256k1
+[submodule "packages/gruszka"]
+	path = packages/gruszka
+	url = git@github.com:jvalinsky/garazyk-gruszka.git
+[submodule "packages/hamownia"]
+	path = packages/hamownia
+	url = git@github.com:jvalinsky/garazyk-hamownia.git
+[submodule "packages/laweta"]
+	path = packages/laweta
+	url = git@github.com:jvalinsky/garazyk-laweta.git
+[submodule "packages/narzedzia"]
+	path = packages/narzedzia
+	url = git@github.com:jvalinsky/garazyk-narzedzia.git
+[submodule "packages/schemat"]
+	path = packages/schemat
+	url = git@github.com:jvalinsky/garazyk-schemat.git
+[submodule "packages/tiles"]
+	path = packages/tiles
+	url = git@github.com:jvalinsky/garazyk-tiles.git
+[submodule "packages/tui"]
+	path = packages/tui
+	url = git@github.com:jvalinsky/garazyk-tui.git
+	branch = monorepo-split
