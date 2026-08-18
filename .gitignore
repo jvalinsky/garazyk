@@ -244,3 +244,6 @@ skills-lock.json
 # ─── Agent Scratchpad / Compat ───────────────────────────────────────────────
 letta.js
 indigo_research
+
+# ─── Build Artifacts ───────────────────────────────────────────────
+tools/jelcz-iroh-blobs-sidecar/target/
