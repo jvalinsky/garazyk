@@ -625,8 +625,20 @@ canonicalization per spec, and the official atproto interop fixtures assert
 exactly that for both P-256 and K-256. `PLCAuditor.verifyP256Signature:` now
 enforces low-S itself (`AuthCryptoECDSA isLowS:`) without touching the shared
 DPoP-facing verifier. See ADR 0007's 2026-07-22 amendment for the full
-evidence trail. `AtprotoInteropFixturesTests` is 5/5; the video-test singleton
-leak remains a separate, still-open follow-up.
+evidence trail. `AtprotoInteropFixturesTests` is 5/5.
+
+**Video-test singleton leak resolved (2026-08-18, verified not re-derived).**
+`PDSVideoWorkerTests.m` now saves and restores `ATProtoVideoTranscoder
+sharedTranscoder`/`ATProtoVideoThumbnailGenerator sharedGenerator`'s
+`blobProvider` around every test that mutates it (`setUp`/`tearDown` plus a
+local save/restore in the one test exercising the shared instance directly),
+and `ATProtoVideoTranscoderUnitTests/testDefaultBlobProviderIsNil` allocates
+a fresh `[[ATProtoVideoTranscoder alloc] init]` rather than touching the
+singleton, with a comment explaining why. Re-verified rather than assumed
+fixed from the presence of that code: `./build/tests/AllTests --category
+Video --shuffle --seed {7,13,99} --gated=run` passes 123/123 across all
+three seeds. This was very likely an incidental fix from later Video-suite
+work, not a dedicated fix for this finding — the doc simply never caught up.
 
 **Problem:** If the firehose ingestion path does synchronous indexing
 (updating AppView tables, search index, etc.), ingest throughput is
