@@ -1,6 +1,6 @@
 ---
 title: Phase Execution Prompts
-last_verified: 2026-08-13
+last_verified: 2026-08-20
 ---
 
 # Phase Execution Prompts
@@ -77,13 +77,14 @@ Completed prompts are archived under
 | 32 | [phase-32](phase-32-s2pa-merkle-bmff.md) | S2PA `c2pa.hash.bmff.v3` Merkle trees | `complete` | — |
 | 33 | [phase-33](phase-33-s2pa-soft-binding-algs.md) | Soft-binding algorithm compute/verify | `complete` | — |
 | 34 | [phase-34](phase-34-dasl-tiles-package-and-embed.md) | Deno tiles package + live Admin UI embed | `complete` | — |
-| 35 | [phase-35](phase-35-ws16-iroh-sidecar.md) | WS16 Track A — jelcz iroh-blobs sidecar (CA/VOD) | `in-progress` — S8 complete (2026-08-14); S9 bounded-staging, S10 measurement, S11 closeout remain | — |
+| 35 | [phase-35](phase-35-ws16-iroh-sidecar.md) | WS16 Track A — jelcz iroh-blobs sidecar (CA/VOD) | `blocked` — S9 complete; S10 measurement and S11 closeout require Docker disk headroom | — |
 | 36 | [phase-36](phase-36-ws16-streamplace-iroh-bridge.md) | WS16 Track B — Streamplace live iroh bridge | `blocked` — Phase 35 completion + dated pinned-image Scenario 101 | 35 |
+| 38 | [phase-38](phase-38-governed-backlog-closeout.md) | Parallel WS10 S2PA and WS11 Mikrus/Beskid acceptance closeout | `in-progress` — isolated Terra/Luna worktrees under Sol integration | — |
 
-**Suggested order:** finish Phase 35 S9 bounded-staging (Rust disk-backed path,
-progress-driven cancel, `cargo test`), then S10 fresh-miss/warm-hit measurement
-in a fresh Track A lab, then S11 closeout. Phase 36 Scenario 101 follows after
-Phase 35 completes.
+**Suggested order:** execute unblocked Phase 38 while Phase 35 is blocked on
+disk headroom. When that input arrives, run Phase 35 S10 fresh-miss/warm-hit
+measurement in a fresh Track A lab, finish S11 closeout, then execute Phase 36
+Scenario 101.
 
 Phase 5 cannot start until a future maintainer message explicitly reopens JSR
 publication. Workstream 03 R1 source synchronization is complete without
