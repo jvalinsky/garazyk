@@ -1390,7 +1390,7 @@ Inbound links: **5**
 
 ## `docs/plans/prompts/phase-35-ws16-iroh-sidecar.md`
 
-Inbound links: **17**
+Inbound links: **16**
 
 - [docs/adr/0038-jelcz-p2p-layering.md](../adr/0038-jelcz-p2p-layering.md)
 - [docs/archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md](../archive/planning/2026-08-13-phase-35-iroh-sidecar-research.md)
@@ -1848,7 +1848,7 @@ Inbound links: **2**
 
 ## `docs/repo-index/all-documents.md`
 
-Inbound links: **296**
+Inbound links: **297**
 
 - [docs/11-reference/documentation-map.md](../11-reference/documentation-map.md)
 - [docs/index.md](../index.md)
@@ -1859,7 +1859,7 @@ Inbound links: **296**
 
 ## `docs/repo-index/backlinks.md`
 
-Inbound links: **94**
+Inbound links: **95**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1868,7 +1868,7 @@ Inbound links: **94**
 
 ## `docs/repo-index/docs-noncanonical.md`
 
-Inbound links: **224**
+Inbound links: **225**
 
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)

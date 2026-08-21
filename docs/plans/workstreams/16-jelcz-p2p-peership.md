@@ -27,13 +27,13 @@ Upstream playbook (Streamplace):
 Garazyk context: [ADR 0036](../../adr/0036-content-addressed-video-distribution.md),
 [video discovery guide](../../20-explanation/guides/video-discovery-and-peer-sharing-options.md).
 
-## Status (2026-08-15; source review plus dated Track A lab evidence)
+## Status (2026-08-21; source review plus dated Track A lab evidence)
 
 **Phases 0–3 complete. Phase 1 ADR accepted ([ADR 0038](../../adr/0038-jelcz-p2p-layering.md)).**
-Phases 4+ Track A **blocked** (S9 completed 2026-08-15; S10 blocked on host disk space). The Track B
+Phase 4 Track A is **complete for the narrow lab exception**. The Track B
 compatibility decision is approved and implemented as source/static evidence;
-Track B remains blocked on Phase 35 completion and a dated pinned-image live
-acceptance in [phase-36](../prompts/phase-36-ws16-streamplace-iroh-bridge.md).
+Track B remains blocked on its own dated pinned-image live acceptance in
+[phase-36](../prompts/phase-36-ws16-streamplace-iroh-bridge.md).
 Scenario 100 supplies the dated Track A transport proof; it does not supply
 Track B or production-promotion evidence.
 
@@ -49,12 +49,15 @@ Execution prompts:
 
 ### Evidence boundary
 
-The dirty worktree contains both Track implementations and their acceptance
-procedures. Track A now has dated Scenario 100 transport evidence, closing S7.
-S9 is complete: the Rust sidecar implements progress-driven cancellation and bounded staging, and tests pass. S10/S11 and the production-promotion gate remain open and blocked on disk space. Track B
-has source, static, focused-test, and fault-topology evidence only; it has no
-dated Scenario 101 live acceptance. The canonical Docker lab is HTTP internally
-(`SP_SECURE=false`); it proves neither HTTPS nor true TLS.
+The worktree contains both Track implementations and their acceptance
+procedures. Track A S7–S11 are complete: the 2026-08-21 fresh Compose lab
+passed Scenario 100 12/0 with one explicit scope skip and the S10 report
+measured independent 1 MiB HTTP and iroh fresh misses plus verified CA-store
+warm hits. The canonical Docker lab is HTTP internally (`SP_SECURE=false`), so
+it proves neither HTTPS nor true TLS, direct-versus-relay routing, wire bytes,
+production demand, nor production cost justification. Track B has source,
+static, focused-test, and fault-topology evidence only; it has no dated
+Scenario 101 live acceptance.
 
 ## Decision (locked for this workstream)
 
@@ -213,9 +216,9 @@ neither is claimed as live evidence.
 
 ### Phase 4 — Track A: iroh-blobs sidecar (CA/VOD)
 
-**Status:** in-progress (2026-08-13). Track A lab exception recorded in
+**Status:** complete (2026-08-21) for the narrow Track A lab exception in
 [ADR 0038 §6.1](../../adr/0038-jelcz-p2p-layering.md). Production
-cost-justification gate remains open.
+cost-justification remains a separate promotion gate.
 
 Deliverables ([phase-35](../prompts/phase-35-ws16-iroh-sidecar.md) S0–S11):
 
@@ -253,10 +256,12 @@ transport evidence (12 passing steps and one explicit scope skip). S8
 (origin announce) is **complete 2026-08-14**: `tools.garazyk.video.origin`
 lexicon extended with `irohEndpointId` + optional `irohEndpointTicket`;
 `GZJelczOriginAnnouncer` factory updated; `JelczOriginAnnouncerTests` 6/6.
-S9 (security/limits) is partial: capability auth, explicit Compose-host trust,
-timeout, and two-request admission are present, but the `MemStore` fetch path
-still checks the byte limit after allocation and Rust crate tests have not been
-compiled in this session. S10 (measurement) and S11 (closeout) remain pending.
+S9 is complete: progress-driven cancellation and bounded staging protect the
+sidecar, and its Rust and focused Objective-C negative tests passed. On
+2026-08-21, a fresh Compose rebuild corrected the Linux `libatomic.so.1`
+runtime dependency, Scenario 100 passed 12/0 with one explicit Track B scope
+skip, and the S10 report recorded fresh-miss/warm-hit evidence for both HTTP
+and iroh. S11 is therefore complete for Track A lab scope.
 **Rollback:** flag off → HTTPS-only.
 
 ### Phase 5 — Track B: Streamplace live mesh (opt-in)
@@ -346,20 +351,16 @@ then serves browser over HTTPS.
 
 ## Blocked on
 
-**Track A (Phase 4):** lab exception **recorded 2026-08-13** ([ADR 0038
-§6.1](../../adr/0038-jelcz-p2p-layering.md)). Implementation may proceed
-default-off under [phase-35](../prompts/phase-35-ws16-iroh-sidecar.md). Closeout
-still requires all of the following:
-
-1. **(Completed 2026-08-15)** Replace the post-download `MemStore` size check with progress-driven cancellation and bounded staging.
-2. **(Completed 2026-08-14)** Complete the Track A origin-announcement contract (S8).
-3. Recreate a fresh isolated Track A lab from the current image and collect the
-   S10 HTTP-versus-iroh fresh-miss/warm-hit report. **Currently blocked**: The host machine is critically low on disk space and cannot successfully build or stage the Docker Compose lab images without exhausting the virtual disk.
-   The 2026-08-21 Crimson VM capacity check reclaimed 2.7 GiB of inactive
-   sidecar build output without touching its running PDS/AppView service data,
-   but left only 3.0 GiB free and no Docker images. That is not safe capacity
-   for the fresh build plus local topology; no S10 Compose run was started.
-4. Record S10 evidence and complete S11 in the same change as the code.
+**Track A (Phase 4): complete for the lab exception (2026-08-21).** The fresh
+isolated local Compose lab rebuilt from the current image after installing
+`libatomic1`, passed Scenario 100 (12/0 plus its explicit Track B scope skip),
+and wrote the S10 measurement at
+`scripts/scenarios/reports/measurements/2026-08-21T162856617z-jelcz-track-a-s10.json`.
+For 1 MiB payloads, HTTP measured 41.876 ms fresh / 11.742 ms warm and iroh
+measured 58.006 ms fresh / 3.499 ms warm; both warm results were `ca-store`
+and both fresh transfers were BLAKE3 verified. Wire bytes and direct-versus-
+relay remain intentionally unobservable from the public contract. The Crimson
+VM remains unsuitable for this lab at 3.0 GiB free, but it was not needed.
 
 **Production promotion** still requires:
 
@@ -370,8 +371,8 @@ still requires all of the following:
 **Track B (Phase 5)** compatibility is decided: the separate, pin-specific
 bridge reproduces the wire at Streamplace revision
 `5ba597dbedda8f2fdb84b815ee633301212f5f51` and binds segment identity to the
-authenticated QUIC peer. It remains blocked on Phase 35 completion and a dated
-successful pinned-image [Scenario 101](../../../scripts/scenarios/scenarios/101_streamplace_track_b_live_iroh.ts)
+authenticated QUIC peer. It remains blocked on a dated successful pinned-image
+[Scenario 101](../../../scripts/scenarios/scenarios/101_streamplace_track_b_live_iroh.ts)
 run; no such run is recorded.
 
 The current live-readiness audit also requires digest-pinned Streamplace,
@@ -387,9 +388,9 @@ The bridge's authenticated transport, local IPC, atomic persistent evidence,
 and single-use bounded Jelcz attestation are implemented. Scenario 101 owns the
 firehose proof rather than trusting a bridge boolean. One reproducibility code
 gap was closed on 2026-08-13 by enforcing all three image digests in the static
-checker and Scenario 101. The remaining inputs are Phase 35 completion and a
-pinned live Streamplace image/publisher run of the full positive and fault
-matrix. Locked/offline Rust compilation and 17/17 library tests passed on
+checker and Scenario 101. The remaining inputs are the pinned live Streamplace
+image/publisher run and its full positive and fault matrix. Locked/offline Rust
+compilation and 17/17 library tests passed on
 2026-08-13. No dated live Scenario 101 pass is recorded.
 
 Phase 3 identity — **DONE**.
@@ -446,7 +447,9 @@ syntax, Compose interpolation, diff checks, and compilation of
 The follow-up security re-audit found no residual issue in those remediated
 surfaces.
 **2026-08-15 S9 completion:** The Rust sidecar now uses progress-driven cancellation and bounded staging to safely reject oversized blobs before memory exhaustion. The Rust crate tests and focused Objective-C negative tests (`testBoundedByteLimitRejectsInvalidValues`) both pass, completing the S9 security limits slice.
-However, the host machine remains critically low on disk space (failing Docker Compose builds entirely), so additional live-lab gates like S10 and S11 are blocked in this session.
+The 2026-08-21 local Compose rebuild and S10 collection close the remaining
+Track A live-lab gates; the older Crimson capacity restriction does not affect
+that local evidence.
 
 **2026-08-13 S10 measurement attempt (not evidence):** the new
 `scripts/demo/jelcz_track_a_s10_measurement.ts` collector passed format and

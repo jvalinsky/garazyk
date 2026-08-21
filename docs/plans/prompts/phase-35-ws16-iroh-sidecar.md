@@ -1,7 +1,7 @@
 ---
 phase: 35
 title: WS16 Track A — jelcz iroh-blobs sidecar (CA/VOD)
-status: blocked
+status: complete
 agent: worker
 depends_on: []
 last_updated: 2026-08-21
@@ -28,8 +28,13 @@ last_updated: 2026-08-21
   `testOriginRecordOmitsEndpointFieldsWhenNil`, renamed httpsBase-only test).
   All 6 pass. Build clean. Legacy `irohTicket` property on announcer retained
   for broadcast-origin compatibility (NodeTicket semantic — not overloaded).
-- **Current evidence boundary:** S8 and S9 complete. The Rust sidecar now uses progress-driven cancellation and bounded staging; tests passed. S10 fresh-miss/warm-hit measurement and S11 closeout remain blocked.
-- **Next:** Host machine disk space must be expanded to allow Docker image building for the S10 measurement lab.
+- **2026-08-21: S10 and S11 complete.** A fresh local Docker Compose lab
+  rebuilt its Linux jelcz image, then Scenario 100 passed all 12 Track A checks
+  (with its explicit Track B scope skip). The S10 collector measured independent
+  1 MiB HTTP and iroh fresh misses followed by verified CA-store warm hits.
+  The report records the public-contract limits on wire bytes and direct/relay
+  attribution. This closes the Track A lab scope; it makes no production or TLS
+  claim.
 
 # Phase 35: Track A — jelcz iroh-blobs sidecar
 
@@ -74,13 +79,14 @@ The formal gate required one of these paths before **S1**:
    (or equivalent decision note): default-off, no production-cost claim, no
    Streamplace live interop implied.
 
-The narrow lab exception was recorded in ADR 0038 §6.1 on 2026-08-13, so S0
-is satisfied and this phase is `in-progress`. The production-clearance path
-remains unsatisfied and no production-cost claim is made.
+The narrow lab exception was recorded in ADR 0038 §6.1 on 2026-08-13, satisfying
+S0. The phase completed for that exception on 2026-08-21. The production-
+clearance path remains unsatisfied and no production-cost claim is made.
 
 Independently, the Streamplace live Track B protocol/version decision and
-static implementation are complete. Its live acceptance still depends on this
-phase completing; see [phase-36](phase-36-ws16-streamplace-iroh-bridge.md).
+static implementation are complete. Its live acceptance has separate pinned-
+image and fault-matrix requirements; see
+[phase-36](phase-36-ws16-streamplace-iroh-bridge.md).
 
 ## Architecture (frozen for this phase)
 
@@ -272,15 +278,23 @@ no further build or live-lab gate is safe in this session.
 
 **2026-08-15 S9 completion:** The Rust sidecar now uses progress-driven cancellation and bounded staging; its local tests and the ObjC negative tests pass, thus completing S9. S10/S11 remain blocked.
 
-## Blocked on
+## Closeout evidence
 
-S10 live-lab measurement is blocked. The host machine is critically low on disk space, preventing Docker Compose from staging or exporting the required `garazyk/jelcz-peer:local` and `garazyk/jelcz-iroh-sidecar:local` images without exhausting the virtual disk. This phase cannot complete until the host environment is provisioned with sufficient storage to reliably run the multi-node S10 lab.
+**2026-08-21 local Docker Compose run:** The first fresh build exposed the
+Linux runtime dependency `libatomic.so.1`; the Compose jelcz image now installs
+`libatomic1`. After rebuilding the exact project-scoped lab, all three jelcz
+nodes, three sidecars, and Streamplace became healthy. Scenario 100 passed
+12/0 with one explicit Track B scope skip; its ignored operational report is at
+`scripts/scenarios/reports/runs/2026-08-21t1628z-64103/reports/100_jelcz_iroh_peership.json`.
+The S10 collector wrote
+`scripts/scenarios/reports/measurements/2026-08-21T162856617z-jelcz-track-a-s10.json`:
+HTTP fresh miss 41.876 ms and warm hit 11.742 ms; iroh fresh miss 58.006 ms and
+warm hit 3.499 ms. Both transfers were 1 MiB, verified BLAKE3, and served from
+`ca-store` on the warm hit. The report correctly marks wire bytes and
+direct-versus-relay as not observable through the public lab contract.
 
-**2026-08-21 capacity check:** the available Crimson VM runs the production
-`kaszlak` and `konbini` services. Its inactive Track A sidecar build output was
-removed (2.7 GiB), preserving all service binaries and data, but the root volume
-still has only 3.0 GiB free and no Docker images. The fresh lab necessarily
-builds Linux jelcz and sidecar images and starts the local ATProto topology, so
-running it at that capacity risks exhausting the volume beneath the active
-services. Crimson is therefore not sufficient S10 capacity yet; no Compose lab
-or scenario was started.
+The separate Crimson capacity audit remains historical: its active services
+were preserved and its 3.0 GiB free space was not used for this lab. Track A is
+complete for the narrow lab exception only. Production promotion still requires
+the CA VOD traffic and origin bandwidth/cache-miss evidence stated in the
+research document.

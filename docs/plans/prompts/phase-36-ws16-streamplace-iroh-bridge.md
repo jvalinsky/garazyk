@@ -4,7 +4,7 @@ title: WS16 Track B — Streamplace live iroh bridge
 status: blocked
 agent: worker
 depends_on: [35]
-last_updated: 2026-08-13
+last_updated: 2026-08-21
 ---
 
 # Phase 36: Track B — Streamplace live iroh bridge
@@ -27,9 +27,10 @@ iroh. This is a **separate executable/crate** from Track A — not an extension 
   complete native target links, the two focused peering classes pass 17/17, and
   the corrected session-store class passes 24/24. The full native gated run was
   interrupted during slow integration fixtures and is not claimed green.
-- **Remaining boundary:** Phase 35 must complete, then Scenario 101 must produce
-  a dated pass against the required pinned Streamplace publisher image. No live
-  Track B acceptance is currently recorded.
+- **Remaining boundary:** Phase 35 completed for its narrow lab scope on
+  2026-08-21. Scenario 101 must now produce a dated pass against the required
+  pinned Streamplace publisher image. No live Track B acceptance is currently
+  recorded.
 - **Current readiness:** the host is running the Track A-only services, has no
   PDS/relay listener on 2583/2584, and has no Track B environment file. Disk
   headroom is now under 3 GiB. Do not pull/build the Track B images in this
@@ -50,10 +51,9 @@ iroh. This is a **separate executable/crate** from Track A — not an extension 
 The maintainer-approved compatibility decision is **implemented as static source
 evidence**, but this phase cannot complete until all of the following are true:
 
-1. **[Phase 35](phase-35-ws16-iroh-sidecar.md) Track A is complete.** Its
-   default-off lab work, security/limits, measurement, and closeout evidence
-   remain in progress; the Track A exception alone does not satisfy this
-   dependency.
+1. **[Phase 35](phase-35-ws16-iroh-sidecar.md) Track A is complete for its
+   narrow lab scope (2026-08-21).** This dependency is satisfied; Track A does
+   not substitute for Track B's protocol-specific live evidence.
 2. **Dated Track B live acceptance on the pinned image.** Run and preserve
    `JELCZ_STREAMPLACE_TRACK_B_LAB=1 deno task hamownia run --no-setup 101`
    against a real Streamplace publisher image whose OCI revision label is

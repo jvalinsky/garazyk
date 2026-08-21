@@ -28,7 +28,7 @@ competing roadmaps.
 | [Content-addressed video](workstreams/12-content-addressed-video.md)                               | MASL manifest per video, jelcz-owned segment store, verified multi-origin retrieval (ADR 0036); consumes workstream 10's MASL/RASL/BDASL slices |
 | [Beskid firehose invalidation](workstreams/14-beskid-firehose-invalidation.md)                     | Edge-cache invalidation from subscribeRepos (optional ops workstream) |
 | [Streamplace VOD peership](workstreams/15-streamplace-vod-peership.md)                             | HTTPS getVideoBlob pull into jelcz CA store; optional compat serve; live iroh stays under WS12 Phase 11 |
-| [Jelcz P2P peership](workstreams/16-jelcz-p2p-peership.md)                                         | Track A CA/VOD sidecar lab in progress; Track B static bridge complete and awaiting Phase 35 plus pinned-image live acceptance |
+| [Jelcz P2P peership](workstreams/16-jelcz-p2p-peership.md)                                         | Track A CA/VOD sidecar lab complete; Track B static bridge awaits pinned-image live acceptance |
 | [Phase execution prompts](prompts/README.md)                                                       | Derived agent prompts that execute the remaining phases; not a roadmap      |
 | [Retired plans](retired-plans.md)                                                                  | Disposition and recovery references for removed plans                       |
 

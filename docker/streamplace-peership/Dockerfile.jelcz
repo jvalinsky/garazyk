@@ -12,10 +12,12 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
+# Rust iroh binaries built for Linux require libatomic on Ubuntu.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     ffmpeg \
+    libatomic1 \
     libcurl4 \
     libffi8 \
     libicu70 \
