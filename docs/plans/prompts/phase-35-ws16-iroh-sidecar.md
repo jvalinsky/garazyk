@@ -4,7 +4,7 @@ title: WS16 Track A — jelcz iroh-blobs sidecar (CA/VOD)
 status: blocked
 agent: worker
 depends_on: []
-last_updated: 2026-08-15
+last_updated: 2026-08-21
 ---
 
 ## Progress
@@ -275,3 +275,12 @@ no further build or live-lab gate is safe in this session.
 ## Blocked on
 
 S10 live-lab measurement is blocked. The host machine is critically low on disk space, preventing Docker Compose from staging or exporting the required `garazyk/jelcz-peer:local` and `garazyk/jelcz-iroh-sidecar:local` images without exhausting the virtual disk. This phase cannot complete until the host environment is provisioned with sufficient storage to reliably run the multi-node S10 lab.
+
+**2026-08-21 capacity check:** the available Crimson VM runs the production
+`kaszlak` and `konbini` services. Its inactive Track A sidecar build output was
+removed (2.7 GiB), preserving all service binaries and data, but the root volume
+still has only 3.0 GiB free and no Docker images. The fresh lab necessarily
+builds Linux jelcz and sidecar images and starts the local ATProto topology, so
+running it at that capacity risks exhausting the volume beneath the active
+services. Crimson is therefore not sufficient S10 capacity yet; no Compose lab
+or scenario was started.

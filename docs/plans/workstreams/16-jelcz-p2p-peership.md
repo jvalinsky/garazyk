@@ -1,7 +1,7 @@
 ---
 title: Jelcz P2P Peership
 status: active
-last_verified: 2026-08-15
+last_verified: 2026-08-21
 ---
 
 # Jelcz P2P Peership
@@ -355,6 +355,10 @@ still requires all of the following:
 2. **(Completed 2026-08-14)** Complete the Track A origin-announcement contract (S8).
 3. Recreate a fresh isolated Track A lab from the current image and collect the
    S10 HTTP-versus-iroh fresh-miss/warm-hit report. **Currently blocked**: The host machine is critically low on disk space and cannot successfully build or stage the Docker Compose lab images without exhausting the virtual disk.
+   The 2026-08-21 Crimson VM capacity check reclaimed 2.7 GiB of inactive
+   sidecar build output without touching its running PDS/AppView service data,
+   but left only 3.0 GiB free and no Docker images. That is not safe capacity
+   for the fresh build plus local topology; no S10 Compose run was started.
 4. Record S10 evidence and complete S11 in the same change as the code.
 
 **Production promotion** still requires:
