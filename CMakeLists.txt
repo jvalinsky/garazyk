@@ -1864,6 +1864,9 @@ if(BUILD_TESTS)
   add_test(NAME AllTestsShard2of4 COMMAND AllTests --gated=run --shard=2/4)
   add_test(NAME AllTestsShard3of4 COMMAND AllTests --gated=run --shard=3/4)
   add_test(NAME AllTestsShard4of4 COMMAND AllTests --gated=run --shard=4/4)
+  set_tests_properties(AllTests AllTestsShard1of4 AllTestsShard2of4
+    AllTestsShard3of4 AllTestsShard4of4 PROPERTIES
+    ENVIRONMENT "GARAZYK_ADMIN_UI_ASSETS_DIR=${CMAKE_BINARY_DIR}/bin/Assets")
   set_tests_properties(AllTestsShard1of4 AllTestsShard2of4 AllTestsShard3of4 AllTestsShard4of4
     PROPERTIES LABELS "shard")
   add_test(
