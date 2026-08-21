@@ -559,13 +559,15 @@ for full traceability; mirrored in the
     closing that row for real). A macOS full regression run passes 4,955 tests;
     module boundary and recursive-setter gates are clean. Bounded RASL/BDASL
     and MASL slices are now implemented and merged to `main` (`da56aa18` and
-    `4bfd6a8a`) with focused verification; remaining open slices are full
-    C2PA claim/assertion-store graph (hash.data + MUXL hard-bind +
+    `4bfd6a8a`) with focused verification. The bounded C2PA
+    claim/assertion-store graph now includes hash.data + MUXL hard-bind +
     `c2pa.hash.bmff.v3` + soft-binding + claim store + ingredient.v3 +
     transcoder auto-sign (opt-in) + ingredient `validationResults` /
-    embedded-manifest verify + Merkle bmffHash (leaf-row) landed 2026-08-13;
+    embedded-manifest verify + Merkle bmffHash (leaf-row), landed 2026-08-13;
     soft-binding `com.joinmonolith.sha256` compute/verify landed 2026-08-13 —
-    [phase-33](prompts/phase-33-s2pa-soft-binding-algs.md); Web Tiles Deno
+    [phase-33](prompts/phase-33-s2pa-soft-binding-algs.md); gathered/redacted
+    claim fields landed 2026-08-20 (`dc02706ae`). Phase 10's explicit S2PA
+    remainder is fragmented `initHash` and auxiliary Merkle boxes. Web Tiles Deno
     `@garazyk/tiles` + live Admin UI embed landed 2026-08-13 —
     [phase-34](prompts/phase-34-dasl-tiles-package-and-embed.md) complete
     (mothership resolve-path + getBlob earlier; JSR still deferred). WS16 iroh
@@ -587,7 +589,7 @@ for full traceability; mirrored in the
     evidence remains governed by workstreams 08 and 10; no full GNUstep gate
     is claimed by this execution.
 
-13. **Complete for M5 (updated 2026-08-12); M4 nearly closed:** dissolve the
+13. **Complete for M5 (updated 2026-08-20); M4 has one surface left:** dissolve the
     single monolithic admin UI process into an admin UI owned by each service
     binary. Complete [workstream 11](workstreams/11-per-service-admin-uis.md).
     One process previously held admin credentials for the PDS, PLC, relay,
@@ -599,7 +601,8 @@ for full traceability; mirrored in the
     complete on `main` (standalone admin binary deleted; Overview/Connections
     dropped; peer switcher + schemat/hamownia retarget). M4 Chat / AppView /
     Relay / PDS briefs closed 2026-08-12; Mikrus / Beskid pack acceptance
-    remain. The governed
+    closed 2026-08-20 (`0a5657205`). Video is the sole remaining M4 surface.
+    The governed
     [per-service brief index](workstreams/service-admin-uis/README.md) adds
     cross-linked execution and acceptance plans for Relay, PLC, AppView,
     Mikrus, Beskid, Chat, Germ, Video, and PDS without creating a second

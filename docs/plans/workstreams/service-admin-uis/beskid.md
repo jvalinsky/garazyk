@@ -1,7 +1,7 @@
 ---
 title: Beskid Admin UI Brief
-status: in-progress
-last_verified: 2026-08-11
+status: complete
+last_verified: 2026-08-20
 ---
 
 # Edge cache (`beskid`)
@@ -73,3 +73,13 @@ latency counters yet.
 Acceptance requires fixture-based counter reconciliation, no sensitive cache
 content in HTML/JSON, and unchanged read-through behavior and latency bounds.
 Rollback disables only the admin listener.
+
+## Acceptance closeout (2026-08-20)
+
+Closed by `0a5657205`. The existing counter/storage fixtures were reverified;
+new authenticated polling coverage exercises concurrent cache mutation while
+asserting cached record bodies remain absent. Login and shell coverage locks in
+the human pack title without changing the scoped-cookie, loopback, or
+read-through contracts. Root evidence: Mikrus/Beskid snapshot and pack suites
+plus shared `UIServerRuntimeTests` passed 69/69; the Mikrus runtime metric
+fixture passed separately 1/1.

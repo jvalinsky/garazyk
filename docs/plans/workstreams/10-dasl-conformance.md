@@ -386,8 +386,8 @@ whole/`fixedBlockSize`/`variableBlockSizes` mdat payloads; C2PA unbalanced
 promote tree; leaf-row stored in `hashes`; when `hash`+`merkle` both present,
 mandatory `/mdat` subset `{offset=16,length=0}` applies. Nested xpath beyond a
 single root 4cc remains out of profile (use root paths + `subset`). Fragmented
-`initHash` / aux merkle boxes remain open. Gathered/redacted assertions remain
-open. **`c2pa.soft-binding` (2026-08-13):** `ATProtoS2PASoftBindingAssertion`
+`initHash` / aux merkle boxes remain open. **`c2pa.soft-binding` (2026-08-13):**
+`ATProtoS2PASoftBindingAssertion`
 encodes/decodes alg + blocks (value + optional timespan scope). **Algorithm
 compute/verify (2026-08-13):** Soft Binding Algorithm List entry
 `com.joinmonolith.sha256` — exact SHA-256 fingerprint over caller-supplied
@@ -397,8 +397,15 @@ do not replace hard bindings. Test string `phash` is non-normative.
 **Claim + assertion store (2026-08-13):** `ATProtoS2PAClaim` builds
 `c2pa.claim.v2` with `created_assertions` hashed URIs, a `c2pa.assertions`
 JUMBF store (`cbor` content boxes), and JUMBF claim-bound sign/verify
-(`uuidBoxSigningAssertions:` / `verifyUUIDBoxClaimBound:`). Gathered/redacted
-assertions remain open.
+(`uuidBoxSigningAssertions:` / `verifyUUIDBoxClaimBound:`).
+**Gathered/redacted assertions (2026-08-20, `dc02706ae`):** the claim helper
+canonically encodes/decodes optional `gathered_assertions` hashed-URI maps and
+`redacted_assertions` JUMBF URI strings. Created and gathered references share
+one assertion store and fail closed on missing, tampered, duplicate, or
+overlapping entries. Redacted references are structurally restricted to
+absolute ingredient-manifest assertion URIs; cross-manifest resolution and
+absolute self-manifest comparison remain the surrounding manifest validator's
+responsibility.
 **`c2pa.ingredient.v3` (2026-08-13):** `ATProtoS2PAIngredientAssertion`
 encodes/decodes relationship + optional title/format/instanceID/description/
 digitalSourceType, activeManifest/claimSignature hashed URIs, and bounded
@@ -410,7 +417,7 @@ JUMBF `uuidBoxSigningAssertions:…embeddedManifests:` nests embeds beside the
 active `c2pa` manifest; claim-bound verify resolves the active manifest so
 embeds do not steal bidb/assertion-store lookups. Proven in
 `ATProtoS2PAIngredientAssertionTests` (round-trip, require-results, embed+verify,
-tamper → `HashMismatch`). Gathered/redacted assertions remain open.
+tamper → `HashMismatch`).
 
 - Owner boundary: `Garazyk/Sources/Security/S2PA` owns the COSE envelope, leaf certificate, and
   JUMBF/BMFF carrier; it consumes `Auth/Crypto/Secp256k1` read-only and does not alter repository
@@ -424,8 +431,11 @@ tamper → `HashMismatch`). Gathered/redacted assertions remain open.
   hashed URIs + claim-bound JUMBF sign/verify),
   `ATProtoS2PAIngredientAssertionTests`, and `ATProtoS2PAJUMBFTests`.
   All registered in `Tests/test_main.m`.
-- Explicit remainder: gathered/redacted assertions remain open. Merkle
-  `bmffHash` (leaf-row, non-fragmented) completed 2026-08-13
+- Explicit remainder: fragmented-BMFF `initHash` and auxiliary Merkle boxes
+  remain open. Gathered/redacted claim fields completed 2026-08-20
+  (`dc02706ae`; `ATProtoS2PAClaimTests` 6/6 and
+  `ATProtoS2PAJUMBFTests` 5/5). Merkle `bmffHash` (leaf-row,
+  non-fragmented) completed 2026-08-13
   ([phase-32](../prompts/phase-32-s2pa-merkle-bmff.md)). Soft-binding
   compute/verify completed 2026-08-13
   ([phase-33](../prompts/phase-33-s2pa-soft-binding-algs.md)). Nested xpath

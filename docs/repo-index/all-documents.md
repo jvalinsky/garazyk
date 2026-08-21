@@ -5,7 +5,7 @@ title: All Documents
 
 Auto-generated documentation index for repository discoverability.
 
-Total documents in this view: **291**
+Total documents in this view: **292**
 
 | Path | Classification | Canonical Target | Owner | Status |
 | --- | --- | --- | --- | --- |
@@ -181,6 +181,7 @@ Total documents in this view: **291**
 | [docs/plans/prompts/phase-34-dasl-tiles-package-and-embed.md](../plans/prompts/phase-34-dasl-tiles-package-and-embed.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/phase-35-ws16-iroh-sidecar.md](../plans/prompts/phase-35-ws16-iroh-sidecar.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md](../plans/prompts/phase-36-ws16-streamplace-iroh-bridge.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
+| [docs/plans/prompts/phase-38-governed-backlog-closeout.md](../plans/prompts/phase-38-governed-backlog-closeout.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/prompts/README.md](../plans/prompts/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/README.md](../plans/README.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |
 | [docs/plans/retired-plans.md](../plans/retired-plans.md) | `internal-reference` | [docs/plans/README.md](../plans/README.md) | `planning` | `reference` |

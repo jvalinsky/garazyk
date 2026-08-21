@@ -508,11 +508,12 @@ Inbound links: **3**
 
 ## `docs/adr/0032-dasl-conformance-profiles.md`
 
-Inbound links: **8**
+Inbound links: **9**
 
 - [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
 - [docs/archive/planning/workstream-01-completed-items.md](../archive/planning/workstream-01-completed-items.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
+- [docs/plans/prompts/phase-38-governed-backlog-closeout.md](../plans/prompts/phase-38-governed-backlog-closeout.md)
 - [docs/plans/workstreams/10-dasl-conformance.md](../plans/workstreams/10-dasl-conformance.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -520,10 +521,11 @@ Inbound links: **8**
 
 ## `docs/adr/0033-per-service-embedded-admin-uis.md`
 
-Inbound links: **14**
+Inbound links: **15**
 
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
+- [docs/plans/prompts/phase-38-governed-backlog-closeout.md](../plans/prompts/phase-38-governed-backlog-closeout.md)
 - [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
 - [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
 - [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md)
@@ -1318,12 +1320,13 @@ Inbound links: **2**
 
 ## `docs/plans/mega-plan.md`
 
-Inbound links: **34**
+Inbound links: **35**
 
 - [docs/archive/planning/README.md](../archive/planning/README.md)
 - [docs/index.md](../index.md)
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/plans/prompts/phase-38-governed-backlog-closeout.md](../plans/prompts/phase-38-governed-backlog-closeout.md)
 - [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/repo-index/all-documents.md](all-documents.md)
 - [docs/repo-index/backlinks.md](backlinks.md)
@@ -1412,9 +1415,18 @@ Inbound links: **14**
 - [docs/repo-index/backlinks.md](backlinks.md)
 - [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
 
+## `docs/plans/prompts/phase-38-governed-backlog-closeout.md`
+
+Inbound links: **10**
+
+- [docs/plans/prompts/README.md](../plans/prompts/README.md)
+- [docs/repo-index/all-documents.md](all-documents.md)
+- [docs/repo-index/backlinks.md](backlinks.md)
+- [docs/repo-index/docs-noncanonical.md](docs-noncanonical.md)
+
 ## `docs/plans/prompts/README.md`
 
-Inbound links: **14**
+Inbound links: **15**
 
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
@@ -1424,7 +1436,7 @@ Inbound links: **14**
 
 ## `docs/plans/README.md`
 
-Inbound links: **116**
+Inbound links: **118**
 
 - [docs/index.md](../index.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
@@ -1567,7 +1579,7 @@ Inbound links: **6**
 
 ## `docs/plans/workstreams/10-dasl-conformance.md`
 
-Inbound links: **18**
+Inbound links: **19**
 
 - [docs/adr/0032-dasl-conformance-profiles.md](../adr/0032-dasl-conformance-profiles.md)
 - [docs/adr/0036-content-addressed-video-distribution.md](../adr/0036-content-addressed-video-distribution.md)
@@ -1577,6 +1589,7 @@ Inbound links: **18**
 - [docs/plans/prompts/phase-31-s2pa-ingredient-verify.md](../plans/prompts/phase-31-s2pa-ingredient-verify.md)
 - [docs/plans/prompts/phase-32-s2pa-merkle-bmff.md](../plans/prompts/phase-32-s2pa-merkle-bmff.md)
 - [docs/plans/prompts/phase-33-s2pa-soft-binding-algs.md](../plans/prompts/phase-33-s2pa-soft-binding-algs.md)
+- [docs/plans/prompts/phase-38-governed-backlog-closeout.md](../plans/prompts/phase-38-governed-backlog-closeout.md)
 - [docs/plans/workstreams/01-security-and-protocol-correctness.md](../plans/workstreams/01-security-and-protocol-correctness.md)
 - [docs/plans/workstreams/12-content-addressed-video.md](../plans/workstreams/12-content-addressed-video.md)
 - [docs/plans/workstreams/service-admin-uis/video.md](../plans/workstreams/service-admin-uis/video.md)
@@ -1586,11 +1599,12 @@ Inbound links: **18**
 
 ## `docs/plans/workstreams/11-per-service-admin-uis.md`
 
-Inbound links: **26**
+Inbound links: **27**
 
 - [docs/plans/README.md](../plans/README.md)
 - [docs/plans/mega-plan.md](../plans/mega-plan.md)
 - [docs/plans/prompts/phase-30-admin-ui-library-extraction.md](../plans/prompts/phase-30-admin-ui-library-extraction.md)
+- [docs/plans/prompts/phase-38-governed-backlog-closeout.md](../plans/prompts/phase-38-governed-backlog-closeout.md)
 - [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
 - [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md)
 - [docs/plans/workstreams/service-admin-uis/beskid.md](../plans/workstreams/service-admin-uis/beskid.md)
@@ -1701,8 +1715,9 @@ Inbound links: **11**
 
 ## `docs/plans/workstreams/service-admin-uis/beskid.md`
 
-Inbound links: **10**
+Inbound links: **11**
 
+- [docs/plans/prompts/phase-38-governed-backlog-closeout.md](../plans/prompts/phase-38-governed-backlog-closeout.md)
 - [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
 - [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
 - [docs/plans/workstreams/service-admin-uis/pds.md](../plans/workstreams/service-admin-uis/pds.md)
@@ -1735,8 +1750,9 @@ Inbound links: **9**
 
 ## `docs/plans/workstreams/service-admin-uis/mikrus.md`
 
-Inbound links: **11**
+Inbound links: **12**
 
+- [docs/plans/prompts/phase-38-governed-backlog-closeout.md](../plans/prompts/phase-38-governed-backlog-closeout.md)
 - [docs/plans/workstreams/11-per-service-admin-uis.md](../plans/workstreams/11-per-service-admin-uis.md)
 - [docs/plans/workstreams/service-admin-uis/README.md](../plans/workstreams/service-admin-uis/README.md)
 - [docs/plans/workstreams/service-admin-uis/appview.md](../plans/workstreams/service-admin-uis/appview.md)

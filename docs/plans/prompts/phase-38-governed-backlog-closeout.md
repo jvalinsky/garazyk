@@ -1,10 +1,11 @@
 ---
 phase: 38
 title: Governed backlog closeout with isolated Terra and Luna workers
-status: in-progress
+status: complete
 agent: default
 depends_on: []
 last_updated: 2026-08-20
+completed_at: 2026-08-20
 ---
 
 ## Progress
@@ -13,6 +14,21 @@ Started 2026-08-20 under Sol orchestration. Sol owns this prompt, deciduous
 nodes, integration, workstream/mega-plan evidence, and final gates. Terra and
 Luna receive disjoint implementation branches in separate git worktrees.
 Blocked Phase 5, Phase 35, and Phase 36 work is explicitly excluded.
+
+Terra's initial local-source characterization found no gathered/redacted wire
+schema. Sol supplied the official C2PA 2.4 claim-map-v2 and validation contract:
+`gathered_assertions` are hashed URIs resolved in the current assertion store;
+`redacted_assertions` are plain JUMBF URIs into ingredient manifests and must
+not target the current claim's own assertions. Deciduous observation 460 records
+the source-driven unblock.
+
+Completed 2026-08-20. Terra landed additive gathered/redacted claim support in
+`dc02706ae`; Luna closed Mikrus/Beskid M4 acceptance in `0a5657205`; Sol made
+CTest's Admin UI asset contract explicit in `85e55f40e`. The bounded S2PA
+helper validates absolute ingredient-manifest URI shape and rejects relative
+self-redaction forms. Resolving cross-manifest targets or comparing an absolute
+URI to the current manifest requires manifest context and remains outside this
+claim helper.
 
 # Phase 38: Governed backlog closeout
 
@@ -40,6 +56,8 @@ closed-not-pursued product lane.
 - [`docs/plans/workstreams/service-admin-uis/beskid.md`](../workstreams/service-admin-uis/beskid.md)
 - [`docs/adr/0032-dasl-conformance-profiles.md`](../../adr/0032-dasl-conformance-profiles.md)
 - [`docs/adr/0033-per-service-embedded-admin-uis.md`](../../adr/0033-per-service-embedded-admin-uis.md)
+- [C2PA 2.4 Technical Specification](https://spec.c2pa.org/specifications/specifications/2.4/specs/C2PA_Specification.html),
+  claim-map-v2 and assertion/redaction validation
 
 ## Ownership and isolation
 
@@ -68,21 +86,27 @@ Required slice:
 
 1. Characterize the existing `ATProtoS2PAClaim`, assertion-store, hashed-URI,
    and JUMBF contracts before editing.
-2. Implement a bounded representation and encode/decode path for gathered and
-   redacted assertion references using existing hashed-URI and canonical CBOR
-   primitives.
-3. Verify referenced assertion labels/digests fail closed on missing,
-   malformed, duplicate, or tampered entries.
-4. Preserve current claim-bound verification for created assertions and
+2. Implement additive, canonical encode/decode support for optional
+   `gathered_assertions` hashed URIs and optional `redacted_assertions` JUMBF
+   URI strings while preserving the existing created-only API.
+3. Verify created and gathered assertion labels/digests against the current
+   assertion store; fail closed on missing, malformed, duplicate, overlapping,
+   or tampered entries.
+4. Validate redacted JUMBF URI structure and reject a redaction that targets
+   the current claim's own assertion store. Redacted targets are ingredient
+   assertions and are not resolved in the current store by this bounded class.
+5. Preserve current claim-bound verification for created assertions and
    ingredient embeds.
-5. Add focused positive, round-trip, malformed, duplicate, and tamper tests.
+6. Add focused positive, round-trip, malformed, duplicate, self-redaction, and
+   gathered-assertion tamper tests.
 
 If the repository's pinned sources do not define an authoritative wire shape,
 Terra must report the exact missing contract and stop. It must not invent a
 Garazyk-only S2PA format.
 
-Out of scope: fragmented-BMFF `initHash`, auxiliary Merkle boxes, certificate
-trust chains, media UX, transcoder policy, and plan/deciduous edits.
+Out of scope: cross-manifest ingredient traversal, redacted action/hard-binding
+policy, fragmented-BMFF `initHash`, auxiliary Merkle boxes, certificate trust
+chains, media UX, transcoder policy, and plan/deciduous edits.
 
 ### Luna — WS11 Mikrus/Beskid M4 acceptance
 
@@ -163,9 +187,36 @@ deno run -A scripts/dev/generate_skill_index.ts --check
 ```
 
 The full `AllTests --gated=run` and GNUstep Docker gate are required before
-claiming repository-wide green. With the host currently below the documented
-disk floor, a skipped full gate must be named as a blocker; it must never be
-reported as passing.
+claiming repository-wide green. A skipped or failing full gate must be named;
+it must never be reported as passing.
+
+## Completion evidence (2026-08-20)
+
+- S2PA: `ATProtoS2PAClaimTests` passed 6/6 and
+  `ATProtoS2PAJUMBFTests` passed 5/5 after `dc02706ae`.
+- Admin UI: the focused Mikrus metric fixture passed 1/1; Mikrus/Beskid
+  snapshot and pack tests plus shared host/runtime tests passed 69/69 after
+  `0a5657205`.
+- CTest asset integration: `85e55f40e` supplies
+  `GARAZYK_ADMIN_UI_ASSETS_DIR` to every AllTests CTest entry. From `build/`,
+  the previously asset-sensitive Mikrus title and UILab login tests passed
+  1/1 each with that environment, and `ctest -N -V` showed the property on the
+  shard.
+- Structural gates passed: source and built module boundaries, namespace,
+  recursive setters, no-host-process-exit, and the Admin UI design-system
+  gate. Deno lint, NSID generation, skill-index generation, raw-XRPC-literal,
+  and Codex agent-role checks passed.
+- A pre-handoff four-shard CTest run was attempted and was not green. All four
+  shard entries reported unrelated current-branch or sandbox failures,
+  including prohibited socket/home access, an AdminAuthSync `Vary` expectation,
+  a keychain error mismatch, and WS16 Streamplace environment/policy tests.
+  `deno task check` also remains red on five pre-existing timer-handle type
+  errors in Gruszka/Laweta. `deno task test` finished with 1,259 passed, 12
+  failed (7 dependent steps), and 1 ignored; the failures include sandboxed
+  socket/port tests, a checked-in Gruszka generator-artifact mismatch, and the
+  same Deno timer-handle assumption. The GNUstep Docker gate was not run.
+  Therefore this phase records scoped acceptance only and does not claim
+  repository-wide green.
 
 ## Rollback
 
@@ -183,4 +234,3 @@ reverting the other or the private package submodules.
 - Phase 36 remains blocked on Phase 35 plus dated pinned-image Scenario 101.
 - WS03's runtime compatibility check remains blocked on disk and a runnable
   `syrena` topology.
-

@@ -331,14 +331,17 @@ index), `syrena` (AppView), `syrena-chat` (chat), `germ` (E2EE mailbox),
 `jelcz` (video), then `kaszlak` (PDS, Ozone, Security, Data Explorer, MST,
 Lab).
 
-### M4 status (2026-08-12)
+### M4 status (2026-08-20)
 
 **Chat, AppView, Relay, and PDS briefs closed 2026-08-12** (headline stats +
 lock/unlock + `admin-ui:chat-smoke`; Exceptions/Probe/Actor dig; live-event
 inspector fields; PDS snapshot + visual/browser smoke including 200% zoom).
-Remaining M4 surface is Mikrus / Beskid pack completion vs brief acceptance
-(see those briefs), plus Video (`jelcz`) CA-aware Distribution/Jobs UX
-(in progress 2026-08-12; see [video brief](service-admin-uis/video.md)).
+Mikrus and Beskid brief acceptance closed 2026-08-20 (`0a5657205`) with
+fixture-backed metric reconciliation, bounded pagination/error polling,
+credential/body/path redaction, human pack titles, and authenticated polling
+during concurrent index/cache mutation. The remaining M4 surface is Video
+(`jelcz`) CA-aware Distribution/Jobs UX (in progress; see
+[video brief](service-admin-uis/video.md)).
 Ozone remains embed-only if a standalone Ozone binary
 appears.
 

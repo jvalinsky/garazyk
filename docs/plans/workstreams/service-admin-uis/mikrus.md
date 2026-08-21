@@ -1,7 +1,7 @@
 ---
 title: Mikrus Admin UI Brief
-status: in-progress
-last_verified: 2026-08-11
+status: complete
+last_verified: 2026-08-20
 ---
 
 # Link index (`mikrus`)
@@ -68,3 +68,16 @@ queries. There are no operational counters or admin credential yet.
 Acceptance requires counters to reconcile against fixture databases, polling
 to add no unbounded query plan, and the public XRPC surface to remain unchanged.
 Rollback disables the embedded listener without changing ingestion or indexes.
+
+## Acceptance closeout (2026-08-20)
+
+Closed by `0a5657205`. Runtime delegate fixtures now reconcile successful
+create/delete metrics with stored state; failed deletes count as ingest errors.
+Snapshot coverage distinguishes enabled-but-missing ingest from healthy state,
+caps explore and recent-error reads, and strips error bodies, DIDs, paths,
+userinfo, query tokens, and fragments. Authenticated partial polling passed
+during concurrent index mutation, and the single-surface shell uses the human
+pack title. Root evidence: the reconciliation test passed 1/1; Mikrus snapshot,
+pack, Beskid snapshot/pack, and shared host suites passed 69/69. The separate
+socket-backed runtime health test could not bind in the Codex sandbox and is
+not represented as passing.
