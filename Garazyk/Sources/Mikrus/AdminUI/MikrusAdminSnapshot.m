@@ -48,7 +48,7 @@ NSString *GZMikrusAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
     
     // health: degraded when ingest enabled but not running
     NSString *health = @"ok";
-    if (self.configuration.ingestEnabled && self.ingestEngine && !self.ingestEngine.isRunning) {
+    if (self.configuration.ingestEnabled && (!self.ingestEngine || !self.ingestEngine.isRunning)) {
         health = @"degraded";
     }
     
@@ -105,17 +105,33 @@ NSString *GZMikrusAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
 }
 
 - (NSArray<NSDictionary *> *)recentErrors:(NSInteger)limit {
+    // Error-log polling is bounded like explore queries. Non-positive limits
+    // are treated as an empty request rather than reaching SQLite LIMIT -1.
+    if (limit <= 0) return @[];
+    limit = MIN(limit, 100);
     // Query the most recent ingest errors from the event log
     // This assumes an ingest_errors table exists; if not, return empty array
-    NSString *sql = @"SELECT timestamp, relay_url, error_message, did, seq "
+    // Error messages can contain request bodies, local paths, or credentials.
+    // Keep only operational context; never expose the diagnostic payload.
+    NSString *sql = @"SELECT timestamp, relay_url, seq "
                     @"FROM ingest_errors ORDER BY timestamp DESC LIMIT ?";
     NSArray *rows = [self.database executeQuery:sql params:@[@(limit)] error:nil];
     
     if (!rows) {
         return @[];
     }
-    
-    return rows;
+
+    NSMutableArray *safeRows = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        NSMutableDictionary *safeRow = [row mutableCopy];
+        safeRow[@"error_message"] = @"Ingest error (details redacted)";
+        NSString *relayURL = [row[@"relay_url"] isKindOfClass:[NSString class]] ? row[@"relay_url"] : nil;
+        NSURLComponents *components = relayURL.length > 0 ? [NSURLComponents componentsWithString:relayURL] : nil;
+        NSString *host = components.host;
+        safeRow[@"relay_url"] = host.length > 0 ? host : @"(relay redacted)";
+        [safeRows addObject:safeRow];
+    }
+    return safeRows;
 }
 
 - (NSDictionary<NSString *, id> *)indexFamilyStatistics {
@@ -155,6 +171,8 @@ NSString *GZMikrusAdminPasswordFromFile(NSString *path, NSError * _Nullable * _N
     });
     if (![allowed containsObject:table]) return 0;
 
+    // MAX(rowid) is an intentionally O(1)-shaped approximation. The dashboard
+    // must not turn every poll into an unbounded COUNT scan.
     NSString *sql = [NSString stringWithFormat:@"SELECT MAX(rowid) as mx FROM %@", table];
     NSArray *rows = [self.database executeQuery:sql params:@[] error:nil];
     if (rows.count == 0) return 0;

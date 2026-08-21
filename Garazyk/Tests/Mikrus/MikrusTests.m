@@ -7,6 +7,7 @@
 #import "Mikrus/MikrusDatabase.h"
 #import "Mikrus/MikrusLinkExtractor.h"
 #import "Mikrus/MikrusRuntime.h"
+#import "Mikrus/MikrusMetrics.h"
 #import "Mikrus/MikrusSourceSpec.h"
 #import "Mikrus/MikrusXrpcRoutePack.h"
 #import "Network/HttpRequest.h"
@@ -119,6 +120,37 @@ static ATProtoHttpRequest *MikrusRequest(NSDictionary *queryParams) {
     XCTAssertNotNil(error);
     config.ingestEnabled = NO;
     XCTAssertTrue([config validate:&error]);
+}
+
+- (void)testIngestCommitMetricsReconcileCreateAndDelete {
+    GZMikrusDatabase *db = MikrusOpenTestDB(self);
+    GZMikrusMetrics *metrics = [[GZMikrusMetrics alloc] init];
+    // Runtime owns these properties; KVC keeps this delegate test independent
+    // of service startup and exercises the real ingest-to-index boundary.
+    [self.runtime setValue:db forKey:@"database"];
+    [self.runtime setValue:metrics forKey:@"metrics"];
+    // The delegate implementation does not inspect the engine argument, but
+    // the protocol correctly requires a nonnull callback source.
+    GZAppViewIngestEngine *engine = [[GZAppViewIngestEngine alloc] init];
+
+    GZAppViewIngestEvent *create = [[GZAppViewIngestEvent alloc] init];
+    create.did = @"did:plc:metrics";
+    create.seq = 1;
+    create.ops = @[@{ @"action": @"create", @"path": @"app.bsky.feed.post/one",
+                      @"record": @{ @"$type": @"app.bsky.feed.post", @"text": @"hello" } }];
+    [self.runtime ingestEngine:engine didReceiveCommit:create];
+
+    GZAppViewIngestEvent *delete = [[GZAppViewIngestEvent alloc] init];
+    delete.did = create.did;
+    delete.seq = 2;
+    delete.ops = @[@{ @"action": @"delete", @"path": @"app.bsky.feed.post/one" }];
+    [self.runtime ingestEngine:engine didReceiveCommit:delete];
+
+    NSDictionary *ingest = [metrics snapshotDictionary][@"ingest"];
+    XCTAssertEqual([ingest[@"recordsIndexed"] integerValue], 1);
+    XCTAssertEqual([ingest[@"recordsDeleted"] integerValue], 1);
+    XCTAssertNil([db recordByURI:@"at://did:plc:metrics/app.bsky.feed.post/one" cid:nil error:nil]);
+    [db close];
 }
 
 - (void)testRuntimeHealthEndpoint {

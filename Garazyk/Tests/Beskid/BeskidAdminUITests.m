@@ -266,6 +266,17 @@ static GZBeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
     XCTAssertTrue([response.bodyString containsString:@"Health"]);
 }
 
+- (void)testSingleSurfaceUsesHumanPackTitle {
+    ATProtoHttpResponse *login = [self.host dispatchRequestForTesting:[self requestWithMethod:@"GET" path:@"/admin/login" headers:@{} body:nil]];
+    XCTAssertEqual(login.statusCode, HttpStatusOK);
+    XCTAssertTrue([login.bodyString containsString:@"Beskid"]);
+    NSString *token = [self.host.authManager createSessionToken];
+    NSDictionary *headers = @{ @"Cookie": [NSString stringWithFormat:@"gz_admin_beskid_token=%@", token] };
+    ATProtoHttpResponse *shell = [self.host dispatchRequestForTesting:[self requestWithMethod:@"GET" path:@"/admin" headers:headers body:nil]];
+    XCTAssertEqual(shell.statusCode, HttpStatusOK);
+    XCTAssertTrue([shell.bodyString containsString:@"<h1 class=\"admin-header-title\">Beskid</h1>"]);
+}
+
 - (void)testCachePartialNeverRendersRecordContent {
     [self.db saveRecord:@{@"$type": @"test", @"secret": @"do-not-leak"} did:@"did:plc:x" collection:@"test.ns" rkey:@"one" cid:@"bafy" ttl:3600 error:nil];
     [self.db saveIdentity:@"did:plc:x" handle:@"x.com" pdsEndpoint:@"https://pds.x.com" signingKey:@"zQleaked" rawDocument:@{} ttl:86400 error:nil];
@@ -329,6 +340,28 @@ static GZBeskidDatabase *BeskidAdminOpenTestDB(XCTestCase *test) {
     XCTAssertNil(GZBeskidAdminPasswordFromFile(missingPath, &error));
     XCTAssertNotNil(error);
     XCTAssertFalse([error.localizedDescription containsString:secret]);
+}
+
+- (void)testAuthenticatedPollingSurvivesConcurrentCacheMutation {
+    NSString *token = [self.host.authManager createSessionToken];
+    NSDictionary *headers = @{ @"Cookie": [NSString stringWithFormat:@"gz_admin_beskid_token=%@", token] };
+    dispatch_group_t group = dispatch_group_create();
+    for (NSInteger i = 0; i < 24; i++) {
+        dispatch_group_async(group, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            NSError *error = nil;
+            BOOL saved = [self.db saveRecord:@{@"$type": @"test", @"body": @"private"}
+                did:@"did:plc:poll" collection:@"test.poll" rkey:[NSString stringWithFormat:@"%ld", (long)i]
+                cid:@"bafy" ttl:3600 error:&error];
+            XCTAssertTrue(saved, @"%@", error);
+            ATProtoHttpRequest *request = [self requestWithMethod:@"GET" path:@"/admin/partials/beskid-cache"
+                headers:headers body:nil];
+            ATProtoHttpResponse *response = [self.host dispatchRequestForTesting:request];
+            XCTAssertEqual(response.statusCode, HttpStatusOK);
+            XCTAssertFalse([response.bodyString containsString:@"private"]);
+        });
+    }
+    long waitResult = dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+    XCTAssertEqual(waitResult, 0L, @"concurrent Beskid polling timed out");
 }
 
 @end

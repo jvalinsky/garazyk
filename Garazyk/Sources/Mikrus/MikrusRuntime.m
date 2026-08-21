@@ -189,7 +189,11 @@
         [self.metrics recordIngestOp];
         if ([action isEqualToString:@"delete"]) {
             [self.metrics recordIngestDelete];
-            if (![self.database deleteRecordForDID:event.did collection:collection rkey:rkey error:&error]) {
+            BOOL deleted = [self.database deleteRecordForDID:event.did collection:collection rkey:rkey error:&error];
+            if (deleted) {
+                [self.metrics recordRecordDeleted];
+            } else {
+                [self.metrics recordIngestError];
                 GZ_LOG_WARN(@"[Mikrus] Failed to delete %@/%@ for %@: %@",
                             collection, rkey, event.did, error.localizedDescription);
             }

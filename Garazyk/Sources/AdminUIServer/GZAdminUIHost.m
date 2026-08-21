@@ -399,14 +399,15 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
 
 - (NSString *)loginPageHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
     NSString *serviceDisplayName = @"Admin";
-    if (self.configuration.serviceIdentifier.length > 0) {
-        serviceDisplayName = [self.configuration.serviceIdentifier uppercaseString];
-    } else if (self.packs.count == 1) {
+    NSString *packDisplayName = nil;
+    if (self.packs.count == 1) {
         Class<GZAdminUIPack> packClass = self.packs.firstObject;
-        NSString *displayName = [packClass displayName];
-        if (displayName.length > 0) {
-            serviceDisplayName = displayName;
-        }
+        packDisplayName = [packClass displayName];
+    }
+    if (packDisplayName.length > 0) {
+        serviceDisplayName = packDisplayName;
+    } else if (self.configuration.serviceIdentifier.length > 0) {
+        serviceDisplayName = [self.configuration.serviceIdentifier uppercaseString];
     }
     return [GZAdminUITemplateEngine renderTemplate:@"login" context:@{
         @"nonce": nonce ?: @"",
@@ -423,16 +424,17 @@ static NSArray<NSDictionary<NSString *, NSString *> *> *GZAdminUIShellTabs(NSArr
     // One pack OR a service-scoped embed = single service surface.
     BOOL isSingleSurface = self.packs.count == 1 || serviceIdentifier.length > 0;
     NSString *shellTitle = @"Garazyk UI Service";
-    if (serviceIdentifier.length > 0) {
-        shellTitle = [serviceIdentifier uppercaseString];
-    } else if (isSingleSurface) {
+    NSString *packDisplayName = nil;
+    if (self.packs.count == 1) {
         Class<GZAdminUIPack> packClass = self.packs.firstObject;
-        NSString *displayName = [packClass displayName];
-        if (displayName.length > 0) {
-            shellTitle = displayName;
-        } else if (tabs.firstObject[@"displayName"].length > 0) {
-            shellTitle = tabs.firstObject[@"displayName"];
-        }
+        packDisplayName = [packClass displayName];
+    }
+    if (self.packs.count == 1 && packDisplayName.length > 0) {
+        shellTitle = packDisplayName;
+    } else if (self.packs.count == 1 && tabs.firstObject[@"displayName"].length > 0) {
+        shellTitle = tabs.firstObject[@"displayName"];
+    } else if (serviceIdentifier.length > 0) {
+        shellTitle = [serviceIdentifier uppercaseString];
     }
 
     NSSet<NSString *> *knownPanels = [NSSet setWithArray:@[

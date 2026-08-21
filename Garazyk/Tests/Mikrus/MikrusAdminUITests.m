@@ -70,6 +70,65 @@ static GZMikrusDatabase *MikrusOpenDB(XCTestCase *t) {
     XCTAssertGreaterThan([identities[@"approxCount"] longLongValue], (long long)0);
     [db close];
 }
+- (void)testEnabledIngestWithoutEngineIsDegraded {
+    GZMikrusDatabase *db = MikrusOpenDB(self);
+    GZMikrusConfiguration *configuration = [GZMikrusConfiguration defaultConfiguration];
+    configuration.ingestEnabled = YES;
+    GZMikrusAdminSnapshot *snapshot = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db
+        metrics:[[GZMikrusMetrics alloc] init] configuration:configuration ingestEngine:nil];
+    XCTAssertEqualObjects([snapshot snapshot][@"health"], @"degraded");
+    [db close];
+}
+- (void)testRecentErrorsRedactFixturePayload {
+    GZMikrusDatabase *db = MikrusOpenDB(self);
+    NSError *error = nil;
+    // The database intentionally has no public write API for this optional
+    // event-log fixture; executeQuery is used here only to seed the test DB.
+    NSArray *created = [db executeQuery:@"CREATE TABLE ingest_errors (timestamp INTEGER, relay_url TEXT, error_message TEXT, did TEXT, seq INTEGER)"
+        params:@[] error:&error];
+    XCTAssertNotNil(created, @"%@", error);
+    NSArray *inserted = [db executeQuery:@"INSERT INTO ingest_errors (timestamp, relay_url, error_message, did, seq) VALUES (?, ?, ?, ?, ?)"
+        params:@[@1, @"https://user:pass@relay.example/private?token=secret#frag", @"secret body /private/key", @"did:plc:secret", @2] error:&error];
+    XCTAssertNotNil(inserted, @"%@", error);
+    GZMikrusAdminSnapshot *snapshot = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db
+        metrics:[[GZMikrusMetrics alloc] init] configuration:[GZMikrusConfiguration defaultConfiguration]
+        ingestEngine:nil];
+    NSDictionary *row = [snapshot recentErrors:10].firstObject;
+    XCTAssertEqualObjects(row[@"error_message"], @"Ingest error (details redacted)");
+    XCTAssertEqualObjects(row[@"relay_url"], @"relay.example");
+    XCTAssertEqual([row[@"seq"] integerValue], 2);
+    NSString *json = [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:[snapshot snapshot] options:0 error:nil] encoding:NSUTF8StringEncoding];
+    XCTAssertFalse([json containsString:@"secret body"]);
+    XCTAssertFalse([json containsString:@"/private/key"]);
+    XCTAssertFalse([json containsString:@"user:pass"]);
+    XCTAssertFalse([json containsString:@"did:plc:secret"]);
+    XCTAssertFalse([json containsString:@"token=secret"]);
+    XCTAssertFalse([json containsString:@"/private"]);
+    XCTAssertFalse([json containsString:@"#frag"]);
+    XCTAssertEqual([snapshot recentErrors:1000].count, 1u);
+    XCTAssertEqual([snapshot recentErrors:-1].count, 0u);
+    [db close];
+}
+- (void)testExplorePageIsBoundedAndCursorReconciles {
+    GZMikrusDatabase *db = MikrusOpenDB(self);
+    NSError *error = nil;
+    for (NSInteger i = 0; i < 105; i++) {
+        NSString *rkey = [NSString stringWithFormat:@"%03ld", (long)i];
+        BOOL indexed = [db indexRecord:@{@"$type": @"test"} did:@"did:plc:bounded"
+            collection:@"test.collection" rkey:rkey cid:nil seq:i error:&error];
+        XCTAssertTrue(indexed, @"%@", error);
+    }
+    GZMikrusAdminSnapshot *snapshot = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db
+        metrics:[[GZMikrusMetrics alloc] init] configuration:[GZMikrusConfiguration defaultConfiguration]
+        ingestEngine:nil];
+    NSString *cursor = nil;
+    NSArray *first = [snapshot listRecordsInCollection:@"test.collection" limit:100 cursor:nil nextCursor:&cursor];
+    XCTAssertEqual(first.count, 100u);
+    XCTAssertNotNil(cursor);
+    NSArray *second = [snapshot listRecordsInCollection:@"test.collection" limit:100 cursor:cursor nextCursor:nil];
+    XCTAssertEqual([second count], 5u);
+    [db close];
+}
 - (void)testDatabasePressure {
     GZMikrusDatabase *db = MikrusOpenDB(self);
     GZMikrusAdminSnapshot *snap = [[GZMikrusAdminSnapshot alloc] initWithDatabase:db metrics:[[GZMikrusMetrics alloc] init] configuration:[GZMikrusConfiguration defaultConfiguration] ingestEngine:nil];
@@ -234,5 +293,27 @@ static GZMikrusDatabase *MikrusOpenDB(XCTestCase *t) {
     XCTAssertEqualObjects(GZMikrusAdminPasswordFromFile(p,&e), s);
     XCTAssertNil(e);
     [[NSFileManager defaultManager] removeItemAtPath:p error:nil];
+}
+- (void)testAuthenticatedPollingSurvivesConcurrentIndexMutation {
+    NSString *token = [self.host.authManager createSessionToken];
+    NSDictionary *headers = @{ @"Cookie": [NSString stringWithFormat:@"gz_admin_mikrus_token=%@", token] };
+    dispatch_group_t group = dispatch_group_create();
+    for (NSInteger i = 0; i < 24; i++) {
+        dispatch_group_async(group, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            NSError *error = nil;
+            BOOL indexed = [self.db indexRecord:@{@"$type": @"test", @"body": @"private"}
+                did:@"did:plc:poll" collection:@"test.poll" rkey:[NSString stringWithFormat:@"%ld", (long)i]
+                cid:nil seq:i error:&error];
+            XCTAssertTrue(indexed, @"%@", error);
+            ATProtoHttpRequest *request = [[ATProtoHttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET"
+                path:@"/admin/partials/mikrus-indexes" queryString:@"" queryParams:@{} version:@"HTTP/1.1"
+                headers:headers body:[NSData data] remoteAddress:@"127.0.0.1"];
+            ATProtoHttpResponse *response = [self.host dispatchRequestForTesting:request];
+            XCTAssertEqual(response.statusCode, HttpStatusOK);
+            XCTAssertFalse([response.bodyString containsString:@"private"]);
+        });
+    }
+    long waitResult = dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+    XCTAssertEqual(waitResult, 0L, @"concurrent Mikrus polling timed out");
 }
 @end
