@@ -26,6 +26,10 @@ static const uint8_t kJUMBFCBORType[16] = {
     0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71
 };
 
+@interface ATProtoS2PAClaim (Private)
++ (nullable NSData *)assertionJUMBFWithLabel:(NSString *)label cbor:(NSData *)cbor error:(NSError **)error;
+@end
+
 static NSError *S2PAClaimErr(ATProtoS2PAClaimErrorCode code, NSString *message) {
     return [NSError errorWithDomain:ATProtoS2PAClaimErrorDomain
                                code:code
@@ -80,6 +84,115 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
     return S2PAWriteBox("jumb", body);
 }
 
+static NSString *S2PAAssertionURIPrefix(void) {
+    return [NSString stringWithFormat:@"self#jumbf=%@/", ATProtoS2PAAssertionStoreLabel];
+}
+
+static ATProtoCBORValue *S2PAHashedURICBOR(ATProtoS2PAHashedURI *uri, NSError **error) {
+    if (uri.url.length == 0 || uri.digest.length != CC_SHA256_DIGEST_LENGTH) {
+        S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidArgument,
+                        @"hashed_uri requires url and 32-byte sha256 hash");
+        return nil;
+    }
+    NSMutableDictionary *map = [@{
+        S2PAText(@"url"): S2PAText(uri.url),
+        S2PAText(@"hash"): [ATProtoCBORValue byteString:uri.digest],
+    } mutableCopy];
+    if (uri.alg.length > 0) map[S2PAText(@"alg")] = S2PAText(uri.alg);
+    return [ATProtoCBORValue map:map];
+}
+
+static ATProtoS2PAHashedURI *S2PAHashedURIFromCBOR(ATProtoCBORValue *value) {
+    if (value.type != CBORTypeMap) return nil;
+    __block NSString *url = nil;
+    __block NSData *hash = nil;
+    __block NSString *alg = nil;
+    __block BOOL malformed = NO;
+    [value.map enumerateKeysAndObjectsUsingBlock:^(ATProtoCBORValue *key, ATProtoCBORValue *val,
+                                                    BOOL *stop) {
+        (void)stop;
+        if (key.type != CBORTypeTextString) {
+            malformed = YES;
+        } else if ([key.textString isEqualToString:@"url"]) {
+            if (val.type != CBORTypeTextString) malformed = YES;
+            else url = val.textString;
+        } else if ([key.textString isEqualToString:@"hash"]) {
+            if (val.type != CBORTypeByteString) malformed = YES;
+            else hash = val.byteString;
+        } else if ([key.textString isEqualToString:@"alg"]) {
+            if (val.type != CBORTypeTextString) malformed = YES;
+            else alg = val.textString;
+        }
+    }];
+    if (malformed || url.length == 0 || hash.length != CC_SHA256_DIGEST_LENGTH) return nil;
+    return [ATProtoS2PAHashedURI hashedURIWithURL:url digest:hash alg:alg];
+}
+
+static BOOL S2PAIsValidRedactedAssertionURI(NSString *uri) {
+    if (![uri isKindOfClass:[NSString class]] || uri.length == 0 ||
+        [uri rangeOfString:@"?"].location != NSNotFound ||
+        [uri componentsSeparatedByString:@"#"].count != 2) {
+        return NO;
+    }
+    NSString *prefix = @"self#jumbf=/c2pa/";
+    if (![uri hasPrefix:prefix]) return NO;
+    NSString *path = [uri substringFromIndex:prefix.length];
+    if ([path rangeOfString:@".."].location != NSNotFound) return NO;
+    NSCharacterSet *allowed = [NSCharacterSet characterSetWithCharactersInString:
+                              @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_./:-"];
+    if ([path rangeOfCharacterFromSet:allowed.invertedSet].location != NSNotFound) return NO;
+    NSArray<NSString *> *parts = [path componentsSeparatedByString:@"/"];
+    return parts.count == 3 && parts[0].length > 0 &&
+           [parts[1] isEqualToString:ATProtoS2PAAssertionStoreLabel] && parts[2].length > 0;
+}
+
+static BOOL S2PAValidateLocalHashedURIReferences(NSArray<ATProtoS2PAHashedURI *> *created,
+                                                 NSArray<ATProtoS2PAHashedURI *> *gathered,
+                                                 NSError **error) {
+    NSString *prefix = S2PAAssertionURIPrefix();
+    NSMutableSet<NSString *> *labels = [NSMutableSet set];
+    for (NSArray<ATProtoS2PAHashedURI *> *list in @[created, gathered]) {
+        for (ATProtoS2PAHashedURI *uri in list) {
+            if (![uri.url hasPrefix:prefix] || uri.digest.length != CC_SHA256_DIGEST_LENGTH) {
+                S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure,
+                                @"hashed_uri must reference c2pa.assertions with a sha256 hash");
+                return NO;
+            }
+            NSString *label = [uri.url substringFromIndex:prefix.length];
+            if (label.length == 0 || [label containsString:@"/"] || [labels containsObject:label]) {
+                S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure,
+                                @"created and gathered assertion references must be unique labels");
+                return NO;
+            }
+            [labels addObject:label];
+        }
+    }
+    return YES;
+}
+
+static NSArray<ATProtoS2PAHashedURI *> *S2PAHashedURIsForAssertions(
+    NSArray<ATProtoS2PAStoredAssertion *> *assertions, NSMutableSet<NSString *> *labels,
+    NSError **error) {
+    NSMutableArray<ATProtoS2PAHashedURI *> *uris = [NSMutableArray array];
+    for (ATProtoS2PAStoredAssertion *assertion in assertions) {
+        if (assertion.label.length == 0 || [labels containsObject:assertion.label]) {
+            S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidArgument,
+                            @"created and gathered assertion labels must be unique");
+            return nil;
+        }
+        [labels addObject:assertion.label];
+        NSData *box = [ATProtoS2PAClaim assertionJUMBFWithLabel:assertion.label cbor:assertion.cbor
+                                                          error:error];
+        if (!box) return nil;
+        NSData *hash = [ATProtoS2PAClaim sha256HashForAssertionJUMBF:box error:error];
+        if (!hash) return nil;
+        [uris addObject:[ATProtoS2PAHashedURI hashedURIWithURL:
+                         [S2PAAssertionURIPrefix() stringByAppendingString:assertion.label]
+                                                    digest:hash alg:nil]];
+    }
+    return uris;
+}
+
 @implementation ATProtoS2PAHashedURI
 + (instancetype)hashedURIWithURL:(NSString *)url digest:(NSData *)digest alg:(NSString *)alg {
     ATProtoS2PAHashedURI *u = [[ATProtoS2PAHashedURI alloc] init];
@@ -116,6 +229,8 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
 @property (nonatomic, strong, readwrite) ATProtoS2PAClaimGeneratorInfo *generatorInfo;
 @property (nonatomic, copy, readwrite) NSString *signatureURI;
 @property (nonatomic, copy, readwrite) NSArray<ATProtoS2PAHashedURI *> *createdAssertions;
+@property (nonatomic, copy, readwrite) NSArray<ATProtoS2PAHashedURI *> *gatheredAssertions;
+@property (nonatomic, copy, readwrite) NSArray<NSString *> *redactedAssertions;
 @property (nonatomic, copy, readwrite) NSString *alg;
 @property (nonatomic, copy, readwrite, nullable) NSString *title;
 @end
@@ -128,12 +243,32 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
                createdAssertions:(NSArray<ATProtoS2PAHashedURI *> *)createdAssertions
                              alg:(NSString *)alg
                            title:(NSString *)title {
+    return [self initWithInstanceID:instanceID
+                      generatorInfo:generatorInfo
+                       signatureURI:signatureURI
+                 createdAssertions:createdAssertions
+                gatheredAssertions:nil
+                redactedAssertions:nil
+                               alg:alg
+                             title:title];
+}
+
+- (instancetype)initWithInstanceID:(NSString *)instanceID
+                    generatorInfo:(ATProtoS2PAClaimGeneratorInfo *)generatorInfo
+                     signatureURI:(NSString *)signatureURI
+               createdAssertions:(NSArray<ATProtoS2PAHashedURI *> *)createdAssertions
+              gatheredAssertions:(NSArray<ATProtoS2PAHashedURI *> *)gatheredAssertions
+              redactedAssertions:(NSArray<NSString *> *)redactedAssertions
+                             alg:(NSString *)alg
+                           title:(NSString *)title {
     self = [super init];
     if (self) {
         _instanceID = [instanceID copy];
         _generatorInfo = generatorInfo;
         _signatureURI = [signatureURI copy];
         _createdAssertions = [createdAssertions copy] ?: @[];
+        _gatheredAssertions = [gatheredAssertions copy] ?: @[];
+        _redactedAssertions = [redactedAssertions copy] ?: @[];
         _alg = [alg copy] ?: @"sha256";
         _title = [title copy];
     }
@@ -185,7 +320,14 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
         return nil;
     }
     NSMutableArray<NSData *> *children = [NSMutableArray array];
+    NSMutableSet<NSString *> *labels = [NSMutableSet set];
     for (ATProtoS2PAStoredAssertion *a in assertions) {
+        if (a.label.length == 0 || [labels containsObject:a.label]) {
+            S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidArgument,
+                            @"assertion store labels must be unique");
+            return nil;
+        }
+        [labels addObject:a.label];
         NSData *box = [self assertionJUMBFWithLabel:a.label cbor:a.cbor error:error];
         if (!box) return nil;
         [children addObject:box];
@@ -208,30 +350,52 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
                               generatorInfo:(ATProtoS2PAClaimGeneratorInfo *)generatorInfo
                                       title:(NSString *)title
                                       error:(NSError **)error {
+    return [self claimWithCreatedAssertions:assertions
+                         gatheredAssertions:nil
+                         redactedAssertions:nil
+                                instanceID:instanceID
+                            generatorInfo:generatorInfo
+                                    title:title
+                                    error:error];
+}
+
++ (nullable instancetype)claimWithCreatedAssertions:(NSArray<ATProtoS2PAStoredAssertion *> *)createdAssertions
+                                  gatheredAssertions:(NSArray<ATProtoS2PAStoredAssertion *> *)gatheredAssertions
+                                   redactedAssertions:(NSArray<NSString *> *)redactedAssertions
+                                          instanceID:(NSString *)instanceID
+                                      generatorInfo:(ATProtoS2PAClaimGeneratorInfo *)generatorInfo
+                                              title:(NSString *)title
+                                              error:(NSError **)error {
     if (instanceID.length == 0 || !generatorInfo || generatorInfo.name.length == 0) {
         S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidArgument,
                         @"instanceID and generator name are required");
         return nil;
     }
-    if (assertions.count == 0) {
+    if (createdAssertions.count == 0) {
         S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidArgument,
                         @"claim requires at least one assertion");
         return nil;
     }
-    NSMutableArray<ATProtoS2PAHashedURI *> *uris = [NSMutableArray array];
-    for (ATProtoS2PAStoredAssertion *a in assertions) {
-        NSData *box = [self assertionJUMBFWithLabel:a.label cbor:a.cbor error:error];
-        if (!box) return nil;
-        NSData *hash = [self sha256HashForAssertionJUMBF:box error:error];
-        if (!hash) return nil;
-        NSString *url =
-            [NSString stringWithFormat:@"self#jumbf=%@/%@", ATProtoS2PAAssertionStoreLabel, a.label];
-        [uris addObject:[ATProtoS2PAHashedURI hashedURIWithURL:url digest:hash alg:nil]];
+    NSMutableSet<NSString *> *labels = [NSMutableSet set];
+    NSArray<ATProtoS2PAHashedURI *> *created =
+        S2PAHashedURIsForAssertions(createdAssertions, labels, error);
+    if (!created) return nil;
+    NSArray<ATProtoS2PAHashedURI *> *gathered =
+        S2PAHashedURIsForAssertions(gatheredAssertions ?: @[], labels, error);
+    if (!gathered) return nil;
+    for (NSString *uri in redactedAssertions ?: @[]) {
+        if (!S2PAIsValidRedactedAssertionURI(uri)) {
+            S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidArgument,
+                            @"redacted assertion must be an ingredient-manifest JUMBF URI");
+            return nil;
+        }
     }
     return [[self alloc] initWithInstanceID:instanceID
                              generatorInfo:generatorInfo
                               signatureURI:ATProtoS2PAClaimSignatureURI
-                        createdAssertions:uris
+                        createdAssertions:created
+                       gatheredAssertions:gathered
+                       redactedAssertions:redactedAssertions
                                       alg:@"sha256"
                                     title:title];
 }
@@ -244,6 +408,8 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
                         @"claim fields incomplete or unsupported alg");
         return nil;
     }
+    if (!S2PAValidateLocalHashedURIReferences(self.createdAssertions, self.gatheredAssertions,
+                                              error)) return nil;
     NSMutableDictionary *gen = [@{
         S2PAText(@"name"): S2PAText(self.generatorInfo.name),
     } mutableCopy];
@@ -254,20 +420,25 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
         gen[S2PAText(@"specVersion")] = S2PAText(self.generatorInfo.specVersion);
     }
     NSMutableArray *created = [NSMutableArray array];
+    NSMutableArray *gathered = [NSMutableArray array];
     for (ATProtoS2PAHashedURI *uri in self.createdAssertions) {
-        if (uri.url.length == 0 || uri.digest.length != CC_SHA256_DIGEST_LENGTH) {
+        ATProtoCBORValue *value = S2PAHashedURICBOR(uri, error);
+        if (!value) return nil;
+        [created addObject:value];
+    }
+    for (ATProtoS2PAHashedURI *uri in self.gatheredAssertions) {
+        ATProtoCBORValue *value = S2PAHashedURICBOR(uri, error);
+        if (!value) return nil;
+        [gathered addObject:value];
+    }
+    NSMutableArray *redacted = [NSMutableArray array];
+    for (NSString *uri in self.redactedAssertions) {
+        if (!S2PAIsValidRedactedAssertionURI(uri)) {
             S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidArgument,
-                            @"hashed_uri requires url and 32-byte sha256 hash");
+                            @"redacted assertion must be an ingredient-manifest JUMBF URI");
             return nil;
         }
-        NSMutableDictionary *m = [@{
-            S2PAText(@"url"): S2PAText(uri.url),
-            S2PAText(@"hash"): [ATProtoCBORValue byteString:uri.digest],
-        } mutableCopy];
-        if (uri.alg.length > 0) {
-            m[S2PAText(@"alg")] = S2PAText(uri.alg);
-        }
-        [created addObject:[ATProtoCBORValue map:m]];
+        [redacted addObject:S2PAText(uri)];
     }
     NSMutableDictionary *dict = [@{
         S2PAText(@"instanceID"): S2PAText(self.instanceID),
@@ -279,6 +450,8 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
     if (self.title.length > 0) {
         dict[S2PAText(@"dc:title")] = S2PAText(self.title);
     }
+    if (gathered.count > 0) dict[S2PAText(@"gathered_assertions")] = [ATProtoCBORValue array:gathered];
+    if (redacted.count > 0) dict[S2PAText(@"redacted_assertions")] = [ATProtoCBORValue array:redacted];
     NSData *encoded = [[ATProtoCBORValue map:dict] encode];
     if (!encoded) {
         S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure, @"failed to encode claim CBOR");
@@ -309,6 +482,9 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
     __block NSString *title = nil;
     __block ATProtoS2PAClaimGeneratorInfo *genInfo = nil;
     NSMutableArray<ATProtoS2PAHashedURI *> *created = [NSMutableArray array];
+    NSMutableArray<ATProtoS2PAHashedURI *> *gathered = [NSMutableArray array];
+    NSMutableArray<NSString *> *redacted = [NSMutableArray array];
+    __block BOOL malformedReferences = NO;
     [root.map enumerateKeysAndObjectsUsingBlock:^(ATProtoCBORValue *key, ATProtoCBORValue *val,
                                                   BOOL *stop) {
         (void)stop;
@@ -339,43 +515,44 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
                                                               version:version
                                                           specVersion:specVersion];
             }
-        } else if ([k isEqualToString:@"created_assertions"] && val.type == CBORTypeArray) {
+        } else if (([k isEqualToString:@"created_assertions"] ||
+                    [k isEqualToString:@"gathered_assertions"]) && val.type == CBORTypeArray) {
+            NSMutableArray<ATProtoS2PAHashedURI *> *out =
+                [k isEqualToString:@"created_assertions"] ? created : gathered;
+            if (val.array.count == 0) malformedReferences = YES;
             for (ATProtoCBORValue *item in val.array) {
-                if (item.type != CBORTypeMap) continue;
-                __block NSString *url = nil;
-                __block NSData *hash = nil;
-                __block NSString *uriAlg = nil;
-                [item.map enumerateKeysAndObjectsUsingBlock:^(ATProtoCBORValue *ik,
-                                                              ATProtoCBORValue *iv, BOOL *s2) {
-                    (void)s2;
-                    if (ik.type != CBORTypeTextString) return;
-                    if ([ik.textString isEqualToString:@"url"] && iv.type == CBORTypeTextString) {
-                        url = iv.textString;
-                    } else if ([ik.textString isEqualToString:@"hash"] &&
-                               iv.type == CBORTypeByteString) {
-                        hash = iv.byteString;
-                    } else if ([ik.textString isEqualToString:@"alg"] &&
-                               iv.type == CBORTypeTextString) {
-                        uriAlg = iv.textString;
-                    }
-                }];
-                if (url.length > 0 && hash.length == CC_SHA256_DIGEST_LENGTH) {
-                    [created addObject:[ATProtoS2PAHashedURI hashedURIWithURL:url
-                                                                       digest:hash
-                                                                          alg:uriAlg]];
+                ATProtoS2PAHashedURI *uri = S2PAHashedURIFromCBOR(item);
+                if (!uri) malformedReferences = YES;
+                else [out addObject:uri];
+            }
+        } else if ([k isEqualToString:@"redacted_assertions"] && val.type == CBORTypeArray) {
+            if (val.array.count == 0) malformedReferences = YES;
+            for (ATProtoCBORValue *item in val.array) {
+                if (item.type != CBORTypeTextString || !S2PAIsValidRedactedAssertionURI(item.textString)) {
+                    malformedReferences = YES;
+                } else {
+                    [redacted addObject:item.textString];
                 }
             }
+        } else if ([k isEqualToString:@"created_assertions"] ||
+                   [k isEqualToString:@"gathered_assertions"] ||
+                   [k isEqualToString:@"redacted_assertions"]) {
+            malformedReferences = YES;
         }
     }];
-    if (instanceID.length == 0 || !genInfo || signatureURI.length == 0 || created.count == 0) {
+    if (malformedReferences || instanceID.length == 0 || !genInfo || signatureURI.length == 0 ||
+        created.count == 0) {
         S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure,
                         @"claim missing required fields");
         return nil;
     }
+    if (!S2PAValidateLocalHashedURIReferences(created, gathered, error)) return nil;
     return [[self alloc] initWithInstanceID:instanceID
                              generatorInfo:genInfo
                               signatureURI:signatureURI
                         createdAssertions:created
+                       gatheredAssertions:gathered
+                       redactedAssertions:redacted
                                       alg:alg
                                     title:title];
 }
@@ -421,6 +598,7 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
         return nil;
     }
     offset += jumdSize;
+    NSData *matchedCBOR = nil;
     while (offset + 8 <= assertionStoreJUMBF.length) {
         uint32_t size = S2PAReadUInt32BE(bytes + offset);
         if (size < 8 || offset + size > assertionStoreJUMBF.length) {
@@ -447,23 +625,38 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
         NSData *jumdBody = [NSData dataWithBytes:bytes + offset + 16 length:childJumdSize - 8];
         NSString *childLabel = [self labelFromJUMDBody:jumdBody];
         if ([childLabel isEqualToString:label]) {
+            if (matchedCBOR) {
+                S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure,
+                                @"assertion store contains a duplicate label");
+                return nil;
+            }
             // Find first cbor content box after jumd
             NSUInteger cOff = 8 + childJumdSize;
+            NSData *content = nil;
             while (cOff + 8 <= size) {
                 uint32_t cSize = S2PAReadUInt32BE(bytes + offset + cOff);
                 if (cSize < 8 || cOff + cSize > size) break;
                 if (memcmp(bytes + offset + cOff + 4, "cbor", 4) == 0) {
-                    return [NSData dataWithBytes:bytes + offset + cOff + 8 length:cSize - 8];
+                    if (content) {
+                        S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure,
+                                        @"assertion contains duplicate cbor content");
+                        return nil;
+                    }
+                    content = [NSData dataWithBytes:bytes + offset + cOff + 8 length:cSize - 8];
                 }
                 cOff += cSize;
             }
-            S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure,
-                            @"assertion missing cbor content");
-            return nil;
+            if (!content) {
+                S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure,
+                                @"assertion missing cbor content");
+                return nil;
+            }
+            matchedCBOR = content;
         }
         (void)child;
         offset += size;
     }
+    if (matchedCBOR) return matchedCBOR;
     S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure, @"assertion label not found");
     return nil;
 }
@@ -479,24 +672,29 @@ static NSData *S2PAWriteJUMB(NSData *jumd, NSArray<NSData *> *children) {
 
 - (BOOL)verifyHashedURIsAgainstAssertionStore:(NSData *)assertionStoreJUMBF
                                         error:(NSError **)error {
-    NSString *prefix =
-        [NSString stringWithFormat:@"self#jumbf=%@/", ATProtoS2PAAssertionStoreLabel];
-    for (ATProtoS2PAHashedURI *uri in self.createdAssertions) {
-        if (![uri.url hasPrefix:prefix]) {
-            S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure,
-                            @"hashed_uri url must reference c2pa.assertions");
-            return NO;
+    NSString *prefix = S2PAAssertionURIPrefix();
+    if (!S2PAValidateLocalHashedURIReferences(self.createdAssertions, self.gatheredAssertions,
+                                              error)) return NO;
+    for (NSArray<ATProtoS2PAHashedURI *> *list in @[self.createdAssertions, self.gatheredAssertions]) {
+        for (ATProtoS2PAHashedURI *uri in list) {
+            NSString *label = [uri.url substringFromIndex:prefix.length];
+            NSData *box = [[self class] assertionJUMBFWithLabel:label
+                                              inAssertionStore:assertionStoreJUMBF
+                                                         error:error];
+            if (!box) return NO;
+            NSData *hash = [[self class] sha256HashForAssertionJUMBF:box error:error];
+            if (!hash) return NO;
+            if (![hash isEqualToData:uri.digest]) {
+                S2PAClaimSetErr(error, ATProtoS2PAClaimErrorHashMismatch,
+                                @"hashed_uri digest mismatch");
+                return NO;
+            }
         }
-        NSString *label = [uri.url substringFromIndex:prefix.length];
-        NSData *box = [[self class] assertionJUMBFWithLabel:label
-                                          inAssertionStore:assertionStoreJUMBF
-                                                     error:error];
-        if (!box) return NO;
-        NSData *hash = [[self class] sha256HashForAssertionJUMBF:box error:error];
-        if (!hash) return NO;
-        if (![hash isEqualToData:uri.digest]) {
-            S2PAClaimSetErr(error, ATProtoS2PAClaimErrorHashMismatch,
-                            @"hashed_uri digest mismatch");
+    }
+    for (NSString *uri in self.redactedAssertions) {
+        if (!S2PAIsValidRedactedAssertionURI(uri)) {
+            S2PAClaimSetErr(error, ATProtoS2PAClaimErrorInvalidStructure,
+                            @"redacted assertion must be an ingredient-manifest JUMBF URI");
             return NO;
         }
     }

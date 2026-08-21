@@ -6,9 +6,9 @@
  @abstract Bounded C2PA claim-map-v2 + assertion-store helpers (WS10 Phase 10).
 
  @discussion Builds a labelled assertion store and a @c c2pa.claim.v2 CBOR map
- with @c created_assertions hashed URIs (SHA-256 over each assertion JUMBF
- body). Does not implement ingredient claims, redaction, or gathered
- assertions. Soft-binding / Merkle remain separate.
+ with @c created_assertions and @c gathered_assertions hashed URIs (SHA-256
+ over each assertion JUMBF body), plus cross-manifest @c redacted_assertions
+ JUMBF URIs. Soft-binding / Merkle remain separate.
  */
 
 #import <Foundation/Foundation.h>
@@ -59,6 +59,10 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAClaimErrorCode) {
 @property (nonatomic, strong, readonly) ATProtoS2PAClaimGeneratorInfo *generatorInfo;
 @property (nonatomic, copy, readonly) NSString *signatureURI;
 @property (nonatomic, copy, readonly) NSArray<ATProtoS2PAHashedURI *> *createdAssertions;
+/** Optional hashed references to assertions gathered into this assertion store. */
+@property (nonatomic, copy, readonly) NSArray<ATProtoS2PAHashedURI *> *gatheredAssertions;
+/** Optional JUMBF URIs to redacted assertions in ingredient manifests. */
+@property (nonatomic, copy, readonly) NSArray<NSString *> *redactedAssertions;
 @property (nonatomic, copy, readonly) NSString *alg; // @"sha256"
 @property (nonatomic, copy, readonly, nullable) NSString *title;
 
@@ -69,6 +73,21 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAClaimErrorCode) {
                     generatorInfo:(ATProtoS2PAClaimGeneratorInfo *)generatorInfo
                      signatureURI:(NSString *)signatureURI
                createdAssertions:(NSArray<ATProtoS2PAHashedURI *> *)createdAssertions
+                             alg:(NSString *)alg
+                           title:(nullable NSString *)title;
+
+/**
+ Extended claim-map-v2 initializer. Gathered assertions use the same
+ @c hashed_uri representation as created assertions; redacted assertions are
+ JUMBF URIs into ingredient manifests and are not resolved in this claim's
+ assertion store.
+ */
+- (instancetype)initWithInstanceID:(NSString *)instanceID
+                    generatorInfo:(ATProtoS2PAClaimGeneratorInfo *)generatorInfo
+                     signatureURI:(NSString *)signatureURI
+               createdAssertions:(NSArray<ATProtoS2PAHashedURI *> *)createdAssertions
+              gatheredAssertions:(nullable NSArray<ATProtoS2PAHashedURI *> *)gatheredAssertions
+              redactedAssertions:(nullable NSArray<NSString *> *)redactedAssertions
                              alg:(NSString *)alg
                            title:(nullable NSString *)title
     NS_DESIGNATED_INITIALIZER;
@@ -87,6 +106,20 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAClaimErrorCode) {
                               generatorInfo:(ATProtoS2PAClaimGeneratorInfo *)generatorInfo
                                       title:(nullable NSString *)title
                                       error:(NSError **)error;
+
+/**
+ Builds a claim with separate created and gathered assertion references. Both
+ lists are hashed against entries in the same assertion store; labels may not
+ repeat or overlap. The legacy @c claimWithAssertions: builder remains
+ created-only.
+ */
++ (nullable instancetype)claimWithCreatedAssertions:(NSArray<ATProtoS2PAStoredAssertion *> *)createdAssertions
+                                  gatheredAssertions:(nullable NSArray<ATProtoS2PAStoredAssertion *> *)gatheredAssertions
+                                   redactedAssertions:(nullable NSArray<NSString *> *)redactedAssertions
+                                          instanceID:(NSString *)instanceID
+                                      generatorInfo:(ATProtoS2PAClaimGeneratorInfo *)generatorInfo
+                                              title:(nullable NSString *)title
+                                              error:(NSError **)error;
 
 /**
  Builds the @c c2pa.assertions JUMBF superbox containing one CBOR assertion
@@ -111,8 +144,9 @@ typedef NS_ENUM(NSInteger, ATProtoS2PAClaimErrorCode) {
                                      error:(NSError **)error;
 
 /**
- Verifies each @c created_assertions hashed URI against assertion boxes in
- @c assertionStoreJUMBF.
+ Verifies each @c created_assertions and @c gathered_assertions hashed URI
+ against assertion boxes in @c assertionStoreJUMBF. Redacted assertion URIs
+ deliberately are not resolved locally.
  */
 - (BOOL)verifyHashedURIsAgainstAssertionStore:(NSData *)assertionStoreJUMBF
                                         error:(NSError **)error;
